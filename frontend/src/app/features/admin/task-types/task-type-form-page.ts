@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import {
   DefinitionDiff,
   DesignerDefinition,
@@ -59,6 +60,7 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
     Button,
     Dialog,
     DialogFocus,
+    ScrollRegion,
     FormsModule,
     MfDatePipe,
   ],

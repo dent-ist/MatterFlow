@@ -168,17 +168,19 @@
             @if (d.added.length + d.changed.length + d.removed.length === 0) {
               <p>No field changes compared with the published version.</p>
             } @else {
-              <ul class="ttf__diff">
-                @if (d.added.length) {
-                  <li>Added: {{ labels(d.added) }}</li>
-                }
-                @if (d.changed.length) {
-                  <li>Changed: {{ labels(d.changed) }}</li>
-                }
-                @if (d.removed.length) {
-                  <li>Removed: {{ labels(d.removed) }}</li>
-                }
-              </ul>
+              <div class="ttf__diff" mfScrollRegion="Changes in this version">
+                <ul>
+                  @if (d.added.length) {
+                    <li>Added: {{ labels(d.added) }}</li>
+                  }
+                  @if (d.changed.length) {
+                    <li>Changed: {{ labels(d.changed) }}</li>
+                  }
+                  @if (d.removed.length) {
+                    <li>Removed: {{ labels(d.removed) }}</li>
+                  }
+                </ul>
+              </div>
             }
           }
           <p>

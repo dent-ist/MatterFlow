@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, model, output } from '@angul
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from './dialog-focus';
+import { ScrollRegion } from './scroll-region';
 
 /**
  * Generic confirmation (UX `mf-confirm-dialog`, 5.4): title states the action, body the consequence, buttons use verbs.
@@ -9,13 +10,13 @@ import { DialogFocus } from './dialog-focus';
  */
 @Component({
   selector: 'mf-confirm-dialog',
-  imports: [Dialog, Button, DialogFocus],
+  imports: [Dialog, Button, DialogFocus, ScrollRegion],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* The text wraps (the dialog may be opened from a table cell that does not: BUG-5) and long references break instead of widening it.
        The body scrolls when taller than the window; the footer buttons stay visible. */
     .mf-confirm__body {
-      max-height: calc(100dvh - 12rem);
+      max-height: calc(90dvh - 13rem);
       overflow-x: hidden;
       overflow-y: auto;
       overflow-wrap: anywhere;
@@ -35,7 +36,7 @@ import { DialogFocus } from './dialog-focus';
       (visibleChange)="visible.set($event)"
       [style]="{ width: '32rem', maxWidth: '95vw', whiteSpace: 'normal' }"
     >
-      <div class="mf-confirm__body" data-confirm-body>
+      <div class="mf-confirm__body" data-confirm-body [mfScrollRegion]="scrollLabel()">
         <ng-content />
       </div>
       <ng-template #footer>
@@ -60,6 +61,11 @@ export class ConfirmDialog {
   readonly danger = input(false);
   readonly busy = input(false);
   readonly showConfirm = input(true);
+  /**
+   * Names the body as a scrollable region ("Changes in this version"): when the content is taller than the window the body scrolls and
+   * becomes a focusable region with this name, so a keyboard user can scroll it (BUG-4). Set it on dialogs that may show a long list.
+   */
+  readonly scrollLabel = input('');
 
   readonly visible = model(false);
   readonly confirmed = output<void>();

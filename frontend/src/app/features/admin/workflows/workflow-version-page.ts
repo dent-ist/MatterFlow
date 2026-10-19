@@ -489,6 +489,7 @@ const UNORDERED_TEXT =
       "
       [confirmLabel]="'Publish v' + (version()?.version?.versionNo ?? '')"
       cancelLabel="Back to draft"
+      scrollLabel="Changes in this version"
       [busy]="busy() || diffLoading()"
       [(visible)]="publishOpen"
       (confirmed)="publish()"
