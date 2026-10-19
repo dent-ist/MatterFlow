@@ -50,7 +50,12 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
   }) => {
     await page.goto('/admin/task-types');
     await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveText(['Task Types', 'Workflows', 'Workflow Steps']);
+    // Each tab carries the count of its active records (#364): `Task Types (61)`.
+    await expect(page.getByRole('tab')).toHaveText([
+      /^Task Types \(\d+\)$/,
+      /^Workflows \(\d+\)$/,
+      /^Workflow Steps \(\d+\)$/,
+    ]);
     await expect(page.getByRole('tab', { name: 'Task Types' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -163,7 +168,10 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const workflowPage = await asUser(workflowUser.username);
     await workflowPage.goto('/admin/task-types');
     await expect(workflowPage).toHaveURL(/\/admin\/workflows$/);
-    await expect(workflowPage.getByRole('tab')).toHaveText(['Workflows', 'Workflow Steps']);
+    await expect(workflowPage.getByRole('tab')).toHaveText([
+      /^Workflows \(\d+\)$/,
+      /^Workflow Steps \(\d+\)$/,
+    ]);
     await expect(workflowPage.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -182,7 +190,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const typePage = await asUser(typeUser.username);
     await typePage.goto('/admin/workflows');
     await expect(typePage).toHaveURL(/\/admin\/task-types$/);
-    await expect(typePage.getByRole('tab')).toHaveText(['Task Types']);
+    await expect(typePage.getByRole('tab')).toHaveText([/^Task Types \(\d+\)$/]);
     await expect(adminMenu(typePage).getByRole('link')).toHaveText(['Task Types']);
     // Without Workflow.Manage the workflow chips are not links.
     await expect(typePage.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();

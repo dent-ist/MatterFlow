@@ -311,10 +311,10 @@ describe('StepsListPage narrow window (#356)', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Tags', 'Used in', 'Status', 'Actions'],
+      ['Title', 'Used in', 'Status', 'Actions'],
     );
     const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
-    expect(row.querySelectorAll('td')).toHaveLength(5);
+    expect(row.querySelectorAll('td')).toHaveLength(4);
     expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
     const used = row.querySelector('[data-used-in-link]')!;
     expect(used.textContent!.trim()).toBe('2');
@@ -366,7 +366,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
     expect(cards[1].textContent).toContain('Not used in a workflow');
   });
 
-  it('leaves the Tags column out below 768 px and shows one tag and "+n more" below 1024 px', async () => {
+  it('leaves the Tags column out below 1100 px, and shows two tags and "+n more" from there', async () => {
     const api = {
       listStepDefinitions: list([summary({ tags: ['a', 'b', 'c'] })]),
       listStepTags: vi.fn().mockReturnValue(ok([])),
@@ -375,19 +375,27 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
     await setup(api);
     let fixture = TestBed.createComponent(StepsListPage);
     await settle(fixture);
-    expect(
-      Array.from(fixture.nativeElement.querySelectorAll('thead th')).map((th) =>
+    const heads = (f: typeof fixture) =>
+      Array.from(f.nativeElement.querySelectorAll('thead th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
-      ),
-    ).toEqual(['Title', 'Used in', 'Status', 'Actions']);
+      );
+    expect(heads(fixture)).toEqual(['Title', 'Used in', 'Status', 'Actions']);
     fixture.destroy();
 
-    viewport(800);
+    viewport(1366);
     fixture = TestBed.createComponent(StepsListPage);
     await settle(fixture);
+    expect(heads(fixture)).toEqual([
+      'Title',
+      'Description',
+      'Tags',
+      'Used in',
+      'Status',
+      'Actions',
+    ]);
     const row: HTMLElement = fixture.nativeElement.querySelector('tbody tr[data-row]');
-    expect(row.querySelectorAll('[data-tag]')).toHaveLength(1);
-    expect(row.querySelector('[data-tags-more]')!.textContent).toContain('+2 more');
+    expect(row.querySelectorAll('[data-tag]')).toHaveLength(2);
+    expect(row.querySelector('[data-tags-more]')!.textContent).toContain('+1 more');
   });
 });
 

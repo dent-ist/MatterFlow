@@ -266,7 +266,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                   }
                   @if (showTags()) {
                     <td class="st-tags ad-tags">
-                      <mf-tag-chips [tags]="s.tags" [max]="tagMax()" />
+                      <mf-tag-chips [tags]="s.tags" [max]="2" />
                     </td>
                   }
                   <td data-used-in class="pg-num">
@@ -350,17 +350,14 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly showDescription = viewportAtLeast(1200);
   /** Below 640 px the list is cards, not a table (#375). */
   protected readonly phone = phoneCards();
-  /** Below 1024 px a step shows one tag and "+n more", so the grid does not scroll sideways at 768 (#375). */
-  private readonly roomForTags = viewportAtLeast(1024);
-  protected readonly tagMax = computed(() => (this.roomForTags() ? 2 : 1));
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'title', label: 'Title' },
     { value: 'usedInWorkflows', label: 'Used in', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
-  /** The Tags column is left out below 768 px (the filter moves under "Other filters"), so the grid fits a 640 px window (#375). */
-  protected readonly showTags = viewportAtLeast(768);
+  /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
+  protected readonly showTags = viewportAtLeast(1100);
   protected readonly columns = computed(() =>
     COLUMNS.filter(
       (c) => (c !== 'description' || this.showDescription()) && (c !== 'tags' || this.showTags()),

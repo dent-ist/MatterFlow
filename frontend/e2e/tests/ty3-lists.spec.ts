@@ -353,9 +353,13 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         await expect(used).toHaveText('5');
         await expect(used).toHaveAttribute('aria-label', 'Used in 5 workflows');
         expect((await used.boundingBox())!.height).toBeLessThanOrEqual(26);
-        // Two tag chips and "+n" (one below 1024 px, #375).
-        await expect(stepRow.locator('[data-tag]')).toHaveCount(size.w >= 1024 ? 2 : 1);
-        await expect(stepRow.locator('[data-tags-more]')).toBeVisible();
+        // Two tag chips and "+n"; the Tags column is left out below 1100 px (#375).
+        if (size.w >= 1100) {
+          await expect(stepRow.locator('[data-tag]')).toHaveCount(2);
+          await expect(stepRow.locator('[data-tags-more]')).toBeVisible();
+        } else {
+          await expect(stepRow.locator('[data-tag]')).toHaveCount(0);
+        }
         const headers = await page.locator('thead tr:first-child th').allInnerTexts();
         if (size.w >= 1200) {
           expect(headers).toContain('Description');
