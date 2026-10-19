@@ -3,7 +3,6 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -42,6 +41,15 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
+import {
+  RecordCard,
+  RecordCardDef,
+  RecordCardList,
+  phoneCards,
+} from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions'] as const;
@@ -78,6 +86,10 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     ColumnFilterRow,
     AssocChips,
     AssocFilter,
+    RecordCardList,
+    RecordCardDef,
+    RecordCard,
+    RecordSort,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -88,7 +100,15 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+      <mf-record-sort
+        mfSheetSort
+        [options]="sortOptions"
+        [sort]="sort()"
+        [defaultSort]="defaultSort"
+        (sorted)="pickSort($event)"
+      />
+    </mf-filters-bar>
 
     @if (taskTypeId() !== undefined) {
       <mf-assoc-filter
@@ -106,119 +126,165 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       />
     }
 
-    <div class="mf-table-wrap" mfScrollArea="Workflows list" #scroll>
-      <div class="mf-scroll">
-        <table class="pg-table mf-has-menu" data-workflows>
-          <caption class="pg-sr">
-            Workflows
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="name"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Name
-              </th>
-              <th scope="col">Task types</th>
-              <th scope="col">Latest published</th>
-              <th scope="col">Draft</th>
-              <th
-                mfSort="status"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Status
-              </th>
-              <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="workflow-filter-row"
-                [filters]="filters"
-                [columns]="columns"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="workflows"
-            emptyText="No workflows yet. Use New workflow above to add the first one."
-            [state]="state()"
-            [empty]="rows().length === 0"
-            [filtered]="filters.activeCount() > 0"
-            [columns]="columns.length"
-            [skeleton]="skeleton"
-            (retry)="load()"
-            (clear)="clear()"
-            [hidden]="hiddenCount()"
-            hiddenLabel="inactive"
-            (showAll)="showAll()"
+    @if (phone()) {
+      <mf-record-card-list
+        noun="workflows"
+        label="Workflows"
+        emptyText="No workflows yet. Use New workflow above to add the first one."
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="filters.activeCount() > 0"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (retry)="load()"
+        (clear)="clear()"
+        (showAll)="showAll()"
+      >
+        <ng-template [mfRecordCard]="rows()" let-w>
+          <mf-record-card
+            [name]="w.name"
+            [link]="['/admin/workflows', w.workflowDefinitionId]"
+            [state]="leave.state()"
+            [list]="listId"
+            [rowKey]="w.workflowDefinitionId"
           >
-            @for (w of rows(); track w.workflowDefinitionId) {
-              <tr [attr.data-row]="w.name">
-                <td class="ad-name">
-                  <!-- Two lines of name, or one line of name and one of description: the row is 44 px; the full texts are the tooltips. -->
-                  <a
-                    class="pg-link pg-name"
-                    [class.pg-name--one]="!!w.description"
-                    [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
-                    [mfRowLink]="listId"
-                    [rowKey]="w.workflowDefinitionId"
-                    [state]="leave.state()"
-                    [title]="w.name"
-                    >{{ w.name }}</a
-                  >
-                  @if (w.description) {
-                    <div class="pg-muted pg-clip" [title]="w.description">{{ w.description }}</div>
-                  }
-                </td>
-                <td data-task-types class="ad-nowrap">
-                  <mf-assoc-chips
-                    [items]="chipsOf(w)"
-                    [label]="'Task types of ' + w.name"
-                    noun="task types"
-                    [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
-                    [moreQuery]="taskTypesQuery(w)"
-                    emptyText="No task type"
-                  />
-                </td>
-                <td class="ad-nowrap">
-                  @if (w.publishedVersionNo) {
-                    <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
-                    v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
-                  } @else {
-                    <span class="pg-muted">Not published</span>
-                  }
-                </td>
-                <td class="ad-nowrap">
-                  @if (w.draftVersionNo) {
-                    <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
-                    v{{ w.draftVersionNo }}
-                  } @else {
-                    <span class="pg-muted">None</span>
-                  }
-                </td>
-                <td class="ad-nowrap">
-                  <mf-active-badge [active]="w.isActive" />
-                </td>
-                <td class="mf-col-menu">
-                  <mf-action-menu
-                    [items]="menuFor(w)"
-                    [label]="'Actions for ' + w.name"
-                    [floating]="true"
-                  />
-                </td>
+            <mf-active-badge mfCardBadges [active]="w.isActive" />
+            <p mfCardMeta class="rc-line" data-card-meta>
+              <span class="rc-text">{{ publishedLine(w) }}</span>
+            </p>
+            <p mfCardMeta class="rc-line" data-card-meta>
+              <span class="rc-text">{{ draftLine(w) }}</span>
+            </p>
+            <mf-action-menu
+              mfCardAside
+              [items]="menuFor(w)"
+              [label]="'Actions for ' + w.name"
+              [floating]="true"
+            />
+          </mf-record-card>
+        </ng-template>
+      </mf-record-card-list>
+    } @else {
+      <div class="mf-table-wrap" mfScrollArea="Workflows list" #scroll>
+        <div class="mf-scroll">
+          <table class="pg-table mf-has-menu" data-workflows>
+            <caption class="pg-sr">
+              Workflows
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  mfSort="name"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
+                @if (wide()) {
+                  <th scope="col">Task types</th>
+                  <th scope="col">Latest published</th>
+                }
+                <th scope="col">Draft</th>
+                <th
+                  mfSort="status"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Status
+                </th>
+                <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
               </tr>
-            }
-          </tbody>
-        </table>
+              @if (filters.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  id="workflow-filter-row"
+                  [filters]="filters"
+                  [columns]="columns()"
+                ></tr>
+              }
+            </thead>
+            <tbody
+              mfGridBody
+              noun="workflows"
+              emptyText="No workflows yet. Use New workflow above to add the first one."
+              [state]="state()"
+              [empty]="rows().length === 0"
+              [filtered]="filters.activeCount() > 0"
+              [columns]="columns().length"
+              [skeleton]="skeleton()"
+              (retry)="load()"
+              (clear)="clear()"
+              [hidden]="hiddenCount()"
+              hiddenLabel="inactive"
+              (showAll)="showAll()"
+            >
+              @for (w of rows(); track w.workflowDefinitionId) {
+                <tr [attr.data-row]="w.name">
+                  <td class="ad-name">
+                    <!-- Two lines of name, or one line of name and one of description: the row is 44 px; the full texts are the tooltips. -->
+                    <a
+                      class="pg-link pg-name"
+                      [class.pg-name--one]="!!w.description"
+                      [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
+                      [mfRowLink]="listId"
+                      [rowKey]="w.workflowDefinitionId"
+                      [state]="leave.state()"
+                      [title]="w.name"
+                      >{{ w.name }}</a
+                    >
+                    @if (w.description) {
+                      <div class="pg-muted pg-clip" [title]="w.description">
+                        {{ w.description }}
+                      </div>
+                    }
+                  </td>
+                  @if (wide()) {
+                    <td data-task-types class="ad-nowrap">
+                      <mf-assoc-chips
+                        [items]="chipsOf(w)"
+                        [label]="'Task types of ' + w.name"
+                        noun="task types"
+                        [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
+                        [moreQuery]="taskTypesQuery(w)"
+                        emptyText="No task type"
+                      />
+                    </td>
+                    <td class="ad-nowrap">
+                      @if (w.publishedVersionNo) {
+                        <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
+                        v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
+                      } @else {
+                        <span class="pg-muted">Not published</span>
+                      }
+                    </td>
+                  }
+                  <td class="ad-nowrap">
+                    @if (w.draftVersionNo) {
+                      <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
+                      v{{ w.draftVersionNo }}
+                    } @else {
+                      <span class="pg-muted">None</span>
+                    }
+                  </td>
+                  <td class="ad-nowrap">
+                    <mf-active-badge [active]="w.isActive" />
+                  </td>
+                  <td class="mf-col-menu">
+                    <mf-action-menu
+                      [items]="menuFor(w)"
+                      [label]="'Actions for ' + w.name"
+                      [floating]="true"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    }
     @if (state() === 'ready' && total() > 0) {
       <mf-pager
         [page]="pageNumber()"
@@ -259,8 +325,24 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected readonly listId = ADMIN_LIST.workflows.id;
 
   protected readonly defaultSort = 'name';
-  protected readonly columns = COLUMNS;
-  protected readonly skeleton = COLUMNS.map((c) => BONES[c]);
+  /** Below 640 px the list is cards, not a table (#375). */
+  protected readonly phone = phoneCards();
+  /**
+   * Below 1280 px the Task types chips and the Latest published column are left out (the card and the page of the workflow carry them), so
+   * the grid never scrolls sideways and the row menu stays in view (#375). Their filters move under "Other filters".
+   */
+  protected readonly wide = viewportAtLeast(1280);
+  protected readonly columns = computed<readonly string[]>(() =>
+    this.wide() ? COLUMNS : COLUMNS.filter((c) => c !== 'taskTypes' && c !== 'published'),
+  );
+  protected readonly skeleton = computed(() =>
+    this.columns().map((c) => BONES[c as keyof typeof BONES]),
+  );
+  /** The phone's Sort by select: the sortable columns (the headers' keys). */
+  protected readonly sortOptions: readonly SortOption[] = [
+    { value: 'name', label: 'Name' },
+    { value: 'status', label: 'Status' },
+  ];
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   /**
@@ -273,6 +355,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     noun: 'workflows',
     openByDefault: true,
     sheetBelow: 640,
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
@@ -349,9 +432,10 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     AdminShellFilters.register({ filters: this.filters, controls: 'workflow-filter-row' });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
     // The names of the filter chips ("Task type: Data Processing"); the id stands in when the record cannot be read.
     effect(() => {
@@ -483,6 +567,20 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** The first fact line of a card: the latest published version and its steps. */
+  protected publishedLine(w: WorkflowSummary): string {
+    return w.publishedVersionNo
+      ? `Published v${w.publishedVersionNo} (${this.stepsLabel(w.publishedStepCount)})`
+      : 'Not published';
+  }
+
+  /** The second fact line of a card: the draft in progress and how many task types may use the workflow. */
+  protected draftLine(w: WorkflowSummary): string {
+    const types = w.taskTypes.length;
+    const used = types === 0 ? 'No task type' : types === 1 ? '1 task type' : `${types} task types`;
+    return w.draftVersionNo ? `Draft v${w.draftVersionNo} - ${used}` : used;
   }
 
   protected stepsLabel(count: number | undefined): string {

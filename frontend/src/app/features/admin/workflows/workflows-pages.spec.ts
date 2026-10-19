@@ -545,6 +545,95 @@ describe('WorkflowsListPage name cell (#356)', () => {
   });
 });
 
+describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
+  /** A window `width` px wide (the lists read `matchMedia`; jsdom has none). */
+  const viewport = (width: number) =>
+    vi.stubGlobal('matchMedia', (q: string) => {
+      const min = Number(/min-width:\s*(\d+)px/.exec(q)?.[1] ?? 0);
+      const max = Number(/max-width:\s*([\d.]+)px/.exec(q)?.[1] ?? Infinity);
+      return {
+        matches: width >= min && width <= max,
+        media: q,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      };
+    });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const items = [
+    summary({ draftVersionId: 12, draftVersionNo: 3, taskTypes: [] }),
+    summary({
+      workflowDefinitionId: 2,
+      name: 'Production',
+      publishedVersionNo: undefined,
+      publishedVersionId: undefined,
+      isActive: false,
+      taskTypes: [
+        { taskTypeId: 1, name: 'Data Load', isActive: true, isDefault: true },
+        { taskTypeId: 2, name: 'Overlay', isActive: true, isDefault: false },
+      ],
+    }),
+  ];
+  const list = () =>
+    vi.fn().mockReturnValue(ok({ items, total: items.length, page: 1, pageSize: 25 }));
+
+  it('is one card per workflow below 640 px: the name link, the status, the published version, the draft and the row menu, and no table', async () => {
+    viewport(375);
+    const api = { listWorkflows: list() };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('table')).toBeNull();
+    const cards = Array.from(el.querySelectorAll('li[data-record-card]'));
+    expect(cards).toHaveLength(2);
+    const name = cards[0].querySelector<HTMLAnchorElement>('a[data-card-name]')!;
+    expect(name.getAttribute('href')).toBe('/admin/workflows/1');
+    expect(name.getAttribute('data-row-list')).toBe('admin-workflows');
+    const facts = Array.from(cards[0].querySelectorAll('[data-card-meta]')).map((p) =>
+      p.textContent!.trim(),
+    );
+    expect(facts).toEqual(['Published v2 (3 steps)', 'Draft v3 - No task type']);
+    expect(cards[0].textContent).toContain('Active');
+    const second = Array.from(cards[1].querySelectorAll('[data-card-meta]')).map((p) =>
+      p.textContent!.trim(),
+    );
+    expect(second).toEqual(['Not published', '2 task types']);
+    expect(cards[1].textContent).toContain('Inactive');
+    expect(cards[0].querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
+      'Actions for Standard Processing',
+    );
+  });
+
+  it('leaves the Task types and Latest published columns out below 1280 px', async () => {
+    viewport(768);
+    await setup({ listWorkflows: list() });
+    let fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const heads = (f: typeof fixture) =>
+      Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
+        (th as HTMLElement).textContent!.trim(),
+      );
+    expect(heads(fixture)).toEqual(['Name', 'Draft', 'Status', 'Actions']);
+    expect(fixture.nativeElement.querySelectorAll('tbody tr[data-row]')[0].children).toHaveLength(
+      4,
+    );
+    fixture.destroy();
+
+    viewport(1366);
+    fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    expect(heads(fixture)).toEqual([
+      'Name',
+      'Task types',
+      'Latest published',
+      'Draft',
+      'Status',
+      'Actions',
+    ]);
+  });
+});
+
 describe('WorkflowsListPage row menu', () => {
   const page = (items: WorkflowSummary[]) => ({
     items,

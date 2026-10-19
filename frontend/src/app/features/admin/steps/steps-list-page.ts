@@ -3,7 +3,6 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -34,7 +33,15 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
+import {
+  RecordCard,
+  RecordCardDef,
+  RecordCardList,
+  phoneCards,
+} from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -71,6 +78,10 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     FiltersBar,
     ColumnFilterRow,
     TagChips,
+    RecordCardList,
+    RecordCardDef,
+    RecordCard,
+    RecordSort,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -81,125 +92,192 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+      <mf-record-sort
+        mfSheetSort
+        [options]="sortOptions"
+        [sort]="sort()"
+        [defaultSort]="defaultSort"
+        (sorted)="pickSort($event)"
+      />
+    </mf-filters-bar>
 
-    <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
-      <div class="mf-scroll">
-        <table class="pg-table mf-has-menu" data-steps>
-          <caption class="pg-sr">
-            Workflow Steps
-          </caption>
-          <thead>
-            <tr>
-              <th
-                mfSort="title"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Title
-              </th>
-              @if (showDescription()) {
-                <th scope="col">Description</th>
-              }
-              <th scope="col">Tags</th>
-              <th
-                class="pg-num"
-                mfSort="usedInWorkflows"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Used in
-              </th>
-              <th
-                mfSort="status"
-                [sort]="sort()"
-                [defaultSort]="defaultSort"
-                (sorted)="setSort($event)"
-              >
-                Status
-              </th>
-              <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="step-filter-row"
-                [filters]="filters"
-                [columns]="columns()"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="steps"
-            emptyText="No steps yet. Use New step above to add the first reusable one."
-            [state]="state()"
-            [empty]="rows().length === 0"
-            [filtered]="filters.activeCount() > 0"
-            [columns]="columns().length"
-            [skeleton]="skeleton()"
-            (retry)="load()"
-            (clear)="clear()"
-            [hidden]="hiddenCount()"
-            hiddenLabel="inactive"
-            (showAll)="showAll()"
+    @if (phone()) {
+      <mf-record-card-list
+        noun="steps"
+        label="Workflow Steps"
+        emptyText="No steps yet. Use New step above to add the first reusable one."
+        [state]="state()"
+        [empty]="rows().length === 0"
+        [filtered]="filters.activeCount() > 0"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (retry)="load()"
+        (clear)="clear()"
+        (showAll)="showAll()"
+      >
+        <ng-template [mfRecordCard]="rows()" let-s>
+          <mf-record-card
+            [name]="s.title"
+            [link]="['/admin/steps', s.stepDefinitionId]"
+            [state]="leave.state()"
+            [list]="listId"
+            [rowKey]="s.stepDefinitionId"
           >
-            @for (s of rows(); track s.stepDefinitionId) {
-              <tr [attr.data-row]="s.title">
-                <td class="ad-spring">
-                  <a
-                    class="pg-link pg-name"
-                    [routerLink]="['/admin/steps', s.stepDefinitionId]"
-                    [mfRowLink]="listId"
-                    [rowKey]="s.stepDefinitionId"
-                    [state]="leave.state()"
-                    [title]="s.title"
-                    >{{ s.title }}</a
-                  >
-                </td>
-                @if (showDescription()) {
-                  <td class="ad-desc">
-                    <span class="pg-clip pg-muted" [title]="s.description ?? ''">{{
-                      s.description
-                    }}</span>
-                  </td>
-                }
-                <td class="st-tags ad-tags"><mf-tag-chips [tags]="s.tags" [max]="2" /></td>
-                <td data-used-in class="pg-num">
-                  @if (s.usedInWorkflows === 0) {
-                    <span class="pg-muted">Not used</span>
-                  } @else {
-                    <a
-                      class="pg-link"
-                      data-used-in-link
-                      [routerLink]="['/admin/workflows']"
-                      [queryParams]="workflowsQuery(s)"
-                      [attr.aria-label]="
-                        'Used in ' +
-                        (s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows')
-                      "
-                      >{{ s.usedInWorkflows }}</a
-                    >
-                  }
-                </td>
-                <td class="ad-nowrap">
-                  <mf-active-badge [active]="s.isActive" />
-                </td>
-                <td class="mf-col-menu">
-                  <mf-action-menu
-                    [items]="menuFor(s)"
-                    [label]="'Actions for ' + s.title"
-                    [floating]="true"
-                  />
-                </td>
-              </tr>
+            <mf-active-badge mfCardBadges [active]="s.isActive" />
+            @if (s.description) {
+              <p mfCardMeta class="rc-line" data-card-meta>
+                <span class="rc-text">{{ s.description }}</span>
+              </p>
             }
-          </tbody>
-        </table>
+            <p mfCardMeta class="rc-line" data-card-meta>
+              @if (s.usedInWorkflows === 0) {
+                <span class="rc-text">Not used in a workflow</span>
+              } @else {
+                <a
+                  data-used-in-link
+                  [routerLink]="['/admin/workflows']"
+                  [queryParams]="workflowsQuery(s)"
+                  >{{ usedLabel(s) }}</a
+                >
+              }
+            </p>
+            <mf-action-menu
+              mfCardAside
+              [items]="menuFor(s)"
+              [label]="'Actions for ' + s.title"
+              [floating]="true"
+            />
+          </mf-record-card>
+        </ng-template>
+      </mf-record-card-list>
+    } @else {
+      <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
+        <div class="mf-scroll">
+          <table class="pg-table mf-has-menu" data-steps>
+            <caption class="pg-sr">
+              Workflow Steps
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  mfSort="title"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Title
+                </th>
+                @if (showDescription()) {
+                  <th scope="col">Description</th>
+                }
+                @if (showTags()) {
+                  <th scope="col">Tags</th>
+                }
+                <th
+                  class="pg-num"
+                  mfSort="usedInWorkflows"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Used in
+                </th>
+                <th
+                  mfSort="status"
+                  [sort]="sort()"
+                  [defaultSort]="defaultSort"
+                  (sorted)="setSort($event)"
+                >
+                  Status
+                </th>
+                <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
+              </tr>
+              @if (filters.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  id="step-filter-row"
+                  [filters]="filters"
+                  [columns]="columns()"
+                ></tr>
+              }
+            </thead>
+            <tbody
+              mfGridBody
+              noun="steps"
+              emptyText="No steps yet. Use New step above to add the first reusable one."
+              [state]="state()"
+              [empty]="rows().length === 0"
+              [filtered]="filters.activeCount() > 0"
+              [columns]="columns().length"
+              [skeleton]="skeleton()"
+              (retry)="load()"
+              (clear)="clear()"
+              [hidden]="hiddenCount()"
+              hiddenLabel="inactive"
+              (showAll)="showAll()"
+            >
+              @for (s of rows(); track s.stepDefinitionId) {
+                <tr [attr.data-row]="s.title">
+                  <td class="ad-spring">
+                    <a
+                      class="pg-link pg-name"
+                      [routerLink]="['/admin/steps', s.stepDefinitionId]"
+                      [mfRowLink]="listId"
+                      [rowKey]="s.stepDefinitionId"
+                      [state]="leave.state()"
+                      [title]="s.title"
+                      >{{ s.title }}</a
+                    >
+                  </td>
+                  @if (showDescription()) {
+                    <td class="ad-desc">
+                      <span class="pg-clip pg-muted" [title]="s.description ?? ''">{{
+                        s.description
+                      }}</span>
+                    </td>
+                  }
+                  @if (showTags()) {
+                    <td class="st-tags ad-tags">
+                      <mf-tag-chips [tags]="s.tags" [max]="tagMax()" />
+                    </td>
+                  }
+                  <td data-used-in class="pg-num">
+                    @if (s.usedInWorkflows === 0) {
+                      <span class="pg-muted">Not used</span>
+                    } @else {
+                      <a
+                        class="pg-link"
+                        data-used-in-link
+                        [routerLink]="['/admin/workflows']"
+                        [queryParams]="workflowsQuery(s)"
+                        [attr.aria-label]="
+                          'Used in ' +
+                          (s.usedInWorkflows === 1
+                            ? '1 workflow'
+                            : s.usedInWorkflows + ' workflows')
+                        "
+                        >{{ s.usedInWorkflows }}</a
+                      >
+                    }
+                  </td>
+                  <td class="ad-nowrap">
+                    <mf-active-badge [active]="s.isActive" />
+                  </td>
+                  <td class="mf-col-menu">
+                    <mf-action-menu
+                      [items]="menuFor(s)"
+                      [label]="'Actions for ' + s.title"
+                      [floating]="true"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    }
     @if (state() === 'ready' && total() > 0) {
       <mf-pager
         [page]="pageNumber()"
@@ -242,8 +320,23 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly defaultSort = 'title';
   /** The Description column is left out below 1200 px (its filter then sits under "Other filters"). */
   protected readonly showDescription = viewportAtLeast(1200);
+  /** Below 640 px the list is cards, not a table (#375). */
+  protected readonly phone = phoneCards();
+  /** Below 1024 px a step shows one tag and "+n more", so the grid does not scroll sideways at 768 (#375). */
+  private readonly roomForTags = viewportAtLeast(1024);
+  protected readonly tagMax = computed(() => (this.roomForTags() ? 2 : 1));
+  /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
+  protected readonly sortOptions: readonly SortOption[] = [
+    { value: 'title', label: 'Title' },
+    { value: 'usedInWorkflows', label: 'Used in', descFirst: true },
+    { value: 'status', label: 'Status' },
+  ];
+  /** The Tags column is left out below 768 px (the filter moves under "Other filters"), so the grid fits a 640 px window (#375). */
+  protected readonly showTags = viewportAtLeast(768);
   protected readonly columns = computed(() =>
-    this.showDescription() ? [...COLUMNS] : COLUMNS.filter((c) => c !== 'description'),
+    COLUMNS.filter(
+      (c) => (c !== 'description' || this.showDescription()) && (c !== 'tags' || this.showTags()),
+    ),
   );
   protected readonly skeleton = computed(() => this.columns().map((c) => BONES[c]));
   /** The tags to choose from, with how many steps of the chosen status carry each. */
@@ -263,6 +356,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     noun: 'steps',
     openByDefault: true,
     sheetBelow: 640,
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
     defs: computed((): FilterDef[] => [
       { key: 'title', label: 'Title', column: 'title', type: 'text' },
       { key: 'description', label: 'Description', column: 'description', type: 'text' },
@@ -316,9 +410,10 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       const status = this.statusValue();
       untracked(() => void this.loadTagOptions(status));
     });
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
 
@@ -397,6 +492,13 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** The "Used in" text of a card. */
+  protected usedLabel(s: StepDefinitionSummary): string {
+    return s.usedInWorkflows === 1
+      ? 'Used in 1 workflow'
+      : `Used in ${s.usedInWorkflows} workflows`;
   }
 
   /** The Workflows tab limited to a step (`?step=<id>`). */

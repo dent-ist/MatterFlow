@@ -159,7 +159,7 @@ describe('StepsListPage', () => {
     );
   });
 
-  it('shows an empty state with a way to add the first step', async () => {
+  it('shows an empty state that points at the New step button of the page header', async () => {
     await setup({
       listStepDefinitions: vi
         .fn()
@@ -169,7 +169,9 @@ describe('StepsListPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('[data-empty="none"]')).not.toBeNull();
-    expect(buttonByLabel(el, 'New step')).toBeDefined();
+    // The one way to add is the page header's New step button: the empty state says so and has no second button (#370).
+    expect(el.querySelector('[data-empty="none"]')!.textContent).toContain('New step');
+    expect(el.querySelector('[data-empty="none"] button, [data-empty="none"] a')).toBeNull();
   });
 
   it('sends the column filters of the address to the API', async () => {
@@ -317,6 +319,75 @@ describe('StepsListPage narrow window (#356)', () => {
     const used = row.querySelector('[data-used-in-link]')!;
     expect(used.textContent!.trim()).toBe('2');
     expect(used.closest('td')!.classList.contains('pg-num')).toBe(true);
+  });
+});
+
+describe('StepsListPage phone cards and narrow columns (#375)', () => {
+  const list = (items: StepDefinitionSummary[]) =>
+    vi.fn().mockReturnValue(ok({ items, total: items.length, page: 1, pageSize: 25 }));
+
+  it('is one card per step below 640 px: the name link, the status, the facts and the row menu, and no table', async () => {
+    viewport(375);
+    const api = {
+      listStepDefinitions: list([
+        summary(),
+        summary({
+          stepDefinitionId: 5,
+          title: 'OCR',
+          description: undefined,
+          usedInWorkflows: 0,
+          isActive: false,
+        }),
+      ]),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('table')).toBeNull();
+    const cards = Array.from(el.querySelectorAll('li[data-record-card]'));
+    expect(cards).toHaveLength(2);
+    const first = cards[0];
+    const name = first.querySelector<HTMLAnchorElement>('a[data-card-name]')!;
+    expect(name.textContent!.trim()).toBe('Deduplicate');
+    expect(name.getAttribute('href')).toBe('/admin/steps/4');
+    expect(name.getAttribute('data-row-list')).toBe('admin-steps');
+    expect(name.getAttribute('data-row-key')).toBe('4');
+    expect(first.textContent).toContain('Active');
+    expect(first.textContent).toContain('Remove duplicate items');
+    expect(first.querySelector('[data-used-in-link]')!.textContent!.trim()).toBe(
+      'Used in 2 workflows',
+    );
+    expect(first.querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
+      'Actions for Deduplicate',
+    );
+    expect(cards[1].textContent).toContain('Inactive');
+    expect(cards[1].textContent).toContain('Not used in a workflow');
+  });
+
+  it('leaves the Tags column out below 768 px and shows one tag and "+n more" below 1024 px', async () => {
+    const api = {
+      listStepDefinitions: list([summary({ tags: ['a', 'b', 'c'] })]),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    viewport(700);
+    await setup(api);
+    let fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    expect(
+      Array.from(fixture.nativeElement.querySelectorAll('thead th')).map((th) =>
+        (th as HTMLElement).textContent!.trim(),
+      ),
+    ).toEqual(['Title', 'Used in', 'Status', 'Actions']);
+    fixture.destroy();
+
+    viewport(800);
+    fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const row: HTMLElement = fixture.nativeElement.querySelector('tbody tr[data-row]');
+    expect(row.querySelectorAll('[data-tag]')).toHaveLength(1);
+    expect(row.querySelector('[data-tags-more]')!.textContent).toContain('+2 more');
   });
 });
 

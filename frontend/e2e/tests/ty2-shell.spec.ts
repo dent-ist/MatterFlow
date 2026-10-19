@@ -96,15 +96,18 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
         await page.setViewportSize(size);
         await page.evaluate(() => localStorage.clear()).catch(() => undefined);
         await page.goto(tab.url);
-        await expect(page.locator('tbody[mfGridBody], tbody').first()).toBeVisible();
-        // At 768 the grids still scroll sideways until the narrow-window columns of #374 and #375, which puts the controls in the sheet.
-        const open = size.width >= 1366;
+        await expect(page.locator('tbody, mf-record-card-list').first()).toBeVisible();
+        const open = size.width >= 640;
         if (open) await expect(page.locator(tab.row)).toBeVisible();
-        else if (size.width < 640) await expect(page.locator(tab.row)).toHaveCount(0);
+        else await expect(page.locator(tab.row)).toHaveCount(0);
         // The button is one of the page header's actions, not a row of its own above the grid.
         const header = page.locator('mf-page-header');
         await expect(header.locator('[data-filters-toggle]')).toBeVisible();
-        await expect(page.locator('[data-grid-toolbar]')).toHaveCount(0);
+        // No row of its own for the button. A narrow window that leaves a column out may keep a row with the one "Other filters" button.
+        const toolbar = page.locator('[data-grid-toolbar]');
+        if ((await toolbar.count()) > 0) {
+          await expect(toolbar).toHaveText(/^\s*Other filters\s*$/);
+        }
         if (open) await expect(toggle(page)).toHaveAttribute('aria-expanded', 'true');
         await noSideScroll(page, `${tab.key} at ${size.width}`);
         if (axeAvailable()) {
