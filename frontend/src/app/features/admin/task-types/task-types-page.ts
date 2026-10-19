@@ -17,7 +17,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
-import { ActiveBadge } from '../../../shared/ui/badge';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -34,7 +34,6 @@ import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AdminCounts } from './admin-counts';
 import { AdminShellFilters } from './shell-filters';
-import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { Pager } from '../../../shared/ui/pager';
 import {
@@ -46,12 +45,21 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
+import { TaskCount } from '../../../shared/ui/task-count';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'form', 'workflows', 'status', 'actions'] as const;
+const COLUMNS = [
+  'name',
+  'defaultWorkflow',
+  'form',
+  'workflows',
+  'openTasks',
+  'status',
+  'actions',
+] as const;
 
 /**
  * The skeleton rows of the loading state: one bone per column, as wide as the column's usual content, so the table that replaces them
@@ -59,10 +67,23 @@ const COLUMNS = ['name', 'form', 'workflows', 'status', 'actions'] as const;
  */
 const BONES: Record<(typeof COLUMNS)[number], string> = {
   name: '12rem',
+  defaultWorkflow: '9rem',
   form: '5rem',
-  workflows: '14rem',
+  workflows: '1.5rem',
+  openTasks: '1.5rem',
   status: '4rem',
   actions: '1.5rem',
+};
+
+/** The class of each loaded cell that sizes it, repeated on its skeleton cell (#370). */
+const SKELETON_CELL: Record<(typeof COLUMNS)[number], string> = {
+  name: 'tt-namecell',
+  defaultWorkflow: '',
+  form: 'tt-nowrap',
+  workflows: 'num',
+  openTasks: 'num',
+  status: 'tt-nowrap',
+  actions: 'mf-col-actions mf-col-menu',
 };
 
 /** Request form filter values (the `form` parameter) and the form statuses they match. */
@@ -88,6 +109,7 @@ const FORM_OPTIONS = [
     ScrollArea,
     ConfirmDialog,
     ActiveBadge,
+    Badge,
     ActionMenu,
     RouterLink,
     RowLink,
@@ -97,13 +119,13 @@ const FORM_OPTIONS = [
     FiltersBar,
     ColumnFilterRow,
     TaskTypeIcon,
-    AssocChips,
     AssocFilter,
     RecordCardList,
     RecordCardDef,
     RecordCard,
     RecordSort,
     WorkStrip,
+    TaskCount,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
@@ -127,25 +149,39 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   /** Below 640 px the list is cards, not a table (#374). */
   protected readonly phone = phoneCards();
   /**
-   * The Workflows chips are the widest column: a window narrower than 1200 px leaves them out (the card and the page of the type say which
-   * workflows it may use), so the grid never scrolls sideways and the row menu stays in view (#374).
+   * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
+   * (#374): Open tasks below 1280 px, Workflows (the count) below 1100 px, then Request form below 900 px; Name, Default workflow and
+   * Status stay. The open Task count is null in the API without Task.View, so that column is not there for a person without it.
    */
-  protected readonly wide = viewportAtLeast(1200);
+  private readonly formRoom = viewportAtLeast(900);
+  private readonly workflowsRoom = viewportAtLeast(1100);
+  private readonly tasksRoom = viewportAtLeast(1280);
+  protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
+  protected readonly formRoomShown = this.formRoom;
+  protected readonly workflowsShown = this.workflowsRoom;
+  protected readonly tasksShown = computed(() => this.tasksRoom() && this.canViewTasks());
   protected readonly columns = computed<readonly string[]>(() =>
-    this.wide() ? COLUMNS : COLUMNS.filter((c) => c !== 'workflows'),
+    COLUMNS.filter(
+      (c) =>
+        (c !== 'form' || this.formRoom()) &&
+        (c !== 'workflows' || this.workflowsRoom()) &&
+        (c !== 'openTasks' || this.tasksShown()),
+    ),
   );
   protected readonly skeleton = computed(() =>
     this.columns().map((c) => BONES[c as keyof typeof BONES]),
   );
   /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
   protected readonly skeletonCells = computed(() =>
-    this.columns().map((c) => (c === 'actions' ? 'mf-col-actions mf-col-menu' : '')),
+    this.columns().map((c) => SKELETON_CELL[c as keyof typeof SKELETON_CELL]),
   );
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
+    { value: 'defaultWorkflow', label: 'Default workflow' },
     { value: 'form', label: 'Request form' },
     { value: 'workflows', label: 'Workflows' },
+    { value: 'openTasks', label: 'Open tasks', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
 
@@ -196,10 +232,6 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   });
   /** People without Workflow.Manage cannot open a workflow page: the chips are plain text for them. */
   protected readonly canOpenWorkflows = computed(() => this.auth.has('Workflow.Manage'));
-  /** The workflow chips of every row, built once per load of the rows or of the workflow names. */
-  protected readonly chips = computed(
-    () => new Map(this.all().map((t) => [t.id, this.chipsOf(t)] as const)),
-  );
   /** The row menu of every row (#355): Edit form, then Deactivate or Activate. The page needs TaskType.Manage, which both need. */
   protected readonly menus = computed(
     () => new Map(this.all().map((t) => [t.id, this.menuOf(t)] as const)),
@@ -330,8 +362,12 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     switch (field) {
       case 'form':
         return this.formStatus(t);
+      case 'defaultWorkflow':
+        return this.defaultWorkflowName(t);
       case 'workflows':
         return t.eligibleWorkflowIds.length;
+      case 'openTasks':
+        return t.openTaskCount ?? 0;
       case 'status':
         return t.isActive ? 'Active' : 'Inactive';
       default:
@@ -389,23 +425,36 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     return this.workflowNames().get(id) ?? `Workflow ${id}`;
   }
 
-  /** The eligible workflows of a type: the default first, then the active ones by name, the deactivated ones last. */
-  private chipsOf(t: TaskTypeView): AssocItem[] {
-    const link = this.canOpenWorkflows();
-    return t.eligibleWorkflowIds
-      .map((id): AssocItem => ({
-        id,
-        label: this.workflowName(id),
-        link: link ? ['/admin/workflows', id] : undefined,
-        isDefault: id === t.defaultWorkflowDefinitionId,
-        inactive: this.workflowOptions().get(id)?.isActive === false,
-      }))
+  /** The eligible workflows of a type by name: the default first, then the active ones, the deactivated ones last. */
+  private eligibleNames(t: TaskTypeView): string[] {
+    return [...t.eligibleWorkflowIds]
       .sort(
         (a, b) =>
-          Number(!!b.isDefault) - Number(!!a.isDefault) ||
-          Number(!!a.inactive) - Number(!!b.inactive) ||
-          a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
-      );
+          Number(b === t.defaultWorkflowDefinitionId) -
+            Number(a === t.defaultWorkflowDefinitionId) ||
+          Number(this.workflowOptions().get(a)?.isActive === false) -
+            Number(this.workflowOptions().get(b)?.isActive === false) ||
+          this.workflowName(a).localeCompare(this.workflowName(b), undefined, {
+            sensitivity: 'base',
+          }),
+      )
+      .map((id) => this.workflowName(id));
+  }
+
+  /** The default workflow's name, "" when the type has none to use (the cell then says "No workflow", muted). */
+  protected defaultWorkflowName(t: TaskTypeView): string {
+    return this.eligibleNames(t)[0] ?? '';
+  }
+
+  /** The cell of the Default workflow column: the name and "+2" when more may be used. */
+  protected defaultWorkflowCell(t: TaskTypeView): { name: string; more: number; all: string } {
+    const names = this.eligibleNames(t);
+    return { name: names[0] ?? '', more: Math.max(0, names.length - 1), all: names.join(', ') };
+  }
+
+  /** Why an active type cannot be used for new tasks (the tooltip and the spoken description of its "Not usable" badge). */
+  protected notUsableReason(t: TaskTypeView): string {
+    return this.warning(t);
   }
 
   /** The Workflows tab limited to a type (`?taskType=<id>`). */
@@ -451,10 +500,6 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
 
   protected menuFor(t: TaskTypeView): readonly MenuAction[] {
     return this.menus().get(t.id) ?? [];
-  }
-
-  protected chipsFor(t: TaskTypeView): AssocItem[] {
-    return this.chips().get(t.id) ?? [];
   }
 
   protected warning(t: TaskTypeView): string {

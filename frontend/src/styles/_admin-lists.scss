@@ -93,3 +93,60 @@
 .mf-table-wrap:has(table.mf-has-menu) {
   scroll-padding-inline-end: 56px;
 }
+
+/*
+ * Task Types rows are 44 px too (#371): one line in every cell, a name two lines at most (the full text is the tooltip), the counts
+ * right aligned. `tt-table` is the table (with `grid`, whose scoped padding rule it must outrank), the other classes are the cells (the skeleton cells carry them as well).
+ */
+.mf-table-wrap table.grid.tt-table td {
+  height: var(--mf-grid-row-h, 44px);
+  padding-block: 2px;
+  line-height: 18px;
+}
+
+.mf-table-wrap table.grid.tt-table th.num,
+.mf-table-wrap table.grid.tt-table td.num {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mf-table-wrap table.grid.tt-table td.tt-namecell {
+  max-width: 22rem;
+}
+
+.mf-table-wrap table.grid.tt-table td.tt-nowrap {
+  white-space: nowrap;
+}
+
+.mf-table-wrap table.grid.tt-table .tt-name {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.mf-table-wrap table.grid.tt-table .tt-link {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.mf-table-wrap table.grid.tt-table .tt-clip {
+  display: block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-table-wrap table.grid.tt-table .tt-status {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--mf-s1);
+  align-items: center;
+}

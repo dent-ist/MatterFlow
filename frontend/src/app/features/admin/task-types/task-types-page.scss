@@ -7,16 +7,6 @@
   font-weight: 600;
 }
 
-.chip {
-  display: inline-block;
-  margin: var(--mf-s1) 0 0;
-  padding: 2px var(--mf-s2);
-  border: 1px solid var(--mf-danger);
-  border-radius: var(--mf-radius);
-  color: var(--mf-danger);
-  font-size: var(--mf-fs-xs);
-}
-
 /* Tables span the full content width (UXR-33). */
 :host {
   max-width: none;
@@ -28,10 +18,4 @@
   align-items: start;
   gap: var(--mf-s4);
   margin-bottom: var(--mf-s3);
-}
-
-.tt-name {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s2);
 }

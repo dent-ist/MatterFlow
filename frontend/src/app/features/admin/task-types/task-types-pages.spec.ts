@@ -84,18 +84,35 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     );
   });
 
-  it('leaves the Workflows chips out below 1200 px', async () => {
-    let fixture = await open(768);
+  it('drops the optional columns in a fixed order as the window narrows: Workflows below 1100 px, Request form below 900 px', async () => {
     const heads = (f: ComponentFixture<TaskTypesPage>) =>
       Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
       );
-    expect(heads(fixture)).toEqual(['Name', 'Request form', 'Status', 'Actions']);
+    let fixture = await open(768);
+    expect(heads(fixture)).toEqual(['Name', 'Default workflow', 'Status', 'Actions']);
     expect(fixture.nativeElement.querySelector('[data-workflows]')).toBeNull();
     fixture.destroy();
     TestBed.resetTestingModule();
+    fixture = await open(1000);
+    expect(heads(fixture)).toEqual([
+      'Name',
+      'Default workflow',
+      'Request form',
+      'Status',
+      'Actions',
+    ]);
+    fixture.destroy();
+    TestBed.resetTestingModule();
     fixture = await open(1366);
-    expect(heads(fixture)).toEqual(['Name', 'Request form', 'Workflows', 'Status', 'Actions']);
+    expect(heads(fixture)).toEqual([
+      'Name',
+      'Default workflow',
+      'Request form',
+      'Workflows',
+      'Status',
+      'Actions',
+    ]);
     expect(fixture.nativeElement.querySelector('[data-workflows]')).not.toBeNull();
   });
 });
@@ -137,27 +154,21 @@ describe('TaskTypesPage', () => {
     });
   });
 
-  it('lists task types with form status and the eligible workflows as chips, the default marked', () => {
+  it('lists task types with the default workflow, the form status and the number of workflows that links to them (#371)', () => {
     const r = row('Data Processing');
     expect(r.querySelector('[data-form-status]')!.textContent).toContain('Published');
     expect(r.querySelector('[data-form-status]')!.textContent).toContain('v1');
-    const chips = Array.from(r.querySelectorAll('[data-assoc-chip]'));
-    // The default first, with a star and the text "default"; the other one after it.
-    expect(chips.map((c) => c.getAttribute('data-assoc-chip'))).toEqual([
-      'Standard Processing',
-      'Expedited Processing',
-    ]);
-    expect(chips[0].querySelector('.pi-star-fill')).not.toBeNull();
-    expect(chips[0].querySelector('[data-assoc-default]')!.textContent).toBe('default');
-    expect(chips[1].querySelector('[data-assoc-default]')).toBeNull();
-    // Each chip opens the workflow's page; "Workflows (n)" opens the Workflows tab filtered to the type.
-    expect(chips[0].querySelector('a')!.getAttribute('href')).toBe('/admin/workflows/1');
-    expect(chips[1].querySelector('a')!.getAttribute('href')).toBe('/admin/workflows/2');
-    expect(r.querySelector('[data-assoc-all]')!.textContent!.trim()).toBe('Workflows (2)');
-    expect(r.querySelector('[data-assoc-all]')!.getAttribute('href')).toBe(
-      '/admin/workflows?taskType=1',
-    );
-    expect(r.querySelector('[data-assoc-more]')).toBeNull();
+    // One name (the default) and "+1" for the other, the whole list as the tooltip; no chips, no red box.
+    const def = r.querySelector('[data-default-workflow] .tt-clip')!;
+    expect(def.textContent!.replace(/\s+/g, ' ').trim()).toBe('Standard Processing +1');
+    expect(def.getAttribute('title')).toBe('Standard Processing, Expedited Processing');
+    expect(r.querySelector('[data-assoc-chip]')).toBeNull();
+    // "Workflows" is a number that opens the Workflows tab filtered to the type.
+    const count = r.querySelector<HTMLAnchorElement>('[data-workflows-link]')!;
+    expect(count.textContent!.trim()).toBe('2');
+    expect(count.getAttribute('href')).toBe('/admin/workflows?taskType=1');
+    expect(count.getAttribute('aria-label')).toBe('2 workflows for Data Processing');
+    expect(r.querySelector('[data-not-usable]')).toBeNull();
     expect(r.querySelector('[data-warning]')).toBeNull();
     // The name is the row link of the list (#354): Back puts focus on it again.
     const link = r.querySelector<HTMLAnchorElement>('a[data-row-key]')!;
@@ -320,22 +331,31 @@ describe('TaskTypesPage', () => {
     ).toBe('published');
   });
 
-  it('warns about a type without an eligible workflow and deactivates and reactivates', async () => {
+  it('marks a type without an eligible workflow with a neutral Not usable badge, and deactivates and reactivates', async () => {
     await new Promise<void>((resolve) =>
       api.create({ name: 'Collection', description: undefined }).subscribe(() => resolve()),
     );
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
     await settle(fixture);
 
-    expect(row('Collection').querySelector('[data-warning]')!.textContent).toContain(
+    // A neutral badge in Status (text and icon, the reason is its description), not a red box in the name cell.
+    const badge = row('Collection').querySelector('[data-not-usable]')!;
+    expect(badge.textContent!.trim()).toBe('Not usable');
+    expect(badge.querySelector('.pi')).not.toBeNull();
+    expect(badge.querySelector('[data-tone="neutral"]')).not.toBeNull();
+    const why = row('Collection').querySelector('[data-warning]')!;
+    expect(why.textContent).toContain(
       "No eligible published workflow: users can't create tasks of this type.",
     );
+    expect(badge.querySelector('.badge')!.getAttribute('aria-describedby')).toBe(why.id);
+    expect(row('Collection').querySelector('.chip')).toBeNull();
     expect(row('Collection').querySelector('[data-form-status]')!.textContent).toContain('No form');
-    // No workflow at all is said in the Workflows column too, as a warning for an active type.
-    expect(row('Collection').querySelector('[data-assoc-empty]')!.textContent).toContain(
-      'No workflow',
-    );
-    expect(row('Collection').querySelector('.ac__empty--warn')).not.toBeNull();
+    // No workflow at all: "No workflow", muted (not a warning), and a plain 0.
+    const none = row('Collection').querySelector('[data-default-workflow] .tt-clip')!;
+    expect(none.textContent!.trim()).toBe('No workflow');
+    expect(none.classList.contains('muted')).toBe(true);
+    expect(row('Collection').querySelector('[data-workflows]')!.textContent!.trim()).toBe('0');
+    expect(row('Collection').querySelector('[data-workflows-link]')).toBeNull();
 
     await pick('Data Processing', 'deactivate');
     const confirm = Array.from(document.querySelectorAll('button')).find(
@@ -391,19 +411,16 @@ describe('TaskTypesPage workflow chips and filter', () => {
     await settle(fixture);
   }
 
-  it('shows three chips then +n more that opens the Workflows tab filtered to the type', async () => {
+  it('names the default workflow and counts how many are eligible, the whole list as the tooltip', async () => {
     await open();
     const r = row('Collection');
-    // The default (Collection and Review) leads, then by name; the fourth is behind "+1 more".
-    expect(
-      Array.from(r.querySelectorAll('[data-assoc-chip]')).map((c) =>
-        c.getAttribute('data-assoc-chip'),
-      ),
-    ).toEqual(['Collection and Review', 'Expedited Processing', 'Production']);
-    const more = r.querySelector<HTMLAnchorElement>('[data-assoc-more]')!;
-    expect(more.textContent!.trim()).toBe('+1 more');
-    expect(more.getAttribute('href')).toMatch(/^\/admin\/workflows\?taskType=\d+$/);
-    expect(r.querySelector('[data-assoc-all]')!.textContent!.trim()).toBe('Workflows (4)');
+    // The default (Collection and Review) leads; the three others are behind "+3".
+    const def = r.querySelector('[data-default-workflow] .tt-clip')!;
+    expect(def.textContent!.replace(/\s+/g, ' ').trim()).toBe('Collection and Review +3');
+    expect(def.getAttribute('title')).toBe(
+      'Collection and Review, Expedited Processing, Production, Standard Processing',
+    );
+    expect(r.querySelector('[data-workflows-link]')!.textContent!.trim()).toBe('4');
   });
 
   it('limits the list to the types a workflow is eligible for, with a removable chip', async () => {
@@ -423,14 +440,16 @@ describe('TaskTypesPage workflow chips and filter', () => {
     expect(el().querySelector('[data-assoc-filter]')).toBeNull();
   });
 
-  it('shows plain chips, not links, without Workflow.Manage', async () => {
+  it('shows the number of workflows as plain text, not a link, without Workflow.Manage', async () => {
     api = configure('TaskType.Manage');
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskTypesPage);
     await settle(fixture);
     const r = row('Data Processing');
-    expect(r.querySelectorAll('[data-assoc-chip]')).toHaveLength(2);
-    expect(r.querySelector('[data-assoc-chip] a')).toBeNull();
-    expect(r.querySelector('[data-assoc-all]')).toBeNull();
+    expect(r.querySelector('[data-workflows]')!.textContent!.trim()).toBe('2');
+    expect(r.querySelector('[data-workflows-link]')).toBeNull();
+    expect(r.querySelector('[data-default-workflow]')!.textContent).toContain(
+      'Standard Processing',
+    );
   });
 });

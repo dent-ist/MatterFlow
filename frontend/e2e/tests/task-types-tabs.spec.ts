@@ -52,9 +52,9 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
     // Each tab carries the count of its active records (#364): `Task Types (61)`.
     await expect(page.getByRole('tab')).toHaveText([
-      /^Task Types \(\d+\)$/,
-      /^Workflows \(\d+\)$/,
-      /^Workflow Steps \(\d+\)$/,
+      /Task Types \(\d+\)$/,
+      /Workflows \(\d+\)$/,
+      /Workflow Steps \(\d+\)$/,
     ]);
     await expect(page.getByRole('tab', { name: 'Task Types' })).toHaveAttribute(
       'aria-selected',
@@ -169,8 +169,8 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await workflowPage.goto('/admin/task-types');
     await expect(workflowPage).toHaveURL(/\/admin\/workflows$/);
     await expect(workflowPage.getByRole('tab')).toHaveText([
-      /^Workflows \(\d+\)$/,
-      /^Workflow Steps \(\d+\)$/,
+      /Workflows \(\d+\)$/,
+      /Workflow Steps \(\d+\)$/,
     ]);
     await expect(workflowPage.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(
       'aria-selected',
@@ -190,11 +190,11 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const typePage = await asUser(typeUser.username);
     await typePage.goto('/admin/workflows');
     await expect(typePage).toHaveURL(/\/admin\/task-types$/);
-    await expect(typePage.getByRole('tab')).toHaveText([/^Task Types \(\d+\)$/]);
+    await expect(typePage.getByRole('tab')).toHaveText([/Task Types \(\d+\)$/]);
     await expect(adminMenu(typePage).getByRole('link')).toHaveText(['Task Types']);
-    // Without Workflow.Manage the workflow chips are not links.
+    // Without Workflow.Manage the number of workflows is plain text, not a link.
     await expect(typePage.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
-    await expect(typePage.locator('[data-assoc-chip] a')).toHaveCount(0);
+    await expect(typePage.locator('[data-workflows-link]')).toHaveCount(0);
 
     const nobody = await seed.user(['Data Technician'], 'tech');
     const techPage = await asUser(nobody.username);
@@ -222,41 +222,42 @@ test.describe('Task type, workflow and step cross-links', () => {
     return { token, w1, w2, w3, w4, many, single, bare };
   }
 
-  test('the Task Types list shows the workflows as chips: default starred, three then +n more, No workflow', async ({
+  test('the Task Types list shows the default workflow and the number of workflows (#371): +n, the list as a tooltip, No workflow muted', async ({
     page,
     seed,
   }) => {
     const w = await world(seed);
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/task-types?name=${w.token}`);
     const many = page.locator(`[data-row="${w.many.name}"]`);
     await expect(many).toBeVisible();
-    const chips = many.locator('[data-assoc-chip]');
-    await expect(chips).toHaveCount(3);
-    // The default (Bravo) first, with a star and the text "default"; the others by name.
-    await expect(chips.nth(0)).toContainText(w.w2.name);
-    await expect(chips.nth(0)).toContainText('default');
-    await expect(chips.nth(0).locator('.pi-star-fill')).toBeVisible();
-    await expect(chips.nth(1)).toContainText(w.w1.name);
-    await expect(chips.nth(1)).not.toContainText('default');
-    await expect(many.locator('[data-assoc-more]')).toHaveText('+1 more');
-    await expect(many.locator('[data-assoc-all]')).toHaveText('Workflows (4)');
+    // The default (Bravo) is the one name; "+3" for the others and the whole list as the tooltip, default first.
+    const def = many.locator('[data-default-workflow] .tt-clip');
+    await expect(def).toContainText(w.w2.name);
+    await expect(def).toContainText('+3');
+    const tip = (await def.getAttribute('title'))!;
+    expect(tip.startsWith(w.w2.name)).toBe(true);
+    for (const flow of [w.w1, w.w3, w.w4]) expect(tip).toContain(flow.name);
+    await expect(many.locator('[data-assoc-chip]')).toHaveCount(0);
+    await expect(many.locator('[data-workflows-link]')).toHaveText('4');
 
     const bare = page.locator(`[data-row="${w.bare.name}"]`);
-    await expect(bare.locator('[data-assoc-empty]')).toHaveText('No workflow');
-
-    // A chip opens the workflow's page.
-    await chips.nth(0).getByRole('link').click();
-    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${w.w2.workflowDefinitionId}$`));
-    await expect(page.getByRole('heading', { level: 1 }).first()).toContainText(w.w2.name);
+    await expect(bare.locator('[data-default-workflow]')).toHaveText('No workflow');
+    await expect(bare.locator('[data-workflows]')).toHaveText('0');
+    await expect(bare.locator('[data-workflows-link]')).toHaveCount(0);
+    // The reason is a neutral badge, not a red box.
+    await expect(bare.locator('[data-not-usable]')).toContainText('Not usable');
+    await expect(page.locator('.chip')).toHaveCount(0);
   });
 
-  test('+n more and Workflows (n) open the Workflows tab filtered to the task type, with a removable chip', async ({
+  test('the number of workflows opens the Workflows tab filtered to the task type, with a removable chip', async ({
     page,
     seed,
   }) => {
     const w = await world(seed);
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/task-types?name=${w.token}`);
-    await page.locator(`[data-row="${w.many.name}"] [data-assoc-more]`).click();
+    await page.locator(`[data-row="${w.many.name}"] [data-workflows-link]`).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.many.id}$`));
     await expect(page.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(
       'aria-selected',
@@ -276,7 +277,7 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(page.locator('[data-assoc-filter]')).toHaveCount(0);
 
     await page.goto(`/admin/task-types?name=${w.token}`);
-    await page.locator(`[data-row="${w.single.name}"] [data-assoc-all]`).click();
+    await page.locator(`[data-row="${w.single.name}"] [data-workflows-link]`).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows\\?taskType=${w.single.id}$`));
     await expect(page.locator('tbody tr')).toHaveCount(1);
     await expect(page.locator('tbody tr')).toContainText(w.w4.name);

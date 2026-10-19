@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-/** The record a count belongs to; the Task Queue filters by it with `client=`, `matter=` or `project=`. */
-export type CountScope = 'client' | 'matter' | 'project';
+/** The record a count belongs to; the Task Queue filters by it with `client=`, `matter=`, `project=` or, for a Task Type, `type=`. */
+export type CountScope = 'client' | 'matter' | 'project' | 'type';
 
 /** The open statuses of the Task Queue (the same words the Dashboard and the summary strip link with). */
 const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];

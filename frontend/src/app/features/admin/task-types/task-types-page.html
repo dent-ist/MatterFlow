@@ -55,13 +55,33 @@
       >
         <mf-task-type-icon mfCardIcon [iconKey]="t.iconKey" />
         <mf-active-badge mfCardBadges [active]="t.isActive" />
+        <!-- One root element per @if: the slots of the card take a block's single element by its attribute. -->
+        @if (notUsableReason(t)) {
+          <mf-badge
+            mfCardBadges
+            tone="neutral"
+            icon="pi-info-circle"
+            [describedBy]="'tt-nu-' + t.id"
+            data-not-usable
+            >Not usable</mf-badge
+          >
+        }
+        @if (notUsableReason(t); as why) {
+          <span mfCardMeta class="mf-sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
+        }
         <p mfCardMeta class="rc-line" data-card-meta>
           <span class="rc-text">{{ cardLine(t) }}</span>
         </p>
-        @if (warning(t); as w) {
-          <p mfCardMeta class="rc-line rc-line--warn" data-warning>
-            <span class="rc-text">{{ w }}</span>
-          </p>
+        @if (canViewTasks() && t.openTaskCount !== undefined && t.openTaskCount !== null) {
+          <mf-task-count
+            mfCardCounts
+            kind="open"
+            scope="type"
+            [word]="true"
+            [recordId]="t.id"
+            [name]="t.name"
+            [count]="t.openTaskCount"
+          />
         }
         <mf-action-menu
           mfCardAside
@@ -75,7 +95,7 @@
 } @else {
   <div class="mf-table-wrap" mfScrollArea="Task types list" #scroll>
     <div class="mf-scroll">
-      <table class="grid mf-has-menu" data-task-types>
+      <table class="grid tt-table mf-has-menu" data-task-types>
         <caption class="sr-only">
           Task types
         </caption>
@@ -90,21 +110,44 @@
               Name
             </th>
             <th
-              mfSort="form"
+              mfSort="defaultWorkflow"
               [sort]="sort()"
               [defaultSort]="defaultSort"
               (sorted)="setSort($event)"
             >
-              Request form
+              Default workflow
             </th>
-            @if (wide()) {
+            @if (formRoomShown()) {
               <th
+                mfSort="form"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Request form
+              </th>
+            }
+            @if (workflowsShown()) {
+              <th
+                class="num"
                 mfSort="workflows"
                 [sort]="sort()"
                 [defaultSort]="defaultSort"
                 (sorted)="setSort($event)"
               >
                 Workflows
+              </th>
+            }
+            @if (tasksShown()) {
+              <th
+                class="num"
+                mfSort="openTasks"
+                [firstDesc]="true"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Open tasks
               </th>
             }
             <th
@@ -147,42 +190,91 @@
         >
           @for (t of rows(); track t.id) {
             <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-              <td>
+              <td class="tt-namecell">
                 <span class="tt-name">
                   <mf-task-type-icon [iconKey]="t.iconKey" />
                   <a
+                    class="tt-link"
                     [routerLink]="['/admin/task-types', t.id]"
                     [mfRowLink]="listId"
                     [rowKey]="t.id"
                     [state]="leave.state()"
+                    [attr.title]="t.name"
                     >{{ t.name }}</a
                   >
                 </span>
-                @if (warning(t); as w) {
-                  <p class="chip" data-warning>{{ w }}</p>
+              </td>
+              <td data-default-workflow>
+                @if (defaultWorkflowCell(t); as d) {
+                  @if (d.name) {
+                    <span class="tt-clip" [attr.title]="d.all"
+                      >{{ d.name }}
+                      @if (d.more > 0) {
+                        <span class="muted"> +{{ d.more }}</span>
+                      }
+                    </span>
+                  } @else {
+                    <span class="tt-clip muted">No workflow</span>
+                  }
                 }
               </td>
-              <td data-form-status>
-                {{ formStatus(t) }}
-                @if (formVersion(t)) {
-                  <span class="muted">{{ formVersion(t) }}</span>
-                }
-              </td>
-              @if (wide()) {
-                <td data-workflows>
-                  <mf-assoc-chips
-                    [items]="chipsFor(t)"
-                    [label]="'Workflows of ' + t.name"
-                    noun="workflows"
-                    [moreLink]="canOpenWorkflows() ? '/admin/workflows' : null"
-                    [moreQuery]="workflowsQuery(t)"
-                    allLabel="Workflows"
-                    emptyText="No workflow"
-                    [emptyWarning]="t.isActive"
-                  />
+              @if (formRoomShown()) {
+                <td data-form-status class="tt-nowrap">
+                  {{ formStatus(t) }}
+                  @if (formVersion(t)) {
+                    <span class="muted">{{ formVersion(t) }}</span>
+                  }
                 </td>
               }
-              <td><mf-active-badge [active]="t.isActive" /></td>
+              @if (workflowsShown()) {
+                <td data-workflows class="num">
+                  @if (t.eligibleWorkflowIds.length === 0) {
+                    <span class="muted">0</span>
+                  } @else if (canOpenWorkflows()) {
+                    <a
+                      data-workflows-link
+                      [routerLink]="['/admin/workflows']"
+                      [queryParams]="workflowsQuery(t)"
+                      [attr.aria-label]="
+                        t.eligibleWorkflowIds.length === 1
+                          ? '1 workflow for ' + t.name
+                          : t.eligibleWorkflowIds.length + ' workflows for ' + t.name
+                      "
+                      >{{ t.eligibleWorkflowIds.length }}</a
+                    >
+                  } @else {
+                    {{ t.eligibleWorkflowIds.length }}
+                  }
+                </td>
+              }
+              @if (tasksShown()) {
+                <td data-open-tasks class="num">
+                  @if (t.openTaskCount !== undefined && t.openTaskCount !== null) {
+                    <mf-task-count
+                      kind="open"
+                      scope="type"
+                      [recordId]="t.id"
+                      [name]="t.name"
+                      [count]="t.openTaskCount"
+                    />
+                  }
+                </td>
+              }
+              <td class="tt-nowrap">
+                <span class="tt-status">
+                  <mf-active-badge [active]="t.isActive" />
+                  @if (notUsableReason(t); as why) {
+                    <mf-badge
+                      tone="neutral"
+                      icon="pi-info-circle"
+                      [describedBy]="'tt-nu-' + t.id"
+                      data-not-usable
+                      >Not usable</mf-badge
+                    >
+                    <span class="sr-only" [id]="'tt-nu-' + t.id">{{ why }}</span>
+                  }
+                </span>
+              </td>
               <td class="mf-col-actions mf-col-menu">
                 <mf-action-menu
                   [items]="menuFor(t)"
