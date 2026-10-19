@@ -18,11 +18,11 @@
 /* Name and badges on line 1, the meta lines and counts under the name; the aside (copy button) spans the two lines under the badges. */
 .rc-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'name badges'
-    'meta aside'
-    'counts aside';
+    'icon name badges'
+    '. meta aside'
+    '. counts aside';
   align-content: start;
   min-width: 0;
   padding: 3px var(--mf-s3);
@@ -63,6 +63,20 @@
 .rc-badges,
 .rc-aside {
   margin-left: var(--mf-s2);
+}
+
+/* An optional icon before the name (task types, #374); it takes no room when a list has none. */
+.rc-icon {
+  display: flex;
+  grid-area: icon;
+  align-items: center;
+  align-self: start;
+  min-height: 24px;
+  margin-right: var(--mf-s2);
+}
+
+.rc-icon:empty {
+  display: none;
 }
 
 .rc-badges {
@@ -114,6 +128,11 @@
 
 .rc-ref {
   font-family: var(--mf-font-mono);
+}
+
+/* A line that says something is wrong (a task type users cannot create tasks of). */
+.rc-line--warn {
+  color: var(--mf-danger);
 }
 
 .rc-text {

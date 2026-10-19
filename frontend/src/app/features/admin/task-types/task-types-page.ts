@@ -2,8 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -38,6 +36,15 @@ import { AdminShellFilters } from './shell-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { Pager } from '../../../shared/ui/pager';
+import {
+  RecordCard,
+  RecordCardDef,
+  RecordCardList,
+  phoneCards,
+} from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -89,6 +96,10 @@ const FORM_OPTIONS = [
     TaskTypeIcon,
     AssocChips,
     AssocFilter,
+    RecordCardList,
+    RecordCardDef,
+    RecordCard,
+    RecordSort,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
@@ -108,10 +119,27 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     () => new Map([...this.workflowOptions()].map(([id, w]) => [id, w.name])),
   );
 
-  private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
-  protected readonly columns = COLUMNS;
-  protected readonly skeleton = COLUMNS.map((c) => BONES[c]);
+  /** Below 640 px the list is cards, not a table (#374). */
+  protected readonly phone = phoneCards();
+  /**
+   * The Workflows chips are the widest column: a window narrower than 1200 px leaves them out (the card and the page of the type say which
+   * workflows it may use), so the grid never scrolls sideways and the row menu stays in view (#374).
+   */
+  protected readonly wide = viewportAtLeast(1200);
+  protected readonly columns = computed<readonly string[]>(() =>
+    this.wide() ? COLUMNS : COLUMNS.filter((c) => c !== 'workflows'),
+  );
+  protected readonly skeleton = computed(() =>
+    this.columns().map((c) => BONES[c as keyof typeof BONES]),
+  );
+  /** The phone's Sort by select: the sortable columns (the headers' keys). */
+  protected readonly sortOptions: readonly SortOption[] = [
+    { value: 'name', label: 'Name' },
+    { value: 'form', label: 'Request form' },
+    { value: 'workflows', label: 'Workflows' },
+    { value: 'status', label: 'Status' },
+  ];
 
   /**
    * Inline column filters: Name (`name`), Request form (`form`) and Status (`status`, Active by default), all applied here because the
@@ -123,6 +151,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     noun: 'task types',
     openByDefault: true,
     sheetBelow: 640,
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
@@ -174,9 +203,10 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       this.workflowId();
       untracked(() => void this.load());
     });
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
 
@@ -239,6 +269,15 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     } catch {
       this.state.set('error');
     }
+  }
+
+  /** The facts line of a card: `Published v1 - Quick Request +1` (the form, then the default workflow and how many more may be used). */
+  protected cardLine(t: TaskTypeView): string {
+    const form = [this.formStatus(t), this.formVersion(t)].filter(Boolean).join(' ');
+    const ids = t.eligibleWorkflowIds;
+    if (ids.length === 0) return `${form} - No workflow`;
+    const name = this.workflowName(t.defaultWorkflowDefinitionId ?? ids[0]);
+    return `${form} - ${name}${ids.length > 1 ? ` +${ids.length - 1}` : ''}`;
   }
 
   protected formStatus(t: TaskTypeView): string {

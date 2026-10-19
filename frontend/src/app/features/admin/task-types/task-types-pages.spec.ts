@@ -39,6 +39,67 @@ function configure(...permissions: Permission[]): InMemoryTaskTypesApi {
   return api;
 }
 
+describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
+  /** A window `width` px wide (the list reads `matchMedia`; jsdom has none). */
+  const viewport = (width: number) =>
+    vi.stubGlobal('matchMedia', (q: string) => {
+      const min = Number(/min-width:\s*(\d+)px/.exec(q)?.[1] ?? 0);
+      const max = Number(/max-width:\s*([\d.]+)px/.exec(q)?.[1] ?? Infinity);
+      return {
+        matches: width >= min && width <= max,
+        media: q,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      };
+    });
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function open(width: number): Promise<ComponentFixture<TaskTypesPage>> {
+    viewport(width);
+    configure();
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(TaskTypesPage);
+    await settle(fixture);
+    return fixture;
+  }
+
+  it('is one card per task type below 640 px: the icon and name, the status, the form and the default workflow, the warning and the row menu, and no table', async () => {
+    const fixture = await open(375);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('table')).toBeNull();
+    const cards = Array.from(el.querySelectorAll('li[data-record-card]'));
+    expect(cards.length).toBeGreaterThan(0);
+    const card = cards.find((c) => c.textContent!.includes('Data Processing'))!;
+    const name = card.querySelector<HTMLAnchorElement>('a[data-card-name]')!;
+    expect(name.getAttribute('href')).toBe('/admin/task-types/1');
+    expect(name.getAttribute('data-row-list')).toBe('admin-task-types');
+    expect(card.querySelector('mf-task-type-icon svg')).not.toBeNull();
+    expect(card.textContent).toContain('Active');
+    // The form and the default workflow with how many more may be used.
+    expect(card.querySelector('[data-card-meta]')!.textContent!.trim()).toBe(
+      'Published v1 - Standard Processing +1',
+    );
+    expect(card.querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
+      'Actions for Data Processing',
+    );
+  });
+
+  it('leaves the Workflows chips out below 1200 px', async () => {
+    let fixture = await open(768);
+    const heads = (f: ComponentFixture<TaskTypesPage>) =>
+      Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
+        (th as HTMLElement).textContent!.trim(),
+      );
+    expect(heads(fixture)).toEqual(['Name', 'Request form', 'Status', 'Actions']);
+    expect(fixture.nativeElement.querySelector('[data-workflows]')).toBeNull();
+    fixture.destroy();
+    TestBed.resetTestingModule();
+    fixture = await open(1366);
+    expect(heads(fixture)).toEqual(['Name', 'Request form', 'Workflows', 'Status', 'Actions']);
+    expect(fixture.nativeElement.querySelector('[data-workflows]')).not.toBeNull();
+  });
+});
+
 describe('TaskTypesPage', () => {
   let fixture: ComponentFixture<TaskTypesPage>;
   let api: InMemoryTaskTypesApi;

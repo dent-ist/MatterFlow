@@ -213,7 +213,7 @@ export class RecordCardList {
 /**
  * The anatomy of one card (WP12, #275), inside the `<li>` the list draws:
  *
- *   line 1  the name, the one link of the card (two lines at most, the full text as tooltip)      [badges, top right]
+ *   line 1  [mfCardIcon] the name, the one link of the card (two lines at most, the full text as tooltip)      [badges, top right]
  *   line 2+ `[mfCardMeta]`: muted lines, each one line with an ellipsis (`.rc-line`; `.rc-ref` is the mono, nowrap reference)   [aside]
  *   last    `[mfCardCounts]`: the open and overdue counts (`mf-task-count` with `word`)
  *
@@ -228,9 +228,11 @@ export class RecordCardList {
   encapsulation: ViewEncapsulation.None,
   host: { class: 'rc-card' },
   template: `
+    <span class="rc-icon"><ng-content select="[mfCardIcon]" /></span>
     <a
       class="rc-name"
       [routerLink]="link()"
+      [state]="state()"
       [attr.title]="name()"
       [mfRowLink]="list()"
       [rowKey]="rowKey()"
@@ -250,4 +252,6 @@ export class RecordCard {
   /** The list this card belongs to and the record's key: Back to the list then focuses this link (#281). Leave empty to opt out. */
   readonly list = input('');
   readonly rowKey = input<string | number>('');
+  /** Router state for the link (the admin lists carry the list address, #354); none by default. */
+  readonly state = input<Record<string, unknown> | undefined>(undefined);
 }

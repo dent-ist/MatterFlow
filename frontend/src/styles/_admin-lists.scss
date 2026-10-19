@@ -93,20 +93,3 @@
 .mf-table-wrap:has(table.mf-has-menu) {
   scroll-padding-inline-end: 56px;
 }
-
-/*
- * Phones (the cards of #374 and #375 replace this): the first column is as wide as the box and keeps clear of the pinned menu button, so
- * at rest the row is the name and its menu and nothing is half hidden under the button; the other columns are a sideways scroll away.
- */
-@media (max-width: 639.98px) {
-  .mf-table-wrap table.mf-has-menu th:first-child,
-  .mf-table-wrap table.mf-has-menu td:first-child {
-    box-sizing: border-box;
-    min-width: calc(100vw - 2 * var(--mf-s4));
-    padding-right: 56px;
-  }
-
-  .mf-table-wrap table td.ad-name:first-child {
-    max-width: calc(100vw - 2 * var(--mf-s4));
-  }
-}

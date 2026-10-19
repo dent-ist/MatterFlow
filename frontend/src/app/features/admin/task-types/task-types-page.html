@@ -4,7 +4,15 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-<mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+<mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+  <mf-record-sort
+    mfSheetSort
+    [options]="sortOptions"
+    [sort]="sort()"
+    [defaultSort]="defaultSort"
+    (sorted)="pickSort($event)"
+  />
+</mf-filters-bar>
 
 @if (workflowId(); as id) {
   <mf-assoc-filter
@@ -15,114 +23,171 @@
   />
 }
 
-<div class="mf-table-wrap" mfScrollArea="Task types list" #scroll>
-  <div class="mf-scroll">
-    <table class="grid mf-has-menu" data-task-types>
-      <caption class="sr-only">
-        Task types
-      </caption>
-      <thead>
-        <tr>
-          <th mfSort="name" [sort]="sort()" [defaultSort]="defaultSort" (sorted)="setSort($event)">
-            Name
-          </th>
-          <th mfSort="form" [sort]="sort()" [defaultSort]="defaultSort" (sorted)="setSort($event)">
-            Request form
-          </th>
-          <th
-            mfSort="workflows"
-            [sort]="sort()"
-            [defaultSort]="defaultSort"
-            (sorted)="setSort($event)"
-          >
-            Workflows
-          </th>
-          <th
-            mfSort="status"
-            [sort]="sort()"
-            [defaultSort]="defaultSort"
-            (sorted)="setSort($event)"
-          >
-            Status
-          </th>
-          <th scope="col" class="mf-col-actions mf-col-menu">
-            <span class="sr-only">Actions</span>
-          </th>
-        </tr>
-        @if (filters.rowVisible()) {
-          <tr
-            mfColumnFilterRow
-            id="task-type-filter-row"
-            [filters]="filters"
-            [columns]="columns"
-          ></tr>
-        }
-      </thead>
-      <tbody
-        mfGridBody
-        noun="task types"
-        [filters]="filters"
-        emptyText="No task types yet. Use New task type above to add the first one."
-        [state]="state()"
-        [empty]="rows().length === 0"
-        [filtered]="filters.activeCount() > 0"
-        [columns]="columns.length"
-        [skeleton]="skeleton"
-        (retry)="load()"
-        (clear)="clear()"
-        [hidden]="hiddenCount()"
-        hiddenLabel="inactive"
-        (showAll)="showAll()"
+@if (phone()) {
+  <mf-record-card-list
+    noun="task types"
+    label="Task types"
+    emptyText="No task types yet. Use New task type above to add the first one."
+    [state]="state()"
+    [empty]="rows().length === 0"
+    [filtered]="filters.activeCount() > 0"
+    [hidden]="hiddenCount()"
+    hiddenLabel="inactive"
+    (retry)="load()"
+    (clear)="clear()"
+    (showAll)="showAll()"
+  >
+    <ng-template [mfRecordCard]="rows()" let-t>
+      <mf-record-card
+        [name]="t.name"
+        [link]="['/admin/task-types', t.id]"
+        [state]="leave.state()"
+        [list]="listId"
+        [rowKey]="t.id"
       >
-        @for (t of rows(); track t.id) {
-          <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
-            <td>
-              <span class="tt-name">
-                <mf-task-type-icon [iconKey]="t.iconKey" />
-                <a
-                  [routerLink]="['/admin/task-types', t.id]"
-                  [mfRowLink]="listId"
-                  [rowKey]="t.id"
-                  [state]="leave.state()"
-                  >{{ t.name }}</a
-                >
-              </span>
-              @if (warning(t); as w) {
-                <p class="chip" data-warning>{{ w }}</p>
-              }
-            </td>
-            <td data-form-status>
-              {{ formStatus(t) }}
-              @if (formVersion(t)) {
-                <span class="muted">{{ formVersion(t) }}</span>
-              }
-            </td>
-            <td data-workflows>
-              <mf-assoc-chips
-                [items]="chipsFor(t)"
-                [label]="'Workflows of ' + t.name"
-                noun="workflows"
-                [moreLink]="canOpenWorkflows() ? '/admin/workflows' : null"
-                [moreQuery]="workflowsQuery(t)"
-                allLabel="Workflows"
-                emptyText="No workflow"
-                [emptyWarning]="t.isActive"
-              />
-            </td>
-            <td><mf-active-badge [active]="t.isActive" /></td>
-            <td class="mf-col-actions mf-col-menu">
-              <mf-action-menu
-                [items]="menuFor(t)"
-                [label]="'Actions for ' + t.name"
-                [floating]="true"
-              />
-            </td>
-          </tr>
+        <mf-task-type-icon mfCardIcon [iconKey]="t.iconKey" />
+        <mf-active-badge mfCardBadges [active]="t.isActive" />
+        <p mfCardMeta class="rc-line" data-card-meta>
+          <span class="rc-text">{{ cardLine(t) }}</span>
+        </p>
+        @if (warning(t); as w) {
+          <p mfCardMeta class="rc-line rc-line--warn" data-warning>
+            <span class="rc-text">{{ w }}</span>
+          </p>
         }
-      </tbody>
-    </table>
+        <mf-action-menu
+          mfCardAside
+          [items]="menuFor(t)"
+          [label]="'Actions for ' + t.name"
+          [floating]="true"
+        />
+      </mf-record-card>
+    </ng-template>
+  </mf-record-card-list>
+} @else {
+  <div class="mf-table-wrap" mfScrollArea="Task types list" #scroll>
+    <div class="mf-scroll">
+      <table class="grid mf-has-menu" data-task-types>
+        <caption class="sr-only">
+          Task types
+        </caption>
+        <thead>
+          <tr>
+            <th
+              mfSort="name"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Name
+            </th>
+            <th
+              mfSort="form"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Request form
+            </th>
+            @if (wide()) {
+              <th
+                mfSort="workflows"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Workflows
+              </th>
+            }
+            <th
+              mfSort="status"
+              [sort]="sort()"
+              [defaultSort]="defaultSort"
+              (sorted)="setSort($event)"
+            >
+              Status
+            </th>
+            <th scope="col" class="mf-col-actions mf-col-menu">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+          @if (filters.rowVisible()) {
+            <tr
+              mfColumnFilterRow
+              id="task-type-filter-row"
+              [filters]="filters"
+              [columns]="columns()"
+            ></tr>
+          }
+        </thead>
+        <tbody
+          mfGridBody
+          noun="task types"
+          [filters]="filters"
+          emptyText="No task types yet. Use New task type above to add the first one."
+          [state]="state()"
+          [empty]="rows().length === 0"
+          [filtered]="filters.activeCount() > 0"
+          [columns]="columns().length"
+          [skeleton]="skeleton()"
+          (retry)="load()"
+          (clear)="clear()"
+          [hidden]="hiddenCount()"
+          hiddenLabel="inactive"
+          (showAll)="showAll()"
+        >
+          @for (t of rows(); track t.id) {
+            <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
+              <td>
+                <span class="tt-name">
+                  <mf-task-type-icon [iconKey]="t.iconKey" />
+                  <a
+                    [routerLink]="['/admin/task-types', t.id]"
+                    [mfRowLink]="listId"
+                    [rowKey]="t.id"
+                    [state]="leave.state()"
+                    >{{ t.name }}</a
+                  >
+                </span>
+                @if (warning(t); as w) {
+                  <p class="chip" data-warning>{{ w }}</p>
+                }
+              </td>
+              <td data-form-status>
+                {{ formStatus(t) }}
+                @if (formVersion(t)) {
+                  <span class="muted">{{ formVersion(t) }}</span>
+                }
+              </td>
+              @if (wide()) {
+                <td data-workflows>
+                  <mf-assoc-chips
+                    [items]="chipsFor(t)"
+                    [label]="'Workflows of ' + t.name"
+                    noun="workflows"
+                    [moreLink]="canOpenWorkflows() ? '/admin/workflows' : null"
+                    [moreQuery]="workflowsQuery(t)"
+                    allLabel="Workflows"
+                    emptyText="No workflow"
+                    [emptyWarning]="t.isActive"
+                  />
+                </td>
+              }
+              <td><mf-active-badge [active]="t.isActive" /></td>
+              <td class="mf-col-actions mf-col-menu">
+                <mf-action-menu
+                  [items]="menuFor(t)"
+                  [label]="'Actions for ' + t.name"
+                  [floating]="true"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
-</div>
+}
 @if (state() === 'ready' && total() > 0) {
   <mf-pager
     [page]="shownPage()"
