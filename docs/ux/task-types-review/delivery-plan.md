@@ -195,6 +195,7 @@ Contract e2e over the seeded data of the review at four sizes (axe 0 including `
 
 (One line per work package; keep other packages' lines when merging. Format: `WP name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
 
+- Owner decision (2026-10-19): no new or changed keyboard shortcuts in this phase. #411 (FD5, designer Alt+Arrow and Undo) was closed as not planned and moved to the Phase 2 backlog; existing shortcuts and the existing Alt+Arrow on the version page stay as they are (#394 and #395 keep it, they add no new shortcut). Remove #411 (1.5 h... see its estimate of 2 h) from the totals and from lane D; nothing else depends on it except #412's regression walk, which tests the designer's current keyboard behaviour.
 - Planning (2026-10-19): epic #352 and issues #353 to #419 created and linked as sub-issues; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned.
 - First release (#353, #354, #355, #356, #357, #358): not started.
 - WP-TY1 Foundations and bugs: not started.
