@@ -35,6 +35,7 @@ import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { CopyButton } from '../../../shared/ui/copy-button';
+import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 
@@ -76,6 +77,7 @@ const BONES: Record<string, string> = {
     RecordCard,
     RecordSort,
     CopyButton,
+    RowLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -123,12 +125,22 @@ const BONES: Record<string, string> = {
             }
           </span>
           <ng-template [mfRecordCard]="rows()" let-m>
-            <mf-record-card [name]="m.name" [link]="['/matters', m.matterId]">
+            <mf-record-card
+              [name]="m.name"
+              [link]="['/matters', m.matterId]"
+              list="client-matters"
+              [rowKey]="m.matterId"
+            >
               <mf-active-badge mfCardBadges [active]="m.isActive" />
               @if (m.isSensitive) {
                 <mf-sensitive-badge mfCardBadges />
               }
-              <mf-copy-button mfCardAside [text]="m.matterRef" label="matter number" />
+              <mf-copy-button
+                mfCardAside
+                [text]="m.matterRef"
+                label="matter number"
+                [rowStop]="true"
+              />
               <p mfCardMeta class="rc-line" data-card-meta>
                 <span class="rc-ref">{{ m.matterRef }}</span>
               </p>
@@ -247,13 +259,15 @@ const BONES: Record<string, string> = {
                 @for (m of rows(); track m.matterId) {
                   <tr>
                     <td>
-                      <mf-matter-ref [value]="m.matterRef" />
+                      <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
                     </td>
                     <td>
                       <div class="pg-namecell">
                         <a
                           class="pg-link pg-name"
                           [routerLink]="['/matters', m.matterId]"
+                          mfRowLink="client-matters"
+                          [rowKey]="m.matterId"
                           [title]="m.name"
                           >{{ m.name }}</a
                         >
@@ -359,6 +373,8 @@ export class ClientMatters extends ServerListPage<MatterResponse> {
 
   constructor() {
     super();
+    registerTableSkip({ copyButton: true });
+    restoreRowFocus('client-matters', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
       const area = this.scroll()?.nativeElement;

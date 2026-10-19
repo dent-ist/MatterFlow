@@ -254,7 +254,7 @@ describe('MattersListPage', () => {
       Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
 
     it('has Reference, Name, Client, Open tasks, Overdue and Status; the counts link to the Task Queue scoped to the matter', async () => {
-      const fixture = await create(['Matter.View', 'Task.View']);
+      const fixture = await create(['Matter.View', 'Client.View', 'Task.View']);
       api.listMatters.mockReturnValue(
         ok(pageOfMatters(aMatter({ matterId: 7, openTaskCount: 5, overdueTaskCount: 2 }))),
       );
@@ -287,6 +287,24 @@ describe('MattersListPage', () => {
       const el: HTMLElement = fixture.nativeElement;
       expect(heads(el)).toEqual(['Matter reference', 'Name', 'Client', 'Status']);
       expect(el.querySelector('[data-count]')).toBeNull();
+    });
+
+    it('shows the Client column as plain text without Client.View (a link exists only when it can be followed, #285)', async () => {
+      const fixture = await create(['Matter.View']);
+      const row = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
+      expect(row.textContent).toContain('00343 Acme Corp');
+      expect(row.querySelector('a[href^="/clients"]')).toBeNull();
+    });
+
+    it('keeps the copy button out of the Tab order and marks the name link for the Back focus (#281, #282)', async () => {
+      const fixture = await create(['Matter.View']);
+      const row = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
+      const copy = row.querySelector('button[data-row-stop]') as HTMLButtonElement;
+      expect(copy.getAttribute('tabindex')).toBe('-1');
+      expect(copy.getAttribute('aria-label')).toBe('Copy matter number');
+      const name = row.querySelector('a.pg-name') as HTMLAnchorElement;
+      expect(name.getAttribute('data-row-list')).toBe('matters');
+      expect(name.getAttribute('data-row-key')).toBe('7');
     });
 
     it('sorts by Overdue descending first', async () => {

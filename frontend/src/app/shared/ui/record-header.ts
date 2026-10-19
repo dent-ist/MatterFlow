@@ -8,13 +8,15 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink, UrlTree } from '@angular/router';
+import { Router, RouterLink, UrlTree } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
 import { ActionMenu, MenuAction } from './action-menu';
 import { ActiveBadge, SensitiveBadge } from './badge';
 import { MatterRef } from './matter-ref';
 import { Crumb, RecordTitle } from './page-header';
 import { RecordKind } from './record-state';
+import { DrillReturn } from '../work-queue/drill';
+import { RETURN_STATE } from './row-nav';
 
 /** Longest last breadcrumb step (the current page) before it is cut with an ellipsis; the full text is its tooltip (H1, #253). */
 export const CRUMB_MAX = 40;
@@ -53,6 +55,7 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   project: { label: 'Projects', link: '/projects' },
   task: { label: 'Task Queue', link: '/tasks' },
 };
+const LIST_PATHS = ['/clients', '/matters', '/projects'];
 
 let nextId = 0;
 
@@ -88,9 +91,12 @@ let nextId = 0;
           Back to {{ back().label }}
         </a>
         <ol class="rh__trail">
-          @for (c of parents(); track $index) {
+          @for (c of trail(); track $index) {
             <li>
-              @if (skeleton() && !c.link) {
+              @if (c.plain) {
+                <!-- A step the person may not open is plain text: a link exists only when its target is reachable (#285). -->
+                <span>{{ c.label }}</span>
+              } @else if (skeleton() && !c.link) {
                 <span class="rh__sk" aria-hidden="true" data-crumb-skeleton></span>
               } @else if (c.label.length > crumbMax) {
                 <a [routerLink]="c.link" [state]="c.state" [attr.title]="c.label">
@@ -220,7 +226,35 @@ export class RecordHeader {
     label: string;
     link: string | UrlTree;
     state?: Record<string, unknown>;
-  }>(() => this.backTo() ?? this.list());
+  }>(() => this.backTo() ?? this.listBack());
+  private listBack(): { label: string; link: string | UrlTree; state?: Record<string, unknown> } {
+    const list = this.list();
+    const to = this.toList(list);
+    return {
+      label: list.label,
+      link: (to.link as string | UrlTree | undefined) ?? list.link,
+      state: to.state,
+    };
+  }
+  private readonly drill = inject(DrillReturn);
+  private readonly router = inject(Router);
+  /** A link to a list goes back to the exact view the person left (filters, sort, page) and asks the list to focus the row they left. */
+  private toList<T extends { link?: string | readonly unknown[] | UrlTree; plain?: boolean }>(
+    crumb: T,
+  ): Omit<T, 'link'> & {
+    link?: string | readonly unknown[] | UrlTree;
+    state?: Record<string, unknown>;
+  } {
+    const link = crumb.link;
+    if (typeof link !== 'string' || !LIST_PATHS.includes(link)) return crumb;
+    return {
+      ...crumb,
+      link: this.router.parseUrl(this.drill.returnUrl(link)),
+      state: RETURN_STATE,
+    };
+  }
+  /** The steps before the current page; the links to a list restore the list view (#281). */
+  protected readonly trail = computed(() => this.parents().map((c) => this.toList(c)));
   protected readonly crumbMax = CRUMB_MAX;
   /** The sentence that goes with a header button: why it is disabled, else its hint. */
   protected buttonNote(a: RecordAction): string | null {

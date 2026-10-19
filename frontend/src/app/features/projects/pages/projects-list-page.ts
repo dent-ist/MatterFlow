@@ -38,6 +38,7 @@ import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
+import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { MatterCell } from '../../../shared/work-queue/matter-cell';
 
@@ -81,6 +82,7 @@ const BONES: Record<string, string> = {
     RecordCardDef,
     RecordCard,
     RecordSort,
+    RowLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -125,7 +127,12 @@ const BONES: Record<string, string> = {
             (clear)="clear()"
           >
             <ng-template [mfRecordCard]="rows()" let-p>
-              <mf-record-card [name]="p.name" [link]="['/projects', p.projectId]">
+              <mf-record-card
+                [name]="p.name"
+                [link]="['/projects', p.projectId]"
+                list="projects"
+                [rowKey]="p.projectId"
+              >
                 @if (!p.isActive) {
                   <mf-active-badge mfCardBadges [active]="false" inactiveLabel="Archived" />
                 }
@@ -247,6 +254,8 @@ const BONES: Record<string, string> = {
                         <a
                           class="pg-link pg-name"
                           [routerLink]="['/projects', p.projectId]"
+                          mfRowLink="projects"
+                          [rowKey]="p.projectId"
                           [title]="p.name"
                           >{{ p.name }}</a
                         >
@@ -394,6 +403,8 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
 
   constructor() {
     super();
+    registerTableSkip();
+    restoreRowFocus('projects', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
       const area = this.scroll()?.nativeElement;

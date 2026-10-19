@@ -312,6 +312,9 @@ test.describe('Fixed-header screens at 1366x768', () => {
 
     await page.goto('/clients');
     await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
+    // The list's own "Skip to table" (#283) comes first, then the global skip link.
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Skip to table' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused();
     await page.keyboard.press('Enter');

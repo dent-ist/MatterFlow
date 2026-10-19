@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
-import { DrillReturn, listUrl, parseFrom } from './drill';
+import { NavigationStart, Router, provideRouter } from '@angular/router';
+import { Subject } from 'rxjs';
+import { DrillReturn, listUrl, parseFrom, parseRowRef } from './drill';
 
 describe('drill-in context (M7)', () => {
   it('whitelists the from values', () => {
@@ -39,5 +40,125 @@ describe('drill-in context (M7)', () => {
       expect(drill.take('my-work')).toBe(42);
       expect(drill.take('my-work')).toBeNull();
     });
+  });
+});
+
+describe('record list rows (#281)', () => {
+  function setup(): { drill: DrillReturn; router: Router } {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: 'clients', children: [] },
+          { path: 'clients/:id', children: [] },
+          { path: 'other', children: [] },
+        ]),
+      ],
+    });
+    return { drill: TestBed.inject(DrillReturn), router: TestBed.inject(Router) };
+  }
+
+  it('parses only a well-formed focusRow from a history state', () => {
+    expect(parseRowRef({ list: 'clients', key: '37' })).toEqual({ list: 'clients', key: '37' });
+    for (const bad of [
+      null,
+      undefined,
+      'x',
+      3,
+      {},
+      { list: 'clients' },
+      { list: '', key: '1' },
+      { list: 'a', key: 1 },
+    ]) {
+      expect(parseRowRef(bad)).toBeNull();
+    }
+  });
+
+  it('writes the row to history.state.focusRow without touching the URL or the router state', async () => {
+    const { drill, router } = setup();
+    await router.navigateByUrl('/clients?name=a&size=100');
+    history.replaceState({ ...history.state, kept: 1 }, '');
+    const url = location.href;
+    drill.leaveRow('clients', 37);
+    expect(history.state.focusRow).toEqual({ list: 'clients', key: '37' });
+    expect(history.state.kept).toBe(1); // the router's own state stays
+    expect(location.href).toBe(url);
+  });
+
+  it('hands the row back once after a "Back to ..." link and not after a forward visit', async () => {
+    const { drill, router } = setup();
+    await router.navigateByUrl('/clients?name=a');
+    drill.leaveRow('clients', 5);
+    await router.navigateByUrl('/clients/5');
+    // A link that asks for the return: the list takes its row, once, and only the list it was left from.
+    await router.navigateByUrl('/clients?name=a', { state: { restoreFocus: true } });
+    expect(drill.takeRow('matters')).toBeNull();
+    expect(drill.takeRow('clients')).toBe('5');
+    expect(drill.takeRow('clients')).toBeNull();
+
+    drill.leaveRow('clients', 6);
+    await router.navigateByUrl('/clients/6');
+    await router.navigateByUrl('/clients?name=a'); // a plain forward visit is not a return
+    expect(drill.takeRow('clients')).toBeNull();
+  });
+
+  it('forgets the row when the person goes on to another page, but not when only the query changes', async () => {
+    const { drill, router } = setup();
+    await router.navigateByUrl('/clients?name=a');
+    drill.leaveRow('clients', 5);
+    await router.navigateByUrl('/clients/5');
+    await router.navigateByUrl('/clients/5?tab=matters');
+    expect(drill.returnUrl('/clients')).toBe('/clients?name=a');
+    await router.navigateByUrl('/other');
+    expect(drill.returnUrl('/clients')).toBe('/clients');
+  });
+
+  it('returns the exact list view only for an address of that list', async () => {
+    const { drill, router } = setup();
+    expect(drill.returnUrl('/clients')).toBe('/clients');
+    await router.navigateByUrl('/clients?name=a&size=100&sort=-name');
+    drill.leaveRow('clients', 1);
+    expect(drill.returnUrl('/clients')).toBe('/clients?name=a&size=100&sort=-name');
+    expect(drill.returnUrl('/matters')).toBe('/matters');
+  });
+
+  it('gives a record page its tab once after a return, unless the row left is in a list inside the page', async () => {
+    const { drill, router } = setup();
+    expect(drill.takeTab()).toBe(false);
+    await router.navigateByUrl('/clients/5');
+    await router.navigateByUrl('/clients', { state: { restoreFocus: true } });
+    expect(drill.takeTab()).toBe(true);
+    expect(drill.takeTab()).toBe(false);
+
+    await router.navigateByUrl('/clients/5?tab=matters');
+    drill.leaveRow('client-matters', 9);
+    await router.navigateByUrl('/clients/9');
+    await router.navigateByUrl('/clients/5?tab=matters', { state: { restoreFocus: true } });
+    expect(drill.takeTab(['client-matters'])).toBe(false);
+    expect(drill.takeRow('client-matters')).toBe('9');
+  });
+
+  it('reads the row from the history entry on browser Back (a popstate), clears it once taken', async () => {
+    const { drill, router } = setup();
+    await router.navigateByUrl('/clients?name=a');
+    drill.leaveRow('clients', 7);
+    await router.navigateByUrl('/clients/7');
+    const entry = { navigationId: 2, focusRow: { list: 'clients', key: '7' } };
+    // What the router announces when the person presses Back to the list entry that carries the row.
+    (router.events as unknown as Subject<unknown>).next(
+      new NavigationStart(3, '/clients?name=a', 'popstate', entry),
+    );
+    expect(drill.takeRow('clients')).toBe('7');
+    expect(drill.takeRow('clients')).toBeNull();
+
+    // A popstate to an entry without a row (the list was reached some other way) hands out nothing; a reload is not a popstate.
+    (router.events as unknown as Subject<unknown>).next(
+      new NavigationStart(4, '/clients', 'popstate', { navigationId: 1 }),
+    );
+    expect(drill.takeRow('clients')).toBeNull();
+    (router.events as unknown as Subject<unknown>).next(
+      new NavigationStart(5, '/clients', 'imperative', undefined),
+    );
+    expect(drill.takeRow('clients')).toBeNull();
+    expect(drill.takeTab()).toBe(false);
   });
 });

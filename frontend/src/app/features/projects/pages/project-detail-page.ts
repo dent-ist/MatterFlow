@@ -24,6 +24,7 @@ import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
@@ -64,8 +65,8 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
             <mf-record-header
               kind="project"
               [parents]="[
-                { label: 'Matters', link: '/matters' },
-                { label: p.matterRef, link: ['/matters', p.matterId] },
+                { label: 'Matters', link: '/matters', plain: !canLinkMatter() },
+                { label: p.matterRef, link: ['/matters', p.matterId], plain: !canLinkMatter() },
               ]"
               [current]="p.name"
               [name]="p.name"
@@ -112,6 +113,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
                   [projectId]="p.projectId"
                   [canCreate]="p.isActive"
                   [showCreate]="false"
+                  [skipLink]="current() === 'tasks'"
                   (loaded)="onTasksLoaded($event)"
                   (opened)="taskCount.set($event)"
                 />
@@ -272,6 +274,7 @@ export class ProjectDetailPage {
   });
 
   constructor() {
+    restoreTabFocus(() => this.state() === 'ready', []);
     // `Name: Tasks` once the record is known, `Project` until then (#248); kept through tab changes.
     effect(() => {
       const p = this.state() === 'ready' ? this.project() : null;

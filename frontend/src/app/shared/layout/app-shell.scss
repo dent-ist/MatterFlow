@@ -20,6 +20,23 @@
   }
 }
 
+/* A focused skip link takes the whole header strip while it has focus, instead of lying half over the Menu button and the logo
+   (axe target-size, #181; on every width since the page-specific skip links of WP13, #283). */
+.mf-skip:focus {
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: var(--mf-header-h);
+  border-radius: 0;
+  border-bottom: 1px solid var(--mf-border-strong);
+  /* The focus ring sits inside the strip, so the edge of the window does not cut it. */
+  outline-offset: -3px;
+}
+
 .mf-header {
   display: flex;
   align-items: center;
@@ -185,21 +202,6 @@
  * the content uses the full width with a 16 px gutter. The search field moves into its own row under the header.
  */
 @media (max-width: 639px) {
-  /* A focused skip link takes the whole header strip while it has focus, instead of lying half over the Menu button and the logo
-     (axe target-size on the phone, #181). */
-  .mf-skip:focus {
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    height: var(--mf-header-h);
-    border-radius: 0;
-    border-bottom: 1px solid var(--mf-border-strong);
-  }
-
   .mf-header {
     flex-wrap: wrap;
   }

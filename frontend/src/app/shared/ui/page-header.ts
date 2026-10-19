@@ -10,6 +10,8 @@ export interface Crumb {
   link?: string | readonly unknown[] | UrlTree;
   /** Router state sent with the link (the Task page's list crumb asks the list to put focus back on the row, `restoreFocus`). */
   state?: Record<string, unknown>;
+  /** The step is shown as plain text: the person may not open its target (a link exists only when it is reachable, #285). */
+  plain?: boolean;
   /** A grey bar instead of the label (`mf-record-skeleton`: the record is still loading); `label` is ignored. */
   skeleton?: boolean;
 }

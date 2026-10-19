@@ -35,6 +35,7 @@ import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterProjects } from './matter-projects';
 
@@ -409,6 +410,8 @@ export class MatterDetailPage {
   });
 
   constructor() {
+    // Back from a project: the Projects tab focuses the row left, every other return focuses the selected tab.
+    restoreTabFocus(() => this.state() === 'ready', ['matter-projects']);
     // `00107-00001 Name: Tasks` once the record is known, `Matter` until then (#248); kept through tab changes.
     effect(() => {
       const m = this.state() === 'ready' ? this.matter() : null;

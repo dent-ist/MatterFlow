@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   output,
@@ -16,6 +17,7 @@ import { TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { LookupStore } from '../../core/lookups/lookup-store';
+import { SkipTarget } from '../layout/skip-target';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
@@ -163,6 +165,8 @@ export class ScopedTasks {
   readonly showCreate = input(true);
   /** How many projects the matter has: the Project column and filter are offered only when it is above zero (unknown shows them). */
   readonly projectCount = input<number | null>(null);
+  /** False while the grid is kept mounted but hidden (the Project's Details tab): it then offers no "Skip to task list". */
+  readonly skipLink = input(true);
   /** The record's open-task count, each time the summary strip has it (Open, whatever the grid shows). */
   readonly opened = output<number>();
   /** Each time a load succeeds: how many tasks match, and whether the person (not just the default open-status view) narrowed the list. */
@@ -335,6 +339,22 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
+    // The first Tab stop of the page (#283): "Skip to task list" moves to the first task, as on the work pages (#181).
+    const skip = inject(SkipTarget);
+    const host = inject<ElementRef<HTMLElement>>(ElementRef);
+    effect((onCleanup) => {
+      if (!this.skipLink() || !this.canView()) return;
+      onCleanup(
+        skip.register({
+          label: 'Skip to task list',
+          focus: () =>
+            (
+              host.nativeElement.querySelector<HTMLElement>('tbody a.wt-title, [data-task] a') ??
+              host.nativeElement.querySelector<HTMLElement>('.wt-wrap')
+            )?.focus(),
+        }),
+      );
+    });
     // The priority and status lookups need Task.View; without it the grid is a notice and asks for nothing (no 403 toast).
     if (this.canView()) void this.lookups.ensureLoaded();
     effect(() => {

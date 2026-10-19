@@ -27,6 +27,7 @@ import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
 import { ActiveBadge } from './badge';
 import { SortHeader } from './data-table';
+import { registerTableSkip } from './row-nav';
 import { ScrollArea } from './fixed-page';
 import { GridBody } from './grid-body';
 import { isActiveParam, parseStatus } from './list-helpers';
@@ -199,6 +200,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   constructor() {
     super();
+    registerTableSkip();
     void this.loadTypes();
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { DrillReturn } from '../work-queue/drill';
 import { settle } from '../testing/org-testing';
 import { CRUMB_MAX, RecordAction, RecordHeader, truncateCrumb } from './record-header';
 
@@ -16,7 +17,7 @@ function action(id: string, role: RecordAction['role'], extra: Partial<RecordAct
   template: `
     <mf-record-header
       kind="matter"
-      [parents]="[{ label: 'Matters', link: '/matters' }]"
+      [parents]="[{ label: 'Matters', link: '/matters', plain: plain() }]"
       [current]="current()"
       ref="00107-00001"
       [name]="name()"
@@ -32,6 +33,7 @@ class Host {
   readonly current = signal('00107-00001 Short');
   readonly name = signal('Short');
   readonly sensitive = signal(false);
+  readonly plain = signal(false);
   readonly actions = signal<RecordAction[]>([]);
 }
 
@@ -181,6 +183,42 @@ class TaskHost {
     action('cancel', 'state', { danger: true, separated: true }),
   ];
 }
+
+describe('mf-record-header list links (#281, #285)', () => {
+  let fixture: ComponentFixture<Host>;
+  const q = <T extends HTMLElement>(sel: string): T | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<T>(sel);
+
+  async function create(setup?: (h: Host) => void): Promise<void> {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', children: [] }])],
+    });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/matters?name=acme&size=50&page=2');
+    TestBed.inject(DrillReturn).leaveRow('matters', 4);
+    await router.navigateByUrl('/matters/4');
+    fixture = TestBed.createComponent(Host);
+    setup?.(fixture.componentInstance);
+    await settle(fixture);
+  }
+
+  it('"Back to Matters" and the Matters crumb return to the exact list view the row was left from', async () => {
+    await create();
+    expect(q<HTMLAnchorElement>('[data-back-link]')!.getAttribute('href')).toBe(
+      '/matters?name=acme&size=50&page=2',
+    );
+    expect(q<HTMLAnchorElement>('.rh__trail a')!.getAttribute('href')).toBe(
+      '/matters?name=acme&size=50&page=2',
+    );
+  });
+
+  it('a crumb the person may not open is plain text, not a link', async () => {
+    await create((h) => h.plain.set(true));
+    const first = q('.rh__trail li')!;
+    expect(first.textContent?.trim()).toBe('Matters');
+    expect(first.querySelector('a')).toBeNull();
+  });
+});
 
 describe('mf-record-header for a Task (#296, #298)', () => {
   async function create() {

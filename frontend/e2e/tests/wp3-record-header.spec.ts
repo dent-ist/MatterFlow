@@ -536,6 +536,7 @@ test.describe('WP3: phone header (#254)', () => {
         expect(box.width, sel).toBeGreaterThanOrEqual(44);
       }
       await page.locator('[data-overflow]').click();
+      await expect(page.getByRole('menuitem').first()).toBeVisible();
       const menu = await page
         .getByRole('menuitem')
         .evaluateAll((bs) =>

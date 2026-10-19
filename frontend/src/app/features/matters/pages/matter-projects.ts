@@ -7,6 +7,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { groupProjects } from './matter-project-groups';
 
@@ -27,6 +28,7 @@ import { groupProjects } from './matter-project-groups';
     ActiveBadge,
     ScrollArea,
     TaskCount,
+    RowLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -164,6 +166,8 @@ import { groupProjects } from './matter-project-groups';
               class="pg-link pg-name"
               data-project-name
               [routerLink]="['/projects', p.projectId]"
+              mfRowLink="matter-projects"
+              [rowKey]="p.projectId"
               [title]="p.name"
               >{{ p.name }}</a
             >
@@ -209,6 +213,20 @@ export class MatterProjects {
 
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
+
+  constructor() {
+    registerTableSkip();
+    // The projects arrive with the matter, so the rows are there as soon as the tab is.
+    // A project left from the collapsed Archived group: focus goes to the group's toggle (the group stays collapsed, as on every visit).
+    restoreRowFocus(
+      'matter-projects',
+      () => true,
+      (key) =>
+        this.groups().archived.some((p) => String(p.projectId) === key)
+          ? document.querySelector<HTMLElement>('[data-archived-toggle]')
+          : null,
+    );
+  }
 
   /** Counts come back empty without Task.View: the two columns are not drawn then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));

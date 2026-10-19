@@ -39,6 +39,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
+import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 
 /** Below this width the Client column (the least informative one) leaves the table (#266). */
@@ -83,6 +84,7 @@ const BONES: Record<string, string> = {
     RecordCard,
     RecordSort,
     CopyButton,
+    RowLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -132,12 +134,22 @@ const BONES: Record<string, string> = {
               (onClick)="go('/matters/new')"
             />
             <ng-template [mfRecordCard]="rows()" let-m>
-              <mf-record-card [name]="m.name" [link]="['/matters', m.matterId]">
+              <mf-record-card
+                [name]="m.name"
+                [link]="['/matters', m.matterId]"
+                list="matters"
+                [rowKey]="m.matterId"
+              >
                 <mf-active-badge mfCardBadges [active]="m.isActive" />
                 @if (m.isSensitive) {
                   <mf-sensitive-badge mfCardBadges />
                 }
-                <mf-copy-button mfCardAside [text]="m.matterRef" label="matter number" />
+                <mf-copy-button
+                  mfCardAside
+                  [text]="m.matterRef"
+                  label="matter number"
+                  [rowStop]="true"
+                />
                 <p mfCardMeta class="rc-line" data-card-meta>
                   <span class="rc-ref">{{ m.matterRef }}</span>
                   <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
@@ -266,13 +278,15 @@ const BONES: Record<string, string> = {
                   @for (m of rows(); track m.matterId) {
                     <tr>
                       <td>
-                        <mf-matter-ref [value]="m.matterRef" />
+                        <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
                       </td>
                       <td>
                         <div class="pg-namecell">
                           <a
                             class="pg-link pg-name"
                             [routerLink]="['/matters', m.matterId]"
+                            mfRowLink="matters"
+                            [rowKey]="m.matterId"
                             [title]="m.name"
                             >{{ m.name }}</a
                           >
@@ -283,12 +297,20 @@ const BONES: Record<string, string> = {
                       </td>
                       @if (showClient()) {
                         <td>
-                          <a
-                            class="pg-link pg-name"
-                            [routerLink]="['/clients', m.clientId]"
-                            [title]="m.clientNumber + ' ' + m.clientName"
-                            ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                          >
+                          @if (clientLink()) {
+                            <a
+                              class="pg-link pg-name"
+                              [routerLink]="['/clients', m.clientId]"
+                              [title]="m.clientNumber + ' ' + m.clientName"
+                              ><span class="pg-mono">{{ m.clientNumber }}</span>
+                              {{ m.clientName }}</a
+                            >
+                          } @else {
+                            <span class="pg-name" [title]="m.clientNumber + ' ' + m.clientName"
+                              ><span class="pg-mono">{{ m.clientNumber }}</span>
+                              {{ m.clientName }}</span
+                            >
+                          }
                         </td>
                       }
                       @if (counts()) {
@@ -415,6 +437,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   constructor() {
     super();
+    registerTableSkip({ copyButton: true });
+    restoreRowFocus('matters', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
       const area = this.scroll()?.nativeElement;

@@ -17,7 +17,10 @@ import {
       class="mf-copy"
       [attr.aria-label]="'Copy ' + label()"
       [title]="'Copy ' + label()"
+      [attr.tabindex]="rowStop() ? -1 : null"
+      [attr.data-row-stop]="rowStop() ? '' : null"
       (click)="copy()"
+      (keydown)="onKey($event)"
     >
       <i [class]="copied() ? 'pi pi-check' : 'pi pi-copy'" aria-hidden="true"></i>
       @if (showText()) {
@@ -47,6 +50,13 @@ import {
     .mf-copy:hover {
       background: var(--mf-surface-alt);
     }
+    /* In a list row (rowStop): out of the Tab order, shown on hover and while the row has focus, never moved (it keeps its space). */
+    @media (hover: hover) and (min-width: 640px) {
+      :host-context(tr:not(:hover):not(:focus-within)) .mf-copy[data-row-stop],
+      :host-context(.rc:not(:hover):not(:focus-within)) .mf-copy[data-row-stop] {
+        opacity: 0;
+      }
+    }
     .mf-sr-only {
       position: absolute;
       width: 1px;
@@ -63,10 +73,30 @@ export class CopyButton implements OnDestroy {
   /** Noun for the accessible name: "Copy <label>". */
   readonly label = input('to clipboard');
   readonly showText = input(false);
+  /**
+   * The button belongs to a list row (#282): it is not a Tab stop (`tabindex="-1"`, so 25 rows are 25 stops) but stays in the accessibility
+   * tree, it is shown while the row is hovered or has focus (always on a phone), and the right arrow on the row's name link (`mfRowLink`)
+   * steps to it. From the button, Tab goes on to what follows the row's link, Shift+Tab or the left arrow back to the link.
+   */
+  readonly rowStop = input(false);
   readonly copiedChange = output<string>();
 
   protected readonly copied = signal(false);
   private timer: ReturnType<typeof setTimeout> | undefined;
+
+  /** Inside a row: Shift+Tab or the left arrow back to the name link; Tab on, from the link's place in the row. */
+  protected onKey(event: KeyboardEvent): void {
+    const back = event.key === 'ArrowLeft' || (event.key === 'Tab' && event.shiftKey);
+    if (!this.rowStop() || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.key !== 'Tab' && !back) return;
+    const link = (event.currentTarget as HTMLElement)
+      .closest('tr, li')
+      ?.querySelector<HTMLElement>('a[data-row-key]');
+    if (!link) return;
+    if (back) event.preventDefault();
+    // Forward: focus moves to the link and the browser's own Tab then goes on from there, to the next stop after the link.
+    link.focus();
+  }
 
   async copy(): Promise<void> {
     try {

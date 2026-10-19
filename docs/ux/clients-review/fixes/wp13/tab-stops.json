@@ -1,0 +1,16 @@
+{
+  "matters list: Tab stops for 25 rows (name + client links, no copy button)": 50,
+  "matters list: copy buttons among them (was 25)": 0,
+  "clients: Tab presses to the first row": 33,
+  "clients: with the skip link (Tab, Enter)": 2,
+  "matters: Tab presses to the first row": 36,
+  "matters: with the skip link (Tab, Enter)": 2,
+  "projects: Tab presses to the first row": 33,
+  "projects: with the skip link (Tab, Enter)": 2,
+  "client-matters: Tab presses to the first row": 37,
+  "client-matters: with the skip link (Tab, Enter)": 2,
+  "matter-projects: Tab presses to the first row": 30,
+  "matter-projects: with the skip link (Tab, Enter)": 2,
+  "matter-tasks: Tab presses to the first row": 35,
+  "matter-tasks: with the skip link (Tab, Enter)": 2
+}

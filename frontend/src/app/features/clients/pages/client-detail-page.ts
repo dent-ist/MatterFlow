@@ -22,6 +22,7 @@ import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 
@@ -223,6 +224,8 @@ export class ClientDetailPage {
   });
 
   constructor() {
+    // Back from a matter: the Matters tab focuses the row left, every other return focuses the selected tab.
+    restoreTabFocus(() => this.state() === 'ready', ['client-matters']);
     // `00107 Hartwell & Bryce LLP: Matters` once the record is known, `Client` until then (#248); kept through tab changes.
     effect(() => {
       const c = this.state() === 'ready' ? this.client() : null;

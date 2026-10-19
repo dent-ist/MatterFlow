@@ -21,6 +21,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CopyPart, CopyParts } from './copy-parts';
 import { LoadState } from './data-table';
+import { RowLink } from './row-nav';
 import { ErrorReference } from './error-reference';
 
 /** Below this width (the work lists' 640 px: 639 is cards, 640 is the table) a record list is cards instead of a table (WP12, #275). */
@@ -204,12 +205,20 @@ export class RecordCardList {
  */
 @Component({
   selector: 'mf-record-card',
-  imports: [RouterLink],
+  imports: [RouterLink, RowLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   host: { class: 'rc-card' },
   template: `
-    <a class="rc-name" [routerLink]="link()" [attr.title]="name()" data-card-name>{{ name() }}</a>
+    <a
+      class="rc-name"
+      [routerLink]="link()"
+      [attr.title]="name()"
+      [mfRowLink]="list()"
+      [rowKey]="rowKey()"
+      data-card-name
+      >{{ name() }}</a
+    >
     <span class="rc-badges"><ng-content select="[mfCardBadges]" /></span>
     <span class="rc-aside"><ng-content select="[mfCardAside]" /></span>
     <div class="rc-meta"><ng-content select="[mfCardMeta]" /></div>
@@ -220,4 +229,7 @@ export class RecordCard {
   readonly name = input.required<string>();
   /** Router commands to the record. */
   readonly link = input.required<string | unknown[]>();
+  /** The list this card belongs to and the record's key: Back to the list then focuses this link (#281). Leave empty to opt out. */
+  readonly list = input('');
+  readonly rowKey = input<string | number>('');
 }

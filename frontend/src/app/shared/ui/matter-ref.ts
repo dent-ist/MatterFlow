@@ -19,7 +19,7 @@ import { CopyButton } from './copy-button';
         <span class="mf-ref">{{ r }}</span>
       }
       @if (copy()) {
-        <mf-copy-button [text]="r" label="matter number" />
+        <mf-copy-button [text]="r" label="matter number" [rowStop]="rowStop()" />
       }
     }
   `,
@@ -55,6 +55,8 @@ export class MatterRef {
   readonly hint = input<string | null>(null);
   /** Show the copy button (default). */
   readonly copy = input(true);
+  /** The copy button belongs to a list row: not a Tab stop of its own, shown on hover and focus (see `mf-copy-button`). */
+  readonly rowStop = input(false);
 
   protected readonly ref = computed(() => formatMatterRef(this.value()));
 }
