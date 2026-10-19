@@ -15,7 +15,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.13" />
     <!-- Swagger UI only (Development); the document itself comes from Microsoft.AspNetCore.OpenApi -->
-    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.6" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.0" />
     <!-- Authentication -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.13" />
     <PackageVersion Include="System.DirectoryServices.AccountManagement" Version="10.0.0" />
