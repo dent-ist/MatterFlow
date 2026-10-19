@@ -444,6 +444,38 @@ describe('WorkflowsListPage', () => {
   });
 });
 
+describe('WorkflowsListPage name cell (#356)', () => {
+  it('clamps the name to two lines, or to one line above a one-line description, with the full texts as tooltips', async () => {
+    const long = 'N'.repeat(150);
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            summary({ workflowDefinitionId: 1, name: long, description: 'D'.repeat(240) }),
+            summary({ workflowDefinitionId: 2, name: 'Plain', description: undefined }),
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const withText = el.querySelector(`tr[data-row="${long}"] td.ad-name`)!;
+    const link = withText.querySelector('a.pg-name')!;
+    expect(link.getAttribute('title')).toBe(long);
+    expect(link.classList.contains('pg-name--one')).toBe(true);
+    const description = withText.querySelector('.pg-clip')!;
+    expect(description.getAttribute('title')).toBe('D'.repeat(240));
+    const plain = el.querySelector('tr[data-row="Plain"] td.ad-name')!;
+    expect(plain.querySelector('a.pg-name')!.classList.contains('pg-name--one')).toBe(false);
+    expect(plain.querySelector('.pg-clip')).toBeNull();
+  });
+});
+
 describe('WorkflowsListPage row menu', () => {
   const page = (items: WorkflowSummary[]) => ({
     items,

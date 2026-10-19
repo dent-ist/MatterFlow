@@ -7,7 +7,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { Seeder, uid } from '../support/seed';
 
 /**
- * WP-TY3 Lists on the grid contract (epic #352): the row overflow menu on the three Administration lists.
+ * WP-TY3 Lists on the grid contract (epic #352): the row overflow menu on the three Administration lists (#355) and the 44 px rows (#356).
  * With E2E_SCREENSHOTS set to a folder the tests also save a screenshot per list and width (docs/ux/task-types-review/fixes/ty3-lists).
  */
 const SHOTS = process.env['E2E_SCREENSHOTS'];
@@ -61,6 +61,12 @@ const LISTS = {
     items: ['Edit inputs', 'Deactivate'],
   }),
 };
+
+/** The record-list row height of the grid contract: 44 px (the half-pixel of the collapsed border is allowed, as in wp8-list-chrome). */
+function expectRow44(height: number, label: string): void {
+  expect(height, label).toBeGreaterThanOrEqual(43);
+  expect(height, label).toBeLessThanOrEqual(45);
+}
 
 const rowOf = (page: Page, name: string): Locator => page.locator(`tr[data-row="${name}"]`);
 const menuButton = (page: Page, name: string): Locator =>
@@ -242,6 +248,101 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     // A resize (or a scroll) closes it: the button it hangs from has moved.
     await page.setViewportSize({ width: 1300, height: 600 });
     await expect(menu).toHaveCount(0);
+  });
+
+  test.describe('rows are exactly 44 px (#356)', () => {
+    for (const size of SIZES) {
+      test(`at ${size.w}x${size.h} the long-name workflow and step rows are 44 px, texts are tooltips, no sideways page scroll, axe clean`, async ({
+        page,
+        seed,
+        admin,
+      }) => {
+        test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
+        const token = uid();
+        const longName = `${token} Cross-border collection, processing, hosting and production for multi-jurisdiction regulatory investigations with data privacy review and translation`;
+        const longDescription =
+          `Nam ${'liber tempor cum soluta nobis eleifend option congue nihil imperdiet doming. '.repeat(3)}`
+            .slice(0, 240)
+            .trim();
+        const created = (await admin.post('/api/v1/workflows', {
+          name: longName,
+          description: longDescription,
+          isOrdered: true,
+        })) as { workflow: { workflowDefinitionId: number } };
+        expect(created.workflow.workflowDefinitionId).toBeGreaterThan(0);
+        const plain = await seed.workflow({ name: `${token} Plain workflow` });
+        const longTitle = `${token} Reconcile the processed document count against the custodian manifest, flag any exceptions to the case team and attach the exception report to the matter workspace`;
+        const longStep = await admin.post('/api/v1/step-definitions', {
+          title: longTitle,
+          description: longDescription,
+          instructions: null,
+          tags: ['Relativity', 'Processing', 'QC', 'A long running tag name for wrapping'],
+        });
+        // The long step is used in five workflows.
+        for (let i = 0; i < 5; i++) {
+          await seed.workflow({
+            name: `${token} Uses long step ${i}`,
+            steps: [{ stepDefinitionId: longStep.stepDefinitionId, title: longTitle }],
+          });
+        }
+        await page.setViewportSize({ width: size.w, height: size.h });
+
+        await page.goto(`/admin/workflows?name=${token}`);
+        for (const name of [longName, plain.name]) {
+          const row = rowOf(page, name);
+          await expect(row).toBeVisible();
+          expectRow44((await row.boundingBox())!.height, name);
+        }
+        const nameLink = rowOf(page, longName).locator('a.pg-name');
+        await expect(nameLink).toHaveAttribute('title', longName);
+        await expect(rowOf(page, longName).locator('.pg-clip')).toHaveAttribute(
+          'title',
+          longDescription,
+        );
+        const noScroll = () =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          );
+        expect(await noScroll()).toBe(true);
+        expect(await axeViolations(page), 'workflows axe').toEqual([]);
+        await shot(page, 'workflows-long', size.w);
+
+        await page.goto(`/admin/steps?title=${token}`);
+        const stepRow = rowOf(page, longTitle);
+        await expect(stepRow).toBeVisible();
+        expectRow44((await stepRow.boundingBox())!.height, 'step');
+        await expect(stepRow.locator('a.pg-name')).toHaveAttribute('title', longTitle);
+        // Used in: the number is the link, on one line.
+        const used = stepRow.locator('[data-used-in-link]');
+        await expect(used).toHaveText('5');
+        await expect(used).toHaveAttribute('aria-label', 'Used in 5 workflows');
+        expect((await used.boundingBox())!.height).toBeLessThanOrEqual(26);
+        // Two tag chips and "+n".
+        await expect(stepRow.locator('[data-tag]')).toHaveCount(2);
+        await expect(stepRow.locator('[data-tags-more]')).toBeVisible();
+        const headers = await page.locator('thead tr:first-child th').allInnerTexts();
+        if (size.w >= 1200) {
+          expect(headers).toContain('Description');
+          await expect(stepRow.locator('td.ad-desc .pg-clip')).toHaveAttribute(
+            'title',
+            longDescription,
+          );
+        } else {
+          expect(headers).not.toContain('Description');
+        }
+        // Title is the spring: at least 240 px, and the widest column.
+        const titleBox = (await stepRow.locator('td.ad-spring').boundingBox())!;
+        expect(titleBox.width).toBeGreaterThanOrEqual(240);
+        if (size.w >= 1366) {
+          for (const other of await stepRow.locator('td:not(.ad-spring)').all()) {
+            expect((await other.boundingBox())!.width).toBeLessThanOrEqual(titleBox.width);
+          }
+        }
+        expect(await noScroll()).toBe(true);
+        expect(await axeViolations(page), 'steps axe').toEqual([]);
+        await shot(page, 'steps-long', size.w);
+      });
+    }
   });
 
   test.describe('permission variants', () => {

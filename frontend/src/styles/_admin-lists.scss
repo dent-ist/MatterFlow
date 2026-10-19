@@ -45,6 +45,50 @@
   z-index: 6;
 }
 
+/*
+ * Rows are exactly 44 px (#356, the grid contract of decision U): a name is clamped to two lines (one when a description sits under it),
+ * a description is one muted clipped line, the full texts are the tooltips. Workflows: `ad-name` caps the Name column. Steps: `ad-spring`
+ * is the one column that takes the spare width (at least 240 px), `ad-desc` is the fixed Description column, `ad-tags` keeps its two
+ * chips on one line and the "Used in" count never wraps.
+ */
+.mf-table-wrap table td.ad-name {
+  max-width: 32rem;
+}
+
+.mf-table-wrap table td.ad-spring {
+  width: 100%;
+  min-width: 240px;
+  max-width: 0;
+}
+
+.mf-table-wrap table td.ad-desc {
+  width: 20rem;
+  min-width: 14rem;
+  max-width: 20rem;
+}
+
+.mf-table-wrap a.pg-name.pg-name--one {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.mf-table-wrap table td.ad-tags,
+.mf-table-wrap table td.ad-nowrap {
+  white-space: nowrap;
+}
+
+.mf-table-wrap table td.ad-tags ul.tc {
+  flex-wrap: nowrap;
+}
+
+.mf-table-wrap table td.ad-tags .tc__chip {
+  max-width: 8rem;
+}
+
+.mf-table-wrap table td[data-used-in] {
+  white-space: nowrap;
+}
+
 /* A focused link that scrolls into view never lands under the pinned menu button. */
 .mf-table-wrap:has(table.mf-has-menu) {
   scroll-padding-inline-end: 56px;
@@ -60,5 +104,9 @@
     box-sizing: border-box;
     min-width: calc(100vw - 2 * var(--mf-s4));
     padding-right: 56px;
+  }
+
+  .mf-table-wrap table td.ad-name:first-child {
+    max-width: calc(100vw - 2 * var(--mf-s4));
   }
 }

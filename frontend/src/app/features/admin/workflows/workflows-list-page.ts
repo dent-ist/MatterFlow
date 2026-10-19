@@ -138,15 +138,20 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
             <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
             @for (w of rows(); track w.workflowDefinitionId) {
               <tr [attr.data-row]="w.name">
-                <td>
-                  <a class="pg-link" [routerLink]="['/admin/workflows', w.workflowDefinitionId]">{{
-                    w.name
-                  }}</a>
+                <td class="ad-name">
+                  <!-- Two lines of name, or one line of name and one of description: the row is 44 px; the full texts are the tooltips. -->
+                  <a
+                    class="pg-link pg-name"
+                    [class.pg-name--one]="!!w.description"
+                    [routerLink]="['/admin/workflows', w.workflowDefinitionId]"
+                    [title]="w.name"
+                    >{{ w.name }}</a
+                  >
                   @if (w.description) {
-                    <div class="pg-muted">{{ w.description }}</div>
+                    <div class="pg-muted pg-clip" [title]="w.description">{{ w.description }}</div>
                   }
                 </td>
-                <td data-task-types>
+                <td data-task-types class="ad-nowrap">
                   <mf-assoc-chips
                     [items]="chipsOf(w)"
                     [label]="'Task types of ' + w.name"
@@ -156,7 +161,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
                     emptyText="No task type"
                   />
                 </td>
-                <td>
+                <td class="ad-nowrap">
                   @if (w.publishedVersionNo) {
                     <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
                     v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
@@ -164,7 +169,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
                     <span class="pg-muted">Not published</span>
                   }
                 </td>
-                <td>
+                <td class="ad-nowrap">
                   @if (w.draftVersionNo) {
                     <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
                     v{{ w.draftVersionNo }}
@@ -172,7 +177,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
                     <span class="pg-muted">None</span>
                   }
                 </td>
-                <td>
+                <td class="ad-nowrap">
                   <mf-active-badge [active]="w.isActive" />
                 </td>
                 <td class="mf-col-menu">

@@ -31,6 +31,7 @@ import { ServerListPage } from '../../../shared/ui/list-query';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -85,9 +86,12 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
               >
                 Title
               </th>
-              <th scope="col">Description</th>
+              @if (showDescription()) {
+                <th scope="col">Description</th>
+              }
               <th scope="col">Tags</th>
               <th
+                class="pg-num"
                 mfSort="usedInWorkflows"
                 [sort]="sort()"
                 [defaultSort]="defaultSort"
@@ -103,7 +107,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
                 mfColumnFilterRow
                 id="step-filter-row"
                 [filters]="filters"
-                [columns]="columns"
+                [columns]="columns()"
               ></tr>
             }
           </thead>
@@ -114,21 +118,30 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
-            [columns]="6"
+            [columns]="columns().length"
             (retry)="load()"
             (clear)="clear()"
           >
             <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
             @for (s of rows(); track s.stepDefinitionId) {
               <tr [attr.data-row]="s.title">
-                <td>
-                  <a class="pg-link" [routerLink]="['/admin/steps', s.stepDefinitionId]">{{
-                    s.title
-                  }}</a>
+                <td class="ad-spring">
+                  <a
+                    class="pg-link pg-name"
+                    [routerLink]="['/admin/steps', s.stepDefinitionId]"
+                    [title]="s.title"
+                    >{{ s.title }}</a
+                  >
                 </td>
-                <td>{{ s.description }}</td>
-                <td class="st-tags"><mf-tag-chips [tags]="s.tags" [max]="3" /></td>
-                <td data-used-in>
+                @if (showDescription()) {
+                  <td class="ad-desc">
+                    <span class="pg-clip pg-muted" [title]="s.description ?? ''">{{
+                      s.description
+                    }}</span>
+                  </td>
+                }
+                <td class="st-tags ad-tags"><mf-tag-chips [tags]="s.tags" [max]="2" /></td>
+                <td data-used-in class="pg-num">
                   @if (s.usedInWorkflows === 0) {
                     <span class="pg-muted">Not used</span>
                   } @else {
@@ -137,14 +150,15 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
                       data-used-in-link
                       [routerLink]="['/admin/workflows']"
                       [queryParams]="workflowsQuery(s)"
-                      >Used in
-                      {{
-                        s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows'
-                      }}</a
+                      [attr.aria-label]="
+                        'Used in ' +
+                        (s.usedInWorkflows === 1 ? '1 workflow' : s.usedInWorkflows + ' workflows')
+                      "
+                      >{{ s.usedInWorkflows }}</a
                     >
                   }
                 </td>
-                <td>
+                <td class="ad-nowrap">
                   <mf-active-badge [active]="s.isActive" />
                 </td>
                 <td class="mf-col-menu">
@@ -194,7 +208,11 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'title';
-  protected readonly columns = COLUMNS;
+  /** The Description column is left out below 1200 px (its filter then sits under "Other filters"). */
+  protected readonly showDescription = viewportAtLeast(1200);
+  protected readonly columns = computed(() =>
+    this.showDescription() ? [...COLUMNS] : COLUMNS.filter((c) => c !== 'description'),
+  );
   /** The tags to choose from, with how many steps of the chosen status carry each. */
   protected readonly tagOptions = signal<FilterOption[]>([]);
   protected readonly busy = signal(false);

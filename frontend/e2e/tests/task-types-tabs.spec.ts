@@ -331,7 +331,7 @@ test.describe('Task type, workflow and step cross-links', () => {
 
     await page.goto(`/admin/steps?title=${token}`);
     const sharedRow = page.locator(`[data-row="${shared.title}"]`);
-    await expect(sharedRow.locator('[data-used-in]')).toHaveText('Used in 2 workflows');
+    await expect(sharedRow.locator('[data-used-in]')).toHaveText('2');
     const spareRow = page.locator(`[data-row="${spare.title}"]`);
     await expect(spareRow.locator('[data-used-in]')).toHaveText('Not used');
     await expect(spareRow.locator('[data-used-in] a')).toHaveCount(0);

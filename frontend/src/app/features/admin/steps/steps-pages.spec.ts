@@ -60,6 +60,21 @@ const detail = (overrides: Partial<StepDefinitionDetail> = {}): StepDefinitionDe
 
 let query: ReturnType<typeof fakeQuery>;
 
+// The Description column shows from 1200 px (#356): the lists are measured on a wide window, whatever another spec left in `matchMedia`.
+const viewport = (width: number) =>
+  vi.stubGlobal('matchMedia', (q: string) => {
+    const min = Number(/min-width:\s*(\d+)px/.exec(q)?.[1] ?? 0);
+    const max = Number(/max-width:\s*([\d.]+)px/.exec(q)?.[1] ?? Infinity);
+    return {
+      matches: width >= min && width <= max,
+      media: q,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    };
+  });
+beforeEach(() => viewport(1366));
+afterEach(() => vi.unstubAllGlobals());
+
 async function setup(api: Record<string, unknown>) {
   localStorage.clear();
   query = fakeQuery();
@@ -106,7 +121,8 @@ describe('StepsListPage', () => {
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/steps/4');
     // "Used in n workflows" opens the Workflows tab filtered to the step; 0 says "Not used" (muted, no link).
     const used = rows[0].querySelector<HTMLAnchorElement>('[data-used-in-link]')!;
-    expect(used.textContent!.trim()).toBe('Used in 2 workflows');
+    expect(used.textContent!.trim()).toBe('2');
+    expect(used.getAttribute('aria-label')).toBe('Used in 2 workflows');
     expect(used.getAttribute('href')).toBe('/admin/workflows?step=4');
     expect(rows[1].querySelector('[data-used-in-link]')).toBeNull();
     expect(rows[1].querySelector('[data-used-in] .pg-muted')!.textContent).toBe('Not used');
@@ -195,6 +211,31 @@ describe('StepsListPage', () => {
     // Match all / any waits for a tag.
     expect(el.querySelector('[data-filter-disabled]')?.textContent).toContain('Choose tags first');
     expect(el.querySelector('[data-filter-count]')).toBeNull();
+  });
+});
+
+describe('StepsListPage narrow window (#356)', () => {
+  it('leaves the Description column out below 1200 px and shows the number of workflows as the link', async () => {
+    viewport(1024);
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
+      ['Title', 'Tags', 'Used in', 'Status', 'Actions'],
+    );
+    const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
+    expect(row.querySelectorAll('td')).toHaveLength(5);
+    expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
+    const used = row.querySelector('[data-used-in-link]')!;
+    expect(used.textContent!.trim()).toBe('2');
+    expect(used.closest('td')!.classList.contains('pg-num')).toBe(true);
   });
 });
 
@@ -431,8 +472,8 @@ describe('StepsListPage tags', () => {
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(
       Array.from(first.querySelectorAll('[data-tag]')).map((c) => c.textContent!.trim()),
-    ).toEqual(['Relativity', 'Processing', 'QC']);
-    expect(first.querySelector('[data-tags-more]')!.textContent).toContain('+2 more');
+    ).toEqual(['Relativity', 'Processing']);
+    expect(first.querySelector('[data-tags-more]')!.textContent).toContain('+3 more');
     expect(el.querySelector('tbody tr[data-row="OCR"] [data-tags]')).toBeNull();
     expect(api.listStepTags).toHaveBeenCalledWith(undefined, true, 200);
 
