@@ -108,6 +108,13 @@ describe('UsersPage', () => {
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
   });
 
+  it('shows First seen as the day only on one line, with the full time as its tooltip (the time made every row five lines high)', async () => {
+    await create('User.View', 'User.Manage');
+    const cell = q('tbody tr td.us-seen');
+    expect(cell.textContent!.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+    expect(cell.getAttribute('title')).toMatch(/\d{1,2}:\d{2}\s?[AP]M/);
+  });
+
   it('opens on Active when no one is waiting, and shows no pending cue', async () => {
     await createWith(
       (a) => a.users.forEach((u) => u.roleIds.length === 0 && u.roleIds.push(6)),

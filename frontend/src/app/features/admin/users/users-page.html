@@ -65,7 +65,9 @@
                   }
                 </td>
                 <td class="mf-mono">{{ u.windowsAccount }}</td>
-                <td>{{ u.registeredAtUtc | mfDate }}</td>
+                <td class="us-seen" [attr.title]="u.registeredAtUtc | mfDate">
+                  {{ u.registeredAtUtc | mfDate: 'date' }}
+                </td>
                 <td>{{ u.email }}</td>
                 <td>{{ rolesLabel(u) }}</td>
                 <td data-pods-cell>

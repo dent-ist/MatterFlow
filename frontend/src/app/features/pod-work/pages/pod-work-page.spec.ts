@@ -287,7 +287,9 @@ describe('PodWorkPage', () => {
 
   it('shows Assignee disabled with the reason on the Unassigned tab, and usable on the others', async () => {
     let el = await open('/pods/work?podId=5&assignee=9');
-    expect(control(el, 'assignee')!.hasAttribute('disabled')).toBe(true);
+    // Not an empty grey box: the cell says what the tab decides (as the My Work tabs do).
+    expect(control(el, 'assignee')!.hasAttribute('data-filter-fixed')).toBe(true);
+    expect(control(el, 'assignee')!.textContent).toContain('Unassigned');
     expect(
       control(el, 'assignee')!.closest('[data-filter-disabled]')!.getAttribute('title'),
     ).toContain('nobody holds');

@@ -96,6 +96,11 @@ td {
   border-bottom: 1px solid var(--mf-border);
 }
 
+/* First seen is the day, on one line (the full time is the tooltip): the time wrapped the cell to five lines and made every row 119 px high. */
+td.us-seen {
+  white-space: nowrap;
+}
+
 tr.mf-selected {
   background: var(--mf-selected-bg);
 }

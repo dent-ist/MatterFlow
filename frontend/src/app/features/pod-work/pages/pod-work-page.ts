@@ -257,6 +257,8 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
         this.tab() === 'queue'
           ? { assignee: () => 'This tab lists the tasks nobody holds yet.' }
           : {},
+      // The disabled Assignee cell says what the tab decides instead of being an empty grey box (as the My Work tabs do).
+      fixed: this.tab() === 'queue' ? { assignee: () => 'Unassigned' } : {},
       // Pod Work lists open tasks only.
       statuses: () => (lookups.statuses ?? []).filter((o) => OPEN_STATUSES.includes(o.value)),
       names: {
