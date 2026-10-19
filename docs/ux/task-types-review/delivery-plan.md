@@ -203,7 +203,7 @@ Contract e2e over the seeded data of the review at four sizes (axe 0 including `
 - WP-TY3 Lists on the grid contract: not started.
 - WP-TY4 Task Type record page: not started.
 - WP-TY5 Workflow record page: not started.
-- WP-TY6 Version editor: not started.
+- WP-TY6 Version editor (2026-10-19, lane C): #357 done (sticky action bar: new `workflow-version-bar.ts`, the page's header actions moved into it; Save draft, Publish..., overflow with Discard draft; read-only: Create new draft or Open draft vN, overflow with Retire version; no shortcut added or changed); #358 not started, then #393 onward open. Tests: unit `workflow-version-bar.spec.ts`, e2e `ty6-version-bar.spec.ts` (four widths, axe, keyboard, states, permissions); initial bundle 644.97 kB unchanged; screenshots `fixes/ty6-version/`; known limits: a Workflow.Manage-only user gets the load error on a version (the version endpoint also needs Task.View; for WP-TY10).
 - WP-TY7 Step record page: not started.
 - WP-TY8 Form designer layout: not started.
 - WP-TY9 Keyboard, focus and a11y: not started.

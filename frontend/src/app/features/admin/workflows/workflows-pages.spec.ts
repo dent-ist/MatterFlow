@@ -925,7 +925,9 @@ describe('WorkflowVersionPage published version', () => {
 
   it('retires after confirmation', async () => {
     const { workflows, fixture, el } = await openPublished();
-    buttonByLabel(el, 'Retire version')!.click();
+    el.querySelector<HTMLButtonElement>('[data-action-bar] [data-overflow]')!.click();
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('[data-action="retire"]')!.click();
     await settle(fixture);
     Array.from(document.querySelectorAll('button'))
       .find((b) => b.textContent?.trim() === 'Retire')!
@@ -934,11 +936,14 @@ describe('WorkflowVersionPage published version', () => {
     expect(workflows.retireWorkflowVersion).toHaveBeenCalledWith(1, 11, { rowVersion: 'VVVV' });
   });
 
-  it('disables creating a draft while one exists', async () => {
+  it('offers Open draft in place of a second draft while one exists', async () => {
     const { el } = await openPublished({
       getWorkflow: vi.fn().mockReturnValue(ok(wfDetail({ draftVersionId: 12, draftVersionNo: 3 }))),
     });
-    expect(buttonByLabel(el, 'Create new draft from v2')!.disabled).toBe(true);
+    expect(buttonByLabel(el, 'Create new draft from v2')).toBeUndefined();
+    const open = el.querySelector('[data-action-bar] [data-open-draft]')!;
+    expect(open.textContent).toContain('Open draft v3');
+    expect(open.getAttribute('href')).toBe('/admin/workflows/1/versions/12');
     expect(el.querySelector('[data-readonly-banner] a')?.getAttribute('href')).toBe(
       '/admin/workflows/1/versions/12',
     );

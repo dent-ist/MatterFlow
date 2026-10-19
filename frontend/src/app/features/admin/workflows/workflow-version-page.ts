@@ -36,6 +36,7 @@ import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/u
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
+import { WorkflowVersionBar } from './workflow-version-bar';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
@@ -73,6 +74,7 @@ const UNORDERED_TEXT =
   selector: 'mf-workflow-version-page',
   imports: [
     PageHeader,
+    WorkflowVersionBar,
     Badge,
     ErrorReference,
     RecordState,
@@ -86,6 +88,8 @@ const UNORDERED_TEXT =
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
+  // A block, so the sticky action bar is held by the whole page and not by an inline box.
+  styles: ':host { display: block; }',
   template: `
     <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
     @if (flow.failed()) {
@@ -122,53 +126,33 @@ const UNORDERED_TEXT =
           {{ v.workflowName }} v{{ v.version.versionNo }}
           <mf-badge [tone]="statusTone()" data-status>{{ v.version.status }}</mf-badge>
         </span>
-        <div mfActions class="mf-contents">
-          @if (editable()) {
-            <p-button
-              label="Discard draft"
-              severity="secondary"
-              [disabled]="busy()"
-              (onClick)="discardOpen.set(true)"
-            />
-            <p-button
-              label="Save draft"
-              severity="secondary"
-              [disabled]="busy() || !dirty()"
-              (onClick)="save()"
-            />
-            <p-button
-              label="Publish..."
-              [disabled]="busy() || rows().length === 0"
-              (onClick)="startPublish()"
-            />
-          } @else {
-            @if (isPublished()) {
-              <p-button
-                label="Retire version"
-                severity="secondary"
-                [disabled]="busy()"
-                (onClick)="retireOpen.set(true)"
-              />
-            }
-            <p-button
-              [label]="'Create new draft from v' + v.version.versionNo"
-              [disabled]="busy() || !!workflow()?.draftVersionId"
-              (onClick)="newDraft()"
-            />
-          }
-        </div>
         <span mfDescription class="wf-meta">
           @if (workflow()?.publishedVersionNo; as p) {
             <span data-published-note>Current published version: v{{ p }}</span>
-          }
-          @if (dirty()) {
-            <mf-badge tone="warning" icon="pi-pencil" data-dirty>Unsaved changes</mf-badge>
           }
           @if (editable() && rows().length === 0) {
             <span data-publish-hint>Add at least one step before you can publish.</span>
           }
         </span>
       </mf-page-header>
+
+      <mf-workflow-version-bar
+        [workflowId]="workflowId()"
+        [name]="v.workflowName"
+        [versionNo]="v.version.versionNo"
+        [editable]="editable()"
+        [published]="isPublished()"
+        [dirty]="dirty()"
+        [busy]="busy()"
+        [canPublish]="rows().length > 0"
+        [draftVersionId]="workflow()?.draftVersionId"
+        [draftVersionNo]="workflow()?.draftVersionNo"
+        (save)="save()"
+        (publish)="startPublish()"
+        (discard)="discardOpen.set(true)"
+        (retire)="retireOpen.set(true)"
+        (newDraft)="newDraft()"
+      />
 
       <div class="wf-stack">
         @if (!editable()) {
