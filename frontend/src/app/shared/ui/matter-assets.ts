@@ -59,17 +59,7 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
   host: { class: 'mf-fill' },
   styleUrl: './page.scss',
   template: `
-    <mf-filters-bar [filters]="filters" controls="matter-asset-filter-row">
-      <p-button
-        mfBarStart
-        *mfHasPermission="'Asset.Create'"
-        label="New asset"
-        icon="pi pi-plus"
-        severity="secondary"
-        data-new-asset
-        (onClick)="newAsset()"
-      />
-    </mf-filters-bar>
+    <mf-filters-bar [filters]="filters" controls="matter-asset-filter-row" />
 
     <div class="mf-table-wrap" mfScrollArea="Assets list" #scroll>
       <div class="mf-scroll">
@@ -118,15 +108,35 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
             (retry)="load()"
             (clear)="clear()"
           >
+            <p-button
+              mfEmptyAction
+              *mfHasPermission="'Asset.Create'"
+              label="New asset"
+              icon="pi pi-plus"
+              severity="secondary"
+              data-empty-new-asset
+              (onClick)="newAsset()"
+            />
             @for (a of rows(); track a.assetId) {
               <tr>
                 <td>
-                  <a class="pg-link" routerLink="/assets" [queryParams]="{ selected: a.assetId }">{{
-                    a.displayName
-                  }}</a>
+                  <a
+                    class="pg-link pg-name"
+                    routerLink="/assets"
+                    [queryParams]="{ selected: a.assetId }"
+                    [title]="a.displayName"
+                    >{{ a.displayName }}</a
+                  >
                 </td>
                 <td>{{ a.assetTypeName }}</td>
-                <td class="pg-mono">{{ a.externalReference }}</td>
+                <td class="pg-mono">
+                  @if (a.externalReference) {
+                    {{ a.externalReference }}
+                  } @else {
+                    <span class="pg-muted" aria-hidden="true" data-none>–</span
+                    ><span class="mf-sr-only">None</span>
+                  }
+                </td>
                 <td>
                   <mf-active-badge [active]="a.isActive" />
                 </td>
@@ -142,6 +152,8 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
         [pageSize]="pageSize()"
         [pageSizes]="pageSizes"
         [total]="total()"
+        [hidden]="hiddenCount()"
+        (showAll)="showAll()"
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
       />
@@ -215,6 +227,19 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive assets the default Active hides, under the same other filters (so "Assets (6)" and 5 rows tell why). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     const typeIds = this.filters
       .list('typeId')
       .map(Number)
@@ -223,13 +248,13 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       this.api.listAssets(
         this.matterId(),
         typeIds.length > 0 ? typeIds : undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         undefined,
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
         undefined,
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
         this.sort() || undefined,
       ),
     );

@@ -21,7 +21,7 @@ const RECORD_TABS = {
     { key: 'details', label: 'Overview' },
     { key: 'tasks', label: 'Tasks', counted: true },
     { key: 'projects', label: 'Projects', counted: true },
-    { key: 'assets', label: 'Assets' },
+    { key: 'assets', label: 'Assets', counted: true },
   ],
   project: [
     { key: 'tasks', label: 'Tasks', counted: true },
@@ -232,7 +232,7 @@ export class RecordSkeleton {
     return recordTabs(
       kind,
       kind === 'matter'
-        ? { tasks: '--', projects: '--' }
+        ? { tasks: '--', projects: '--', assets: '--' }
         : kind === 'project'
           ? { tasks: '--' }
           : { matters: '--' },

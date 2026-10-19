@@ -38,13 +38,6 @@ const VIEW_PARAM: Record<Key, string | null> = {
   asap: 'asap',
   onHold: 'onHold',
 };
-const LABEL: Record<Key, string> = {
-  open: 'Open',
-  overdue: 'Overdue',
-  dueSoon: 'Due soon',
-  asap: 'ASAP',
-  onHold: 'On hold',
-};
 const A_NUMBERS: Record<Key, number> = { open: 10, overdue: 2, dueSoon: 1, asap: 1, onHold: 1 };
 const P1_NUMBERS: Record<Key, number> = { open: 3, overdue: 1, dueSoon: 1, asap: 0, onHold: 0 };
 const B_NUMBERS: Record<Key, number> = { open: 3, overdue: 1, dueSoon: 0, asap: 1, onHold: 0 };
@@ -244,7 +237,7 @@ test.describe('WP7: Matter Overview (#263)', () => {
     const tabs = (await page.getByRole('tab').allTextContents()).map((t) =>
       t.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual(['Overview', 'Tasks (10)', 'Projects (2)', 'Assets']);
+    expect(tabs).toEqual(['Overview', 'Tasks (10)', 'Projects (2)', 'Assets (0)']);
     await expect(page.getByRole('tab', { name: /^Overview/ })).toHaveAttribute(
       'aria-selected',
       'true',
@@ -638,7 +631,7 @@ test.describe('WP7: strip numbers equal the Task Queue totals behind each link a
       await expect(page.locator('[role=alert]')).toHaveCount(0);
       expect(
         (await page.getByRole('tab').allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim()),
-      ).toEqual(['Overview', 'Tasks', 'Projects (2)', 'Assets']);
+      ).toEqual(['Overview', 'Tasks', 'Projects (2)', 'Assets (0)']);
       await axeClean(page, `no Task.View overview ${w}x${h}`);
       await noSidewaysScroll(page);
       await shot(page, 'matter-overview-no-task-view');

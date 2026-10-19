@@ -32,6 +32,7 @@ import {
   provideLookups,
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
+import { ProjectResponse } from '../../../api/generated/api-client';
 import { MatterDetailPage } from './matter-detail-page';
 
 describe('MatterDetailPage', () => {
@@ -165,7 +166,7 @@ describe('MatterDetailPage', () => {
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Overview', 'Tasks', 'Projects (1)', 'Assets']);
+    ).toEqual(['Overview', 'Tasks', 'Projects (1)']); // Assets needs Asset.View
     // The first tab (Overview) is selected on open and loads no task list.
     expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('[data-details-tab] dl')?.textContent).toContain('Acme Corp');
@@ -187,9 +188,11 @@ describe('MatterDetailPage', () => {
     await openTab('projects');
     expect(el().querySelector('tbody a')?.getAttribute('href')).toBe('/projects/3');
 
+    // A link to the Assets tab without Asset.View shows the Overview and asks for no assets.
     await openTab('assets');
-    expect(el().querySelector('[data-no-access=assets]')).not.toBeNull();
+    expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
     expect(assets.listAssets).not.toHaveBeenCalled();
+    expect(matters.getMatterSummary).not.toHaveBeenCalled();
     // No parameter, ?tab=details and an unknown value all show the Overview.
     for (const key of [undefined, 'details', 'nonsense']) {
       await openTab(key);
@@ -413,7 +416,9 @@ describe('MatterDetailPage', () => {
     );
     const grid = el().querySelector('mf-matter-assets')!;
     expect(grid.querySelector('tbody a')?.getAttribute('href')).toBe('/assets?selected=9');
-    expect(buttonByLabel(el(), 'New asset')).toBeDefined();
+    // New asset lives in the header overflow now (#274); the tab has no button of its own while it lists assets.
+    expect(buttonByLabel(el(), 'New asset')).toBeUndefined();
+    expect(grid.querySelector('[data-new-asset], [data-empty-new-asset]')).toBeNull();
     // The standalone search box and status select are gone: Name, Type, External reference and Status are column filters.
     expect(grid.querySelector('#matter-asset-search, #matter-asset-status')).toBeNull();
     expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
@@ -442,9 +447,6 @@ describe('MatterDetailPage', () => {
       25,
       undefined,
     );
-
-    buttonByLabel(el(), 'New asset')!.click();
-    expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });
 
   it('gates Edit, New project and the activation button by permission', async () => {
@@ -487,6 +489,8 @@ describe('MatterDetailPage', () => {
         b.getAttribute('data-action'),
       ),
     ).toEqual(['new-project', 'new-asset', 'toggle-active']);
+    menu!.querySelector<HTMLElement>('[data-action=new-asset]')!.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
   });
 
   it('shows the Projects tab action in its empty state', async () => {
@@ -588,7 +592,7 @@ describe('MatterDetailPage', () => {
   });
 
   it('names the record and the tab in the document title', async () => {
-    await create(['Matter.View', 'Project.View']);
+    await create(['Matter.View', 'Project.View', 'Asset.View']);
     expect(document.title).toBe('00343-00012 Merger Review: Overview - MatterFlow');
     await openTab('projects');
     expect(document.title).toBe('00343-00012 Merger Review: Projects - MatterFlow');
@@ -605,7 +609,7 @@ describe('MatterDetailPage', () => {
     await fixture.componentInstance.load();
     await openTab('projects');
 
-    const rows = Array.from(el().querySelectorAll('tbody tr td:first-child')).map((c) =>
+    const rows = Array.from(el().querySelectorAll('[data-project-name]')).map((c) =>
       c.textContent!.trim(),
     );
     expect(rows).toEqual(['etude 2', 'Étude 10', 'Wave 7', 'Wave 15', 'Wave 23']);
@@ -627,12 +631,148 @@ describe('MatterDetailPage', () => {
     await openTab('projects');
 
     expect(
-      Array.from(el().querySelectorAll('tbody tr td:first-child')).map((c) =>
-        c.textContent!.trim(),
-      ),
+      Array.from(el().querySelectorAll('[data-project-name]')).map((c) => c.textContent!.trim()),
     ).toEqual(['Wave 15', 'Wave 7']);
     expect(el().querySelector('[data-projects-truncated]')?.textContent).toContain(
       'Showing the first 2 projects.',
     );
+  });
+
+  describe('Projects tab (#273)', () => {
+    const many = (...rows: Partial<ProjectResponse>[]) =>
+      projects.listProjects.mockReturnValue(
+        ok(pageOfProjects(...rows.map((r, i) => aProject({ projectId: i + 1, ...r })))),
+      );
+    const names = (): string[] =>
+      Array.from(el().querySelectorAll('[data-project-name]')).map((c) => c.textContent!.trim());
+    const toggle = (): HTMLButtonElement =>
+      el().querySelector<HTMLButtonElement>('[data-archived-toggle]')!;
+
+    it('has Name, Open tasks, Overdue and Status columns and no Description column', async () => {
+      await create(['Matter.View', 'Project.View', 'Task.View']);
+      many({ name: 'Alpha', openTaskCount: 4, overdueTaskCount: 2 });
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      expect(
+        Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim()),
+      ).toEqual(['Name', 'Open tasks', 'Overdue', 'Status']);
+      const cells = el().querySelectorAll('tbody tr')[0].querySelectorAll('td');
+      expect(cells[1].querySelector('a')?.getAttribute('aria-label')).toBe('4 open tasks in Alpha');
+      expect(cells[2].querySelector('a')?.getAttribute('aria-label')).toBe(
+        '2 overdue tasks in Alpha',
+      );
+    });
+
+    it('leaves the count columns out without Task.View', async () => {
+      await create(['Matter.View', 'Project.View']);
+      many({ name: 'Alpha', openTaskCount: undefined });
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      expect(
+        Array.from(el().querySelectorAll('thead th')).map((h) => h.textContent!.trim()),
+      ).toEqual(['Name', 'Status']);
+      expect(el().querySelector('mf-task-count')).toBeNull();
+    });
+
+    it('shows the description as a muted second line only when there is one', async () => {
+      await create(['Matter.View', 'Project.View']);
+      many(
+        { name: 'With', description: 'Intake of custodian data' },
+        { name: 'Without', description: undefined },
+      );
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      const rows = el().querySelectorAll('tbody tr');
+      const d = rows[0].querySelector('[data-project-description]')!;
+      expect(d.textContent!.trim()).toBe('Intake of custodian data');
+      expect(d.getAttribute('title')).toBe('Intake of custodian data');
+      expect(rows[1].querySelector('[data-project-description]')).toBeNull();
+    });
+
+    it('lists Active projects first and keeps Archived in a collapsed group that opens with Enter or Space', async () => {
+      await create(['Matter.View', 'Project.View']);
+      many(
+        { name: 'Zed archived', isActive: false },
+        { name: 'Wave 15' },
+        { name: 'Wave 7' },
+        { name: 'Alpha archived', isActive: false },
+      );
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      expect(names()).toEqual(['Wave 7', 'Wave 15']);
+      expect(toggle().getAttribute('aria-expanded')).toBe('false');
+      expect(toggle().textContent!.replace(/\s+/g, ' ').trim()).toBe('Archived (2 projects)');
+      toggle().click();
+      await settle(fixture);
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(names()).toEqual(['Wave 7', 'Wave 15', 'Alpha archived', 'Zed archived']);
+      toggle().click();
+      await settle(fixture);
+      expect(names()).toEqual(['Wave 7', 'Wave 15']);
+    });
+
+    it('starts with the Archived group open when every project is archived, and has no group without archived ones', async () => {
+      await create(['Matter.View', 'Project.View']);
+      many({ name: 'Old one', isActive: false }, { name: 'Old two', isActive: false });
+      await fixture.componentInstance.load();
+      await openTab('projects');
+      expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(names()).toEqual(['Old one', 'Old two']);
+
+      many({ name: 'Live' });
+      await fixture.componentInstance.load();
+      await settle(fixture);
+      expect(el().querySelector('[data-archived-toggle]')).toBeNull();
+    });
+  });
+
+  describe('Assets tab (#274)', () => {
+    it('shows a muted dash with the hidden word None for an empty External reference', async () => {
+      await create(['Matter.View', 'Asset.View']);
+      assets.listAssets.mockReturnValue(
+        ok(
+          pageOfAssets(
+            anAssetListItem({ assetId: 1, externalReference: undefined }),
+            anAssetListItem({ assetId: 2, externalReference: 'WS-1' }),
+          ),
+        ),
+      );
+      await openTab('assets');
+      const cells = el().querySelectorAll('mf-matter-assets tbody tr td:nth-child(3)');
+      expect(cells[0].textContent!.replace(/\s+/g, ' ').trim()).toBe('–None');
+      expect(cells[0].querySelector('[data-none]')?.getAttribute('aria-hidden')).toBe('true');
+      expect(cells[1].textContent!.trim()).toBe('WS-1');
+    });
+
+    it('offers New asset in the empty state for a person who may create assets, and nothing otherwise', async () => {
+      await create(['Matter.View', 'Asset.View', 'Asset.Create']);
+      assets.listAssets.mockReturnValue(ok(pageOfAssets()));
+      await openTab('assets');
+      el()
+        .querySelector<HTMLButtonElement>(
+          '[data-empty-new-asset] button, button[data-empty-new-asset]',
+        )!
+        .click();
+      expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
+    });
+
+    it('offers no New asset in the empty state without Asset.Create', async () => {
+      await create(['Matter.View', 'Asset.View']);
+      assets.listAssets.mockReturnValue(ok(pageOfAssets()));
+      await openTab('assets');
+      expect(el().querySelector('[data-empty="none"]')).not.toBeNull();
+      expect(el().querySelector('[data-empty-new-asset]')).toBeNull();
+    });
+
+    it('shows Assets (n) from the summary and hides the tab and the request without Asset.View', async () => {
+      await create(['Matter.View', 'Asset.View']);
+      expect(tab('Assets').textContent!.replace(/\s+/g, ' ').trim()).toBe('Assets (0)');
+    });
+
+    it('has no Assets tab and asks for no summary without Asset.View', async () => {
+      await create(['Matter.View']);
+      expect(tab('Assets')).toBeUndefined();
+      expect(matters.getMatterSummary).not.toHaveBeenCalled();
+    });
   });
 });

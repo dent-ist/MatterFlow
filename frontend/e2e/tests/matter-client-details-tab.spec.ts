@@ -44,7 +44,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
       /^\s*Overview\s*$/,
       /^\s*Tasks/,
       /^\s*Projects/,
-      /^\s*Assets\s*$/,
+      /^\s*Assets \(0\)\s*$/,
     ]);
     await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
     await expect(tab(page, 'Overview')).toHaveAttribute('tabindex', '0');

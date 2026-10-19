@@ -40,7 +40,7 @@ describe('mf-record-skeleton (#247)', () => {
   it('draws a matter with the real tab labels and -- for the counts', async () => {
     const el = await render('matter', 'projects');
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading matter');
-    expect(labels(el)).toEqual(['Overview', 'Tasks (--)', 'Projects (--)', 'Assets']);
+    expect(labels(el)).toEqual(['Overview', 'Tasks (--)', 'Projects (--)', 'Assets (--)']);
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');
   });
 
@@ -85,11 +85,11 @@ describe('mf-record-skeleton (#247)', () => {
       { key: 'details', label: 'Overview' },
       { key: 'matters', label: 'Matters', count: 63 },
     ]);
-    expect(recordTabs('matter', { tasks: 3, projects: 40 })).toEqual([
+    expect(recordTabs('matter', { tasks: 3, projects: 40, assets: 6 })).toEqual([
       { key: 'details', label: 'Overview' },
       { key: 'tasks', label: 'Tasks', count: 3 },
       { key: 'projects', label: 'Projects', count: 40 },
-      { key: 'assets', label: 'Assets' },
+      { key: 'assets', label: 'Assets', count: 6 },
     ]);
     expect(recordTabLabel('matter', 'tasks')).toBe('Tasks');
     expect(recordTabLabel('client', 'nonsense')).toBe('Overview');

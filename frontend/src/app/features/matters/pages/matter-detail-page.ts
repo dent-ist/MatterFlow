@@ -33,10 +33,10 @@ import { SummaryStrip } from '../../../shared/work-queue/summary-strip';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
-import { naturalCompare } from '../../../shared/ui/list-helpers';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { MatterProjects } from './matter-projects';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
@@ -71,6 +71,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     CustomFieldsView,
     ScopedTasks,
     SummaryStrip,
+    MatterProjects,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -186,57 +187,12 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                   />
                 }
                 @case ('projects') {
-                  @if (tabProjects().length === 0) {
-                    <div class="pg-state" data-empty="projects">
-                      No projects in this matter yet.
-                      <p-button
-                        *mfHasPermission="'Project.Create'"
-                        label="New project"
-                        icon="pi pi-plus"
-                        severity="secondary"
-                        data-empty-new-project
-                        (onClick)="go('/projects/new?matterId=' + m.matterId)"
-                      />
-                    </div>
-                  } @else {
-                    <div class="mf-scroll" mfScrollArea="Projects list">
-                      <table class="pg-table">
-                        <caption class="pg-sr">
-                          Projects of
-                          {{
-                            m.matterRef
-                          }}
-                        </caption>
-                        <thead>
-                          <tr>
-                            <th scope="col">Name</th>
-                            <th scope="col">Description</th>
-                            <th scope="col">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (p of tabProjects(); track p.projectId) {
-                            <tr>
-                              <td>
-                                <a class="pg-link" [routerLink]="['/projects', p.projectId]">{{
-                                  p.name
-                                }}</a>
-                              </td>
-                              <td>{{ p.description }}</td>
-                              <td>
-                                <mf-active-badge [active]="p.isActive" inactiveLabel="Archived" />
-                              </td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                    @if (projectsShown() < projectsTotal()) {
-                      <p class="pg-reason" data-projects-truncated>
-                        Showing the first {{ projectsShown() }} projects.
-                      </p>
-                    }
-                  }
+                  <mf-matter-projects
+                    [matterId]="m.matterId"
+                    [matterRef]="m.matterRef"
+                    [projects]="projects()"
+                    [total]="projectsTotal()"
+                  />
                 }
                 @case ('assets') {
                   @if (canSeeAssets()) {
@@ -341,29 +297,31 @@ export class MatterDetailPage {
   protected readonly projects = signal<ProjectResponse[]>([]);
   /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
   protected readonly projectsTotal = signal(0);
-  protected readonly projectsShown = computed(() => this.projects().length);
-  /**
-   * The Projects tab rows: natural order by name ("Wave 7" before "Wave 15", accents and case ignored; ties keep the server order, name
-   * then id). When the matter has more projects than one request returns, the server order is kept and the tab says so.
-   */
-  protected readonly tabProjects = computed(() => {
-    const rows = this.projects();
-    return this.projectsTotal() > rows.length
-      ? rows
-      : [...rows].sort((a, b) => naturalCompare(a.name, b.name));
-  });
   protected readonly activityOpen = signal(false);
+  /** How many assets the matter has (the summary's `assetCount`, retired ones included); null when unknown or not for this viewer. */
+  protected readonly assetCount = signal<number | null>(null);
+  /**
+   * The tab strip. Projects and Assets are offered only with their View permission (a person who may not see them has no tab to open),
+   * and a count is shown only when the viewer may see what it counts (no fake zero without Task.View).
+   */
   protected readonly tabs = computed<MfTab[]>(() => {
     const m = this.matter();
     return recordTabs('matter', {
-      // Without Task.View the API sends no count: no number rather than a fake zero.
       tasks: this.auth.has('Task.View') ? (m?.openTaskCount ?? 0) : null,
       projects: m?.projectCount ?? 0,
-    });
+      assets: this.assetCount(),
+    }).filter(
+      (t) =>
+        (t.key !== 'projects' || this.auth.has('Project.View')) &&
+        (t.key !== 'assets' || this.auth.has('Asset.View')),
+    );
   });
   protected readonly current = computed<Tab>(() => {
     const t = this.tab();
-    return t === 'tasks' || t === 'projects' || t === 'assets' ? t : 'details';
+    return (t === 'tasks' || t === 'projects' || t === 'assets') &&
+      this.tabs().some((x) => x.key === t)
+      ? t
+      : 'details';
   });
   protected readonly projectOptions = computed(() =>
     this.projects().map((p) => ({
@@ -506,6 +464,10 @@ export class MatterDetailPage {
       () =>
         Promise.all([
           firstValueFrom(this.api.getMatter(id)),
+          // The Assets tab's number; a failure only leaves the tab without one.
+          this.auth.has('Asset.View')
+            ? firstValueFrom(this.api.getMatterSummary(id)).catch(() => null)
+            : Promise.resolve(null),
           this.auth.has('Project.View')
             ? // One request at the API's page maximum; the Projects tab sorts them itself (natural order).
               firstValueFrom(
@@ -522,8 +484,9 @@ export class MatterDetailPage {
               )
             : Promise.resolve(null),
         ]),
-      ([matter, projects]) => {
+      ([matter, summary, projects]) => {
         this.matter.set(matter);
+        this.assetCount.set(summary?.assetCount ?? null);
         this.projects.set(projects?.items ?? []);
         this.projectsTotal.set(projects?.total ?? 0);
       },

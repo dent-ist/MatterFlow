@@ -265,7 +265,7 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
           'Overview',
           'Tasks (--)',
           'Projects (--)',
-          'Assets',
+          'Assets (--)',
         ]);
       }
       await shot(page, `${kind}-loading`);
