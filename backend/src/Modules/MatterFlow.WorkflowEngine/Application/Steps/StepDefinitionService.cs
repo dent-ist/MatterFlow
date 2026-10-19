@@ -20,6 +20,8 @@ namespace MatterFlow.WorkflowEngine.Application.Steps;
 /// <param name="UsedInWorkflows">Number of distinct workflows with a version (any status) that contains a copy of this step.</param>
 /// <param name="Tags">The step's tags (display names) in the order they were entered.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
+/// <param name="PublishedFormVersionId">The published input form version a new workflow version would pin; null when the step has no published inputs.</param>
+/// <param name="DraftFormFieldCount">Fields in the open input form draft (0 when there is none), the same number as on the detail.</param>
 public sealed record StepDefinitionSummary(
     [property: Required] int StepDefinitionId,
     [property: Required] string Title,
@@ -29,7 +31,35 @@ public sealed record StepDefinitionSummary(
     [property: Required] int UsedInVersions,
     [property: Required] int UsedInWorkflows,
     [property: Required] IReadOnlyList<string> Tags,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? PublishedFormVersionId = null,
+    [property: Required] int DraftFormFieldCount = 0);
+
+/// <summary>Counts of the whole step library for the health strip, independent of the list's filters and paging.</summary>
+/// <param name="Total">All steps.</param>
+/// <param name="Active">Active steps (the number on the tab).</param>
+/// <param name="Inactive">Inactive steps.</param>
+/// <param name="NotUsed">Active steps that no workflow version (any status) contains.</param>
+/// <param name="InputsInDraft">Active steps whose input form has an open draft with at least one field (<c>draftFormFieldCount</c> above 0).</param>
+public sealed record StepListSummary(
+    [property: Required] int Total,
+    [property: Required] int Active,
+    [property: Required] int Inactive,
+    [property: Required] int NotUsed,
+    [property: Required] int InputsInDraft);
+
+/// <summary>One page of the step list with the library-wide counts of the health strip.</summary>
+/// <param name="Items">The steps of this page.</param>
+/// <param name="Total">All steps matching the filters (not the library total: see <paramref name="Summary"/>).</param>
+/// <param name="Page">1-based page.</param>
+/// <param name="PageSize">Page size.</param>
+/// <param name="Summary">Counts over all steps, ignoring every filter.</param>
+public sealed record StepDefinitionListPage(
+    [property: Required] IReadOnlyList<StepDefinitionSummary> Items,
+    [property: Required] int Total,
+    [property: Required] int Page,
+    [property: Required] int PageSize,
+    [property: Required] StepListSummary Summary);
 
 /// <summary>An existing tag with the number of steps that carry it.</summary>
 /// <param name="Name">Display name (the spelling of the first time the tag was entered).</param>
@@ -220,7 +250,7 @@ public sealed class StepTagListQuery
 /// </summary>
 public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver forms, IAuditWriter audit)
 {
-    public async Task<Result<PagedResult<StepDefinitionSummary>>> ListAsync(StepDefinitionListQuery query, CancellationToken ct)
+    public async Task<Result<StepDefinitionListPage>> ListAsync(StepDefinitionListQuery query, CancellationToken ct)
     {
         var paging = PageRequest.Create(query.Page, query.PageSize);
         if (paging.IsFailure)
@@ -325,8 +355,26 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         };
         var rows = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         var tagsByStep = await TagsOfAsync(rows.Select(r => r.Step.Id).ToList(), ct);
-        var items = rows.Select(r => ToSummary(r.Step, r.Used, r.Workflows, tagsByStep.GetValueOrDefault(r.Step.Id) ?? [])).ToList();
-        return new PagedResult<StepDefinitionSummary>(items, total, page.Page, page.PageSize);
+        var states = await forms.GetOwnerStatesAsync(FormOwnerKind.Step, [.. rows.Select(r => r.Step.Id)], ct);
+        var items = rows.Select(r => ToSummary(r.Step, r.Used, r.Workflows, tagsByStep.GetValueOrDefault(r.Step.Id) ?? [], states.GetValueOrDefault(r.Step.Id))).ToList();
+        return new StepDefinitionListPage(items, total, page.Page, page.PageSize, await ListSummaryAsync(ct));
+    }
+
+    /// <summary>The health-strip counts over the whole library (two statements: the steps with their usage flag, and the input form states; no filter applies).</summary>
+    private async Task<StepListSummary> ListSummaryAsync(CancellationToken ct)
+    {
+        var usages = db.Set<WorkflowVersionStep>().AsNoTracking();
+        var steps = await db.Set<StepDefinition>().AsNoTracking()
+            .Select(s => new { s.Id, s.IsActive, Used = usages.Any(u => u.SourceStepDefinitionId == s.Id) })
+            .ToListAsync(ct);
+        var active = steps.Where(s => s.IsActive).ToList();
+        IReadOnlyDictionary<int, FormOwnerState> states = active.Count == 0 ? new Dictionary<int, FormOwnerState>() : await forms.GetOwnerStatesAsync(FormOwnerKind.Step, null, ct);
+        return new StepListSummary(
+            steps.Count,
+            active.Count,
+            steps.Count - active.Count,
+            active.Count(s => !s.Used),
+            active.Count(s => states.TryGetValue(s.Id, out var state) && state.DraftFieldCount > 0));
     }
 
     /// <summary>Existing tags with the number of steps carrying each: prefix matches first, then the most used, then by name.</summary>
@@ -662,8 +710,8 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
         return (t.Value, d.Value, i.Value, u.Value);
     }
 
-    private static StepDefinitionSummary ToSummary(StepDefinition s, int used, int workflows, IReadOnlyList<string> tags) =>
-        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, workflows, tags, WorkflowSupport.FormatRowVersion(s.RowVersion));
+    private static StepDefinitionSummary ToSummary(StepDefinition s, int used, int workflows, IReadOnlyList<string> tags, FormOwnerState? form) =>
+        new(s.Id, s.Title, s.Description, s.DocumentationUrl, s.IsActive, used, workflows, tags, WorkflowSupport.FormatRowVersion(s.RowVersion), form?.Published?.FormVersionId, form?.DraftFieldCount ?? 0);
 
     private async Task<StepDefinitionDetail> ToDetailAsync(StepDefinition step, CancellationToken ct)
     {

@@ -125,6 +125,57 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
             draft?.FieldCount ?? 0);
     }
 
+    public async Task<IReadOnlyDictionary<int, FormOwnerState>> GetOwnerStatesAsync(FormOwnerKind ownerKind, IReadOnlyCollection<int>? ownerIds, CancellationToken cancellationToken = default)
+    {
+        if (IsSingleton(ownerKind))
+            throw new ArgumentException($"A {ownerKind} form has no owner id.", nameof(ownerKind));
+        if (ownerIds is { Count: 0 })
+            return new Dictionary<int, FormOwnerState>();
+
+        var definitions = db.Set<FormDefinition>().AsNoTracking().Where(d => d.Scope == ownerKind);
+        if (ownerIds is not null)
+        {
+            var wanted = ownerIds.Distinct().ToList();
+            definitions = ownerKind switch
+            {
+                FormOwnerKind.TaskType => definitions.Where(d => d.TaskTypeId != null && wanted.Contains(d.TaskTypeId.Value)),
+                FormOwnerKind.Step => definitions.Where(d => d.StepDefinitionId != null && wanted.Contains(d.StepDefinitionId.Value)),
+                _ => definitions.Where(d => d.AssetTypeId != null && wanted.Contains(d.AssetTypeId.Value)),
+            };
+        }
+
+        var rows = await definitions.Select(d => new
+        {
+            d.TaskTypeId,
+            d.StepDefinitionId,
+            d.AssetTypeId,
+            DefinitionId = d.Id,
+            Published = d.Versions.Where(v => v.Status == FormVersionStatus.Published).Select(v => new { v.Id, v.VersionNo }).FirstOrDefault(),
+            Draft = d.Versions.Where(v => v.Status == FormVersionStatus.Draft).Select(v => new { v.Id, FieldCount = v.Fields.Count }).FirstOrDefault(),
+        }).ToListAsync(cancellationToken);
+
+        var result = new Dictionary<int, FormOwnerState>();
+        foreach (var r in rows)
+        {
+            var owner = ownerKind switch
+            {
+                FormOwnerKind.TaskType => r.TaskTypeId,
+                FormOwnerKind.Step => r.StepDefinitionId,
+                _ => r.AssetTypeId,
+            };
+            if (owner is { } id)
+            {
+                result[id] = new FormOwnerState(
+                    r.DefinitionId,
+                    r.Published is null ? null : new FormVersionRef(r.DefinitionId, r.Published.Id, r.Published.VersionNo, FormVersionStatus.Published),
+                    r.Draft?.Id,
+                    r.Draft?.FieldCount ?? 0);
+            }
+        }
+
+        return result;
+    }
+
     public Task<int?> FindDefinitionIdAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default) =>
         FindIdAsync(ownerKind, ownerId, cancellationToken);
 

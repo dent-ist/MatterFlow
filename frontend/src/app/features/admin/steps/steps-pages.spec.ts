@@ -31,6 +31,8 @@ const summary = (overrides: Partial<StepDefinitionSummary> = {}): StepDefinition
   usedInWorkflows: 2,
   tags: [],
   rowVersion: 'AAAA',
+  publishedFormVersionId: undefined,
+  draftFormFieldCount: 0,
   ...overrides,
 });
 

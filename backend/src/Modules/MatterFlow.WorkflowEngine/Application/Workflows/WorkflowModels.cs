@@ -26,6 +26,11 @@ public sealed record WorkflowTaskTypeRef(
 /// <param name="DraftVersionNo">Its number.</param>
 /// <param name="TaskTypes">The Task Types this workflow is eligible for, by name (all of them; the screen shows the first few).</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64).</param>
+/// <param name="HasDraft">True when a draft is open (<paramref name="DraftVersionId"/> is then set).</param>
+/// <param name="VersionCount">Number of versions of any status (the Versions column).</param>
+/// <param name="PublishedAtUtc">When the latest published version was published (the current published version, else the most recently retired one); null when the workflow was never published.</param>
+/// <param name="StepCount">Number of steps of that latest published version; null when the workflow was never published. Equals <paramref name="PublishedStepCount"/> while a version is published.</param>
+/// <param name="TaskTypeCount">Number of ACTIVE Task Types this workflow is eligible for (inactive types are listed in <paramref name="TaskTypes"/> but not counted).</param>
 public sealed record WorkflowSummary(
     [property: Required] int WorkflowDefinitionId,
     [property: Required] string Name,
@@ -37,7 +42,40 @@ public sealed record WorkflowSummary(
     int? DraftVersionId,
     int? DraftVersionNo,
     [property: Required] IReadOnlyList<WorkflowTaskTypeRef> TaskTypes,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    [property: Required] bool HasDraft = false,
+    [property: Required] int VersionCount = 0,
+    DateTime? PublishedAtUtc = null,
+    int? StepCount = null,
+    [property: Required] int TaskTypeCount = 0);
+
+/// <summary>Counts of the whole workflow library for the health strip, independent of the list's filters and paging.</summary>
+/// <param name="Total">All workflows.</param>
+/// <param name="Active">Active workflows (the number on the tab).</param>
+/// <param name="Inactive">Inactive workflows.</param>
+/// <param name="Published">Active workflows that have a published version.</param>
+/// <param name="NotPublished">Active workflows without a published version (<paramref name="Published"/> + this = <paramref name="Active"/>).</param>
+/// <param name="DraftInProgress">Active workflows with an open draft (they may also be published).</param>
+public sealed record WorkflowListSummary(
+    [property: Required] int Total,
+    [property: Required] int Active,
+    [property: Required] int Inactive,
+    [property: Required] int Published,
+    [property: Required] int NotPublished,
+    [property: Required] int DraftInProgress);
+
+/// <summary>One page of the workflow list with the library-wide counts of the health strip.</summary>
+/// <param name="Items">The workflows of this page.</param>
+/// <param name="Total">All workflows matching the filters (not the library total: see <paramref name="Summary"/>).</param>
+/// <param name="Page">1-based page.</param>
+/// <param name="PageSize">Page size.</param>
+/// <param name="Summary">Counts over all workflows, ignoring every filter.</param>
+public sealed record WorkflowListPage(
+    [property: Required] IReadOnlyList<WorkflowSummary> Items,
+    [property: Required] int Total,
+    [property: Required] int Page,
+    [property: Required] int PageSize,
+    [property: Required] WorkflowListSummary Summary);
 
 /// <summary>A version in a version list.</summary>
 /// <param name="WorkflowVersionId">Version id.</param>
@@ -189,9 +227,12 @@ public sealed class WorkflowListQuery
     internal static readonly string[] Keys = ["page", "pageSize", "q", "name", "isActive", "sort", "taskTypeId", "stepId", "hasPublished", "hasDraft"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
-    internal static readonly string[] SortFields = ["name", "-name"];
+    internal static readonly string[] SortFields = ["name", "-name", "publishedAtUtc", "-publishedAtUtc", "taskTypeCount", "-taskTypeCount"];
 
-    /// <summary>One of <c>name</c> (default) or <c>-name</c>.</summary>
+    /// <summary>
+    /// One of <c>name</c> (default), <c>-name</c>, <c>publishedAtUtc</c> (oldest first), <c>-publishedAtUtc</c> (newest first; never-published workflows last
+    /// in both directions), <c>taskTypeCount</c> or <c>-taskTypeCount</c> (active Task Types). Ties follow the name.
+    /// </summary>
     [StringLength(30)]
     public string? Sort { get; init; }
 

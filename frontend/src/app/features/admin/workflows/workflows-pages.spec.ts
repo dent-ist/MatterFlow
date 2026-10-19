@@ -40,6 +40,11 @@ const summary = (overrides: Partial<WorkflowSummary> = {}): WorkflowSummary => (
   draftVersionNo: undefined,
   taskTypes: [],
   rowVersion: 'WWWW',
+  hasDraft: false,
+  versionCount: 2,
+  publishedAtUtc: '2026-10-01T10:00:00Z',
+  stepCount: 3,
+  taskTypeCount: 0,
   ...overrides,
 });
 
@@ -92,6 +97,8 @@ const libStep = (id: number, title: string): StepDefinitionSummary => ({
   usedInWorkflows: 0,
   tags: [],
   rowVersion: 'S',
+  publishedFormVersionId: undefined,
+  draftFormFieldCount: 0,
 });
 
 const wfDetail = (w: Partial<WorkflowSummary> = {}): WorkflowDetail => ({

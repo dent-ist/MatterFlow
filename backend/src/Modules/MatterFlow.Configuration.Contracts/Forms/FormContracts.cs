@@ -199,6 +199,13 @@ public interface IFormDefinitionResolver
 
     /// <summary>Whether the owner's form is published, in draft or empty. Never fails for a missing definition (that is an empty form).</summary>
     Task<FormOwnerState> GetOwnerStateAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The design states of many owners of one kind (Task Type, Step or Asset Type) in one grouped read, for lists and summaries (the single-owner
+    /// call per row would be an N+1). <paramref name="ownerIds"/> null means every owner that has a form definition. Owners without a definition are
+    /// absent from the result (that is an empty form, as <see cref="GetOwnerStateAsync"/> reports it). Never creates anything.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, FormOwnerState>> GetOwnerStatesAsync(FormOwnerKind ownerKind, IReadOnlyCollection<int>? ownerIds, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Stored values of one owner, with the version they were captured under.</summary>

@@ -10144,7 +10144,7 @@ export interface IStepDefinitionsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary>;
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<StepDefinitionListPage>;
     /**
      * @return Created
      */
@@ -10200,7 +10200,7 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfStepDefinitionSummary> {
+    listStepDefinitions(sort?: string | undefined, q?: string | undefined, title?: string | undefined, description?: string | undefined, used?: boolean | undefined, tags?: string[] | undefined, tagMatch?: string | undefined, isActive?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<StepDefinitionListPage> {
         let url_ = this.baseUrl + "/api/v1/step-definitions?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -10259,14 +10259,14 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
                 try {
                     return this.processListStepDefinitions(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<PagedResultOfStepDefinitionSummary>;
+                    return _observableThrow(e) as any as Observable<StepDefinitionListPage>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<PagedResultOfStepDefinitionSummary>;
+                return _observableThrow(response_) as any as Observable<StepDefinitionListPage>;
         }));
     }
 
-    protected processListStepDefinitions(response: HttpResponseBase): Observable<PagedResultOfStepDefinitionSummary> {
+    protected processListStepDefinitions(response: HttpResponseBase): Observable<StepDefinitionListPage> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -10276,7 +10276,7 @@ export class StepDefinitionsClient implements IStepDefinitionsClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfStepDefinitionSummary;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as StepDefinitionListPage;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -10645,7 +10645,7 @@ export interface IWorkflowsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary>;
+    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<WorkflowListPage>;
     /**
      * @return Created
      */
@@ -10718,7 +10718,7 @@ export class WorkflowsClient implements IWorkflowsClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PagedResultOfWorkflowSummary> {
+    listWorkflows(sort?: string | undefined, q?: string | undefined, name?: string | undefined, isActive?: boolean | undefined, hasPublished?: boolean | undefined, hasDraft?: boolean | undefined, taskTypeId?: number | undefined, stepId?: number | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<WorkflowListPage> {
         let url_ = this.baseUrl + "/api/v1/workflows?";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
@@ -10777,14 +10777,14 @@ export class WorkflowsClient implements IWorkflowsClient {
                 try {
                     return this.processListWorkflows(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<PagedResultOfWorkflowSummary>;
+                    return _observableThrow(e) as any as Observable<WorkflowListPage>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<PagedResultOfWorkflowSummary>;
+                return _observableThrow(response_) as any as Observable<WorkflowListPage>;
         }));
     }
 
-    protected processListWorkflows(response: HttpResponseBase): Observable<PagedResultOfWorkflowSummary> {
+    protected processListWorkflows(response: HttpResponseBase): Observable<WorkflowListPage> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -10794,7 +10794,7 @@ export class WorkflowsClient implements IWorkflowsClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfWorkflowSummary;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as WorkflowListPage;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -12446,15 +12446,6 @@ export interface PagedResultOfProjectResponse {
     [key: string]: any;
 }
 
-export interface PagedResultOfStepDefinitionSummary {
-    items: StepDefinitionSummary[];
-    total: number;
-    page: number;
-    pageSize: number;
-
-    [key: string]: any;
-}
-
 export interface PagedResultOfTaskListItem {
     items: TaskListItem[];
     total: number;
@@ -12466,15 +12457,6 @@ export interface PagedResultOfTaskListItem {
 
 export interface PagedResultOfUserSummaryDto {
     items: UserSummaryDto[];
-    total: number;
-    page: number;
-    pageSize: number;
-
-    [key: string]: any;
-}
-
-export interface PagedResultOfWorkflowSummary {
-    items: WorkflowSummary[];
     total: number;
     page: number;
     pageSize: number;
@@ -12918,6 +12900,16 @@ export interface StepDefinitionDetail {
     [key: string]: any;
 }
 
+export interface StepDefinitionListPage {
+    items: StepDefinitionSummary[];
+    total: number;
+    page: number;
+    pageSize: number;
+    summary: StepListSummary;
+
+    [key: string]: any;
+}
+
 export interface StepDefinitionSummary {
     stepDefinitionId: number;
     title: string;
@@ -12928,6 +12920,18 @@ export interface StepDefinitionSummary {
     usedInWorkflows: number;
     tags: string[];
     rowVersion: string;
+    publishedFormVersionId?: number | undefined;
+    draftFormFieldCount: number;
+
+    [key: string]: any;
+}
+
+export interface StepListSummary {
+    total: number;
+    active: number;
+    inactive: number;
+    notUsed: number;
+    inputsInDraft: number;
 
     [key: string]: any;
 }
@@ -13740,6 +13744,27 @@ export interface WorkflowDetail {
     [key: string]: any;
 }
 
+export interface WorkflowListPage {
+    items: WorkflowSummary[];
+    total: number;
+    page: number;
+    pageSize: number;
+    summary: WorkflowListSummary;
+
+    [key: string]: any;
+}
+
+export interface WorkflowListSummary {
+    total: number;
+    active: number;
+    inactive: number;
+    published: number;
+    notPublished: number;
+    draftInProgress: number;
+
+    [key: string]: any;
+}
+
 export interface WorkflowProgress {
     stepsTotal: number;
     stepsResolved: number;
@@ -13785,6 +13810,11 @@ export interface WorkflowSummary {
     draftVersionNo: number | undefined;
     taskTypes: WorkflowTaskTypeRef[];
     rowVersion: string;
+    hasDraft: boolean;
+    versionCount: number;
+    publishedAtUtc?: string | undefined;
+    stepCount?: number | undefined;
+    taskTypeCount: number;
 
     [key: string]: any;
 }

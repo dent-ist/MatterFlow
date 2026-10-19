@@ -35,11 +35,11 @@ internal static class WorkflowFilters
 [Produces("application/json")]
 public class StepDefinitionsController(StepDefinitionService steps) : ControllerBase
 {
-    /// <summary>Lists library steps by title. <c>q</c> matches title, description or tag text; <c>isActive</c> filters by state; <c>tags</c> (repeat it) keeps steps that carry all of the tags (<c>tagMatch=all</c>, the default) or any of them (<c>tagMatch=any</c>).</summary>
+    /// <summary>Lists library steps by title. <c>q</c> matches title, description or tag text; <c>isActive</c> filters by state; <c>tags</c> (repeat it) keeps steps that carry all of the tags (<c>tagMatch=all</c>, the default) or any of them (<c>tagMatch=any</c>). Each step carries its published input form version and the field count of its open input draft; <c>summary</c> holds counts over the whole library for the health strip (active, inactive, not used, inputs in draft), independent of the filters and the page.</summary>
     [HttpGet(Name = "ListStepDefinitions")]
     [Authorize(Policy = WorkflowPolicies.Manage)]
-    [ProducesResponseType<PagedResult<StepDefinitionSummary>>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<PagedResult<StepDefinitionSummary>>> List([FromQuery] StepDefinitionListQuery query, CancellationToken cancellationToken)
+    [ProducesResponseType<StepDefinitionListPage>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<StepDefinitionListPage>> List([FromQuery] StepDefinitionListQuery query, CancellationToken cancellationToken)
     {
         WorkflowFilters.EnsureKnown(Request, StepDefinitionListQuery.Keys);
         return (await steps.ListAsync(query, cancellationToken)).OrThrow();
@@ -106,11 +106,16 @@ public class StepDefinitionsController(StepDefinitionService steps) : Controller
 [Produces("application/json")]
 public class WorkflowsController(WorkflowAdminService workflows, IWorkflowCatalog catalog) : ControllerBase
 {
-    /// <summary>Lists workflows by name with their published and draft versions.</summary>
+    /// <summary>
+    /// Lists workflows (default by name) with their published and draft versions, the date and step count of the latest publication, the number of
+    /// versions and of active Task Types. <c>sort</c>: name, -name, publishedAtUtc, -publishedAtUtc, taskTypeCount, -taskTypeCount. The response also
+    /// carries <c>summary</c>: counts over the whole library for the health strip (active, inactive, published, not published, draft in progress), which
+    /// do not depend on the filters or the page.
+    /// </summary>
     [HttpGet(Name = "ListWorkflows")]
     [Authorize(Policy = WorkflowPolicies.Manage)]
-    [ProducesResponseType<PagedResult<WorkflowSummary>>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<PagedResult<WorkflowSummary>>> List([FromQuery] WorkflowListQuery query, CancellationToken cancellationToken)
+    [ProducesResponseType<WorkflowListPage>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<WorkflowListPage>> List([FromQuery] WorkflowListQuery query, CancellationToken cancellationToken)
     {
         WorkflowFilters.EnsureKnown(Request, WorkflowListQuery.Keys);
         return (await workflows.ListAsync(query, cancellationToken)).OrThrow();

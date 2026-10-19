@@ -32,7 +32,7 @@ public sealed class WorkflowAdminService(
 
     // ---- workflows
 
-    public async Task<Result<PagedResult<WorkflowSummary>>> ListAsync(WorkflowListQuery query, CancellationToken ct)
+    public async Task<Result<WorkflowListPage>> ListAsync(WorkflowListQuery query, CancellationToken ct)
     {
         var paging = PageRequest.Create(query.Page, query.PageSize);
         if (paging.IsFailure)
@@ -94,10 +94,73 @@ public sealed class WorkflowAdminService(
 
         var total = await workflows.CountAsync(ct);
         var page = paging.Value;
-        var ordered = query.Sort == "-name" ? workflows.OrderByDescending(w => w.Name).ThenBy(w => w.Id) : workflows.OrderBy(w => w.Name).ThenBy(w => w.Id);
-        var defs = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
-        var items = await SummariesAsync(defs, ct);
-        return new PagedResult<WorkflowSummary>(items, total, page.Page, page.PageSize);
+        IReadOnlyList<WorkflowDefinition> defs;
+        IReadOnlyList<TaskTypeWorkflowLink>? allLinks = null;
+        if (query.Sort is "taskTypeCount" or "-taskTypeCount")
+        {
+            // The eligibility links belong to the Configuration module, so the count is ordered here: the filtered ids by name (SQL collation),
+            // a stable order by active Task Type count, then the page. One link read serves the order and the page's rows.
+            allLinks = await taskTypes.ListWorkflowLinksAsync(cancellationToken: ct);
+            var counts = allLinks.Where(l => l.TaskTypeIsActive).GroupBy(l => l.WorkflowDefinitionId).ToDictionary(g => g.Key, g => g.Count());
+            var byName = await workflows.OrderBy(w => w.Name).ThenBy(w => w.Id).Select(w => w.Id).ToListAsync(ct);
+            var ranked = query.Sort == "taskTypeCount" ? byName.OrderBy(id => counts.GetValueOrDefault(id)) : byName.OrderByDescending(id => counts.GetValueOrDefault(id));
+            var pageIds = ranked.Skip(page.Skip).Take(page.PageSize).ToList();
+            var loaded = (await workflows.Where(w => pageIds.Contains(w.Id)).ToListAsync(ct)).ToDictionary(w => w.Id);
+            defs = [.. pageIds.Select(id => loaded[id])];
+        }
+        else
+        {
+            defs = await Ordered(workflows, query.Sort).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
+        }
+
+        var items = await SummariesAsync(defs, allLinks, ct);
+        return new WorkflowListPage(items, total, page.Page, page.PageSize, await ListSummaryAsync(ct));
+    }
+
+    /// <summary>
+    /// The SQL orders of the list: the name (default), or the date of the latest publication (never-published workflows last in both
+    /// directions). Ties follow the name.
+    /// </summary>
+    private IOrderedQueryable<WorkflowDefinition> Ordered(IQueryable<WorkflowDefinition> workflows, string? sort)
+    {
+        var versions = db.Set<WorkflowVersion>().AsNoTracking();
+        return sort switch
+        {
+            "-name" => workflows.OrderByDescending(w => w.Name).ThenBy(w => w.Id),
+            "publishedAtUtc" => workflows
+                .OrderBy(w => versions.Any(v => v.WorkflowDefinitionId == w.Id && v.PublishedAt != null) ? 0 : 1)
+                .ThenBy(w => versions.Where(v => v.WorkflowDefinitionId == w.Id).Max(v => v.PublishedAt))
+                .ThenBy(w => w.Name).ThenBy(w => w.Id),
+            "-publishedAtUtc" => workflows
+                .OrderBy(w => versions.Any(v => v.WorkflowDefinitionId == w.Id && v.PublishedAt != null) ? 0 : 1)
+                .ThenByDescending(w => versions.Where(v => v.WorkflowDefinitionId == w.Id).Max(v => v.PublishedAt))
+                .ThenBy(w => w.Name).ThenBy(w => w.Id),
+            _ => workflows.OrderBy(w => w.Name).ThenBy(w => w.Id),
+        };
+    }
+
+    /// <summary>The health-strip counts over the whole library (one grouped statement; no filter applies).</summary>
+    private async Task<WorkflowListSummary> ListSummaryAsync(CancellationToken ct)
+    {
+        var versions = db.Set<WorkflowVersion>().AsNoTracking();
+        var groups = await db.Set<WorkflowDefinition>().AsNoTracking()
+            .Select(w => new
+            {
+                w.IsActive,
+                HasPublished = versions.Any(v => v.WorkflowDefinitionId == w.Id && v.Status == WorkflowVersionStatus.Published),
+                HasDraft = versions.Any(v => v.WorkflowDefinitionId == w.Id && v.Status == WorkflowVersionStatus.Draft),
+            })
+            .GroupBy(x => new { x.IsActive, x.HasPublished, x.HasDraft })
+            .Select(g => new { g.Key.IsActive, g.Key.HasPublished, g.Key.HasDraft, Count = g.Count() })
+            .ToListAsync(ct);
+        var active = groups.Where(g => g.IsActive).ToList();
+        return new WorkflowListSummary(
+            groups.Sum(g => g.Count),
+            active.Sum(g => g.Count),
+            groups.Where(g => !g.IsActive).Sum(g => g.Count),
+            active.Where(g => g.HasPublished).Sum(g => g.Count),
+            active.Where(g => !g.HasPublished).Sum(g => g.Count),
+            active.Where(g => g.HasDraft).Sum(g => g.Count));
     }
 
     public async Task<Result<WorkflowDetail>> GetAsync(int id, CancellationToken ct)
@@ -685,7 +748,7 @@ public sealed class WorkflowAdminService(
 
     private async Task<WorkflowDetail> ReadDetailAsync(WorkflowDefinition definition, CancellationToken ct)
     {
-        var summary = (await SummariesAsync([definition], ct))[0];
+        var summary = (await SummariesAsync([definition], null, ct))[0];
         var versions = await db.Set<WorkflowVersion>().AsNoTracking()
             .Where(v => v.WorkflowDefinitionId == definition.Id)
             .OrderByDescending(v => v.VersionNo)
@@ -694,22 +757,26 @@ public sealed class WorkflowAdminService(
         return new WorkflowDetail(summary, versions.Select(v => ToSummary(v.Version, v.StepCount)).ToList());
     }
 
-    private async Task<IReadOnlyList<WorkflowSummary>> SummariesAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken ct)
+    private async Task<IReadOnlyList<WorkflowSummary>> SummariesAsync(IReadOnlyList<WorkflowDefinition> definitions, IReadOnlyList<TaskTypeWorkflowLink>? allLinks, CancellationToken ct)
     {
         var ids = definitions.Select(d => d.Id).ToList();
         var versions = await db.Set<WorkflowVersion>().AsNoTracking()
-            .Where(v => ids.Contains(v.WorkflowDefinitionId) && v.Status != WorkflowVersionStatus.Retired)
-            .Select(v => new { v.Id, v.WorkflowDefinitionId, v.VersionNo, v.Status, StepCount = v.Steps.Count })
+            .Where(v => ids.Contains(v.WorkflowDefinitionId))
+            .Select(v => new { v.Id, v.WorkflowDefinitionId, v.VersionNo, v.Status, v.PublishedAt, StepCount = v.Steps.Count })
             .ToListAsync(ct);
 
-        // One grouped query for the Task Types of every workflow on the page.
-        var links = (await taskTypes.ListWorkflowLinksAsync(ids, cancellationToken: ct)).ToLookup(l => l.WorkflowDefinitionId);
+        // One grouped query for the Task Types of every workflow on the page (or the links the caller already loaded for a count sort).
+        var links = (allLinks ?? await taskTypes.ListWorkflowLinksAsync(ids, cancellationToken: ct)).ToLookup(l => l.WorkflowDefinitionId);
         return
         [
             .. definitions.Select(d =>
             {
-                var published = versions.FirstOrDefault(v => v.WorkflowDefinitionId == d.Id && v.Status == WorkflowVersionStatus.Published);
-                var draft = versions.FirstOrDefault(v => v.WorkflowDefinitionId == d.Id && v.Status == WorkflowVersionStatus.Draft);
+                var own = versions.Where(v => v.WorkflowDefinitionId == d.Id).ToList();
+                var published = own.FirstOrDefault(v => v.Status == WorkflowVersionStatus.Published);
+                var draft = own.FirstOrDefault(v => v.Status == WorkflowVersionStatus.Draft);
+
+                // The latest publication: the published version, else the most recently published one that was retired since.
+                var latest = own.Where(v => v.PublishedAt != null).OrderByDescending(v => v.VersionNo).FirstOrDefault();
                 return new WorkflowSummary(
                     d.Id,
                     d.Name,
@@ -721,7 +788,12 @@ public sealed class WorkflowAdminService(
                     draft?.Id,
                     draft?.VersionNo,
                     [.. links[d.Id].Select(l => new WorkflowTaskTypeRef(l.TaskTypeId, l.TaskTypeName, l.TaskTypeIsActive, l.IsDefault))],
-                    WorkflowSupport.FormatRowVersion(d.RowVersion));
+                    WorkflowSupport.FormatRowVersion(d.RowVersion),
+                    draft is not null,
+                    own.Count,
+                    latest?.PublishedAt,
+                    latest?.StepCount,
+                    links[d.Id].Count(l => l.TaskTypeIsActive));
             }),
         ];
     }
