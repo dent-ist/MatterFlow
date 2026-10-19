@@ -261,7 +261,8 @@ test.describe('Column filters on the administration lists', () => {
       page,
       seed,
     }) => {
-      await page.setViewportSize({ width: 1366, height: 768 });
+      // The Description column is there from 1600 px (#378): its box is in the row only on a window that wide.
+      await page.setViewportSize({ width: 1920, height: 1080 });
       const token = uid();
       const one = await seed.step({
         title: `Alpha ${token}`,

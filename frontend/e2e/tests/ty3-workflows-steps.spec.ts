@@ -62,6 +62,7 @@ test.describe('Workflows columns (#376, #377)', () => {
 
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/workflows?name=${token}`);
+    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
     expect(await heads(page)).toEqual([
       'Name',
       'Versions',
@@ -227,6 +228,7 @@ test.describe('Steps Inputs column (#378)', () => {
 
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
+    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
     expect((await heads(page)).includes('Inputs')).toBe(true);
     await expect(cell('Drafted').locator('[data-inputs-draft]')).toHaveText('Draft');
     await expect(cell('Drafted').locator('[data-tone="neutral"]')).toHaveCount(1);
@@ -255,6 +257,7 @@ test.describe('Steps Inputs column (#378)', () => {
     }
     await page.setViewportSize({ width: 768, height: 900 });
     await page.goto(`/admin/steps?title=${token}`);
+    await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
     expect(await heads(page)).not.toContain('Inputs');
 
     // The phone card says it.

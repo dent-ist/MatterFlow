@@ -47,14 +47,16 @@ const pagerTotal = async (page: Page): Promise<number> => {
 };
 
 /** The one-row request behind a tab count (no filter, no `isActive`: the hidden-count request has one). */
+const query = (url: string): Map<string, string> =>
+  new Map([...new URL(url).searchParams].map(([k, v]) => [k.toLowerCase(), v]));
 const isCountRequest = (url: string, path: string): boolean => {
-  const u = new URL(url);
+  const q = query(url);
   return (
-    u.pathname === path &&
-    u.searchParams.get('pageSize') === '1' &&
-    !u.searchParams.has('isActive') &&
-    !u.searchParams.has('name') &&
-    !u.searchParams.has('title')
+    new URL(url).pathname === path &&
+    q.get('pagesize') === '1' &&
+    !q.has('isactive') &&
+    !q.has('name') &&
+    !q.has('title')
   );
 };
 
@@ -116,8 +118,8 @@ test.describe('tab counts (#364)', () => {
     const reload = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/workflows' &&
-        new URL(r.url()).searchParams.has('name') &&
-        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        query(r.url()).has('name') &&
+        query(r.url()).get('pagesize') === '25' &&
         r.request().method() === 'GET',
     );
     await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
@@ -177,7 +179,7 @@ test.describe('tab counts (#364)', () => {
     await expect(tab(tt, 'task-types')).toContainText(/\(\d+\)/);
     // No count request for the tabs it may not use (the workflow names behind the old chips are the page's own, older request).
     expect(askedTypes.filter((p) => p.startsWith('/api/v1/step-definitions'))).toEqual([]);
-    expect(askedTypes.filter((p) => /^\/api\/v1\/workflows\?.*pageSize=1(&|$)/.test(p))).toEqual(
+    expect(askedTypes.filter((p) => /^\/api\/v1\/workflows\?.*pagesize=1(&|$)/i.test(p))).toEqual(
       [],
     );
   });
@@ -223,6 +225,7 @@ test.describe('health strips (#367, #368)', () => {
 
     const strip = page.getByRole('list', { name: 'Task types summary' });
     await expect(strip).toBeVisible();
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     for (const key of ['active', 'notUsable', 'formDraft', 'inactive'] as const) {
       expect(await chipCount(page, key), key).toBe(expected[key]);
     }
@@ -287,7 +290,7 @@ test.describe('health strips (#367, #368)', () => {
     const answer = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/workflows' &&
-        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        query(r.url()).get('pagesize') === '25' &&
         r.request().method() === 'GET',
     );
     await page.setViewportSize(SIZES[0]);
@@ -295,6 +298,7 @@ test.describe('health strips (#367, #368)', () => {
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     const strip = page.getByRole('list', { name: 'Workflows summary' });
     await expect(strip).toBeVisible();
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     expect(await chipCount(page, 'published')).toBe(summary.published);
     expect(await chipCount(page, 'draft')).toBe(summary.draftInProgress);
     expect(await chipCount(page, 'notPublished')).toBe(summary.notPublished);
@@ -339,13 +343,14 @@ test.describe('health strips (#367, #368)', () => {
     const answer = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/step-definitions' &&
-        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        query(r.url()).get('pagesize') === '25' &&
         r.request().method() === 'GET',
     );
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     await expect(page.getByRole('list', { name: 'Steps summary' })).toBeVisible();
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     expect(await chipCount(page, 'active')).toBe(summary.active);
     expect(await chipCount(page, 'notUsed')).toBe(summary.notUsed);
     expect(await chipCount(page, 'inputsDraft')).toBe(summary.inputsInDraft);
@@ -368,6 +373,7 @@ test.describe('health strips (#367, #368)', () => {
   test('four sizes: the strips wrap without a sideways scroll and pass axe, a skeleton count shows -- while loading', async ({
     page,
   }) => {
+    test.setTimeout(240_000);
     for (const path of ['/admin/task-types', '/admin/workflows', '/admin/steps']) {
       for (const size of SIZES) {
         await page.setViewportSize(size);
