@@ -98,7 +98,12 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const type = await seed.taskType({ name: `Crumb type ${uid()}`, workflows: [workflow] });
 
     await page.goto(`/admin/task-types/${type.id}`);
-    await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', type.name]);
+    // The record header's last crumb carries the full name once more for screen readers (the short text is aria-hidden).
+    await expect(crumbs(page)).toHaveText([
+      'Administration',
+      'Task Types',
+      `${type.name}${type.name}`,
+    ]);
     await page.goto(`/admin/task-types/${type.id}/form`);
     await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', type.name, 'Form']);
 

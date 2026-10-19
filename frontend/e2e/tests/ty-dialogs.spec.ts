@@ -45,9 +45,10 @@ test.describe('Dialog wording and focus (#362)', () => {
     const wf = await seed.workflow({});
     const tt = await seed.taskType({ workflows: [wf] });
     await page.goto(`/admin/task-types/${tt.id}`);
-    await page.getByLabel('Active (offered for new tasks)').uncheck();
-    const save = page.getByRole('button', { name: 'Save changes' });
-    await save.click();
+    // Deactivate is in the overflow of the record header (#380), not behind an Active checkbox.
+    const overflow = page.locator('[data-page-actions] button[data-overflow]');
+    await overflow.click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page)).toBeVisible();
     await expect(
       dialog(page).getByText('Deactivate task type?', { exact: true }).first(),
@@ -57,7 +58,7 @@ test.describe('Dialog wording and focus (#362)', () => {
     await atEverySize(page, 'dialog-deactivate-task-type');
     await page.keyboard.press('Escape');
     await expect(dialog(page)).toHaveCount(0);
-    await expect(save).toBeFocused();
+    await expect(overflow).toBeFocused();
   });
 
   test('Deactivate workflow and Deactivate step use the same wording', async ({ page, seed }) => {
@@ -119,8 +120,8 @@ test.describe('Dialog wording and focus (#362)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const typePage = await asUser((await seed.user([typeRole.name], 'tt-ttonly')).username);
     await typePage.goto(`/admin/task-types/${tt.id}`);
-    await typePage.getByLabel('Active (offered for new tasks)').uncheck();
-    await typePage.getByRole('button', { name: 'Save changes' }).click();
+    await typePage.locator('[data-page-actions] button[data-overflow]').click();
+    await typePage.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(
       typePage.getByRole('dialog').getByRole('button', { name: 'Deactivate task type' }),
     ).toBeVisible();

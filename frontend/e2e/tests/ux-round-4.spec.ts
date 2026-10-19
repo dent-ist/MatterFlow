@@ -590,7 +590,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     const world = await seed.world();
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     await page.locator('#tt-name').fill(`${world.taskType.name} renamed`);
-    await page.locator('[data-save] button').click();
+    await page.locator('[data-save]').click();
     const toast = page.locator('.p-toast-message-success').first();
     await expect(toast).toBeVisible();
     const colors = await toast.evaluate((el) => {

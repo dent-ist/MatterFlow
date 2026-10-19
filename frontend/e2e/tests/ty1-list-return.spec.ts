@@ -119,15 +119,17 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
       expect(urlOf(page)).toBe(before);
       await expect(rowLink(page, id)).toBeFocused();
 
-      // Cancel on the edit page is the same way back.
-      await rowLink(page, id).click();
-      await expect(page).toHaveURL(new RegExp(`${list}/${id}$`));
-      await page
-        .getByRole('link', { name: 'Cancel' })
-        .or(page.getByRole('button', { name: 'Cancel' }))
-        .click();
-      expect(urlOf(page)).toBe(before);
-      await expect(rowLink(page, id)).toBeFocused();
+      // Cancel on the edit page is the same way back (the Task Type record page has no Cancel until a tab has edits, #380).
+      if (kind !== 'types') {
+        await rowLink(page, id).click();
+        await expect(page).toHaveURL(new RegExp(`${list}/${id}$`));
+        await page
+          .getByRole('link', { name: 'Cancel' })
+          .or(page.getByRole('button', { name: 'Cancel' }))
+          .click();
+        expect(urlOf(page)).toBe(before);
+        await expect(rowLink(page, id)).toBeFocused();
+      }
 
       // A reload of the list is not a return: nothing takes focus.
       await page.reload();
@@ -201,7 +203,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
 
     // Name link, then the edit page's link to the designer: the form page crumb still returns to the list view.
     await rowLink(page, typeId).click();
-    await page.getByRole('link', { name: 'Open the form designer' }).click();
+    await page.locator('[data-action="edit-form"]').click();
     await expect(page).toHaveURL(new RegExp(`/admin/task-types/${typeId}/form$`));
     await crumb(page, 'Task Types').click();
     expect(urlOf(page)).toBe(typesUrl);
