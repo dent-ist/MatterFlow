@@ -49,9 +49,7 @@ describe('formatStatusStamp (T3 status note)', () => {
   });
   it('adds the year outside the current year of the viewer zone', () => {
     expect(formatStatusStamp('2025-12-31T23:30:00Z', NY, NOW)).toBe('Dec 31, 2025, 6:30 PM');
-    expect(formatStatusStamp('2025-12-31T23:30:00Z', 'Asia/Tokyo', NOW)).toBe(
-      'Jan 1, 8:30 AM',
-    );
+    expect(formatStatusStamp('2025-12-31T23:30:00Z', 'Asia/Tokyo', NOW)).toBe('Jan 1, 8:30 AM');
   });
 });
 
