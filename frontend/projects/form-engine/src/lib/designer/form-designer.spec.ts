@@ -241,7 +241,7 @@ describe('FormDesigner', () => {
     await click('[data-row="1"]');
     const unnamed = Array.from(
       el().querySelectorAll<HTMLElement>(
-        '.fd__props input, .fd__props select, .fd__props textarea, button',
+        '.fd__panel input, .fd__panel select, .fd__panel textarea, button',
       ),
     ).filter((c) => {
       const labelled = c.id && el().querySelector(`label[for="${c.id}"]`);
@@ -286,5 +286,160 @@ describe('FormDesigner', () => {
     el().querySelector<HTMLElement>('.fd__issue-list .fd__link')!.click();
     await stable();
     expect(el().textContent).toContain('The server says this key is taken.');
+  });
+
+  describe('tabs of the details column (FD1)', () => {
+    const tab = (key: string): HTMLButtonElement => q<HTMLButtonElement>(`[data-tab="${key}"]`);
+    const panel = (key: string): HTMLElement => q(`[data-panel="${key}"]`);
+    const press = async (key: string): Promise<void> => {
+      el()
+        .querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      await stable();
+    };
+
+    it('offers Properties, Preview and Validation as tabs with one tab stop', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      const tabs = Array.from(el().querySelectorAll<HTMLElement>('[role="tab"]'));
+      expect(tabs.map((t) => t.textContent!.trim())).toEqual([
+        'Properties',
+        'Preview',
+        'Validation',
+      ]);
+      expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
+      expect(tabs.map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1']);
+      expect(q('[role="tablist"]').getAttribute('aria-label')).toBe('Field details');
+      expect(tab('props').getAttribute('aria-controls')).toBe(panel('props').id);
+      expect(panel('props').getAttribute('aria-labelledby')).toBe(tab('props').id);
+      expect(panel('preview').hidden).toBe(true);
+    });
+
+    it('moves with the arrow keys, wraps round, and Home and End jump', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      await press('ArrowRight');
+      expect(tab('preview').getAttribute('aria-selected')).toBe('true');
+      expect(panel('preview').hidden).toBe(false);
+      await press('ArrowRight');
+      await press('ArrowRight');
+      expect(tab('props').getAttribute('aria-selected')).toBe('true');
+      await press('ArrowLeft');
+      expect(tab('issues').getAttribute('aria-selected')).toBe('true');
+      await press('Home');
+      expect(tab('props').getAttribute('aria-selected')).toBe('true');
+      await press('End');
+      expect(tab('issues').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('shows the error count on Validation and showIssues() opens that tab', async () => {
+      await create([
+        { key: 'pick', control: 'SELECT', label: 'Pick', options: [] },
+        { key: 'code', control: 'TEXT', label: 'Code', validation: { pattern: '(' } },
+      ]);
+      const errors = el().querySelectorAll('.fd__issue-list li:not(.is-warning)').length;
+      expect(errors).toBeGreaterThan(0);
+      expect(tab('issues').textContent).toContain(`(${errors})`);
+      expect(tab('issues').textContent).toContain('errors');
+      expect(tab('props').textContent).not.toContain('(');
+      fixture.componentInstance.showIssues();
+      await stable();
+      expect(tab('issues').getAttribute('aria-selected')).toBe('true');
+      expect(panel('issues').hidden).toBe(false);
+    });
+
+    it('shows no count while the form is valid', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      expect(el().querySelector('[data-error-count]')).toBeNull();
+    });
+
+    it('choosing a field shows its Properties again', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      await press('ArrowRight');
+      expect(tab('preview').getAttribute('aria-selected')).toBe('true');
+      await click('[data-row="0"]');
+      expect(tab('props').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('a read-only form opens on Preview and keeps it when a field is chosen', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }], { readOnly: true });
+      expect(tab('preview').getAttribute('aria-selected')).toBe('true');
+      await click('[data-row="0"]');
+      expect(tab('preview').getAttribute('aria-selected')).toBe('true');
+      expect(el().querySelector('.fd__layout--ro')).not.toBeNull();
+    });
+
+    it('names a pane body that scrolls and leaves one that fits alone', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      expect(
+        el().querySelector('[data-palette]')!.closest('.fd__scroll')!.getAttribute('tabindex'),
+      ).toBeNull();
+    });
+  });
+
+  describe('narrow layout: sheets (FD4)', () => {
+    let showModal: ReturnType<typeof vi.fn>;
+    let close: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+      showModal = vi.fn(function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      });
+      close = vi.fn(function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+        this.dispatchEvent(new Event('close'));
+      });
+      HTMLDialogElement.prototype.showModal = showModal as unknown as () => void;
+      HTMLDialogElement.prototype.close = close as unknown as () => void;
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('puts Fields first with one Add field button instead of the palette', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }]);
+      expect(el().querySelector('.fd__palette')).toBeNull();
+      expect(el().querySelector('.fd__side')).toBeNull();
+      expect(q('[data-open-add]').textContent).toContain('Add field');
+      expect(q('[data-open-add]').getAttribute('aria-haspopup')).toBe('dialog');
+      const order = Array.from(el().querySelectorAll('section')).map((s) => s.className);
+      expect(order[0]).toContain('fd__canvas');
+    });
+
+    it('opens the palette as a sheet; choosing a control adds the field and shows its properties', async () => {
+      await create([]);
+      await click('[data-open-add]');
+      expect(showModal).toHaveBeenCalled();
+      expect(q('[data-sheet] [data-palette]')).not.toBeNull();
+      await click('[data-sheet] [data-add="TEXT"]');
+      expect(latest.fields.length).toBe(1);
+      expect(el().querySelector('[data-sheet] [data-palette]')).toBeNull();
+      expect(q('[data-sheet] [data-slot="label"]')).not.toBeNull();
+      await click('[data-sheet-close]');
+      expect(close).toHaveBeenCalled();
+      expect(el().querySelector('[data-sheet] [data-slot="label"]')).toBeNull();
+    });
+
+    it('choosing a field opens its Properties as a sheet; Preview and Validation open the same sheet', async () => {
+      await create([{ key: 'pick', control: 'SELECT', label: 'Pick', options: [] }]);
+      await click('[data-row="0"]');
+      expect(q('[data-sheet] [data-slot="label"]')).not.toBeNull();
+      await click('[data-sheet-close]');
+      await click('[data-open-preview]');
+      expect(q('[data-sheet] [data-tab="preview"]').getAttribute('aria-selected')).toBe('true');
+      await click('[data-sheet-close]');
+      expect(q('[data-open-issues]').textContent).toMatch(/\([1-9]\d*\)/);
+      await click('[data-open-issues]');
+      expect(q('[data-sheet] [data-tab="issues"]').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('has no Add field in a read-only form', async () => {
+      await create([{ key: 'a', control: 'TEXT', label: 'A' }], { readOnly: true });
+      expect(el().querySelector('[data-open-add]')).toBeNull();
+      expect(q('[data-open-preview]')).not.toBeNull();
+    });
   });
 });

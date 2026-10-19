@@ -37,6 +37,17 @@ describe('TaskTypeFormPage', () => {
     await settle();
   }
 
+  /** Opens the Versions dialog and chooses a version in it. */
+  async function chooseVersion(label: string): Promise<void> {
+    q('[data-versions]').click();
+    await settle();
+    const link = Array.from(
+      document.body.querySelectorAll<HTMLButtonElement>('[data-dialog="versions"] .ttf__link'),
+    ).find((b) => b.textContent!.trim() === label)!;
+    link.click();
+    await settle();
+  }
+
   beforeEach(async () => {
     TestBed.configureTestingModule({
       providers: [
@@ -71,7 +82,7 @@ describe('TaskTypeFormPage', () => {
   it('creates a draft from the published version, edits and saves it', async () => {
     await press('Create new draft');
     expect(q('[data-status]').textContent).toContain('Draft v2');
-    expect(q('[data-status]').textContent).toContain('published: v1');
+    expect(q('[data-published-note]').textContent).toContain('published: v1');
     expect(el().querySelector('[data-add]')).not.toBeNull();
     expect(button('Save draft')!.disabled).toBe(true);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
@@ -82,7 +93,7 @@ describe('TaskTypeFormPage', () => {
     expect(button('Save draft')!.disabled).toBe(false);
 
     await press('Save draft');
-    expect(q('[role=status]:not(.fd__sr)').textContent).toContain('Draft v2 saved.');
+    expect(q('[data-notice]').textContent).toContain('Draft v2 saved.');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     const saved = await new Promise<number>((resolve) =>
       api.getVersion('data-processing', 'v2').subscribe((v) => resolve(v.definition.fields.length)),
@@ -108,14 +119,16 @@ describe('TaskTypeFormPage', () => {
     await press('Publish v2', document.body);
     expect(q('[data-status]').textContent).toContain('Published v2');
     expect(q('[data-readonly-banner]')).not.toBeNull();
-    const rows = Array.from(el().querySelectorAll('.ttf__table tbody tr')).map((r) =>
+    q('[data-versions]').click();
+    await settle();
+    const rows = Array.from(document.body.querySelectorAll('.ttf__table tbody tr')).map((r) =>
       r.textContent!.replace(/\s+/g, ' '),
     );
     expect(rows[0]).toContain('Published');
     expect(rows[1]).toContain('Retired');
   });
 
-  it('blocks publishing while the definition has errors', async () => {
+  it('Publish... with errors left shows the Validation tab instead of the dialog', async () => {
     await press('Create new draft');
     q('[data-add="SELECT"]').click();
     await settle();
@@ -124,24 +137,65 @@ describe('TaskTypeFormPage', () => {
       await settle();
     }
     expect(q('[data-issue="EMPTY_OPTIONS"]').textContent).toContain('Add at least one option.');
-    expect(button('Publish...')!.disabled).toBe(true);
+    // The button is not disabled without a reason: it explains and moves to the list of errors.
+    expect(button('Publish...')!.disabled).toBe(false);
+    await press('Publish...');
+    expect(document.body.querySelector('[data-dialog="publish"]')).toBeNull();
+    expect(q('[role=alert]').textContent).toMatch(/Fix \d+ errors? before publishing/);
+    expect(q('[data-tab="issues"]').getAttribute('aria-selected')).toBe('true');
+    expect(q('[data-panel="issues"]').hidden).toBe(false);
+  });
+
+  it('puts the version in the title as a badge with an icon, and the published version as muted text', async () => {
+    const badge = q('mf-badge[data-status]');
+    expect(badge.textContent).toContain('Published v1');
+    expect(badge.querySelector('i.pi')).not.toBeNull();
+    expect(q('h1').contains(badge)).toBe(true);
+    expect(el().querySelector('[data-published-note]')).toBeNull();
+    await press('Create new draft');
+    expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
+    expect(q('[data-published-note]').textContent).toContain('(published: v1)');
+  });
+
+  it('is a fixed-height page with a sticky action bar and Versions in a dialog', async () => {
+    expect(el().querySelector('mf-fixed-page')).not.toBeNull();
+    expect(q('mf-form-designer-bar [data-action-bar]').getAttribute('aria-label')).toBe(
+      'Form actions',
+    );
+    expect(q('[data-versions]').textContent).toContain('Versions (1)');
+    expect(el().querySelector('.ttf__table')).toBeNull();
+    q('[data-versions]').click();
+    await settle();
+    expect(document.body.querySelector('[data-dialog="versions"] .ttf__table')).not.toBeNull();
+  });
+
+  it('shows Unsaved changes in the bar while the draft is dirty', async () => {
+    await press('Create new draft');
+    expect(el().querySelector('[data-dirty]')).toBeNull();
+    q('[data-add="TEXT"]').click();
+    await settle();
+    expect(q('[data-dirty]').textContent).toContain('Unsaved changes');
+  });
+
+  it('a read-only version offers Open draft when a draft exists', async () => {
+    await press('Create new draft');
+    await chooseVersion('v1');
+    expect(q('mf-badge[data-status]').textContent).toContain('Published v1');
+    expect(button('Create new draft')).toBeUndefined();
+    await press('Open draft v2');
+    expect(q('mf-badge[data-status]').textContent).toContain('Draft v2');
   });
 
   it('asks before discarding unsaved changes when switching versions', async () => {
     await press('Create new draft');
     q('[data-add="TEXT"]').click();
     await settle();
-    const v1 = Array.from(el().querySelectorAll<HTMLButtonElement>('.ttf__link')).find(
-      (b) => b.textContent!.trim() === 'v1',
-    )!;
-    v1.click();
-    await settle();
+    await chooseVersion('v1');
     expect(q('[data-dialog="discard"]', document.body)).not.toBeNull();
     await press('Keep editing', document.body);
     expect(q('[data-status]').textContent).toContain('Draft v2');
 
-    v1.click();
-    await settle();
+    await chooseVersion('v1');
     await press('Discard changes', document.body);
     expect(q('[data-status]').textContent).toContain('Published v1');
   });
@@ -198,7 +252,7 @@ describe('TaskTypeFormPage', () => {
     await press('Keep my changes', document.body);
     expect(document.body.querySelector('[data-dialog="conflict"]')).toBeNull();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    expect(q('[role=status]:not(.fd__sr)').textContent).toContain('Your edits are kept');
+    expect(q('[data-notice]').textContent).toContain('Your edits are kept');
     await press('Save draft');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });

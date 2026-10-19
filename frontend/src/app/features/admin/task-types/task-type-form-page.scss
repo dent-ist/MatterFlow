@@ -2,16 +2,39 @@
   display: block;
 }
 
-.ttf__crumb,
 .ttf__muted {
   margin: 0;
   color: var(--mf-text-muted, #4b5563);
 }
 
-.ttf__status {
-  margin-left: 0.75rem;
-  font-weight: 600;
-  color: var(--mf-text, #111827);
+.ttf-title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s1) var(--mf-s2);
+  min-width: 0;
+}
+
+/* A long name wraps inside the title and is cut at three lines (the whole name is the tooltip and the breadcrumb). */
+.ttf-title__name {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.ttf-title__note {
+  color: var(--mf-text-muted, #4b5563);
+  font-size: var(--mf-fs-md, 1rem);
+  font-weight: 400;
+}
+
+.ttf__vers {
+  max-height: max(8rem, calc(90dvh - 14rem));
+  overflow: auto;
 }
 
 .ttf__actions,
@@ -49,33 +72,18 @@
   }
 }
 
-.ttf__live {
-  min-height: 1.25rem;
-  margin: 0 0 0.5rem;
-  color: var(--mf-success-text, #166534);
-}
-
 .ttf__error {
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--mf-s2);
   color: var(--mf-danger-text, #b91c1c);
   font-weight: 600;
 }
 
 .ttf__banner {
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
+  margin: 0 0 var(--mf-s3);
+  padding: var(--mf-s2) var(--mf-s3);
   border: 1px solid var(--mf-info, #1d4ed8);
   border-radius: var(--mf-radius, 4px);
   background: var(--mf-selected-bg, #eff6ff);
-}
-
-.ttf__versions {
-  margin-top: 1.5rem;
-}
-
-.ttf__h2 {
-  margin: 0 0 0.5rem;
-  font-size: var(--mf-fs-h3, 1rem);
 }
 
 .ttf__table {
@@ -116,8 +124,4 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-.ttf__crumb a {
-  color: var(--mf-link);
 }

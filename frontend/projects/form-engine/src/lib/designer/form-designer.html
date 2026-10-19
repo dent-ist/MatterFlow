@@ -1,600 +1,775 @@
 <div class="fd">
   <p class="fd__sr" role="status" aria-live="polite">{{ announcement() }}</p>
 
-  <div class="fd__layout">
+  <div class="fd__layout" [class.fd__layout--ro]="readOnly()" [class.is-narrow]="narrow()">
     <!-- Palette -->
-    @if (!readOnly()) {
-      <section class="fd__palette" aria-labelledby="{{ uid }}-palette-h">
+    @if (!readOnly() && !narrow()) {
+      <section class="fd__palette fd__pane" aria-labelledby="{{ uid }}-palette-h">
         <h3 class="fd__h" [id]="uid + '-palette-h'">Add a field</h3>
-        <ul class="fd__palette-list" data-palette>
-          @for (c of catalog; track c.control) {
-            <li>
-              <button
-                type="button"
-                class="mf-btn fd__btn"
-                [attr.data-add]="c.control"
-                [attr.aria-label]="'Add ' + c.label"
-                (click)="add(c.control)"
-              >
-                + {{ c.label }}
-              </button>
-            </li>
-          }
-        </ul>
+        <div class="fd__scroll" mfFdScroll="Field types">
+          <ng-container *ngTemplateOutlet="paletteTpl" />
+        </div>
       </section>
     }
 
     <!-- Canvas -->
-    <section class="fd__canvas" aria-labelledby="{{ uid }}-canvas-h">
-      <h3 class="fd__h" [id]="uid + '-canvas-h'">Fields</h3>
-      @if (blockMessage()) {
-        <p class="fd__error" role="alert">{{ blockMessage() }}</p>
-      }
-      @if (fields().length === 0) {
-        <p class="fd__empty">No fields yet. Add your first field from the palette.</p>
-      } @else {
-        <ol class="fd__rows">
-          @for (f of fields(); track $index; let i = $index; let first = $first; let last = $last) {
-            <li
-              class="fd__row"
-              [class.is-selected]="i === selected()"
-              [class.is-indented]="indentOf(f)"
-              [class.is-heading]="f.control === 'SECTION_HEADING'"
-            >
+    <section class="fd__canvas fd__pane" aria-labelledby="{{ uid }}-canvas-h">
+      <div class="fd__head">
+        <h3 class="fd__h" [id]="uid + '-canvas-h'">
+          Fields<span class="fd__count" data-field-count> ({{ fields().length }})</span>
+        </h3>
+        @if (narrow()) {
+          <div class="fd__tools" data-narrow-tools>
+            @if (!readOnly()) {
               <button
                 type="button"
-                class="fd__rowmain"
-                [attr.data-row]="i"
-                [attr.aria-current]="i === selected() ? 'true' : null"
-                (click)="select(i)"
+                class="mf-btn fd__btn"
+                data-open-add
+                aria-haspopup="dialog"
+                (click)="openSheet('add')"
               >
-                <span class="fd__name">{{ rowLabel(f) }}</span>
-                <span class="fd__type">{{ controlLabel(f.control) }}</span>
-                @if (summary(f)) {
-                  <span class="fd__badge">{{ summary(f) }}</span>
-                }
-                @if (problemCount().get(f.key); as n) {
-                  <span class="fd__problems"> {{ n }} {{ n === 1 ? 'problem' : 'problems' }} </span>
-                }
+                <span aria-hidden="true">+</span> Add field
               </button>
-              @if (!readOnly()) {
-                <span class="fd__row-actions">
+            }
+            <button
+              type="button"
+              class="mf-btn fd__btn"
+              data-open-preview
+              aria-haspopup="dialog"
+              (click)="openTab('preview')"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              class="mf-btn fd__btn"
+              data-open-issues
+              aria-haspopup="dialog"
+              (click)="openTab('issues')"
+            >
+              Validation
+              @if (errorCount() > 0) {
+                <span class="fd__tabcount"> ({{ errorCount() }})</span
+                ><span class="fd__sr"> errors</span>
+              }
+            </button>
+          </div>
+        }
+      </div>
+      <div class="fd__scroll" mfFdScroll="Fields list">
+        @if (blockMessage()) {
+          <p class="fd__error" role="alert">{{ blockMessage() }}</p>
+        }
+        @if (fields().length === 0) {
+          <p class="fd__empty">
+            No fields yet.
+            @if (narrow()) {
+              Use Add field to add your first field.
+            } @else {
+              Add your first field from the palette.
+            }
+          </p>
+        } @else {
+          <ol class="fd__rows">
+            @for (
+              f of fields();
+              track $index;
+              let i = $index;
+              let first = $first;
+              let last = $last
+            ) {
+              <li
+                class="fd__row"
+                [class.is-selected]="i === selected()"
+                [class.is-indented]="indentOf(f)"
+                [class.is-heading]="f.control === 'SECTION_HEADING'"
+              >
+                <button
+                  type="button"
+                  class="fd__rowmain"
+                  [attr.data-row]="i"
+                  [attr.aria-current]="i === selected() ? 'true' : null"
+                  (click)="select(i)"
+                >
+                  <span class="fd__name" [attr.title]="rowLabel(f)">{{ rowLabel(f) }}</span>
+                  <span class="fd__type">{{ controlLabel(f.control) }}</span>
+                  @if (summary(f)) {
+                    <span class="fd__badge">{{ summary(f) }}</span>
+                  }
+                  @if (problemCount().get(f.key); as n) {
+                    <span class="fd__problems">
+                      {{ n }} {{ n === 1 ? 'problem' : 'problems' }}
+                    </span>
+                  }
+                </button>
+                @if (!readOnly()) {
+                  <span class="fd__row-actions">
+                    <button
+                      type="button"
+                      class="fd__icon"
+                      [attr.data-move]="'up-' + i"
+                      [attr.aria-label]="'Move ' + rowLabel(f) + ' up'"
+                      [disabled]="first"
+                      (click)="move(i, -1)"
+                    >
+                      <span aria-hidden="true">&#8593;</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="fd__icon"
+                      [attr.data-move]="'down-' + i"
+                      [attr.aria-label]="'Move ' + rowLabel(f) + ' down'"
+                      [disabled]="last"
+                      (click)="move(i, 1)"
+                    >
+                      <span aria-hidden="true">&#8595;</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="fd__icon"
+                      [attr.data-delete]="i"
+                      [attr.aria-label]="'Delete ' + rowLabel(f)"
+                      (click)="remove(i)"
+                    >
+                      <span aria-hidden="true">&#10005;</span>
+                    </button>
+                  </span>
+                }
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    </section>
+
+    <!-- Properties, Preview and Validation -->
+    @if (!narrow()) {
+      <section class="fd__side fd__pane" aria-label="Field details">
+        <ng-container *ngTemplateOutlet="sideTpl" />
+      </section>
+    }
+  </div>
+
+  @if (narrow()) {
+    <dialog
+      #sheetEl
+      class="fd__sheet"
+      data-sheet
+      [attr.aria-labelledby]="uid + '-sheet-h'"
+      (close)="onSheetClosed()"
+    >
+      @if (sheet() === 'add') {
+        <div class="fd__sheet-head">
+          <h3 class="fd__h" [id]="uid + '-sheet-h'">Add a field</h3>
+          <button type="button" class="mf-btn fd__btn" data-sheet-close (click)="closeSheet()">
+            Close
+          </button>
+        </div>
+        <div class="fd__sheet-body">
+          <ng-container *ngTemplateOutlet="paletteTpl" />
+        </div>
+      } @else if (sheet() === 'side') {
+        <div class="fd__sheet-head">
+          <h3 class="fd__sr" [id]="uid + '-sheet-h'">Field details</h3>
+          <ng-container *ngTemplateOutlet="tabsTpl" />
+          <button type="button" class="mf-btn fd__btn" data-sheet-close (click)="closeSheet()">
+            Close
+          </button>
+        </div>
+        <div class="fd__sheet-body">
+          <ng-container *ngTemplateOutlet="panelsTpl" />
+        </div>
+      }
+    </dialog>
+  }
+</div>
+
+<!-- The palette: one button per control type. -->
+<ng-template #paletteTpl>
+  <ul class="fd__palette-list" data-palette>
+    @for (c of catalog; track c.control) {
+      <li>
+        <button
+          type="button"
+          class="mf-btn fd__btn"
+          [attr.data-add]="c.control"
+          [attr.aria-label]="'Add ' + c.label"
+          (click)="add(c.control)"
+        >
+          + {{ c.label }}
+        </button>
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<!-- The tab list (WAI-ARIA tabs, automatic activation): the selected tab is the only tab stop. -->
+<ng-template #tabsTpl>
+  <div class="fd__tabs" role="tablist" aria-label="Field details" data-tablist>
+    @for (t of tabItems; track t.key) {
+      <button
+        type="button"
+        role="tab"
+        class="fd__tab"
+        [id]="uid + '-tab-' + t.key"
+        [attr.data-tab]="t.key"
+        [attr.aria-selected]="tab() === t.key"
+        [attr.aria-controls]="uid + '-panel-' + t.key"
+        [attr.tabindex]="tab() === t.key ? 0 : -1"
+        (click)="tab.set(t.key)"
+        (keydown)="onTabKey($event)"
+      >
+        {{ t.label }}
+        @if (t.key === 'issues' && errorCount() > 0) {
+          <span class="fd__tabcount" data-error-count> ({{ errorCount() }})</span
+          ><span class="fd__sr"> errors</span>
+        }
+      </button>
+    }
+  </div>
+</ng-template>
+
+<ng-template #panelsTpl>
+  <div
+    role="tabpanel"
+    class="fd__panel"
+    [id]="uid + '-panel-props'"
+    [attr.aria-labelledby]="uid + '-tab-props'"
+    [hidden]="tab() !== 'props'"
+    data-panel="props"
+  >
+    <div class="fd__scroll" mfFdScroll="Properties">
+      <ng-container *ngTemplateOutlet="propsTpl" />
+    </div>
+  </div>
+  <div
+    role="tabpanel"
+    class="fd__panel"
+    [id]="uid + '-panel-preview'"
+    [attr.aria-labelledby]="uid + '-tab-preview'"
+    [hidden]="tab() !== 'preview'"
+    data-panel="preview"
+  >
+    <div class="fd__scroll" mfFdScroll="Preview">
+      <ng-container *ngTemplateOutlet="previewTpl" />
+    </div>
+  </div>
+  <div
+    role="tabpanel"
+    class="fd__panel"
+    [id]="uid + '-panel-issues'"
+    [attr.aria-labelledby]="uid + '-tab-issues'"
+    [hidden]="tab() !== 'issues'"
+    data-panel="issues"
+  >
+    <div class="fd__scroll" mfFdScroll="Validation">
+      <ng-container *ngTemplateOutlet="issuesTpl" />
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #sideTpl>
+  <div class="fd__head fd__head--tabs">
+    <ng-container *ngTemplateOutlet="tabsTpl" />
+  </div>
+  <ng-container *ngTemplateOutlet="panelsTpl" />
+</ng-template>
+
+<ng-template #propsTpl>
+  @let f = current();
+  @if (!f) {
+    <h3 class="fd__sr" [id]="uid + '-props-h'">Properties</h3>
+    <p class="fd__empty">Select a field to edit its properties.</p>
+  } @else {
+    <h3 class="fd__h" [id]="uid + '-props-h'">Properties: {{ rowLabel(f) }}</h3>
+    <fieldset class="fd__fieldset" [disabled]="readOnly()">
+      <legend class="fd__sr">Properties of {{ rowLabel(f) }}</legend>
+
+      <!-- Label / text -->
+      <div class="fd__field">
+        @if (f.control === 'HELP_TEXT') {
+          <label [for]="rowId('label')">Text to show</label>
+          <textarea
+            [id]="rowId('label')"
+            data-slot="label"
+            rows="3"
+            [value]="f.helpText ?? ''"
+            (input)="setLabel(v($event))"
+          ></textarea>
+        } @else {
+          <label [for]="rowId('label')">{{
+            f.control === 'SECTION_HEADING' ? 'Heading' : 'Label'
+          }}</label>
+          <input
+            type="text"
+            [id]="rowId('label')"
+            data-slot="label"
+            [value]="f.label ?? ''"
+            [attr.aria-invalid]="msgs('label').length ? 'true' : null"
+            [attr.aria-describedby]="msgs('label').length ? rowId('label-err') : null"
+            (input)="setLabel(v($event))"
+          />
+          @if (msgs('label').length) {
+            <p class="fd__warn" [id]="rowId('label-err')">{{ msgs('label')[0] }}</p>
+          }
+        }
+      </div>
+
+      <!-- Key -->
+      <div class="fd__field">
+        <label [for]="rowId('key')">Key</label>
+        <input
+          type="text"
+          [id]="rowId('key')"
+          data-slot="key"
+          class="fd__mono"
+          [value]="f.key"
+          [disabled]="isLocked(f)"
+          [attr.aria-invalid]="msgs('key').length || keyMessage() ? 'true' : null"
+          [attr.aria-describedby]="rowId('key-help') + ' ' + rowId('key-err')"
+          (change)="setKey(v($event))"
+        />
+        <p class="fd__hint" [id]="rowId('key-help')">
+          @if (isLocked(f)) {
+            Locked once saved, so existing answers keep working.
+          } @else {
+            Internal name, taken from the label until the form is saved. Lowercase letters, digits
+            and underscores.
+          }
+        </p>
+        <div [id]="rowId('key-err')">
+          @for (m of msgs('key'); track m) {
+            <p class="fd__error">{{ m }}</p>
+          }
+          @if (keyMessage()) {
+            <p class="fd__error">{{ keyMessage() }}</p>
+          }
+        </div>
+      </div>
+
+      <!-- Type -->
+      <div class="fd__field">
+        <label [for]="rowId('type')">Type</label>
+        <select
+          [id]="rowId('type')"
+          data-slot="control"
+          [disabled]="isLocked(f)"
+          [attr.aria-describedby]="isLocked(f) ? rowId('type-help') : null"
+          (change)="setControl(v($event))"
+        >
+          @for (c of catalog; track c.control) {
+            <option [value]="c.control" [selected]="c.control === f.control">
+              {{ c.label }}
+            </option>
+          }
+        </select>
+        @if (isLocked(f)) {
+          <p class="fd__hint" [id]="rowId('type-help')">
+            The type can't change after the field has been saved.
+          </p>
+        }
+      </div>
+
+      @if (isInputControl(f.control)) {
+        <div class="fd__field">
+          <label [for]="rowId('help')">Help text</label>
+          <textarea
+            [id]="rowId('help')"
+            rows="2"
+            [value]="f.helpText ?? ''"
+            (input)="setHelp(v($event))"
+          ></textarea>
+        </div>
+      }
+
+      <!-- Section -->
+      @if (f.control !== 'SECTION_HEADING' && sections().length) {
+        <div class="fd__field">
+          <label [for]="rowId('section')">Section</label>
+          <select
+            [id]="rowId('section')"
+            data-slot="section"
+            [attr.aria-invalid]="msgs('section').length ? 'true' : null"
+            (change)="setSection(v($event))"
+          >
+            <option value="" [selected]="!f.section">None</option>
+            @for (s of sections(); track s.key) {
+              <option [value]="s.key" [selected]="s.key === f.section">
+                {{ fieldName(s) }}
+              </option>
+            }
+          </select>
+          @for (m of msgs('section'); track m) {
+            <p class="fd__error">{{ m }}</p>
+          }
+        </div>
+      }
+
+      <!-- Options -->
+      @if (hasOptions(f.control)) {
+        <fieldset class="fd__group" data-slot="options">
+          <legend>Options</legend>
+          <ul class="fd__options">
+            @for (
+              o of f.options ?? [];
+              track $index;
+              let oi = $index;
+              let ofirst = $first;
+              let olast = $last
+            ) {
+              <li class="fd__option">
+                <div class="fd__option-row">
+                  <label class="fd__sr" [for]="rowId('ol' + oi)">Option {{ oi + 1 }} label</label>
+                  <input
+                    type="text"
+                    [id]="rowId('ol' + oi)"
+                    [attr.data-option-label]="oi"
+                    [value]="o.label ?? ''"
+                    (input)="setOptionLabel(oi, v($event))"
+                  />
+                  <label class="fd__sr" [for]="rowId('ok' + oi)">Option {{ oi + 1 }} key</label>
+                  <input
+                    type="text"
+                    class="fd__mono"
+                    [id]="rowId('ok' + oi)"
+                    [value]="o.key"
+                    [disabled]="isOptionLocked(f, o)"
+                    (change)="setOptionKey(oi, v($event))"
+                  />
                   <button
                     type="button"
                     class="fd__icon"
-                    [attr.data-move]="'up-' + i"
-                    [attr.aria-label]="'Move ' + rowLabel(f) + ' up'"
-                    [disabled]="first"
-                    (click)="move(i, -1)"
+                    [attr.data-option-move]="'up-' + oi"
+                    [attr.aria-label]="'Move option ' + (o.label || o.key) + ' up'"
+                    [disabled]="ofirst"
+                    (click)="moveOption(oi, -1)"
                   >
                     <span aria-hidden="true">&#8593;</span>
                   </button>
                   <button
                     type="button"
                     class="fd__icon"
-                    [attr.data-move]="'down-' + i"
-                    [attr.aria-label]="'Move ' + rowLabel(f) + ' down'"
-                    [disabled]="last"
-                    (click)="move(i, 1)"
+                    [attr.data-option-move]="'down-' + oi"
+                    [attr.aria-label]="'Move option ' + (o.label || o.key) + ' down'"
+                    [disabled]="olast"
+                    (click)="moveOption(oi, 1)"
                   >
                     <span aria-hidden="true">&#8595;</span>
                   </button>
                   <button
                     type="button"
                     class="fd__icon"
-                    [attr.data-delete]="i"
-                    [attr.aria-label]="'Delete ' + rowLabel(f)"
-                    (click)="remove(i)"
+                    [attr.aria-label]="'Remove option ' + (o.label || o.key)"
+                    (click)="removeOption(oi)"
                   >
                     <span aria-hidden="true">&#10005;</span>
                   </button>
-                </span>
-              }
-            </li>
-          }
-        </ol>
-      }
-    </section>
-
-    <!-- Properties -->
-    <section class="fd__props" aria-labelledby="{{ uid }}-props-h">
-      @let f = current();
-      @if (!f) {
-        <h3 class="fd__h" [id]="uid + '-props-h'">Properties</h3>
-        <p class="fd__empty">Select a field to edit its properties.</p>
-      } @else {
-        <h3 class="fd__h" [id]="uid + '-props-h'">Properties: {{ rowLabel(f) }}</h3>
-        <fieldset class="fd__fieldset" [disabled]="readOnly()">
-          <legend class="fd__sr">Properties of {{ rowLabel(f) }}</legend>
-
-          <!-- Label / text -->
-          <div class="fd__field">
-            @if (f.control === 'HELP_TEXT') {
-              <label [for]="rowId('label')">Text to show</label>
-              <textarea
-                [id]="rowId('label')"
-                data-slot="label"
-                rows="3"
-                [value]="f.helpText ?? ''"
-                (input)="setLabel(v($event))"
-              ></textarea>
-            } @else {
-              <label [for]="rowId('label')">{{
-                f.control === 'SECTION_HEADING' ? 'Heading' : 'Label'
-              }}</label>
-              <input
-                type="text"
-                [id]="rowId('label')"
-                data-slot="label"
-                [value]="f.label ?? ''"
-                [attr.aria-invalid]="msgs('label').length ? 'true' : null"
-                [attr.aria-describedby]="msgs('label').length ? rowId('label-err') : null"
-                (input)="setLabel(v($event))"
-              />
-              @if (msgs('label').length) {
-                <p class="fd__warn" [id]="rowId('label-err')">{{ msgs('label')[0] }}</p>
-              }
-            }
-          </div>
-
-          <!-- Key -->
-          <div class="fd__field">
-            <label [for]="rowId('key')">Key</label>
-            <input
-              type="text"
-              [id]="rowId('key')"
-              data-slot="key"
-              class="fd__mono"
-              [value]="f.key"
-              [disabled]="isLocked(f)"
-              [attr.aria-invalid]="msgs('key').length || keyMessage() ? 'true' : null"
-              [attr.aria-describedby]="rowId('key-help') + ' ' + rowId('key-err')"
-              (change)="setKey(v($event))"
-            />
-            <p class="fd__hint" [id]="rowId('key-help')">
-              @if (isLocked(f)) {
-                Locked once saved, so existing answers keep working.
-              } @else {
-                Internal name, taken from the label until the form is saved. Lowercase letters,
-                digits and underscores.
-              }
-            </p>
-            <div [id]="rowId('key-err')">
-              @for (m of msgs('key'); track m) {
-                <p class="fd__error">{{ m }}</p>
-              }
-              @if (keyMessage()) {
-                <p class="fd__error">{{ keyMessage() }}</p>
-              }
-            </div>
-          </div>
-
-          <!-- Type -->
-          <div class="fd__field">
-            <label [for]="rowId('type')">Type</label>
-            <select
-              [id]="rowId('type')"
-              data-slot="control"
-              [disabled]="isLocked(f)"
-              [attr.aria-describedby]="isLocked(f) ? rowId('type-help') : null"
-              (change)="setControl(v($event))"
-            >
-              @for (c of catalog; track c.control) {
-                <option [value]="c.control" [selected]="c.control === f.control">
-                  {{ c.label }}
-                </option>
-              }
-            </select>
-            @if (isLocked(f)) {
-              <p class="fd__hint" [id]="rowId('type-help')">
-                The type can't change after the field has been saved.
-              </p>
-            }
-          </div>
-
-          @if (isInputControl(f.control)) {
-            <div class="fd__field">
-              <label [for]="rowId('help')">Help text</label>
-              <textarea
-                [id]="rowId('help')"
-                rows="2"
-                [value]="f.helpText ?? ''"
-                (input)="setHelp(v($event))"
-              ></textarea>
-            </div>
-          }
-
-          <!-- Section -->
-          @if (f.control !== 'SECTION_HEADING' && sections().length) {
-            <div class="fd__field">
-              <label [for]="rowId('section')">Section</label>
-              <select
-                [id]="rowId('section')"
-                data-slot="section"
-                [attr.aria-invalid]="msgs('section').length ? 'true' : null"
-                (change)="setSection(v($event))"
-              >
-                <option value="" [selected]="!f.section">None</option>
-                @for (s of sections(); track s.key) {
-                  <option [value]="s.key" [selected]="s.key === f.section">
-                    {{ fieldName(s) }}
-                  </option>
-                }
-              </select>
-              @for (m of msgs('section'); track m) {
-                <p class="fd__error">{{ m }}</p>
-              }
-            </div>
-          }
-
-          <!-- Options -->
-          @if (hasOptions(f.control)) {
-            <fieldset class="fd__group" data-slot="options">
-              <legend>Options</legend>
-              <ul class="fd__options">
-                @for (
-                  o of f.options ?? [];
-                  track $index;
-                  let oi = $index;
-                  let ofirst = $first;
-                  let olast = $last
-                ) {
-                  <li class="fd__option">
-                    <div class="fd__option-row">
-                      <label class="fd__sr" [for]="rowId('ol' + oi)"
-                        >Option {{ oi + 1 }} label</label
-                      >
-                      <input
-                        type="text"
-                        [id]="rowId('ol' + oi)"
-                        [attr.data-option-label]="oi"
-                        [value]="o.label ?? ''"
-                        (input)="setOptionLabel(oi, v($event))"
-                      />
-                      <label class="fd__sr" [for]="rowId('ok' + oi)">Option {{ oi + 1 }} key</label>
-                      <input
-                        type="text"
-                        class="fd__mono"
-                        [id]="rowId('ok' + oi)"
-                        [value]="o.key"
-                        [disabled]="isOptionLocked(f, o)"
-                        (change)="setOptionKey(oi, v($event))"
-                      />
-                      <button
-                        type="button"
-                        class="fd__icon"
-                        [attr.data-option-move]="'up-' + oi"
-                        [attr.aria-label]="'Move option ' + (o.label || o.key) + ' up'"
-                        [disabled]="ofirst"
-                        (click)="moveOption(oi, -1)"
-                      >
-                        <span aria-hidden="true">&#8593;</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="fd__icon"
-                        [attr.data-option-move]="'down-' + oi"
-                        [attr.aria-label]="'Move option ' + (o.label || o.key) + ' down'"
-                        [disabled]="olast"
-                        (click)="moveOption(oi, 1)"
-                      >
-                        <span aria-hidden="true">&#8595;</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="fd__icon"
-                        [attr.aria-label]="'Remove option ' + (o.label || o.key)"
-                        (click)="removeOption(oi)"
-                      >
-                        <span aria-hidden="true">&#10005;</span>
-                      </button>
-                    </div>
-                    <label class="fd__check">
-                      <input
-                        type="checkbox"
-                        [checked]="!!o.availableWhen"
-                        (change)="toggleOptionRule(oi, checked($event))"
-                      />
-                      Only offer "{{ o.label || o.key }}" when a condition is met
-                    </label>
-                    @if (o.availableWhen) {
-                      <div [attr.data-slot]="'option:' + o.key">
-                        <mf-rule-builder
-                          [field]="f"
-                          [allFields]="fields()"
-                          [rule]="o.availableWhen"
-                          [legend]="'Offer ' + (o.label || o.key) + ' only when'"
-                          [issues]="optionRuleIssues(o)"
-                          [readOnly]="readOnly()"
-                          (ruleChange)="setOptionRule(oi, $event)"
-                        />
-                      </div>
-                    }
-                  </li>
-                }
-              </ul>
-              <button type="button" class="mf-btn fd__btn" (click)="addOption()">Add option</button>
-              @for (m of msgs('options'); track m) {
-                <p class="fd__error">{{ m }}</p>
-              }
-            </fieldset>
-          }
-
-          <!-- Default -->
-          @if (isInputControl(f.control)) {
-            @switch (f.control) {
-              @case ('TEXT') {
-                <ng-container *ngTemplateOutlet="textDefault" />
-              }
-              @case ('TEXTAREA') {
-                <ng-container *ngTemplateOutlet="textDefault" />
-              }
-              @case ('URL') {
-                <ng-container *ngTemplateOutlet="textDefault" />
-              }
-              @case ('NUMBER') {
-                <div class="fd__field">
-                  <label [for]="rowId('default')">Default value</label>
-                  <input
-                    type="number"
-                    [id]="rowId('default')"
-                    data-slot="default"
-                    [value]="f.defaultValue ?? ''"
-                    (change)="setDefaultNumber(v($event))"
-                  />
                 </div>
-              }
-              @case ('DATE') {
-                <div class="fd__field">
-                  <label [for]="rowId('default')">Default value</label>
-                  <mf-date-input
-                    data-slot="default"
-                    label="default value"
-                    [inputId]="rowId('default')"
-                    [isoValue]="$any(f.defaultValue ?? null)"
-                    (isoChange)="setDefault($event ?? undefined)"
-                  />
-                </div>
-              }
-              @case ('CHECKBOX') {
                 <label class="fd__check">
                   <input
                     type="checkbox"
-                    data-slot="default"
-                    [checked]="f.defaultValue === true"
-                    (change)="setDefault(checked($event) ? true : undefined)"
+                    [checked]="!!o.availableWhen"
+                    (change)="toggleOptionRule(oi, checked($event))"
                   />
-                  Checked by default
+                  Only offer "{{ o.label || o.key }}" when a condition is met
                 </label>
-              }
-              @case ('SELECT') {
-                <ng-container *ngTemplateOutlet="singleDefault" />
-              }
-              @case ('RADIO') {
-                <ng-container *ngTemplateOutlet="singleDefault" />
-              }
-              @case ('MULTISELECT') {
-                <fieldset class="fd__group" data-slot="default">
-                  <legend>Default selection</legend>
-                  @for (o of f.options ?? []; track $index) {
-                    <label class="fd__check">
-                      <input
-                        type="checkbox"
-                        [checked]="defaultHas(o.key)"
-                        (change)="toggleDefaultOption(o.key, checked($event))"
-                      />
-                      {{ o.label || o.key }}
-                    </label>
-                  }
-                </fieldset>
-              }
+                @if (o.availableWhen) {
+                  <div [attr.data-slot]="'option:' + o.key">
+                    <mf-rule-builder
+                      [field]="f"
+                      [allFields]="fields()"
+                      [rule]="o.availableWhen"
+                      [legend]="'Offer ' + (o.label || o.key) + ' only when'"
+                      [issues]="optionRuleIssues(o)"
+                      [readOnly]="readOnly()"
+                      (ruleChange)="setOptionRule(oi, $event)"
+                    />
+                  </div>
+                }
+              </li>
             }
-            @for (m of msgs('default'); track m) {
-              <p class="fd__error">{{ m }}</p>
-            }
-          }
-
-          <!-- Validation -->
-          @if (isTextFamily(f.control) || f.control === 'NUMBER' || f.control === 'DATE') {
-            <fieldset class="fd__group" data-slot="validation">
-              <legend>Validation</legend>
-              @if (f.control === 'NUMBER') {
-                <div class="fd__field">
-                  <label [for]="rowId('min')">Minimum</label>
-                  <input
-                    type="number"
-                    [id]="rowId('min')"
-                    [value]="validationValue('min')"
-                    (change)="setValidation('min', v($event))"
-                  />
-                </div>
-                <div class="fd__field">
-                  <label [for]="rowId('max')">Maximum</label>
-                  <input
-                    type="number"
-                    [id]="rowId('max')"
-                    [value]="validationValue('max')"
-                    (change)="setValidation('max', v($event))"
-                  />
-                </div>
-              } @else if (f.control === 'DATE') {
-                <div class="fd__field">
-                  <label [for]="rowId('min')">Earliest date</label>
-                  <mf-date-input
-                    label="earliest date"
-                    [inputId]="rowId('min')"
-                    [isoValue]="$any(validationValue('min')) || null"
-                    (isoChange)="setValidation('min', $event ?? '')"
-                  />
-                </div>
-                <div class="fd__field">
-                  <label [for]="rowId('max')">Latest date</label>
-                  <mf-date-input
-                    label="latest date"
-                    [inputId]="rowId('max')"
-                    [isoValue]="$any(validationValue('max')) || null"
-                    (isoChange)="setValidation('max', $event ?? '')"
-                  />
-                </div>
-              } @else {
-                <div class="fd__field">
-                  <label [for]="rowId('maxlen')">Maximum length</label>
-                  <input
-                    type="number"
-                    min="1"
-                    [id]="rowId('maxlen')"
-                    [value]="validationValue('maxLength')"
-                    (change)="setValidation('maxLength', v($event))"
-                  />
-                </div>
-                <div class="fd__field">
-                  <label [for]="rowId('pattern')">Pattern (regular expression)</label>
-                  <input
-                    type="text"
-                    class="fd__mono"
-                    [id]="rowId('pattern')"
-                    [value]="validationValue('pattern')"
-                    (change)="setValidation('pattern', v($event))"
-                  />
-                </div>
-              }
-              @for (m of msgs('validation'); track m) {
-                <p class="fd__error">{{ m }}</p>
-              }
-            </fieldset>
-          }
-
-          <!-- Visibility -->
-          <fieldset class="fd__group">
-            <legend>Visibility</legend>
-            <label class="fd__check">
-              <input
-                type="radio"
-                [name]="rowId('vis')"
-                [checked]="!f.showWhen"
-                (change)="setVisibilityMode('always')"
-              />
-              Always shown
-            </label>
-            <label class="fd__check">
-              <input
-                type="radio"
-                [name]="rowId('vis')"
-                [checked]="!!f.showWhen"
-                [disabled]="!f.showWhen && eligibleForRules().length === 0"
-                (change)="setVisibilityMode('conditional')"
-              />
-              Show only when...
-            </label>
-            @if (!f.showWhen && eligibleForRules().length === 0) {
-              <p class="fd__hint">Add another input field to use it in a condition.</p>
-            }
-            @if (f.showWhen; as rule) {
-              <div data-slot="showWhen">
-                <mf-rule-builder
-                  [field]="f"
-                  [allFields]="fields()"
-                  [rule]="rule"
-                  legend="Show only when"
-                  [issues]="msgs('showWhen')"
-                  [readOnly]="readOnly()"
-                  (ruleChange)="setRule('showWhen', $event)"
-                />
-              </div>
-            }
-          </fieldset>
-
-          <!-- Required -->
-          @if (isInputControl(f.control)) {
-            <fieldset class="fd__group">
-              <legend>Required</legend>
-              @for (
-                m of [
-                  ['never', 'Never'],
-                  ['always', 'Always'],
-                  ['conditional', 'Required when...'],
-                ];
-                track m[0]
-              ) {
-                <label class="fd__check">
-                  <input
-                    type="radio"
-                    [name]="rowId('req')"
-                    [checked]="requiredMode(f) === m[0]"
-                    [disabled]="
-                      m[0] === 'conditional' && !f.requiredWhen && eligibleForRules().length === 0
-                    "
-                    (change)="setRequiredMode(m[0])"
-                  />
-                  {{ m[1] }}
-                </label>
-              }
-              @if (f.requiredWhen; as rule) {
-                <div data-slot="requiredWhen">
-                  <mf-rule-builder
-                    [field]="f"
-                    [allFields]="fields()"
-                    [rule]="rule"
-                    legend="Required when"
-                    [issues]="msgs('requiredWhen')"
-                    [readOnly]="readOnly()"
-                    (ruleChange)="setRule('requiredWhen', $event)"
-                  />
-                </div>
-              }
-            </fieldset>
+          </ul>
+          <button type="button" class="mf-btn fd__btn" (click)="addOption()">Add option</button>
+          @for (m of msgs('options'); track m) {
+            <p class="fd__error">{{ m }}</p>
           }
         </fieldset>
       }
-    </section>
-  </div>
 
-  <!-- Validation panel -->
-  <section class="fd__issues" aria-labelledby="{{ uid }}-issues-h">
-    <h3 class="fd__h" [id]="uid + '-issues-h'">Validation</h3>
-    @if (issues().length === 0) {
-      <p class="fd__ok" data-valid>
-        No problems found.{{ readOnly() ? '' : ' This form can be published.' }}
-      </p>
-    } @else {
-      <p class="fd__summary">
-        {{ errorCount() }} {{ errorCount() === 1 ? 'error' : 'errors' }} to fix before publishing.
-      </p>
-      <ul class="fd__issue-list">
-        @for (i of issues(); track i.id) {
-          <li [class.is-warning]="i.severity === 'warning'" [attr.data-issue]="i.code">
-            <b>{{ i.severity === 'error' ? 'Error' : 'Warning' }}:</b>
-            <b>{{ issueLabel(i) }}</b> - {{ i.message }}
-            @if (i.fieldKey !== undefined) {
-              <button type="button" class="fd__link" (click)="goTo(i)">
-                Go to <span class="fd__sr">{{ issueLabel(i) }}</span>
-              </button>
-            }
-          </li>
+      <!-- Default -->
+      @if (isInputControl(f.control)) {
+        @switch (f.control) {
+          @case ('TEXT') {
+            <ng-container *ngTemplateOutlet="textDefault" />
+          }
+          @case ('TEXTAREA') {
+            <ng-container *ngTemplateOutlet="textDefault" />
+          }
+          @case ('URL') {
+            <ng-container *ngTemplateOutlet="textDefault" />
+          }
+          @case ('NUMBER') {
+            <div class="fd__field">
+              <label [for]="rowId('default')">Default value</label>
+              <input
+                type="number"
+                [id]="rowId('default')"
+                data-slot="default"
+                [value]="f.defaultValue ?? ''"
+                (change)="setDefaultNumber(v($event))"
+              />
+            </div>
+          }
+          @case ('DATE') {
+            <div class="fd__field">
+              <label [for]="rowId('default')">Default value</label>
+              <mf-date-input
+                data-slot="default"
+                label="default value"
+                [inputId]="rowId('default')"
+                [isoValue]="$any(f.defaultValue ?? null)"
+                (isoChange)="setDefault($event ?? undefined)"
+              />
+            </div>
+          }
+          @case ('CHECKBOX') {
+            <label class="fd__check">
+              <input
+                type="checkbox"
+                data-slot="default"
+                [checked]="f.defaultValue === true"
+                (change)="setDefault(checked($event) ? true : undefined)"
+              />
+              Checked by default
+            </label>
+          }
+          @case ('SELECT') {
+            <ng-container *ngTemplateOutlet="singleDefault" />
+          }
+          @case ('RADIO') {
+            <ng-container *ngTemplateOutlet="singleDefault" />
+          }
+          @case ('MULTISELECT') {
+            <fieldset class="fd__group" data-slot="default">
+              <legend>Default selection</legend>
+              @for (o of f.options ?? []; track $index) {
+                <label class="fd__check">
+                  <input
+                    type="checkbox"
+                    [checked]="defaultHas(o.key)"
+                    (change)="toggleDefaultOption(o.key, checked($event))"
+                  />
+                  {{ o.label || o.key }}
+                </label>
+              }
+            </fieldset>
+          }
         }
-      </ul>
-    }
-  </section>
+        @for (m of msgs('default'); track m) {
+          <p class="fd__error">{{ m }}</p>
+        }
+      }
 
-  <!-- Preview -->
-  <section class="fd__preview" aria-labelledby="{{ uid }}-preview-h">
-    <h3 class="fd__h" [id]="uid + '-preview-h'">Preview</h3>
-    <p class="fd__hint">This is how people will see the form. Change answers to test your rules.</p>
-    @if (blocked()) {
-      <p class="fd__empty" data-preview-blocked>
-        Fix the errors listed under Validation to see the preview.
-      </p>
-    } @else if (fields().length === 0) {
-      <p class="fd__empty">Nothing to preview yet.</p>
-    } @else {
-      <mf-dynamic-form [definition]="previewDefinition()" [values]="previewValues()" />
-      <div class="fd__test">
-        <button type="button" class="mf-btn fd__btn" (click)="testSubmit()">Test submit</button>
-        <span class="fd__hint">Server re-validates on submission.</span>
-      </div>
-    }
-  </section>
-</div>
+      <!-- Validation -->
+      @if (isTextFamily(f.control) || f.control === 'NUMBER' || f.control === 'DATE') {
+        <fieldset class="fd__group" data-slot="validation">
+          <legend>Validation</legend>
+          @if (f.control === 'NUMBER') {
+            <div class="fd__field">
+              <label [for]="rowId('min')">Minimum</label>
+              <input
+                type="number"
+                [id]="rowId('min')"
+                [value]="validationValue('min')"
+                (change)="setValidation('min', v($event))"
+              />
+            </div>
+            <div class="fd__field">
+              <label [for]="rowId('max')">Maximum</label>
+              <input
+                type="number"
+                [id]="rowId('max')"
+                [value]="validationValue('max')"
+                (change)="setValidation('max', v($event))"
+              />
+            </div>
+          } @else if (f.control === 'DATE') {
+            <div class="fd__field">
+              <label [for]="rowId('min')">Earliest date</label>
+              <mf-date-input
+                label="earliest date"
+                [inputId]="rowId('min')"
+                [isoValue]="$any(validationValue('min')) || null"
+                (isoChange)="setValidation('min', $event ?? '')"
+              />
+            </div>
+            <div class="fd__field">
+              <label [for]="rowId('max')">Latest date</label>
+              <mf-date-input
+                label="latest date"
+                [inputId]="rowId('max')"
+                [isoValue]="$any(validationValue('max')) || null"
+                (isoChange)="setValidation('max', $event ?? '')"
+              />
+            </div>
+          } @else {
+            <div class="fd__field">
+              <label [for]="rowId('maxlen')">Maximum length</label>
+              <input
+                type="number"
+                min="1"
+                [id]="rowId('maxlen')"
+                [value]="validationValue('maxLength')"
+                (change)="setValidation('maxLength', v($event))"
+              />
+            </div>
+            <div class="fd__field">
+              <label [for]="rowId('pattern')">Pattern (regular expression)</label>
+              <input
+                type="text"
+                class="fd__mono"
+                [id]="rowId('pattern')"
+                [value]="validationValue('pattern')"
+                (change)="setValidation('pattern', v($event))"
+              />
+            </div>
+          }
+          @for (m of msgs('validation'); track m) {
+            <p class="fd__error">{{ m }}</p>
+          }
+        </fieldset>
+      }
+
+      <!-- Visibility -->
+      <fieldset class="fd__group">
+        <legend>Visibility</legend>
+        <label class="fd__check">
+          <input
+            type="radio"
+            [name]="rowId('vis')"
+            [checked]="!f.showWhen"
+            (change)="setVisibilityMode('always')"
+          />
+          Always shown
+        </label>
+        <label class="fd__check">
+          <input
+            type="radio"
+            [name]="rowId('vis')"
+            [checked]="!!f.showWhen"
+            [disabled]="!f.showWhen && eligibleForRules().length === 0"
+            (change)="setVisibilityMode('conditional')"
+          />
+          Show only when...
+        </label>
+        @if (!f.showWhen && eligibleForRules().length === 0) {
+          <p class="fd__hint">Add another input field to use it in a condition.</p>
+        }
+        @if (f.showWhen; as rule) {
+          <div data-slot="showWhen">
+            <mf-rule-builder
+              [field]="f"
+              [allFields]="fields()"
+              [rule]="rule"
+              legend="Show only when"
+              [issues]="msgs('showWhen')"
+              [readOnly]="readOnly()"
+              (ruleChange)="setRule('showWhen', $event)"
+            />
+          </div>
+        }
+      </fieldset>
+
+      <!-- Required -->
+      @if (isInputControl(f.control)) {
+        <fieldset class="fd__group">
+          <legend>Required</legend>
+          @for (
+            m of [
+              ['never', 'Never'],
+              ['always', 'Always'],
+              ['conditional', 'Required when...'],
+            ];
+            track m[0]
+          ) {
+            <label class="fd__check">
+              <input
+                type="radio"
+                [name]="rowId('req')"
+                [checked]="requiredMode(f) === m[0]"
+                [disabled]="
+                  m[0] === 'conditional' && !f.requiredWhen && eligibleForRules().length === 0
+                "
+                (change)="setRequiredMode(m[0])"
+              />
+              {{ m[1] }}
+            </label>
+          }
+          @if (f.requiredWhen; as rule) {
+            <div data-slot="requiredWhen">
+              <mf-rule-builder
+                [field]="f"
+                [allFields]="fields()"
+                [rule]="rule"
+                legend="Required when"
+                [issues]="msgs('requiredWhen')"
+                [readOnly]="readOnly()"
+                (ruleChange)="setRule('requiredWhen', $event)"
+              />
+            </div>
+          }
+        </fieldset>
+      }
+    </fieldset>
+  }
+</ng-template>
+
+<ng-template #issuesTpl>
+  <h3 class="fd__sr" [id]="uid + '-issues-h'">Validation</h3>
+  @if (issues().length === 0) {
+    <p class="fd__ok" data-valid>
+      No problems found.{{ readOnly() ? '' : ' This form can be published.' }}
+    </p>
+  } @else {
+    <p class="fd__summary">
+      {{ errorCount() }} {{ errorCount() === 1 ? 'error' : 'errors' }} to fix before publishing.
+    </p>
+    <ul class="fd__issue-list">
+      @for (i of issues(); track i.id) {
+        <li [class.is-warning]="i.severity === 'warning'" [attr.data-issue]="i.code">
+          <b>{{ i.severity === 'error' ? 'Error' : 'Warning' }}:</b>&ngsp;
+          <b>{{ issueLabel(i) }}</b> - {{ i.message }}
+          @if (i.fieldKey !== undefined) {
+            <button type="button" class="fd__link" (click)="goTo(i)">
+              Go to <span class="fd__sr">{{ issueLabel(i) }}</span>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  }
+</ng-template>
+
+<ng-template #previewTpl>
+  <h3 class="fd__sr" [id]="uid + '-preview-h'">Preview</h3>
+  <p class="fd__hint">This is how people will see the form. Change answers to test your rules.</p>
+  @if (blocked()) {
+    <p class="fd__empty" data-preview-blocked>
+      Fix the errors listed under Validation to see the preview.
+      <button type="button" class="fd__link" data-show-issues (click)="tab.set('issues')">
+        Show Validation
+      </button>
+    </p>
+  } @else if (fields().length === 0) {
+    <p class="fd__empty">Nothing to preview yet.</p>
+  } @else {
+    <mf-dynamic-form [definition]="previewDefinition()" [values]="previewValues()" />
+    <div class="fd__test">
+      <button type="button" class="mf-btn fd__btn" (click)="testSubmit()">Test submit</button>
+      <span class="fd__hint">Server re-validates on submission.</span>
+    </div>
+  }
+</ng-template>
 
 <ng-template #textDefault>
   @let f = current();

@@ -98,9 +98,14 @@ const FIXED_URLS = [
   '/dashboard',
   // The workflow version page (VP1, #393): the header and the action bar stay, the steps pane scrolls inside.
   '/admin/workflows/7/versions/9',
+  // The form designer (FD1, #407), one component for Task Types, Steps, Asset Types and Custom Fields: header and action bar stay, the panes scroll.
+  '/admin/task-types/7/form',
+  '/admin/steps/7/form',
+  '/admin/asset-types/7/form',
+  '/admin/custom-fields/client/form',
 ];
 
-/** Screens that keep the normal page scroll: forms, the designers, the task page and the system pages. */
+/** Screens that keep the normal page scroll: forms, the task page and the system pages. */
 const NORMAL_URLS = [
   '/tasks/new',
   '/tasks/7',
@@ -114,10 +119,8 @@ const NORMAL_URLS = [
   '/assets/7/edit',
   '/admin/task-types/new',
   '/admin/task-types/7',
-  '/admin/task-types/7/form',
   '/admin/steps/new',
   '/admin/steps/7',
-  '/admin/steps/7/form',
   '/admin/workflows/new',
   '/admin/workflows/7',
   '/403',

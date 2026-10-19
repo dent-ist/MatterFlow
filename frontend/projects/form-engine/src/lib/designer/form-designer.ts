@@ -2,9 +2,11 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
+  afterRenderEffect,
   computed,
   inject,
   input,
@@ -41,8 +43,15 @@ import {
   toRuntimeDefinition,
 } from './designer-model';
 import { RuleBuilder } from './rule-builder';
+import { FdScroll } from './fd-scroll';
 
 let nextInstance = 0;
+
+/** Below this width the details column becomes a bottom sheet and the palette a sheet opened by Add field (FD1, FD4). */
+const NARROW_QUERY = '(max-width: 1099.98px)';
+
+export type DesignerTab = 'props' | 'preview' | 'issues';
+type SheetKind = 'add' | 'side';
 
 const num = (raw: string): number | undefined => (raw.trim() === '' ? undefined : Number(raw));
 
@@ -64,9 +73,9 @@ const WHERE: Record<Dependent['where'], string> = {
 @Component({
   selector: 'mf-form-designer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DynamicForm, DateInput, RuleBuilder, NgTemplateOutlet],
+  imports: [DynamicForm, DateInput, RuleBuilder, NgTemplateOutlet, FdScroll],
   templateUrl: './form-designer.html',
-  styleUrl: './form-designer.scss',
+  styleUrls: ['./form-designer.scss', './form-designer-layout.scss'],
 })
 export class FormDesigner {
   readonly definition = input.required<DesignerDefinition>();
@@ -93,6 +102,21 @@ export class FormDesigner {
   protected readonly isTextFamily = isTextFamily;
 
   private readonly preview = viewChild(DynamicForm);
+  private readonly sheetEl = viewChild<ElementRef<HTMLDialogElement>>('sheetEl');
+
+  /** True below 1100 px: Fields come first, the palette and the details open as sheets. */
+  protected readonly narrow = signal(false);
+  protected readonly tabItems: readonly { key: DesignerTab; label: string }[] = [
+    { key: 'props', label: 'Properties' },
+    { key: 'preview', label: 'Preview' },
+    { key: 'issues', label: 'Validation' },
+  ];
+  /** The tab of the details column; a read-only form opens on Preview (Fields and Preview side by side). */
+  protected readonly tab = linkedSignal<DesignerTab>(() => (this.readOnly() ? 'preview' : 'props'));
+  /** The open sheet (narrow layout only). */
+  protected readonly sheet = signal<SheetKind | null>(null);
+  private sheetInvoker: HTMLElement | null = null;
+  private lastSheet: SheetKind | null = null;
 
   protected readonly fields = linkedSignal<DesignerField[]>(() => [...this.definition().fields]);
   protected readonly selected = signal(-1);
@@ -141,6 +165,32 @@ export class FormDesigner {
   });
 
   constructor() {
+    if (typeof matchMedia === 'function') {
+      const query = matchMedia(NARROW_QUERY);
+      this.narrow.set(query.matches);
+      const update = (): void => this.narrow.set(query.matches);
+      query.addEventListener('change', update);
+      inject(DestroyRef).onDestroy(() => query.removeEventListener('change', update));
+    }
+    // The sheet is a native modal dialog: the browser traps focus, closes it on Escape and inerts the page behind it.
+    afterRenderEffect(() => {
+      const kind = this.sheet();
+      const dialog = this.sheetEl()?.nativeElement;
+      if (!dialog) return;
+      // A press on the backdrop (the dialog element itself, outside its content) closes the sheet; Close and Escape are the keyboard ways.
+      if (!this.wired.has(dialog)) {
+        this.wired.add(dialog);
+        dialog.addEventListener('click', (e) => {
+          if (e.target === dialog) this.closeSheet();
+        });
+      }
+      if (kind && !dialog.open && typeof dialog.showModal === 'function') dialog.showModal();
+      else if (!kind && dialog.open) dialog.close();
+    });
+    // Leaving the narrow layout (window resize) closes an open sheet.
+    afterRenderEffect(() => {
+      if (!this.narrow() && this.sheet()) this.sheet.set(null);
+    });
     // Report diagnostics to the host (it disables Publish while errors remain).
     afterNextRender(() => this.issuesChange.emit(this.localIssues()), { injector: this.injector });
   }
@@ -245,6 +295,85 @@ export class FormDesigner {
     this.selected.set(index);
     this.blockMessage.set('');
     this.keyMessage.set('');
+    // Choosing a field is about its properties: a draft shows them at once; a read-only form keeps Preview beside the list unless it is a sheet.
+    if (!this.readOnly() || this.narrow()) this.tab.set('props');
+    if (this.narrow()) this.openSheet('side');
+  }
+
+  // ---------------------------------------------------------------- sheets and tabs
+
+  protected openSheet(kind: SheetKind): void {
+    if (this.sheet() === null) this.sheetInvoker = document.activeElement as HTMLElement | null;
+    this.lastSheet = kind;
+    this.sheet.set(kind);
+  }
+
+  /** Narrow layout: opens the sheet on `tab`. Wide layout: shows that tab of the column. */
+  protected openTab(tab: DesignerTab): void {
+    this.tab.set(tab);
+    if (this.narrow()) this.openSheet('side');
+  }
+
+  protected closeSheet(): void {
+    this.sheet.set(null);
+  }
+
+  /** The dialog closed (Close button, Escape or the page behind): focus goes back to the field that was chosen, or to what opened it. */
+  protected onSheetClosed(): void {
+    const wasSide = this.lastSheet === 'side';
+    this.sheet.set(null);
+    this.lastSheet = null;
+    const invoker = this.sheetInvoker;
+    this.sheetInvoker = null;
+    afterNextRender(
+      () => {
+        const root = this.host.nativeElement;
+        const row =
+          wasSide && this.selected() >= 0
+            ? root.querySelector<HTMLElement>(`[data-row="${this.selected()}"]`)
+            : null;
+        const target =
+          row ??
+          (invoker && root.contains(invoker) ? invoker : null) ??
+          root.querySelector<HTMLElement>('[data-open-add]');
+        target?.focus();
+      },
+      { injector: this.injector },
+    );
+  }
+
+  private readonly wired = new WeakSet<HTMLDialogElement>();
+
+  protected onTabKey(event: KeyboardEvent): void {
+    const keys = this.tabItems.map((t) => t.key);
+    const at = keys.indexOf(this.tab());
+    let to = -1;
+    switch (event.key) {
+      case 'ArrowRight':
+        to = (at + 1) % keys.length;
+        break;
+      case 'ArrowLeft':
+        to = (at - 1 + keys.length) % keys.length;
+        break;
+      case 'Home':
+        to = 0;
+        break;
+      case 'End':
+        to = keys.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.tab.set(keys[to]);
+    this.focusAfterRender(`[data-tab="${keys[to]}"]`);
+  }
+
+  /** For the host: Publish was pressed with errors left. Shows the Validation tab (a sheet when narrow) and moves focus to it. */
+  showIssues(): void {
+    this.tab.set('issues');
+    if (this.narrow()) this.openSheet('side');
+    this.focusAfterRender('[data-tab="issues"]');
   }
 
   protected add(control: FormControl): void {
@@ -256,6 +385,9 @@ export class FormDesigner {
     this.commit(next);
     this.selected.set(at);
     this.blockMessage.set('');
+    this.tab.set('props');
+    // On a narrow screen the palette sheet turns into the new field's properties, so it can be named at once.
+    if (this.narrow()) this.openSheet('side');
     this.announcement.set(
       `Added ${controlLabel(control)} at position ${at + 1} of ${next.length}.`,
     );
@@ -291,7 +423,9 @@ export class FormDesigner {
     this.blockMessage.set('');
     this.announcement.set(`Deleted ${this.rowLabel(f)}.`);
     this.focusAfterRender(
-      next.length ? `[data-row="${Math.min(index, next.length - 1)}"]` : '[data-palette]',
+      next.length
+        ? `[data-row="${Math.min(index, next.length - 1)}"]`
+        : '[data-palette], [data-open-add]',
     );
   }
 

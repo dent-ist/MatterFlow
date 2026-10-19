@@ -1,0 +1,204 @@
+/*
+ * Layout of the designer (FD1 to FD4). Wide (1100 px and up): Add a field, Fields and a details column (Properties, Preview and
+ * Validation as tabs). In a fixed-height page (768 x 561 px and up, the application's FIXED_MODE) every pane scrolls inside itself.
+ * Narrow: Fields only, with the palette and the details in bottom sheets.
+ */
+.fd__layout {
+  display: grid;
+  grid-template-columns: minmax(10rem, 13rem) minmax(16rem, 1fr) minmax(20rem, 1.4fr);
+  gap: var(--mf-s3, 0.75rem);
+  align-items: start;
+  min-width: 0;
+}
+
+/* Read only: Fields and Preview side by side, no palette. */
+.fd__layout--ro {
+  grid-template-columns: minmax(16rem, 1fr) minmax(20rem, 1.2fr);
+}
+
+.fd__layout.is-narrow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fd__pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fd__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2, 0.5rem);
+  margin-bottom: var(--mf-s2, 0.5rem);
+
+  .fd__h {
+    margin: 0;
+  }
+}
+
+.fd__head--tabs {
+  margin-bottom: var(--mf-s2, 0.5rem);
+}
+
+.fd__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2, 0.5rem);
+}
+
+.fd__count {
+  color: var(--mf-text-muted, #4b5563);
+  font-weight: 400;
+}
+
+.fd__scroll {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fd__scroll:focus-visible {
+  outline: 2px solid var(--mf-focus, #1d4ed8);
+  outline-offset: 2px;
+}
+
+.fd__tabs {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--mf-s1, 0.25rem);
+  overflow-x: auto;
+  box-shadow: inset 0 -1px 0 var(--mf-border, #d1d5db);
+}
+
+.fd__tab {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--mf-text, #111827);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    border-bottom-color: var(--mf-primary, #1d4ed8);
+    font-weight: 600;
+  }
+}
+
+.fd__tabcount {
+  color: var(--mf-danger-text, #b91c1c);
+  font-weight: 600;
+}
+
+.fd__panel[hidden] {
+  display: none;
+}
+
+/* The sheet: a native modal dialog fixed to the bottom edge. */
+.fd__sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: 85dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--mf-border-strong, #9ca3af);
+  border-radius: var(--mf-radius-lg, 8px) var(--mf-radius-lg, 8px) 0 0;
+  background: var(--mf-surface, #fff);
+  color: var(--mf-text, #111827);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 24%);
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &::backdrop {
+    background: rgb(0 0 0 / 40%);
+  }
+}
+
+.fd__sheet-head {
+  display: flex;
+  flex: none;
+  gap: var(--mf-s2, 0.5rem);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mf-s2, 0.5rem) var(--mf-s3, 0.75rem);
+  border-bottom: 1px solid var(--mf-border, #d1d5db);
+
+  .fd__h {
+    margin: 0;
+  }
+}
+
+.fd__sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--mf-s3, 0.75rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A fixed-height page: the designer takes what the page leaves and each pane scrolls inside itself. */
+@media (min-width: 768px) and (min-height: 561px) {
+  :host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .fd {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .fd__layout {
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .fd__pane > .fd__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .fd__panel:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .fd__panel > .fd__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* A long label wraps inside its row and is cut at two lines; the whole label is the tooltip. */
+.fd__name {
+  display: -webkit-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

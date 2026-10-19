@@ -5,23 +5,12 @@
 .fd {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-}
-
-.fd__layout {
-  display: grid;
-  grid-template-columns: minmax(10rem, 13rem) minmax(16rem, 1fr) minmax(18rem, 1.4fr);
   gap: 1rem;
-  align-items: start;
-
-  @media (max-width: 64rem) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .fd__palette,
 .fd__canvas,
-.fd__props,
+.fd__side,
 .fd__issues,
 .fd__preview {
   padding: 0.75rem;
@@ -191,6 +180,15 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+
+  /* A touch target of 24 px (WCAG 2.5.8): the native box is 16 px. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+  }
 }
 
 .fd__option-row {

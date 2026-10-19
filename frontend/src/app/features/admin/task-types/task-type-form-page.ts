@@ -9,12 +9,16 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
+import { FixedPage } from '../../../shared/ui/fixed-page';
+import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
+import { FormDesignerBar } from './task-type-form-bar';
 import {
   DefinitionDiff,
   DesignerDefinition,
@@ -23,7 +27,6 @@ import {
   diagnoseDefinition,
   diffDefinitions,
   fieldName,
-  hasErrors,
 } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
 
@@ -45,7 +48,7 @@ import {
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
 
-type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
+type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | 'versions' | null;
 
 /**
  * Admin: Task Type > Form (UX S14). Hosts `<mf-form-designer>` against `FormDesignerApi` and owns
@@ -56,6 +59,9 @@ type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
   selector: 'mf-task-type-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FixedPage,
+    FormDesignerBar,
+    Badge,
     PageHeader,
     ErrorReference,
     RecordState,
@@ -149,6 +155,8 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected readonly busy = signal(false);
   protected readonly notice = signal('');
   protected readonly failure = signal('');
+  /** Why Publish... did not open its dialog (errors are left); cleared by the next edit. */
+  protected readonly blockNote = signal('');
   protected readonly dialog = signal<DialogKind>(null);
   protected readonly publishNote = signal('');
   protected readonly diff = signal<DefinitionDiff | null>(null);
@@ -171,9 +179,11 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     const c = this.current();
     return !!c && JSON.stringify(c.definition) !== JSON.stringify(this.working());
   });
-  protected readonly canPublish = computed(
-    () => !this.readOnly() && !this.busy() && !hasErrors(this.issues()),
+  /** The number of the open draft, for the read-only bar's "Open draft vN". */
+  protected readonly draftNo = computed(
+    () => this.versions().find((v) => v.status === 'DRAFT')?.versionNo ?? null,
   );
+  private readonly designer = viewChild(FormDesigner);
   protected readonly dialogOpen = computed(() => this.dialog() !== null);
   /** The dialogs' wording comes from the one table (#362). */
   protected readonly copy = DIALOG_COPY;
@@ -228,6 +238,18 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   @HostListener('window:beforeunload', ['$event'])
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.dirty()) event.preventDefault();
+  }
+
+  protected statusTone(v: FormVersion): BadgeTone {
+    return workflowStatusTone(v.status);
+  }
+
+  protected statusIcon(v: FormVersion): string {
+    return v.status === 'DRAFT'
+      ? 'pi-pencil'
+      : v.status === 'PUBLISHED'
+        ? 'pi-check-circle'
+        : 'pi-ban';
   }
 
   protected title(v: FormVersion | null): string {
@@ -311,12 +333,14 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected onChange(definition: DesignerDefinition): void {
     this.working.set(definition);
     this.notice.set('');
+    this.blockNote.set('');
     this.serverIssues.set([]);
   }
 
   protected async run(action: () => Promise<void>): Promise<boolean> {
     this.busy.set(true);
     this.failure.set('');
+    this.blockNote.set('');
     try {
       await action();
       return true;
@@ -375,7 +399,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       this.show('discard', invoker);
       return;
     }
-    void this.switchTo(versionId);
+    void this.switchTo(versionId).then(() => queueMicrotask(() => invoker?.focus()));
   }
 
   private async switchTo(versionId: string): Promise<void> {
@@ -392,6 +416,20 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     this.dialog.set(kind);
   }
 
+  /** Publish... : with errors left it shows the Validation tab instead of the dialog (the button is not disabled without a reason). */
+  protected async tryPublish(): Promise<void> {
+    const errors = this.errorCount();
+    if (errors > 0) {
+      this.notice.set('');
+      this.blockNote.set(
+        `Fix ${errors} ${errors === 1 ? 'error' : 'errors'} before publishing. They are listed under Validation.`,
+      );
+      this.designer()?.showIssues();
+      return;
+    }
+    await this.openPublish();
+  }
+
   protected async openPublish(invoker?: HTMLElement): Promise<void> {
     const pub = this.published();
     this.diff.set(null);
@@ -405,6 +443,28 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     }
     this.publishNote.set('');
     this.show('publish', invoker);
+  }
+
+  protected openVersions(invoker: HTMLElement): void {
+    this.show('versions', invoker);
+  }
+
+  /** A version chosen in the Versions dialog: the dialog closes, a dirty draft asks before it is left, and focus returns to Versions. */
+  protected pickVersion(versionId: string): void {
+    const back = this.invoker;
+    this.dialog.set(null);
+    this.invoker = null;
+    if (versionId === this.current()?.id) {
+      queueMicrotask(() => back?.focus());
+      return;
+    }
+    this.open(versionId, back ?? undefined);
+  }
+
+  protected openDraft(): void {
+    const draft = this.versions().find((v) => v.status === 'DRAFT');
+    if (draft)
+      this.open(draft.id, document.querySelector<HTMLElement>('[data-versions]') ?? undefined);
   }
 
   protected openRetire(invoker?: HTMLElement): void {
@@ -440,7 +500,11 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     // A conflict opens its own dialog; every other outcome closes the publish dialog.
     if (this.dialog() === 'publish') this.dialog.set(null);
     if (ok) this.notice.set(`Version ${this.current()?.versionNo} published.`);
-    else if (this.dialog() === null) this.restoreFocus();
+    else if (this.serverIssues().length > 0) {
+      // The server found problems: they are listed under Validation, which takes the focus (not the Publish button).
+      this.invoker = null;
+      this.designer()?.showIssues();
+    } else if (this.dialog() === null) this.restoreFocus();
   }
 
   /** Conflict dialog: take the other admin's saved draft (dropping mine) or keep my edits on top of it. */

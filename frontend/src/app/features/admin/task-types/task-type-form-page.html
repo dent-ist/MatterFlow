@@ -1,100 +1,106 @@
-@if (flow.failed() && recordKind(); as kind) {
-  <mf-record-state
-    [kind]="kind"
-    [state]="state()"
-    [busy]="flow.retrying()"
-    [focusHeading]="true"
-    (retried)="retry()"
-  />
-} @else {
-  <mf-page-header
-    [heading]="owner() ? 'Form: ' + owner()!.name : heading()"
-    [crumbs]="formCrumbs()"
-  >
-    @if (state() === 'ready' && current()) {
-      <div mfActions class="mf-contents">
-        @if (!readOnly()) {
-          <p-button
-            label="Save draft"
-            severity="secondary"
-            [disabled]="!dirty() || busy()"
-            (onClick)="saveDraft()"
-          />
-          <p-button label="Publish..." [disabled]="!canPublish()" (onClick)="openPublish()" />
-        } @else {
-          @if (current()!.status === 'PUBLISHED') {
-            <p-button
-              label="Retire version"
-              severity="secondary"
-              [disabled]="busy()"
-              (onClick)="openRetire()"
-            />
-          }
-          @if (!hasDraft()) {
-            <p-button label="Create new draft" [disabled]="busy()" (onClick)="createDraft()" />
-          }
-        }
-      </div>
-    }
-    @if (owner() && current(); as c) {
-      <p class="ttf__crumb">
-        <span class="ttf__status" data-status>
-          {{ title(c) }}
+<mf-fixed-page>
+  @if (flow.failed() && recordKind(); as kind) {
+    <mf-record-state
+      [kind]="kind"
+      [state]="state()"
+      [busy]="flow.retrying()"
+      [focusHeading]="true"
+      (retried)="retry()"
+    />
+  } @else {
+    <mf-page-header [crumbs]="formCrumbs()">
+      <span mfTitle class="ttf-title">
+        <span class="ttf-title__name" [attr.title]="owner() ? 'Form: ' + owner()!.name : null">{{
+          owner() ? 'Form: ' + owner()!.name : heading()
+        }}</span>
+        @if (owner() && current(); as c) {
+          <mf-badge [tone]="statusTone(c)" [icon]="statusIcon(c)" data-status>{{
+            title(c)
+          }}</mf-badge>
           @if (published() && c.status === 'DRAFT') {
-            (published: v{{ published()!.versionNo }})
+            <span class="ttf-title__note" data-published-note
+              >(published: v{{ published()!.versionNo }})</span
+            >
           }
-        </span>
-      </p>
-    }
-  </mf-page-header>
-
-  <p class="ttf__live" role="status" aria-live="polite">{{ notice() }}</p>
-  @if (failure()) {
-    <p class="ttf__error" role="alert">{{ failure() }}</p>
-  }
-
-  @switch (state()) {
-    @case ('loading') {
-      <p class="ttf__muted">Loading the form...</p>
-    }
-    @default {
-      <mf-error-reference />
-      <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
-    }
-    @case ('ready') {
-      @if (!current()) {
-        <p class="ttf__muted">This {{ ownerLabel().toLowerCase() }} has no form yet.</p>
-        <p-button label="Create new draft" (onClick)="createDraft()" />
-      } @else {
-        @if (readOnly()) {
-          <p class="ttf__banner" data-readonly-banner>
-            Version {{ current()!.versionNo }} is
-            {{ current()!.status === 'PUBLISHED' ? 'published' : 'retired' }}
-            and can't be edited.
-            @if (hasDraft()) {
-              Open the draft to keep editing.
-            } @else {
-              Use Create new draft to make changes.
-            }
-          </p>
         }
-        @if (!readOnly() && errorCount() > 0) {
-          <p class="ttf__muted">
-            Fix {{ errorCount() }} {{ errorCount() === 1 ? 'error' : 'errors' }} before publishing.
-          </p>
+      </span>
+    </mf-page-header>
+
+    @if (state() === 'ready' && current()) {
+      <mf-form-designer-bar
+        [readOnly]="readOnly()"
+        [published]="current()!.status === 'PUBLISHED'"
+        [dirty]="dirty()"
+        [busy]="busy()"
+        [versionCount]="versions().length"
+        [draftNo]="draftNo()"
+        [notice]="notice()"
+        (save)="saveDraft()"
+        (publish)="tryPublish()"
+        (retire)="openRetire()"
+        (newDraft)="createDraft()"
+        (openDraft)="openDraft()"
+        (versions)="openVersions($event)"
+      />
+    }
+    @if (failure() || blockNote()) {
+      <p class="ttf__error" role="alert" data-form-alert>{{ failure() || blockNote() }}</p>
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <p class="ttf__muted">Loading the form...</p>
+      }
+      @default {
+        <mf-error-reference />
+        <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+      }
+      @case ('ready') {
+        @if (!current()) {
+          <p class="ttf__muted">This {{ ownerLabel().toLowerCase() }} has no form yet.</p>
+          <p-button label="Create new draft" (onClick)="createDraft()" />
+        } @else {
+          @if (readOnly()) {
+            <p class="ttf__banner" data-readonly-banner>
+              Version {{ current()!.versionNo }} is
+              {{ current()!.status === 'PUBLISHED' ? 'published' : 'retired' }}
+              and can't be edited.
+              @if (hasDraft()) {
+                Open the draft to keep editing.
+              } @else {
+                Use Create new draft to make changes.
+              }
+            </p>
+          }
+
+          <mf-form-designer
+            class="mf-fill"
+            [definition]="working()"
+            [saved]="current()!.definition"
+            [readOnly]="readOnly()"
+            [externalIssues]="serverIssues()"
+            (definitionChange)="onChange($event)"
+          />
         }
+      }
+    }
 
-        <mf-form-designer
-          [definition]="working()"
-          [saved]="current()!.definition"
-          [readOnly]="readOnly()"
-          [externalIssues]="serverIssues()"
-          (definitionChange)="onChange($event)"
-        />
-
-        <section class="ttf__versions" aria-labelledby="ttf-versions-h">
-          <h2 id="ttf-versions-h" class="ttf__h2">Versions</h2>
-          <div class="mf-scroll">
+    <p-dialog
+      [visible]="dialog() === 'versions'"
+      (visibleChange)="onVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [closable]="true"
+      closeAriaLabel="Close dialog"
+      [mfDialogFocus]="dialog() === 'versions'"
+      [focusOnShow]="false"
+      (onShow)="focusPrimary()"
+      [style]="{ width: '40rem', maxWidth: '95vw' }"
+      header="Form versions"
+    >
+      @if (dialog() === 'versions') {
+        <div class="ttf__dialog" data-dialog="versions">
+          <div class="ttf__vers" mfScrollRegion="Form versions">
             <table class="ttf__table">
               <caption class="ttf__sr">
                 Form versions
@@ -109,13 +115,13 @@
               </thead>
               <tbody>
                 @for (v of versions(); track v.id) {
-                  <tr [class.is-current]="v.id === current()!.id">
+                  <tr [class.is-current]="v.id === current()?.id">
                     <th scope="row">
                       <button
                         type="button"
                         class="ttf__link"
-                        [attr.aria-current]="v.id === current()!.id ? 'true' : null"
-                        (click)="open(v.id, $any($event.target))"
+                        [attr.aria-current]="v.id === current()?.id ? 'true' : null"
+                        (click)="pickVersion(v.id)"
                       >
                         v{{ v.versionNo }}
                       </button>
@@ -136,132 +142,133 @@
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       }
-    }
-  }
+    </p-dialog>
 
-  <p-dialog
-    [visible]="dialogOpen()"
-    (visibleChange)="onVisibleChange($event)"
-    [modal]="true"
-    [draggable]="false"
-    [closable]="true"
-    closeAriaLabel="Close dialog"
-    [mfDialogFocus]="dialogOpen()"
-    [focusOnShow]="false"
-    (onShow)="focusPrimary()"
-    [style]="{ width: '34rem', maxWidth: '95vw' }"
-    [header]="dialogTitle()"
-  >
-    @switch (dialog()) {
-      @case ('publish') {
-        <div class="ttf__dialog" data-dialog="publish">
-          @if (diff(); as d) {
-            @if (d.added.length + d.changed.length + d.removed.length === 0) {
-              <p>No field changes compared with the published version.</p>
-            } @else {
-              <div class="ttf__diff" mfScrollRegion="Changes in this version">
-                <ul>
-                  @if (d.added.length) {
-                    <li>Added: {{ labels(d.added) }}</li>
-                  }
-                  @if (d.changed.length) {
-                    <li>Changed: {{ labels(d.changed) }}</li>
-                  }
-                  @if (d.removed.length) {
-                    <li>Removed: {{ labels(d.removed) }}</li>
-                  }
-                </ul>
-              </div>
+    <p-dialog
+      [visible]="dialogOpen() && dialog() !== 'versions'"
+      (visibleChange)="onVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [closable]="true"
+      closeAriaLabel="Close dialog"
+      [mfDialogFocus]="dialogOpen()"
+      [focusOnShow]="false"
+      (onShow)="focusPrimary()"
+      [style]="{ width: '34rem', maxWidth: '95vw' }"
+      [header]="dialogTitle()"
+    >
+      @switch (dialog()) {
+        @case ('publish') {
+          <div class="ttf__dialog" data-dialog="publish">
+            @if (diff(); as d) {
+              @if (d.added.length + d.changed.length + d.removed.length === 0) {
+                <p>No field changes compared with the published version.</p>
+              } @else {
+                <div class="ttf__diff" mfScrollRegion="Changes in this version">
+                  <ul>
+                    @if (d.added.length) {
+                      <li>Added: {{ labels(d.added) }}</li>
+                    }
+                    @if (d.changed.length) {
+                      <li>Changed: {{ labels(d.changed) }}</li>
+                    }
+                    @if (d.removed.length) {
+                      <li>Removed: {{ labels(d.removed) }}</li>
+                    }
+                  </ul>
+                </div>
+              }
             }
-          }
-          <p>
-            @if (published(); as p) {
-              Existing {{ recordNoun() }} keep form version {{ p.versionNo }}. New
-              {{ recordNoun() }} will use version {{ current()?.versionNo }}.
-            } @else {
-              New {{ recordNoun() }} will use version {{ current()?.versionNo }}.
-            }
-            Published versions can't be edited.
-          </p>
-          <label for="ttf-note">Version note</label>
-          <textarea
-            id="ttf-note"
-            rows="2"
-            [ngModel]="publishNote()"
-            (ngModelChange)="publishNote.set($event)"
-          ></textarea>
-          <div class="ttf__dialog-actions">
-            <p-button
-              [label]="publishText().cancel"
-              severity="secondary"
-              (onClick)="closeDialog()"
-            />
-            <p-button
-              data-primary
-              [label]="publishText().confirm"
-              [disabled]="busy()"
-              (onClick)="confirmPublish()"
-            />
+            <p>
+              @if (published(); as p) {
+                Existing {{ recordNoun() }} keep form version {{ p.versionNo }}. New
+                {{ recordNoun() }} will use version {{ current()?.versionNo }}.
+              } @else {
+                New {{ recordNoun() }} will use version {{ current()?.versionNo }}.
+              }
+              Published versions can't be edited.
+            </p>
+            <label for="ttf-note">Version note</label>
+            <textarea
+              id="ttf-note"
+              rows="2"
+              [ngModel]="publishNote()"
+              (ngModelChange)="publishNote.set($event)"
+            ></textarea>
+            <div class="ttf__dialog-actions">
+              <p-button
+                [label]="publishText().cancel"
+                severity="secondary"
+                (onClick)="closeDialog()"
+              />
+              <p-button
+                data-primary
+                [label]="publishText().confirm"
+                [disabled]="busy()"
+                (onClick)="confirmPublish()"
+              />
+            </div>
           </div>
-        </div>
-      }
-      @case ('retire') {
-        <div class="ttf__dialog" data-dialog="retire">
-          <p>
-            New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep it.
-          </p>
-          <div class="ttf__dialog-actions">
-            <p-button
-              [label]="retireText().cancel"
-              severity="secondary"
-              (onClick)="closeDialog()"
-            />
-            <p-button
-              data-primary
-              [label]="retireText().confirm"
-              severity="danger"
-              styleClass="mf-btn--solid"
-              (onClick)="confirmRetire()"
-            />
+        }
+        @case ('retire') {
+          <div class="ttf__dialog" data-dialog="retire">
+            <p>
+              New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep
+              it.
+            </p>
+            <div class="ttf__dialog-actions">
+              <p-button
+                [label]="retireText().cancel"
+                severity="secondary"
+                (onClick)="closeDialog()"
+              />
+              <p-button
+                data-primary
+                [label]="retireText().confirm"
+                severity="danger"
+                styleClass="mf-btn--solid"
+                (onClick)="confirmRetire()"
+              />
+            </div>
           </div>
-        </div>
-      }
-      @case ('conflict') {
-        <div class="ttf__dialog" data-dialog="conflict">
-          <p>
-            Another admin saved this draft after you opened it. Reload to see their version, or keep
-            your edits and save over theirs.
-          </p>
-          <div class="ttf__dialog-actions">
-            <p-button
-              [label]="copy.conflict.cancel"
-              severity="secondary"
-              (onClick)="resolveConflict(false)"
-            />
-            <p-button [label]="copy.conflict.confirm" (onClick)="resolveConflict(true)" />
+        }
+        @case ('conflict') {
+          <div class="ttf__dialog" data-dialog="conflict">
+            <p>
+              Another admin saved this draft after you opened it. Reload to see their version, or
+              keep your edits and save over theirs.
+            </p>
+            <div class="ttf__dialog-actions">
+              <p-button
+                [label]="copy.conflict.cancel"
+                severity="secondary"
+                (onClick)="resolveConflict(false)"
+              />
+              <p-button [label]="copy.conflict.confirm" (onClick)="resolveConflict(true)" />
+            </div>
           </div>
-        </div>
-      }
-      @case ('discard') {
-        <div class="ttf__dialog" data-dialog="discard">
-          <p>You have unsaved changes to this draft. Opening another version discards them.</p>
-          <div class="ttf__dialog-actions">
-            <p-button
-              [label]="copy.discardChanges.cancel"
-              severity="secondary"
-              (onClick)="closeDialog()"
-            />
-            <p-button
-              [label]="copy.discardChanges.confirm"
-              severity="danger"
-              styleClass="mf-btn--solid"
-              (onClick)="confirmDiscard()"
-            />
+        }
+        @case ('discard') {
+          <div class="ttf__dialog" data-dialog="discard">
+            <p>You have unsaved changes to this draft. Opening another version discards them.</p>
+            <div class="ttf__dialog-actions">
+              <p-button
+                [label]="copy.discardChanges.cancel"
+                severity="secondary"
+                (onClick)="closeDialog()"
+              />
+              <p-button
+                [label]="copy.discardChanges.confirm"
+                severity="danger"
+                styleClass="mf-btn--solid"
+                (onClick)="confirmDiscard()"
+              />
+            </div>
           </div>
-        </div>
+        }
       }
-    }
-  </p-dialog>
-}
+    </p-dialog>
+  }
+</mf-fixed-page>
