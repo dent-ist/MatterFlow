@@ -63,7 +63,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(page).toHaveURL(/\/admin\/workflows$/);
     await expect(page.getByRole('tab', { name: 'Workflows' })).toBeFocused();
     await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'New workflow' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New workflow$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types - Workflows - MatterFlow');
@@ -72,7 +72,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await page.getByRole('tab', { name: 'Workflows' }).press('ArrowRight');
     await expect(page).toHaveURL(/\/admin\/steps$/);
     await expect(page.getByRole('tab', { name: 'Workflow Steps' })).toBeFocused();
-    await expect(page.getByRole('button', { name: 'New step' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New step$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
     await expect(page).toHaveTitle('Task Types - Workflow Steps - MatterFlow');

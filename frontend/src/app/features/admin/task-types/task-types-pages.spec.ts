@@ -46,11 +46,33 @@ describe('TaskTypesPage', () => {
   const el = (): HTMLElement => fixture.nativeElement;
   const row = (name: string): HTMLElement => el().querySelector(`[data-row="${name}"]`)!;
 
+  /** Opens the row menu of a type and picks one entry (`data-action`). */
+  async function pick(name: string, action: string): Promise<void> {
+    row(name).querySelector<HTMLButtonElement>('button[data-overflow]')!.click();
+    await settle(fixture);
+    el().querySelector<HTMLButtonElement>(`[role=menuitem][data-action="${action}"]`)!.click();
+    await settle(fixture);
+  }
+
   beforeEach(async () => {
     api = configure();
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskTypesPage);
     await settle(fixture);
+  });
+
+  it('offers Edit form and Deactivate in the row menu of an active type, Edit form and Activate for an inactive one', async () => {
+    row('Data Processing').querySelector<HTMLButtonElement>('button[data-overflow]')!.click();
+    await settle(fixture);
+    const entries = () =>
+      Array.from(el().querySelectorAll('[role=menuitem]')).map((i) =>
+        i.getAttribute('data-action'),
+      );
+    expect(entries()).toEqual(['edit-form', 'deactivate']);
+    const router = TestBed.inject(Router);
+    const go = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    el().querySelector<HTMLButtonElement>('[data-action=edit-form]')!.click();
+    expect(go).toHaveBeenCalledWith(['/admin/task-types', 1, 'form']);
   });
 
   it('lists task types with form status and the eligible workflows as chips, the default marked', () => {
@@ -75,11 +97,6 @@ describe('TaskTypesPage', () => {
     );
     expect(r.querySelector('[data-assoc-more]')).toBeNull();
     expect(r.querySelector('[data-warning]')).toBeNull();
-    expect(
-      r
-        .querySelector<HTMLAnchorElement>('a[aria-label^="Edit the request form"]')!
-        .getAttribute('href'),
-    ).toBe('/admin/task-types/1/form');
   });
 
   it('shows each type with its icon in neutral colour before the name', () => {
@@ -108,11 +125,15 @@ describe('TaskTypesPage', () => {
     await TestBed.inject(Router).navigateByUrl('/admin/task-types?name=COLLECTION');
     await settle(fixture);
     expect(names()).toContain('Collection');
-    const actions = row('Collection').querySelector('.mf-row-actions')!;
-    expect(Array.from(actions.querySelectorAll('[aria-label]')).map((a) => a.ariaLabel)).toEqual([
-      'Edit the request form of Collection',
-      'Deactivate Collection',
-    ]);
+    // One overflow button per row (#355) named after the row; the text links are gone.
+    const cell = row('Collection').querySelector('td.mf-col-menu')!;
+    expect(cell.querySelectorAll('button[data-overflow]')).toHaveLength(1);
+    expect(cell.querySelector('button[data-overflow]')!.getAttribute('aria-label')).toBe(
+      'Actions for Collection',
+    );
+    expect(
+      row('Collection').querySelector('[data-deactivate], a[aria-label^="Edit the request"]'),
+    ).toBeNull();
 
     await TestBed.inject(Router).navigateByUrl('/admin/task-types?name=no%20such%20type');
     await settle(fixture);
@@ -160,8 +181,7 @@ describe('TaskTypesPage', () => {
     );
     expect(row('Collection').querySelector('.ac__empty--warn')).not.toBeNull();
 
-    row('Data Processing').querySelector<HTMLButtonElement>('[data-deactivate]')!.click();
-    await settle(fixture);
+    await pick('Data Processing', 'deactivate');
     const confirm = Array.from(document.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Deactivate task type' && b.closest('p-dialog, .p-dialog'),
     );
@@ -179,8 +199,7 @@ describe('TaskTypesPage', () => {
     expect(row('Data Processing').textContent).toContain('Inactive');
     expect(row('Data Processing').querySelector('[data-warning]')).toBeNull();
 
-    row('Data Processing').querySelector<HTMLButtonElement>('[data-activate]')!.click();
-    await settle(fixture);
+    await pick('Data Processing', 'activate');
     expect(row('Data Processing').textContent).not.toContain('Inactive');
   }, 20_000);
 });

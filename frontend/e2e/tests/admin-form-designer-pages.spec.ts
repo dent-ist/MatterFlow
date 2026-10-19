@@ -35,9 +35,10 @@ test.describe('Form designer pages open from their lists', () => {
     const errors = collectErrors(page);
     await page.goto('/admin/task-types');
     await page
-      .getByRole('link', { name: /Edit the request form of/ })
+      .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
+    await page.getByRole('menuitem', { name: 'Edit form' }).click();
     await expect(page).toHaveURL(/\/admin\/task-types\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

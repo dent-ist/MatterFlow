@@ -198,6 +198,63 @@ describe('StepsListPage', () => {
   });
 });
 
+describe('StepsListPage row menu', () => {
+  const list = (items: StepDefinitionSummary[]) =>
+    vi.fn().mockReturnValue(ok({ items, total: items.length, page: 1, pageSize: 25 }));
+  const entries = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('[role=menuitem]')).map((i) => i.getAttribute('data-action'));
+
+  it('has one overflow button per row with Edit inputs and Deactivate (Activate when inactive), and confirms Deactivate', async () => {
+    const api = {
+      listStepDefinitions: list([
+        summary(),
+        summary({ stepDefinitionId: 5, title: 'OCR', isActive: false }),
+      ]),
+      deactivateStepDefinition: vi.fn().mockReturnValue(of(detail({ isActive: false }))),
+      activateStepDefinition: vi.fn().mockReturnValue(of(detail())),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelectorAll('tbody button[data-overflow]')).toHaveLength(2);
+    expect(
+      el.querySelector('tr[data-row="OCR"] button[data-overflow]')!.getAttribute('aria-label'),
+    ).toBe('Actions for OCR');
+
+    el.querySelector<HTMLButtonElement>('tr[data-row="OCR"] button[data-overflow]')!.click();
+    await settle(fixture);
+    expect(entries(el)).toEqual(['edit-inputs', 'activate']);
+    el.querySelector<HTMLButtonElement>('[data-action=activate]')!.click();
+    await settle(fixture);
+    expect(api.activateStepDefinition).toHaveBeenCalledWith(5, { rowVersion: 'AAAA' });
+
+    el.querySelector<HTMLButtonElement>(
+      'tr[data-row="Deduplicate"] button[data-overflow]',
+    )!.click();
+    await settle(fixture);
+    expect(entries(el)).toEqual(['edit-inputs', 'deactivate']);
+    const go = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    el.querySelector<HTMLButtonElement>('[data-action=edit-inputs]')!.click();
+    expect(go).toHaveBeenCalledWith(['/admin/steps', 4, 'form']);
+
+    el.querySelector<HTMLButtonElement>(
+      'tr[data-row="Deduplicate"] button[data-overflow]',
+    )!.click();
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
+    await settle(fixture);
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Deactivate step' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    expect(api.deactivateStepDefinition).not.toHaveBeenCalled();
+    confirm!.click();
+    await settle(fixture);
+    expect(api.deactivateStepDefinition).toHaveBeenCalledWith(4, { rowVersion: 'AAAA' });
+  });
+});
+
 describe('StepEditPage', () => {
   it('creates a step and opens it for editing; requires a title and a valid link', async () => {
     const api = {
@@ -369,7 +426,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used in', 'Status'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Status', 'Actions'],
     );
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(

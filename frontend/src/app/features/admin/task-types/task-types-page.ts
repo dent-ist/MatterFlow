@@ -20,6 +20,7 @@ import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-l
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
@@ -61,6 +62,7 @@ const FORM_OPTIONS = [
     ScrollArea,
     ConfirmDialog,
     ActiveBadge,
+    ActionMenu,
     RouterLink,
     Pager,
     SortHeader,
@@ -128,6 +130,10 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   /** The workflow chips of every row, built once per load of the rows or of the workflow names. */
   protected readonly chips = computed(
     () => new Map(this.all().map((t) => [t.id, this.chipsOf(t)] as const)),
+  );
+  /** The row menu of every row (#355): Edit form, then Deactivate or Activate. The page needs TaskType.Manage, which both need. */
+  protected readonly menus = computed(
+    () => new Map(this.all().map((t) => [t.id, this.menuOf(t)] as const)),
   );
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
@@ -254,6 +260,40 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   /** The Workflows tab limited to a type (`?taskType=<id>`). */
   protected workflowsQuery(t: TaskTypeView): Record<string, number> {
     return { taskType: t.id };
+  }
+
+  private menuOf(t: TaskTypeView): MenuAction[] {
+    const busy = this.busy();
+    return [
+      {
+        id: 'edit-form',
+        label: 'Edit form',
+        icon: 'pi-file-edit',
+        run: () => void this.router.navigate(['/admin/task-types', t.id, 'form']),
+      },
+      t.isActive
+        ? {
+            id: 'deactivate',
+            label: 'Deactivate',
+            icon: 'pi-ban',
+            danger: true,
+            separated: true,
+            disabled: busy,
+            run: () => this.askDeactivate(t),
+          }
+        : {
+            id: 'activate',
+            label: 'Activate',
+            icon: 'pi-check-circle',
+            separated: true,
+            disabled: busy,
+            run: () => void this.setActive(t, true),
+          },
+    ];
+  }
+
+  protected menuFor(t: TaskTypeView): readonly MenuAction[] {
+    return this.menus().get(t.id) ?? [];
   }
 
   protected chipsFor(t: TaskTypeView): AssocItem[] {

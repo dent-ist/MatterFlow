@@ -111,3 +111,29 @@ describe('mf-action-menu', () => {
     expect(items()[1].classList).toContain('am__item--sep');
   });
 });
+
+describe('mf-action-menu floating', () => {
+  @Component({
+    imports: [ActionMenu],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `<mf-action-menu [items]="items" [floating]="true" />`,
+  })
+  class FloatHost {
+    readonly items: MenuAction[] = [{ id: 'a', label: 'Alpha', run: vi.fn() }];
+  }
+
+  it('is placed against the window, and closes when the window is resized', async () => {
+    const fixture = TestBed.createComponent(FloatHost);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<HTMLButtonElement>('[data-overflow]')!.click();
+    await settle(fixture);
+    const menu = el.querySelector<HTMLElement>('[role=menu]')!;
+    expect(menu.classList.contains('am__menu--fixed')).toBe(true);
+    expect(menu.style.right).not.toBe('');
+    expect(menu.style.top !== '' || menu.style.bottom !== '').toBe(true);
+    window.dispatchEvent(new Event('resize'));
+    await settle(fixture);
+    expect(el.querySelector('[role=menu]')).toBeNull();
+  });
+});

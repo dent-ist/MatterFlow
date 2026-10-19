@@ -23,6 +23,12 @@
   box-shadow: var(--mf-shadow-2);
 }
 
+/* A floating menu (row menus in a scrolling table): placed against the window by the component. */
+.am__menu--fixed {
+  position: fixed;
+  left: auto;
+}
+
 .am__item {
   display: flex;
   align-items: center;

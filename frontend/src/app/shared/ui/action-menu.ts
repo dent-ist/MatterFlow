@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
+  inject,
   input,
   signal,
   viewChildren,
@@ -57,12 +59,16 @@ let nextId = 0;
       @if (open()) {
         <div
           class="am__menu"
+          [class.am__menu--fixed]="pos() !== null"
+          [style.top.px]="pos()?.top"
+          [style.bottom.px]="pos()?.bottom"
+          [style.right.px]="pos()?.right"
           role="menu"
           tabindex="-1"
           [id]="uid + '-menu'"
           [attr.aria-label]="label()"
           [mfDismissable]="trigger"
-          (dismissed)="open.set(false)"
+          (dismissed)="close(false)"
           (keydown)="onMenuKey($event)"
         >
           @for (item of items(); track item.id) {
@@ -100,9 +106,18 @@ export class ActionMenu {
   /** The accessible name of the button and of the menu, for example "More actions". */
   readonly label = input('More actions');
   readonly items = input<readonly MenuAction[]>([]);
+  /**
+   * The menu is placed against the window (`position: fixed`, under the button or above it when there is no room) instead of inside its
+   * parent, so a scrolling table (a row's menu in the last row) never clips it or grows its scroll height. It closes when the page or any
+   * box scrolls, or the window is resized, because the button it hangs from has then moved.
+   */
+  readonly floating = input(false);
 
   protected readonly uid = `am-${nextId++}`;
   protected readonly open = signal(false);
+  protected readonly pos = signal<{ top?: number; bottom?: number; right: number } | null>(null);
+  private readonly dismissScroll = () => this.close(false);
+  private watching = false;
   private readonly entries = viewChildren<ElementRef<HTMLButtonElement>>('entry');
   private readonly trigger = viewChildren<ElementRef<HTMLButtonElement>>('trigger');
 
@@ -111,14 +126,50 @@ export class ActionMenu {
     else this.show(0);
   }
 
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.unwatch());
+  }
+
   private show(focusIndex: number): void {
+    this.place();
     this.open.set(true);
     setTimeout(() => this.focusEntry(focusIndex));
   }
 
-  private close(returnFocus: boolean): void {
+  /** The window position of a floating menu: right edges aligned, below the button, or above it when the room below is too small. */
+  private place(): void {
+    const button = this.trigger()[0]?.nativeElement;
+    if (!this.floating() || !button) {
+      this.pos.set(null);
+      return;
+    }
+    const rect = button.getBoundingClientRect();
+    const right = Math.max(0, window.innerWidth - rect.right);
+    const need = this.items().length * 44 + 12;
+    const below = window.innerHeight - rect.bottom;
+    this.pos.set(
+      below >= need || rect.top < need
+        ? { top: rect.bottom + 4, right }
+        : { bottom: window.innerHeight - rect.top + 4, right },
+    );
+    if (!this.watching) {
+      this.watching = true;
+      window.addEventListener('scroll', this.dismissScroll, true);
+      window.addEventListener('resize', this.dismissScroll);
+    }
+  }
+
+  private unwatch(): void {
+    if (!this.watching) return;
+    this.watching = false;
+    window.removeEventListener('scroll', this.dismissScroll, true);
+    window.removeEventListener('resize', this.dismissScroll);
+  }
+
+  protected close(returnFocus: boolean): void {
     if (!this.open()) return;
     this.open.set(false);
+    this.unwatch();
     if (returnFocus) this.trigger()[0]?.nativeElement.focus();
   }
 

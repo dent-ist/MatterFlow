@@ -444,6 +444,96 @@ describe('WorkflowsListPage', () => {
   });
 });
 
+describe('WorkflowsListPage row menu', () => {
+  const page = (items: WorkflowSummary[]) => ({
+    items,
+    total: items.length,
+    page: 1,
+    pageSize: 25,
+  });
+  const openMenu = async (fixture: { nativeElement: HTMLElement }, name: string) => {
+    const el: HTMLElement = fixture.nativeElement;
+    el.querySelector<HTMLButtonElement>(`tr[data-row="${name}"] button[data-overflow]`)!.click();
+    await new Promise((r) => setTimeout(r));
+    return () =>
+      Array.from(el.querySelectorAll('[role=menuitem]')).map((i) => i.getAttribute('data-action'));
+  };
+
+  it('has one overflow button per row, offers Open draft only when there is a draft and confirms Deactivate', async () => {
+    const withDraft = summary({
+      workflowDefinitionId: 2,
+      name: 'Production',
+      draftVersionId: 20,
+      draftVersionNo: 3,
+    });
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(ok(page([summary(), withDraft]))),
+      updateWorkflow: vi.fn().mockReturnValue(ok(wfDetail())),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelectorAll('tbody button[data-overflow]')).toHaveLength(2);
+    expect(
+      el
+        .querySelector('tr[data-row="Production"] button[data-overflow]')!
+        .getAttribute('aria-label'),
+    ).toBe('Actions for Production');
+    let entries = await openMenu(fixture, 'Standard Processing');
+    await settle(fixture);
+    expect(entries()).toEqual(['deactivate']);
+    el.querySelector<HTMLButtonElement>(
+      'tr[data-row="Standard Processing"] button[data-overflow]',
+    )!.click();
+    await settle(fixture);
+
+    entries = await openMenu(fixture, 'Production');
+    await settle(fixture);
+    expect(entries()).toEqual(['open-draft', 'deactivate']);
+    const go = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    el.querySelector<HTMLButtonElement>('[data-action=open-draft]')!.click();
+    expect(go).toHaveBeenCalledWith(['/admin/workflows', 2, 'versions', 20]);
+
+    // Deactivate asks first, then saves with the row version.
+    await openMenu(fixture, 'Standard Processing');
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('[data-action=deactivate]')!.click();
+    await settle(fixture);
+    const confirm = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Deactivate workflow' && b.closest('p-dialog, .p-dialog'),
+    );
+    expect(confirm).toBeDefined();
+    expect(api.updateWorkflow).not.toHaveBeenCalled();
+    confirm!.click();
+    await settle(fixture);
+    expect(api.updateWorkflow).toHaveBeenCalledWith(1, {
+      name: 'Standard Processing',
+      description: 'Default flow',
+      isActive: false,
+      rowVersion: 'WWWW',
+    });
+    expect(el.querySelector('[data-announce]')!.textContent).toContain('deactivated');
+  });
+
+  it('offers Activate on an inactive workflow', async () => {
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(ok(page([summary({ isActive: false })]))),
+      updateWorkflow: vi.fn().mockReturnValue(ok(wfDetail())),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const entries = await openMenu(fixture, 'Standard Processing');
+    await settle(fixture);
+    expect(entries()).toEqual(['activate']);
+    fixture.nativeElement.querySelector('[data-action=activate]').click();
+    await settle(fixture);
+    expect(api.updateWorkflow).toHaveBeenCalledWith(1, expect.objectContaining({ isActive: true }));
+  });
+});
+
 describe('WorkflowEditPage', () => {
   it('creates a workflow and opens its first draft', async () => {
     const api = {

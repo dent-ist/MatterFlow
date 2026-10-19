@@ -15,12 +15,16 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { StepDefinitionSummary, StepDefinitionsClient } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
+import { NotificationService } from '../../../core/notify/notification.service';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge } from '../../../shared/ui/badge';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
@@ -30,7 +34,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
+const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] as const;
 
 /**
  * Admin: the Workflow Steps tab of the Workflows page (UX S15), the step library list. Inline column filters: Title (`title`),
@@ -43,6 +47,8 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
   imports: [
     ScrollArea,
     ActiveBadge,
+    ActionMenu,
+    ConfirmDialog,
     RouterLink,
     Button,
     Pager,
@@ -56,11 +62,16 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
   host: { class: 'mf-fill' },
   styleUrl: '../../../shared/ui/page.scss',
   template: `
+    <div class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+    @if (failure()) {
+      <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
+    }
+
     <mf-filters-bar [filters]="filters" controls="step-filter-row" [clearAlso]="['q']" />
 
     <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
       <div class="mf-scroll">
-        <table class="pg-table" data-steps>
+        <table class="pg-table mf-has-menu" data-steps>
           <caption class="pg-sr">
             Workflow Steps
           </caption>
@@ -85,6 +96,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
                 Used in
               </th>
               <th scope="col">Status</th>
+              <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
             </tr>
             @if (filters.rowVisible()) {
               <tr
@@ -102,7 +114,7 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
-            [columns]="5"
+            [columns]="6"
             (retry)="load()"
             (clear)="clear()"
           >
@@ -135,6 +147,13 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
                 <td>
                   <mf-active-badge [active]="s.isActive" />
                 </td>
+                <td class="mf-col-menu">
+                  <mf-action-menu
+                    [items]="menuFor(s)"
+                    [label]="'Actions for ' + s.title"
+                    [floating]="true"
+                  />
+                </td>
               </tr>
             }
           </tbody>
@@ -151,18 +170,42 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status'] as const;
         (pageSizeChange)="setPageSize($event)"
       />
     }
+    <mf-confirm-dialog
+      title="Deactivate step?"
+      confirmLabel="Deactivate step"
+      cancelLabel="Keep active"
+      [danger]="true"
+      [busy]="busy()"
+      [(visible)]="deactivateOpen"
+      (confirmed)="confirmDeactivate()"
+    >
+      <p>
+        {{ deactivateTarget()?.title }} will be hidden from new workflow drafts. Published workflows
+        that already use it are not changed, and you can activate it again later.
+      </p>
+    </mf-confirm-dialog>
   `,
 })
 export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(StepDefinitionsClient);
   private readonly injector = inject(Injector);
+  private readonly notify = inject(NotificationService);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'title';
   protected readonly columns = COLUMNS;
   /** The tags to choose from, with how many steps of the chosen status carry each. */
   protected readonly tagOptions = signal<FilterOption[]>([]);
+  protected readonly busy = signal(false);
+  protected readonly failure = signal('');
+  protected readonly announcement = signal('');
+  protected readonly deactivateOpen = signal(false);
+  protected readonly deactivateTarget = signal<StepDefinitionSummary | null>(null);
+  /** The row menu of every row (#355): Edit inputs, then Deactivate or Activate. The page needs Workflow.Manage, which both need. */
+  private readonly menus = computed(
+    () => new Map(this.rows().map((s) => [s.stepDefinitionId, this.menuOf(s)] as const)),
+  );
 
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'steps',
@@ -225,6 +268,74 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
 
   protected override listFilters() {
     return this.filters;
+  }
+
+  private menuOf(s: StepDefinitionSummary): MenuAction[] {
+    const busy = this.busy();
+    return [
+      {
+        id: 'edit-inputs',
+        label: 'Edit inputs',
+        icon: 'pi-file-edit',
+        run: () => void this.router.navigate(['/admin/steps', s.stepDefinitionId, 'form']),
+      },
+      s.isActive
+        ? {
+            id: 'deactivate',
+            label: 'Deactivate',
+            icon: 'pi-ban',
+            danger: true,
+            separated: true,
+            disabled: busy,
+            run: () => {
+              this.deactivateTarget.set(s);
+              this.deactivateOpen.set(true);
+            },
+          }
+        : {
+            id: 'activate',
+            label: 'Activate',
+            icon: 'pi-check-circle',
+            separated: true,
+            disabled: busy,
+            run: () => void this.setActive(s, true),
+          },
+    ];
+  }
+
+  protected menuFor(s: StepDefinitionSummary): readonly MenuAction[] {
+    return this.menus().get(s.stepDefinitionId) ?? [];
+  }
+
+  protected async confirmDeactivate(): Promise<void> {
+    const s = this.deactivateTarget();
+    this.deactivateOpen.set(false);
+    if (s) await this.setActive(s, false);
+  }
+
+  private async setActive(s: StepDefinitionSummary, isActive: boolean): Promise<void> {
+    this.busy.set(true);
+    this.failure.set('');
+    try {
+      const body = { rowVersion: s.rowVersion };
+      await firstValueFrom(
+        isActive
+          ? this.api.activateStepDefinition(s.stepDefinitionId, body)
+          : this.api.deactivateStepDefinition(s.stepDefinitionId, body),
+      );
+      this.announcement.set(`${s.title} ${isActive ? 'activated' : 'deactivated'}.`);
+      this.notify.success('Saved.');
+      await this.load();
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
+        this.failure.set('Someone else changed this step. The list was reloaded; try again.');
+        await this.load();
+      } else {
+        this.failure.set(e instanceof ApiError ? e.message : 'Couldn’t save. Try again.');
+      }
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   /** The Workflows tab limited to a step (`?step=<id>`). */

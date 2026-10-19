@@ -1,0 +1,64 @@
+/*
+ * The three Administration lists (Task Types, Workflows, Workflow Steps; #355, #356). Global because the lists' own style budgets are small.
+ *
+ * Row menu (#355): the last column holds ONE overflow button (`mf-action-menu`), a 44 px wide target that stays at the right edge of the
+ * box while the other columns scroll sideways, so the actions are never off screen. Put `mf-col-menu` on its th and td and `mf-has-menu`
+ * on the table (that one also keeps the filter row's last, empty cell in place).
+ */
+.mf-table-wrap table th.mf-col-menu,
+.mf-table-wrap table td.mf-col-menu,
+.mf-table-wrap table.mf-has-menu .mf-filter-row td:last-child {
+  position: sticky;
+  right: 0;
+  width: 1%;
+  padding-inline: var(--mf-s1);
+  border-left: 1px solid var(--mf-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mf-table-wrap table td.mf-col-menu {
+  z-index: 2;
+  background: var(--mf-surface);
+}
+
+/* Above the other sticky headers (the first column's header is 4) where they slide under it. */
+.mf-table-wrap table th.mf-col-menu {
+  z-index: 5;
+  background: var(--mf-surface-alt);
+}
+
+.mf-table-wrap table.mf-has-menu .mf-filter-row td:last-child {
+  z-index: 5;
+  background: var(--mf-surface-alt);
+}
+
+/* One 44 px wide target; the row stays 44 px tall (the button is as tall as the row's content box). */
+.mf-col-menu button[data-overflow] {
+  min-width: 44px;
+  min-height: 40px;
+  padding: 0;
+}
+
+/* The cell of an open menu paints above the sticky cells of the rows below it, so the menu is never cut by them. */
+.mf-table-wrap table td.mf-col-menu:has([aria-expanded='true']) {
+  z-index: 6;
+}
+
+/* A focused link that scrolls into view never lands under the pinned menu button. */
+.mf-table-wrap:has(table.mf-has-menu) {
+  scroll-padding-inline-end: 56px;
+}
+
+/*
+ * Phones (the cards of #374 and #375 replace this): the first column is as wide as the box and keeps clear of the pinned menu button, so
+ * at rest the row is the name and its menu and nothing is half hidden under the button; the other columns are a sideways scroll away.
+ */
+@media (max-width: 639.98px) {
+  .mf-table-wrap table.mf-has-menu th:first-child,
+  .mf-table-wrap table.mf-has-menu td:first-child {
+    box-sizing: border-box;
+    min-width: calc(100vw - 2 * var(--mf-s4));
+    padding-right: 56px;
+  }
+}

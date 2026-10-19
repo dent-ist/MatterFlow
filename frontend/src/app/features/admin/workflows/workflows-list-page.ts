@@ -21,6 +21,8 @@ import {
   WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ApiError } from '../../../core/http/api-error';
+import { NotificationService } from '../../../core/notify/notification.service';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
@@ -28,7 +30,9 @@ import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
+import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
@@ -37,7 +41,7 @@ import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
+const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions'] as const;
 
 /**
  * Admin: the Workflows tab of the Workflows page (UX S16), the workflow list. Inline column filters (Name, Latest published, Draft,
@@ -50,6 +54,8 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
     ScrollArea,
     Badge,
     ActiveBadge,
+    ActionMenu,
+    ConfirmDialog,
     RouterLink,
     Button,
     Pager,
@@ -64,6 +70,11 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
   host: { class: 'mf-fill' },
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
+    <div class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+    @if (failure()) {
+      <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
+    }
+
     <mf-filters-bar [filters]="filters" controls="workflow-filter-row" [clearAlso]="['q']" />
 
     @if (taskTypeId() !== undefined) {
@@ -84,7 +95,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
 
     <div class="mf-table-wrap" mfScrollArea="Workflows list" #scroll>
       <div class="mf-scroll">
-        <table class="pg-table" data-workflows>
+        <table class="pg-table mf-has-menu" data-workflows>
           <caption class="pg-sr">
             Workflows
           </caption>
@@ -102,6 +113,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
               <th scope="col">Latest published</th>
               <th scope="col">Draft</th>
               <th scope="col">Status</th>
+              <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
             </tr>
             @if (filters.rowVisible()) {
               <tr
@@ -119,7 +131,7 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
-            [columns]="5"
+            [columns]="6"
             (retry)="load()"
             (clear)="clear()"
           >
@@ -163,6 +175,13 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
                 <td>
                   <mf-active-badge [active]="w.isActive" />
                 </td>
+                <td class="mf-col-menu">
+                  <mf-action-menu
+                    [items]="menuFor(w)"
+                    [label]="'Actions for ' + w.name"
+                    [floating]="true"
+                  />
+                </td>
               </tr>
             }
           </tbody>
@@ -179,6 +198,20 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status'] as const;
         (pageSizeChange)="setPageSize($event)"
       />
     }
+    <mf-confirm-dialog
+      title="Deactivate workflow?"
+      confirmLabel="Deactivate workflow"
+      cancelLabel="Keep active"
+      [danger]="true"
+      [busy]="busy()"
+      [(visible)]="deactivateOpen"
+      (confirmed)="confirmDeactivate()"
+    >
+      <p>
+        {{ deactivateTarget()?.name }} will no longer be offered when people create tasks. Tasks
+        already running on it are not changed, and you can activate it again later.
+      </p>
+    </mf-confirm-dialog>
   `,
 })
 export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
@@ -186,6 +219,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly api = inject(WorkflowsClient);
   private readonly injector = inject(Injector);
   private readonly auth = inject(AuthStore);
+  private readonly notify = inject(NotificationService);
 
   protected readonly defaultSort = 'name';
   protected readonly columns = COLUMNS;
@@ -260,6 +294,15 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     return known && known.id === this.stepId() ? known.name : `Step ${this.stepId()}`;
   });
   protected readonly canOpenTaskTypes = computed(() => this.auth.has('TaskType.Manage'));
+  protected readonly busy = signal(false);
+  protected readonly failure = signal('');
+  protected readonly announcement = signal('');
+  protected readonly deactivateOpen = signal(false);
+  protected readonly deactivateTarget = signal<WorkflowSummary | null>(null);
+  /** The row menu of every row (#355): Open draft (a workflow that has one), then Deactivate or Activate. The page needs Workflow.Manage. */
+  private readonly menus = computed(
+    () => new Map(this.rows().map((w) => [w.workflowDefinitionId, this.menuOf(w)] as const)),
+  );
 
   constructor() {
     super();
@@ -314,6 +357,87 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         isDefault: t.isDefault,
         inactive: !t.isActive,
       }));
+  }
+
+  private menuOf(w: WorkflowSummary): MenuAction[] {
+    const busy = this.busy();
+    const items: MenuAction[] = [];
+    if (w.draftVersionId !== undefined && w.draftVersionId !== null) {
+      const draft = w.draftVersionId;
+      items.push({
+        id: 'open-draft',
+        label: `Open draft v${w.draftVersionNo}`,
+        icon: 'pi-pencil',
+        run: () =>
+          void this.router.navigate([
+            '/admin/workflows',
+            w.workflowDefinitionId,
+            'versions',
+            draft,
+          ]),
+      });
+    }
+    items.push(
+      w.isActive
+        ? {
+            id: 'deactivate',
+            label: 'Deactivate',
+            icon: 'pi-ban',
+            danger: true,
+            separated: items.length > 0,
+            disabled: busy,
+            run: () => {
+              this.deactivateTarget.set(w);
+              this.deactivateOpen.set(true);
+            },
+          }
+        : {
+            id: 'activate',
+            label: 'Activate',
+            icon: 'pi-check-circle',
+            separated: items.length > 0,
+            disabled: busy,
+            run: () => void this.setActive(w, true),
+          },
+    );
+    return items;
+  }
+
+  protected menuFor(w: WorkflowSummary): readonly MenuAction[] {
+    return this.menus().get(w.workflowDefinitionId) ?? [];
+  }
+
+  protected async confirmDeactivate(): Promise<void> {
+    const w = this.deactivateTarget();
+    this.deactivateOpen.set(false);
+    if (w) await this.setActive(w, false);
+  }
+
+  private async setActive(w: WorkflowSummary, isActive: boolean): Promise<void> {
+    this.busy.set(true);
+    this.failure.set('');
+    try {
+      await firstValueFrom(
+        this.api.updateWorkflow(w.workflowDefinitionId, {
+          name: w.name,
+          description: w.description,
+          isActive,
+          rowVersion: w.rowVersion,
+        }),
+      );
+      this.announcement.set(`${w.name} ${isActive ? 'activated' : 'deactivated'}.`);
+      this.notify.success('Saved.');
+      await this.load();
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
+        this.failure.set('Someone else changed this workflow. The list was reloaded; try again.');
+        await this.load();
+      } else {
+        this.failure.set(e instanceof ApiError ? e.message : 'Couldn’t save. Try again.');
+      }
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected stepsLabel(count: number | undefined): string {
