@@ -591,6 +591,7 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
     await page.goto(`/tasks/new?taskType=${world.taskType.id}`);
     await expect(page.locator('[data-record-header]')).toBeVisible();
     await expect(page.locator('[data-summary-card]')).toBeVisible();
+    await new CreateTaskPage(page).openWhen(); // collapsed by default (#349)
     await expect(page.locator('[data-no-assign]')).toBeVisible();
     await checkPage(page, 'Task.Create only 375');
   });

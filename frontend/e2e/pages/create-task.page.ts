@@ -19,6 +19,9 @@ export class CreateTaskPage {
   readonly priority: Locator;
   readonly dueDate: Locator;
   readonly dueTime: Locator;
+  /** The header button of the collapsed "Priority, due date and assignment" section (#349). */
+  readonly whenToggle: Locator;
+  readonly whenSummary: Locator;
   readonly pod: Locator;
   readonly assignee: Locator;
   readonly submit: Locator;
@@ -43,6 +46,8 @@ export class CreateTaskPage {
     this.priority = page.getByLabel('Priority (required)');
     this.dueDate = page.getByLabel('Due date', { exact: true });
     this.dueTime = page.getByLabel(/^Time \(/);
+    this.whenToggle = page.locator('[data-when-toggle]');
+    this.whenSummary = page.locator('[data-when-summary]');
     this.pod = page.getByLabel('Pod', { exact: true });
     this.assignee = page.getByRole('combobox', { name: 'Assignee', exact: true });
     this.submit = page.getByRole('button', { name: 'Create task', exact: true });
@@ -115,6 +120,14 @@ export class CreateTaskPage {
     await this.pickMatter(opts.typed ?? opts.matterRef, opts.matterRef);
     await this.title.fill(opts.title);
     await this.requestorName.fill(opts.requestor ?? 'Rita Requestor');
+  }
+
+  /** "Priority, due date and assignment" starts collapsed; opens it unless it is already open (also when an error opened it). */
+  async openWhen(): Promise<void> {
+    if ((await this.whenToggle.getAttribute('aria-expanded')) !== 'true') {
+      await this.whenToggle.click();
+    }
+    await expect(this.whenToggle).toHaveAttribute('aria-expanded', 'true');
   }
 
   /** Creates the task and returns its id from the URL of the opened detail page. */

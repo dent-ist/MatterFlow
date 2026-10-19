@@ -55,8 +55,62 @@
 .ct__due {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  align-items: end;
+  /* Top-aligned: the date control has a hint line under it, so bottom alignment pushed the Time input below the date input (#349). */
+  align-items: start;
   gap: var(--mf-s3);
+}
+
+.ct__when {
+  display: grid;
+  gap: var(--mf-s3);
+  min-width: 0;
+}
+
+.ct__when[hidden] {
+  display: none;
+}
+
+.ct__h--toggle {
+  font-size: var(--mf-fs-h3);
+}
+
+.ct__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--mf-s1) 0;
+  border: 0;
+  background: none;
+  color: var(--mf-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ct__toggle:hover .ct__toggle-text > :first-child {
+  text-decoration: underline;
+}
+
+.ct__toggle:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+
+.ct__toggle-text {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.ct__toggle-summary {
+  overflow-wrap: anywhere;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  font-weight: 400;
 }
 
 /* The Summary in the shape of the Task page's facts strip: label over value tiles on the surface, tokens only. */

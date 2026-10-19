@@ -180,6 +180,7 @@ test.describe('Round 4: layout and responsive', () => {
     const create = new CreateTaskPage(page);
     await create.open();
     await create.chooseTaskType(world.taskType.name);
+    await create.openWhen(); // collapsed by default (#349)
     await expect(page.getByLabel('Due date', { exact: true })).toBeVisible();
     await expect(page.getByLabel(/^Time \(\w+\)$/)).toBeVisible();
     await page.goto(`/tasks/${task.taskId}`);

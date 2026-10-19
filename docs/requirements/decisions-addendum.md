@@ -262,3 +262,5 @@ Decided by the PM on the owner's approval of the Task Detail review ("I like you
 10. **Edit dialog width:** #319 said 720 px at 1100 px and up and full width below 640; the code is 720 px and the screen's width below 720.
 11. **Activity folding:** the plan said "minimum 3 rows within a 10-minute gap"; the 10 minutes are the gap between neighbours (not the span of the run) and a fold counts the events loaded so far.
 12. **Test location:** #329 named `frontend/e2e/tasks/`; all e2e specs live in `frontend/e2e/tests/`.
+
+**Addendum (2026-10-19, issue #349): Create task sections.** The Create task form has three sections, Task (Matter, Title, Description, Project), Input (requestor, the request-form fields in form order, the workflow) and "Priority, due date and assignment", which is collapsed by default, shows a one-line summary of its values, remembers nothing and opens on its own when it holds an error. Input is always shown (requestor and workflow always belong to it); the Edit dialog keeps its own three sections for now (follow-up). Due date and Time are top-aligned (the date control's hint line made bottom alignment push the Time input down).

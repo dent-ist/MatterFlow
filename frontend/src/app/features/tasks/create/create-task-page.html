@@ -182,93 +182,25 @@
               [error]="fieldError('title')"
               [(value)]="title"
             />
-            <mf-text-field
-              inputId="ct-requestor-name"
-              label="Requestor name"
-              [required]="true"
-              [maxLength]="200"
-              [error]="fieldError('requestorName')"
-              [(value)]="requestorName"
-            />
-            <mf-text-field
-              inputId="ct-requestor-email"
-              label="Requestor email"
-              [maxLength]="254"
-              [error]="fieldError('requestorEmail')"
-              [(value)]="requestorEmail"
-            />
-          </section>
-
-          <!-- Request details and workflow depend on the task type -->
-          @if (selectedChoice()) {
-            <section
-              class="ct__section"
-              aria-label="Request details and workflow"
-              data-type-section
-            >
-              <div class="ct__details" data-request-details>
-                @if (schemaState() === 'loading') {
-                  <p class="pg-muted" role="status" aria-busy="true">Loading request details...</p>
-                } @else if (schemaState() === 'error') {
-                  <div class="pg-alert" role="alert" data-schema-error>
-                    We couldn't load the request details for this task type.
-                    <mf-error-reference />
-                    <p-button label="Retry" severity="secondary" (onClick)="loadSchema()" />
-                  </div>
-                } @else if (definition(); as def) {
-                  <fieldset class="ct__fieldset">
-                    <legend>Request details</legend>
-                    <mf-dynamic-form
-                      [definition]="def"
-                      [values]="seed()"
-                      [serverErrors]="formErrors()"
-                      (valuesChange)="onFormValues($event)"
-                    />
-                  </fieldset>
-                }
-              </div>
-
-              <fieldset class="ct__fieldset" data-workflows>
-                <legend>Workflow <span class="mf-field__req">(required)</span></legend>
-                @for (w of workflows(); track w.id) {
-                  <label class="pg-radio">
-                    <input
-                      type="radio"
-                      name="ct-workflow"
-                      [value]="w.id"
-                      [checked]="w.id === workflowId()"
-                      [attr.aria-describedby]="'ct-workflow-help'"
-                      (change)="onWorkflowPicked(w.id)"
-                    />
-                    <span>
-                      {{ w.name }} v{{ w.versionNo }}
-                      <span class="pg-reason">
-                        ({{ w.stepCount }} {{ w.stepCount === 1 ? 'step' : 'steps' }},
-                        {{ w.isOrdered ? 'ordered' : 'any order'
-                        }}{{ w.isDefault ? ', default' : '' }})
-                      </span>
-                    </span>
-                  </label>
-                }
-                <p class="mf-field__help" id="ct-workflow-help">
-                  Steps of an ordered workflow must be done in order.
-                </p>
-                @if (fieldError('workflowDefinitionId'); as e) {
-                  <p class="mf-field__error" role="alert">
-                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                  </p>
-                }
-              </fieldset>
-              @if (fieldError('formValues'); as e) {
-                <p class="mf-field__error" role="alert">
+            <div class="mf-field" data-description-field>
+              <span class="mf-field__label" id="ct-description-label">Description</span>
+              <mf-rich-text-editor
+                label="Description"
+                placeholder="Describe the work. You can paste a table from an email."
+                [maxLength]="descriptionMax"
+                [(value)]="description"
+              />
+              <p class="mf-field__help" id="ct-description-help">
+                Bold, italic, lists, links and tables. Privilege reminder: don't paste privileged
+                advice or more than the work needs; this text is saved with the task and visible to
+                everyone who can open it.
+              </p>
+              @if (fieldError('description'); as e) {
+                <p class="mf-field__error" id="ct-description-error" role="alert">
                   <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
                 </p>
               }
-            </section>
-          }
-
-          <section class="ct__section" aria-labelledby="ct-h-more">
-            <h2 id="ct-h-more" class="ct__h">More details</h2>
+            </div>
             <div class="mf-field">
               <label class="mf-field__label" for="ct-project">Project</label>
               <select
@@ -301,25 +233,6 @@
                 </p>
               }
             </div>
-            <div class="mf-field" data-description-field>
-              <span class="mf-field__label" id="ct-description-label">Description</span>
-              <mf-rich-text-editor
-                label="Description"
-                placeholder="Describe the work. You can paste a table from an email."
-                [maxLength]="descriptionMax"
-                [(value)]="description"
-              />
-              <p class="mf-field__help" id="ct-description-help">
-                Bold, italic, lists, links and tables. Privilege reminder: don't paste privileged
-                advice or more than the work needs; this text is saved with the task and visible to
-                everyone who can open it.
-              </p>
-              @if (fieldError('description'); as e) {
-                <p class="mf-field__error" id="ct-description-error" role="alert">
-                  <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                </p>
-              }
-            </div>
             @if (requestedAt(); as sent) {
               <p class="mf-field__help" data-source-sent>
                 Source email sent: {{ sent | mfDate }} (read-only, from the email)
@@ -327,148 +240,253 @@
             }
           </section>
 
-          <!-- Priority, due, assignment -->
-          <section class="ct__section" aria-labelledby="ct-h-when">
-            <h2 id="ct-h-when" class="ct__h">Priority, due date and assignment</h2>
-
-            <div class="mf-field">
-              @if (canSetPriority()) {
-                <label class="mf-field__label" for="ct-priority">
-                  Priority <span class="mf-field__req">(required)</span>
-                </label>
-                <select
-                  id="ct-priority"
-                  class="mf-field__input"
-                  [attr.aria-invalid]="fieldError('priorityId') ? 'true' : null"
-                  (change)="onPriorityChange($event)"
-                >
-                  @for (p of activePriorities(); track p.id) {
-                    <option [value]="p.id" [selected]="p.id === priorityLabelId()">
-                      {{ p.label }}{{ p.isDefault ? ' (default)' : '' }}
-                    </option>
-                  }
-                </select>
-                @if (fieldError('priorityId'); as e) {
-                  <p class="mf-field__error" role="alert">
-                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                  </p>
+          <!-- Input: the requestor and the task type's request-form fields, in form order, then the workflow -->
+          <section
+            class="ct__section"
+            aria-labelledby="ct-h-input"
+            data-section="input"
+            data-type-section
+          >
+            <h2 id="ct-h-input" class="ct__h">Input</h2>
+            <mf-text-field
+              inputId="ct-requestor-name"
+              label="Requestor name"
+              [required]="true"
+              [maxLength]="200"
+              [error]="fieldError('requestorName')"
+              [(value)]="requestorName"
+            />
+            <mf-text-field
+              inputId="ct-requestor-email"
+              label="Requestor email"
+              [maxLength]="254"
+              [error]="fieldError('requestorEmail')"
+              [(value)]="requestorEmail"
+            />
+            <div class="ct__details" data-request-details>
+              @if (schemaState() === 'loading') {
+                <p class="pg-muted" role="status" aria-busy="true">Loading request details...</p>
+              } @else if (schemaState() === 'error') {
+                <div class="pg-alert" role="alert" data-schema-error>
+                  We couldn't load the request details for this task type.
+                  <mf-error-reference />
+                  <p-button label="Retry" severity="secondary" (onClick)="loadSchema()" />
+                </div>
+              } @else if (definition(); as def) {
+                @if (def.fields.length > 0) {
+                  <div class="ct__form-fields" data-form-fields>
+                    <mf-dynamic-form
+                      [definition]="def"
+                      [values]="seed()"
+                      [serverErrors]="formErrors()"
+                      (valuesChange)="onFormValues($event)"
+                    />
+                  </div>
                 }
-              } @else {
-                <span class="mf-field__label" id="ct-priority-fixed">Priority</span>
-                <span data-priority-fixed>
-                  @if (defaultPriority(); as d) {
-                    <mf-priority-badge [priorityId]="d.id" />
-                  }
-                </span>
-                <p class="mf-field__help">
-                  New tasks start at the default priority. Changing it needs the Set priority
-                  permission.
+              }
+            </div>
+
+            <fieldset class="ct__fieldset" data-workflows>
+              <legend>Workflow <span class="mf-field__req">(required)</span></legend>
+              @for (w of workflows(); track w.id) {
+                <label class="pg-radio">
+                  <input
+                    type="radio"
+                    name="ct-workflow"
+                    [value]="w.id"
+                    [checked]="w.id === workflowId()"
+                    [attr.aria-describedby]="'ct-workflow-help'"
+                    (change)="onWorkflowPicked(w.id)"
+                  />
+                  <span>
+                    {{ w.name }} v{{ w.versionNo }}
+                    <span class="pg-reason">
+                      ({{ w.stepCount }} {{ w.stepCount === 1 ? 'step' : 'steps' }},
+                      {{ w.isOrdered ? 'ordered' : 'any order'
+                      }}{{ w.isDefault ? ', default' : '' }})
+                    </span>
+                  </span>
+                </label>
+              }
+              <p class="mf-field__help" id="ct-workflow-help">
+                Steps of an ordered workflow must be done in order.
+              </p>
+              @if (fieldError('workflowDefinitionId'); as e) {
+                <p class="mf-field__error" role="alert">
+                  <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
                 </p>
               }
-            </div>
-
-            <div class="ct__due">
-              <div class="mf-field">
-                <label class="mf-field__label" for="ct-due-date">Due date</label>
-                <mf-date-input
-                  inputId="ct-due-date"
-                  label="due date"
-                  [isoValue]="dueDate() || null"
-                  [invalid]="!!fieldError('dueDate')"
-                  [showError]="false"
-                  describedBy="ct-due-help"
-                  (isoChange)="dueDate.set($event ?? '')"
-                  (textInvalid)="dueDateBad.set($event)"
-                />
-                @if (fieldError('dueDate'); as e) {
-                  <p class="mf-field__error" role="alert">
-                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                  </p>
-                }
-              </div>
-              <div class="mf-field">
-                <label class="mf-field__label" for="ct-due-time">Time ({{ zoneLabel() }})</label>
-                <input
-                  id="ct-due-time"
-                  class="mf-field__input"
-                  type="time"
-                  [value]="dueTime()"
-                  [attr.aria-invalid]="fieldError('dueTime') ? 'true' : null"
-                  aria-describedby="ct-due-help"
-                  (input)="onDueTime($event)"
-                />
-                @if (fieldError('dueTime'); as e) {
-                  <p class="mf-field__error" role="alert">
-                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
-                  </p>
-                }
-              </div>
-              @if (dueDate()) {
-                <p-button
-                  label="No due date"
-                  severity="secondary"
-                  [text]="true"
-                  (onClick)="clearDue()"
-                />
-              }
-            </div>
-            <p class="mf-field__help" id="ct-due-help" data-due-help>
-              @if (!dueDate()) {
-                No due date means ASAP: handled promptly and never overdue.
-              } @else {
-                Times are in your local time zone ({{ zoneLabel() }}).
-              }
-            </p>
-            @if (pastDue()) {
-              <p class="pg-banner" role="status" data-past-due>
-                This date has already passed. The task will be overdue immediately.
+            </fieldset>
+            @if (fieldError('formValues'); as e) {
+              <p class="mf-field__error" role="alert">
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
               </p>
             }
+          </section>
 
-            @if (canAssign()) {
-              @if (canListPods()) {
-                <div class="mf-field">
-                  <label class="mf-field__label" for="ct-pod">Pod</label>
+          <!-- Priority, due, assignment -->
+          <section class="ct__section" aria-labelledby="ct-h-when" data-section="when">
+            <h2 id="ct-h-when" class="ct__h ct__h--toggle">
+              <button
+                type="button"
+                class="ct__toggle"
+                data-when-toggle
+                [attr.aria-expanded]="whenOpen()"
+                aria-controls="ct-when-body"
+                (click)="toggleWhen()"
+              >
+                <span class="ct__toggle-text">
+                  <span>Priority, due date and assignment</span>
+                  <span class="ct__toggle-summary" data-when-summary>{{ whenSummary() }}</span>
+                </span>
+                <i
+                  class="pi"
+                  [class.pi-chevron-down]="whenOpen()"
+                  [class.pi-chevron-right]="!whenOpen()"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </h2>
+            <div id="ct-when-body" class="ct__when" data-when-body [hidden]="!whenOpen()">
+              <div class="mf-field">
+                @if (canSetPriority()) {
+                  <label class="mf-field__label" for="ct-priority">
+                    Priority <span class="mf-field__req">(required)</span>
+                  </label>
                   <select
-                    id="ct-pod"
+                    id="ct-priority"
                     class="mf-field__input"
-                    [attr.aria-invalid]="fieldError('assignedPodId') ? 'true' : null"
-                    (change)="onPodChange($event)"
+                    [attr.aria-invalid]="fieldError('priorityId') ? 'true' : null"
+                    (change)="onPriorityChange($event)"
                   >
-                    <option value="" [selected]="podId() === null">No pod</option>
-                    @for (p of pods(); track p.podId) {
-                      <option [value]="p.podId" [selected]="p.podId === podId()">
-                        {{ p.name }}
+                    @for (p of activePriorities(); track p.id) {
+                      <option [value]="p.id" [selected]="p.id === priorityLabelId()">
+                        {{ p.label }}{{ p.isDefault ? ' (default)' : '' }}
                       </option>
                     }
                   </select>
-                  @if (fieldError('assignedPodId'); as e) {
+                  @if (fieldError('priorityId'); as e) {
+                    <p class="mf-field__error" role="alert">
+                      <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
+                    </p>
+                  }
+                } @else {
+                  <span class="mf-field__label" id="ct-priority-fixed">Priority</span>
+                  <span data-priority-fixed>
+                    @if (defaultPriority(); as d) {
+                      <mf-priority-badge [priorityId]="d.id" />
+                    }
+                  </span>
+                  <p class="mf-field__help">
+                    New tasks start at the default priority. Changing it needs the Set priority
+                    permission.
+                  </p>
+                }
+              </div>
+
+              <div class="ct__due">
+                <div class="mf-field">
+                  <label class="mf-field__label" for="ct-due-date">Due date</label>
+                  <mf-date-input
+                    inputId="ct-due-date"
+                    label="due date"
+                    [isoValue]="dueDate() || null"
+                    [invalid]="!!fieldError('dueDate')"
+                    [showError]="false"
+                    describedBy="ct-due-help"
+                    (isoChange)="dueDate.set($event ?? '')"
+                    (textInvalid)="dueDateBad.set($event)"
+                  />
+                  @if (fieldError('dueDate'); as e) {
                     <p class="mf-field__error" role="alert">
                       <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
                     </p>
                   }
                 </div>
-              }
-              <mf-entity-picker
-                inputId="ct-user"
-                label="Assignee"
-                placeholder="Search users"
-                help="Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
-                [search]="searchUsers"
-                [error]="fieldError('assignedUserId')"
-                [(selected)]="assignee"
-              />
-              @if (userNotInPod()) {
-                <p class="pg-banner" role="status" data-not-in-pod>
-                  {{ assignee()?.label }} isn't a member of {{ podName() }}. You can still assign
-                  them.
+                <div class="mf-field">
+                  <label class="mf-field__label" for="ct-due-time">Time ({{ zoneLabel() }})</label>
+                  <input
+                    id="ct-due-time"
+                    class="mf-field__input"
+                    type="time"
+                    [value]="dueTime()"
+                    [attr.aria-invalid]="fieldError('dueTime') ? 'true' : null"
+                    aria-describedby="ct-due-help"
+                    (input)="onDueTime($event)"
+                  />
+                  @if (fieldError('dueTime'); as e) {
+                    <p class="mf-field__error" role="alert">
+                      <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
+                    </p>
+                  }
+                </div>
+                @if (dueDate()) {
+                  <p-button
+                    label="No due date"
+                    severity="secondary"
+                    [text]="true"
+                    (onClick)="clearDue()"
+                  />
+                }
+              </div>
+              <p class="mf-field__help" id="ct-due-help" data-due-help>
+                @if (!dueDate()) {
+                  No due date means ASAP: handled promptly and never overdue.
+                } @else {
+                  Times are in your local time zone ({{ zoneLabel() }}).
+                }
+              </p>
+              @if (pastDue()) {
+                <p class="pg-banner" role="status" data-past-due>
+                  This date has already passed. The task will be overdue immediately.
                 </p>
               }
-            } @else {
-              <p class="mf-field__help" data-no-assign>
-                You can't assign tasks. The task will be created unassigned.
-              </p>
-            }
+
+              @if (canAssign()) {
+                @if (canListPods()) {
+                  <div class="mf-field">
+                    <label class="mf-field__label" for="ct-pod">Pod</label>
+                    <select
+                      id="ct-pod"
+                      class="mf-field__input"
+                      [attr.aria-invalid]="fieldError('assignedPodId') ? 'true' : null"
+                      (change)="onPodChange($event)"
+                    >
+                      <option value="" [selected]="podId() === null">No pod</option>
+                      @for (p of pods(); track p.podId) {
+                        <option [value]="p.podId" [selected]="p.podId === podId()">
+                          {{ p.name }}
+                        </option>
+                      }
+                    </select>
+                    @if (fieldError('assignedPodId'); as e) {
+                      <p class="mf-field__error" role="alert">
+                        <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ e }}
+                      </p>
+                    }
+                  </div>
+                }
+                <mf-entity-picker
+                  inputId="ct-user"
+                  label="Assignee"
+                  placeholder="Search users"
+                  help="Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
+                  [search]="searchUsers"
+                  [error]="fieldError('assignedUserId')"
+                  [(selected)]="assignee"
+                />
+                @if (userNotInPod()) {
+                  <p class="pg-banner" role="status" data-not-in-pod>
+                    {{ assignee()?.label }} isn't a member of {{ podName() }}. You can still assign
+                    them.
+                  </p>
+                }
+              } @else {
+                <p class="mf-field__help" data-no-assign>
+                  You can't assign tasks. The task will be created unassigned.
+                </p>
+              }
+            </div>
           </section>
 
           <div class="pg-actions mf-form-actions--sticky">

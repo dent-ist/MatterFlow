@@ -771,19 +771,24 @@ What kind of task is this?                  (step 1: the chooser; type, workflow
  Task
   Matter (required)        [ typeahead 343-12 / name v ]  Only active matters are listed.
   Title (required)         [______________________________]  n / 200
+  Description              [ rich text ___ ]   Source email sent: Oct 13, 2026 9:12 AM
+  Project (optional)       [ none v ]
+ Input
   Requestor name (required) [______________]   Requestor email (optional) [______________]
- Request details           (DynamicForm for the selected Task Type form version, with conditional rules)
+  (DynamicForm for the selected Task Type form version, in form order, with conditional rules)
   Requires OCR? [x]   -> OCR language (required) [ English v ]
- Workflow (required)       ( ) Standard Processing v2   ( ) Rush Processing v1     [Preview steps v]
- More details
-  Project (optional)  [ none v ]            Description  [ rich text ___ ]   Source email sent: Oct 13, 2026 9:12 AM
- Priority, due date and assignment
-  Priority (required) [ Normal v ]   Due date [ date ] [ time optional ] [x] No due date (ASAP)
-  Pod [ none v ]   Assignee [ none v ]
-   helper: "Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
+  Workflow (required)       ( ) Standard Processing v2   ( ) Rush Processing v1
+ [v] Priority, due date and assignment      (collapsed by default)
+     Normal priority, due Oct 24, 2026 at 5:00 PM, Unassigned          (the summary line)
+  (open:) Priority (required) [ Normal v ]
+          Due date [ date ]  Time [ time optional ]  [x] No due date (ASAP)      (one row, same height and top)
+          Pod [ none v ]   Assignee [ none v ]
+           helper: "Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
 -------------------------------------------------------------------------------------------------
 [Create task] [Create and add another] [Cancel]              (sticky footer)
 ```
+**Sections (#349).** Three sections, exactly: Task (Matter, Title, Description, Project), Input (Requestor name and email, the request-form fields in form order, the Workflow choice; "More details" no longer exists) and "Priority, due date and assignment". The third is collapsed on every new page (nothing is remembered); its header is a button (`aria-expanded`, `aria-controls`, Enter and Space) with a one-line summary of the values, and it opens by itself when one of its fields has an error. Input always shows because the requestor and the workflow always belong to it; with a type without request-form fields only the form-field block is left out. Due date and Time are top-aligned on one row from 640 px and stack at equal width below.
+
 **Layout (Task Detail epic T8, #322, #323).** The page uses the shared record header (`mf-record-header`, kind `task`): the h1 "Create task" with a plus icon in the `mfIcon` slot, the crumb `Tasks > Create task` (or `Tasks > matter > Create task` when opened from a matter the person may open) and the chosen type as the one context line ("Choose a task type to start" before). There are two steps on one page: the **type chooser** (cards: 3 per row from 1024 px, 2 from 640, 1 below; the search box appears when there are many types; the description is cut after the last whole word at 110 characters with the whole text as the tooltip) and then the form. The form is **one 720 px column** with one input width rule (`--mf-field-max`, default 480 px for other forms); the former sticky right-hand Summary card is now a **three-tile strip** (Matter, Task type, Workflow) above the form, built locally from the work-strip tokens, with the sentence that type, workflow and matter can't be changed; the action row is a sticky footer. Not a wizard otherwise: Task type must be chosen before Workflow and Request details render. The form engine and Fill from email are unchanged.
 
 **Fields and rules.**

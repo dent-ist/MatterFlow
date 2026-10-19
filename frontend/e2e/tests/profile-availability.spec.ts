@@ -313,6 +313,7 @@ test.describe('My profile: availability and work hours', () => {
     // Create task: the Assignee typeahead.
     const create = new CreateTaskPage(page);
     await create.open(`?taskType=${world.taskType.id}`);
+    await create.openWhen();
     await create.assignee.fill(name);
     const option = page.getByRole('option', { name });
     await expect(option.locator('[data-option-flag]')).toContainText(
@@ -503,6 +504,7 @@ test.describe('profile screenshots', () => {
       await create.setViewportSize({ width: size.w, height: size.h });
       const createTask = new CreateTaskPage(create);
       await createTask.open(`?taskType=${world.taskType.id}`);
+      await createTask.openWhen();
       await createTask.assignee.fill(names[0]);
       await expect(create.locator('[data-option-flag]').first()).toBeVisible();
       await shot(create, size.n, '09-assignee-picker-flag', false);

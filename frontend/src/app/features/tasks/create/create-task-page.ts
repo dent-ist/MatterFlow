@@ -41,6 +41,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
   calendarDayInZone,
   dayIndex,
+  formatDateOnly,
   parseDateOnly,
   zoneAbbreviation,
   zonedLocalToUtc,
@@ -389,8 +390,44 @@ export class CreateTaskPage implements HasUnsavedChanges {
     return this.clientErrors()[key] || this.serverErrors()[key] || null;
   }
 
+  /** "Priority, due date and assignment" starts collapsed, remembers nothing, and opens by itself when it holds an error (#349). */
+  protected readonly whenOpen = signal(false);
+  private readonly whenHasError = computed(() =>
+    ['priorityId', 'dueDate', 'dueTime', 'assignedPodId', 'assignedUserId'].some(
+      (key) => !!this.fieldError(key),
+    ),
+  );
+  /** One line for the collapsed header, e.g. "Normal priority, due Oct 24, 2026 at 5:00 PM, Unassigned". */
+  protected readonly whenSummary = computed(() => {
+    const priority =
+      this.priorityLabelId() === null ? null : this.lookups.priority(this.priorityLabelId()!);
+    const parts = [priority ? `${priority.label} priority` : 'Default priority'];
+    const date = this.dueDate();
+    if (!date) parts.push('no due date (ASAP)');
+    else {
+      const m = /^(\d{2}):(\d{2})$/.exec(this.dueTime());
+      const at = m ? ` at ${+m[1] % 12 || 12}:${m[2]} ${+m[1] < 12 ? 'AM' : 'PM'}` : '';
+      parts.push(`due ${formatDateOnly(date)}${at}`);
+    }
+    const user = this.canAssign() ? this.assignee() : null;
+    const pod = this.canAssign() && this.podId() !== null ? this.podName() : null;
+    if (user) parts.push(`assigned to ${user.label}`);
+    else if (pod) parts.push(`${pod} (no person)`);
+    else parts.push('Unassigned');
+    return parts.join(', ');
+  });
+
+  protected toggleWhen(): void {
+    this.whenOpen.update((open) => !open);
+  }
+
   constructor() {
     void this.load();
+
+    // An error is never hidden: the collapsed section opens when one of its fields has a problem.
+    effect(() => {
+      if (this.whenHasError()) untracked(() => this.whenOpen.set(true));
+    });
 
     // `?taskType=<id>` skips the chooser, once the types are known.
     effect(() => {
