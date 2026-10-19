@@ -133,13 +133,15 @@ test.describe('tab counts (#364)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const tt = await asUser((await seed.user([typeRole.name], 'ty2c-tt')).username);
     const askedTypes: string[] = [];
-    tt.on('request', (r) => askedTypes.push(new URL(r.url()).pathname));
+    tt.on('request', (r) => askedTypes.push(new URL(r.url()).pathname + new URL(r.url()).search));
     await tt.goto('/admin/task-types');
     await expect(tt.locator('[role="tab"]')).toHaveCount(1);
     await expect(tab(tt, 'task-types')).toContainText(/\(\d+\)/);
-    expect(
-      askedTypes.filter((p) => p === '/api/v1/workflows' || p === '/api/v1/step-definitions'),
-    ).toEqual([]);
+    // No count request for the tabs it may not use (the workflow names behind the chips are the page's own, older request).
+    expect(askedTypes.filter((p) => p.startsWith('/api/v1/step-definitions'))).toEqual([]);
+    expect(askedTypes.filter((p) => /^\/api\/v1\/workflows\?.*pageSize=1(&|$)/.test(p))).toEqual(
+      [],
+    );
   });
 });
 
