@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   inject,
+  Injector,
   input,
   signal,
   untracked,
@@ -15,6 +16,7 @@ import { firstValueFrom } from 'rxjs';
 import { StepDefinitionDetail, StepDefinitionsClient } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
+import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TagInput } from '../../../shared/ui/tag-input';
@@ -234,6 +236,7 @@ export class StepEditPage implements HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
+  private readonly injector = inject(Injector);
 
   protected readonly isEdit = computed(() => this.stepId() !== undefined);
   /** The shared load flow of the record pages (#353): 404, 403 and failures show `mf-record-state`; the request is quiet (no toast). */
@@ -345,6 +348,7 @@ export class StepEditPage implements HasUnsavedChanges {
     }
     if (problems.length > 0) {
       this.summary.set(problems);
+      focusFirstInvalid(this.injector);
       return;
     }
 
@@ -433,6 +437,7 @@ export class StepEditPage implements HasUnsavedChanges {
           : ['We could not save the step. Try again.'],
       );
       this.conflict.set(errors.conflict);
+      focusFirstInvalid(this.injector);
       return undefined;
     } finally {
       this.busy.set(false);

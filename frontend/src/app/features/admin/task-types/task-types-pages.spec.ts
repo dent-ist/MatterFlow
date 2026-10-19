@@ -358,6 +358,22 @@ describe('TaskTypeEditPage', () => {
     expect(q('[data-name-error]').textContent).toContain(
       "A task type named 'data processing' already exists.",
     );
+    // The server message is in the summary too.
+    expect(q('[data-summary]').textContent).toContain("A task type named 'data processing'");
+  });
+
+  it('validates like the Workflow and Step pages: summary at the top, icon in the message, focus on the first invalid field (#361)', async () => {
+    await open();
+    await save();
+    expect(q('[data-summary]').getAttribute('role')).toBe('alert');
+    expect(q('[data-summary]').textContent).toContain('Fix the following to save:');
+    expect(q('[data-summary] li').textContent).toBe('Enter a name.');
+    expect(q('[data-name-error] .pi-exclamation-circle')).not.toBeNull();
+    expect(q('[data-name]').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(q('[data-name]'));
+    // Typing clears the problems.
+    await type('[data-name]', 'Collection');
+    expect(el().querySelector('[data-summary]')).toBeNull();
   });
 
   it('edits an existing type: removing the default workflow clears the default', async () => {

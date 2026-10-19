@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   inject,
+  Injector,
   input,
   signal,
   untracked,
@@ -23,6 +24,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { TextField } from '../../../shared/ui/text-field';
 import { workflowErrors } from './workflow-errors';
+import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge, Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
@@ -296,6 +298,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
+  private readonly injector = inject(Injector);
 
   protected readonly published = WorkflowVersionStatus.Published;
   protected readonly isEdit = computed(() => this.workflowId() !== undefined);
@@ -380,6 +383,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     this.resetErrors();
     if (this.name().trim() === '') {
       this.messages.set(['Enter a name.']);
+      focusFirstInvalid(this.injector);
       return;
     }
     if (
@@ -464,6 +468,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
       const errors = workflowErrors(err, 'We could not save the workflow. Try again.');
       this.serverErrors.set(errors.fields);
       this.messages.set(errors.messages);
+      focusFirstInvalid(this.injector);
       this.conflict.set(errors.conflict);
       return undefined;
     } finally {

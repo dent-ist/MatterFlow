@@ -38,6 +38,16 @@
       <p class="muted" data-loading>Loading...</p>
     }
     @default {
+      @if (summary().length > 0) {
+        <div class="pg-summary" role="alert" data-summary>
+          Fix the following to save:
+          <ul>
+            @for (message of summary(); track message) {
+              <li>{{ message }}</li>
+            }
+          </ul>
+        </div>
+      }
       <form class="edit" (submit)="$event.preventDefault(); save()" novalidate>
         <section aria-labelledby="tt-general">
           <h2 id="tt-general">General</h2>
@@ -56,6 +66,7 @@
             />
             @if (fieldErrors()['name']) {
               <p id="tt-name-error" class="error" role="alert" data-name-error>
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
                 {{ fieldErrors()['name'] }}
               </p>
             }
@@ -77,7 +88,10 @@
               type. Several types may share an icon.
             </p>
             @if (fieldErrors()['iconKey']) {
-              <p class="error" role="alert" data-icon-error>{{ fieldErrors()['iconKey'] }}</p>
+              <p class="error" role="alert" data-icon-error>
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                {{ fieldErrors()['iconKey'] }}
+              </p>
             }
           </div>
           <div class="field">
@@ -170,6 +184,7 @@
             </select>
             @if (fieldErrors()['defaultWorkflowDefinitionId']) {
               <p class="error" role="alert" data-default-error>
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
                 {{ fieldErrors()['defaultWorkflowDefinitionId'] }}
               </p>
             }
@@ -196,7 +211,7 @@
             [disabled]="busy() || (!isNew() && !dirty())"
             data-save
           />
-          <a class="mf-btn" routerLink="/admin/task-types">Cancel</a>
+          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" data-cancel />
         </div>
       </form>
     }

@@ -187,7 +187,8 @@
 .pg-form {
   display: grid;
   gap: var(--mf-s4);
-  max-width: 640px;
+  /* One form column and card width on the Task Type, Workflow and Step pages (#361); the fields keep --mf-field-max. */
+  max-width: 720px;
   padding: var(--mf-s5);
   background: var(--mf-surface);
   border-radius: var(--mf-radius-lg);

@@ -55,7 +55,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
       'aria-selected',
       'true',
     );
-    await expect(page.getByRole('link', { name: 'New task type' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New task type' })).toBeVisible();
     await expect(page).toHaveTitle('Task Types - MatterFlow');
     await expect(crumbs(page)).toHaveText(['Administration', 'Task Types']);
 
@@ -157,7 +157,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
       'aria-selected',
       'true',
     );
-    await expect(workflowPage.getByRole('link', { name: 'New task type' })).toHaveCount(0);
+    await expect(workflowPage.getByRole('button', { name: 'New task type' })).toHaveCount(0);
     const menu = adminMenu(workflowPage).getByRole('link');
     await expect(menu).toHaveText(['Task Types']);
     await workflowPage.goto('/admin/steps');

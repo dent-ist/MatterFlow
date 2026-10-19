@@ -4,6 +4,7 @@ import {
   computed,
   effect,
   inject,
+  Injector,
   input,
   signal,
   untracked,
@@ -17,6 +18,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
+import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -81,6 +83,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
+  private readonly injector = inject(Injector);
 
   /** The shared load flow of the record pages (#353): 404, 403 and failures show `mf-record-state`; the request is quiet (no toast). */
   protected readonly flow = new RecordLoadFlow('taskType');
@@ -93,6 +96,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   protected readonly failure = signal('');
   protected readonly conflict = signal(false);
   protected readonly fieldErrors = signal<Record<string, string>>({});
+  /** The messages of the summary at the top, in field order (the same rule as the Workflow and Step pages). */
+  protected readonly summary = computed(() => Object.values(this.fieldErrors()));
   protected readonly announcement = signal('');
 
   protected readonly isNew = computed(() => this.id() === undefined);
@@ -151,6 +156,16 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   protected confirmDeactivate(): void {
     this.deactivateOpen.set(false);
     void this.save(true);
+  }
+
+  /** Shows the problems (summary at the top plus the message under each field) and puts focus on the first field to fix. */
+  private showErrors(errors: Record<string, string>): void {
+    this.fieldErrors.set(errors);
+    focusFirstInvalid(this.injector);
+  }
+
+  protected cancel(): void {
+    void this.router.navigateByUrl('/admin/task-types');
   }
 
   protected retry(): void {
@@ -231,11 +246,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     const m = this.model();
     const name = m.name.trim();
     if (!name) {
-      this.fieldErrors.set({ name: 'Enter a name.' });
+      this.showErrors({ name: 'Enter a name.' });
       return;
     }
     if (!m.iconKey) {
-      this.fieldErrors.set({ iconKey: 'Choose an icon.' });
+      this.showErrors({ iconKey: 'Choose an icon.' });
       return;
     }
     if (!deactivationConfirmed && this.taskType()?.isActive && !m.isActive) {
@@ -283,7 +298,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     } catch (e) {
       const errors = serverFormErrors(e);
       if (errors.conflict) this.conflict.set(true);
-      else if (Object.keys(errors.fields).length > 0) this.fieldErrors.set(errors.fields);
+      else if (Object.keys(errors.fields).length > 0) this.showErrors(errors.fields);
       else this.failure.set(e instanceof Error ? e.message : 'Couldn’t save. Try again.');
     } finally {
       this.busy.set(false);

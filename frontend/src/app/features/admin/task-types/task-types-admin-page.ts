@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
@@ -30,25 +30,20 @@ const TEXT: Record<TaskTypesTab, string> = {
  */
 @Component({
   selector: 'mf-task-types-admin-page',
-  imports: [
-    FixedPage,
-    PageHeader,
-    Tabs,
-    Button,
-    RouterLink,
-    TaskTypesPage,
-    WorkflowsListPage,
-    StepsListPage,
-  ],
+  imports: [FixedPage, PageHeader, Tabs, Button, TaskTypesPage, WorkflowsListPage, StepsListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Task Types" [crumbs]="crumbs()" [description]="description()">
         @switch (current()) {
           @case ('task-types') {
-            <a mfActions class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new" data-new>
-              <i class="pi pi-plus" aria-hidden="true"></i> New task type
-            </a>
+            <p-button
+              mfActions
+              label="New task type"
+              icon="pi pi-plus"
+              data-new
+              (onClick)="go('/admin/task-types/new')"
+            />
           }
           @case ('workflows') {
             <p-button
