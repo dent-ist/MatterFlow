@@ -3,7 +3,7 @@ import { TaskQueueRow, TaskResponse } from '../../api/generated/api-client';
 /** The three cells that can be changed from the row. */
 export type InlineField = 'status' | 'priority' | 'assignee';
 
-/** Status actions of the lifecycle matrix (architecture 8.3), as in the Task header's Change status menu. */
+/** Status actions of the lifecycle matrix (architecture 8.3), as in the Status menu of the Task page. */
 export type StatusAction = 'START' | 'RESUME' | 'HOLD' | 'COMPLETE' | 'CANCEL' | 'REOPEN';
 
 export interface StatusChoice {

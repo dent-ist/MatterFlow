@@ -272,7 +272,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
 
   /**
    * Whether Comments and Assets are expanded: the choice remembered for this person (read before the first render), collapsed by default.
-   * Links, Jump to and new comments open a section without changing what is remembered. Reset when another Task is shown.
+   * Links, the section nav and new comments open a section without changing what is remembered. Reset when another Task is shown.
    */
   private readonly openKeys = computed(() => {
     const user = this.auth.profile()?.userId;
@@ -374,7 +374,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
         if (hasStep) this.store.focusStepId.set(stepId);
       });
     });
-    // A request to show a section (Jump to, ?tab=): scroll there and put focus on the section's heading.
+    // A request to show a section (the section nav, ?tab=): scroll there and put focus on the section's heading.
     effect(() => {
       const request = this.store.sectionRequest();
       untracked(() => {

@@ -156,6 +156,8 @@ export class TaskHeader {
     if (!from || !t) return null;
     const returnTo = this.store.returnTo;
     if (!isRecordOrigin(from)) {
+      // Pod Work is a page of its own permission: without Pod.View the crumb would be a dead link (T10, #329).
+      if (from === 'pod-work' && !this.auth.has('Pod.View')) return null;
       return {
         label: DRILL_SOURCES[from].label,
         link: this.router.parseUrl(listUrl(from, returnTo)),
@@ -184,7 +186,8 @@ export class TaskHeader {
         return at([base], base, `Project ${t.project.name}`);
       }
       case 'dashboard':
-        return this.auth.has('Dashboard.View')
+        // Dashboard.View alone opens an empty page whose tabs answer 403: the Dashboard needs a tab permission too (T10, #329).
+        return this.auth.hasAnyDashboardTab()
           ? at(RECORD_ORIGINS.dashboard.paths, '/dashboard', RECORD_ORIGINS.dashboard.label)
           : null;
       case 'search':

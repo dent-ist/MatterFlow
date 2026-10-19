@@ -24,7 +24,7 @@ export const TASK_TABS: readonly TaskTab[] = [
   'assets',
   'activity',
 ];
-/** The sections of the page that links, the "Jump to" row and `?tab=` can scroll to. */
+/** The sections of the page that links, the section nav and `?tab=` can scroll to. */
 export type TaskSection = 'workflow' | 'comments' | 'assets';
 
 /** The dialog currently asking the user to confirm or explain a status change. */

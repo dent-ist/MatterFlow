@@ -1046,9 +1046,19 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
     expect(crumb(plain.el).textContent!.trim()).toBe('Task Queue');
     expect(crumb(plain.el).getAttribute('href')).toBe('/tasks');
     TestBed.resetTestingModule();
-    const foreign = await openFrom('pod-work', '/admin/users?x=1');
+    const foreign = await openFrom('pod-work', '/admin/users?x=1', undefined, [
+      ...PERMS,
+      'Pod.View',
+    ]);
     expect(crumb(foreign.el).textContent!.trim()).toBe('Pod Work');
     expect(crumb(foreign.el).getAttribute('href')).toBe('/pods/work');
+  });
+
+  it('drops Pod Work as the origin for a person without Pod.View: the crumb would be a dead link (T10, #329)', async () => {
+    const { el } = await openFrom('pod-work', '/pods/work?pod=2');
+    expect(crumb(el).textContent!.trim()).toBe('Tasks');
+    expect(crumb(el).getAttribute('href')).toBe('/tasks');
+    expect((q(el, '[data-back-link]') as HTMLAnchorElement).getAttribute('href')).toBe('/tasks');
   });
 
   describe('from a Matter, Project, Dashboard or Search (T9, #324)', () => {
@@ -1103,6 +1113,7 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       const dash = await openFrom('dashboard', '/dashboard?pod=4', undefined, [
         ...PERMS,
         'Dashboard.View',
+        'Dashboard.ViewSummary',
       ]);
       expect(crumbs(dash.el)).toEqual([['Dashboard', '/dashboard?pod=4']]);
       TestBed.resetTestingModule();
@@ -1118,6 +1129,13 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       TestBed.resetTestingModule();
       const denied = await openFrom('dashboard', '/dashboard');
       expect(crumbs(denied.el)).toEqual([['Tasks', '/tasks']]);
+      TestBed.resetTestingModule();
+      // Dashboard.View without any tab permission opens an empty Dashboard whose data answers 403: not an origin (T10, #329).
+      const noTab = await openFrom('dashboard', '/dashboard', undefined, [
+        ...PERMS,
+        'Dashboard.View',
+      ]);
+      expect(crumbs(noTab.el)).toEqual([['Tasks', '/tasks']]);
     });
   });
 
