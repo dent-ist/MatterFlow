@@ -26,7 +26,7 @@ import { workflowErrors } from './workflow-errors';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge, Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
-import { PageTitle } from '../../../core/title/page-title';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 /**
@@ -331,7 +331,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
       const name = this.detail()?.workflow?.name;
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('workflow', state));
-      } else if (name) this.pageTitle.set(name);
+      } else if (name) this.pageTitle.set(shortTitleText(name));
     });
   }
 

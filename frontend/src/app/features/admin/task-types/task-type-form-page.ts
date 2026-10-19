@@ -32,7 +32,7 @@ import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './f
 import { publishIssuesOf } from './form-mapping';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { QuietRequests } from '../../../core/http/interceptors';
-import { PageTitle } from '../../../core/title/page-title';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import {
   RecordKind,
   RecordLoadFlow,
@@ -159,7 +159,10 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
     effect(() => {
       const kind = this.recordKind();
       const state = this.state();
+      const name = this.owner()?.name;
       if (kind && this.flow.failed()) this.pageTitle.set(recordStateTitle(kind, state));
+      // "Form: Data Processing Extended" for a Task Type or a Step (Asset Types and Custom Fields keep their route title).
+      else if (kind && name) this.pageTitle.set(shortTitleText(`Form: ${name}`));
     });
     effect(() => {
       const id = this.ownerId();

@@ -20,7 +20,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TagInput } from '../../../shared/ui/tag-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
-import { PageTitle } from '../../../core/title/page-title';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 
 /** True for an empty value or a full http(s) address (mirrors the server rule). */
@@ -290,7 +290,7 @@ export class StepEditPage implements HasUnsavedChanges {
       const title = this.original()?.title;
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('step', state));
-      } else if (title) this.pageTitle.set(title);
+      } else if (title) this.pageTitle.set(shortTitleText(title));
     });
   }
 

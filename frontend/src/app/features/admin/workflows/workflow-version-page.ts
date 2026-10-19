@@ -35,7 +35,7 @@ import { ErrorReference } from '../../../shared/ui/error-reference';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
-import { PageTitle } from '../../../core/title/page-title';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
@@ -692,6 +692,14 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       const state = this.state();
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('workflowVersion', state));
+      } else if (state === 'ready') {
+        // "Large Production Workflow v3 (Draft)"; follows the version after a save, publish or retire.
+        const v = this.version();
+        if (v) {
+          this.pageTitle.set(
+            shortTitleText(`${v.workflowName} v${v.version.versionNo} (${v.version.status})`),
+          );
+        }
       }
     });
     effect(() => {

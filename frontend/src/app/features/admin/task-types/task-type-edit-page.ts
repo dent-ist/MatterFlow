@@ -20,7 +20,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { PageTitle } from '../../../core/title/page-title';
+import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { DEFAULT_TASK_TYPE_ICON } from '../../../shared/icons/task-type-icon';
@@ -117,7 +117,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       const name = this.taskType()?.name;
       if (state === 'notFound' || state === 'forbidden' || state === 'error') {
         this.pageTitle.set(recordStateTitle('taskType', state));
-      } else if (name) this.pageTitle.set(name);
+      } else if (name) this.pageTitle.set(shortTitleText(name));
     });
   }
 
