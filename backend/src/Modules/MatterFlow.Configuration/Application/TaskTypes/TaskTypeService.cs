@@ -7,8 +7,10 @@ using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Configuration.Domain;
 using MatterFlow.Configuration.Domain.Forms;
 using MatterFlow.Configuration.Infrastructure;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,6 +33,11 @@ namespace MatterFlow.Configuration.Application.TaskTypes;
 /// <param name="IsUsable">True when active, the form is published (or has no fields) and there is at least one eligible workflow.</param>
 /// <param name="UsabilityIssues">Why the type is not usable: INACTIVE, FORM_NOT_PUBLISHED, NO_ELIGIBLE_WORKFLOW. Empty when usable.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
+/// <param name="OpenTaskCount">
+/// Tasks of this type that are open (New, In Progress or On Hold, the Task Queue definition), over every pod and Matter: configuration data, not
+/// trimmed to what the viewer may open. Null (not 0) when the viewer lacks <c>Task.View</c>. The list, the detail and the create and
+/// update responses all carry it.
+/// </param>
 public sealed record TaskTypeView(
     [property: Required] int Id,
     [property: Required] string Name,
@@ -47,7 +54,8 @@ public sealed record TaskTypeView(
     [property: Required] bool HasFormFields,
     [property: Required] bool IsUsable,
     [property: Required] IReadOnlyList<string> UsabilityIssues,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OpenTaskCount = null);
 
 /// <summary>Body to create a Task Type. Its (empty) request form is provisioned with it.</summary>
 /// <param name="Name">Unique display name.</param>
@@ -80,7 +88,9 @@ public sealed class TaskTypeService(
     IFormDefinitionResolver forms,
     IAuditWriter audit,
     IClock clock,
-    ICurrentUser currentUser) : ITaskTypeCatalog
+    ICurrentUser currentUser,
+    IPermissionChecker permissions,
+    IConfigurationTaskCounts taskCounts) : ITaskTypeCatalog
 {
     private const string ObjectType = "TaskType";
 
@@ -99,7 +109,33 @@ public sealed class TaskTypeService(
     // ---- read side
 
     /// <summary>All Task Types by name; with <paramref name="workflowId"/> only the types that list that workflow as eligible.</summary>
-    public async Task<IReadOnlyList<TaskTypeView>> ListViewsAsync(int? workflowId = null, CancellationToken ct = default)
+    public Task<IReadOnlyList<TaskTypeView>> ListViewsAsync(int? workflowId = null, CancellationToken ct = default) => LoadViewsAsync(workflowId, true, ct);
+
+    /// <summary>Sort keys of the list: the name (default) or the open Task count, each ascending or descending (<c>-</c>); ties and equal counts follow the name.</summary>
+    public static readonly string[] SortFields = ["name", "-name", "openTaskCount", "-openTaskCount"];
+
+    /// <summary>
+    /// The list in the requested order. The list is not paged (every Task Type comes back), so the order is applied to the loaded rows. Without
+    /// <c>Task.View</c> the counts are null and a count sort falls back to the name order. 400 <c>INVALID</c> for an unknown sort key.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<TaskTypeView>>> ListViewsAsync(int? workflowId, string? sort, CancellationToken ct = default)
+    {
+        if (sort is not null && !SortFields.Contains(sort))
+            return Error.Validation("sort", "INVALID", $"sort must be one of: {string.Join(", ", SortFields)}.");
+
+        var rows = await LoadViewsAsync(workflowId, true, ct);
+        // The rows come back by name (the database collation); the LINQ orderings below are stable, so equal counts keep that name order.
+        IEnumerable<TaskTypeView> ordered = sort switch
+        {
+            "-name" => rows.Reverse(),
+            "openTaskCount" => rows.OrderBy(r => r.OpenTaskCount ?? 0),
+            "-openTaskCount" => rows.OrderByDescending(r => r.OpenTaskCount ?? 0),
+            _ => rows,
+        };
+        return Result<IReadOnlyList<TaskTypeView>>.Success([.. ordered]);
+    }
+
+    private async Task<IReadOnlyList<TaskTypeView>> LoadViewsAsync(int? workflowId, bool withCounts, CancellationToken ct)
     {
         var query = db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).AsQueryable();
         if (workflowId is { } wanted)
@@ -108,28 +144,44 @@ public sealed class TaskTypeService(
         }
 
         var rows = await query.OrderBy(t => t.Name).ThenBy(t => t.Id).ToListAsync(ct);
-        var facts = await LoadFormFactsAsync(rows.Select(r => r.Id).ToList(), ct);
-        return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id)))];
+        var ids = rows.Select(r => r.Id).ToList();
+        var facts = await LoadFormFactsAsync(ids, ct);
+        var counts = withCounts ? await OpenCountsAsync(ids, ct) : null;
+        return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id), counts is null ? null : counts.GetValueOrDefault(r.Id)))];
     }
 
-    public async Task<Result<TaskTypeView>> GetViewAsync(int id, CancellationToken ct = default)
+    public async Task<Result<TaskTypeView>> GetViewAsync(int id, CancellationToken ct = default) => await GetViewAsync(id, true, ct);
+
+    private async Task<Result<TaskTypeView>> GetViewAsync(int id, bool withCounts, CancellationToken ct)
     {
         var row = await db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).FirstOrDefaultAsync(t => t.Id == id, ct);
         if (row is null)
             return Error.NotFound("Task type not found.");
         var facts = await LoadFormFactsAsync([id], ct);
-        return ToView(row, facts.GetValueOrDefault(id));
+        var counts = withCounts ? await OpenCountsAsync([id], ct) : null;
+        return ToView(row, facts.GetValueOrDefault(id), counts is null ? null : counts.GetValueOrDefault(id));
+    }
+
+    /// <summary>
+    /// The open Task count of each Task Type (one grouped statement for the whole page of ids), or null when the viewer may not see Tasks, so the
+    /// responses carry null instead of a made-up 0 (the Organization lists do the same). A type with no open Task is 0.
+    /// </summary>
+    private async Task<Dictionary<int, int>?> OpenCountsAsync(IReadOnlyCollection<int> ids, CancellationToken ct)
+    {
+        if (!permissions.Has(Permissions.Task.View))
+            return null;
+        return new Dictionary<int, int>(await taskCounts.OpenByTaskTypeAsync(ids, ct));
     }
 
     public async Task<IReadOnlyList<TaskTypeInfo>> ListUsableAsync(CancellationToken cancellationToken = default) =>
         [.. (await ListAsync(false, cancellationToken)).Where(t => t.IsUsable)];
 
     public async Task<IReadOnlyList<TaskTypeInfo>> ListAsync(bool includeInactive, CancellationToken cancellationToken = default) =>
-        [.. (await ListViewsAsync(null, cancellationToken)).Where(v => includeInactive || v.IsActive).Select(ToInfo)];
+        [.. (await LoadViewsAsync(null, false, cancellationToken)).Where(v => includeInactive || v.IsActive).Select(ToInfo)];
 
     public async Task<TaskTypeInfo?> GetAsync(int taskTypeId, CancellationToken cancellationToken = default)
     {
-        var view = await GetViewAsync(taskTypeId, cancellationToken);
+        var view = await GetViewAsync(taskTypeId, false, cancellationToken);
         return view.IsSuccess ? ToInfo(view.Value) : null;
     }
 
@@ -159,7 +211,7 @@ public sealed class TaskTypeService(
     private static TaskTypeInfo ToInfo(TaskTypeView v) =>
         new(v.Id, v.Name, v.Description, v.IconKey, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable);
 
-    private static TaskTypeView ToView(TaskType t, FormFacts? form)
+    private static TaskTypeView ToView(TaskType t, FormFacts? form, int? openTaskCount)
     {
         var eligible = t.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
         var issues = new List<string>();
@@ -192,7 +244,8 @@ public sealed class TaskTypeService(
             form?.HasFields ?? false,
             issues.Count == 0,
             issues,
-            LookupSupport.FormatRowVersion(t.RowVersion));
+            LookupSupport.FormatRowVersion(t.RowVersion),
+            openTaskCount);
     }
 
     private async Task<Dictionary<int, FormFacts>> LoadFormFactsAsync(IReadOnlyCollection<int> taskTypeIds, CancellationToken ct)

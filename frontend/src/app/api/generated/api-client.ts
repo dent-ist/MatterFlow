@@ -2821,9 +2821,10 @@ export class StatusLabelsClient implements IStatusLabelsClient {
 export interface ITaskTypesClient {
     /**
      * @param workflowId (optional) 
+     * @param sort (optional) 
      * @return OK
      */
-    listTaskTypes(workflowId?: number | undefined): Observable<TaskTypeView[]>;
+    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined): Observable<TaskTypeView[]>;
     /**
      * @return Created
      */
@@ -2853,14 +2854,19 @@ export class TaskTypesClient implements ITaskTypesClient {
 
     /**
      * @param workflowId (optional) 
+     * @param sort (optional) 
      * @return OK
      */
-    listTaskTypes(workflowId?: number | undefined): Observable<TaskTypeView[]> {
+    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined): Observable<TaskTypeView[]> {
         let url_ = this.baseUrl + "/api/v1/task-types?";
         if (workflowId === null)
             throw new globalThis.Error("The parameter 'workflowId' cannot be null.");
         else if (workflowId !== undefined)
             url_ += "workflowId=" + encodeURIComponent("" + workflowId) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -13430,6 +13436,7 @@ export interface TaskTypeView {
     isUsable: boolean;
     usabilityIssues: string[];
     rowVersion: string;
+    openTaskCount?: number | undefined;
 
     [key: string]: any;
 }

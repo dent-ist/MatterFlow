@@ -1885,6 +1885,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15561,6 +15568,13 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

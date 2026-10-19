@@ -20,15 +20,17 @@ public class TaskTypesController(TaskTypeService taskTypes) : ControllerBase
 {
     /// <summary>
     /// Lists all Task Types by name, including inactive ones (historical Tasks still display them; pickers use <c>isUsable</c>). With
-    /// <c>workflowId</c> only the types for which that workflow is eligible (the Workflows tab links to it).
+    /// <c>workflowId</c> only the types for which that workflow is eligible (the Workflows tab links to it). Every type carries <c>openTaskCount</c>
+    /// (New, In Progress and On Hold Tasks of the type, the Task Queue definition; null without <c>Task.View</c>). <c>sort</c>: <c>name</c> (default),
+    /// <c>-name</c>, <c>openTaskCount</c> or <c>-openTaskCount</c> (equal counts keep the name order); the list is not paged.
     /// </summary>
     [HttpGet(Name = "ListTaskTypes")]
     [Authorize(Policy = ConfigurationPolicies.TaskView)]
     [ProducesResponseType<IReadOnlyList<TaskTypeView>>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, CancellationToken cancellationToken) =>
-        Ok(await taskTypes.ListViewsAsync(workflowId, cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, [FromQuery] string? sort, CancellationToken cancellationToken) =>
+        Ok((await taskTypes.ListViewsAsync(workflowId, sort, cancellationToken)).OrThrow());
 
-    /// <summary>One Task Type with its form status and eligible workflows.</summary>
+    /// <summary>One Task Type with its form status, eligible workflows and open Task count (null without <c>Task.View</c>).</summary>
     [HttpGet("{id:int}", Name = "GetTaskType")]
     [Authorize(Policy = ConfigurationPolicies.TaskView)]
     [ProducesResponseType<TaskTypeView>(StatusCodes.Status200OK, "application/json")]

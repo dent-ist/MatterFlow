@@ -3,7 +3,9 @@ using MatterFlow.Configuration.Application.Lookups;
 using MatterFlow.Configuration.Application.TaskTypes;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.SharedKernel.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.Configuration;
 
@@ -24,6 +26,7 @@ public static class ConfigurationModule
         services.AddScoped<IStatusLabelCatalog>(sp => sp.GetRequiredService<StatusLabelService>());
         services.AddScoped<AssetLinkRoleService>();
         services.AddScoped<IAssetLinkRoleCatalog>(sp => sp.GetRequiredService<AssetLinkRoleService>());
+        services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
         services.AddScoped<TaskTypeService>();
         services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
         services.AddScoped<ConfigurationSeeder>();
