@@ -693,7 +693,7 @@ async function runTask(plan, env, partial) {
       ? ctx.pods[plan.k % ctx.pods.length].podId
       : null;
 
-  const title = `${type.name} - ${matter.matterRef} - ${offsets.get(type.id) + plan.seq}`;
+  const title = `${type.name} - ${offsets.get(type.id) + plan.seq}`;
   const body = {
     matterId: matter.matterId,
     ...(project ? { projectId: project.projectId } : {}),
