@@ -186,6 +186,7 @@ test.describe('Round 4: layout and responsive', () => {
     await page.goto(`/tasks/${task.taskId}`);
     await page.getByRole('button', { name: 'Edit', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit task details' });
+    await dialog.locator('[data-when-toggle]').click(); // collapsed by default (#350)
     await expect(dialog.getByLabel('Due date', { exact: true })).toBeVisible();
     await expect(dialog.getByLabel(/^Time \(\w+\)$/)).toBeVisible();
     const [date, time] = [
