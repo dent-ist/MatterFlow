@@ -54,6 +54,10 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   matter: { label: 'Matters', link: '/matters' },
   project: { label: 'Projects', link: '/projects' },
   task: { label: 'Task Queue', link: '/tasks' },
+  taskType: { label: 'Task Types', link: '/admin/task-types' },
+  workflow: { label: 'Workflows', link: '/admin/workflows' },
+  workflowVersion: { label: 'Workflows', link: '/admin/workflows' },
+  step: { label: 'Workflow Steps', link: '/admin/steps' },
 };
 const LIST_PATHS = ['/clients', '/matters', '/projects'];
 

@@ -32,8 +32,10 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { Crumb, PageHeader } from '../../../shared/ui/page-header';
+import { PageTitle } from '../../../core/title/page-title';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TagFilter, TagMatch, TagOption } from '../../../shared/ui/tag-filter';
@@ -73,6 +75,7 @@ const UNORDERED_TEXT =
     PageHeader,
     Badge,
     ErrorReference,
+    RecordState,
     RouterLink,
     Button,
     ConfirmDialog,
@@ -84,14 +87,27 @@ const UNORDERED_TEXT =
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss'],
   template: `
-    @if (state() === 'loading') {
+    <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
+    @if (flow.failed()) {
+      <mf-record-state
+        kind="workflowVersion"
+        [state]="state()"
+        [busy]="flow.retrying()"
+        [parent]="parentCrumb()"
+        [focusHeading]="true"
+        (retried)="load()"
+      />
+    } @else if (state() === 'loading') {
+      <mf-page-header
+        heading="Workflow version"
+        [crumbs]="[
+          { label: 'Administration' },
+          { label: 'Task Types', link: '/admin/task-types' },
+          { label: 'Workflows', link: '/admin/workflows' },
+          { label: 'Version' },
+        ]"
+      />
       <div class="pg-state" role="status" aria-busy="true">Loading the workflow version...</div>
-    } @else if (state() === 'error') {
-      <div class="pg-alert" role="alert">
-        We couldn't load that workflow version.
-        <mf-error-reference />
-        <p-button label="Retry" severity="secondary" (onClick)="load()" />
-      </div>
     } @else if (version(); as v) {
       <mf-page-header
         [crumbs]="[
@@ -601,13 +617,22 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   private readonly forms = inject(FormsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly orderedText = ORDERED_TEXT;
   protected readonly unorderedText = UNORDERED_TEXT;
 
-  protected readonly state = signal<LoadState>('loading');
+  /** The shared load flow of the record pages (#353): 404, 403 and failures show `mf-record-state`; the request is quiet (no toast). */
+  protected readonly flow = new RecordLoadFlow('workflowVersion');
+  protected readonly state = this.flow.state;
+  /** The workflow's name when it loaded, so a missing or forbidden version still shows its workflow in the breadcrumb. */
+  private readonly parentName = signal<string | null>(null);
+  protected readonly parentCrumb = computed<Crumb | null>(() => {
+    const name = this.parentName();
+    return name ? { label: name, link: ['/admin/workflows', this.workflowId()] } : null;
+  });
   protected readonly version = signal<WorkflowVersionDetail | null>(null);
   protected readonly workflow = signal<WorkflowSummary | null>(null);
   protected readonly rows = signal<PlacementRow[]>([]);
@@ -662,6 +687,13 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   );
 
   constructor() {
+    // The tab title names the state ("Workflow version not found"); the record title is #359's.
+    effect(() => {
+      const state = this.state();
+      if (state === 'notFound' || state === 'forbidden' || state === 'error') {
+        this.pageTitle.set(recordStateTitle('workflowVersion', state));
+      }
+    });
     effect(() => {
       this.workflowId();
       this.versionId();
@@ -679,24 +711,29 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   }
 
   async load(): Promise<void> {
-    this.state.set('loading');
     this.resetErrors();
-    try {
-      const [detail, workflow] = await Promise.all([
-        firstValueFrom(
-          this.api.getWorkflowVersion(Number(this.workflowId()), Number(this.versionId())),
-        ),
-        firstValueFrom(this.api.getWorkflow(Number(this.workflowId()))),
-      ]);
-      this.workflow.set(workflow.workflow);
-      this.apply(detail);
-      this.state.set('ready');
-      if (this.editable() && this.libState() !== 'ready') {
-        void this.loadLibrary();
-        void this.loadLibraryTags();
-      }
-    } catch {
-      this.state.set('error');
+    const workflowId = Number(this.workflowId());
+    await this.flow.run(
+      async () => {
+        // Both requests start together (quiet); the version decides the state, the workflow only supplies the breadcrumb and the header.
+        const version = firstValueFrom(
+          this.api.getWorkflowVersion(workflowId, Number(this.versionId())),
+        );
+        const workflow = firstValueFrom(this.api.getWorkflow(workflowId));
+        const [v, w] = await Promise.allSettled([version, workflow]);
+        this.parentName.set(w.status === 'fulfilled' ? w.value.workflow.name : null);
+        if (v.status === 'rejected') throw v.reason;
+        if (w.status === 'rejected') throw w.reason;
+        return { detail: v.value, workflow: w.value };
+      },
+      ({ detail, workflow }) => {
+        this.workflow.set(workflow.workflow);
+        this.apply(detail);
+      },
+    );
+    if (this.state() === 'ready' && this.editable() && this.libState() !== 'ready') {
+      void this.loadLibrary();
+      void this.loadLibraryTags();
     }
   }
 

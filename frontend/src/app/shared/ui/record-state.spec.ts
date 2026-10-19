@@ -11,6 +11,7 @@ import {
   RecordState,
   recordFailureOf,
   recordStateText,
+  recordStateTitle,
 } from './record-state';
 
 const apiError = (status: number) => ApiError.from(new HttpErrorResponse({ status, error: {} }));
@@ -55,6 +56,25 @@ class Host {
   retries = 0;
 }
 
+describe('Administration record kinds (#353)', () => {
+  it('words the three states for the four administration records and names the tab title', () => {
+    const nouns: [RecordKind, string, string][] = [
+      ['taskType', 'task type', 'Task type'],
+      ['workflow', 'workflow', 'Workflow'],
+      ['workflowVersion', 'workflow version', 'Workflow version'],
+      ['step', 'step', 'Step'],
+    ];
+    for (const [kind, noun, name] of nouns) {
+      expect(recordStateText(kind, 'notFound')).toBe(`We couldn't find that ${noun}.`);
+      expect(recordStateText(kind, 'forbidden')).toBe(`You don't have access to this ${noun}.`);
+      expect(recordStateText(kind, 'error')).toBe(`Couldn't load this ${noun}.`);
+      expect(recordStateTitle(kind, 'notFound')).toBe(`${name} not found`);
+      expect(recordStateTitle(kind, 'forbidden')).toBe(`No access to this ${noun}`);
+      expect(recordStateTitle(kind, 'error')).toBe(`${name} could not be loaded`);
+    }
+  });
+});
+
 describe('mf-record-state', () => {
   async function render(
     permissions: string[] = ['Client.View', 'Matter.View', 'Project.View', 'Task.View'],
@@ -75,6 +95,16 @@ describe('mf-record-state', () => {
     };
     return { fixture, el, host: fixture.componentInstance, settle };
   }
+
+  it('shows the Administration crumb with the parent workflow and never the id (#353)', async () => {
+    const { el, host, settle } = await render(['Workflow.Manage']);
+    host.kind.set('workflowVersion');
+    await settle();
+    const crumbs = Array.from(el.querySelectorAll('nav li')).map((li) => li.textContent!.trim());
+    expect(crumbs).toEqual(['Administration', 'Task Types', 'Workflows', 'Version']);
+    expect(el.textContent).not.toContain('99999');
+    expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/workflows');
+  });
 
   it('shows the not-found text, the crumb and a link to the list, without Retry', async () => {
     const { el } = await render();

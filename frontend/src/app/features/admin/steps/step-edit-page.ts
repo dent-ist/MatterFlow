@@ -19,11 +19,9 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TagInput } from '../../../shared/ui/tag-input';
 import { TextField } from '../../../shared/ui/text-field';
-import { ErrorReference } from '../../../shared/ui/error-reference';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
-
-type LoadState = 'loading' | 'ready' | 'error';
 
 /** True for an empty value or a full http(s) address (mirrors the server rule). */
 export function isValidDocumentationUrl(value: string): boolean {
@@ -49,162 +47,167 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
  */
 @Component({
   selector: 'mf-step-edit-page',
-  imports: [PageHeader, ErrorReference, RouterLink, Button, TextField, TagInput, ConfirmDialog],
+  imports: [PageHeader, RecordState, RouterLink, Button, TextField, TagInput, ConfirmDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header
-      [crumbs]="[
-        { label: 'Administration' },
-        { label: 'Task Types', link: '/admin/task-types' },
-        { label: 'Workflow Steps', link: '/admin/steps' },
-        { label: isEdit() ? original()?.title || 'Edit' : 'New' },
-      ]"
-      [heading]="isEdit() ? 'Edit step' : 'New step'"
-    />
-
-    @if (state() === 'loading') {
-      <div class="pg-state" role="status" aria-busy="true">Loading the step...</div>
-    } @else if (state() === 'error') {
-      <div class="pg-alert" role="alert">
-        We couldn't load that step.
-        <mf-error-reference />
-        <p-button label="Retry" severity="secondary" (onClick)="load()" />
-      </div>
+    @if (flow.failed()) {
+      <mf-record-state
+        kind="step"
+        [state]="state()"
+        [busy]="flow.retrying()"
+        [focusHeading]="true"
+        (retried)="load()"
+      />
     } @else {
-      @if (isEdit()) {
-        <div class="pg-banner" data-banner>
-          Editing this step doesn't change workflows that are already published. Workflows pick up
-          changes only when you publish a new workflow version.
-        </div>
-      }
-      @if (conflict()) {
-        <div class="pg-alert" role="alert" data-conflict>
-          This step was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
-        </div>
-      }
-      @if (summary().length > 0) {
-        <div class="pg-summary" role="alert" data-summary>
-          Fix the following to save:
-          <ul>
-            @for (message of summary(); track message) {
-              <li>{{ message }}</li>
-            }
-          </ul>
-        </div>
-      }
+      <mf-page-header
+        [crumbs]="[
+          { label: 'Administration' },
+          { label: 'Task Types', link: '/admin/task-types' },
+          { label: 'Workflow Steps', link: '/admin/steps' },
+          { label: isEdit() ? original()?.title || 'Edit' : 'New' },
+        ]"
+        [heading]="isEdit() ? 'Edit step' : 'New step'"
+      />
 
-      <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
-        <mf-text-field
-          inputId="step-title"
-          label="Title"
-          [required]="true"
-          [maxLength]="200"
-          [error]="titleError()"
-          [(value)]="title"
-        />
-        <mf-text-field
-          inputId="step-description"
-          label="Description"
-          help="A short explanation shown in the workflow."
-          [maxLength]="1000"
-          [error]="fieldError('description')"
-          [(value)]="description"
-        />
-        <mf-tag-input
-          inputId="step-tags"
-          label="Tags"
-          placeholder="Add a tag"
-          help="Optional labels such as Relativity or Processing, used to find the step. Press Enter or comma to add one. Up to 20 tags, 40 characters each."
-          [error]="fieldError('tags')"
-          [suggestions]="tagSuggestions()"
-          (queryChange)="suggestTags($event)"
-          [(value)]="tags"
-        />
-        <mf-text-field
-          inputId="step-instructions"
-          label="Instructions"
-          help="The detailed procedure. Plain text with line breaks."
-          [multiline]="true"
-          [maxLength]="20000"
-          [error]="fieldError('instructions')"
-          [(value)]="instructions"
-        />
-        <mf-text-field
-          inputId="step-url"
-          label="Documentation URL"
-          help="Optional link to the full procedure, starting with https://"
-          [maxLength]="1000"
-          [error]="urlError()"
-          [(value)]="documentationUrl"
-        />
-
-        <section aria-labelledby="step-inputs-heading" data-inputs>
-          <h2 id="step-inputs-heading" class="pg-label">Data inputs</h2>
-          <p class="pg-muted">
-            Operational values recorded on the task (for example items in, items out, QC result).
-            These are not staff or billing metrics.
-          </p>
-          @if (original(); as o) {
-            <p class="pg-muted" data-inputs-state>{{ inputsSummary() }}</p>
-            @if (o.formDefinitionId) {
-              <a
-                class="pg-link"
-                data-form-link
-                [routerLink]="['/admin/steps', o.stepDefinitionId, 'form']"
-                >Edit inputs in the form designer</a
-              >
-            }
-          } @else {
-            <p class="pg-muted" data-inputs-state>Save the step first, then add its inputs.</p>
-          }
-        </section>
-
-        @if (original(); as o) {
-          <section aria-labelledby="step-usage-heading" data-usage>
-            <h2 id="step-usage-heading" class="pg-label">Used by</h2>
-            @if (o.usage.length === 0) {
-              <p class="pg-muted">No workflow uses this step yet.</p>
-            } @else {
-              <ul>
-                @for (u of o.usage; track u.workflowVersionId) {
-                  <li>
-                    {{ u.workflowName }} v{{ u.versionNo }}
-                    <span class="pg-muted">({{ statusLabel(u.status) }})</span>
-                  </li>
-                }
-              </ul>
-            }
-          </section>
+      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
+      @if (state() === 'loading') {
+        <div class="pg-state" role="status" aria-busy="true">Loading the step...</div>
+      } @else {
+        @if (isEdit()) {
+          <div class="pg-banner" data-banner>
+            Editing this step doesn't change workflows that are already published. Workflows pick up
+            changes only when you publish a new workflow version.
+          </div>
+        }
+        @if (conflict()) {
+          <div class="pg-alert" role="alert" data-conflict>
+            This step was changed by someone else.
+            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          </div>
+        }
+        @if (summary().length > 0) {
+          <div class="pg-summary" role="alert" data-summary>
+            Fix the following to save:
+            <ul>
+              @for (message of summary(); track message) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          </div>
         }
 
-        <div class="pg-actions mf-form-actions--sticky">
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step'"
-            [disabled]="busy()"
+        <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
+          <mf-text-field
+            inputId="step-title"
+            label="Title"
+            [required]="true"
+            [maxLength]="200"
+            [error]="titleError()"
+            [(value)]="title"
           />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-          @if (original(); as o) {
-            @if (o.isActive) {
-              <p-button
-                label="Deactivate"
-                severity="secondary"
-                [disabled]="busy()"
-                (onClick)="deactivateOpen.set(true)"
-              />
+          <mf-text-field
+            inputId="step-description"
+            label="Description"
+            help="A short explanation shown in the workflow."
+            [maxLength]="1000"
+            [error]="fieldError('description')"
+            [(value)]="description"
+          />
+          <mf-tag-input
+            inputId="step-tags"
+            label="Tags"
+            placeholder="Add a tag"
+            help="Optional labels such as Relativity or Processing, used to find the step. Press Enter or comma to add one. Up to 20 tags, 40 characters each."
+            [error]="fieldError('tags')"
+            [suggestions]="tagSuggestions()"
+            (queryChange)="suggestTags($event)"
+            [(value)]="tags"
+          />
+          <mf-text-field
+            inputId="step-instructions"
+            label="Instructions"
+            help="The detailed procedure. Plain text with line breaks."
+            [multiline]="true"
+            [maxLength]="20000"
+            [error]="fieldError('instructions')"
+            [(value)]="instructions"
+          />
+          <mf-text-field
+            inputId="step-url"
+            label="Documentation URL"
+            help="Optional link to the full procedure, starting with https://"
+            [maxLength]="1000"
+            [error]="urlError()"
+            [(value)]="documentationUrl"
+          />
+
+          <section aria-labelledby="step-inputs-heading" data-inputs>
+            <h2 id="step-inputs-heading" class="pg-label">Data inputs</h2>
+            <p class="pg-muted">
+              Operational values recorded on the task (for example items in, items out, QC result).
+              These are not staff or billing metrics.
+            </p>
+            @if (original(); as o) {
+              <p class="pg-muted" data-inputs-state>{{ inputsSummary() }}</p>
+              @if (o.formDefinitionId) {
+                <a
+                  class="pg-link"
+                  data-form-link
+                  [routerLink]="['/admin/steps', o.stepDefinitionId, 'form']"
+                  >Edit inputs in the form designer</a
+                >
+              }
             } @else {
-              <p-button
-                label="Activate"
-                severity="secondary"
-                [disabled]="busy()"
-                (onClick)="activate()"
-              />
+              <p class="pg-muted" data-inputs-state>Save the step first, then add its inputs.</p>
             }
+          </section>
+
+          @if (original(); as o) {
+            <section aria-labelledby="step-usage-heading" data-usage>
+              <h2 id="step-usage-heading" class="pg-label">Used by</h2>
+              @if (o.usage.length === 0) {
+                <p class="pg-muted">No workflow uses this step yet.</p>
+              } @else {
+                <ul>
+                  @for (u of o.usage; track u.workflowVersionId) {
+                    <li>
+                      {{ u.workflowName }} v{{ u.versionNo }}
+                      <span class="pg-muted">({{ statusLabel(u.status) }})</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
           }
-        </div>
-      </form>
+
+          <div class="pg-actions mf-form-actions--sticky">
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step'"
+              [disabled]="busy()"
+            />
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
+            @if (original(); as o) {
+              @if (o.isActive) {
+                <p-button
+                  label="Deactivate"
+                  severity="secondary"
+                  [disabled]="busy()"
+                  (onClick)="deactivateOpen.set(true)"
+                />
+              } @else {
+                <p-button
+                  label="Activate"
+                  severity="secondary"
+                  [disabled]="busy()"
+                  (onClick)="activate()"
+                />
+              }
+            }
+          </div>
+        </form>
+      }
     }
 
     <mf-confirm-dialog
@@ -233,7 +236,9 @@ export class StepEditPage implements HasUnsavedChanges {
   private readonly pageTitle = inject(PageTitle);
 
   protected readonly isEdit = computed(() => this.stepId() !== undefined);
-  protected readonly state = signal<LoadState>('ready');
+  /** The shared load flow of the record pages (#353): 404, 403 and failures show `mf-record-state`; the request is quiet (no toast). */
+  protected readonly flow = new RecordLoadFlow('step');
+  protected readonly state = this.flow.state;
   protected readonly original = signal<StepDefinitionDetail | null>(null);
   protected readonly title = signal('');
   protected readonly description = signal('');
@@ -278,10 +283,14 @@ export class StepEditPage implements HasUnsavedChanges {
   constructor() {
     effect(() => {
       if (this.stepId() !== undefined) untracked(() => void this.load());
+      else untracked(() => this.flow.state.set('ready'));
     });
     effect(() => {
+      const state = this.state();
       const title = this.original()?.title;
-      if (title) this.pageTitle.set(title);
+      if (state === 'notFound' || state === 'forbidden' || state === 'error') {
+        this.pageTitle.set(recordStateTitle('step', state));
+      } else if (title) this.pageTitle.set(title);
     });
   }
 
@@ -317,15 +326,12 @@ export class StepEditPage implements HasUnsavedChanges {
   }
 
   async load(): Promise<void> {
-    this.state.set('loading');
     this.conflict.set(false);
     this.summary.set([]);
-    try {
-      this.apply(await firstValueFrom(this.api.getStepDefinition(Number(this.stepId()))));
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
+    await this.flow.run(
+      () => firstValueFrom(this.api.getStepDefinition(Number(this.stepId()))),
+      (step) => this.apply(step),
+    );
   }
 
   protected async save(): Promise<void> {

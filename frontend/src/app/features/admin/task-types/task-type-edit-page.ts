@@ -13,19 +13,18 @@ import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { FormVersionStatus } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
 import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
-import { ErrorReference } from '../../../shared/ui/error-reference';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { PageTitle } from '../../../core/title/page-title';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { DEFAULT_TASK_TYPE_ICON } from '../../../shared/icons/task-type-icon';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
-
-type LoadState = 'loading' | 'ready' | 'error';
 
 interface Model {
   name: string;
@@ -64,7 +63,7 @@ const key = (m: Model): string =>
   imports: [
     PageHeader,
     ConfirmDialog,
-    ErrorReference,
+    RecordState,
     FormsModule,
     RouterLink,
     Button,
@@ -83,7 +82,9 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
 
-  protected readonly state = signal<LoadState>('loading');
+  /** The shared load flow of the record pages (#353): 404, 403 and failures show `mf-record-state`; the request is quiet (no toast). */
+  protected readonly flow = new RecordLoadFlow('taskType');
+  protected readonly state = this.flow.state;
   protected readonly taskType = signal<TaskTypeView | null>(null);
   protected readonly workflows = signal<WorkflowOption[]>([]);
   protected readonly model = signal<Model>({ ...EMPTY });
@@ -110,10 +111,13 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       const id = this.id();
       untracked(() => void this.load(id));
     });
-    // The tab title names the record, like the detail pages do (UXR2-17).
+    // The tab title names the record, like the detail pages do (UXR2-17), or the state ("Task type not found", #353).
     effect(() => {
+      const state = this.state();
       const name = this.taskType()?.name;
-      if (name) this.pageTitle.set(name);
+      if (state === 'notFound' || state === 'forbidden' || state === 'error') {
+        this.pageTitle.set(recordStateTitle('taskType', state));
+      } else if (name) this.pageTitle.set(name);
     });
   }
 
@@ -122,23 +126,24 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   }
 
   protected async load(id: string | undefined): Promise<void> {
-    this.state.set('loading');
     this.failure.set('');
     this.conflict.set(false);
-    try {
-      this.workflows.set(await firstValueFrom(this.lookup.list()));
-      if (id === undefined) {
-        this.taskType.set(null);
-        this.apply({ ...EMPTY });
-      } else {
-        const t = await firstValueFrom(this.api.get(Number(id)));
+    await this.flow.run(
+      () =>
+        Promise.all([
+          // Without Workflow.Manage the workflow list answers 403: the page still opens (the workflows show as "Workflow n").
+          firstValueFrom(this.lookup.list()).catch((e: unknown): WorkflowOption[] => {
+            if (e instanceof ApiError && e.status === 403) return [];
+            throw e;
+          }),
+          id === undefined ? Promise.resolve(null) : firstValueFrom(this.api.get(Number(id))),
+        ]),
+      ([workflows, t]) => {
+        this.workflows.set(workflows);
         this.taskType.set(t);
-        this.apply(this.modelOf(t));
-      }
-      this.state.set('ready');
-    } catch {
-      this.state.set('error');
-    }
+        this.apply(t ? this.modelOf(t) : { ...EMPTY });
+      },
+    );
   }
 
   protected readonly deactivateOpen = signal(false);

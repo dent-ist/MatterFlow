@@ -31,10 +31,17 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { FormDesignerApi, FormOwner, FormVersion, FormVersionSummary } from './form-designer-api';
 import { publishIssuesOf } from './form-mapping';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { QuietRequests } from '../../../core/http/interceptors';
+import { PageTitle } from '../../../core/title/page-title';
+import {
+  RecordKind,
+  RecordLoadFlow,
+  RecordState,
+  recordStateTitle,
+} from '../../../shared/ui/record-state';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 
 type DialogKind = 'publish' | 'retire' | 'discard' | 'conflict' | null;
-type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * Admin: Task Type > Form (UX S14). Hosts `<mf-form-designer>` against `FormDesignerApi` and owns
@@ -47,6 +54,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     PageHeader,
     ErrorReference,
+    RecordState,
     FormDesigner,
     Button,
     Dialog,
@@ -98,7 +106,21 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
 
   private readonly api = inject(FormDesignerApi);
 
-  protected readonly state = signal<LoadState>('loading');
+  private readonly quiet = inject(QuietRequests);
+  private readonly pageTitle = inject(PageTitle);
+  /** The record kind whose 404, 403 and failure states the owner gets (#353); Asset Types and Custom Fields keep the plain failure block. */
+  protected readonly recordKind = computed<RecordKind | null>(() => {
+    switch (this.ownerLabel()) {
+      case 'Task Type':
+        return 'taskType';
+      case 'Step':
+        return 'step';
+      default:
+        return null;
+    }
+  });
+  protected readonly flow = new RecordLoadFlow(() => this.recordKind() ?? 'taskType');
+  protected readonly state = this.flow.state;
   protected readonly owner = signal<FormOwner | null>(null);
   protected readonly versions = signal<FormVersionSummary[]>([]);
   protected readonly current = signal<FormVersion | null>(null);
@@ -134,6 +156,11 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   protected readonly dialogOpen = computed(() => this.dialog() !== null);
 
   constructor() {
+    effect(() => {
+      const kind = this.recordKind();
+      const state = this.state();
+      if (kind && this.flow.failed()) this.pageTitle.set(recordStateTitle(kind, state));
+    });
     effect(() => {
       const id = this.ownerId();
       untracked(() => void this.load(id));
@@ -171,30 +198,36 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   // ---------------------------------------------------------------- loading
 
   protected async load(ownerId: string, versionId?: string): Promise<void> {
-    this.state.set('loading');
     this.failure.set('');
-    try {
-      const [owner, versions] = await Promise.all([
-        firstValueFrom(this.api.getOwner(ownerId)),
-        firstValueFrom(this.api.listVersions(ownerId)),
-      ]);
-      this.owner.set(owner);
-      this.versions.set(versions);
-      const pick =
-        versions.find((v) => v.id === versionId) ??
-        versions.find((v) => v.status === 'DRAFT') ??
-        versions.find((v) => v.status === 'PUBLISHED') ??
-        versions[0];
-      if (pick) this.setCurrent(await firstValueFrom(this.api.getVersion(ownerId, pick.id)));
-      else {
-        this.current.set(null);
-        this.working.set({ fields: [] });
-      }
-      this.state.set('ready');
-    } catch (e) {
-      this.failure.set(this.messageOf(e));
-      this.state.set('error');
-    }
+    await this.flow.run(
+      async () => {
+        const [owner, versions] = await Promise.all([
+          firstValueFrom(this.api.getOwner(ownerId)),
+          firstValueFrom(this.api.listVersions(ownerId)),
+        ]);
+        const pick =
+          versions.find((v) => v.id === versionId) ??
+          versions.find((v) => v.status === 'DRAFT') ??
+          versions.find((v) => v.status === 'PUBLISHED') ??
+          versions[0];
+        // The second request starts after an answer, so it is marked quiet on its own.
+        const current = pick
+          ? await this.quiet.runInline(() => firstValueFrom(this.api.getVersion(ownerId, pick.id)))
+          : null;
+        return { owner, versions, current };
+      },
+      ({ owner, versions, current }) => {
+        this.owner.set(owner);
+        this.versions.set(versions);
+        if (current) this.setCurrent(current);
+        else {
+          this.current.set(null);
+          this.working.set({ fields: [] });
+        }
+      },
+    );
+    if (this.flow.failed() && !this.recordKind())
+      this.failure.set('Something went wrong. Try again.');
   }
 
   protected retry(): void {

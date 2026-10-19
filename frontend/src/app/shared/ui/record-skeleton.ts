@@ -252,7 +252,8 @@ export class RecordSkeleton {
   });
   protected readonly tabs = computed(() => {
     const kind = this.kind();
-    if (kind === 'task') return [];
+    // The Task and the Administration pages (#353) have no Client/Matter/Project tabs; their skeletons come with their record pages.
+    if (kind !== 'client' && kind !== 'matter' && kind !== 'project') return [];
     return recordTabs(
       kind,
       kind === 'matter'

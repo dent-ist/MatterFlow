@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   Injector,
   afterNextRender,
   computed,
@@ -20,7 +21,8 @@ import { ErrorReference } from './error-reference';
 import { Crumb, PageHeader } from './page-header';
 
 /** The record pages that share these states. */
-export type RecordKind = 'client' | 'matter' | 'project' | 'task';
+export type RecordKind =
+  'client' | 'matter' | 'project' | 'task' | 'taskType' | 'workflow' | 'workflowVersion' | 'step';
 
 /** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
 export type RecordFailure = 'notFound' | 'forbidden' | 'error';
@@ -29,7 +31,15 @@ export type RecordLoadState = 'loading' | 'ready' | RecordFailure;
 /** The list a record page goes back to, and the words the three states use for it. */
 const KINDS: Record<
   RecordKind,
-  { noun: string; list: string; label: string; path: string; view: Permission }
+  {
+    noun: string;
+    list: string;
+    label: string;
+    path: string;
+    view: Permission;
+    /** Administration pages (#353): the breadcrumb starts `Administration > Task Types` and the last step is `crumb`, never the address id. */
+    admin?: { crumb: string };
+  }
 > = {
   client: {
     noun: 'client',
@@ -58,6 +68,38 @@ const KINDS: Record<
     label: 'Task Queue',
     path: '/tasks',
     view: 'Task.View',
+  },
+  taskType: {
+    noun: 'task type',
+    list: 'Task Types',
+    label: 'Task Types',
+    path: '/admin/task-types',
+    view: 'TaskType.Manage',
+    admin: { crumb: 'Task type' },
+  },
+  workflow: {
+    noun: 'workflow',
+    list: 'Workflows',
+    label: 'Workflows',
+    path: '/admin/workflows',
+    view: 'Workflow.Manage',
+    admin: { crumb: 'Workflow' },
+  },
+  workflowVersion: {
+    noun: 'workflow version',
+    list: 'Workflows',
+    label: 'Workflows',
+    path: '/admin/workflows',
+    view: 'Workflow.Manage',
+    admin: { crumb: 'Version' },
+  },
+  step: {
+    noun: 'step',
+    list: 'Workflow Steps',
+    label: 'Workflow Steps',
+    path: '/admin/steps',
+    view: 'Workflow.Manage',
+    admin: { crumb: 'Step' },
   },
 };
 
@@ -94,6 +136,22 @@ export function recordStateText(kind: RecordKind, state: RecordFailure): string 
   }
 }
 
+/** The browser-tab title of a record that could not be shown ("Task type not found"); the page pins it while the state is on screen. */
+export function recordStateTitle(kind: RecordKind, state: RecordLoadState): string {
+  const noun = KINDS[kind].noun;
+  const name = `${noun[0].toUpperCase()}${noun.slice(1)}`;
+  switch (state) {
+    case 'notFound':
+      return `${name} not found`;
+    case 'forbidden':
+      return `No access to this ${noun}`;
+    case 'error':
+      return `${name} could not be loaded`;
+    default:
+      return name;
+  }
+}
+
 /**
  * The load state of a record page (Client, Matter, Project): `loading` shows the skeleton, `ready` the page, and a failure the shared
  * `mf-record-state`. A Retry from a failure keeps that state on screen (so the Retry button keeps focus) until the answer arrives; when it
@@ -104,12 +162,22 @@ export class RecordLoadFlow {
   private readonly quiet = inject(QuietRequests);
 
   readonly state = signal<RecordLoadState>('loading');
+  /** True when the load ended in a 404, a 403 or a failure (the page shows `mf-record-state` instead of its header and body). */
+  readonly failed = computed(() => {
+    const s = this.state();
+    return s === 'notFound' || s === 'forbidden' || s === 'error';
+  });
   /** True while a Retry is waiting for its answer. */
   readonly retrying = signal(false);
   /** The page's polite live message ("Loading client" while retrying, "Loaded" after a successful retry). */
   readonly live = signal('');
 
-  constructor(private readonly kind: RecordKind) {}
+  /** `kind` may be a function for a page whose record kind depends on its route (the form designer serves Task Types and Steps). */
+  constructor(private readonly kindOf: RecordKind | (() => RecordKind)) {}
+
+  private get kind(): RecordKind {
+    return typeof this.kindOf === 'function' ? this.kindOf() : this.kindOf;
+  }
 
   /** Starts a load. The request is quiet: the failure shows inline here, not as a toast as well (the error reference is kept). */
   async run<T>(request: () => Promise<T>, apply: (value: T) => void): Promise<void> {
@@ -219,9 +287,25 @@ export class RecordState {
   readonly state = input.required<RecordLoadState>();
   /** A Retry is waiting for its answer. */
   readonly busy = input(false);
+  /**
+   * The record's parent when it loaded, shown in the breadcrumb before the record (a workflow version's workflow). Administration kinds only.
+   */
+  readonly parent = input<Crumb | null>(null);
+  /** Moves focus to the heading once, when the state appears (the page it replaces had no heading to keep focus on). */
+  readonly focusHeading = input(false);
   readonly retried = output<void>();
 
   private readonly auth = inject(AuthStore);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterNextRender(() => {
+      if (!this.focusHeading()) return;
+      const heading = this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]');
+      heading?.setAttribute('tabindex', '-1');
+      heading?.focus();
+    });
+  }
 
   protected readonly info = computed(() => KINDS[this.kind()]);
   protected readonly back = computed(() => recordBackLink(this.kind(), this.auth));
@@ -233,6 +317,21 @@ export class RecordState {
   protected readonly crumbs = computed<Crumb[]>(() => {
     const info = this.info();
     const id = this.recordId();
+    if (info.admin) {
+      const list: Crumb = this.auth.has(info.view)
+        ? { label: info.label, link: info.path }
+        : { label: info.label };
+      const parent = this.parent();
+      return [
+        { label: 'Administration' },
+        this.auth.hasAny(['TaskType.Manage', 'Workflow.Manage'])
+          ? { label: 'Task Types', link: '/admin/task-types' }
+          : { label: 'Task Types' },
+        ...(info.path === '/admin/task-types' ? [] : [list]),
+        ...(parent ? [parent] : []),
+        { label: info.admin.crumb },
+      ];
+    }
     return [
       // A step the person cannot open is text, not a link to a 403.
       this.auth.has(info.view) ? { label: info.label, link: info.path } : { label: info.label },
