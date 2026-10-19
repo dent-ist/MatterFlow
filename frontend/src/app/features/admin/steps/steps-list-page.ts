@@ -28,7 +28,7 @@ import { QuietRequests } from '../../../core/http/interceptors';
 import { AdminCounts } from '../task-types/admin-counts';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
-import { ActiveBadge } from '../../../shared/ui/badge';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -52,7 +52,7 @@ import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip'
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] as const;
+const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'inputs', 'status', 'actions'] as const;
 
 /** One skeleton bone per column, as wide as its usual content (#370: one definition of the columns for the table and its skeleton). */
 const BONES: Record<(typeof COLUMNS)[number], string> = {
@@ -60,6 +60,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
   description: '14rem',
   tags: '8rem',
   usedIn: '2rem',
+  inputs: '4rem',
   status: '4rem',
   actions: '1.5rem',
 };
@@ -70,6 +71,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
   description: 'ad-desc',
   tags: 'st-tags ad-tags',
   usedIn: 'pg-num',
+  inputs: 'ad-nowrap',
   status: 'ad-nowrap',
   actions: 'mf-col-menu',
 };
@@ -85,6 +87,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
   imports: [
     ScrollArea,
     ActiveBadge,
+    Badge,
     ActionMenu,
     ConfirmDialog,
     RouterLink,
@@ -168,6 +171,15 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                 >
               }
             </p>
+            @if (inputsState(s) === 'draft') {
+              <p mfCardMeta class="rc-line" data-card-meta data-card-inputs>
+                <span class="rc-text"
+                  >Inputs in draft ({{
+                    s.draftFormFieldCount === 1 ? '1 field' : s.draftFormFieldCount + ' fields'
+                  }})</span
+                >
+              </p>
+            }
             <mf-action-menu
               mfCardAside
               [items]="menuFor(s)"
@@ -209,6 +221,9 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                 >
                   Used in
                 </th>
+                @if (showInputs()) {
+                  <th scope="col">Inputs</th>
+                }
                 <th
                   mfSort="status"
                   [sort]="sort()"
@@ -288,6 +303,25 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                       >
                     }
                   </td>
+                  @if (showInputs()) {
+                    <td class="ad-nowrap" data-inputs>
+                      @if (inputsState(s); as state) {
+                        @if (state === 'draft') {
+                          <mf-badge
+                            tone="neutral"
+                            icon="pi-file-edit"
+                            data-inputs-draft
+                            [attr.title]="draftTitle(s)"
+                            >Draft</mf-badge
+                          >
+                        } @else {
+                          <span class="pg-muted" [attr.data-inputs-state]="state">{{
+                            state === 'published' ? 'Published' : 'None'
+                          }}</span>
+                        }
+                      }
+                    </td>
+                  }
                   <td class="ad-nowrap">
                     <mf-active-badge [active]="s.isActive" />
                   </td>
@@ -346,8 +380,11 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   protected readonly defaultSort = 'title';
-  /** The Description column is left out below 1200 px (its filter then sits under "Other filters"). */
-  protected readonly showDescription = viewportAtLeast(1200);
+  /**
+   * The Description column is left out below 1600 px (its filter then sits under "Other filters"): with the Tags and Inputs columns it
+   * would make the Title narrower than the Description, and Title is the spring (#356, #378).
+   */
+  protected readonly showDescription = viewportAtLeast(1600);
   /** Below 640 px the list is cards, not a table (#375). */
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns (the headers' keys); the count sorts descending first, like its header. */
@@ -357,10 +394,15 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     { value: 'status', label: 'Status' },
   ];
   /** The Tags column (two chips and "+n") is left out below 1100 px, its filter moving under "Other filters", so the grid fits a 768 px window (#375). */
-  protected readonly showTags = viewportAtLeast(1100);
+  protected readonly showTags = viewportAtLeast(1180);
+  /** The Inputs column (none, published or a Draft badge) is left out below 1024 px (#378). */
+  protected readonly showInputs = viewportAtLeast(1024);
   protected readonly columns = computed(() =>
     COLUMNS.filter(
-      (c) => (c !== 'description' || this.showDescription()) && (c !== 'tags' || this.showTags()),
+      (c) =>
+        (c !== 'description' || this.showDescription()) &&
+        (c !== 'tags' || this.showTags()) &&
+        (c !== 'inputs' || this.showInputs()),
     ),
   );
   protected readonly skeleton = computed(() => this.columns().map((c) => BONES[c]));
@@ -565,6 +607,21 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * The state of a step's inputs (its form) for the Inputs column (#378): `draft` when an open draft has fields (the step cannot go into a
+   * published workflow until they are published), `published` when a published form exists, else `none`. The number of fields of a
+   * published form is not in the list answer, so it is not shown.
+   */
+  protected inputsState(s: StepDefinitionSummary): 'draft' | 'published' | 'none' {
+    if (s.draftFormFieldCount > 0) return 'draft';
+    return s.publishedFormVersionId ? 'published' : 'none';
+  }
+
+  protected draftTitle(s: StepDefinitionSummary): string {
+    const n = s.draftFormFieldCount;
+    return `The inputs are a draft with ${n === 1 ? '1 field' : `${n} fields`}: publish them before this step can be published in a workflow.`;
   }
 
   /** The "Used in" text of a card. */

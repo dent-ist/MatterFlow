@@ -67,7 +67,7 @@ const detail = (overrides: Partial<StepDefinitionDetail> = {}): StepDefinitionDe
 
 let query: ReturnType<typeof fakeQuery>;
 
-// The Description column shows from 1200 px (#356): the lists are measured on a wide window, whatever another spec left in `matchMedia`.
+// The Description column shows from 1600 px (#356, #378): the lists are measured on a wide window, whatever another spec left in `matchMedia`.
 const viewport = (width: number) =>
   vi.stubGlobal('matchMedia', (q: string) => {
     const min = Number(/min-width:\s*(\d+)px/.exec(q)?.[1] ?? 0);
@@ -79,7 +79,7 @@ const viewport = (width: number) =>
       removeEventListener: () => undefined,
     };
   });
-beforeEach(() => viewport(1366));
+beforeEach(() => viewport(1920));
 afterEach(() => vi.unstubAllGlobals());
 
 async function setup(api: Record<string, unknown>) {
@@ -298,7 +298,7 @@ describe('StepsListPage', () => {
 });
 
 describe('StepsListPage narrow window (#356)', () => {
-  it('leaves the Description column out below 1200 px and shows the number of workflows as the link', async () => {
+  it('leaves the Description column out below 1600 px and shows the number of workflows as the link', async () => {
     viewport(1024);
     const api = {
       listStepDefinitions: vi
@@ -311,10 +311,10 @@ describe('StepsListPage narrow window (#356)', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Used in', 'Status', 'Actions'],
+      ['Title', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
     const row = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
-    expect(row.querySelectorAll('td')).toHaveLength(4);
+    expect(row.querySelectorAll('td')).toHaveLength(5);
     expect(row.querySelector('a.pg-name')!.getAttribute('title')).toBe('Deduplicate');
     const used = row.querySelector('[data-used-in-link]')!;
     expect(used.textContent!.trim()).toBe('2');
@@ -366,7 +366,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
     expect(cards[1].textContent).toContain('Not used in a workflow');
   });
 
-  it('leaves the Tags column out below 1100 px, and shows two tags and "+n more" from there', async () => {
+  it('leaves the Tags column out below 1180 px, and shows two tags and "+n more" from there', async () => {
     const api = {
       listStepDefinitions: list([summary({ tags: ['a', 'b', 'c'] })]),
       listStepTags: vi.fn().mockReturnValue(ok([])),
@@ -382,7 +382,7 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
     expect(heads(fixture)).toEqual(['Title', 'Used in', 'Status', 'Actions']);
     fixture.destroy();
 
-    viewport(1366);
+    viewport(1920);
     fixture = TestBed.createComponent(StepsListPage);
     await settle(fixture);
     expect(heads(fixture)).toEqual([
@@ -390,12 +390,74 @@ describe('StepsListPage phone cards and narrow columns (#375)', () => {
       'Description',
       'Tags',
       'Used in',
+      'Inputs',
       'Status',
       'Actions',
     ]);
     const row: HTMLElement = fixture.nativeElement.querySelector('tbody tr[data-row]');
     expect(row.querySelectorAll('[data-tag]')).toHaveLength(2);
     expect(row.querySelector('[data-tags-more]')!.textContent).toContain('+1 more');
+  });
+});
+
+describe('StepsListPage Inputs column (#378)', () => {
+  it('says Draft (a neutral badge with the field count as its tooltip), Published or None, from 1024 px', async () => {
+    viewport(1366);
+    const api = {
+      listStepDefinitions: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            summary({ stepDefinitionId: 1, title: 'Drafted', draftFormFieldCount: 3 }),
+            summary({
+              stepDefinitionId: 2,
+              title: 'Published inputs',
+              publishedFormVersionId: 7,
+              draftFormFieldCount: 0,
+            }),
+            summary({ stepDefinitionId: 3, title: 'Bare', draftFormFieldCount: 0 }),
+          ],
+          total: 3,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const cell = (title: string) => el.querySelector(`[data-row="${title}"] [data-inputs]`)!;
+    const badge = cell('Drafted').querySelector('[data-inputs-draft]')!;
+    expect(badge.textContent!.trim()).toBe('Draft');
+    expect(badge.querySelector('[data-tone="neutral"]')).not.toBeNull();
+    expect(badge.getAttribute('title')).toContain('3 fields');
+    expect(cell('Published inputs').textContent!.trim()).toBe('Published');
+    expect(cell('Bare').textContent!.trim()).toBe('None');
+    fixture.destroy();
+
+    viewport(900);
+    const narrow = TestBed.createComponent(StepsListPage);
+    await settle(narrow);
+    expect(narrow.nativeElement.querySelector('[data-inputs]')).toBeNull();
+  });
+
+  it('adds an "Inputs in draft" line to the card of a step whose inputs are a draft', async () => {
+    viewport(375);
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(
+          ok({ items: [summary({ draftFormFieldCount: 1 })], total: 1, page: 1, pageSize: 25 }),
+        ),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    expect(fixture.nativeElement.querySelector('[data-card-inputs]').textContent.trim()).toBe(
+      'Inputs in draft (1 field)',
+    );
   });
 });
 
@@ -688,7 +750,7 @@ describe('StepsListPage tags', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(Array.from(el.querySelectorAll('thead th')).map((th) => th.textContent!.trim())).toEqual(
-      ['Title', 'Description', 'Tags', 'Used in', 'Status', 'Actions'],
+      ['Title', 'Description', 'Tags', 'Used in', 'Inputs', 'Status', 'Actions'],
     );
     const first = el.querySelector('tbody tr[data-row="Deduplicate"]')!;
     expect(

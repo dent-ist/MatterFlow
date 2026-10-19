@@ -361,7 +361,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
           await expect(stepRow.locator('[data-tag]')).toHaveCount(0);
         }
         const headers = await page.locator('thead tr:first-child th').allInnerTexts();
-        if (size.w >= 1200) {
+        if (size.w >= 1600) {
           expect(headers).toContain('Description');
           await expect(stepRow.locator('td.ad-desc .pg-clip')).toHaveAttribute(
             'title',
