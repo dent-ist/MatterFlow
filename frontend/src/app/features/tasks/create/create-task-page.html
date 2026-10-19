@@ -1,7 +1,13 @@
-<mf-page-header
-  heading="Create task"
-  [crumbs]="[{ label: 'Tasks', link: '/tasks' }, { label: 'Create task' }]"
-/>
+<mf-record-header kind="task" current="Create task" name="Create task" [parents]="headerParents()">
+  <i mfIcon class="ct__title-icon pi pi-plus" aria-hidden="true" data-page-icon></i>
+  <span mfContext data-create-context>
+    @if (selectedChoice(); as c) {
+      Task type <strong>{{ c.type.name }}</strong>
+    } @else {
+      Choose a task type to start
+    }
+  </span>
+</mf-record-header>
 
 @if (!canCreate()) {
   <div class="pg-alert" role="alert" data-denied>You don't have permission to create tasks.</div>
@@ -94,13 +100,14 @@
                   aria-checked="false"
                   [attr.tabindex]="c.type.id === cardTabStop() ? 0 : -1"
                   [attr.data-type-card]="c.type.name"
+                  [attr.title]="c.type.description || null"
                   (click)="chooseType(c.type.id)"
                   (focus)="focusedType.set(c.type.id)"
                 >
                   <mf-task-type-icon [iconKey]="c.type.iconKey" size="lg" />
                   <span class="ct__card-name">{{ c.type.name }}</span>
                   @if (c.type.description) {
-                    <span class="ct__card-desc">{{ c.type.description }}</span>
+                    <span class="ct__card-desc">{{ cardText(c.type.description) }}</span>
                   }
                 </button>
               }
@@ -109,6 +116,32 @@
         </section>
       } @else {
         <form class="pg-form ct__form" novalidate (submit)="$event.preventDefault(); submit()">
+          <section class="ct__strip" aria-label="Summary" data-summary-card>
+            <div class="ct__tile" data-strip-matter>
+              <span class="ct__tile-label">Matter</span>
+              <span class="ct__tile-value">{{ matter()?.label ?? 'Not chosen' }}</span>
+            </div>
+            <div class="ct__tile" data-strip-type>
+              <span class="ct__tile-label">Task type</span>
+              <span class="ct__tile-value">{{ selectedChoice()?.type?.name ?? 'Not chosen' }}</span>
+            </div>
+            <div class="ct__tile" data-strip-workflow>
+              <span class="ct__tile-label">Workflow</span>
+              <span class="ct__tile-value">
+                @if (selectedWorkflow(); as w) {
+                  {{ w.name }} v{{ w.versionNo }} ({{ w.stepCount }}
+                  {{ w.stepCount === 1 ? 'step' : 'steps' }},
+                  {{ w.isOrdered ? 'ordered' : 'any order' }})
+                } @else {
+                  Not chosen
+                }
+              </span>
+            </div>
+            <p class="ct__strip-note pg-reason">
+              Type, workflow and matter can't be changed after you create the task.
+            </p>
+          </section>
+
           <div class="ct__chip" data-type-chip>
             <mf-task-type-icon [iconKey]="selectedChoice()?.type?.iconKey" />
             <span class="ct__chip-text">
@@ -141,7 +174,7 @@
                 warning only and does not restrict who can see it.
               </div>
             }
-            <mf-text-field
+            <mf-title-area
               inputId="ct-title"
               label="Title"
               [required]="true"
@@ -455,33 +488,6 @@
         </form>
       }
     </div>
-
-    @if (selectedChoice()) {
-      <aside class="ct__aside" aria-label="Summary">
-        <div class="ct__card" data-summary-card>
-          <h2 class="ct__h">Summary</h2>
-          <dl class="pg-dl">
-            <dt>Matter</dt>
-            <dd>{{ matter()?.label ?? 'Not chosen' }}</dd>
-            <dt>Task type</dt>
-            <dd>{{ selectedChoice()?.type?.name ?? 'Not chosen' }}</dd>
-            <dt>Workflow</dt>
-            <dd>
-              @if (selectedWorkflow(); as w) {
-                {{ w.name }} v{{ w.versionNo }} ({{ w.stepCount }}
-                {{ w.stepCount === 1 ? 'step' : 'steps' }},
-                {{ w.isOrdered ? 'ordered' : 'any order' }})
-              } @else {
-                Not chosen
-              }
-            </dd>
-          </dl>
-          <p class="pg-reason">
-            Type, workflow and matter can't be changed after you create the task.
-          </p>
-        </div>
-      </aside>
-    }
   </div>
 }
 

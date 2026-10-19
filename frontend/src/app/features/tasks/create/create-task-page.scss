@@ -13,6 +13,8 @@
 
 .ct__form {
   max-width: none;
+  /* One input width rule (CT1, #322): every field fills the 720 px column, so labels and inputs line up. */
+  --mf-field-max: none;
 }
 
 .ct__section {
@@ -51,27 +53,49 @@
 }
 
 .ct__due {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   align-items: end;
   gap: var(--mf-s3);
 }
 
-.ct__card {
-  padding: var(--mf-s4);
+/* The Summary in the shape of the Task page's facts strip: label over value tiles on the surface, tokens only. */
+.ct__strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mf-s2) var(--mf-s3);
+  padding: var(--mf-s3);
   background: var(--mf-surface);
+  border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius-lg);
-  box-shadow: var(--mf-shadow-1);
 }
 
-@media (min-width: 1280px) {
-  .ct {
-    grid-template-columns: minmax(0, 720px) 20rem;
-  }
+.ct__tile {
+  display: grid;
+  align-content: start;
+  gap: var(--mf-s1);
+  min-width: 0;
+}
 
-  .ct__aside {
-    position: sticky;
-    top: var(--mf-s4);
+.ct__tile-label {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+}
+
+.ct__tile-value {
+  overflow-wrap: anywhere;
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+.ct__strip-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 639.98px) {
+  .ct__strip {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -96,8 +120,15 @@
 
 .ct__cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  /* Three cards per row from a tablet landscape up (1366 and 1920), two on a tablet, one on a phone (CT1, #323). */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--mf-s3);
+}
+
+@media (max-width: 1023.98px) {
+  .ct__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .ct__card-type {
@@ -138,6 +169,9 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+  /* The text is already cut after a whole word (cardText); the clamp is only the safety net. */
+  overflow-wrap: normal;
+  word-break: normal;
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);
 }
@@ -163,8 +197,16 @@
   font-size: var(--mf-fs-xs);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 639.98px) {
   .ct__cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* The plus before the title, in the record header's icon slot (the header's own icon style does not reach projected content). */
+.ct__title-icon {
+  flex: none;
+  color: var(--mf-text-muted);
+  font-size: 1rem;
+  line-height: 1.7;
 }

@@ -7,7 +7,8 @@
 .mf-field {
   display: grid;
   gap: var(--mf-s1);
-  max-width: 480px;
+  /* A form that wants one width for all its fields sets --mf-field-max on its container (Create task: the whole column). */
+  max-width: var(--mf-field-max, 480px);
 }
 
 .mf-field__label {

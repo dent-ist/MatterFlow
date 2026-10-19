@@ -282,6 +282,49 @@ describe('Details tab', () => {
     expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
   });
 
+  it('groups the dialog into Task, Request details (collapsed, kept mounted) and Assignment, with the Save footer outside the scrolling form', async () => {
+    const { fixture, el } = await mountTaskPage(
+      aTask({ formVersionId: 3, formVersionNo: 3, formValues: { ocr: true, language: 'English' } }),
+      ['Task.View', 'Task.Edit'],
+      { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(schema)) } },
+    );
+    await click(fixture, q(el, '[data-edit-details]'));
+    const body = document.body;
+    expect(q(body, '[data-section="task"]')).not.toBeNull();
+    expect(q(body, '[data-section="assignment"]')).not.toBeNull();
+    const toggle = q(body, '[data-request-toggle]')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.textContent).toContain('2 fields');
+    // Collapsed, not removed: the form still holds its fields so it validates and saves.
+    expect(q(body, '[data-request-body]')!.hasAttribute('hidden')).toBe(true);
+    expect(
+      q(body, '[data-request-body] input, [data-request-body] [role=checkbox]'),
+    ).not.toBeNull();
+    // The footer is the dialog's own footer, outside the form body, and its Save button submits the form.
+    const save = q(body, '[data-save]')!;
+    expect(q(body, '[data-edit-form]')!.contains(save)).toBe(false);
+    expect(save.getAttribute('form')).toBe('td-edit-form');
+    await click(fixture, toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(q(body, '[data-request-body]')!.hasAttribute('hidden')).toBe(false);
+  });
+
+  it('a Task section error leaves Request details collapsed and puts the cursor in the first invalid field', async () => {
+    const { fixture, el } = await mountTaskPage(
+      aTask({ formVersionId: 3 }),
+      ['Task.View', 'Task.Edit'],
+      {
+        forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(schema)) },
+      },
+    );
+    await click(fixture, q(el, '[data-edit-details]'));
+    await type(fixture, document.body, '#td-title', '');
+    await click(fixture, q(document.body, '[data-save]'));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement?.id).toBe('td-title');
+  });
+
   it('saves with the rowVersion and leaves edit mode', async () => {
     const saved = aTask({ title: 'New title', rowVersion: 'RV2' });
     const { fixture, el, fakes } = await mountTaskPage(aTask(), ['Task.View', 'Task.Edit'], {

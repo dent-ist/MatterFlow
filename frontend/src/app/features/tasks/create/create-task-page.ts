@@ -58,9 +58,12 @@ import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { RichTextEditor } from '../panels/rich-text-editor';
 import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-text';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { RecordHeader } from '../../../shared/ui/record-header';
+import type { Crumb } from '../../../shared/ui/page-header';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
+import { TitleArea } from '../../../shared/ui/title-area';
+import { cardText } from './type-card-text';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -107,12 +110,13 @@ const matterOption = (m: MatterResponse): PickerOption => ({
   imports: [
     ErrorReference,
     Button,
-    PageHeader,
+    RecordHeader,
     DynamicForm,
     DateInput,
     EmailIntake,
     EntityPicker,
     TextField,
+    TitleArea,
     RichTextEditor,
     ConfirmDialog,
     GridNav,
@@ -240,6 +244,17 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   // --- form state --------------------------------------------------------------------------------
   protected readonly matter = signal<PickerOption | null>(null);
+  protected readonly cardText = cardText;
+
+  /** Crumb steps before "Create task": Tasks, and the Matter when the page was opened from one (only for a person who may open it). */
+  protected readonly headerParents = computed<Crumb[]>(() => {
+    const parents: Crumb[] = [{ label: 'Tasks', link: '/tasks' }];
+    const from = this.matter();
+    if (from && this.matterId() !== undefined && this.auth.canLink('matter')) {
+      parents.push({ label: from.label.split(' ')[0], link: ['/matters', from.id] });
+    }
+    return parents;
+  });
   private readonly matterRecords = new Map<number, MatterResponse>();
   protected readonly projects = signal<ProjectResponse[]>([]);
   protected readonly projectId$ = signal<number | null>(null);
