@@ -45,9 +45,19 @@ import { ScrollRegion } from './scroll-region';
           <p-button
             [label]="confirmLabel()"
             [severity]="danger() ? 'danger' : 'primary'"
-            [styleClass]="danger() ? 'mf-btn--solid' : ''"
+            [outlined]="extraLabel() !== '' && danger()"
+            [styleClass]="danger() && extraLabel() === '' ? 'mf-btn--solid' : ''"
             [disabled]="busy()"
             (onClick)="confirmed.emit()"
+          />
+        }
+        @if (extraLabel() !== '') {
+          <p-button
+            [label]="extraLabel()"
+            severity="primary"
+            data-extra
+            [disabled]="busy()"
+            (onClick)="extra.emit()"
           />
         }
       </ng-template>
@@ -66,7 +76,13 @@ export class ConfirmDialog {
    * becomes a focusable region with this name, so a keyboard user can scroll it (BUG-4). Set it on dialogs that may show a long list.
    */
   readonly scrollLabel = input('');
+  /**
+   * A third, primary choice after the confirm button ("Save draft and leave"). With it the confirm button, when `danger`, becomes the
+   * secondary danger choice (an outline) and the extra button is the primary one. Empty: no extra button.
+   */
+  readonly extraLabel = input('');
 
   readonly visible = model(false);
   readonly confirmed = output<void>();
+  readonly extra = output<void>();
 }

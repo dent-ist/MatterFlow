@@ -348,25 +348,54 @@ const LIBRARY_PANE_MIN = 1280;
               @for (t of d.added; track t) {
                 <li>
                   <mf-badge tone="success" icon="pi-plus">Added</mf-badge>
-                  <span>"{{ t }}"</span>
+                  <span class="wf-diff__title" [attr.title]="t">"{{ t }}"</span>
                 </li>
               }
               @for (t of d.removed; track t) {
                 <li>
                   <mf-badge tone="danger" icon="pi-minus">Removed</mf-badge>
-                  <span>"{{ t }}"</span>
+                  <span class="wf-diff__title" [attr.title]="t">"{{ t }}"</span>
                 </li>
               }
               @for (t of d.moved; track t) {
                 <li>
                   <mf-badge tone="info" icon="pi-arrows-v">Moved</mf-badge>
-                  <span>"{{ t }}"</span>
+                  <span class="wf-diff__title" [attr.title]="t">"{{ t }}"</span>
                 </li>
               }
               @for (t of d.skipRuleChanged; track t) {
                 <li>
                   <mf-badge tone="warning" icon="pi-forward">Skip rule changed</mf-badge>
-                  <span>"{{ t }}"</span>
+                  <span class="wf-diff__title" [attr.title]="t">"{{ t }}"</span>
+                </li>
+              }
+              @if (d.shifted.length > 0) {
+                <li data-shifted>
+                  <mf-badge tone="neutral" icon="pi-sort-alt">Positions</mf-badge>
+                  <span class="wf-diff__shift">
+                    {{ d.shifted.length === 1 ? '1 step' : d.shifted.length + ' steps' }} moved
+                    <span class="pg-muted">(only their position numbers changed)</span>
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      data-shifted-toggle
+                      aria-controls="wf-shifted-list"
+                      [attr.aria-expanded]="shiftedOpen()"
+                      (click)="shiftedOpen.set(!shiftedOpen())"
+                    >
+                      {{ shiftedOpen() ? 'Hide steps' : 'Show steps' }}
+                    </button>
+                  </span>
+                  @if (shiftedOpen()) {
+                    <ul class="wf-diff__shifted" id="wf-shifted-list" data-shifted-list>
+                      @for (t of d.shifted; track t.title) {
+                        <li>
+                          <span class="wf-diff__title" [attr.title]="t.title">"{{ t.title }}"</span>
+                          <span class="pg-muted">{{ t.from }} to {{ t.to }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
                 </li>
               }
             </ul>
@@ -480,6 +509,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly diffLoading = signal(false);
   protected readonly diff = signal<WorkflowDiff | null>(null);
   protected readonly previousNo = signal<number | null>(null);
+  protected readonly shiftedOpen = signal(false);
   protected readonly modeOpen = signal(false);
   protected readonly pendingMode = signal(true);
   protected readonly retireOpen = signal(false);
@@ -532,6 +562,13 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
 
   hasUnsavedChanges(): boolean {
     return !this.leaving && this.dirty();
+  }
+
+  /** The leave question of a dirty draft offers this as its primary choice (VP8, #398); a failed save keeps the page open. */
+  readonly saveForLeaveLabel = 'Save draft and leave';
+
+  saveForLeave(): Promise<boolean> {
+    return this.save();
   }
 
   @HostListener('window:beforeunload', ['$event'])
@@ -744,6 +781,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     this.resetErrors();
     this.diff.set(null);
     this.previousNo.set(null);
+    this.shiftedOpen.set(false);
     this.publishOpen.set(true);
     this.diffLoading.set(true);
     try {

@@ -13,9 +13,12 @@ import { LeaveConfirmService } from './unsaved-changes.guard';
       confirmLabel="Leave"
       cancelLabel="Stay"
       [danger]="true"
+      [extraLabel]="leave.saveOffer()?.label ?? ''"
+      [busy]="leave.saving()"
       [visible]="leave.open()"
       (visibleChange)="!$event && leave.answer(false)"
       (confirmed)="leave.answer(true)"
+      (extra)="leave.saveAndLeave()"
     >
       <p>You have unsaved changes. If you leave now they will be lost.</p>
     </mf-confirm-dialog>
