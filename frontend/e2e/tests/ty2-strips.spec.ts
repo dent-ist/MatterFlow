@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
-import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { seedMix } from '../support/admin-lists';
 import { expect, test } from '../support/fixtures';
@@ -10,7 +9,9 @@ import { uid } from '../support/seed';
 /**
  * WP-TY2 tab counts (#364) and health strips (#367 Task Types, #368 Workflows and Steps) of the Task Types administration. The counts are
  * the ACTIVE records of each tab; the strips count the whole library (no filter applies to them) and their chips put the matching filter
- * in the address. Screenshots go to E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty2-shell).
+ * in the address. Other specs create and deactivate records in parallel, so a number read from the API at another moment is a race: the
+ * numbers the page shows are checked against the very responses it received. Screenshots go to E2E_SCREENSHOTS
+ * (docs/ux/task-types-review/fixes/ty2-shell).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
@@ -45,22 +46,24 @@ const pagerTotal = async (page: Page): Promise<number> => {
   return Number(/of (\d+)/.exec(text)![1]);
 };
 
-interface Counts {
-  types: number;
-  workflows: number;
-  steps: number;
-}
+/** The one-row request behind a tab count (no filter, no `isActive`: the hidden-count request has one). */
+const isCountRequest = (url: string, path: string): boolean => {
+  const u = new URL(url);
+  return (
+    u.pathname === path &&
+    u.searchParams.get('pageSize') === '1' &&
+    !u.searchParams.has('isActive') &&
+    !u.searchParams.has('name') &&
+    !u.searchParams.has('title')
+  );
+};
 
-/** What the tabs must say, from the API directly. */
-async function activeCounts(admin: Api): Promise<Counts> {
-  const types = await admin.get<{ isActive: boolean }[]>('/api/v1/task-types');
-  const wf = await admin.get<{ total: number }>(
-    '/api/v1/workflows?isActive=true&page=1&pageSize=1',
-  );
-  const steps = await admin.get<{ total: number }>(
-    '/api/v1/step-definitions?isActive=true&page=1&pageSize=1',
-  );
-  return { types: types.filter((t) => t.isActive).length, workflows: wf.total, steps: steps.total };
+const isTaskTypesList = (url: string): boolean => new URL(url).pathname === '/api/v1/task-types';
+
+interface TaskTypeRow {
+  isActive: boolean;
+  usabilityIssues: string[];
+  formStatus?: string;
 }
 
 test.describe('tab counts (#364)', () => {
@@ -72,37 +75,72 @@ test.describe('tab counts (#364)', () => {
     await seedMix(admin, 'workflows', token, 2, 1);
     await seedMix(admin, 'steps', token, 2, 1);
     await seedMix(admin, 'types', token, 2, 1);
-    const expected = await activeCounts(admin);
+    let countRequests = 0;
+    page.on('request', (r) => {
+      if (
+        isCountRequest(r.url(), '/api/v1/workflows') ||
+        isCountRequest(r.url(), '/api/v1/step-definitions')
+      ) {
+        countRequests++;
+      }
+    });
+    const typesResponse = page.waitForResponse(
+      (r) => isTaskTypesList(r.url()) && r.request().method() === 'GET',
+    );
+    const workflowsResponse = page.waitForResponse((r) =>
+      isCountRequest(r.url(), '/api/v1/workflows'),
+    );
+    const stepsResponse = page.waitForResponse((r) =>
+      isCountRequest(r.url(), '/api/v1/step-definitions'),
+    );
     await page.goto(`/admin/workflows?name=${token}`);
-    await expect(tab(page, 'task-types')).toContainText(`(${expected.types})`);
-    await expect(tab(page, 'workflows')).toContainText(`(${expected.workflows})`);
-    await expect(tab(page, 'steps')).toContainText(`(${expected.steps})`);
+    const types = ((await (await typesResponse).json()) as TaskTypeRow[]).filter(
+      (t) => t.isActive,
+    ).length;
+    const workflows = ((await (await workflowsResponse).json()) as { summary: { active: number } })
+      .summary.active;
+    const steps = ((await (await stepsResponse).json()) as { summary: { active: number } }).summary
+      .active;
+    await expect(tab(page, 'task-types')).toContainText(`(${types})`);
+    await expect(tab(page, 'workflows')).toContainText(`(${workflows})`);
+    await expect(tab(page, 'steps')).toContainText(`(${steps})`);
     await expect(tab(page, 'workflows')).toHaveAttribute(
       'aria-label',
-      `Workflows, ${expected.workflows} active`,
+      `Workflows, ${workflows} active`,
     );
-    // A filtered view does not change a count: the name filter above shows two rows, the tab says the library.
+    // One request per permitted tab, no more; a filtered view does not change a count (the name filter shows two rows).
+    expect(countRequests).toBe(2);
     await expect(page.locator('tbody tr[data-row]')).toHaveCount(2);
 
-    // Deactivate one in the list: the tab follows without another page load.
+    // Deactivate one in the list: the tab follows from the list's own answer, with no further count request.
+    const reload = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === '/api/v1/workflows' &&
+        new URL(r.url()).searchParams.has('name') &&
+        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        r.request().method() === 'GET',
+    );
     await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await page
       .getByRole('dialog')
       .getByRole('button', { name: /^Deactivate/ })
       .click();
-    await expect(tab(page, 'workflows')).toContainText(`(${expected.workflows - 1})`);
-    expect((await activeCounts(admin)).workflows).toBe(expected.workflows - 1);
+    const after = ((await (await reload).json()) as { summary: { active: number } }).summary.active;
+    await expect(tab(page, 'workflows')).toContainText(`(${after})`);
+    expect(countRequests).toBe(2);
 
-    // The Task Types tab reports its own number the same way.
+    // The Task Types tab reports its own number the same way: one less, from its own list.
     await page.goto(`/admin/task-types?name=${token}`);
+    await expect(tab(page, 'task-types')).toContainText(/\(\d+\)/);
+    const shown = Number(/\((\d+)\)/.exec((await tab(page, 'task-types').textContent()) ?? '')![1]);
     await page.locator('tbody tr[data-row]').first().locator('button[data-overflow]').click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await page
       .getByRole('dialog')
       .getByRole('button', { name: /^Deactivate/ })
       .click();
-    await expect(tab(page, 'task-types')).toContainText(`(${expected.types - 1})`);
+    await expect(tab(page, 'task-types')).toContainText(`(${shown - 1})`);
   });
 
   test('four sizes: no sideways scroll and axe 0 with the counts', async ({ page }) => {
@@ -137,7 +175,7 @@ test.describe('tab counts (#364)', () => {
     await tt.goto('/admin/task-types');
     await expect(tt.locator('[role="tab"]')).toHaveCount(1);
     await expect(tab(tt, 'task-types')).toContainText(/\(\d+\)/);
-    // No count request for the tabs it may not use (the workflow names behind the chips are the page's own, older request).
+    // No count request for the tabs it may not use (the workflow names behind the old chips are the page's own, older request).
     expect(askedTypes.filter((p) => p.startsWith('/api/v1/step-definitions'))).toEqual([]);
     expect(askedTypes.filter((p) => /^\/api\/v1\/workflows\?.*pageSize=1(&|$)/.test(p))).toEqual(
       [],
@@ -169,10 +207,12 @@ test.describe('health strips (#367, #368)', () => {
     });
     await admin.post(`/api/v1/forms/${drafted.formDefinitionId}/versions`);
 
-    const all =
-      await admin.get<{ isActive: boolean; usabilityIssues: string[]; formStatus?: string }[]>(
-        '/api/v1/task-types',
-      );
+    await page.setViewportSize(SIZES[0]);
+    const listResponse = page.waitForResponse(
+      (r) => isTaskTypesList(r.url()) && r.request().method() === 'GET',
+    );
+    await page.goto('/admin/task-types');
+    const all = (await (await listResponse).json()) as TaskTypeRow[];
     const active = all.filter((t) => t.isActive);
     const expected = {
       active: active.length,
@@ -181,8 +221,6 @@ test.describe('health strips (#367, #368)', () => {
       inactive: all.length - active.length,
     };
 
-    await page.setViewportSize(SIZES[0]);
-    await page.goto('/admin/task-types');
     const strip = page.getByRole('list', { name: 'Task types summary' });
     await expect(strip).toBeVisible();
     for (const key of ['active', 'notUsable', 'formDraft', 'inactive'] as const) {
@@ -193,7 +231,7 @@ test.describe('health strips (#367, #368)', () => {
     expect(expected.formDraft).toBeGreaterThan(0);
     await shot(page, 'p367-strip');
 
-    // Not usable: the address, the pressed chip, the rows (all active, all with the red line) and the announced count.
+    // Not usable: the address, the pressed chip, the rows and the announced count.
     await chip(page, 'notUsable').click();
     await expect(page).toHaveURL(/usable=no/);
     await expect(chip(page, 'notUsable')).toHaveAttribute('aria-pressed', 'true');
@@ -233,45 +271,57 @@ test.describe('health strips (#367, #368)', () => {
     seed,
   }) => {
     const token = uid();
-    const published = await seed.workflow({ name: `${token} Published`, stepCount: 1 });
+    await seed.workflow({ name: `${token} Published`, stepCount: 1 });
     const both = await seed.workflow({ name: `${token} Both`, stepCount: 1 });
     await admin.post(`/api/v1/workflows/${both.workflowDefinitionId}/versions`, {});
     await admin.post('/api/v1/workflows', { name: `${token} Draft only`, isOrdered: true });
     await seedMix(admin, 'workflows', token, 0, 1);
-    expect(published.workflowDefinitionId).toBeGreaterThan(0);
-    const summary = (
-      await admin.get<{
-        summary: {
-          published: number;
-          draftInProgress: number;
-          notPublished: number;
-          inactive: number;
-        };
-      }>('/api/v1/workflows?page=1&pageSize=1')
-    ).summary;
 
+    type Summary = {
+      published: number;
+      draftInProgress: number;
+      notPublished: number;
+      inactive: number;
+    };
+    // The summary of the list answer the page itself received (library-wide, whatever the name filter above shows).
+    const answer = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === '/api/v1/workflows' &&
+        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        r.request().method() === 'GET',
+    );
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/workflows?name=${token}`);
+    const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     const strip = page.getByRole('list', { name: 'Workflows summary' });
     await expect(strip).toBeVisible();
-    // The counts are the library's, not the filtered list's (the name filter shows 3 rows).
     expect(await chipCount(page, 'published')).toBe(summary.published);
     expect(await chipCount(page, 'draft')).toBe(summary.draftInProgress);
     expect(await chipCount(page, 'notPublished')).toBe(summary.notPublished);
     expect(await chipCount(page, 'inactive')).toBe(summary.inactive);
+    await expect(page.locator('tbody tr[data-row]')).toHaveCount(3);
     await shot(page, 'p368-workflows-strip');
 
+    // A chip puts its filter in the address; the pager total of the unfiltered library equals the chip (read from the same page).
     await page.goto('/admin/workflows');
+    await expect(chip(page, 'notPublished').locator('.n')).toHaveText(/\d+/);
     await chip(page, 'notPublished').click();
     await expect(page).toHaveURL(/hasPublished=false/);
     await expect(chip(page, 'notPublished')).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => pagerTotal(page)).toBe(summary.notPublished);
+    await expect
+      .poll(async () => (await pagerTotal(page)) === (await chipCount(page, 'notPublished')))
+      .toBe(true);
     await chip(page, 'draft').click();
     await expect(page).toHaveURL(/hasDraft=true/);
     await expect(page).not.toHaveURL(/hasPublished=/);
-    await expect.poll(() => pagerTotal(page)).toBe(summary.draftInProgress);
+    await expect
+      .poll(async () => (await pagerTotal(page)) === (await chipCount(page, 'draft')))
+      .toBe(true);
     await chip(page, 'published').click();
-    await expect.poll(() => pagerTotal(page)).toBe(summary.published);
+    await expect(page).toHaveURL(/hasPublished=true/);
+    await expect
+      .poll(async () => (await pagerTotal(page)) === (await chipCount(page, 'published')))
+      .toBe(true);
     await chip(page, 'inactive').click();
     await expect(page).toHaveURL(/status=inactive/);
     await expect(page.locator('tbody tr[data-row]').first()).toBeVisible();
@@ -285,24 +335,31 @@ test.describe('health strips (#367, #368)', () => {
   }) => {
     const token = uid();
     await seedMix(admin, 'steps', token, 2, 1);
-    const summary = (
-      await admin.get<{
-        summary: { active: number; notUsed: number; inputsInDraft: number; inactive: number };
-      }>('/api/v1/step-definitions?page=1&pageSize=1')
-    ).summary;
+    type Summary = { active: number; notUsed: number; inputsInDraft: number; inactive: number };
+    const answer = page.waitForResponse(
+      (r) =>
+        new URL(r.url()).pathname === '/api/v1/step-definitions' &&
+        new URL(r.url()).searchParams.get('pageSize') === '25' &&
+        r.request().method() === 'GET',
+    );
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
+    const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     await expect(page.getByRole('list', { name: 'Steps summary' })).toBeVisible();
     expect(await chipCount(page, 'active')).toBe(summary.active);
     expect(await chipCount(page, 'notUsed')).toBe(summary.notUsed);
     expect(await chipCount(page, 'inputsDraft')).toBe(summary.inputsInDraft);
     expect(await chipCount(page, 'inactive')).toBe(summary.inactive);
+    // Inputs in draft is a plain count: no button, no pressed state.
     await expect(chip(page, 'inputsDraft')).not.toHaveAttribute('aria-pressed', /.*/);
     await shot(page, 'p368-steps-strip');
     await page.goto('/admin/steps');
+    await expect(chip(page, 'notUsed').locator('.n')).toHaveText(/\d+/);
     await chip(page, 'notUsed').click();
     await expect(page).toHaveURL(/used=false/);
-    await expect.poll(() => pagerTotal(page)).toBe(summary.notUsed);
+    await expect
+      .poll(async () => (await pagerTotal(page)) === (await chipCount(page, 'notUsed')))
+      .toBe(true);
     await chip(page, 'inactive').click();
     await expect(page).toHaveURL(/status=inactive/);
     await expect(page).not.toHaveURL(/used=/);
