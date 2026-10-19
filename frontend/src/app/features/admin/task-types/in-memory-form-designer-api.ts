@@ -95,6 +95,8 @@ export class InMemoryFormDesignerApi extends FormDesignerApi {
           status: v.status,
           note: v.note,
           updatedAtUtc: v.updatedAtUtc,
+          fieldCount: v.definition.fields.length,
+          ...(v.status === 'PUBLISHED' ? { publishedAtUtc: v.updatedAtUtc } : {}),
         }))
         .sort((a, b) => b.versionNo - a.versionNo),
     );

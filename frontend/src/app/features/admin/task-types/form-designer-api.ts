@@ -10,6 +10,10 @@ export interface FormVersionSummary {
   /** Optional note given at publish time. */
   note?: string;
   updatedAtUtc: string;
+  /** Number of fields in the version (real API; the Request form tab of the Task Type page says "4 fields"). */
+  fieldCount?: number;
+  /** When the version was published; absent for a draft. */
+  publishedAtUtc?: string;
   /** Concurrency token of the version (real API only); send it back when saving or publishing a draft. */
   rowVersion?: string;
 }

@@ -13,6 +13,8 @@ export interface WorkStripItem {
   label: string;
   /** Null while unknown: shown as `--` with the width reserved. */
   count: number | null;
+  /** A word or phrase in place of the number (a record's Form, Default workflow or Status); long text is cut with an ellipsis, the tooltip has it whole. */
+  value?: string;
   /** Tooltip of the item. */
   hint?: string;
   /** Overdue style: red text and an icon while the count is above zero (never colour alone: the label is always there). */
@@ -81,7 +83,9 @@ export interface WorkStripItem {
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
       }
       {{ item.label }}
-      <strong class="n">{{ item.count ?? '--' }}</strong>
+      <strong class="n" [class.v]="item.value !== undefined">{{
+        item.value ?? item.count ?? '--'
+      }}</strong>
     </ng-template>
   `,
   styles: `
@@ -135,6 +139,12 @@ export interface WorkStripItem {
       color: var(--mf-text);
       font-variant-numeric: tabular-nums;
     }
+    .n.v {
+      max-width: 22ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .zero,
     .zero .n {
       color: var(--mf-text-muted);
@@ -145,6 +155,24 @@ export interface WorkStripItem {
       color: var(--mf-danger);
     }
     @media (width < 480px) {
+      .strip li {
+        min-width: 0;
+      }
+      /* A word or phrase (a record's Form, Default workflow) gets the whole box: label above, text below, so it is not cut to "No...". */
+      .item:has(.n.v) {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+      }
+      .item:has(.n.v) .n.v {
+        max-width: 100%;
+      }
+      .n.v {
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: none;
+      }
       .strip {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -152,6 +180,7 @@ export interface WorkStripItem {
       }
       .item {
         width: 100%;
+        min-width: 0;
         min-height: 44px;
         justify-content: space-between;
         border: 1px solid var(--mf-border);

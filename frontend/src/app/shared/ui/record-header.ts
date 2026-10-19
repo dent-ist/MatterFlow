@@ -11,7 +11,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink, UrlTree } from '@angular/router';
 import { iconForPath } from '../layout/section-icons';
 import { ActionMenu, MenuAction } from './action-menu';
-import { ActiveBadge, SensitiveBadge } from './badge';
+import { ActiveBadge, Badge, BadgeTone, SensitiveBadge } from './badge';
 import { MatterRef } from './matter-ref';
 import { CRUMB_MAX, Crumb, RecordTitle, truncateCrumb } from './page-header';
 import { RecordKind } from './record-state';
@@ -74,6 +74,7 @@ let nextId = 0;
     RouterLink,
     RecordTitle,
     ActiveBadge,
+    Badge,
     SensitiveBadge,
     MatterRef,
     ActionMenu,
@@ -171,7 +172,11 @@ let nextId = 0;
         <p class="rh__ctx rh__ctx--sk"><span class="rh__sk rh__sk--ctx"></span></p>
       }
       <ng-template #badges>
-        @if (kind() !== 'task') {
+        @if (statusBadge(); as b) {
+          <mf-badge [tone]="b.tone ?? 'neutral'" [icon]="b.icon ?? null" data-status-badge>{{
+            b.label
+          }}</mf-badge>
+        } @else if (kind() !== 'task' && showStatus()) {
           <mf-active-badge [active]="active()" [inactiveLabel]="inactiveLabel()" />
         }
         @if (sensitive()) {
@@ -202,6 +207,10 @@ export class RecordHeader {
   /** `Archived` for a project. */
   readonly inactiveLabel = input('Inactive');
   readonly sensitive = input(false);
+  /** A derived state instead of Active / Inactive, for example the neutral `Not usable` of a Task Type (#380). */
+  /** False for a record that does not exist yet (Create): no Active badge. */
+  readonly showStatus = input(true);
+  readonly statusBadge = input<{ label: string; tone?: BadgeTone; icon?: string } | null>(null);
   /** Where "Back to ..." goes (a phone) when it is not the record's own list, for example the list a Task was opened from (`?from=`). */
   readonly backTo = input<{
     label: string;

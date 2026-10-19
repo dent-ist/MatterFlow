@@ -8,6 +8,12 @@ export interface WorkflowOption {
   name: string;
   /** Version number of the current PUBLISHED version; absent while the workflow has none. */
   publishedVersionNo?: number;
+  /** Steps of the published version; absent while the workflow has none. */
+  stepCount?: number;
+  /** True while an open draft exists (a workflow with only a draft cannot be used yet). */
+  hasDraft?: boolean;
+  /** Active task types the workflow is eligible for; a type that removes it from its list may leave it with none (#379). */
+  taskTypeCount?: number;
   /** False for a deactivated workflow (still resolvable by id so saved eligibility keeps its name). */
   isActive?: boolean;
 }
@@ -66,6 +72,9 @@ export class HttpWorkflowLookup extends WorkflowLookup {
           id: w.workflowDefinitionId,
           name: w.name,
           publishedVersionNo: w.publishedVersionNo,
+          stepCount: w.publishedStepCount,
+          hasDraft: w.hasDraft,
+          taskTypeCount: w.taskTypeCount,
           isActive: w.isActive,
         });
       }

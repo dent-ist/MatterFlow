@@ -21,6 +21,11 @@ export interface MfTab {
   count?: number | string | null;
   /** The accessible name when the visible label and count do not read well aloud (`Workflow, 2 of 3 steps resolved`); it starts with the label. */
   name?: string;
+  /**
+   * The tab cannot be opened yet and this says why ("Save the task type first"). It stays in the tab order (`aria-disabled`, not `disabled`),
+   * is described by the reason and does nothing when chosen.
+   */
+  disabledReason?: string;
 }
 
 /**
@@ -55,6 +60,9 @@ export interface MfTab {
             [id]="idPrefix() + '-tab-' + t.key"
             [attr.data-tab]="t.key"
             [attr.aria-label]="nameOf(t)"
+            [attr.aria-disabled]="t.disabledReason ? 'true' : null"
+            [attr.aria-describedby]="t.disabledReason ? idPrefix() + '-why-' + t.key : null"
+            [attr.title]="t.disabledReason ?? null"
             [attr.aria-selected]="t.key === selected()"
             [attr.aria-controls]="t.key === selected() ? idPrefix() + '-panel' : null"
             [attr.tabindex]="t.key === selected() ? 0 : -1"
@@ -66,6 +74,11 @@ export interface MfTab {
               <span class="count">({{ t.count }})</span>
             }
           </button>
+          @if (t.disabledReason) {
+            <span class="mf-sr-only" [id]="idPrefix() + '-why-' + t.key">{{
+              t.disabledReason
+            }}</span>
+          }
         }
       </div>
       @if (cues().start) {
@@ -173,6 +186,14 @@ export interface MfTab {
     .tab:hover {
       color: var(--mf-text);
       background: var(--mf-surface-alt);
+    }
+    /* Not openable yet (a reason is given): same colour, no hover feedback, no pointer. */
+    .tab[aria-disabled='true'] {
+      cursor: not-allowed;
+    }
+    .tab[aria-disabled='true']:hover {
+      color: var(--mf-text-muted);
+      background: none;
     }
     .tab[aria-selected='true'] {
       color: var(--mf-text);
@@ -325,6 +346,7 @@ export class Tabs {
   }
 
   protected choose(key: string): void {
+    if (this.tabs().find((t) => t.key === key)?.disabledReason) return;
     if (key !== this.selected()) this.tabChange.emit(key);
   }
 

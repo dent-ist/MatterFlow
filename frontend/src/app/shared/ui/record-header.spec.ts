@@ -23,6 +23,8 @@ function action(id: string, role: RecordAction['role'], extra: Partial<RecordAct
       [name]="name()"
       [active]="true"
       [sensitive]="sensitive()"
+      [statusBadge]="badge()"
+      [showStatus]="showStatus()"
       [actions]="actions()"
     >
       <span mfContext data-ctx>Client 00107 Hartwell</span>
@@ -34,6 +36,10 @@ class Host {
   readonly name = signal('Short');
   readonly sensitive = signal(false);
   readonly plain = signal(false);
+  readonly badge = signal<{ label: string; tone?: 'neutral' | 'success'; icon?: string } | null>(
+    null,
+  );
+  readonly showStatus = signal(true);
   readonly actions = signal<RecordAction[]>([]);
 }
 
@@ -78,6 +84,24 @@ describe('mf-record-header', () => {
     expect(cur.querySelector('[aria-hidden=true]')!.textContent!.length).toBe(40);
     expect(cur.querySelector('.mf-sr-only')!.textContent).toBe('00107-00001 ' + LONG);
     expect(q('.rh__trail a')?.textContent).toBe('Matters'); // earlier steps are unchanged links
+  });
+
+  it('shows Active by default, a derived status badge in its place (neutral Not usable) and no badge for a record that does not exist yet (#380)', async () => {
+    await create();
+    expect(q('mf-active-badge')?.textContent).toContain('Active');
+    expect(q('[data-status-badge]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    await create((h) =>
+      h.badge.set({ label: 'Not usable', tone: 'neutral', icon: 'pi-info-circle' }),
+    );
+    expect(q('[data-status-badge]')?.textContent).toContain('Not usable');
+    expect(q('mf-active-badge')).toBeNull();
+
+    TestBed.resetTestingModule();
+    await create((h) => h.showStatus.set(false));
+    expect(q('mf-active-badge')).toBeNull();
+    expect(q('[data-status-badge]')).toBeNull();
   });
 
   it('gives the name the full text as tooltip and keeps it whole in the heading', async () => {

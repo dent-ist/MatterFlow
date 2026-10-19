@@ -40,6 +40,21 @@ describe('WorkStrip', () => {
     expect(el.querySelector('[data-strip-item="a"] .pi')).not.toBeNull();
   });
 
+  it('shows a word or phrase in place of the number, cut with an ellipsis through CSS and whole in the tooltip (#380)', () => {
+    const { f, el } = create();
+    f.componentInstance.items.set([
+      { key: 'form', label: 'Form', count: null, value: 'Published v2', hint: 'Request form' },
+      { key: 'n', label: 'Workflows', count: 3 },
+    ]);
+    f.detectChanges();
+    expect(el.textContent!.replace(/\s+/g, ' ').trim()).toBe('Form Published v2 Workflows 3');
+    expect(el.querySelector('[data-strip-item="form"] .v')).not.toBeNull();
+    expect(el.querySelector('[data-strip-item="n"] .v')).toBeNull();
+    expect(el.querySelector('[data-strip-item="form"]')!.getAttribute('title')).toBe(
+      'Request form',
+    );
+  });
+
   it('emits the key of a clicked item and marks the active one pressed', () => {
     const { f, el } = create();
     f.componentInstance.active.set('a');

@@ -1,4 +1,4 @@
-@if (state() === 'notFound' || state() === 'forbidden' || state() === 'error') {
+@if (flow.failed()) {
   <mf-record-state
     kind="taskType"
     [state]="state()"
@@ -6,220 +6,266 @@
     [focusHeading]="true"
     (retried)="retry()"
   />
+} @else if (state() === 'loading') {
+  <span class="sr-only" role="status" aria-live="polite" data-announce>{{ flow.live() }}</span>
+  <mf-record-skeleton kind="taskType" [activeTab]="current()" />
 } @else {
-  <mf-page-header
-    [heading]="isNew() ? 'New task type' : (taskType()?.name ?? 'Task type')"
-    [crumbs]="[
-      { label: 'Administration' },
-      listCrumb,
-      { label: isNew() ? 'New' : (taskType()?.name ?? 'Edit') },
-    ]"
-  />
-
-  <div class="sr-only" role="status" aria-live="polite" data-announce>
-    {{ announcement() || flow.live() }}
-  </div>
-
-  @if (failure()) {
-    <p class="error" role="alert" data-failure>{{ failure() }}</p>
-  }
-  @if (conflict()) {
-    <p class="error" role="alert" data-conflict>
-      Someone else changed this task type.
-      <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
-        Reload the latest version
-      </button>
-      (your unsaved edits will be discarded).
-    </p>
-  }
-
-  @switch (state()) {
-    @case ('loading') {
-      <p class="muted" data-loading>Loading...</p>
-    }
-    @default {
-      @if (summary().length > 0) {
-        <div class="pg-summary" role="alert" data-summary>
-          Fix the following to save:
-          <ul>
-            @for (message of summary(); track message) {
-              <li>{{ message }}</li>
-            }
-          </ul>
-        </div>
+  <div class="tt" data-task-type-page>
+    <mf-record-header
+      kind="taskType"
+      [parents]="parents()"
+      [current]="headerName()"
+      [name]="headerName()"
+      [backTo]="backTo()"
+      [showStatus]="!isNew()"
+      [statusBadge]="badge()"
+      [actions]="headerActions()"
+    >
+      @if (!isNew()) {
+        <mf-task-type-icon
+          mfIcon
+          class="tt__icon"
+          size="md"
+          [iconKey]="taskType()?.iconKey ?? ''"
+          data-title-icon
+        />
       }
-      <form class="edit" (submit)="$event.preventDefault(); save()" novalidate>
-        <section aria-labelledby="tt-general">
-          <h2 id="tt-general">General</h2>
-          <div class="field">
-            <label for="tt-name">Name <span class="mf-req">(required)</span></label>
-            <input
-              id="tt-name"
-              class="text"
-              name="name"
-              maxlength="100"
-              [ngModel]="model().name"
-              (ngModelChange)="patch({ name: $event })"
-              [attr.aria-invalid]="fieldErrors()['name'] ? 'true' : null"
-              [attr.aria-describedby]="fieldErrors()['name'] ? 'tt-name-error' : null"
-              data-name
-            />
-            @if (fieldErrors()['name']) {
-              <p id="tt-name-error" class="error" role="alert" data-name-error>
-                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                {{ fieldErrors()['name'] }}
-              </p>
-            }
-          </div>
-          <div class="field">
-            <label id="tt-icon-label" for="tt-icon"
-              >Icon <span class="mf-req">(required)</span></label
-            >
-            <mf-task-type-icon-picker
-              inputId="tt-icon"
-              labelId="tt-icon-label"
-              [value]="model().iconKey"
-              (valueChange)="patch({ iconKey: $event })"
-              [invalid]="!!fieldErrors()['iconKey']"
-              describedBy="tt-icon-help"
-            />
-            <p id="tt-icon-help" class="muted hint">
-              Shown next to the task type's name in lists, on task pages and when people choose a
-              type. Several types may share an icon.
-            </p>
-            @if (fieldErrors()['iconKey']) {
-              <p class="error" role="alert" data-icon-error>
-                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                {{ fieldErrors()['iconKey'] }}
-              </p>
-            }
-          </div>
-          <div class="field">
-            <label for="tt-description">Description</label>
-            <textarea
-              id="tt-description"
-              class="text"
-              name="description"
-              rows="3"
-              maxlength="1000"
-              [ngModel]="model().description"
-              (ngModelChange)="patch({ description: $event })"
-              data-description
-            ></textarea>
-          </div>
-          <div class="field inline">
-            <input
-              id="tt-active"
-              type="checkbox"
-              class="check"
-              name="isActive"
-              [ngModel]="model().isActive"
-              (ngModelChange)="patch({ isActive: $event })"
-              data-active
-            />
-            <label for="tt-active">Active (offered for new tasks)</label>
-          </div>
-        </section>
+      @if (!isNew() && taskType()?.description; as d) {
+        <span mfContext class="tt__ctx" [attr.title]="d" data-context>{{ d }}</span>
+      }
+    </mf-record-header>
 
-        <section aria-labelledby="tt-form">
-          <h2 id="tt-form">Request form</h2>
-          @if (taskType(); as t) {
-            <p data-form-summary>{{ formSummary(t) }}</p>
-            <a
-              class="open-form"
-              [routerLink]="['/admin/task-types', t.id, 'form']"
-              [state]="back.carry"
-              data-open-form
-              >Open the form designer</a
-            >
-            @if (dirty()) {
-              <p class="muted hint">Save your changes before opening the designer.</p>
-            }
-          } @else {
-            <p class="muted" data-form-hint>
-              Save the task type first, then design its request form.
-            </p>
-          }
-        </section>
+    <div class="sr-only" role="status" aria-live="polite" data-announce>
+      {{ announcement() || flow.live() }}
+    </div>
 
-        <section aria-labelledby="tt-workflows">
-          <h2 id="tt-workflows">Eligible workflows</h2>
-          <p class="muted hint">
-            People choose one of these when they create a task of this type. A type needs at least
-            one to be usable.
-          </p>
-          @if (workflows().length === 0 && unknownEligible().length === 0) {
-            <p class="muted" data-no-workflows>No workflows exist yet.</p>
+    @if (taskType(); as t) {
+      <mf-work-strip label="Task type summary" [items]="strip()" />
+      <mf-task-type-status-note
+        [reasons]="reasons()"
+        [formLink]="['/admin/task-types', t.id, 'form']"
+        [linkState]="back.carry"
+        (fixed)="fix($event)"
+      />
+    }
+
+    @if (failure()) {
+      <p class="error" role="alert" data-failure>{{ failure() }}</p>
+    }
+    @if (conflict()) {
+      <p class="error" role="alert" data-conflict>
+        Someone else changed this task type.
+        <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
+          Reload the latest version
+        </button>
+        (your unsaved edits will be discarded).
+      </p>
+    }
+    @if (summary().length > 0) {
+      <div class="pg-summary" role="alert" data-summary>
+        Fix the following to save:
+        <ul>
+          @for (message of summary(); track message) {
+            <li>{{ message }}</li>
           }
-          <ul class="workflows" data-workflows>
-            @for (w of workflows(); track w.id) {
-              <li>
+        </ul>
+      </div>
+    }
+
+    <mf-tabs
+      label="Task type sections"
+      idPrefix="tt"
+      [tabs]="tabs()"
+      [selected]="current()"
+      (tabChange)="select($event)"
+    />
+    <div
+      class="tt__panel"
+      role="tabpanel"
+      id="tt-panel"
+      [attr.aria-labelledby]="'tt-tab-' + current()"
+    >
+      @switch (current()) {
+        @case ('overview') {
+          <form
+            id="tt-overview-form"
+            class="edit"
+            (submit)="$event.preventDefault(); save()"
+            novalidate
+            data-overview-tab
+          >
+            <section aria-labelledby="tt-general">
+              <h2 id="tt-general">General</h2>
+              <div class="field">
+                <label for="tt-name">Name <span class="mf-req">(required)</span></label>
                 <input
-                  type="checkbox"
-                  class="check"
-                  [id]="'tt-wf-' + w.id"
-                  [checked]="isEligible(w.id)"
-                  (change)="toggleEligible(w, $any($event.target).checked)"
-                  [attr.data-workflow]="w.id"
+                  id="tt-name"
+                  class="text"
+                  name="name"
+                  maxlength="100"
+                  [ngModel]="model().name"
+                  (ngModelChange)="patch({ name: $event })"
+                  [attr.aria-invalid]="fieldErrors()['name'] ? 'true' : null"
+                  [attr.aria-describedby]="
+                    fieldErrors()['name'] ? 'tt-name-error tt-name-count' : 'tt-name-count'
+                  "
+                  data-name-input
                 />
-                <label [for]="'tt-wf-' + w.id">{{ workflowLabel(w) }}</label>
-              </li>
-            }
-            @for (id of unknownEligible(); track id) {
-              <li class="muted">Workflow {{ id }} (no longer listed)</li>
-            }
-          </ul>
-
-          <div class="field">
-            <label for="tt-default">Default workflow</label>
-            <select
-              id="tt-default"
-              class="select"
-              name="defaultWorkflow"
-              [ngModel]="model().defaultWorkflow"
-              (ngModelChange)="patch({ defaultWorkflow: $event })"
-              [attr.aria-invalid]="fieldErrors()['defaultWorkflowDefinitionId'] ? 'true' : null"
-              data-default
-            >
-              <option [ngValue]="null">None</option>
-              @for (w of eligibleOptions(); track w.id) {
-                <option [ngValue]="w.id">{{ w.name }}</option>
-              }
-            </select>
-            @if (fieldErrors()['defaultWorkflowDefinitionId']) {
-              <p class="error" role="alert" data-default-error>
-                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-                {{ fieldErrors()['defaultWorkflowDefinitionId'] }}
-              </p>
-            }
-          </div>
-        </section>
-
-        @if (taskType(); as t) {
-          @if (!t.isUsable) {
-            <section class="usability" data-usability>
-              <h2>Not usable for new tasks yet</h2>
-              <ul>
-                @for (code of t.usabilityIssues; track code) {
-                  <li>{{ issueText(code) }}</li>
+                <mf-char-counter countId="tt-name-count" [value]="model().name" [max]="100" />
+                @if (fieldErrors()['name']) {
+                  <p id="tt-name-error" class="error" role="alert" data-name-error>
+                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                    {{ fieldErrors()['name'] }}
+                  </p>
                 }
-              </ul>
+              </div>
+              <div class="field">
+                <label id="tt-icon-label" for="tt-icon"
+                  >Icon <span class="mf-req">(required)</span></label
+                >
+                <mf-task-type-icon-picker
+                  inputId="tt-icon"
+                  labelId="tt-icon-label"
+                  [value]="model().iconKey"
+                  (valueChange)="patch({ iconKey: $event })"
+                  [invalid]="!!fieldErrors()['iconKey']"
+                  describedBy="tt-icon-help"
+                />
+                <p id="tt-icon-help" class="muted hint">
+                  Shown next to the task type's name in lists, on task pages and when people choose
+                  a type. Several types may share an icon.
+                </p>
+                @if (fieldErrors()['iconKey']) {
+                  <p class="error" role="alert" data-icon-error>
+                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                    {{ fieldErrors()['iconKey'] }}
+                  </p>
+                }
+              </div>
+              <div class="field">
+                <label for="tt-description">Description</label>
+                <textarea
+                  id="tt-description"
+                  class="text"
+                  name="description"
+                  rows="3"
+                  maxlength="1000"
+                  [ngModel]="model().description"
+                  (ngModelChange)="patch({ description: $event })"
+                  aria-describedby="tt-description-count"
+                  data-description
+                ></textarea>
+                <mf-char-counter
+                  countId="tt-description-count"
+                  [value]="model().description"
+                  [max]="1000"
+                />
+              </div>
+              @if (isNew()) {
+                <div class="field inline">
+                  <input
+                    id="tt-active"
+                    type="checkbox"
+                    class="check"
+                    name="isActive"
+                    [ngModel]="model().isActive"
+                    (ngModelChange)="patch({ isActive: $event })"
+                    data-active
+                  />
+                  <label for="tt-active">Active (offered for new tasks)</label>
+                </div>
+              }
+            </section>
+          </form>
+        }
+        @case ('workflows') {
+          <mf-task-type-workflows-tab
+            [workflows]="workflows()"
+            [eligible]="model().eligible"
+            [defaultId]="model().defaultWorkflow"
+            [canLink]="canLinkWorkflows()"
+            [canAdd]="!workflowsDenied()"
+            (changed)="changeWorkflows($event)"
+          />
+          @if (fieldErrors()['defaultWorkflowDefinitionId']) {
+            <p class="error" role="alert" data-default-error>
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+              {{ fieldErrors()['defaultWorkflowDefinitionId'] }}
+            </p>
+          }
+        }
+        @case ('form') {
+          @if (taskType(); as t) {
+            <section class="rf" aria-labelledby="tt-form" data-form-tab>
+              <h2 id="tt-form">Request form</h2>
+              @if (formFacts(); as f) {
+                <ul class="rf__states" data-form-summary>
+                  @if (f.published) {
+                    <li data-form-published>
+                      Published v{{ f.published.versionNo }}
+                      @if (f.published.fields !== null) {
+                        <span aria-hidden="true"> &middot; </span>
+                        <span class="mf-sr-only">, </span>{{ f.published.fields }}
+                        {{ f.published.fields === 1 ? 'field' : 'fields' }}
+                      }
+                      @if (f.published.at) {
+                        <span aria-hidden="true"> &middot; </span>
+                        <span class="mf-sr-only">, </span>last published
+                        {{ f.published.at | mfDate: 'date' }}
+                      }
+                    </li>
+                  }
+                  @if (f.draftVersionNo !== null) {
+                    <li data-form-draft>Draft v{{ f.draftVersionNo }} in progress</li>
+                  }
+                  @if (!f.published && f.draftVersionNo === null) {
+                    <li data-form-none>
+                      {{ f.retired ? 'Retired, no published version' : 'No form yet' }}
+                    </li>
+                  }
+                </ul>
+              }
+              <button type="button" class="mf-btn" (click)="openForm()" data-open-form>
+                {{ hasForm() ? 'Edit form' : 'Create form' }}
+              </button>
+              <p class="muted hint">
+                The request form is the set of fields people fill in when they create a task of this
+                type. It is designed on its own page and published as a version.
+              </p>
             </section>
           }
         }
+      }
 
-        <div class="actions-row mf-form-actions--sticky">
-          <p-button
-            type="submit"
-            [label]="isNew() ? 'Create task type' : 'Save changes'"
-            [disabled]="busy() || (!isNew() && !dirty())"
+      @if (showFooter()) {
+        <div class="actions-row mf-form-actions--sticky" data-footer>
+          <button
+            class="mf-btn mf-btn--primary"
+            [attr.type]="current() === 'overview' ? 'submit' : 'button'"
+            [attr.form]="current() === 'overview' ? 'tt-overview-form' : null"
+            [disabled]="busy()"
+            (click)="current() === 'overview' ? null : save()"
             data-save
-          />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" data-cancel />
+          >
+            {{ isNew() ? 'Create task type' : 'Save changes' }}
+          </button>
+          <button type="button" class="mf-btn" [disabled]="busy()" (click)="cancel()" data-cancel>
+            Cancel
+          </button>
         </div>
-      </form>
+      }
+    </div>
+
+    @if (canSeeActivity() && taskType(); as t) {
+      <mf-activity-drawer
+        objectType="TaskType"
+        [objectId]="t.id"
+        [name]="t.name"
+        [visible]="activityOpen()"
+        (visibleChange)="activityOpen.set($event)"
+      />
     }
-  }
+  </div>
 
   <mf-confirm-dialog
     [title]="copy.title"
@@ -234,5 +280,15 @@
       This task type will no longer be offered when people create tasks. Existing tasks keep this
       type, and you can activate it again later.
     </p>
+    @if (impact().text) {
+      <p data-impact>{{ impact().text }}</p>
+    }
+    @if (impact().names.length > 0) {
+      <ul data-impact-names>
+        @for (n of impact().names; track n) {
+          <li>{{ n }}</li>
+        }
+      </ul>
+    }
   </mf-confirm-dialog>
 }

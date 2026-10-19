@@ -69,7 +69,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
   host: { '[class.rk-task]': "kind() === 'task'" },
   template: `
     <div class="rk" aria-busy="true" data-record-skeleton [attr.data-kind]="kind()">
-      <span class="mf-sr-only" role="status" data-loading>Loading {{ kind() }}</span>
+      <span class="mf-sr-only" role="status" data-loading>Loading {{ noun() }}</span>
       <div class="rk__vis" inert aria-hidden="true">
         @if (kind() === 'task') {
           <ng-container *ngTemplateOutlet="taskTpl" />
@@ -252,7 +252,14 @@ export class RecordSkeleton {
   });
   protected readonly tabs = computed(() => {
     const kind = this.kind();
-    // The Task and the Administration pages (#353) have no Client/Matter/Project tabs; their skeletons come with their record pages.
+    // The Task page has no tab strip; the Administration pages bring theirs with their record pages (the Task Type page: #380).
+    if (kind === 'taskType') {
+      return [
+        { key: 'overview', label: 'Overview' },
+        { key: 'workflows', label: 'Workflows', count: '--' },
+        { key: 'form', label: 'Request form' },
+      ];
+    }
     if (kind !== 'client' && kind !== 'matter' && kind !== 'project') return [];
     return recordTabs(
       kind,
@@ -263,6 +270,10 @@ export class RecordSkeleton {
           : { matters: '--' },
     );
   });
+  /** What the page is called in the loading message: "Loading task type". */
+  protected readonly noun = computed(() =>
+    this.kind() === 'taskType' ? 'task type' : this.kind(),
+  );
   protected readonly tab = computed(() => {
     const t = this.activeTab();
     return this.tabs().some((x) => x.key === t) ? t : (this.tabs()[0]?.key ?? 'details');
@@ -272,6 +283,12 @@ export class RecordSkeleton {
     switch (this.kind()) {
       case 'task':
         return [];
+      case 'taskType':
+        return [
+          { label: 'Administration', plain: true },
+          { label: 'Task Types', link: '/admin/task-types' },
+          { label: '' },
+        ];
       case 'client':
         return [{ label: 'Clients', link: '/clients' }];
       case 'matter':

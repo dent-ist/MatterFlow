@@ -53,6 +53,15 @@ describe('mf-record-skeleton (#247)', () => {
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading project');
   });
 
+  it('draws a task type (#380): Administration and Task Types crumbs, its three tabs, "Loading task type"', async () => {
+    const el = await render('taskType', 'workflows');
+    expect(el.querySelector('[role=status]')?.textContent).toContain('Loading task type');
+    expect(labels(el)).toEqual(['Overview', 'Workflows (--)', 'Request form']);
+    expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Workflows');
+    expect(el.querySelector('nav a')?.textContent).toContain('Task Types');
+    expect(el.querySelector('nav')?.textContent).toContain('Administration');
+  });
+
   it('selects the first tab of a project for a tab it does not have', async () => {
     const el = await render('project', 'nonsense');
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Tasks');

@@ -80,6 +80,8 @@ export function toSummary(v: ApiVersionSummary): FormVersionSummary {
     status: STATUS[v.status],
     note: v.notes ?? undefined,
     updatedAtUtc: v.publishedAtUtc ?? v.createdAtUtc,
+    fieldCount: v.fieldCount,
+    publishedAtUtc: v.publishedAtUtc ?? undefined,
     rowVersion: v.rowVersion,
   };
 }

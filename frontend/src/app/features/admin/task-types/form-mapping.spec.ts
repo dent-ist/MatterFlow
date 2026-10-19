@@ -85,6 +85,7 @@ describe('form mapping', () => {
       status: 'DRAFT',
       note: undefined,
       updatedAtUtc: '2026-10-01T00:00:00Z',
+      fieldCount: 1,
       rowVersion: 'AAAA',
       definition: { fields: [{ key: 'a', control: 'TEXT', label: 'A' }] },
     });

@@ -1,0 +1,270 @@
+@use '../../../../styles/form-mixins' as m;
+
+:host {
+  display: block;
+}
+
+.muted {
+  color: var(--mf-text-muted);
+}
+
+.wt {
+  display: grid;
+  gap: var(--mf-s3);
+  min-width: 0;
+  max-width: 960px;
+}
+
+.wt__h {
+  margin: 0;
+  font-size: var(--mf-fs-h3);
+}
+
+.wt__lead,
+.wt__help,
+.wt__empty {
+  margin: 0;
+}
+
+.wt__empty {
+  padding: var(--mf-s4);
+  border: 1px dashed var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  color: var(--mf-text-muted);
+}
+
+.wt__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mf-surface);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+
+  th,
+  td {
+    height: var(--mf-grid-row-h, 44px);
+    padding: 0 var(--mf-s3);
+    border-bottom: 1px solid var(--mf-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  thead th {
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-sm);
+    font-weight: 600;
+  }
+
+  tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+}
+
+/* The name column takes what the others leave and cuts a long name with an ellipsis (the full text is the tooltip). */
+.wt__name {
+  width: 100%;
+  max-width: 0;
+  font-weight: 600;
+}
+
+.wt__nm {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.wt__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.wt__title {
+  color: var(--mf-link);
+}
+
+.wt__pub,
+.wt__steps {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.wt__def,
+.wt__rm {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.wt__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: var(--mf-target-min, 24px);
+
+  input {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    accent-color: var(--mf-primary);
+  }
+}
+
+/* The cells say their column on a phone; on wider screens the column header does. */
+.wt__lbl {
+  display: none;
+  color: var(--mf-text-muted);
+}
+
+.wt__add {
+  display: grid;
+  gap: var(--mf-s1);
+  max-width: 480px;
+}
+
+.wt__add-label {
+  font-weight: 600;
+}
+
+.wt__box {
+  display: grid;
+}
+
+.wt__input {
+  @include m.mf-control;
+  @include m.mf-control-states;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--mf-row-h);
+  padding: 0 var(--mf-s3);
+}
+
+.wt__list {
+  /* In the flow, not floating: nothing is covered while it is open (the table moves down) and it works the same on a phone. */
+  margin: 2px 0 0;
+  padding: var(--mf-s1) 0;
+  list-style: none;
+  background: var(--mf-surface);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+}
+
+.wt__opt {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mf-s3);
+  min-height: 2.25rem;
+  padding: var(--mf-s1) var(--mf-s3);
+  cursor: pointer;
+}
+
+.wt__opt-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wt__opt-why {
+  flex: none;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.wt__opt--active {
+  background: var(--mf-surface-alt);
+  outline: 2px solid var(--mf-focus);
+  outline-offset: -2px;
+}
+
+.wt__opt--off {
+  color: var(--mf-text-muted);
+  cursor: default;
+}
+
+.wt__note {
+  padding: var(--mf-s2) var(--mf-s3);
+  color: var(--mf-text-muted);
+}
+
+@media (max-width: 639.98px) {
+  .wt__table {
+    border: 0;
+    background: none;
+
+    thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    tbody,
+    tr {
+      display: block;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0 var(--mf-s3);
+      margin-bottom: var(--mf-s2);
+      padding: var(--mf-s2) var(--mf-s3);
+      background: var(--mf-surface);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+    }
+
+    th,
+    td {
+      display: block;
+      height: auto;
+      padding: 0;
+      border: 0;
+    }
+
+    .wt__name {
+      grid-column: 1 / -1;
+      width: auto;
+      max-width: none;
+      padding: var(--mf-s1) 0;
+    }
+
+    .wt__pub,
+    .wt__steps {
+      display: inline-block;
+      width: auto;
+      grid-row: 2;
+      color: var(--mf-text-muted);
+    }
+
+    .wt__pub {
+      grid-column: 1;
+    }
+
+    .wt__steps {
+      grid-column: 2;
+    }
+
+    .wt__def {
+      grid-column: 1;
+      grid-row: 3;
+      width: auto;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .wt__rm {
+      grid-column: 2;
+      grid-row: 3;
+      width: auto;
+    }
+
+    .wt__lbl {
+      display: inline;
+    }
+  }
+}
