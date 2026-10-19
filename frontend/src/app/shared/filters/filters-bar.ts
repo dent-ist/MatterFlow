@@ -203,7 +203,7 @@ export class MoreFilters {
               (showColumn)="showColumn.emit($event)"
             />
           </div>
-          @if (filters().activeCount() > 0) {
+          @if (filters().activeCount() > 0 && !filters().emptyClear()) {
             <button
               type="button"
               class="mf-btn mf-btn--text"

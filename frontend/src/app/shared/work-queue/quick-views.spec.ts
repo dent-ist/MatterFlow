@@ -41,6 +41,28 @@ describe('QuickViews', () => {
     ]);
   });
 
+  it('watches its room with a ResizeObserver and lets go of it when destroyed (no NG0203 from afterNextRender)', async () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = observe;
+        disconnect = disconnect;
+      },
+    );
+    try {
+      const fixture = create();
+      await fixture.whenStable();
+      TestBed.tick();
+      expect(observe).toHaveBeenCalled();
+      fixture.destroy();
+      expect(disconnect).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('gives every view a one-sentence tooltip', () => {
     const el = create().nativeElement as HTMLElement;
     expect(button(el, 'dueSoon').getAttribute('title')).toBe(

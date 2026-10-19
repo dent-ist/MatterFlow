@@ -14,6 +14,7 @@ import { Button } from 'primeng/button';
 import { CopyParts, CopyPart } from './copy-parts';
 import { LoadState } from './data-table';
 import { ErrorReference } from './error-reference';
+import type { ListFilters } from '../filters/list-filters';
 
 /** Bone widths of a skeleton row when the page gives none; they repeat across the columns. */
 const DEFAULT_BONES = ['7rem', '14rem', '5rem', '6rem'] as const;
@@ -155,6 +156,11 @@ export class GridBody {
   readonly empty = input(false);
   /** True while a filter is active: the empty text then offers Clear filters. */
   readonly filtered = input(false);
+  /**
+   * The page's filters, for a list that does not report its own emptiness: while this body shows "No ... match these filters" with its
+   * Clear filters button, the bar above the grid shows none (one Clear filters at a time).
+   */
+  readonly filters = input<ListFilters | null>(null);
   /** Plural, lowercase: "clients". */
   readonly noun = input.required<string>();
   /** First-run text; defaults to "No {noun} yet.". */
@@ -173,6 +179,12 @@ export class GridBody {
   });
 
   constructor() {
+    effect((onCleanup) => {
+      const filters = this.filters();
+      if (!filters) return;
+      filters.emptyClear.set(this.state() === 'ready' && this.empty() && this.filtered());
+      onCleanup(() => filters.emptyClear.set(false));
+    });
     // A Retry that succeeds puts keyboard focus where the rows are.
     effect(() => {
       if (this.state() !== 'ready' || !this.focusAfterRetry) return;

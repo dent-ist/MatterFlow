@@ -47,6 +47,7 @@
           <tbody
             mfGridBody
             noun="users"
+            [filters]="filters"
             [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
             [state]="listState()"
             [empty]="users().length === 0"

@@ -305,6 +305,18 @@ describe('filters bar', { timeout: 20_000 }, () => {
       expect(Array.from(row1().children).map((c) => c.tagName + c.className)).toEqual(before);
     });
 
+    it('has no Clear filters in row 2 while the grid empty state offers its own, and brings it back after', async () => {
+      sm = await mountFilters(StackedHost, { url: '/list?name=a&status=all' });
+      expect(row2()!.querySelector('[data-clear-filters]')).not.toBeNull();
+      sm.filters.emptyClear.set(true);
+      await sm.settle();
+      expect(sm.el.querySelectorAll('[data-clear-filters]').length).toBe(0);
+      expect(row2()).not.toBeNull(); // the row keeps its place: nothing jumps when the list turns empty
+      sm.filters.emptyClear.set(false);
+      await sm.settle();
+      expect(sm.el.querySelectorAll('[data-clear-filters]').length).toBe(1);
+    });
+
     it('shows the restored notice in row 2 and the x removes it', async () => {
       sm = await mountFilters(StackedHost, { url: '/list' });
       sm.filters.markRestored();

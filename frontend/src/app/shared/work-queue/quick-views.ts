@@ -305,6 +305,7 @@ export class QuickViews {
   readonly viewSelect = output<BuiltInViewKey>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
   protected readonly menuOpen = signal(false);
 
@@ -356,7 +357,7 @@ export class QuickViews {
     // The arrow keys of the toolbar are listed in the `?` help while the toolbar is on screen.
     const registry = inject(ShortcutRegistry);
     const offs = QUICK_VIEW_SHORTCUTS.map((def) => registry.register(def));
-    inject(DestroyRef).onDestroy(() => offs.forEach((off) => off()));
+    this.destroyRef.onDestroy(() => offs.forEach((off) => off()));
     // Choosing a view makes it the stop again.
     effect(() => {
       this.active();
@@ -458,7 +459,8 @@ export class QuickViews {
     const observer = new ResizeObserver(() => this.measure());
     observer.observe(parent);
     observer.observe(strip);
-    inject(DestroyRef).onDestroy(() => observer.disconnect());
+    // Not inject(DestroyRef): this runs inside afterNextRender, outside the injection context (it threw NG0203 on every load).
+    this.destroyRef.onDestroy(() => observer.disconnect());
     this.measure();
   }
 

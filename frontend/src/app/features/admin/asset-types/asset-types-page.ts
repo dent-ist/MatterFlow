@@ -175,6 +175,7 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
           <tbody
             mfGridBody
             noun="asset types"
+            [filters]="filters"
             emptyText="No asset types yet."
             [state]="state()"
             [empty]="rows().length === 0"

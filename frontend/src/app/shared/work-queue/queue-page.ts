@@ -265,6 +265,12 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     this.density.set(loadDensity(pageKey, this.auth.profile()?.userId ?? null));
     void this.lookups.ensureLoaded();
     inject(DestroyRef).onDestroy(() => this.leaving.clear());
+    // An empty, filtered list has its own Clear filters button: the bar then shows none (one Clear filters at a time).
+    effect(() =>
+      this.filters.emptyClear.set(
+        this.loadState() === 'ready' && this.rows().length === 0 && this.filters.activeCount() > 0,
+      ),
+    );
     effect(() => {
       const state = this.state();
       const params = this.params();

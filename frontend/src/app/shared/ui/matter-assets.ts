@@ -208,6 +208,8 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     });
   }
 
+  protected override readonly emptyOffersClear = true;
+
   protected override listFilters() {
     return this.filters;
   }

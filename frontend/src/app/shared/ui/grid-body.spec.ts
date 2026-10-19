@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { LoadState } from './data-table';
+import { ListFilters } from '../filters/list-filters';
 import { GridBody } from './grid-body';
 
 @Component({
@@ -22,6 +23,7 @@ import { GridBody } from './grid-body';
         [filtered]="filtered()"
         [columns]="2"
         [skeleton]="skeleton()"
+        [filters]="listFilters()"
         (retry)="retried = retried + 1"
         (clear)="cleared = cleared + 1"
       >
@@ -39,6 +41,7 @@ class Host {
   readonly empty = signal(false);
   readonly filtered = signal(false);
   readonly skeleton = signal<readonly string[]>(['7rem', '14rem']);
+  readonly listFilters = signal<ListFilters | null>(null);
   retried = 0;
   cleared = 0;
 }
@@ -148,5 +151,25 @@ describe('GridBody', () => {
       .find((b) => b.textContent?.includes('Clear filters'))!
       .click();
     expect(f.componentInstance.cleared).toBe(1);
+  });
+
+  it('tells the filters bar while its filtered empty state offers Clear filters (one Clear filters at a time)', () => {
+    const f = create();
+    const flag = signal(false);
+    f.componentInstance.listFilters.set({ emptyClear: flag } as unknown as ListFilters);
+    f.detectChanges();
+    expect(flag()).toBe(false);
+    f.componentInstance.empty.set(true);
+    f.componentInstance.filtered.set(true);
+    f.detectChanges();
+    expect(flag()).toBe(true);
+    f.componentInstance.state.set('loading');
+    f.detectChanges();
+    expect(flag()).toBe(false);
+    f.componentInstance.state.set('ready');
+    f.detectChanges();
+    expect(flag()).toBe(true);
+    f.destroy();
+    expect(flag()).toBe(false);
   });
 });

@@ -52,6 +52,7 @@
       <tbody
         mfGridBody
         noun="task types"
+        [filters]="filters"
         emptyText="No task types yet. Create the first one."
         [state]="state()"
         [empty]="rows().length === 0"

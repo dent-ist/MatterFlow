@@ -347,6 +347,12 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
+    // An empty, filtered grid has its own Clear filters button: the bar then shows none (one Clear filters at a time).
+    effect(() =>
+      this.filters.emptyClear.set(
+        this.state() === 'ready' && this.rows().length === 0 && this.filters.activeCount() > 0,
+      ),
+    );
     restoreRowFocus(
       () => this.rowList(),
       () => this.state() === 'ready',
