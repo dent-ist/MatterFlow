@@ -143,7 +143,10 @@ test.describe('Fixed layout (#200)', () => {
       const m = await measure(page);
       expect(Math.round(m.widths['due'])).toBe(136);
       expect(Math.round(m.widths['ref'])).toBe(112);
-      expect(Math.round(m.widths['matter'])).toBe(160);
+      expect(Math.round(m.widths['matter'])).toBe(144);
+      // #348: Matter Name is 160 px where the box holds it (1920), and dropped by the narrow-box rule at 1366.
+      if (width >= 1920) expect(Math.round(m.widths['matterName'])).toBe(160);
+      else expect(m.widths['matterName']).toBeUndefined();
       expect(Math.round(m.widths['priority'])).toBe(112);
       expect(m.widths['title']).toBeGreaterThan(160);
       await shot(page, `task-queue-default-${width}x${height}`);

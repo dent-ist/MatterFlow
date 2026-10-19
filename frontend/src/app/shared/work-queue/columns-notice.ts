@@ -11,12 +11,12 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     <div class="cn" role="status" data-columns-notice>
       <i class="pi pi-info-circle" aria-hidden="true"></i>
       <p class="cn-text">
-        The client and matter line under task titles is gone. Matter now shows the reference and the
-        name. Client is in Columns.
+        The client and matter line under task titles is gone. Matter Number shows the reference and
+        Matter Name has its own column. Client is in Columns.
       </p>
       @if (offerMatter()) {
         <button type="button" class="mf-btn" data-add-matter (click)="addMatter.emit()">
-          Add Matter column
+          Add Matter Number column
         </button>
       }
       <button type="button" class="mf-btn cn-close" data-dismiss-notice (click)="dismiss.emit()">
@@ -44,7 +44,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   `,
 })
 export class ColumnsNotice {
-  /** True on Task Queue and Pod Work when the current tab has no Matter column. */
+  /** True on Task Queue and Pod Work when the current tab has no Matter Number column. */
   readonly offerMatter = input(false);
   readonly addMatter = output<void>();
   readonly dismiss = output<void>();

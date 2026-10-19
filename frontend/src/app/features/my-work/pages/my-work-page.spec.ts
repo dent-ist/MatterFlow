@@ -207,15 +207,18 @@ describe('MyWorkPage', () => {
     expect(headers).toEqual([
       'Ref',
       'Title',
-      'Matter',
+      'Matter Number',
+      'Matter Name',
       'Workflow progress',
       'Priority',
       'Due',
       'Status',
     ]);
     const row = el.querySelector('tbody tr')!;
-    // #197: the Matter cell shows the reference over the matter name.
+    // #348: the Matter Number cell shows the reference only; the matter name is its own column.
     expect(row.querySelector('td[data-col="matter"]')!.textContent).toContain('00343-00012');
+    expect(row.querySelector('td[data-col="matter"]')!.textContent).not.toContain('Merger');
+    expect(row.querySelector('td[data-col="matterName"]')!.textContent).toContain('Merger');
     expect(row.textContent).toContain('2 of 6 done');
     expect(row.textContent).toContain('Dedup');
     expect(row.textContent).toContain('ASAP');

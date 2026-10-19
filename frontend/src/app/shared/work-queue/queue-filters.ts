@@ -71,6 +71,7 @@ export const SORT_FIELDS: readonly string[] = [
   'closed',
   'title',
   'matter',
+  'matterName',
   'updated',
   'age',
   'assignee',

@@ -48,14 +48,15 @@
      --mf-row-h above is for generic tables and pickers, not the work grid. */
   --mf-grid-row-h: 44px;          /* Comfortable row, exact, in every state (2 px padding, 1 px line, at most 39 px of content) */
   --mf-grid-row-h-compact: 36px;  /* Compact row, exact, one line per cell */
-  --mf-grid-line-h: 18px;         /* the two-line cells (Title, Matter, Due): two lines are 36 px */
+  --mf-grid-line-h: 18px;         /* the two-line cells (Title, Due): two lines are 36 px */
   --mf-grid-head-h: 40px;         /* header row and inline filter row */
   --mf-grid-group-h: 36px;        /* Due-sort divider rows, both densities */
   /* Work grid column widths in CSS px at the default zoom (the grid applies them in rem at the app's 14 px root, so text zoom scales them).
      -w default, -min and -max a user may resize to (columns panel, header menu, drag). The Title is the spring: no width, 160 px minimum,
      never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
   --mf-col-ref-w: 112px; --mf-col-ref-min: 80px; --mf-col-ref-max: 120px;
-  --mf-col-matter-w: 160px; --mf-col-matter-min: 112px; --mf-col-matter-max: 320px;
+  --mf-col-matter-w: 144px; --mf-col-matter-min: 112px; --mf-col-matter-max: 320px;
+  --mf-col-matterName-w: 160px; --mf-col-matterName-min: 112px; --mf-col-matterName-max: 360px;
   --mf-col-client-w: 140px; --mf-col-client-min: 96px; --mf-col-client-max: 280px;
   --mf-col-project-w: 140px; --mf-col-project-min: 96px; --mf-col-project-max: 280px;
   --mf-col-type-w: 140px; --mf-col-type-min: 96px; --mf-col-type-max: 280px;

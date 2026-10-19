@@ -15,7 +15,8 @@ describe('column widths (#200)', () => {
   it('uses the defaults of the issue in rem', () => {
     expect(columnWidthRem(def('due'))).toBe(136 / 14);
     expect(columnWidthRem(def('ref'))).toBe(112 / 14);
-    expect(columnWidthRem(def('matter'))).toBe(160 / 14);
+    expect(columnWidthRem(def('matter'))).toBe(144 / 14);
+    expect(columnWidthRem(def('matterName'))).toBe(160 / 14);
     expect(def('due').minWidth).toBe(120);
   });
 

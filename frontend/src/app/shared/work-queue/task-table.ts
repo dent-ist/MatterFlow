@@ -34,7 +34,7 @@ import { mfDate } from '../../core/time/time';
 import { TaskTypeIcon } from '../icons/task-type-icon';
 import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
-import { MatterCell } from './matter-cell';
+import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
@@ -88,6 +88,7 @@ const LONG_PRESS_MS = 500;
     RouterLink,
     RowLink,
     MatterCell,
+    MatterNameCell,
     ProjectCell,
     DueCell,
     MfDatePipe,
@@ -316,7 +317,11 @@ const LONG_PRESS_MS = 500;
                           [row]="row"
                           [link]="auth.canLink('matter')"
                           [compact]="density() === 'compact'"
+                          [nameLine]="false"
                         />
+                      }
+                      @case ('matterName') {
+                        <mf-matter-name-cell [row]="row" [link]="auth.canLink('matter')" />
                       }
                       @case ('client') {
                         <span class="wt-clip" [attr.title]="row.clientName">{{
@@ -528,6 +533,8 @@ export class TaskTable {
 
   /** Width of the table's box in px (0 until measured); narrow boxes drop the lowest-priority columns instead of scrolling. */
   protected readonly boxWidth = signal(0);
+  /** False until the first measure: the table is laid out but not drawn, so the narrow-box rule never shows a column for one frame (layout shift, #348). */
+  private readonly measured = signal(false);
 
   /** The real root font size in px (text-only zoom grows it); the widths are rem. */
   private readonly rootPx = signal(ROOT_PX);
@@ -733,14 +740,20 @@ export class TaskTable {
     afterNextRender(() => {
       const el = this.wrap()?.nativeElement;
       if (!el) return;
-      const measure = () => {
+      const sizes = (): void => {
         this.boxWidth.set(el.clientWidth);
         const root = parseFloat(getComputedStyle(document.documentElement).fontSize);
         this.rootPx.set(root > 0 ? root : ROOT_PX);
-        this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
         this.wide.set(window.innerWidth >= RESIZE_MIN_VIEWPORT_PX);
+        this.measured.set(true);
       };
-      measure();
+      const measure = (): void => {
+        sizes();
+        this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+      };
+      // The first measure only sets the sizes: the narrow-box rule then drops columns in the next render, and whether the grid still scrolls is
+      // read after that (a column dropped by the rule must not look like an overflow: the filters would flip to the sheet and back, #348).
+      sizes();
       // The keyboard model listens on the scrolling region (rows come and go under it).
       el.addEventListener('keydown', this.onGridKey);
       el.addEventListener('focusin', this.onGridFocus);
@@ -748,14 +761,20 @@ export class TaskTable {
         el.removeEventListener('keydown', this.onGridKey);
         el.removeEventListener('focusin', this.onGridFocus);
       });
-      // Where the grid overflows sideways the filters move into the sheet.
-      this.filters()?.watchOverflow(el);
-      if (typeof ResizeObserver === 'undefined') return;
-      const observer = new ResizeObserver(measure);
-      observer.observe(el);
-      const table = el.querySelector('table');
-      if (table) observer.observe(table);
-      destroyRef.onDestroy(() => observer.disconnect());
+      afterNextRender(
+        () => {
+          this.overflowing.set(el.scrollWidth > el.clientWidth + 1);
+          // Where the grid overflows sideways the filters move into the sheet.
+          this.filters()?.watchOverflow(el);
+          if (typeof ResizeObserver === 'undefined') return;
+          const observer = new ResizeObserver(measure);
+          observer.observe(el);
+          const table = el.querySelector('table');
+          if (table) observer.observe(table);
+          destroyRef.onDestroy(() => observer.disconnect());
+        },
+        { injector: this.injector },
+      );
     });
   }
 
@@ -778,7 +797,8 @@ export class TaskTable {
     const hide = this.hideContext();
     const wide = WORK_COLUMNS.filter(
       (c) =>
-        (c.locked || wanted.has(c.key)) && !(hide && (c.key === 'matter' || c.key === 'client')),
+        (c.locked || wanted.has(c.key)) &&
+        !(hide && (c.key === 'matter' || c.key === 'matterName' || c.key === 'client')),
     );
     const dropped = narrowDrops(wide, this.boxWidth(), this.rootPx(), this.effectiveWidths());
     return wide.filter((c) => !dropped.has(c.key));
@@ -803,6 +823,7 @@ export class TaskTable {
     return {
       ...widthVars(this.shownColumns(), widths),
       '--wt-min': `${tableMinRem(this.shownColumns(), widths)}rem`,
+      visibility: this.measured() ? 'visible' : 'hidden',
     };
   });
   /** The widths in force: the user's, over the default of a grid whose Assignee cell holds "Unassigned" and the "Assign to me" button (Pod Work). */

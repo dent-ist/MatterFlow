@@ -45,7 +45,27 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     fill: true,
     resizable: false,
   },
-  { key: 'matter', label: 'Matter', sortField: 'matter', width: 160, minWidth: 112, maxWidth: 320 },
+  // The reference only (one line); the storage key stays `matter` so stored columns, widths and sorts survive the rename (#348). 144 and not
+  // the 160 of the two-line cell: the reference needs about 120 px and the room goes to Matter Name (measured, see docs/ux/task-queue-review).
+  {
+    key: 'matter',
+    label: 'Matter Number',
+    sortField: 'matter',
+    width: 144,
+    minWidth: 112,
+    maxWidth: 320,
+  },
+  // The matter name in its own column (#348): one line, ellipsis, full text as the tooltip. 160 and not the planned 200 (measured): with 200 the
+  // Task Queue default no longer fits a 1440 px window with a 200 px Title; it is the first column to drop out of a narrow box.
+  {
+    key: 'matterName',
+    label: 'Matter Name',
+    sortField: 'matterName',
+    width: 160,
+    minWidth: 112,
+    maxWidth: 360,
+    autoHide: true,
+  },
   {
     key: 'client',
     label: 'Client',
@@ -147,11 +167,31 @@ export function columnScope(page: WorkPage, tab: string | null): ColumnScope {
 
 // Chosen to fit a 1280 px screen without sideways scrolling (UXR-09). Project is empty for most tasks and Task type repeats what the
 // title says, so both live in the column chooser; so do Age, Pod (Task Queue and My Work) and Workflow progress (Pod Work).
-const QUEUE_DEFAULT = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
+const QUEUE_DEFAULT = [
+  'ref',
+  'title',
+  'matter',
+  'matterName',
+  'priority',
+  'assignee',
+  'due',
+  'status',
+];
+/** What the Task Queue and Pod Work showed before Matter Name (#348): a stored set equal to it was never customised. */
+const QUEUE_BEFORE_NAME = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
 /** What My Work showed before X1 and WP6b: a stored set equal to it was never customised. */
 const MY_WORK_LEGACY = ['ref', 'title', 'matter', 'priority', 'progress', 'due', 'status'];
 /** Active and Due soon and overdue: Matter is back (WP6b #174 had dropped it, so stored sets without it are migrated) (#198), now a two-line cell (reference over name, #197). */
-const MY_WORK_DEFAULT = MY_WORK_LEGACY;
+const MY_WORK_DEFAULT = [
+  'ref',
+  'title',
+  'matter',
+  'matterName',
+  'priority',
+  'progress',
+  'due',
+  'status',
+];
 
 /**
  * The default columns per scope, most specific first (X1). To give a tab its own set (C2, B1, B3, A2, A3), add its key here
@@ -162,9 +202,19 @@ export const DEFAULT_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   myWork: MY_WORK_DEFAULT,
   podWork: QUEUE_DEFAULT,
   // Closed (C2): finished work has no progress and no urgency; the date it closed (C1) and the outcome matter. Priority and Due are in the chooser.
-  'myWork.closed': ['ref', 'title', 'matter', 'closed', 'status'],
+  'myWork.closed': ['ref', 'title', 'matter', 'matterName', 'closed', 'status'],
   // Created by me (B1, B3): where did the work I handed off go: who has it, how urgent, when due, what state, how old.
-  'myWork.createdByMe': ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status', 'age'],
+  'myWork.createdByMe': [
+    'ref',
+    'title',
+    'matter',
+    'matterName',
+    'priority',
+    'assignee',
+    'due',
+    'status',
+    'age',
+  ],
 };
 
 /** The default set of a scope, normalized (table order, Ref and Title included). */
@@ -189,9 +239,9 @@ export function normalizeColumns(keys: readonly string[]): string[] {
 
 /** The sets every screen showed before X1 (one for all tabs): a stored set equal to one of these was never customised. */
 const LEGACY_DEFAULTS: Readonly<Record<WorkPage, readonly string[]>> = {
-  queue: QUEUE_DEFAULT,
+  queue: QUEUE_BEFORE_NAME,
   'my-work': MY_WORK_LEGACY,
-  'pod-work': QUEUE_DEFAULT,
+  'pod-work': QUEUE_BEFORE_NAME,
 };
 
 /** The scope that inherits a set customised before X1 (one shared set): the page's main tab. */
@@ -219,6 +269,10 @@ const migratedKey = (page: WorkPage, userId: number | null) =>
 /** The Matter default migration (#198): per page and user, 'notice' while the one-time notice waits, 'done' once dismissed. */
 const v3Key = (page: WorkPage, userId: number | null) =>
   `mf.work-columns.v3.migrated.${page}.${who(userId)}`;
+
+/** The Matter Name default migration (#348): per page and user, '1' once done. */
+const v4Key = (page: WorkPage, userId: number | null) =>
+  `mf.work-columns.v4.migrated.${page}.${who(userId)}`;
 
 function storage(): Storage | null {
   try {
@@ -273,19 +327,49 @@ function migrateLegacy(page: WorkPage, userId: number | null): void {
  * default had Matter, so a user who removed it did so on purpose and keeps the choice. A user with a stored set gets a one-time notice
  * (`columnsNotice`); one without stores nothing and sees none. Idempotent; corrupt values go through `normalizeColumns`.
  */
+/** The stored column choices of a page's scopes for a user: storage key and scope. */
+function storedColumnKeys(page: WorkPage, userId: number | null): { key: string; scope: string }[] {
+  const out: { key: string; scope: string }[] = [];
+  const store = storage();
+  if (!store) return out;
+  const prefix = 'mf.work-columns.v2.';
+  const suffix = `.${who(userId)}`;
+  for (let i = 0; i < store.length; i++) {
+    const k = store.key(i);
+    if (!k || !k.startsWith(prefix + PAGE_SCOPE[page]) || !k.endsWith(suffix)) continue;
+    const scope = k.slice(prefix.length, k.length - suffix.length);
+    if (scope === PAGE_SCOPE[page] || scope.startsWith(`${PAGE_SCOPE[page]}.`))
+      out.push({ key: k, scope });
+  }
+  return out;
+}
+
+/**
+ * One-time Matter Name migration (#348), per user and page, before the Matter move. A stored set that equals the scope's default from before
+ * Matter Name existed (the default without `matterName`) was never customised: it is dropped, so the new default (with Matter Name next to
+ * Matter Number) applies. A customised set is left alone; Matter Name is then one click away in the Columns panel. Idempotent.
+ */
+function migrateMatterName(page: WorkPage, userId: number | null): void {
+  try {
+    const store = storage();
+    if (!store || store.getItem(v4Key(page, userId))) return;
+    store.setItem(v4Key(page, userId), '1');
+    for (const { key, scope } of storedColumnKeys(page, userId)) {
+      const cols = strings(readJson(key));
+      if (!cols) continue;
+      const before = defaultColumns(scope).filter((c) => c !== 'matterName');
+      if (sameSet(cols, before)) store.removeItem(key);
+    }
+  } catch {
+    // Blocked storage: defaults apply.
+  }
+}
+
 function migrateMatter(page: WorkPage, userId: number | null): void {
   try {
     const store = storage();
     if (!store || store.getItem(v3Key(page, userId))) return;
-    const prefix = 'mf.work-columns.v2.';
-    const suffix = `.${who(userId)}`;
-    const stored: string[] = [];
-    for (let i = 0; i < store.length; i++) {
-      const k = store.key(i);
-      if (!k || !k.startsWith(prefix + PAGE_SCOPE[page]) || !k.endsWith(suffix)) continue;
-      const scope = k.slice(prefix.length, k.length - suffix.length);
-      if (scope === PAGE_SCOPE[page] || scope.startsWith(`${PAGE_SCOPE[page]}.`)) stored.push(k);
-    }
+    const stored = storedColumnKeys(page, userId).map((e) => e.key);
     for (const k of stored) {
       if (page !== 'my-work' || k.includes('.myWork.closed.')) continue;
       const cols = strings(readJson(k));
@@ -321,6 +405,8 @@ export function loadColumns(scope: ColumnScope, userId: number | null): string[]
   const page = PAGE_OF[scope.split('.')[0]];
   if (page) {
     migrateLegacy(page, userId);
+    // Matter Name first: a set that only became equal to the old default because the Matter move added Matter was customised.
+    migrateMatterName(page, userId);
     migrateMatter(page, userId);
   }
   const stored = strings(readJson(columnsKey(scope, userId)));

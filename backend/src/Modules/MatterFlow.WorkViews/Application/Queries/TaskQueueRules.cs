@@ -56,6 +56,9 @@ public sealed class TaskSortRow
     /// <summary>The Matter reference (zero-padded by its generator, so the text order is the numeric order).</summary>
     public string MatterRef { get; init; } = string.Empty;
 
+    /// <summary>The Matter name in the accent- and case-insensitive collation (the plain name in tests).</summary>
+    public string MatterNameKey { get; init; } = string.Empty;
+
     /// <summary>The assignee's display name in the accent- and case-insensitive collation; null for a Task with no individual assignee.</summary>
     public string? AssigneeKey { get; init; }
 
@@ -83,6 +86,7 @@ public static class TaskQueueRules
     public const string SortAge = "age";
     public const string SortAssignee = "assignee";
     public const string SortClient = "client";
+    public const string SortMatterName = "matterName";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
 
@@ -98,7 +102,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -238,6 +242,10 @@ public static class TaskQueueRules
                 return descending ? rows.OrderByDescending(r => r.TitleKey).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.TitleKey).ThenBy(r => r.Id);
             case SortMatter:
                 return descending ? rows.OrderByDescending(r => r.MatterRef).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.MatterRef).ThenBy(r => r.Id);
+            case SortMatterName:
+                return descending
+                    ? rows.OrderByDescending(r => r.MatterNameKey).ThenByDescending(r => r.MatterRef).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.MatterNameKey).ThenBy(r => r.MatterRef).ThenBy(r => r.Id);
             case SortUpdated:
                 // Never-updated Tasks come last in either direction.
                 return descending

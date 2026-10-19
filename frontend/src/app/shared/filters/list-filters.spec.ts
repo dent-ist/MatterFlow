@@ -427,6 +427,28 @@ describe('ListFilters', { timeout: 20_000 }, () => {
       expect(f.sheetMode()).toBe(false);
     });
 
+    it('lifts the hold when the grid drops a column after the first measure (the narrow-box rule, #348): the row comes back', async () => {
+      vi.stubGlobal('ResizeObserver', FakeObserver);
+      const f = await open('/list');
+      let cols = ['ref', 'title', 'matter', 'matterName'];
+      const table = {
+        querySelectorAll: () => cols.map((c) => ({ getAttribute: () => c })),
+      };
+      const area = {
+        scrollWidth: 1200,
+        clientWidth: 1098,
+        querySelector: (sel: string) => (sel === 'table' ? table : null),
+      };
+      f.watchOverflow(area as unknown as HTMLElement);
+      expect(f.sheetMode()).toBe(true);
+
+      // The table dropped Matter Name: it fits at the same width, so the hold must not keep the sheet.
+      cols = ['ref', 'title', 'matter'];
+      area.scrollWidth = 1098;
+      FakeObserver.last!.callback();
+      expect(f.sheetMode()).toBe(false);
+    });
+
     it('ignores the loading skeleton (its fixed bone widths overflow a small window) and measures when the rows are there', async () => {
       vi.stubGlobal('ResizeObserver', FakeObserver);
       const f = await open('/list');

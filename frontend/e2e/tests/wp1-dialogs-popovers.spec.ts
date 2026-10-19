@@ -144,7 +144,7 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       await pageAxe(mine, `columns panel ${size.name}`);
 
       // Esc closes it and the button has focus.
-      await mine.getByRole('checkbox', { name: /^Matter/ }).focus();
+      await mine.getByRole('checkbox', { name: /^Matter Number/ }).focus();
       await mine.keyboard.press('Escape');
       await expect(columnsPanel(mine)).toHaveCount(0);
       await expect(columnsButton(mine)).toBeFocused();
@@ -203,7 +203,7 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
     await expect(myWork.row(`Esc ${token}`)).toHaveCount(1);
 
     await columnsButton(mine).click();
-    await mine.getByRole('checkbox', { name: /^Matter/ }).focus();
+    await mine.getByRole('checkbox', { name: /^Matter Number/ }).focus();
     await mine.keyboard.press('Escape');
     await expect(columnsPanel(mine)).toHaveCount(0);
     await expect(myWork.titleFilter).toHaveValue(`Esc ${token}`);

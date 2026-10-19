@@ -461,6 +461,17 @@ public class TaskQueueRulesTests
     }
 
     [Fact]
+    public void Matter_name_sort_ties_by_matter_reference_then_id_in_both_directions()
+    {
+        static TaskSortRow N(long id, string name, string matter) => new() { Id = id, MatterNameKey = name, MatterRef = matter };
+        var rows = new[] { N(1, "b", "00002-0001"), N(2, "a", "00009-0001"), N(3, "b", "00001-0001"), N(4, "b", "00001-0001") }.AsQueryable();
+        Ids(rows, TaskQueueRules.SortMatterName).ShouldBe([2, 3, 4, 1]);
+        Ids(rows, TaskQueueRules.SortMatterName, descending: true).ShouldBe([1, 4, 3, 2]);
+        TaskQueueRules.DefaultsToDescending(TaskQueueRules.SortMatterName).ShouldBeFalse();
+        TaskQueueRules.SortFields.ShouldContain(TaskQueueRules.SortMatterName);
+    }
+
+    [Fact]
     public void Updated_sort_puts_never_updated_last_and_age_is_created_reversed()
     {
         TaskSortRow R(long id, int? updatedDays, int createdDays) => new()

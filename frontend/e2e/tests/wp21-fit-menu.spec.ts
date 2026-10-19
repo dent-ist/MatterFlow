@@ -104,14 +104,15 @@ async function openQueue(page: Page, tag: string, rows: number): Promise<void> {
 }
 
 test.describe('Fit to content (#205)', () => {
-  test('a double-click on a handle fits Matter, Assignee, Due and Status to the rows on the page: no clipping, stored, survives a reload; the Title has no handle', async ({
+  test('a double-click on a handle fits Matter Number, Matter Name, Assignee, Due and Status to the rows on the page: no clipping, stored, survives a reload; the Title has no handle', async ({
     seed,
     asUser,
   }) => {
     const tag = uid();
     await seedLong(seed, tag);
     const page = await asUser('ke\\kekim');
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1920 px: at 1366 the narrow-box rule drops Matter Name (#348).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await openQueue(page, tag, 4);
     await expect(handle(page, 'matter')).toHaveAttribute(
       'title',
@@ -120,7 +121,7 @@ test.describe('Fit to content (#205)', () => {
     expect(await handle(page, 'title').count()).toBe(0);
 
     const fitted: Record<string, number> = {};
-    for (const key of ['matter', 'assignee', 'due', 'status']) {
+    for (const key of ['matter', 'matterName', 'assignee', 'due', 'status']) {
       const before = await width(page, key);
       await handle(page, key).dblclick();
       await expect(note(page)).toContainText(new RegExp(`column \\d+ pixels`));
@@ -130,6 +131,7 @@ test.describe('Fit to content (#205)', () => {
       expect(await clippedCells(page, key), `${key} is not cut at ${w}px`).toEqual([]);
       const limits: Record<string, [number, number]> = {
         matter: [112, 320],
+        matterName: [112, 360],
         assignee: [112, 240],
         due: [120, 200],
         status: [112, 200],
@@ -139,11 +141,14 @@ test.describe('Fit to content (#205)', () => {
       console.log(`WP21 fit ${key}: ${Math.round(before)} -> ${w}`);
     }
     // The long matter name needs more than the default 160 px; every fitted column is the widest content plus padding, so the next
-    // fit changes nothing (idempotent).
-    expect(fitted['matter']).toBeGreaterThan(160);
-    await handle(page, 'matter').dblclick();
-    await page.waitForTimeout(150);
-    expect(Math.abs((await width(page, 'matter')) - fitted['matter'])).toBeLessThanOrEqual(1);
+    // fit changes nothing (idempotent). The Matter Number holds the reference only: its fit is the reference plus padding.
+    expect(fitted['matterName']).toBeGreaterThan(160);
+    expect(fitted['matter']).toBeLessThan(160);
+    for (const key of ['matter', 'matterName']) {
+      await handle(page, key).dblclick();
+      await page.waitForTimeout(150);
+      expect(Math.abs((await width(page, key)) - fitted[key])).toBeLessThanOrEqual(1);
+    }
 
     const entries = Object.values(await stored(page));
     expect(entries).toHaveLength(1);
@@ -275,9 +280,10 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'fit').focus();
     await page.keyboard.press('Enter');
-    await expect(note(page)).toContainText('Matter column');
+    await expect(note(page)).toContainText('Matter Number column');
     expect(await clippedCells(page, 'matter')).toEqual([]);
-    expect(Math.round(await width(page, 'matter'))).toBeGreaterThan(160);
+    expect(Math.round(await width(page, 'matter'))).toBeGreaterThanOrEqual(112);
+    expect(Math.round(await width(page, 'matter'))).toBeLessThan(160);
     await expect(sortButton(page, 'matter')).toBeFocused();
 
     // Esc closes and returns focus to the header; Tab closes too.
@@ -398,10 +404,10 @@ test.describe('Column header menu (#207)', () => {
     await page.keyboard.press('Shift+F10');
     await item(page, 'hide').click();
     await expect(th(page, 'matter')).toHaveCount(0);
-    await expect(note(page)).toHaveText('Matter column hidden');
+    await expect(note(page)).toHaveText('Matter Number column hidden');
     await expect(sortButton(page, 'priority')).toBeFocused();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await expect(page.getByRole('checkbox', { name: 'Matter' })).not.toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'Matter Number' })).not.toBeChecked();
     await page.keyboard.press('Escape');
 
     // The sort click, the column filter inputs and the drag handle are untouched.

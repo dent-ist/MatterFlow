@@ -14,6 +14,7 @@ export const PHONE_SORTS: readonly string[] = [
   'status',
   'title',
   'matter',
+  'matterName',
   'client',
   'assignee',
   'closed',

@@ -7,9 +7,9 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 
 /**
- * Matter cell and default columns (TQ-WP8, #197, #198): the Matter cell is reference over name (name muted, one line, ellipsis, the name
- * is shown without Matter.View), the Client column is one line, and a Task Queue user who removed Matter keeps that choice with a one-time
- * notice that offers "Add Matter column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
+ * Matter cell and default columns (TQ-WP8, #197, #198, #348): the Matter Number cell is the reference only (one line), the Matter Name
+ * column shows the name (one line, ellipsis, tooltip, shown without Matter.View), the Client column is one line, and a Task Queue user who
+ * removed Matter keeps that choice with a one-time notice that offers "Add Matter Number column". Own users and tagged data only. Screenshots go to E2E_SCREENSHOTS when it is set
  * (docs/ux/task-queue-review/fixes/wp-matter).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -49,8 +49,8 @@ async function world(seed: Seeder, label: string) {
   return { tag, client, matterLong, matterShort, longName, me, long, short };
 }
 
-test.describe('Matter cell (#197)', () => {
-  test('reference over name, tooltip, ellipsis without a taller row, axe at four sizes', async ({
+test.describe('Matter Number and Matter Name cells (#197, #348)', () => {
+  test('number only, name in its own column, tooltip, ellipsis without a taller row, axe at four sizes', async ({
     seed,
     asUser,
   }) => {
@@ -72,13 +72,25 @@ test.describe('Matter cell (#197)', () => {
         // No Matter.View: the reference is plain text, the name is shown.
         await expect(cell.locator('a')).toHaveCount(0);
         await expect(cell.locator('.mf-ref')).toHaveText(String(w.matterLong.matterRef));
-        await expect(cell.locator('[data-matter-name]')).toContainText('Matter name');
+        // #348: the Matter Number cell holds the reference and nothing else; the name has its own column.
+        await expect(cell.locator('[data-matter-name]')).toHaveCount(0);
+        await expect(cell).not.toContainText('Matter name');
         await expect(cell.locator('[title]').first()).toHaveAttribute(
           'title',
           `${w.client.name} · ${w.longName}`,
         );
-        const name = cell.locator('[data-matter-name]');
-        expect(await name.evaluate((n) => n.scrollWidth > n.clientWidth), 'ellipsis').toBe(true);
+        // Matter Name needs a 1140 px box (1440 px window): below that the narrow-box rule drops it (#348).
+        const nameCell = longRow.locator('td[data-col="matterName"]');
+        if (width >= 1440) {
+          await expect(nameCell).toContainText('Matter name');
+          await expect(nameCell.locator('a')).toHaveCount(0);
+          await expect(nameCell.locator('.mn')).toHaveAttribute('title', w.longName);
+          const name = nameCell.locator('.mn');
+          expect(await name.evaluate((n) => n.scrollWidth > n.clientWidth), 'ellipsis').toBe(true);
+          expect(await nameCell.evaluate((n) => n.getBoundingClientRect().width)).toBeLessThan(260);
+        } else {
+          await expect(nameCell).toHaveCount(0);
+        }
         const hl = (await longRow.boundingBox())!.height;
         const hs = (await shortRow.boundingBox())!.height;
         expect(Math.abs(hl - hs), `row height at ${width}`).toBeLessThanOrEqual(1);
@@ -89,7 +101,7 @@ test.describe('Matter cell (#197)', () => {
     }
   });
 
-  test('a user with Matter.View gets a link; Client is a one-line column; Compact shows the reference only', async ({
+  test('a user with Matter.View gets links on number and name; Client is a one-line column; Compact keeps both one line', async ({
     seed,
     asUser,
   }) => {
@@ -103,10 +115,10 @@ test.describe('Matter cell (#197)', () => {
       },
       [
         `mf.work-columns.v2.taskQueue.${viewer.userId}`,
-        JSON.stringify(['ref', 'title', 'matter', 'client', 'status']),
+        JSON.stringify(['ref', 'title', 'matter', 'matterName', 'client', 'status']),
       ],
     );
-    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${w.tag}`);
     const longRow = page.locator(`[data-task="${w.long.taskNumber}"]`);
@@ -115,24 +127,30 @@ test.describe('Matter cell (#197)', () => {
       'href',
       `/matters/${w.matterLong.matterId}`,
     );
+    await expect(longRow.locator('td[data-col="matterName"] a')).toHaveAttribute(
+      'href',
+      `/matters/${w.matterLong.matterId}`,
+    );
     const clientCell = longRow.locator('td[data-col="client"]');
     await expect(clientCell).toContainText(String(w.client.name).slice(0, 20));
     expect(
       Math.abs((await longRow.boundingBox())!.height - (await shortRow.boundingBox())!.height),
     ).toBeLessThanOrEqual(1);
-    await shot(page, 'task-queue-matter-client-1366x768');
+    await shot(page, 'task-queue-matter-client-1920x1080');
     await axeClean(page, 'Task Queue with Matter link and Client');
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await page.getByRole('radio', { name: 'Compact' }).check();
     await page.keyboard.press('Escape');
     await expect(longRow.locator('[data-matter-name]')).toHaveCount(0);
     await expect(longRow.locator('td[data-col="matter"] .mf-ref')).toBeVisible();
-    await shot(page, 'task-queue-matter-compact-1366x768');
+    await expect(longRow.locator('td[data-col="matterName"] .mn')).toBeVisible();
+    expect((await longRow.boundingBox())!.height).toBeLessThanOrEqual(36.5);
+    await shot(page, 'task-queue-matter-compact-1920x1080');
   });
 });
 
 test.describe('Matter column default and notice (#198)', () => {
-  test('a Task Queue user who removed Matter keeps the choice; the notice offers Add Matter column once', async ({
+  test('a Task Queue user who removed Matter keeps the choice; the notice offers Add Matter Number column once', async ({
     seed,
     asUser,
   }) => {
@@ -181,7 +199,7 @@ test.describe('Matter column default and notice (#198)', () => {
     await expect(page.locator('th[data-col="client"]')).toHaveCount(0);
     await expect(page.locator('[data-columns-notice]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
-    await page.getByLabel('Matter', { exact: true }).uncheck();
+    await page.getByLabel('Matter Number', { exact: true }).uncheck();
     await expect(page.locator('th[data-col="matter"]')).toHaveCount(0);
     await page.getByRole('button', { name: /Reset columns/ }).click();
     await expect(page.locator('th[data-col="matter"]')).toBeVisible();

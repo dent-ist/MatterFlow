@@ -56,16 +56,35 @@ describe('work table preferences', () => {
   it('gives each scope its default and falls back to the page default for a tab without one', () => {
     expect(defaultColumns('taskQueue')).toEqual(normalizeColumns(DEFAULT_COLUMNS['taskQueue']!));
     // #198: Matter is in every default set again (two-line cell, #197).
-    const active = ['ref', 'title', 'matter', 'progress', 'priority', 'due', 'status'];
+    const active = [
+      'ref',
+      'title',
+      'matter',
+      'matterName',
+      'progress',
+      'priority',
+      'due',
+      'status',
+    ];
     expect(defaultColumns('myWork.active')).toEqual(normalizeColumns(active));
     expect(defaultColumns('myWork.dueSoon')).toEqual(normalizeColumns(active));
     // C2: finished work has no progress, priority or due date by default.
     expect(defaultColumns('myWork.closed')).toEqual(
-      normalizeColumns(['ref', 'title', 'matter', 'closed', 'status']),
+      normalizeColumns(['ref', 'title', 'matter', 'matterName', 'closed', 'status']),
     );
     // B1, B3: where did the work I handed off go.
     expect(defaultColumns('myWork.createdByMe')).toEqual(
-      normalizeColumns(['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status', 'age']),
+      normalizeColumns([
+        'ref',
+        'title',
+        'matter',
+        'matterName',
+        'priority',
+        'assignee',
+        'due',
+        'status',
+        'age',
+      ]),
     );
     for (const sc of [
       'taskQueue',
@@ -76,6 +95,7 @@ describe('work table preferences', () => {
       'myWork.createdByMe',
     ]) {
       expect(defaultColumns(sc)).toContain('matter');
+      expect(defaultColumns(sc)).toContain('matterName');
       expect(defaultColumns(sc)).not.toContain('client');
     }
     expect(defaultColumns('podWork.all')).toEqual(defaultColumns('podWork'));
@@ -144,6 +164,49 @@ describe('work table preferences', () => {
       legacy('my-work', ['ref', 'title', 'matter', 'due']);
       expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'due']);
       resetColumns('myWork.active', 1);
+      expect(loadColumns('myWork.active', 1)).toEqual(defaultColumns('myWork.active'));
+    });
+  });
+
+  describe('Matter Name migration (#348)', () => {
+    const OLD_QUEUE = ['ref', 'title', 'matter', 'priority', 'assignee', 'due', 'status'];
+    const stored = (scope: string, id: number) =>
+      JSON.parse(localStorage.getItem(`mf.work-columns.v2.${scope}.${id}`) ?? 'null');
+
+    it('puts Matter Name into the default of every page and tab, next to Matter Number', () => {
+      for (const sc of ['taskQueue', 'podWork', 'myWork', 'myWork.closed', 'myWork.createdByMe']) {
+        const cols = defaultColumns(sc);
+        expect(cols.indexOf('matterName'), sc).toBe(cols.indexOf('matter') + 1);
+      }
+    });
+
+    it('drops a stored set equal to the old default, so the new default (with Matter Name) applies', () => {
+      saveColumns('taskQueue', 1, OLD_QUEUE);
+      saveColumns('podWork.all', 1, OLD_QUEUE);
+      saveColumns('myWork.active', 1, OLD_MY_WORK);
+      saveColumns('myWork.closed', 1, ['ref', 'title', 'matter', 'closed', 'status']);
+      expect(loadColumns('taskQueue', 1)).toEqual(defaultColumns('taskQueue'));
+      expect(loadColumns('taskQueue', 1)).toContain('matterName');
+      expect(loadColumns('podWork.all', 1)).toContain('matterName');
+      expect(loadColumns('myWork.active', 1)).toContain('matterName');
+      expect(loadColumns('myWork.closed', 1)).toContain('matterName');
+      expect(stored('taskQueue', 1)).toBeNull();
+    });
+
+    it('leaves a customised set alone, once: the column is added by the user afterwards', () => {
+      saveColumns('taskQueue', 1, [...OLD_QUEUE, 'client']);
+      saveColumns('myWork.active', 1, ['ref', 'title', 'matter', 'due']);
+      expect(loadColumns('taskQueue', 1)).toEqual(normalizeColumns([...OLD_QUEUE, 'client']));
+      expect(loadColumns('myWork.active', 1)).toEqual(['ref', 'title', 'matter', 'due']);
+      // Idempotent: a later choice that happens to equal the old default is a choice and stays.
+      saveColumns('taskQueue', 1, OLD_QUEUE);
+      expect(loadColumns('taskQueue', 1)).toEqual(normalizeColumns(OLD_QUEUE));
+    });
+
+    it('leaves another user and a page without a stored set alone', () => {
+      saveColumns('taskQueue', 1, OLD_QUEUE);
+      loadColumns('taskQueue', 1);
+      expect(loadColumns('taskQueue', 2)).toEqual(defaultColumns('taskQueue'));
       expect(loadColumns('myWork.active', 1)).toEqual(defaultColumns('myWork.active'));
     });
   });

@@ -155,7 +155,10 @@ public sealed class TaskQueueSortApiTests(SqlServerFixture sql) : IAsyncLifetime
         var mC = await _h.CreateMatterAsync("200", "23");
         await _h.ExecuteAsync("UPDATE dbo.Client SET Name = N'étoile' WHERE Name = N'Acme Corp 343';"
             + "UPDATE dbo.Client SET Name = N'Zulu' WHERE Name = N'Acme Corp 100';"
-            + "UPDATE dbo.Client SET Name = N'apple Ltd' WHERE Name = N'Acme Corp 200';");
+            + "UPDATE dbo.Client SET Name = N'apple Ltd' WHERE Name = N'Acme Corp 200';"
+            + $"UPDATE dbo.Matter SET Name = N'Éclair case' WHERE MatterId = {mA};"
+            + $"UPDATE dbo.Matter SET Name = N'zebra case' WHERE MatterId = {mB};"
+            + $"UPDATE dbo.Matter SET Name = N'apple case' WHERE MatterId = {mC};");
         var zoe = await _h.UserIdAsync("sort-zoe");
         var emile = await _h.UserIdAsync("sort-emile");
         var adam = await _h.UserIdAsync("sort-adam");
@@ -182,6 +185,7 @@ public sealed class TaskQueueSortApiTests(SqlServerFixture sql) : IAsyncLifetime
             // The two non-queue lists only show the viewer's own and pod Tasks, so they are checked for acceptance and a stable order.
             await OkAsync(await _h.Admin.GetAsync($"/api/v1/{path}?sort=assignee&dir=asc"));
             await OkAsync(await _h.Admin.GetAsync($"/api/v1/{path}?sort=client&dir=desc"));
+            await OkAsync(await _h.Admin.GetAsync($"/api/v1/{path}?sort=matterName&dir=asc"));
         }
 
         // Assignee: adam, émile (t3, t6 by id), Zoe, then the unassigned (t2, t5; ties by id in the direction) in both.
@@ -191,7 +195,11 @@ public sealed class TaskQueueSortApiTests(SqlServerFixture sql) : IAsyncLifetime
         Mine(await ListAsync("task-queue", "sort=client&dir=asc")).ShouldBe([t[2], t[5], t[1], t[3], t[0], t[4]]);
         Mine(await ListAsync("task-queue", "sort=client&dir=desc")).ShouldBe([t[4], t[0], t[3], t[1], t[5], t[2]]);
 
-        foreach (var sort in new[] { "assignee", "client" })
+        // Matter name: apple case (t3, t6), Éclair case (t2, t4), zebra case (t1, t5); accents and case ignored, ties by matter reference then id.
+        Mine(await ListAsync("task-queue", "sort=matterName&dir=asc")).ShouldBe([t[2], t[5], t[1], t[3], t[0], t[4]]);
+        Mine(await ListAsync("task-queue", "sort=matterName&dir=desc")).ShouldBe([t[4], t[0], t[3], t[1], t[5], t[2]]);
+
+        foreach (var sort in new[] { "assignee", "client", "matterName" })
         {
             var all = Mine(await ListAsync("task-queue", $"sort={sort}&dir=asc"));
             var seen = new List<long>();

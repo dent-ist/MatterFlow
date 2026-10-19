@@ -92,7 +92,7 @@ export function queueFilterDefs(
       ...(options.defaultStatus ? { default: options.defaultStatus, defaultOnlyBare: true } : {}),
       ...off('status'),
     },
-    { key: 'matterText', label: 'Matter', column: 'matter', type: 'text' },
+    { key: 'matterText', label: 'Matter Number', column: 'matter', type: 'text' },
     { key: 'clientText', label: 'Client', column: 'client', type: 'text' },
     { key: 'projectText', label: 'Project', column: 'project', type: 'text' },
     {

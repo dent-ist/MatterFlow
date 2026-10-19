@@ -372,16 +372,24 @@ export class ListFilters {
     if (!area || typeof ResizeObserver !== 'function') return;
     const table = area.querySelector('table');
     // The filter row itself can cause the overflow (its controls have a minimum width) and it is not rendered in sheet mode: without a
-    // hold the grid would then fit, the row would come back, overflow again, and so on. An overflow holds until the area changes width.
+    // hold the grid would then fit, the row would come back, overflow again, and so on. An overflow holds until the area changes width, or
+    // until the grid's columns change: a column the narrow-box rule drops after the first measure (#348) is the cause that went away, not the row.
     let heldAt: number | null = null;
+    let heldCols = '';
+    const columns = (): string =>
+      Array.from(
+        table?.querySelectorAll?.('col') ?? [],
+        (c) => c.getAttribute('data-col') ?? '',
+      ).join(',');
     const check = () => {
       // The skeleton rows (fixed bone widths) are wider than a small window while a list loads: that is no reason to move the controls.
       if (area.querySelector('tbody[aria-busy="true"]')) return;
       const width = area.clientWidth;
       if (area.scrollWidth > width + 1) {
         heldAt = width;
+        heldCols = columns();
         this.overflowing.set(true);
-      } else if (!(heldAt === width && this.overflowing())) {
+      } else if (!(heldAt === width && heldCols === columns() && this.overflowing())) {
         heldAt = null;
         this.overflowing.set(false);
       }

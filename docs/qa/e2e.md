@@ -147,7 +147,8 @@ The counts are tests at the time of writing (`--list`); the names in a row are t
 | Spec | What it covers |
 |---|---|
 | `wp2-title-cell` (3) | The Title cell is the icon and the title only; a long title and an unbroken token keep the row height and column width (#196) |
-| `wp8-matter-cell` (4) | Matter cell (reference over name, tooltip, link with `Matter.View`), Client one line, Matter in the defaults and the one-time notice (#197, #198) |
+| `wp8-matter-cell` (4) | Matter Number cell (reference only, tooltip, link with `Matter.View`) and Matter Name cell (one line, ellipsis, tooltip, link), Client one line, Matter in the defaults and the one-time notice (#197, #198, #348) |
+| `matter-columns` (9) | Matter Number and Matter Name (#348): defaults on the Task Queue, four My Work tabs and Pod Work, axe and no page scroll at 375/768/1366/1920, no `Matter.View`, the narrow-box rule (Matter Name drops first), server sort by Matter Name asc/desc over two pages and the unchanged Matter Number sort, migration (old default gets Matter Name, a customised set does not), Columns panel hide/show/Reset, widths panel, Fit, header menu by keyboard, drag handle, Matter Number filter, Compact and print |
 | `wp9-fixed-layout` (4) | Fixed layout: widths identical across twelve views and sorts, 44 px rows, skeleton lines up with the header, Pod Work Assignee column (#200) |
 | `wp13-narrow-rule` (9) | The narrow-box rule and sticky Ref at 640 to 1023 px, the 1098 px box, drop order, the chevron inside the Priority and Status cells, stored widths applied per page and tab, corrupt or blocked storage (#201 to #203) |
 | `wp14-due-cell` (2) | The eight Due states: two lines, one spoken sentence, tooltip with the zone, contrast, 136 px, Compact inline (#209) |

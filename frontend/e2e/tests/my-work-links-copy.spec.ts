@@ -76,7 +76,8 @@ test.describe('My Work links, filters and copy', () => {
 
       await new TaskQueuePage(page).open(`?q=${encodeURIComponent(task.title)}`);
       await expect(page.locator(`[data-task]`).filter({ hasText: task.title })).toHaveCount(1);
-      await expect(page.locator('tbody a[href*="/matters/"]')).toHaveCount(allowed ? 1 : 0);
+      // #348: the Task Queue default has Matter Number and Matter Name, both links to the matter with Matter.View.
+      await expect(page.locator('tbody a[href*="/matters/"]')).toHaveCount(allowed ? 2 : 0);
 
       await page.goto(`/tasks/${task.taskId}`);
       await expect(page.locator('[data-matter]')).toBeVisible();

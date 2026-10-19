@@ -47,7 +47,7 @@ async function showColumns(page: Page, screen: string, userId: number, columns: 
 
 test.describe('Column filters on the work lists', () => {
   test.describe('Task Queue', () => {
-    test('the filter row is open by default, the old panel and search box are gone, and Title or Ref, Matter and Project filter on the server', async ({
+    test('the filter row is open by default, the old panel and search box are gone, and Title or Ref, Matter Number and Project filter on the server', async ({
       page,
       seed,
     }) => {
@@ -74,12 +74,12 @@ test.describe('Column filters on the work lists', () => {
       await expect(page).toHaveURL(new RegExp(`q=${token}`));
       await queue.expectListed(withProject.title, plain.title, other.title);
 
-      // Matter: the reference or the name, a text box under the Matter column.
-      await text(page, 'Matter').fill(world.matter.matterRef);
+      // Matter: the reference or the name, a text box under the Matter Number column.
+      await text(page, 'Matter Number').fill(world.matter.matterRef);
       await expect(page).toHaveURL(/matterText=/);
       await queue.expectListed(withProject.title, plain.title);
       await queue.expectNotListed(other.title);
-      await text(page, 'Matter').fill('');
+      await text(page, 'Matter Number').fill('');
       await expect(page).not.toHaveURL(/matterText=/);
       await queue.expectListed(other.title);
 
@@ -158,7 +158,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
 
       // A filter on top of the view is an extra filter: the view stays pressed and the count is the extra ones (#221).
-      await text(page, 'Matter').fill('zzz');
+      await text(page, 'Matter Number').fill('zzz');
       await expect(page).toHaveURL(/matterText=zzz/);
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
       await expect(toggle(page)).toHaveText(/\(1\)/);
@@ -492,7 +492,7 @@ test.describe('Column filters on the work lists', () => {
 
       await toggle(page).click();
       await expect(sheet(page)).toBeVisible();
-      for (const name of ['Title or Ref', 'Matter', 'Client', 'Project', 'Requestor']) {
+      for (const name of ['Title or Ref', 'Matter Number', 'Client', 'Project', 'Requestor']) {
         await expect(sheet(page).getByRole('textbox', { name: `Filter by ${name}` })).toBeVisible();
       }
       await sheet(page).getByRole('textbox', { name: 'Filter by Title or Ref' }).fill(token);

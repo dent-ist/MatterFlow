@@ -543,6 +543,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                            ModifiedAtUtc = t.ModifiedAtUtc,
                            TitleKey = EF.Functions.Collate(t.Title, TitleCollation),
                            MatterRef = m.MatterRef,
+                           MatterNameKey = EF.Functions.Collate(m.Name, TitleCollation),
                            AssigneeKey = au == null ? null : EF.Functions.Collate(au.DisplayName, TitleCollation),
                            ClientKey = EF.Functions.Collate(c.Name, TitleCollation),
                        };

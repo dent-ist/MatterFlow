@@ -159,7 +159,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     const tag = uid();
     await seedTasks(seed, tag);
     const page = await asUser('ke\\kekim');
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1920 px: at 1366 the narrow-box rule drops Matter Name (#348).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await openQueue(page, tag, 3);
     await openPanel(page);
 
@@ -169,31 +170,33 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await expect(resetAll).toHaveAttribute('aria-disabled', 'true');
 
     // The matter name is longer than its default 160 px: Fit takes it to what the rows need.
-    await row(page, 'matter').getByRole('button', { name: 'Fit Matter to content' }).click();
-    await expect(live(page)).toHaveText(/^Matter column \d+ pixels$/);
-    const fitted = Number(await field(page, 'matter').inputValue());
+    await row(page, 'matterName')
+      .getByRole('button', { name: 'Fit Matter Name to content' })
+      .click();
+    await expect(live(page)).toHaveText(/^Matter Name column \d+ pixels$/);
+    const fitted = Number(await field(page, 'matterName').inputValue());
     expect(fitted).toBeGreaterThan(160);
-    expect(await gridWidth(page, 'matter')).toBe(fitted);
+    expect(await gridWidth(page, 'matterName')).toBe(fitted);
 
     await row(page, 'due').getByRole('button', { name: 'Widen Due' }).click();
     await expect(resetDue).not.toHaveAttribute('aria-disabled', 'true');
     await resetDue.click();
     await expect(field(page, 'due')).toHaveValue('136');
     await expect(live(page)).toHaveText('Due column 136 pixels');
-    expect(Object.values(await stored(page))[0]).toEqual({ matter: fitted });
+    expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
     // Hiding and showing a column keeps its width; Reset columns does not touch widths.
     await page.getByRole('checkbox', { name: 'Status' }).uncheck();
     await expect(row(page, 'status')).toHaveCount(0);
     await page.getByRole('button', { name: 'Reset columns' }).click();
     await expect(row(page, 'status')).toHaveCount(1);
-    expect(Object.values(await stored(page))[0]).toEqual({ matter: fitted });
+    expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
     await expect(resetAll).not.toHaveAttribute('aria-disabled', 'true');
     await resetAll.click();
     await expect(live(page)).toHaveText('All column widths reset to the default.');
-    await expect(field(page, 'matter')).toHaveValue('160');
-    expect(await gridWidth(page, 'matter')).toBe(160);
+    await expect(field(page, 'matterName')).toHaveValue('160');
+    expect(await gridWidth(page, 'matterName')).toBe(160);
     expect(await stored(page)).toEqual({});
     await expect(resetAll).toHaveAttribute('aria-disabled', 'true');
     await expect(resetAll).toBeFocused();
@@ -236,7 +239,7 @@ test.describe('Columns panel groups (#230)', () => {
     const legends = page.locator('[data-columns-group] legend');
     await expect(legends).toHaveText(['Task', 'Where', 'Who', 'When', 'State']);
     const boxes = page.locator('[data-columns-group] input[type=checkbox]');
-    await expect(boxes).toHaveCount(19);
+    await expect(boxes).toHaveCount(20);
     await expect(page.locator('[data-columns-group] input[type=checkbox]:disabled')).toHaveCount(2);
     await expect(page.locator('[data-columns-group="Task"]')).toContainText('(always shown)');
     // The whole list is reachable: the scroll area scrolls and the footer stays in view.

@@ -766,7 +766,9 @@ describe('TaskQueuePage', () => {
     const cells = Array.from(el.querySelectorAll('tr[data-filter-row] td'));
     expect(cells[0].getAttribute('colspan')).toBe('2');
     expect(filterInput(el, 'q').getAttribute('aria-label')).toBe('Filter by Title or Ref');
-    expect(filterInput(el, 'matterText').getAttribute('aria-label')).toBe('Filter by Matter');
+    expect(filterInput(el, 'matterText').getAttribute('aria-label')).toBe(
+      'Filter by Matter Number',
+    );
     for (const key of ['priority', 'assignee', 'due', 'status']) {
       expect(el.querySelector(`tr[data-filter-row] [data-filter="${key}"]`), key).not.toBeNull();
     }

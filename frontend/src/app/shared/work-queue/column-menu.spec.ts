@@ -236,7 +236,7 @@ describe('TaskTable column menu (#207) and fit (#205)', () => {
     item('hide').click();
     await settle();
     expect(actions[2]).toEqual({ kind: 'hide', key: 'matter' });
-    expect(said.at(-1)).toBe('Matter column hidden');
+    expect(said.at(-1)).toBe('Matter Number column hidden');
   });
 
   it('arrow keys move through the items with wrap, Home and End', async () => {

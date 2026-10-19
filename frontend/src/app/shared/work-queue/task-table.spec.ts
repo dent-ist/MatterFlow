@@ -41,7 +41,7 @@ describe('TaskTable', () => {
   const cell = (key: string) => el().querySelector(`tbody td[data-col="${key}"]`) as HTMLElement;
 
   it('shows the ref, a title link to the task and a compact matter link without a copy button', async () => {
-    await create([aRow()], ['ref', 'title', 'matter'], {}, ['Matter.View']);
+    await create([aRow()], ['ref', 'title', 'matter', 'matterName'], {}, ['Matter.View']);
 
     expect(cell('ref').textContent?.trim()).toBe('TSK-1042');
     const title = cell('title').querySelector('a')!;
@@ -50,13 +50,16 @@ describe('TaskTable', () => {
     const matter = cell('matter').querySelector('a')!;
     expect(matter.textContent?.trim()).toBe('00343-00012');
     expect(matter.getAttribute('href')).toBe('/matters/7');
-    // #197: the tooltip is on the cell (client and matter name); the name is line 2.
+    // #197: the tooltip is on the cell (client and matter name). #348: the Matter Number cell is the reference only, the name has its own column.
     expect(cell('matter').querySelector('[title]')!.getAttribute('title')).toBe(
       'Acme Corp · Merger Review',
     );
-    expect(cell('matter').querySelector('[data-matter-name]')!.textContent).toContain(
-      'Merger Review',
-    );
+    expect(cell('matter').querySelector('[data-matter-name]')).toBeNull();
+    expect(cell('matter').textContent).not.toContain('Merger Review');
+    const name = cell('matterName').querySelector('a')!;
+    expect(name.textContent?.trim()).toBe('Merger Review');
+    expect(name.getAttribute('href')).toBe('/matters/7');
+    expect(name.getAttribute('title')).toBe('Merger Review');
     expect(cell('matter').querySelector('button')).toBeNull();
     expect(cell('matter').querySelector('[aria-label="Sensitive matter"]')).toBeNull();
   });
@@ -67,20 +70,32 @@ describe('TaskTable', () => {
     expect(cell('matter').querySelector('span.mf-ref')!.textContent?.trim()).toBe('00343-00012');
   });
 
-  it('shows the matter name even without Matter.View, appends (inactive), and only the reference in Compact (#197)', async () => {
-    await create([aRow({ matterIsActive: false })], ['ref', 'title', 'matter'], {}, ['Task.View']);
-    expect(cell('matter').querySelector('a')).toBeNull();
-    expect(cell('matter').querySelector('[data-matter-name]')!.textContent).toContain(
+  it('shows the matter name in its own column even without Matter.View, appends (inactive), one line in Compact (#197, #348)', async () => {
+    await create([aRow({ matterIsActive: false })], ['ref', 'title', 'matter', 'matterName'], {}, [
+      'Task.View',
+    ]);
+    expect(cell('matterName').querySelector('a')).toBeNull();
+    expect(cell('matterName').textContent?.trim()).toBe('Merger Review (inactive)');
+    expect(cell('matterName').querySelector('.mn')!.getAttribute('title')).toBe(
       'Merger Review (inactive)',
     );
     const f = TestBed.createComponent(TaskTable);
     f.componentRef.setInput('rows', [aRow()]);
-    f.componentRef.setInput('columns', ['ref', 'title', 'matter']);
+    f.componentRef.setInput('columns', ['ref', 'title', 'matter', 'matterName']);
     f.componentRef.setInput('density', 'compact');
     f.detectChanges();
     await f.whenStable();
     expect(f.nativeElement.querySelector('td[data-col="matter"] [data-matter-name]')).toBeNull();
     expect(f.nativeElement.querySelector('td[data-col="matter"] .mf-ref')).not.toBeNull();
+    expect(f.nativeElement.querySelector('td[data-col="matterName"] .mn')).not.toBeNull();
+  });
+
+  it('labels the columns Matter Number and Matter Name (#348)', async () => {
+    await create([aRow()], ['ref', 'title', 'matter', 'matterName']);
+    const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
+      th.textContent?.trim(),
+    );
+    expect(heads).toEqual(['Ref', 'Title', 'Matter Number', 'Matter Name']);
   });
 
   it('marks a sensitive matter with an icon that has a text alternative', async () => {
@@ -223,8 +238,10 @@ describe('TaskTable', () => {
     noExtras();
   });
 
-  it('hideContext hides the Matter and Client columns (#196)', async () => {
-    await create([aRow()], ['ref', 'title', 'matter', 'client'], { hideContext: true });
+  it('hideContext hides the Matter Number, Matter Name and Client columns (#196, #348)', async () => {
+    await create([aRow()], ['ref', 'title', 'matter', 'matterName', 'client'], {
+      hideContext: true,
+    });
     const keys = Array.from(el().querySelectorAll('th')).map((th) => th.textContent?.trim());
     expect(keys).toEqual(['Ref', 'Title']);
   });
