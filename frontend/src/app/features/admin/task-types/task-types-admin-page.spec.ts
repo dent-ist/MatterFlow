@@ -1,3 +1,4 @@
+import { lastMain } from '../list-testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -125,10 +126,12 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(tabNames()).toEqual(['Task Types', 'Workflows', 'Workflow Steps']);
       expect(selected()).toEqual(['Task Types']);
       expect(crumbs()).toEqual(['Administration', 'Task Types']);
-      // Every tab has its own filters bar (inline column filters, closed by default) and no search box.
+      // Every tab has its own filters bar (inline column filters, open by default from 640 px, #365) and no search box; the Filters
+      // button is one of the page header's actions.
       expect(el().querySelector('mf-filters-bar')).not.toBeNull();
       expect(el().querySelector('#task-type-search, #wf-search, mf-search-box')).toBeNull();
-      expect(el().querySelector('[data-filter-row]')).toBeNull();
+      expect(el().querySelector('[data-filter-row]')).not.toBeNull();
+      expect(el().querySelector('mf-page-header [data-filters-toggle]')).not.toBeNull();
       expect(el().querySelector('[data-new]')!.textContent).toContain('New task type');
       expect(el().querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         'task-types-admin-tab-task-types',
@@ -197,7 +200,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'TaskType.Manage',
         'Workflow.Manage',
       );
-      expect(steps.listStepDefinitions).toHaveBeenLastCalledWith(
+      expect(lastMain(steps.listStepDefinitions)).toEqual([
         undefined,
         undefined,
         'load',
@@ -208,7 +211,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         true,
         1,
         25,
-      );
+      ]);
       // The address opens the filter row with the tags chosen and Match any selected.
       expect(
         el().querySelector<HTMLSelectElement>('[aria-label="Filter by Tag match"]')?.value,
@@ -225,7 +228,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'TaskType.Manage',
         'Workflow.Manage',
       );
-      expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
+      expect(lastMain(workflows.listWorkflows)).toEqual([
         undefined,
         undefined,
         undefined,
@@ -236,7 +239,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         undefined,
         1,
         25,
-      );
+      ]);
       expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
         'Filtered by task type Data Processing',
       );
@@ -251,7 +254,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
 
       await harness.navigateByUrl('/admin/workflows?step=5');
       await settle();
-      expect(workflows.listWorkflows).toHaveBeenLastCalledWith(
+      expect(lastMain(workflows.listWorkflows)).toEqual([
         undefined,
         undefined,
         undefined,
@@ -262,7 +265,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         5,
         1,
         25,
-      );
+      ]);
       expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
         'Filtered by step Load',
       );

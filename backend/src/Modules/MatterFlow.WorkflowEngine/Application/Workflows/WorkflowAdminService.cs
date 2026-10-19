@@ -121,7 +121,7 @@ public sealed class WorkflowAdminService(
     }
 
     /// <summary>
-    /// The SQL orders of the list: the name (default), or the date of the latest publication (never-published workflows last in both
+    /// The SQL orders of the list: the name (default), the status (active first), or the date of the latest publication (never-published workflows last in both
     /// directions). Ties follow the name.
     /// </summary>
     private IOrderedQueryable<WorkflowDefinition> Ordered(IQueryable<WorkflowDefinition> workflows, string? sort)
@@ -130,6 +130,8 @@ public sealed class WorkflowAdminService(
         return sort switch
         {
             "-name" => workflows.OrderByDescending(w => w.Name).ThenBy(w => w.Id),
+            "status" => workflows.OrderByDescending(w => w.IsActive).ThenBy(w => w.Name).ThenBy(w => w.Id),
+            "-status" => workflows.OrderBy(w => w.IsActive).ThenBy(w => w.Name).ThenBy(w => w.Id),
             "publishedAtUtc" => workflows
                 .OrderBy(w => versions.Any(v => v.WorkflowDefinitionId == w.Id && v.PublishedAt != null) ? 0 : 1)
                 .ThenBy(w => versions.Where(v => v.WorkflowDefinitionId == w.Id).Max(v => v.PublishedAt))

@@ -1,3 +1,5 @@
+import { lastMain } from '../list-testing';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -128,10 +130,14 @@ async function setup(
       { provide: WorkflowsClient, useValue: workflows },
       { provide: StepDefinitionsClient, useValue: steps },
       { provide: FormsClient, useValue: forms },
+      AdminShellFilters,
     ],
   });
   await TestBed.inject(AuthStore).ensureLoaded();
 }
+
+/** The filters the open tab handed to the page header (where the Filters button and its count live, #365). */
+const headerFilters = () => TestBed.inject(AdminShellFilters).current()!.filters;
 
 const type = (el: HTMLElement, selector: string, value: string) => {
   const input = el.querySelector<HTMLInputElement>(selector)!;
@@ -316,7 +322,7 @@ describe('WorkflowsListPage', () => {
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listWorkflows)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -327,7 +333,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       1,
       25,
-    );
+    ]);
     expect(el.querySelector('[data-filtered-by]')!.textContent).toContain(
       'Filtered by task type Data Processing: 1 workflow',
     );
@@ -339,7 +345,7 @@ describe('WorkflowsListPage', () => {
     await settle(fixture);
     expect(router.url).toBe('/admin/workflows');
     expect(el.querySelector('[data-assoc-filter]')).toBeNull();
-    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listWorkflows)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -350,7 +356,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       1,
       25,
-    );
+    ]);
   });
 
   it('ignores a task type or step that is not a number', async () => {
@@ -371,7 +377,7 @@ describe('WorkflowsListPage', () => {
     await TestBed.inject(Router).navigateByUrl('/x?taskType=abc&step=-3');
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
-    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listWorkflows)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -382,7 +388,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       1,
       25,
-    );
+    ]);
   });
 
   it('sends the column filters of the address: name, published, draft and status', async () => {
@@ -397,6 +403,7 @@ describe('WorkflowsListPage', () => {
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
         { provide: WorkflowsClient, useValue: api },
+        AdminShellFilters,
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -406,7 +413,7 @@ describe('WorkflowsListPage', () => {
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    expect(api.listWorkflows).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listWorkflows)).toEqual([
       undefined,
       undefined,
       'std',
@@ -417,15 +424,55 @@ describe('WorkflowsListPage', () => {
       undefined,
       1,
       25,
-    );
+    ]);
     // A link with filters opens the row with the values in it.
     const control = (name: string) =>
       el.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="Filter by ${name}"]`);
     expect(control('Name')?.value).toBe('std');
-    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(4)');
+    expect(headerFilters().activeCount()).toBe(4);
   });
 
-  it('has column filters instead of a search box and a status select, closed by default', async () => {
+  it('says what the default Active hides and makes Status sortable (#369)', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        // (sort, q, name, isActive, hasPublished, hasDraft, taskTypeId, stepId, page, size): isActive false is the hidden-count request.
+        .mockImplementation((...args: unknown[]) =>
+          ok({
+            items: args[3] === false ? [] : [summary()],
+            total: args[3] === false ? 2 : 4,
+            page: 1,
+            pageSize: 25,
+          }),
+        ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    fixture.componentRef.setInput('sort', '-status');
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(api.listWorkflows).toHaveBeenCalledWith(
+      '-status',
+      undefined,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      1,
+      1,
+    );
+    expect(el.querySelector('mf-pager [data-hidden-hint]')!.textContent).toContain(
+      '2 inactive hidden',
+    );
+    const th = Array.from(el.querySelectorAll('th')).find((t) =>
+      t.textContent!.includes('Status'),
+    )!;
+    expect(th.getAttribute('aria-sort')).toBe('descending');
+  });
+
+  it('has column filters instead of a search box and a status select, open by default', async () => {
     const api = {
       listWorkflows: vi
         .fn()
@@ -437,16 +484,16 @@ describe('WorkflowsListPage', () => {
     const el: HTMLElement = fixture.nativeElement;
 
     expect(el.querySelector('#wf-search, #wf-status, mf-search-box')).toBeNull();
-    expect(el.querySelector('[data-filter-row]')).toBeNull();
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
+    // Open by default (from 640 px, #365); the Filters button sits in the page header, not in this tab.
+    expect(el.querySelector('[data-filter-row]')).not.toBeNull();
+    expect(el.querySelector('[data-filters-toggle]')).toBeNull();
     for (const column of ['Name', 'Latest published', 'Draft', 'Status']) {
       expect(el.querySelector(`[aria-label="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!.value).toBe(
       'active',
     );
-    expect(el.querySelector('[data-filter-count]')).toBeNull();
+    expect(headerFilters().activeCount()).toBe(0);
   });
 
   it('shows empty and error states', async () => {
@@ -646,7 +693,9 @@ describe('WorkflowEditPage', () => {
     el.querySelector<HTMLElement>('[data-action="new-draft"]')!.click();
     await settle(fixture);
     expect(api.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {});
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {
+      state: { keepRow: true },
+    });
   });
 
   it('shows the workflow status in the header and links to the draft in progress', async () => {
@@ -855,7 +904,7 @@ describe('WorkflowVersionPage draft editor', () => {
     type(el, '#wf-lib-search', 'zzz');
     await new Promise((r) => setTimeout(r, 400));
     await settle(fixture);
-    expect(a.steps.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(a.steps.listStepDefinitions)).toEqual([
       undefined,
       'zzz',
       undefined,
@@ -866,7 +915,7 @@ describe('WorkflowVersionPage draft editor', () => {
       true,
       1,
       50,
-    );
+    ]);
     expect(el.querySelector('[data-lib-empty]')?.textContent).toContain('No steps match');
   });
 
@@ -1017,7 +1066,9 @@ describe('WorkflowVersionPage draft editor', () => {
     expect(a.workflows['publishWorkflowVersion']).toHaveBeenCalledWith(1, 12, {
       rowVersion: 'NEW',
     });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1], {});
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1], {
+      state: { keepRow: true },
+    });
   });
 
   it('shows server validation errors inline when publishing fails', async () => {
@@ -1117,7 +1168,9 @@ describe('WorkflowVersionPage published version', () => {
     buttonByLabel(el, 'Create new draft from v2')!.click();
     await settle(fixture);
     expect(workflows.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
-    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {});
+    expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {
+      state: { keepRow: true },
+    });
   });
 
   it('retires after confirmation', async () => {

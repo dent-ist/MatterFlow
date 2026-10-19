@@ -105,6 +105,51 @@ describe('TaskTypesPage', () => {
     expect(link.getAttribute('href')).toBe('/admin/task-types/1');
   });
 
+  it('says what the default Active hides, with a Show all that applies Status = All, and Status sorts (#369)', async () => {
+    for (const name of ['Archive One', 'Archive Two']) {
+      await new Promise<void>((resolve) =>
+        api
+          .create({ name, description: undefined })
+          .subscribe((t) =>
+            api
+              .update(t.id, { ...t, isActive: false, rowVersion: t.rowVersion })
+              .subscribe(() => resolve()),
+          ),
+      );
+    }
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    const names = () =>
+      Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
+        r.getAttribute('data-row'),
+      );
+    expect(names()).not.toContain('Archive One');
+    expect(el().querySelector('mf-pager [data-hidden-hint]')!.textContent).toContain(
+      '2 inactive hidden',
+    );
+    expect(el().querySelector('mf-pager')!.textContent).toContain('active');
+
+    fixture.componentRef.setInput('status', 'all');
+    await settle(fixture);
+    expect(names()).toContain('Archive One');
+    expect(el().querySelector('mf-pager [data-hidden-hint]')).toBeNull();
+
+    // Status sorts: active first, then the inactive ones (and back).
+    fixture.componentRef.setInput('sort', 'status');
+    await settle(fixture);
+    expect(el().querySelector('th[aria-sort="ascending"]')!.textContent).toContain('Status');
+    const order = Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
+      r.classList.contains('inactive'),
+    );
+    expect(order).toEqual([...order].sort((x, y) => Number(x) - Number(y)));
+    fixture.componentRef.setInput('sort', '-status');
+    await settle(fixture);
+    const reversed = Array.from(el().querySelectorAll('tbody tr[data-row]')).map((r) =>
+      r.classList.contains('inactive'),
+    );
+    expect(reversed).toEqual([...reversed].sort((x, y) => Number(y) - Number(x)));
+  });
+
   it('shows each type with its icon in neutral colour before the name', () => {
     const icon = row('Data Processing').querySelector('mf-task-type-icon svg')!;
     expect(icon.getAttribute('aria-hidden')).toBe('true');

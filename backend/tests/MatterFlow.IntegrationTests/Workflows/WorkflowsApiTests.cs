@@ -190,6 +190,38 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
     // ---- workflow drafts and publish (#38)
 
     [Fact]
+    public async Task Workflow_and_step_lists_sort_by_status_with_active_first_and_ties_by_name()
+    {
+        var client = As();
+        var tag = Guid.NewGuid().ToString("N")[..6];
+
+        // Two workflows and two steps of each status, created out of name order.
+        var wfB = await CreateWorkflowAsync(client, $"{tag} Beta");
+        await CreateWorkflowAsync(client, $"{tag} Alpha");
+        var wfC = await CreateWorkflowAsync(client, $"{tag} Gamma");
+        await CreateWorkflowAsync(client, $"{tag} Delta");
+        foreach (var (detail, name) in new[] { (wfB, $"{tag} Beta"), (wfC, $"{tag} Gamma") })
+        {
+            await OkAsync(await client.PutAsync(
+                $"/api/v1/workflows/{WorkflowId(detail)}",
+                Json(new { name, isActive = false, rowVersion = detail.GetProperty("workflow").GetProperty("rowVersion").GetString() })));
+        }
+
+        async Task<List<string?>> Names(string url, string property)
+            => (await OkAsync(await client.GetAsync(url))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty(property).GetString()).ToList();
+
+        (await Names($"/api/v1/workflows?q={tag}&sort=status", "name")).ShouldBe([$"{tag} Alpha", $"{tag} Delta", $"{tag} Beta", $"{tag} Gamma"]);
+        (await Names($"/api/v1/workflows?q={tag}&sort=-status", "name")).ShouldBe([$"{tag} Beta", $"{tag} Gamma", $"{tag} Alpha", $"{tag} Delta"]);
+
+        var stepB = await CreateStepAsync(client, $"{tag} Step Beta");
+        await CreateStepAsync(client, $"{tag} Step Alpha");
+        await OkAsync(await client.PostAsync($"/api/v1/step-definitions/{StepId(stepB)}/deactivate", Json(new { rowVersion = stepB.GetProperty("rowVersion").GetString() })));
+
+        (await Names($"/api/v1/step-definitions?q={tag}&sort=status", "title")).ShouldBe([$"{tag} Step Alpha", $"{tag} Step Beta"]);
+        (await Names($"/api/v1/step-definitions?q={tag}&sort=-status", "title")).ShouldBe([$"{tag} Step Beta", $"{tag} Step Alpha"]);
+    }
+
+    [Fact]
     public async Task Workflow_starts_with_an_empty_draft_and_cannot_publish_without_steps()
     {
         var client = As();

@@ -236,11 +236,11 @@ public sealed class WorkflowListQuery
     internal static readonly string[] Keys = ["page", "pageSize", "q", "name", "isActive", "sort", "taskTypeId", "stepId", "hasPublished", "hasDraft"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
-    internal static readonly string[] SortFields = ["name", "-name", "publishedAtUtc", "-publishedAtUtc", "taskTypeCount", "-taskTypeCount"];
+    internal static readonly string[] SortFields = ["name", "-name", "publishedAtUtc", "-publishedAtUtc", "taskTypeCount", "-taskTypeCount", "status", "-status"];
 
     /// <summary>
     /// One of <c>name</c> (default), <c>-name</c>, <c>publishedAtUtc</c> (oldest first), <c>-publishedAtUtc</c> (newest first; never-published workflows last
-    /// in both directions), <c>taskTypeCount</c> or <c>-taskTypeCount</c> (active Task Types). Ties follow the name.
+    /// in both directions), <c>taskTypeCount</c> or <c>-taskTypeCount</c> (active Task Types), <c>status</c> (active first) or <c>-status</c> (inactive first). Ties follow the name.
     /// </summary>
     [StringLength(30)]
     public string? Sort { get; init; }

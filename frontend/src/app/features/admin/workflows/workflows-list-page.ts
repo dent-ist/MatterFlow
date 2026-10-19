@@ -117,7 +117,14 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
               <th scope="col">Task types</th>
               <th scope="col">Latest published</th>
               <th scope="col">Draft</th>
-              <th scope="col">Status</th>
+              <th
+                mfSort="status"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Status
+              </th>
               <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
             </tr>
             @if (filters.rowVisible()) {
@@ -139,6 +146,9 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
             [columns]="6"
             (retry)="load()"
             (clear)="clear()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
           >
             <p-button mfEmptyAction label="New workflow" (onClick)="go('/admin/workflows/new')" />
             @for (w of rows(); track w.workflowDefinitionId) {
@@ -207,6 +217,9 @@ const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions']
         [pageSize]="pageSize()"
         [pageSizes]="pageSizes"
         [total]="total()"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (showAll)="showAll()"
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
       />
@@ -468,18 +481,31 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive workflows the default Active hides, under the same filters (#369, one row, no API change). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     return firstValueFrom(
       this.api.listWorkflows(
         this.sort() || undefined,
         undefined,
         this.filters.text('name') || undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         triBool(this.filters.text('hasPublished')),
         triBool(this.filters.text('hasDraft')),
         this.taskTypeId(),
         this.stepId(),
-        this.pageNumber(),
-        this.pageSize(),
+        page,
+        size,
       ),
     );
   }

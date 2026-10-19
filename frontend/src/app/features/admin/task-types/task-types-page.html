@@ -37,7 +37,14 @@
           >
             Workflows
           </th>
-          <th scope="col">Status</th>
+          <th
+            mfSort="status"
+            [sort]="sort()"
+            [defaultSort]="defaultSort"
+            (sorted)="setSort($event)"
+          >
+            Status
+          </th>
           <th scope="col" class="mf-col-actions mf-col-menu">
             <span class="sr-only">Actions</span>
           </th>
@@ -62,6 +69,9 @@
         [columns]="5"
         (retry)="load()"
         (clear)="clear()"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (showAll)="showAll()"
       >
         <a mfEmptyAction class="mf-btn mf-btn--primary" routerLink="/admin/task-types/new">
           <i class="pi pi-plus" aria-hidden="true"></i> New task type
@@ -121,6 +131,9 @@
     [pageSize]="pageSize()"
     [pageSizes]="pageSizes"
     [total]="total()"
+    [hidden]="hiddenCount()"
+    hiddenLabel="inactive"
+    (showAll)="showAll()"
     (pageChange)="goToPage($event)"
     (pageSizeChange)="setPageSize($event)"
   />

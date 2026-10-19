@@ -29,6 +29,7 @@ class LocalHost extends LocalListPage<Row> {
   names = () => this.rows().map((r) => r.name);
   totalRows = () => this.total();
   shown = () => this.shownPage();
+  hidden = () => this.hiddenCount();
   filtering = () => this.hasFilter();
   doSearch = (t: string) => this.search(t);
   doSetPageSize = (n: number) => this.setPageSize(n);
@@ -100,6 +101,18 @@ describe('list URL state', () => {
       expect(fixture.componentInstance.filtering()).toBe(true);
       set('status', 'all');
       expect(fixture.componentInstance.names()).toEqual(['Alpha', 'beta', 'delta', 'gamma']);
+    });
+
+    it('counts the inactive rows the default Active hides, under the same search (#369)', () => {
+      expect(fixture.componentInstance.hidden()).toBe(1);
+      set('q', 'ELT'); // delta is active, gamma does not match: nothing is hidden by the status
+      expect(fixture.componentInstance.hidden()).toBe(0);
+      set('q', 'gam');
+      expect(fixture.componentInstance.hidden()).toBe(1);
+      set('status', 'all'); // nothing is hidden once the status is not the default
+      expect(fixture.componentInstance.hidden()).toBe(0);
+      set('status', 'inactive');
+      expect(fixture.componentInstance.hidden()).toBe(0);
     });
 
     it('searches case-insensitively and reports the matching total', () => {

@@ -104,7 +104,14 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
               >
                 Used in
               </th>
-              <th scope="col">Status</th>
+              <th
+                mfSort="status"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Status
+              </th>
               <th scope="col" class="mf-col-menu"><span class="pg-sr">Actions</span></th>
             </tr>
             @if (filters.rowVisible()) {
@@ -126,6 +133,9 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
             [columns]="columns().length"
             (retry)="load()"
             (clear)="clear()"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            (showAll)="showAll()"
           >
             <p-button mfEmptyAction label="New step" (onClick)="go('/admin/steps/new')" />
             @for (s of rows(); track s.stepDefinitionId) {
@@ -188,6 +198,9 @@ const COLUMNS = ['title', 'description', 'tags', 'usedIn', 'status', 'actions'] 
         [pageSize]="pageSize()"
         [pageSizes]="pageSizes"
         [total]="total()"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (showAll)="showAll()"
         (pageChange)="goToPage($event)"
         (pageSizeChange)="setPageSize($event)"
       />
@@ -394,6 +407,19 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+    );
+  }
+
+  /** The inactive steps the default Active hides, under the same filters (#369, one row, no API change). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number) {
     const tags = this.filters.list('tags');
     return firstValueFrom(
       this.api.listStepDefinitions(
@@ -404,9 +430,9 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
         triBool(this.filters.text('used')),
         tags.length > 0 ? [...tags] : undefined,
         tags.length > 0 && this.filters.text('tagMatch') === 'any' ? 'any' : undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
-        this.pageNumber(),
-        this.pageSize(),
+        isActive,
+        page,
+        size,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import { lastMain } from '../list-testing';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -96,10 +98,14 @@ async function setup(api: Record<string, unknown>) {
         useValue: { listWorkflows: vi.fn().mockReturnValue(of({ items: [], total: 0 })) },
       },
       { provide: FormsClient, useValue: { listFormVersions: vi.fn().mockReturnValue(of([])) } },
+      AdminShellFilters,
     ],
   });
   await TestBed.inject(AuthStore).ensureLoaded();
 }
+
+/** The filters the open tab handed to the page header (where the Filters button and its count live, #365). */
+const headerFilters = () => TestBed.inject(AdminShellFilters).current()!.filters;
 
 describe('StepsListPage', () => {
   it('lists steps with usage and status, linking each to its editor', async () => {
@@ -179,7 +185,7 @@ describe('StepsListPage', () => {
     query.set({ title: ' qc ', description: 'dupes', used: 'false', status: 'all' });
     fixture.componentRef.setInput('page', '2');
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listStepDefinitions)).toEqual([
       undefined,
       undefined,
       'qc',
@@ -190,14 +196,78 @@ describe('StepsListPage', () => {
       undefined,
       2,
       25,
-    );
+    ]);
     // A link with filters opens the row with the values in it and counts them (status All is a change from the default).
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector<HTMLInputElement>('[aria-label="Filter by Title"]')!.value).toBe('qc');
-    expect(el.querySelector('[data-filter-count]')?.textContent).toBe('(4)');
+    expect(headerFilters().activeCount()).toBe(4);
   });
 
-  it('has column filters instead of a search box, status select and tag popover, closed by default', async () => {
+  it('says what the default Active hides: one more request for the inactive ones, the count in the pager (#369)', async () => {
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        // (sort, q, title, description, used, tags, tagMatch, isActive, page, size): isActive false is the hidden-count request.
+        .mockImplementation((...args: unknown[]) =>
+          ok({
+            items: args[7] === false ? [] : [summary()],
+            total: args[7] === false ? 3 : 5,
+            page: 1,
+            pageSize: 25,
+          }),
+        ),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(StepsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(api.listStepDefinitions).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      false,
+      1,
+      1,
+    );
+    expect(el.querySelector('mf-pager [data-hidden-hint]')!.textContent).toContain(
+      '3 inactive hidden',
+    );
+    expect(el.querySelector('mf-pager')!.textContent).toContain('of 5 active');
+    // Show all puts Status = All in the address, where no hidden count is asked for.
+    el.querySelector<HTMLButtonElement>('mf-pager [data-show-all]')!.click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { status: 'all', page: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('makes Status a sortable column', async () => {
+    const api = {
+      listStepDefinitions: vi
+        .fn()
+        .mockReturnValue(ok({ items: [summary()], total: 1, page: 1, pageSize: 25 })),
+      listStepTags: vi.fn().mockReturnValue(ok([])),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(StepsListPage);
+    fixture.componentRef.setInput('sort', 'status');
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const th = Array.from(el.querySelectorAll('th')).find((t) =>
+      t.textContent!.includes('Status'),
+    )!;
+    expect(th.getAttribute('aria-sort')).toBe('ascending');
+    expect(lastMain(api.listStepDefinitions)![0]).toBe('status');
+  });
+
+  it('has column filters instead of a search box, status select and tag popover, open by default', async () => {
     const api = {
       listStepDefinitions: vi
         .fn()
@@ -212,16 +282,16 @@ describe('StepsListPage', () => {
     expect(
       el.querySelector('#step-search, #step-status, #step-tags-button, mf-search-box'),
     ).toBeNull();
-    expect(el.querySelector('[data-filter-row]')).toBeNull();
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
+    // Open by default (from 640 px, #365); the Filters button sits in the page header, not in this tab.
+    expect(el.querySelector('[data-filter-row]')).not.toBeNull();
+    expect(el.querySelector('[data-filters-toggle]')).toBeNull();
     for (const column of ['Title', 'Description', 'Used in', 'Status']) {
       expect(el.querySelector(`[aria-label="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector('button[data-filter="tags"]')).not.toBeNull();
     // Match all / any waits for a tag.
     expect(el.querySelector('[data-filter-disabled]')?.textContent).toContain('Choose tags first');
-    expect(el.querySelector('[data-filter-count]')).toBeNull();
+    expect(headerFilters().activeCount()).toBe(0);
   });
 });
 
@@ -510,8 +580,6 @@ describe('StepsListPage tags', () => {
     expect(el.querySelector('tbody tr[data-row="OCR"] [data-tags]')).toBeNull();
     expect(api.listStepTags).toHaveBeenCalledWith(undefined, true, 200);
 
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
     el.querySelector<HTMLButtonElement>('button[data-filter="tags"]')!.click();
     await settle(fixture);
     expect(
@@ -534,8 +602,6 @@ describe('StepsListPage tags', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
     el.querySelector<HTMLButtonElement>('button[data-filter="tags"]')!.click();
     await settle(fixture);
     el.querySelector<HTMLInputElement>('input[data-option="Relativity"]')!.click();
@@ -548,7 +614,7 @@ describe('StepsListPage tags', () => {
 
     query.set({ tags: 'Relativity' });
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listStepDefinitions)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -559,7 +625,7 @@ describe('StepsListPage tags', () => {
       true,
       1,
       25,
-    );
+    ]);
   });
 
   it('sends Match any with the tags, and ignores it while no tag is chosen', async () => {
@@ -573,7 +639,7 @@ describe('StepsListPage tags', () => {
     const fixture = TestBed.createComponent(StepsListPage);
     query.set({ tagMatch: 'any' });
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listStepDefinitions)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -584,11 +650,11 @@ describe('StepsListPage tags', () => {
       true,
       1,
       25,
-    );
+    ]);
 
     query.set({ tags: 'Relativity' });
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listStepDefinitions)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -599,7 +665,7 @@ describe('StepsListPage tags', () => {
       true,
       1,
       25,
-    );
+    ]);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector<HTMLSelectElement>('[aria-label="Filter by Tag match"]')!.value).toBe(
       'any',
@@ -618,7 +684,7 @@ describe('StepsListPage tags', () => {
     const fixture = TestBed.createComponent(StepsListPage);
     query.set({ tags: 'QC' });
     await settle(fixture);
-    expect(api.listStepDefinitions).toHaveBeenLastCalledWith(
+    expect(lastMain(api.listStepDefinitions)).toEqual([
       undefined,
       undefined,
       undefined,
@@ -629,7 +695,7 @@ describe('StepsListPage tags', () => {
       true,
       1,
       25,
-    );
+    ]);
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('td[data-empty="filtered"]')).not.toBeNull();
     expect(el.querySelector('thead th')).not.toBeNull(); // the headers stay

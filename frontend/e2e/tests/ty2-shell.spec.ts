@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { LISTS, ListKind, seedMix } from '../support/admin-lists';
 import { expect, test } from '../support/fixtures';
+import { uid } from '../support/seed';
 
 /**
  * WP-TY2 page shell of the Task Types administration (#363 descriptions, #365 filter row open by default, #369 hidden-count line and
@@ -174,5 +176,109 @@ test.describe('the filter row is open from 640 px and the Filters button sits in
       viewer.getByRole('heading', { name: "You don't have permission to view this." }),
     ).toBeVisible();
     await expect(viewer.locator('[data-filters-toggle]')).toHaveCount(0);
+  });
+});
+
+const KINDS: ListKind[] = ['types', 'workflows', 'steps'];
+const dataRows = (page: Page) => page.locator('tbody tr[data-row]');
+
+test.describe('the list says what the default Status hides and Status sorts (#369)', () => {
+  for (const kind of KINDS) {
+    const info = LISTS[kind];
+
+    test(`${kind}: "n inactive hidden" with Show all in the pager, counted under the same filters`, async ({
+      page,
+      admin,
+    }) => {
+      const token = uid();
+      await seedMix(admin, kind, token, 3, 2);
+      const other = uid();
+      await seedMix(admin, kind, other, 0, 4); // inactive ones that do not match the filter are not counted
+      await page.setViewportSize(SIZES[0]);
+      await page.goto(`${info.list}?${info.filter}=${token}`);
+      await expect(dataRows(page)).toHaveCount(3);
+      const pager = page.locator('mf-pager');
+      await expect(pager).toContainText('Showing 1-3 of 3 active');
+      await expect(pager.locator('[data-hidden-hint]')).toContainText('2 inactive hidden');
+      if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
+      await shot(page, `p369-${kind}-hint`);
+
+      // The link applies Status = All in the address and lists them all; the hint goes.
+      await pager.locator('[data-show-all]').click();
+      await expect(page).toHaveURL(/status=all/);
+      await expect(dataRows(page)).toHaveCount(5);
+      await expect(pager.locator('[data-hidden-hint]')).toHaveCount(0);
+      await expect(pager).toContainText('Showing 1-5 of 5');
+
+      // Keyboard: the link is a button that Enter operates.
+      await page.goto(`${info.list}?${info.filter}=${token}`);
+      await pager.locator('[data-show-all]').focus();
+      await page.keyboard.press('Enter');
+      await expect(dataRows(page)).toHaveCount(5);
+    });
+
+    test(`${kind}: a list whose matches are all inactive says so and offers Show all`, async ({
+      page,
+      admin,
+    }) => {
+      const token = uid();
+      await seedMix(admin, kind, token, 0, 2);
+      await page.setViewportSize(SIZES[0]);
+      await page.goto(`${info.list}?${info.filter}=${token}`);
+      const empty = page.locator('[data-empty="filtered"]');
+      await expect(empty).toContainText(`No ${info.noun} match these filters`);
+      await expect(empty.locator('[data-hidden-hint]')).toContainText('2 inactive hidden');
+      await empty.locator('[data-show-all]').click();
+      await expect(dataRows(page)).toHaveCount(2);
+    });
+
+    test(`${kind}: Status sorts (Active first, then Inactive first) with aria-sort`, async ({
+      page,
+      admin,
+    }) => {
+      const token = uid();
+      const rows = await seedMix(admin, kind, token, 2, 2);
+      await page.setViewportSize(SIZES[0]);
+      await page.goto(`${info.list}?${info.filter}=${token}&status=all`);
+      await expect(dataRows(page)).toHaveCount(4);
+      const header = page.getByRole('columnheader', { name: 'Status' });
+      await expect(header).toHaveAttribute('aria-sort', 'none');
+      await header.getByRole('button').click();
+      await expect(page).toHaveURL(/sort=status/);
+      await expect(header).toHaveAttribute('aria-sort', 'ascending');
+      const order = () =>
+        dataRows(page).evaluateAll((trs) => trs.map((tr) => tr.getAttribute('data-row')));
+      const active = rows.filter((r) => r.active).map((r) => r.name);
+      await expect.poll(async () => (await order()).slice(0, 2).sort()).toEqual(active.sort());
+      await header.getByRole('button').click();
+      await expect(header).toHaveAttribute('aria-sort', 'descending');
+      await expect.poll(async () => (await order()).slice(2).sort()).toEqual(active.sort());
+      // Keyboard: the header button is operable with Enter.
+      await header.getByRole('button').focus();
+      await page.keyboard.press('Enter');
+      await expect(header).toHaveAttribute('aria-sort', 'ascending');
+    });
+  }
+
+  test('permissions: the hint and the Status sort are the same for Workflow.Manage only and TaskType.Manage only', async ({
+    admin,
+    seed,
+    asUser,
+  }) => {
+    const token = uid();
+    await seedMix(admin, 'workflows', token, 1, 1);
+    await seedMix(admin, 'types', token, 1, 1);
+    const wfRole = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow only');
+    const wf = await asUser((await seed.user([wfRole.name], 'ty2-wf2')).username);
+    await wf.goto(`/admin/workflows?name=${token}`);
+    await expect(wf.locator('mf-pager [data-hidden-hint]')).toContainText('1 inactive hidden');
+    await expect(wf.getByRole('columnheader', { name: 'Status' })).toHaveAttribute(
+      'aria-sort',
+      'none',
+    );
+    const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
+    const tt = await asUser((await seed.user([typeRole.name], 'ty2-tt2')).username);
+    await tt.goto(`/admin/task-types?name=${token}`);
+    await expect(tt.locator('mf-pager [data-hidden-hint]')).toContainText('1 inactive hidden');
   });
 });

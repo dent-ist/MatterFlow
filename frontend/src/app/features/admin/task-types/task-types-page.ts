@@ -205,6 +205,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         return this.formStatus(t);
       case 'workflows':
         return t.eligibleWorkflowIds.length;
+      case 'status':
+        return t.isActive ? 'Active' : 'Inactive';
       default:
         return t.name;
     }

@@ -255,6 +255,27 @@ export abstract class LocalListPage<T> extends ListQueryPage {
 
   protected readonly total = computed(() => this.matching().length);
 
+  /**
+   * The inactive rows the default Status hides ("8 inactive hidden"), under the same search and column filters (#369); 0 unless the
+   * Status is the default Active. The pager and the empty state say it, with a "Show all" link (`showAll`).
+   */
+  protected readonly hiddenCount = computed(() => {
+    if (this.statusFilter() !== 'active') return 0;
+    const needle = (this.q() ?? '').trim().toLowerCase();
+    this.listFilters()?.values();
+    return this.all().filter(
+      (r) =>
+        !this.isActiveRow(r) &&
+        (!needle || this.searchText(r).toLowerCase().includes(needle)) &&
+        this.matchesFilters(r),
+    ).length;
+  });
+
+  /** "Show all" next to the hidden count: Status = All, in the address. */
+  protected showAll(): void {
+    this.listFilters()?.set?.('status', 'all');
+  }
+
   /** The current page number, pulled back to the last page when filtering leaves fewer pages. */
   protected readonly shownPage = computed(() =>
     Math.min(this.pageNumber(), Math.max(1, Math.ceil(this.total() / this.pageSize()))),

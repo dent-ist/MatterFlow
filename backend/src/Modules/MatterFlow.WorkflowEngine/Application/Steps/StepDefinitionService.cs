@@ -187,9 +187,9 @@ public sealed class StepDefinitionListQuery
     internal static readonly string[] Keys = ["page", "pageSize", "q", "title", "description", "isActive", "sort", "tags", "tagMatch", "used"];
 
     /// <summary>Sort fields accepted by <see cref="Sort"/> (prefix with <c>-</c> for descending).</summary>
-    internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions", "usedInWorkflows", "-usedInWorkflows"];
+    internal static readonly string[] SortFields = ["title", "-title", "usedInVersions", "-usedInVersions", "usedInWorkflows", "-usedInWorkflows", "status", "-status"];
 
-    /// <summary>One of <c>title</c> (default), <c>-title</c>, <c>usedInVersions</c>, <c>-usedInVersions</c>, <c>usedInWorkflows</c> or <c>-usedInWorkflows</c>.</summary>
+    /// <summary>One of <c>title</c> (default), <c>-title</c>, <c>usedInVersions</c>, <c>-usedInVersions</c>, <c>usedInWorkflows</c>, <c>-usedInWorkflows</c>, <c>status</c> (active first) or <c>-status</c> (inactive first).</summary>
     [StringLength(30)]
     public string? Sort { get; init; }
 
@@ -351,6 +351,8 @@ public sealed class StepDefinitionService(DbContext db, IFormDefinitionResolver 
             "-usedInVersions" => withUsage.OrderByDescending(r => r.Used).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
             "usedInWorkflows" => withUsage.OrderBy(r => r.Workflows).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
             "-usedInWorkflows" => withUsage.OrderByDescending(r => r.Workflows).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "status" => withUsage.OrderByDescending(r => r.Step.IsActive).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
+            "-status" => withUsage.OrderBy(r => r.Step.IsActive).ThenBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
             _ => withUsage.OrderBy(r => r.Step.Title).ThenBy(r => r.Step.Id),
         };
         var rows = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
