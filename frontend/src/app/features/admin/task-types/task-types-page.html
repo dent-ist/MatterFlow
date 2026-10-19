@@ -4,6 +4,14 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
+<mf-work-strip
+  label="Task types summary"
+  [items]="stripItems()"
+  [interactive]="true"
+  [active]="stripActive()"
+  (pick)="pickStrip($event)"
+/>
+
 <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
   <mf-record-sort
     mfSheetSort

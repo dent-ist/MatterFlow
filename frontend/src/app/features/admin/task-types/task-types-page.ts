@@ -46,6 +46,8 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { parseStatus } from '../../../shared/ui/list-helpers';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -101,6 +103,7 @@ const FORM_OPTIONS = [
     RecordCardDef,
     RecordCard,
     RecordSort,
+    WorkStrip,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
@@ -169,6 +172,15 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       },
       statusDef(),
       {
+        // The health strip's "Not usable" (#367): no control, a removable chip.
+        key: 'usable',
+        label: 'Can create tasks',
+        type: 'text',
+        noControl: true,
+        normalize: (v) => (v === 'no' ? v : null),
+        valueLabel: () => 'No',
+      },
+      {
         key: 'workflow',
         label: 'Workflow',
         type: 'text',
@@ -229,8 +241,68 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected override matchesFilters(t: TaskTypeView): boolean {
     const name = this.filters.text('name').trim().toLowerCase();
     if (name && !t.name.toLowerCase().includes(name)) return false;
+    if (this.filters.text('usable') === 'no' && !this.isNotUsable(t)) return false;
     const form = this.filters.text('form');
     return !form || this.formKey(t) === form;
+  }
+
+  /** An active type users cannot create tasks of (the red line of its row, the "Not usable" of the strip). */
+  private isNotUsable(t: TaskTypeView): boolean {
+    return t.isActive && t.usabilityIssues.some((i) => i !== 'INACTIVE');
+  }
+
+  /**
+   * The health strip (#367): Active, Not usable, Form in draft, Inactive, counted over the whole list (no filter applies) in the browser,
+   * where it is loaded whole. The chips are toggles that put the matching filters in the address.
+   */
+  protected readonly stripItems = computed<WorkStripItem[]>(() => {
+    const rows = this.state() === 'ready' ? this.all() : null;
+    const active = rows?.filter((t) => t.isActive) ?? null;
+    return [
+      { key: 'active', label: 'Active', count: active?.length ?? null },
+      {
+        key: 'notUsable',
+        label: 'Not usable',
+        count: active?.filter((t) => this.isNotUsable(t)).length ?? null,
+        hint: "Active task types users can't create tasks of",
+      },
+      {
+        key: 'formDraft',
+        label: 'Form in draft',
+        count: active?.filter((t) => this.formKey(t) === 'draft').length ?? null,
+        hint: 'Active task types whose request form is a draft',
+      },
+      {
+        key: 'inactive',
+        label: 'Inactive',
+        count: rows ? rows.length - (active?.length ?? 0) : null,
+      },
+    ];
+  });
+
+  /** The chip that matches the address exactly (the one the list shows), or none when the filters are something else. */
+  protected readonly stripActive = computed<string | null>(() => {
+    const status = parseStatus(this.filters.text('status'));
+    const form = this.filters.text('form');
+    const usable = this.filters.text('usable');
+    if (status === 'inactive' && !form && !usable) return 'inactive';
+    if (status !== 'active') return null;
+    if (usable === 'no' && !form) return 'notUsable';
+    if (form === 'draft' && !usable) return 'formDraft';
+    return !form && !usable ? 'active' : null;
+  });
+
+  /** A chip puts its filters in the address and takes the others off; the pressed chip again goes back to Active. */
+  protected pickStrip(key: string): void {
+    const to = key === this.stripActive() ? 'active' : key;
+    this.navigate({
+      status: to === 'inactive' ? 'inactive' : null,
+      form: to === 'formDraft' ? 'draft' : null,
+      usable: to === 'notUsable' ? 'no' : null,
+      page: null,
+    });
+    const item = this.stripItems().find((i) => i.key === to);
+    if (item) this.announcement.set(`${item.label}: ${item.count ?? 0} task types.`);
   }
 
   private formKey(t: TaskTypeView): string {
