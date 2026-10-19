@@ -9,15 +9,13 @@ import { StepsListPage } from '../steps/steps-list-page';
 import { WorkflowsListPage } from '../workflows/workflows-list-page';
 import { TaskTypesPage } from './task-types-page';
 
-type TaskTypesTab = 'task-types' | 'workflows' | 'steps';
+export type TaskTypesTab = 'task-types' | 'workflows' | 'steps';
 
-const TEXT: Record<TaskTypesTab, string> = {
-  'task-types':
-    'What people can request. Each type has a request form and the workflows it may use, one of them the default. Types are deactivated, never deleted.',
-  workflows:
-    'A workflow is an ordered or unordered list of steps. Tasks run on a published version; edit by creating a new draft.',
-  steps:
-    'Reusable steps. Workflows copy a step when they are published, so editing a step here never changes a published workflow.',
+/** One line per tab, 90 characters at most (#363): it must fit the header's single line at 1366 without an ellipsis. */
+export const TAB_TEXT: Record<TaskTypesTab, string> = {
+  'task-types': 'What people can request: a request form and its eligible workflows.',
+  workflows: 'Ordered steps a request follows, with versions you publish.',
+  steps: 'The reusable steps and inputs that workflows are built from.',
 };
 
 /**
@@ -137,7 +135,7 @@ export class TaskTypesAdminPage {
     return (keys.includes(wanted) ? wanted : (keys[0] ?? wanted)) as TaskTypesTab;
   });
 
-  protected readonly description = computed(() => TEXT[this.current()]);
+  protected readonly description = computed(() => TAB_TEXT[this.current()]);
 
   /** `Administration > Task Types`, then the tab name for the second and third tab. */
   protected readonly crumbs = computed<Crumb[]>(() => {
