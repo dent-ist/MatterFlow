@@ -50,6 +50,8 @@ test.describe('Assignment by a technician (SCN-006)', () => {
     await detail.expectStatus('In Progress');
 
     await page.locator('[data-task-header] [data-action="edit"]').click();
+    // The assignment sits in the collapsed "Priority, due date and assignment" section of the Edit dialog (#350).
+    await page.locator('[data-when-toggle]').click();
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
@@ -77,6 +79,8 @@ test.describe('Known application defects (docs/qa/e2e-findings.md)', () => {
     await detail.open(task.taskId);
     await page.locator('[data-task-header] [data-action="edit"]').click();
     // Any active user can be chosen (the same lookup as Create Task), not only members of the task's Pod.
+    // The assignment sits in the collapsed "Priority, due date and assignment" section of the Edit dialog (#350).
+    await page.locator('[data-when-toggle]').click();
     await page.getByRole('button', { name: 'Change', exact: true }).click();
     await page.getByRole('combobox', { name: 'Assignee' }).fill(colleague.username);
     await page.getByRole('option', { name: colleague.username }).click();
