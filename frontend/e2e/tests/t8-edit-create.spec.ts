@@ -50,6 +50,7 @@ async function checkPage(page: Page, label: string): Promise<void> {
 const editDialog = (page: Page): Locator => page.getByRole('dialog', { name: 'Edit task details' });
 const dialogBody = (page: Page): Locator => page.locator('.p-dialog-content');
 const requestToggle = (page: Page): Locator => page.locator('[data-request-toggle]');
+const whenToggle = (page: Page): Locator => page.locator('[data-when-toggle]');
 /** A request-form text field by number (the label also matches "Request field 10" and "(required)"). */
 const reqField = (page: Page, n: number): Locator =>
   page.getByRole('textbox', { name: new RegExp(`^Request field ${n}(\\s|$)`) });
@@ -71,7 +72,7 @@ const overflowX = (loc: Locator): Promise<number> =>
   loc.evaluate((el) => el.scrollWidth - el.clientWidth);
 
 test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
-  test('720 px wide with a header and footer that stay put; Task, Request details (collapsed) and Assignment sections; Save visible at every scroll position', async ({
+  test('720 px wide with a header and footer that stay put; Task, Input (collapsed) and Priority, due date and assignment (collapsed) sections; Save visible at every scroll position', async ({
     page,
     seed,
   }) => {
@@ -89,11 +90,13 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     const box = (await dialog.boundingBox())!;
     expect(Math.round(box.width)).toBe(720);
 
-    // The three sections, Request details collapsed (it holds ten fields) with its field count.
+    // The three sections (#350), Input collapsed (it holds ten fields) with its field count, the third collapsed with its summary.
     await expect(dialog.locator('[data-section="task"] h3')).toHaveText('Task');
-    await expect(dialog.locator('[data-section="assignment"] h3')).toHaveText('Assignment');
+    await expect(dialog.locator('[data-section="input"] h3')).toHaveText(/^Input/);
+    await expect(whenToggle(page)).toContainText('Priority, due date and assignment');
+    await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'false');
     await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'false');
-    await expect(requestToggle(page)).toContainText('Request details');
+    await expect(requestToggle(page)).toContainText('Input');
     await expect(requestToggle(page)).toContainText('10 fields');
     await expect(page.locator('[data-request-body]')).toBeHidden();
 
@@ -196,6 +199,9 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
 
       expect(await overflowX(dialogBody(page)), 'dialog body sideways').toBeLessThanOrEqual(0);
       expect(await overflowX(page.locator('[data-edit-form]'))).toBeLessThanOrEqual(0);
+      // The requestor is part of Input (#350), which is closed for a long form: open it so its labels can be measured.
+      await requestToggle(page).click();
+      await expect(page.locator('[data-request-body]')).toBeVisible();
       // The labels start inside the dialog (BUG-3 cut "(required)" and "Description" at the left edge).
       for (const label of ['Title', 'Requestor name', 'Requestor email', 'Project']) {
         const el = dialog.locator('label', { hasText: label }).first();
@@ -213,9 +219,10 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
       await shot(page, `edit-dialog-${size.name}`);
       await checkPage(page, `edit dialog collapsed ${size.name}`);
 
-      // Request details open: still no sideways scroll, axe clean.
-      await requestToggle(page).click();
+      // Input and the priority section open: still no sideways scroll, axe clean.
+      await whenToggle(page).click();
       await expect(page.locator('[data-request-body]')).toBeVisible();
+      await expect(page.locator('[data-when-body]')).toBeVisible();
       expect(
         await overflowX(dialogBody(page)),
         'dialog body sideways, request open',
@@ -225,7 +232,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     });
   }
 
-  test('validation: the summary shows, the first invalid field takes focus, Request details opens on its own error, the footer stays visible; the fix saves', async ({
+  test('validation: the summary shows, the first invalid field takes focus, Input opens on its own error, the footer stays visible; the fix saves', async ({
     page,
     seed,
     admin,
@@ -243,7 +250,10 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
 
     // Title and requestor name emptied: the first problem in page order (Title) takes the cursor.
     await page.locator('#td-title').fill('');
+    await requestToggle(page).click(); // the requestor is inside Input (closed for ten fields)
     await page.locator('#td-req-name').fill('');
+    await requestToggle(page).click();
+    await expect(page.locator('[data-request-body]')).toBeHidden();
     await page.locator('[data-save]').click();
     await expect(page.locator('[data-error-summary]')).toBeVisible();
     await expect(page.locator('[data-error-summary]')).toContainText('Enter a title.');
@@ -253,14 +263,15 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(page.locator('#td-title-error')).toContainText('Enter a title.');
     await expect(page.locator('#td-req-name-error')).toBeVisible();
     await expect(page.locator('[data-save]')).toBeInViewport();
-    await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'false');
+    // The requestor is part of Input (#350): its section opened for the error, the priority section had none and stays closed.
+    await expect(requestToggle(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'false');
     await shot(page, 'edit-dialog-errors-1366x768');
     await checkPage(page, 'edit dialog with errors 1366');
 
     // Fix those; the request form's required field is empty: its section opens itself and the field takes the cursor.
     await page.locator('#td-title').fill(`Validate ${uid()}`);
     await page.locator('#td-req-name').fill('Rita Requestor');
-    await requestToggle(page).click();
     await reqField(page, 1).fill('');
     await requestToggle(page).click();
     await expect(page.locator('[data-request-body]')).toBeHidden();
@@ -298,7 +309,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await page.waitForTimeout(700);
     await expect(editDialog(page)).toBeVisible();
 
-    // A server field error (the email is rejected by the server rule, not by the page) stays on the field, in the Task section.
+    // A server field error (the name is rejected by the server rule, not by the page) stays on the field; its section (Input) is open.
     await page.route('**/api/v1/tasks/*', async (route) => {
       if (route.request().method() !== 'PUT') return route.continue();
       return route.fulfill({
@@ -339,7 +350,8 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await openEdit(page);
-    await expect(page.locator('[data-section="assignment"]')).toBeVisible();
+    await whenToggle(page).click();
+    await expect(page.locator('#td-assignee')).toBeVisible();
     await expect(page.locator('[data-locked-fields] a[href^="/matters/"]')).toHaveCount(1);
     await page.locator('[data-cancel]').click();
 
@@ -367,7 +379,9 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await editorPage.setViewportSize({ width: 375, height: 812 });
     await new TaskDetailPage(editorPage).open(task.taskId);
     await openEdit(editorPage);
-    await expect(editorPage.locator('[data-section="assignment"]')).toHaveCount(0);
+    await editorPage.locator('[data-when-toggle]').click();
+    await expect(editorPage.locator('#td-pod')).toHaveCount(0);
+    await expect(editorPage.locator('#td-assignee')).toHaveCount(0);
     await expect(editorPage.locator('[data-locked-fields] a')).toHaveCount(0);
     await expect(editorPage.locator('[data-locked-fields]')).toContainText(world.matter.matterRef);
     expect(await overflowX(editorPage.locator('.p-dialog-content'))).toBeLessThanOrEqual(0);

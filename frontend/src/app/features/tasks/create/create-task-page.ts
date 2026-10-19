@@ -41,7 +41,6 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
   calendarDayInZone,
   dayIndex,
-  formatDateOnly,
   parseDateOnly,
   zoneAbbreviation,
   zonedLocalToUtc,
@@ -58,6 +57,7 @@ import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { RichTextEditor } from '../panels/rich-text-editor';
 import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-text';
+import { whenSummaryText } from '../panels/when-summary';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { RecordHeader } from '../../../shared/ui/record-header';
 import type { Crumb } from '../../../shared/ui/page-header';
@@ -401,20 +401,13 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly whenSummary = computed(() => {
     const priority =
       this.priorityLabelId() === null ? null : this.lookups.priority(this.priorityLabelId()!);
-    const parts = [priority ? `${priority.label} priority` : 'Default priority'];
-    const date = this.dueDate();
-    if (!date) parts.push('no due date (ASAP)');
-    else {
-      const m = /^(\d{2}):(\d{2})$/.exec(this.dueTime());
-      const at = m ? ` at ${+m[1] % 12 || 12}:${m[2]} ${+m[1] < 12 ? 'AM' : 'PM'}` : '';
-      parts.push(`due ${formatDateOnly(date)}${at}`);
-    }
-    const user = this.canAssign() ? this.assignee() : null;
-    const pod = this.canAssign() && this.podId() !== null ? this.podName() : null;
-    if (user) parts.push(`assigned to ${user.label}`);
-    else if (pod) parts.push(`${pod} (no person)`);
-    else parts.push('Unassigned');
-    return parts.join(', ');
+    return whenSummaryText({
+      priorityLabel: priority?.label ?? null,
+      dueDate: this.dueDate(),
+      dueTime: this.dueTime(),
+      assigneeLabel: this.canAssign() ? (this.assignee()?.label ?? null) : null,
+      podName: this.canAssign() && this.podId() !== null ? this.podName() : null,
+    });
   });
 
   protected toggleWhen(): void {

@@ -295,7 +295,7 @@ describe('Details tab', () => {
     expect(fakes.tasks['updateTask']).not.toHaveBeenCalled();
   });
 
-  it('groups the dialog into Task, Request details (collapsed from 7 fields, kept mounted) and Assignment, with the Save footer outside the scrolling form', async () => {
+  it('groups the dialog into Task, Input (collapsed from 7 fields, kept mounted) and Priority, due date and assignment (collapsed with a summary), with the Save footer outside the scrolling form', async () => {
     const { fixture, el } = await mountTaskPage(
       aTask({ formVersionId: 3, formVersionNo: 3, formValues: { ocr: true, language: 'English' } }),
       ['Task.View', 'Task.Edit'],
@@ -304,9 +304,21 @@ describe('Details tab', () => {
     await click(fixture, q(el, '[data-action="edit"]'));
     const body = document.body;
     expect(q(body, '[data-section="task"]')).not.toBeNull();
-    expect(q(body, '[data-section="assignment"]')).not.toBeNull();
+    expect(q(body, '[data-section="input"]')).not.toBeNull();
+    const when = q(body, '[data-when-toggle]')!;
+    expect(when.getAttribute('aria-expanded')).toBe('false');
+    expect(q(body, '[data-when-body]')!.hasAttribute('hidden')).toBe(true);
+    expect(q(body, '[data-when-summary]')!.textContent).toBe(
+      'Critical priority, no due date (ASAP), assigned to Tariq M.',
+    );
+    // Collapsed, not removed: the Due fields are still mounted.
+    expect(q(body, '[data-when-body] #td-due-date')).not.toBeNull();
+    await click(fixture, when);
+    expect(when.getAttribute('aria-expanded')).toBe('true');
+    expect(q(body, '[data-when-body]')!.hasAttribute('hidden')).toBe(false);
     const toggle = q(body, '[data-request-toggle]')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.textContent).toContain('Input');
     expect(toggle.textContent).toContain('8 fields');
     // Collapsed, not removed: the form still holds its fields so it validates and saves.
     expect(q(body, '[data-request-body]')!.hasAttribute('hidden')).toBe(true);
@@ -336,6 +348,23 @@ describe('Details tab', () => {
     await new Promise((r) => setTimeout(r, 30));
     expect(q(document.body, '[data-request-toggle]')!.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement?.id).toBe('td-title');
+  });
+
+  it('opens Priority, due date and assignment by itself when its own field has an error', async () => {
+    const { fixture, el } = await mountTaskPage(
+      aTask({ formVersionId: 3, dueDate: undefined, dueTime: undefined }),
+      ['Task.View', 'Task.Edit'],
+      { forms: { getFormVersionSchema: vi.fn().mockReturnValue(of(fieldsOf(8))) } },
+    );
+    await click(fixture, q(el, '[data-action="edit"]'));
+    const when = q(document.body, '[data-when-toggle]')!;
+    expect(when.getAttribute('aria-expanded')).toBe('false');
+    await type(fixture, document.body, '#td-due-time', '10:00');
+    await click(fixture, q(document.body, '[data-save]'));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(when.getAttribute('aria-expanded')).toBe('true');
+    expect(q(document.body, '[data-when-body]')!.hasAttribute('hidden')).toBe(false);
+    expect(document.activeElement?.id).toBe('td-due-date');
   });
 
   it('opens Request details in the dialog for 6 fields or fewer and honours the remembered choice', async () => {

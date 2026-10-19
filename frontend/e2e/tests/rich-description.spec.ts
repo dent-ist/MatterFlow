@@ -436,7 +436,7 @@ test.describe('Rich text description with tables (issue #80)', () => {
 
     // Tab in the last cell of the table carries on to the next field: the editor is no keyboard trap.
     await page.keyboard.press('Tab');
-    await expect(page.locator('#td-req-name')).toBeFocused();
+    await expect(page.locator('#td-project')).toBeFocused();
 
     await page.locator('[data-save]').click();
     await expect(page.locator('[data-edit-form]')).toHaveCount(0);

@@ -54,6 +54,7 @@ import {
   htmlToText,
   isBlankHtml,
 } from '../panels/rich-text';
+import { whenSummaryText } from '../panels/when-summary';
 import { requestInitiallyOpen, requestOpenKey, saveOpen } from '../panels/section-state';
 import { RequestSection, requestHeadingText } from './request-section';
 import { TaskDetailStore } from './task-detail.store';
@@ -87,9 +88,10 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
 
 /**
  * The Edit dialog of the Task page (UX S10, E1 #319 to #321). 720 px wide (the full width of a phone), a header and a footer that stay in
- * place (Save changes, Cancel) while the body scrolls, and three sections like the page: Task (title as a growing textarea with a
- * counter, description, requestor, project, priority, due date and time), Request details (the request form; collapsed, and opened on
- * an error) and Assignment (Pod and assignee). Matter, Task Type and Workflow are shown read-only. A failed Save shows the summary,
+ * place (Save changes, Cancel) while the body scrolls, and the same three sections as Create task (#350): Task (title as a growing
+ * textarea with a counter, description, project), Input (requestor and the request form; open for 6 fields or fewer, remembered per
+ * task type, opened on an error) and "Priority, due date and assignment" (collapsed with a one-line summary, opened on an error;
+ * Pod and assignee only with Task.Assign). Matter, Task Type and Workflow are shown read-only. A failed Save shows the summary,
  * opens the section of the first error and puts the cursor in that field; server field errors are mapped back onto the fields. Esc is
  * ignored with unsaved changes; focus returns to the control that opened the dialog.
  */
@@ -167,67 +169,113 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               }
             </div>
 
-            <div class="dt__row">
-              <div class="mf-field">
-                <label class="mf-field__label" for="td-req-name"
-                  >Requestor name <span class="mf-field__req">(required)</span></label
-                >
-                <input
-                  id="td-req-name"
-                  class="mf-field__input"
-                  type="text"
-                  maxlength="200"
-                  [value]="model().requestorName"
-                  [attr.aria-invalid]="err('requestorName') ? 'true' : null"
-                  [attr.aria-describedby]="err('requestorName') ? 'td-req-name-error' : null"
-                  (input)="set('requestorName', $any($event.target).value)"
-                />
-                @if (err('requestorName'); as e) {
-                  <p class="mf-field__error" id="td-req-name-error" role="alert">{{ e }}</p>
+            <div class="mf-field">
+              <label class="mf-field__label" for="td-project">Project</label>
+              <select
+                id="td-project"
+                class="mf-field__input"
+                [value]="model().projectId ?? ''"
+                [attr.aria-invalid]="err('projectId') ? 'true' : null"
+                (change)="set('projectId', toNumber($any($event.target).value))"
+              >
+                <option value="" [selected]="model().projectId === null">No project</option>
+                @for (p of projectOptions(); track p.id) {
+                  <option [value]="p.id" [selected]="model().projectId === p.id">
+                    {{ p.label }}
+                  </option>
                 }
-              </div>
-
-              <div class="mf-field">
-                <label class="mf-field__label" for="td-req-email">Requestor email</label>
-                <input
-                  id="td-req-email"
-                  class="mf-field__input"
-                  type="email"
-                  maxlength="254"
-                  [value]="model().requestorEmail"
-                  [attr.aria-invalid]="err('requestorEmail') ? 'true' : null"
-                  [attr.aria-describedby]="err('requestorEmail') ? 'td-req-email-error' : null"
-                  (input)="set('requestorEmail', $any($event.target).value)"
-                />
-                @if (err('requestorEmail'); as e) {
-                  <p class="mf-field__error" id="td-req-email-error" role="alert">{{ e }}</p>
-                }
-              </div>
+              </select>
+              <p class="mf-field__help">Only projects of the same matter.</p>
+              @if (err('projectId'); as e) {
+                <p class="mf-field__error" role="alert">{{ e }}</p>
+              }
             </div>
+          </section>
 
-            <div class="dt__row">
-              <div class="mf-field">
-                <label class="mf-field__label" for="td-project">Project</label>
-                <select
-                  id="td-project"
-                  class="mf-field__input"
-                  [value]="model().projectId ?? ''"
-                  [attr.aria-invalid]="err('projectId') ? 'true' : null"
-                  (change)="set('projectId', toNumber($any($event.target).value))"
-                >
-                  <option value="" [selected]="model().projectId === null">No project</option>
-                  @for (p of projectOptions(); track p.id) {
-                    <option [value]="p.id" [selected]="model().projectId === p.id">
-                      {{ p.label }}
-                    </option>
-                  }
-                </select>
-                <p class="mf-field__help">Only projects of the same matter.</p>
-                @if (err('projectId'); as e) {
-                  <p class="mf-field__error" role="alert">{{ e }}</p>
+          <section class="dt__sec" data-section="input">
+            <!-- Hidden, not removed: the form keeps its values and still validates while it is collapsed. -->
+            <mf-request-section
+              heading="Input"
+              [count]="definition()?.fields?.length ?? 0"
+              [open]="requestOpen()"
+              (openChange)="rememberRequestOpen($event)"
+            >
+              <div class="dt__input">
+                @if (requestCaption(); as caption) {
+                  <p class="pg-muted dt__caption" data-form-caption>{{ caption }}</p>
+                }
+                <div class="dt__row">
+                  <div class="mf-field">
+                    <label class="mf-field__label" for="td-req-name"
+                      >Requestor name <span class="mf-field__req">(required)</span></label
+                    >
+                    <input
+                      id="td-req-name"
+                      class="mf-field__input"
+                      type="text"
+                      maxlength="200"
+                      [value]="model().requestorName"
+                      [attr.aria-invalid]="err('requestorName') ? 'true' : null"
+                      [attr.aria-describedby]="err('requestorName') ? 'td-req-name-error' : null"
+                      (input)="set('requestorName', $any($event.target).value)"
+                    />
+                    @if (err('requestorName'); as e) {
+                      <p class="mf-field__error" id="td-req-name-error" role="alert">{{ e }}</p>
+                    }
+                  </div>
+
+                  <div class="mf-field">
+                    <label class="mf-field__label" for="td-req-email">Requestor email</label>
+                    <input
+                      id="td-req-email"
+                      class="mf-field__input"
+                      type="email"
+                      maxlength="254"
+                      [value]="model().requestorEmail"
+                      [attr.aria-invalid]="err('requestorEmail') ? 'true' : null"
+                      [attr.aria-describedby]="err('requestorEmail') ? 'td-req-email-error' : null"
+                      (input)="set('requestorEmail', $any($event.target).value)"
+                    />
+                    @if (err('requestorEmail'); as e) {
+                      <p class="mf-field__error" id="td-req-email-error" role="alert">{{ e }}</p>
+                    }
+                  </div>
+                </div>
+                @if (definition(); as def) {
+                  <mf-dynamic-form
+                    [definition]="def"
+                    [values]="formValues()"
+                    [serverErrors]="formErrors()"
+                    (valuesChange)="onFormValues()"
+                  />
                 }
               </div>
+            </mf-request-section>
+          </section>
 
+          <section class="dt__sec" aria-labelledby="td-sec-when" data-section="when">
+            <h3 id="td-sec-when" class="dt__sech dt__sech--toggle">
+              <button
+                type="button"
+                class="dt__toggle"
+                data-when-toggle
+                [attr.aria-expanded]="whenOpen()"
+                aria-controls="td-when-body"
+                (click)="toggleWhen()"
+              >
+                <span class="dt__toggle-text">
+                  <span>Priority, due date and assignment</span>
+                  <span class="dt__toggle-summary" data-when-summary>{{ whenSummary() }}</span>
+                </span>
+                <i
+                  class="pi"
+                  [class.pi-chevron-down]="whenOpen()"
+                  [class.pi-chevron-right]="!whenOpen()"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </h3>
+            <div id="td-when-body" class="dt__when" data-when-body [hidden]="!whenOpen()">
               @if (
                 t.allowedActions.canSetPriority || t.priority.priorityId !== model().priorityId
               ) {
@@ -247,112 +295,91 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                   </select>
                 </div>
               }
-            </div>
 
-            <fieldset class="dt__due">
-              <legend class="dt__sr">Due date and time</legend>
-              <div class="dt__row">
-                <div class="mf-field">
-                  <label class="mf-field__label" for="td-due-date">Due date</label>
-                  <mf-date-input
-                    inputId="td-due-date"
-                    label="due date"
-                    [isoValue]="model().dueDate || null"
-                    [invalid]="!!err('dueDate')"
-                    [showError]="false"
-                    (isoChange)="set('dueDate', $event ?? '')"
-                    (textInvalid)="dueDateBad.set($event)"
-                  />
-                  @if (err('dueDate'); as e) {
-                    <p class="mf-field__error" role="alert">{{ e }}</p>
-                  }
+              <fieldset class="dt__due">
+                <legend class="dt__sr">Due date and time</legend>
+                <div class="dt__row">
+                  <div class="mf-field">
+                    <label class="mf-field__label" for="td-due-date">Due date</label>
+                    <mf-date-input
+                      inputId="td-due-date"
+                      label="due date"
+                      [isoValue]="model().dueDate || null"
+                      [invalid]="!!err('dueDate')"
+                      [showError]="false"
+                      (isoChange)="set('dueDate', $event ?? '')"
+                      (textInvalid)="dueDateBad.set($event)"
+                    />
+                    @if (err('dueDate'); as e) {
+                      <p class="mf-field__error" role="alert">{{ e }}</p>
+                    }
+                  </div>
+                  <div class="mf-field">
+                    <label class="mf-field__label" for="td-due-time">Time ({{ zoneName() }})</label>
+                    <input
+                      id="td-due-time"
+                      class="mf-field__input"
+                      type="time"
+                      [value]="model().dueTime"
+                      [attr.aria-invalid]="err('dueTime') ? 'true' : null"
+                      (input)="set('dueTime', $any($event.target).value)"
+                    />
+                    @if (err('dueTime'); as e) {
+                      <p class="mf-field__error" role="alert">{{ e }}</p>
+                    }
+                  </div>
                 </div>
-                <div class="mf-field">
-                  <label class="mf-field__label" for="td-due-time">Time ({{ zoneName() }})</label>
-                  <input
-                    id="td-due-time"
-                    class="mf-field__input"
-                    type="time"
-                    [value]="model().dueTime"
-                    [attr.aria-invalid]="err('dueTime') ? 'true' : null"
-                    (input)="set('dueTime', $any($event.target).value)"
-                  />
-                  @if (err('dueTime'); as e) {
-                    <p class="mf-field__error" role="alert">{{ e }}</p>
-                  }
-                </div>
-              </div>
-              <p class="mf-field__help">
-                Leave the date empty for ASAP. The time is optional and is in your local time zone.
-              </p>
-              @if (pastDue()) {
-                <p class="warn" role="status" data-past-due>
-                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                  This date has already passed. The task will be overdue. You can still save.
+                <p class="mf-field__help">
+                  Leave the date empty for ASAP. The time is optional and is in your local time
+                  zone.
                 </p>
-              }
-            </fieldset>
-          </section>
-
-          @if (definition(); as def) {
-            <section class="dt__sec" data-section="request">
-              <!-- Hidden, not removed: the form keeps its values and still validates while it is collapsed. -->
-              <mf-request-section
-                [heading]="requestHeading()"
-                [count]="def.fields.length"
-                [open]="requestOpen()"
-                (openChange)="rememberRequestOpen($event)"
-              >
-                <mf-dynamic-form
-                  [definition]="def"
-                  [values]="formValues()"
-                  [serverErrors]="formErrors()"
-                  (valuesChange)="onFormValues()"
-                />
-              </mf-request-section>
-            </section>
-          }
-
-          @if (t.allowedActions.canAssign) {
-            <section class="dt__sec" aria-labelledby="td-sec-assign" data-section="assignment">
-              <h3 id="td-sec-assign" class="dt__sech">Assignment</h3>
-              <div class="mf-field">
-                <label class="mf-field__label" for="td-pod">Pod</label>
-                <select
-                  id="td-pod"
-                  class="mf-field__input"
-                  [attr.aria-invalid]="err('assignedPodId') ? 'true' : null"
-                  (change)="set('podId', toNumber($any($event.target).value))"
-                >
-                  <option value="" [selected]="model().podId === null">No pod</option>
-                  @for (p of podOptions(); track p.id) {
-                    <option [value]="p.id" [selected]="model().podId === p.id">
-                      {{ p.label }}
-                    </option>
-                  }
-                </select>
-                @if (err('assignedPodId'); as e) {
-                  <p class="mf-field__error" role="alert">{{ e }}</p>
+                @if (pastDue()) {
+                  <p class="warn" role="status" data-past-due>
+                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                    This date has already passed. The task will be overdue. You can still save.
+                  </p>
                 }
-              </div>
-              <mf-entity-picker
-                inputId="td-assignee"
-                label="Assignee"
-                placeholder="Search users"
-                help="Any active user can be assigned, not only members of the Pod. Clear the choice to leave the task unassigned."
-                [error]="err('assignedUserId')"
-                [search]="searchUsers"
-                [selected]="assignee()"
-                (selectedChange)="onAssignee($event)"
-              />
-              @if (notInPod()) {
-                <p class="mf-field__help warn" id="td-assignee-warning" data-pod-warning>
-                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                  This person isn't a member of the selected Pod. You can still save.
-                </p>
+              </fieldset>
+
+              @if (t.allowedActions.canAssign) {
+                <div class="mf-field">
+                  <label class="mf-field__label" for="td-pod">Pod</label>
+                  <select
+                    id="td-pod"
+                    class="mf-field__input"
+                    [attr.aria-invalid]="err('assignedPodId') ? 'true' : null"
+                    (change)="set('podId', toNumber($any($event.target).value))"
+                  >
+                    <option value="" [selected]="model().podId === null">No pod</option>
+                    @for (p of podOptions(); track p.id) {
+                      <option [value]="p.id" [selected]="model().podId === p.id">
+                        {{ p.label }}
+                      </option>
+                    }
+                  </select>
+                  @if (err('assignedPodId'); as e) {
+                    <p class="mf-field__error" role="alert">{{ e }}</p>
+                  }
+                </div>
+                <mf-entity-picker
+                  inputId="td-assignee"
+                  label="Assignee"
+                  placeholder="Search users"
+                  help="Any active user can be assigned, not only members of the Pod. Clear the choice to leave the task unassigned."
+                  [error]="err('assignedUserId')"
+                  [search]="searchUsers"
+                  [selected]="assignee()"
+                  (selectedChange)="onAssignee($event)"
+                />
+                @if (notInPod()) {
+                  <p class="mf-field__help warn" id="td-assignee-warning" data-pod-warning>
+                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                    This person isn't a member of the selected Pod. You can still save.
+                  </p>
+                }
               }
-            </section>
-          }
+            </div>
+          </section>
 
           <section class="dt__locked" aria-labelledby="td-locked-h" data-locked-fields>
             <h3 id="td-locked-h" class="dt__sech dt__sech--plain">
@@ -441,6 +468,61 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     .dt__rich {
       min-width: 0;
     }
+    .dt__input {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--mf-s4);
+      min-width: 0;
+    }
+    .dt__caption {
+      margin: 0;
+    }
+    .dt__sech--toggle {
+      font-size: var(--mf-fs-md);
+    }
+    .dt__when {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--mf-s4);
+      min-width: 0;
+    }
+    .dt__when[hidden] {
+      display: none;
+    }
+    .dt__toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 2.75rem;
+      padding: var(--mf-s1) 0;
+      border: 0;
+      background: none;
+      color: var(--mf-text);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .dt__toggle:hover .dt__toggle-text > :first-child {
+      text-decoration: underline;
+    }
+    .dt__toggle:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    .dt__toggle-text {
+      display: grid;
+      flex: 1 1 auto;
+      min-width: 0;
+      font-weight: 600;
+    }
+    .dt__toggle-summary {
+      overflow-wrap: anywhere;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      font-weight: 400;
+    }
     .dt__due {
       display: grid;
       gap: var(--mf-s2);
@@ -511,7 +593,29 @@ export class TaskEditDialog {
    * task type) and opens itself on an error.
    */
   protected readonly requestOpen = signal(false);
-  protected readonly requestHeading = computed(() => requestHeadingText(this.store.task()));
+  /** The task type and form version the request was made on, shown inside the Input section. */
+  protected readonly requestCaption = computed(() =>
+    requestHeadingText(this.store.task()).replace(/^Request details \((.*)\)$/, '$1'),
+  );
+  /** "Priority, due date and assignment" starts collapsed and opens itself when a field in it has an error (#350). */
+  protected readonly whenOpen = signal(false);
+  protected readonly whenSummary = computed(() => {
+    const t = this.store.task();
+    const m = this.model();
+    const canAssign = !!t?.allowedActions.canAssign;
+    const priority = this.priorityOptions().find((o) => o.id === m.priorityId);
+    const pod =
+      canAssign && m.podId !== null ? this.podOptions().find((o) => o.id === m.podId) : null;
+    return whenSummaryText({
+      priorityLabel: priority?.label ?? null,
+      dueDate: m.dueDate,
+      dueTime: m.dueTime,
+      assigneeLabel: canAssign
+        ? (this.assignee()?.label ?? null)
+        : (t?.assignedUser?.displayName ?? null),
+      podName: canAssign ? (pod?.label ?? null) : (t?.assignedPod?.name ?? null),
+    });
+  });
 
   protected readonly projects = signal<ProjectResponse[]>([]);
   protected readonly pods = signal<PodSummary[]>([]);
@@ -624,6 +728,24 @@ export class TaskEditDialog {
     };
   }
 
+  protected toggleWhen(): void {
+    this.whenOpen.update((open) => !open);
+  }
+
+  /** Opens the sections that hold an error, so none is hidden (the field-level errors, client or server). */
+  private openSectionsWithErrors(errors: Record<string, string>, formHasError = false): void {
+    if (
+      ['priorityId', 'dueDate', 'dueTime', 'assignedPodId', 'assignedUserId'].some(
+        (k) => k in errors,
+      )
+    ) {
+      this.whenOpen.set(true);
+    }
+    if (formHasError || 'requestorName' in errors || 'requestorEmail' in errors) {
+      this.requestOpen.set(true);
+    }
+  }
+
   protected rememberRequestOpen(open: boolean): void {
     this.requestOpen.set(open);
     saveOpen(
@@ -664,6 +786,7 @@ export class TaskEditDialog {
     this.fieldErrors.set({});
     this.formErrors.set([]);
     this.summary.set([]);
+    this.whenOpen.set(false);
     this.requestOpen.set(
       requestInitiallyOpen(
         this.auth.profile()?.userId,
@@ -826,7 +949,7 @@ export class TaskEditDialog {
           formInvalid ? (formLines.length > 0 ? formLines : ['Fix the request details.']) : [],
         ),
       );
-      if (formInvalid) this.requestOpen.set(true);
+      this.openSectionsWithErrors(errors, formInvalid);
       this.focusFirstInvalid();
       return;
     }
@@ -923,8 +1046,8 @@ export class TaskEditDialog {
     this.formErrors.set(form);
     this.summary.set([...Object.values(base), ...form.map((f) => f.message)].filter(Boolean));
     if (mapped.conflict) this.summary.set([]);
-    // The section of an error is the one that opens: the request form for a form error. Task and Assignment are always open.
-    if (form.length > 0) this.requestOpen.set(true);
+    // The section of an error is the one that opens: Input for a request form or requestor error, the priority section for its own.
+    this.openSectionsWithErrors(base, form.length > 0);
     this.focusFirstInvalid();
   }
 }
