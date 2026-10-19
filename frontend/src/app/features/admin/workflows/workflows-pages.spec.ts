@@ -1,6 +1,6 @@
 import { lastMain } from '../list-testing';
 import { AdminShellFilters } from '../task-types/shell-filters';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import {
@@ -178,6 +178,8 @@ describe('WorkflowsListPage', () => {
               draftVersionNo: 1,
               draftVersionId: 20,
               isActive: false,
+              stepCount: undefined,
+              publishedStepCount: undefined,
             }),
           ],
           total: 2,
@@ -197,9 +199,12 @@ describe('WorkflowsListPage', () => {
       'Production',
     ]);
     expect(rows[0].querySelector('a')?.getAttribute('href')).toBe('/admin/workflows/1');
-    expect(rows[0].textContent).toContain('v2 (3 steps)');
-    expect(rows[1].textContent).toContain('Not published');
-    expect(rows[1].textContent).toContain('Draft');
+    // One Versions cell of badges (text and icon): the published version, or a neutral Not published, and the draft (#376, #377).
+    expect(rows[0].querySelector('[data-versions]')!.textContent).toContain('Published v2');
+    expect(rows[0].querySelector('[data-steps]')!.textContent!.trim()).toBe('3');
+    expect(rows[1].querySelector('[data-not-published]')!.textContent).toContain('Not published');
+    expect(rows[1].querySelector('[data-versions]')!.textContent).toContain('Draft v1');
+    expect(rows[1].querySelector('[data-steps]')!.textContent!.trim()).toBe('–');
     expect(rows[1].textContent).toContain('Inactive');
     expect(api.listWorkflows).toHaveBeenCalledWith(
       undefined,
@@ -215,64 +220,24 @@ describe('WorkflowsListPage', () => {
     );
   });
 
-  it('shows the task types of each workflow as chips (default starred, three then +n more) and links', async () => {
-    const ref = (id: number, name: string, isDefault = false, isActive = true) => ({
-      taskTypeId: id,
-      name,
-      isDefault,
-      isActive,
-    });
+  it('shows the number of task types and the date of the last publication, and links the number to the filtered Task Types tab (#376)', async () => {
     const api = {
       listWorkflows: vi.fn().mockReturnValue(
         ok({
           items: [
+            summary({ taskTypeCount: 4, publishedAtUtc: '2026-10-01T10:00:00Z' }),
             summary({
-              taskTypes: [
-                ref(1, 'Data Processing', true),
-                ref(2, 'Collection'),
-                ref(3, 'Review'),
-                ref(4, 'Production'),
-                ref(5, 'Legacy', false, false),
-              ],
+              workflowDefinitionId: 2,
+              name: 'Production',
+              taskTypeCount: 0,
+              publishedAtUtc: undefined,
+              publishedVersionNo: undefined,
+              publishedVersionId: undefined,
+              stepCount: undefined,
+              publishedStepCount: undefined,
             }),
-            summary({ workflowDefinitionId: 2, name: 'Production', taskTypes: [] }),
           ],
           total: 2,
-          page: 1,
-          pageSize: 25,
-        }),
-      ),
-    };
-    await setup(api);
-    const fixture = TestBed.createComponent(WorkflowsListPage);
-    await settle(fixture);
-    const el: HTMLElement = fixture.nativeElement;
-    const first = el.querySelector('[data-row="Standard Processing"]')!;
-    expect(
-      Array.from(first.querySelectorAll('[data-assoc-chip]')).map((c) =>
-        c.getAttribute('data-assoc-chip'),
-      ),
-    ).toEqual(['Data Processing', 'Collection', 'Production']);
-    expect(first.querySelector('[data-assoc-default]')!.textContent).toBe('default');
-    expect(first.querySelector('[data-assoc-more]')!.textContent!.trim()).toBe('+2 more');
-    expect(el.querySelector('[data-row="Production"] [data-assoc-empty]')!.textContent).toContain(
-      'No task type',
-    );
-    expect(first.textContent).toContain('v2 (3 steps)');
-  });
-
-  it('links the task type chips to the task type pages and +n more to the filtered Task Types tab', async () => {
-    const ref = (id: number, name: string) => ({
-      taskTypeId: id,
-      name,
-      isDefault: false,
-      isActive: true,
-    });
-    const api = {
-      listWorkflows: vi.fn().mockReturnValue(
-        ok({
-          items: [summary({ taskTypes: [1, 2, 3, 4].map((i) => ref(i, 'T' + i)) })],
-          total: 1,
           page: 1,
           pageSize: 25,
         }),
@@ -284,18 +249,41 @@ describe('WorkflowsListPage', () => {
         MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage', 'TaskType.Manage'))),
         { provide: WorkflowsClient, useValue: api },
+        AdminShellFilters,
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     const fixture = TestBed.createComponent(WorkflowsListPage);
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector('[data-assoc-chip="T2"] a')!.getAttribute('href')).toBe(
-      '/admin/task-types/2',
-    );
-    expect(el.querySelector('[data-assoc-more]')!.getAttribute('href')).toBe(
-      '/admin/task-types?workflow=1',
-    );
+    const first = el.querySelector('[data-row="Standard Processing"]')!;
+    const link = first.querySelector<HTMLAnchorElement>('[data-task-types-link]')!;
+    expect(link.textContent!.trim()).toBe('4');
+    expect(link.getAttribute('href')).toBe('/admin/task-types?workflow=1');
+    expect(link.getAttribute('aria-label')).toBe('4 task types use Standard Processing');
+    expect(first.querySelector('[data-last-published]')!.textContent).toContain('Oct 1, 2026');
+    // No chips: the task types of a workflow are on its page.
+    expect(first.querySelector('[data-assoc-chip]')).toBeNull();
+    const second = el.querySelector('[data-row="Production"]')!;
+    expect(second.querySelector('[data-task-types]')!.textContent!.trim()).toBe('0');
+    expect(second.querySelector('[data-task-types-link]')).toBeNull();
+    expect(second.querySelector('[data-last-published]')!.textContent!.trim()).toBe('–');
+  });
+
+  it('shows the number of task types as plain text without TaskType.Manage', async () => {
+    const api = {
+      listWorkflows: vi
+        .fn()
+        .mockReturnValue(
+          ok({ items: [summary({ taskTypeCount: 2 })], total: 1, page: 1, pageSize: 25 }),
+        ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const cell = fixture.nativeElement.querySelector('[data-task-types]');
+    expect(cell.textContent.trim()).toBe('2');
+    expect(cell.querySelector('a')).toBeNull();
   });
 
   it('filters by task type and by step from the address, with a removable chip', async () => {
@@ -597,7 +585,16 @@ describe('WorkflowsListPage health strip (#368)', () => {
 
   it('shows -- until the first answer and marks the chip that matches the address pressed', async () => {
     const api = { listWorkflows: vi.fn().mockReturnValue(page()) };
-    await setup(api);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        MessageService,
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
+        { provide: WorkflowsClient, useValue: api },
+        AdminShellFilters,
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
     await TestBed.inject(Router).navigateByUrl('/x?hasPublished=true');
     const fixture = TestBed.createComponent(WorkflowsListPage);
     fixture.detectChanges();
@@ -610,6 +607,45 @@ describe('WorkflowsListPage health strip (#368)', () => {
     expect(el.querySelector('[data-strip-item="draft"]')!.getAttribute('aria-pressed')).toBe(
       'false',
     );
+  });
+});
+
+describe('WorkflowsListPage Versions cell (#377)', () => {
+  it('makes the Draft badge the link into the draft (one Tab stop named Open draft v3) and leaves the row like the name link', async () => {
+    const api = {
+      listWorkflows: vi.fn().mockReturnValue(
+        ok({
+          items: [
+            summary({ draftVersionId: 12, draftVersionNo: 3 }),
+            summary({
+              workflowDefinitionId: 2,
+              name: 'Production',
+              publishedVersionNo: undefined,
+              publishedVersionId: undefined,
+            }),
+          ],
+          total: 2,
+          page: 1,
+          pageSize: 25,
+        }),
+      ),
+    };
+    await setup(api);
+    const fixture = TestBed.createComponent(WorkflowsListPage);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    const link = el.querySelector<HTMLAnchorElement>(
+      '[data-row="Standard Processing"] [data-draft-link]',
+    )!;
+    expect(link.getAttribute('href')).toBe('/admin/workflows/1/versions/12');
+    expect(link.getAttribute('aria-label')).toBe('Open draft v3');
+    expect(link.textContent!.trim()).toBe('Draft v3');
+    // Without a draft there is no link; a workflow without a published version has the neutral badge.
+    expect(el.querySelector('[data-row="Production"] [data-draft-link]')).toBeNull();
+    const notPublished = el.querySelector('[data-row="Production"] [data-not-published]')!;
+    expect(notPublished.querySelector('[data-tone="neutral"]')).not.toBeNull();
+    expect(notPublished.getAttribute('title')).toContain('No version is published');
+    expect(el.querySelector('[data-row="Standard Processing"] [data-not-published]')).toBeNull();
   });
 });
 
@@ -629,10 +665,11 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   const items = [
-    summary({ draftVersionId: 12, draftVersionNo: 3, taskTypes: [] }),
+    summary({ draftVersionId: 12, draftVersionNo: 3, taskTypes: [], taskTypeCount: 0 }),
     summary({
       workflowDefinitionId: 2,
       name: 'Production',
+      taskTypeCount: 2,
       publishedVersionNo: undefined,
       publishedVersionId: undefined,
       isActive: false,
@@ -673,32 +710,26 @@ describe('WorkflowsListPage phone cards and narrow columns (#375)', () => {
     );
   });
 
-  it('leaves the Task types and Latest published columns out below 1280 px', async () => {
-    viewport(768);
-    await setup({ listWorkflows: list() });
-    let fixture = TestBed.createComponent(WorkflowsListPage);
-    await settle(fixture);
-    const heads = (f: typeof fixture) =>
+  it('drops the optional columns in a fixed order as the window narrows: Last published below 1280 px, Task types below 1100 px, Steps below 900 px', async () => {
+    const heads = (f: ComponentFixture<WorkflowsListPage>) =>
       Array.from(f.nativeElement.querySelectorAll('thead tr:first-child th')).map((th) =>
         (th as HTMLElement).textContent!.trim(),
       );
-    expect(heads(fixture)).toEqual(['Name', 'Draft', 'Status', 'Actions']);
-    expect(fixture.nativeElement.querySelectorAll('tbody tr[data-row]')[0].children).toHaveLength(
-      4,
-    );
-    fixture.destroy();
-
-    viewport(1366);
-    fixture = TestBed.createComponent(WorkflowsListPage);
-    await settle(fixture);
-    expect(heads(fixture)).toEqual([
-      'Name',
-      'Task types',
-      'Latest published',
-      'Draft',
-      'Status',
-      'Actions',
-    ]);
+    const widths: [number, string[]][] = [
+      [768, ['Name', 'Versions', 'Status', 'Actions']],
+      [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
+      [1200, ['Name', 'Versions', 'Steps', 'Task types', 'Status', 'Actions']],
+      [1366, ['Name', 'Versions', 'Steps', 'Task types', 'Last published', 'Status', 'Actions']],
+    ];
+    for (const [width, expected] of widths) {
+      viewport(width);
+      TestBed.resetTestingModule();
+      await setup({ listWorkflows: list() });
+      const fixture = TestBed.createComponent(WorkflowsListPage);
+      await settle(fixture);
+      expect(heads(fixture), `at ${width}`).toEqual(expected);
+      fixture.destroy();
+    }
   });
 });
 

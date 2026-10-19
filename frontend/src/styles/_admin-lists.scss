@@ -150,3 +150,26 @@
   gap: var(--mf-s1);
   align-items: center;
 }
+
+/* Workflows: the Versions cell is badges on one line; the Draft badge is a link (#376, #377), whose focus ring is the badge's. */
+.mf-table-wrap table td[data-versions] .wl-versions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--mf-s1);
+  align-items: center;
+}
+
+.mf-table-wrap table a.wl-draft {
+  display: inline-flex;
+  border-radius: var(--mf-radius);
+  text-decoration: none;
+}
+
+.mf-table-wrap table a.wl-draft:hover mf-badge {
+  filter: brightness(0.95);
+}
+
+.mf-table-wrap table a.wl-draft:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 1px;
+}

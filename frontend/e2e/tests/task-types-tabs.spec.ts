@@ -283,33 +283,28 @@ test.describe('Task type, workflow and step cross-links', () => {
     await expect(page.locator('tbody tr')).toContainText(w.w4.name);
   });
 
-  test('the Workflows list shows the task types as chips linking to them; +n more opens the Task Types tab filtered to the workflow', async ({
+  test('the Workflows list shows the number of task types, which opens the Task Types tab filtered to the workflow (#376)', async ({
     page,
     seed,
   }) => {
     const token = uid();
     const workflow = await seed.workflow({ name: `Shared flow ${token}` });
-    const types = [];
     for (const n of ['A', 'B', 'C', 'D', 'E']) {
-      types.push(
-        await seed.taskType({
-          name: `Type ${n} ${token}`,
-          workflows: [workflow],
-        }),
-      );
+      await seed.taskType({ name: `Type ${n} ${token}`, workflows: [workflow] });
     }
     const lonely = await seed.workflow({ name: `Lonely flow ${token}` });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/workflows?name=${token}`);
     const row = page.locator(`[data-row="${workflow.name}"]`);
-    await expect(row.locator('[data-assoc-chip]')).toHaveCount(3);
-    await expect(row.locator('[data-assoc-more]')).toHaveText('+2 more');
-    await expect(page.locator(`[data-row="${lonely.name}"] [data-assoc-empty]`)).toHaveText(
-      'No task type',
-    );
-    // The steps count stays.
-    await expect(row).toContainText('v1 (3 steps)');
+    await expect(row.locator('[data-assoc-chip]')).toHaveCount(0);
+    await expect(row.locator('[data-task-types-link]')).toHaveText('5');
+    await expect(page.locator(`[data-row="${lonely.name}"] [data-task-types]`)).toHaveText('0');
+    await expect(page.locator(`[data-row="${lonely.name}"] [data-task-types-link]`)).toHaveCount(0);
+    // The Versions cell and the steps count.
+    await expect(row.locator('[data-versions]')).toContainText('Published v1');
+    await expect(row.locator('[data-steps]')).toHaveText('3');
 
-    await row.locator('[data-assoc-more]').click();
+    await row.locator('[data-task-types-link]').click();
     await expect(page).toHaveURL(
       new RegExp(`/admin/task-types\\?workflow=${workflow.workflowDefinitionId}$`),
     );
@@ -324,12 +319,6 @@ test.describe('Task type, workflow and step cross-links', () => {
     await page.getByRole('button', { name: `Remove filter Workflow: ${workflow.name}` }).click();
     await expect(page).toHaveURL(/\/admin\/task-types$/);
     await expect(page.locator('[data-assoc-filter]')).toHaveCount(0);
-
-    await page.goto(`/admin/workflows?name=${token}`);
-    await page
-      .locator(`[data-row="${workflow.name}"] [data-assoc-chip="${types[0].name}"] a`)
-      .click();
-    await expect(page).toHaveURL(new RegExp(`/admin/task-types/${types[0].id}$`));
   });
 
   test('the Workflow Steps list says where a step is used and opens the Workflows tab filtered by the step', async ({

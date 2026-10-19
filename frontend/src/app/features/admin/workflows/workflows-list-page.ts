@@ -30,7 +30,6 @@ import { ListFilters } from '../../../shared/filters/list-filters';
 import { QuietRequests } from '../../../core/http/interceptors';
 import { AdminCounts } from '../task-types/admin-counts';
 import { AdminShellFilters } from '../task-types/shell-filters';
-import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
@@ -43,6 +42,7 @@ import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
+import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { Pager } from '../../../shared/ui/pager';
 import {
   RecordCard,
@@ -56,14 +56,23 @@ import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'taskTypes', 'published', 'draft', 'status', 'actions'] as const;
+const COLUMNS = [
+  'name',
+  'versions',
+  'steps',
+  'taskTypes',
+  'lastPublished',
+  'status',
+  'actions',
+] as const;
 
 /** One skeleton bone per column, as wide as its usual content (#370: one definition of the columns for the table and its skeleton). */
 const BONES: Record<(typeof COLUMNS)[number], string> = {
   name: '12rem',
-  taskTypes: '12rem',
-  published: '8rem',
-  draft: '4rem',
+  versions: '10rem',
+  steps: '1.5rem',
+  taskTypes: '1.5rem',
+  lastPublished: '5rem',
   status: '4rem',
   actions: '1.5rem',
 };
@@ -88,13 +97,13 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     GridBody,
     FiltersBar,
     ColumnFilterRow,
-    AssocChips,
     AssocFilter,
     RecordCardList,
     RecordCardDef,
     RecordCard,
     RecordSort,
     WorkStrip,
+    MfDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -194,11 +203,33 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                 >
                   Name
                 </th>
-                @if (wide()) {
-                  <th scope="col">Task types</th>
-                  <th scope="col">Latest published</th>
+                <th scope="col">Versions</th>
+                @if (stepsShown()) {
+                  <th scope="col" class="pg-num">Steps</th>
                 }
-                <th scope="col">Draft</th>
+                @if (taskTypesShown()) {
+                  <th
+                    class="pg-num"
+                    mfSort="taskTypeCount"
+                    [firstDesc]="true"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Task types
+                  </th>
+                }
+                @if (publishedShown()) {
+                  <th
+                    mfSort="publishedAtUtc"
+                    [firstDesc]="true"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Last published
+                  </th>
+                }
                 <th
                   mfSort="status"
                   [sort]="sort()"
@@ -254,34 +285,88 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                       </div>
                     }
                   </td>
-                  @if (wide()) {
-                    <td data-task-types class="ad-nowrap">
-                      <mf-assoc-chips
-                        [items]="chipsOf(w)"
-                        [label]="'Task types of ' + w.name"
-                        noun="task types"
-                        [moreLink]="canOpenTaskTypes() ? '/admin/task-types' : null"
-                        [moreQuery]="taskTypesQuery(w)"
-                        emptyText="No task type"
-                      />
-                    </td>
-                    <td class="ad-nowrap">
+                  <td class="ad-nowrap" data-versions>
+                    <span class="wl-versions">
                       @if (w.publishedVersionNo) {
-                        <mf-badge tone="success" icon="pi-check-circle">Published</mf-badge>
-                        v{{ w.publishedVersionNo }} ({{ stepsLabel(w.publishedStepCount) }})
+                        <mf-badge tone="success" icon="pi-check-circle"
+                          >Published v{{ w.publishedVersionNo }}</mf-badge
+                        >
                       } @else {
-                        <span class="pg-muted">Not published</span>
+                        <mf-badge
+                          tone="neutral"
+                          icon="pi-minus-circle"
+                          data-not-published
+                          [attr.title]="'No version is published: new tasks cannot use this workflow.'"
+                          >Not published</mf-badge
+                        >
+                      }
+                      @if (w.draftVersionNo && w.draftVersionId) {
+                        <!-- The badge is the way into the draft: one Tab stop, named "Open draft v3" (#377). -->
+                        <a
+                          class="wl-draft"
+                          data-draft-link
+                          [routerLink]="[
+                            '/admin/workflows',
+                            w.workflowDefinitionId,
+                            'versions',
+                            w.draftVersionId,
+                          ]"
+                          [state]="leave.state()"
+                          [attr.aria-label]="'Open draft v' + w.draftVersionNo"
+                          [attr.title]="'Open draft v' + w.draftVersionNo"
+                          (click)="leaveRow(w)"
+                        >
+                          <mf-badge tone="warning" icon="pi-pencil" data-draft-badge
+                            >Draft v{{ w.draftVersionNo }}</mf-badge
+                          >
+                        </a>
+                      }
+                    </span>
+                  </td>
+                  @if (stepsShown()) {
+                    <td class="pg-num" data-steps>
+                      @if (stepCountOf(w); as n) {
+                        {{ n }}
+                      } @else {
+                        <span class="pg-muted" aria-label="No published version">&ndash;</span>
                       }
                     </td>
                   }
-                  <td class="ad-nowrap">
-                    @if (w.draftVersionNo) {
-                      <mf-badge tone="warning" icon="pi-pencil">Draft</mf-badge>
-                      v{{ w.draftVersionNo }}
-                    } @else {
-                      <span class="pg-muted">None</span>
-                    }
-                  </td>
+                  @if (taskTypesShown()) {
+                    <td class="pg-num" data-task-types>
+                      @if (w.taskTypeCount === 0) {
+                        <span class="pg-muted">0</span>
+                      } @else if (canOpenTaskTypes()) {
+                        <a
+                          class="pg-link"
+                          data-task-types-link
+                          routerLink="/admin/task-types"
+                          [queryParams]="taskTypesQuery(w)"
+                          [attr.aria-label]="
+                            (w.taskTypeCount === 1
+                              ? '1 task type'
+                              : w.taskTypeCount + ' task types') +
+                            ' use ' +
+                            w.name
+                          "
+                          >{{ w.taskTypeCount }}</a
+                        >
+                      } @else {
+                        {{ w.taskTypeCount }}
+                      }
+                    </td>
+                  }
+                  @if (publishedShown()) {
+                    <td class="ad-nowrap" data-last-published>
+                      @if (w.publishedAtUtc) {
+                        <span [attr.title]="w.publishedAtUtc | mfDate">{{
+                          w.publishedAtUtc | mfDate: 'date'
+                        }}</span>
+                      } @else {
+                        <span class="pg-muted">&ndash;</span>
+                      }
+                    </td>
+                  }
                   <td class="ad-nowrap">
                     <mf-active-badge [active]="w.isActive" />
                   </td>
@@ -343,12 +428,22 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   /** Below 640 px the list is cards, not a table (#375). */
   protected readonly phone = phoneCards();
   /**
-   * Below 1280 px the Task types chips and the Latest published column are left out (the card and the page of the workflow carry them), so
-   * the grid never scrolls sideways and the row menu stays in view (#375). Their filters move under "Other filters".
+   * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
+   * (#375): Last published below 1280 px, Task types (the count) below 1100 px, Steps below 900 px; Name, Versions and Status stay.
    */
-  protected readonly wide = viewportAtLeast(1280);
+  private readonly stepsRoom = viewportAtLeast(900);
+  private readonly taskTypesRoom = viewportAtLeast(1100);
+  private readonly publishedRoom = viewportAtLeast(1280);
+  protected readonly stepsShown = this.stepsRoom;
+  protected readonly taskTypesShown = this.taskTypesRoom;
+  protected readonly publishedShown = this.publishedRoom;
   protected readonly columns = computed<readonly string[]>(() =>
-    this.wide() ? COLUMNS : COLUMNS.filter((c) => c !== 'taskTypes' && c !== 'published'),
+    COLUMNS.filter(
+      (c) =>
+        (c !== 'steps' || this.stepsRoom()) &&
+        (c !== 'taskTypes' || this.taskTypesRoom()) &&
+        (c !== 'lastPublished' || this.publishedRoom()),
+    ),
   );
   protected readonly skeleton = computed(() =>
     this.columns().map((c) => BONES[c as keyof typeof BONES]),
@@ -362,6 +457,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
+    { value: 'publishedAtUtc', label: 'Last published', descFirst: true },
+    { value: 'taskTypeCount', label: 'Task types', descFirst: true },
     { value: 'status', label: 'Status' },
   ];
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
@@ -382,7 +479,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
       {
         key: 'hasPublished',
         label: 'Latest published',
-        column: 'published',
+        column: 'versions',
         type: 'triState',
         options: [
           { value: '', label: 'Any' },
@@ -393,7 +490,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
       {
         key: 'hasDraft',
         label: 'Draft',
-        column: 'draft',
+        column: 'versions',
         type: 'triState',
         options: [
           { value: '', label: 'Any' },
@@ -539,23 +636,14 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     return { workflow: w.workflowDefinitionId };
   }
 
-  /** The task types a workflow is eligible for: the ones it is the default of first, then the active ones by name, the deactivated ones last. */
-  protected chipsOf(w: WorkflowSummary): AssocItem[] {
-    const link = this.canOpenTaskTypes();
-    return [...w.taskTypes]
-      .sort(
-        (a, b) =>
-          Number(b.isDefault) - Number(a.isDefault) ||
-          Number(!a.isActive) - Number(!b.isActive) ||
-          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-      )
-      .map((t) => ({
-        id: t.taskTypeId,
-        label: t.name,
-        link: link ? ['/admin/task-types', t.taskTypeId] : undefined,
-        isDefault: t.isDefault,
-        inactive: !t.isActive,
-      }));
+  /** The number of steps of the latest publication (the Steps column); 0 when the workflow was never published. */
+  protected stepCountOf(w: WorkflowSummary): number {
+    return w.stepCount ?? w.publishedStepCount ?? 0;
+  }
+
+  /** The draft link of a row leaves the row like the name link does: Back puts focus on the name again (#354). */
+  protected leaveRow(w: WorkflowSummary): void {
+    this.drill.leaveRow(this.listId, w.workflowDefinitionId);
   }
 
   private menuOf(w: WorkflowSummary): MenuAction[] {
@@ -650,7 +738,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   /** The second fact line of a card: the draft in progress and how many task types may use the workflow. */
   protected draftLine(w: WorkflowSummary): string {
-    const types = w.taskTypes.length;
+    const types = w.taskTypeCount;
     const used = types === 0 ? 'No task type' : types === 1 ? '1 task type' : `${types} task types`;
     return w.draftVersionNo ? `Draft v${w.draftVersionNo} - ${used}` : used;
   }
