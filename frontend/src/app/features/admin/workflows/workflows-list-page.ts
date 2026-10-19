@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   StepDefinitionsClient,
   TaskTypesClient,
+  WorkflowListSummary,
   WorkflowSummary,
   WorkflowsClient,
 } from '../../../api/generated/api-client';
@@ -26,6 +27,8 @@ import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { QuietRequests } from '../../../core/http/interceptors';
+import { AdminCounts } from '../task-types/admin-counts';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
@@ -214,6 +217,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
               [filtered]="filters.activeCount() > 0"
               [columns]="columns().length"
               [skeleton]="skeleton()"
+              [skeletonCells]="skeletonCells()"
               (retry)="load()"
               (clear)="clear()"
               [hidden]="hiddenCount()"
@@ -320,6 +324,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly injector = inject(Injector);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
+  private readonly quiet = inject(QuietRequests);
   private readonly drill = inject(DrillReturn);
   protected readonly leave = inject(AdminListLeave);
   protected readonly listId = ADMIN_LIST.workflows.id;
@@ -337,6 +342,12 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   );
   protected readonly skeleton = computed(() =>
     this.columns().map((c) => BONES[c as keyof typeof BONES]),
+  );
+  /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
+  protected readonly skeletonCells = computed(() =>
+    this.columns().map((c) =>
+      c === 'name' ? 'ad-name' : c === 'actions' ? 'mf-col-menu' : 'ad-nowrap',
+    ),
   );
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
@@ -417,6 +428,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     return known && known.id === this.stepId() ? known.name : `Step ${this.stepId()}`;
   });
   protected readonly canOpenTaskTypes = computed(() => this.auth.has('TaskType.Manage'));
+  /** The library-wide counts of the last answer (no filter applies to them). */
+  protected readonly summary = signal<WorkflowListSummary | null>(null);
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
@@ -430,6 +443,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   constructor() {
     super();
     AdminShellFilters.register({ filters: this.filters, controls: 'workflow-filter-row' });
+    const report = AdminCounts.report('workflows');
+    effect(() => report(this.summary()?.active));
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
@@ -587,17 +602,23 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     return count === 1 ? '1 step' : `${count ?? 0} steps`;
   }
 
-  protected override fetch() {
-    return this.list(
+  protected override async fetch() {
+    const page = await this.list(
       isActiveParam(parseStatus(this.filters.text('status'))),
       this.pageNumber(),
       this.pageSize(),
     );
+    // The library-wide counts of the answer: the tab's count (#364).
+    this.summary.set(page.summary ?? null);
+    return page;
   }
 
   /** The inactive workflows the default Active hides, under the same filters (#369, one row, no API change). */
   protected override fetchHidden() {
-    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+    // A background request: its failure is no reason for a toast, the list shows its own message.
+    return parseStatus(this.filters.text('status')) === 'active'
+      ? this.quiet.run(() => this.list(false, 1, 1))
+      : null;
   }
 
   private list(isActive: boolean | undefined, page: number, size: number) {

@@ -32,6 +32,7 @@ import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminCounts } from './admin-counts';
 import { AdminShellFilters } from './shell-filters';
 import { AssocChips, AssocItem } from '../assoc-chips';
 import { AssocFilter } from '../assoc-filter';
@@ -133,6 +134,10 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly skeleton = computed(() =>
     this.columns().map((c) => BONES[c as keyof typeof BONES]),
   );
+  /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
+  protected readonly skeletonCells = computed(() =>
+    this.columns().map((c) => (c === 'actions' ? 'mf-col-actions mf-col-menu' : '')),
+  );
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'name', label: 'Name' },
@@ -196,6 +201,13 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   constructor() {
     super();
     AdminShellFilters.register({ filters: this.filters, controls: 'task-type-filter-row' });
+    // The tab's count is the number of active types; a list limited to a workflow (?workflow=) is not the whole set and reports nothing.
+    const report = AdminCounts.report('task-types');
+    effect(() => {
+      if (this.state() === 'ready' && this.workflowId() === undefined) {
+        report(this.all().filter((t) => t.isActive).length);
+      }
+    });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // Loads the list, and again when the workflow filter changes.

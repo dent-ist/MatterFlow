@@ -12,7 +12,11 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { StepDefinitionSummary, StepDefinitionsClient } from '../../../api/generated/api-client';
+import {
+  StepDefinitionSummary,
+  StepDefinitionsClient,
+  StepListSummary,
+} from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
@@ -20,6 +24,8 @@ import { statusDef, triBool } from '../../../shared/filters/common-defs';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { QuietRequests } from '../../../core/http/interceptors';
+import { AdminCounts } from '../task-types/admin-counts';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge } from '../../../shared/ui/badge';
@@ -55,6 +61,16 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
   usedIn: '2rem',
   status: '4rem',
   actions: '1.5rem',
+};
+
+/** The class that sizes the loaded cell of each column, repeated on its skeleton cell so the columns keep their widths while loading. */
+const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
+  title: 'ad-spring',
+  description: 'ad-desc',
+  tags: 'st-tags ad-tags',
+  usedIn: 'pg-num',
+  status: 'ad-nowrap',
+  actions: 'mf-col-menu',
 };
 
 /**
@@ -211,6 +227,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
               [filtered]="filters.activeCount() > 0"
               [columns]="columns().length"
               [skeleton]="skeleton()"
+              [skeletonCells]="skeletonCells()"
               (retry)="load()"
               (clear)="clear()"
               [hidden]="hiddenCount()"
@@ -312,6 +329,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   private readonly api = inject(StepDefinitionsClient);
   private readonly injector = inject(Injector);
   private readonly notify = inject(NotificationService);
+  private readonly quiet = inject(QuietRequests);
   private readonly drill = inject(DrillReturn);
   protected readonly leave = inject(AdminListLeave);
   protected readonly listId = ADMIN_LIST.steps.id;
@@ -339,8 +357,12 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     ),
   );
   protected readonly skeleton = computed(() => this.columns().map((c) => BONES[c]));
+  /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
+  protected readonly skeletonCells = computed(() => this.columns().map((c) => CELL_CLASS[c]));
   /** The tags to choose from, with how many steps of the chosen status carry each. */
   protected readonly tagOptions = signal<FilterOption[]>([]);
+  /** The library-wide counts of the last answer (no filter applies to them). */
+  protected readonly summary = signal<StepListSummary | null>(null);
   protected readonly busy = signal(false);
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
@@ -403,6 +425,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   constructor() {
     super();
     AdminShellFilters.register({ filters: this.filters, controls: 'step-filter-row' });
+    const report = AdminCounts.report('steps');
+    effect(() => report(this.summary()?.active));
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The tags to choose from follow the status filter.
@@ -517,17 +541,23 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     }
   }
 
-  protected override fetch() {
-    return this.list(
+  protected override async fetch() {
+    const page = await this.list(
       isActiveParam(parseStatus(this.filters.text('status'))),
       this.pageNumber(),
       this.pageSize(),
     );
+    // The library-wide counts of the answer: the tab's count (#364).
+    this.summary.set(page.summary ?? null);
+    return page;
   }
 
   /** The inactive steps the default Active hides, under the same filters (#369, one row, no API change). */
   protected override fetchHidden() {
-    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+    // A background request: its failure is no reason for a toast, the list shows its own message.
+    return parseStatus(this.filters.text('status')) === 'active'
+      ? this.quiet.run(() => this.list(false, 1, 1))
+      : null;
   }
 
   private list(isActive: boolean | undefined, page: number, size: number) {

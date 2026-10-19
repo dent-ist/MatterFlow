@@ -31,11 +31,13 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
   let workflows: { listWorkflows: ReturnType<typeof vi.fn> };
   const el = (): HTMLElement => harness.routeNativeElement as HTMLElement;
   const tabs = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('[role="tab"]'));
-  const tabNames = (): string[] => tabs().map((t) => t.textContent!.trim());
+  /** The visible text of a tab without its count: `Task Types (61)` is `Task Types` (#364 adds the counts). */
+  const label = (t: HTMLElement): string => t.textContent!.replace(/\s*\(.*\)\s*$/, '').trim();
+  const tabNames = (): string[] => tabs().map(label);
   const selected = (): string[] =>
     tabs()
       .filter((t) => t.getAttribute('aria-selected') === 'true')
-      .map((t) => t.textContent!.trim());
+      .map(label);
   const crumbs = (): string[] =>
     Array.from(el().querySelectorAll('nav[aria-label="Breadcrumb"] li')).map((li) =>
       li.textContent!.trim(),
@@ -50,11 +52,13 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
 
   async function open(url: string, ...permissions: Permission[]): Promise<Router> {
     steps = {
-      listStepDefinitions: vi.fn().mockReturnValue(of(empty)),
+      listStepDefinitions: vi.fn().mockReturnValue(of({ ...empty, summary: { active: 66 } })),
       listStepTags: vi.fn().mockReturnValue(of([{ name: 'Relativity', stepCount: 2 }])),
       getStepDefinition: vi.fn().mockReturnValue(of({ stepDefinitionId: 5, title: 'Load' })),
     };
-    workflows = { listWorkflows: vi.fn().mockReturnValue(of(empty)) };
+    workflows = {
+      listWorkflows: vi.fn().mockReturnValue(of({ ...empty, summary: { active: 30 } })),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter(
@@ -155,6 +159,25 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
           (b) => b.textContent?.trim() === 'New workflow',
         ),
       ).toBe(true);
+    },
+    SLOW,
+  );
+
+  it(
+    'shows the active count of each tab, spoken as "Workflows, 30 active", `--` while unknown (#364)',
+    async () => {
+      await open('/admin/workflows', 'TaskType.Manage', 'Workflow.Manage');
+      // The in-memory Task Types API answers with its seed, the library-wide summaries of the other two are mocked.
+      expect(tabs().map((t) => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+        expect.stringMatching(/^Task Types \(\d+\)$/),
+        'Workflows (30)',
+        'Workflow Steps (66)',
+      ]);
+      expect(tabs().map((t) => t.getAttribute('aria-label'))).toEqual([
+        expect.stringMatching(/^Task Types, \d+ active$/),
+        'Workflows, 30 active',
+        'Workflow Steps, 66 active',
+      ]);
     },
     SLOW,
   );

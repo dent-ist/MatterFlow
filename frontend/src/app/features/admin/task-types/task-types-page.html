@@ -130,6 +130,7 @@
           [filtered]="filters.activeCount() > 0"
           [columns]="columns().length"
           [skeleton]="skeleton()"
+          [skeletonCells]="skeletonCells()"
           (retry)="load()"
           (clear)="clear()"
           [hidden]="hiddenCount()"

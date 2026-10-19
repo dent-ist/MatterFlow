@@ -9,6 +9,7 @@ import { StepsListPage } from '../steps/steps-list-page';
 import { WorkflowsListPage } from '../workflows/workflows-list-page';
 import { TaskTypesPage } from './task-types-page';
 import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { AdminCounts } from './admin-counts';
 import { AdminShellFilters } from './shell-filters';
 
 export type TaskTypesTab = 'task-types' | 'workflows' | 'steps';
@@ -40,7 +41,7 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
     WorkflowsListPage,
     StepsListPage,
   ],
-  providers: [AdminShellFilters],
+  providers: [AdminShellFilters, AdminCounts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mf-fixed-page>
@@ -128,6 +129,7 @@ export class TaskTypesAdminPage {
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   protected readonly shell = inject(AdminShellFilters);
+  private readonly counts = inject(AdminCounts);
 
   /** The `:tab` path segment (`task-types`, `workflows` or `steps`). */
   readonly tab = input<string>();
@@ -138,13 +140,18 @@ export class TaskTypesAdminPage {
 
   /** Only the tabs the person may use, in the order of the model. */
   protected readonly tabs = computed<MfTab[]>(() => {
+    const counts = this.counts.counts();
+    /** `Task Types (61)`: the active records, `--` while the count is on its way, spoken as "Task Types, 61 active" (#364). */
+    const tab = (key: TaskTypesTab, label: string): MfTab => {
+      const n = counts[key];
+      return n === null
+        ? { key, label, count: '--' }
+        : { key, label, count: n, name: `${label}, ${n} active` };
+    };
     const tabs: MfTab[] = [];
-    if (this.auth.has('TaskType.Manage')) tabs.push({ key: 'task-types', label: 'Task Types' });
+    if (this.auth.has('TaskType.Manage')) tabs.push(tab('task-types', 'Task Types'));
     if (this.auth.has('Workflow.Manage')) {
-      tabs.push(
-        { key: 'workflows', label: 'Workflows' },
-        { key: 'steps', label: 'Workflow Steps' },
-      );
+      tabs.push(tab('workflows', 'Workflows'), tab('steps', 'Workflow Steps'));
     }
     return tabs;
   });
@@ -176,6 +183,7 @@ export class TaskTypesAdminPage {
   });
 
   constructor() {
+    void this.counts.load();
     // A link to a tab the person may not use is replaced by the first one they may (Workflow.Manage only: the Workflows tab).
     effect(() => {
       const current = this.current();
