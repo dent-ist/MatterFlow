@@ -507,6 +507,28 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('mf-pager')).toBeNull();
     });
 
+    it('says how many inactive assets the default Status hides when nothing active matches, and Show all reaches them', async () => {
+      await create(['Asset.View'], { name: 'zzz' });
+      assets.listAssets.mockImplementation((_m: unknown, _t: unknown, isActive?: boolean) =>
+        ok(
+          isActive === false
+            ? pageOfAssets(anAssetListItem({ assetId: 10, isActive: false }))
+            : pageOfAssets(),
+        ),
+      );
+      await setInputs({ name: 'zzzz' });
+
+      const empty = el().querySelector('[data-empty=filtered]')!;
+      expect(empty.querySelector('[data-hidden-hint]')?.textContent).toContain('1 inactive hidden');
+      empty.querySelector<HTMLButtonElement>('[data-show-all]')!.click();
+      expect(navigate).toHaveBeenLastCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ status: 'all', page: null }),
+        }),
+      );
+    });
+
     it('says so when there are no assets at all and keeps the headers on an error', async () => {
       await create(['Asset.View']);
       assets.listAssets.mockReturnValue(ok(pageOfAssets()));

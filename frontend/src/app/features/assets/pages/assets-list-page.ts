@@ -126,6 +126,9 @@ export function parseSelected(value: string | null | undefined): number | null {
     .as-state p {
       margin: 0 0 var(--mf-s2);
     }
+    .as-hint {
+      color: var(--mf-text-muted);
+    }
     .as-alert {
       margin-bottom: var(--mf-s2);
       color: var(--mf-danger);
@@ -274,6 +277,19 @@ export function parseSelected(value: string | null | undefined): number | null {
                         >
                           @if (filters.activeCount() > 0) {
                             <p>No assets match these filters</p>
+                            @if (hiddenCount() > 0) {
+                              <p class="as-hint" data-hidden-hint>
+                                {{ hiddenCount() }} inactive hidden
+                                <button
+                                  type="button"
+                                  class="mf-btn mf-btn--text"
+                                  data-show-all
+                                  (click)="showAll()"
+                                >
+                                  Show all
+                                </button>
+                              </p>
+                            }
                             <p-button
                               label="Clear filters"
                               severity="secondary"
@@ -297,6 +313,8 @@ export function parseSelected(value: string | null | undefined): number | null {
             [pageSize]="pageSize()"
             [pageSizes]="pageSizes"
             [total]="total()"
+            [hidden]="hiddenCount()"
+            (showAll)="showAll()"
             (pageChange)="goToPage($event)"
             (pageSizeChange)="setPageSize($event)"
           />
@@ -492,6 +510,27 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   }
 
   protected override fetch() {
+    return this.list(
+      isActiveParam(parseStatus(this.filters.text('status'))),
+      this.pageNumber(),
+      this.pageSize(),
+      this.sort() || undefined,
+    );
+  }
+
+  /** The inactive assets the default Active hides, under the same other filters ("of 55 active - 5 inactive hidden  Show all"). */
+  protected override fetchHidden() {
+    return parseStatus(this.filters.text('status')) === 'active'
+      ? this.list(false, 1, 1, undefined)
+      : null;
+  }
+
+  private list(
+    isActive: boolean | undefined,
+    page: number,
+    size: number,
+    sort: string | undefined,
+  ) {
     const matterId = Number(this.filters.text('matterId'));
     const typeIds = this.filters
       .list('typeId')
@@ -501,14 +540,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       this.api.listAssets(
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
         typeIds.length > 0 ? typeIds : undefined,
-        isActiveParam(parseStatus(this.filters.text('status'))),
+        isActive,
         undefined,
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
         this.filters.text('matter') || undefined,
-        this.pageNumber(),
-        this.pageSize(),
-        this.sort() || undefined,
+        page,
+        size,
+        sort,
       ),
     );
   }

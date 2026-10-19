@@ -130,10 +130,10 @@ Issue #77 (Batch 2 of epic #75). Clients, Matters, Projects, the Client page's M
 | Screen | Filters (URL parameter) | Notes |
 | --- | --- | --- |
 | Clients `/clients` | Client number (`clientNumber`, text), Name (`name`, text), Status (`status`, Active default) | The old `q` is no longer read; Clear filters still drops it from an old link. |
-| Matters `/matters` | Matter reference (`matterRef`), Name (`name`), Client (`client`, name or number digits), Status (`status`), Sensitive (`isSensitive`, in Other filters, Yes / No), `?clientId=` as a removable chip | The typed pair `343-12` finds the padded reference (and `343-120` while typing); a full padded reference is exact. |
+| Matters `/matters` | Matter reference (`matterRef`), Name (`name`), Client (`client`, name or number digits), Status (`status`), Sensitive (`isSensitive`, a select in the row: Any / Yes / No, #272), `?clientId=` as a removable chip | The typed pair `343-12` finds the padded reference (and `343-120` while typing); a full padded reference is exact. |
 | Projects `/projects` | Name (`name`), Matter (`matter`, reference, typed pair or name), Status (`status`; inactive is called Archived), `?matterId=` chip | |
-| Client page, Matters | Matter (`matterRef`), Name (`name`), Status (`status`), Sensitive (`isSensitive`, Other filters) | Create matter sits at the left of the bar. `page`, `size`, `sort` stay router inputs of the page. |
-| Matter page, Assets tab (`?tab=assets`) | Name (`name`), Type (`typeId`, multi-select), External reference (`extref`), Status (`status`) | Same parameter names as the Assets screen. Switching tab removes the tab's filters, paging and sort from the address. New asset sits at the left of the bar. |
+| Client page, Matters | Matter (`matterRef`), Name (`name`), Status (`status`), Sensitive (`isSensitive`, a select in the row) | New matter is in the record header (#266). `page`, `size`, `sort` stay router inputs of the page. |
+| Matter page, Assets tab (`?tab=assets`) | Name (`name`), Type (`typeId`, multi-select), External reference (`extref`), Status (`status`) | Same parameter names as the Assets screen. Switching tab removes the tab's filters, paging and sort from the address. New asset is in the record header's overflow menu. |
 | Assets `/assets` | Type is now a multi-select (`typeId=4&typeId=5`; `assetTypeId[]` on the API) | Other filters unchanged. |
 
 Shared pieces added for these screens:
@@ -197,7 +197,7 @@ Issue #78 (Batch 3 of epic #75). The Task Queue, My Work, Pod Work and the Tasks
 | Column | Control | URL parameter(s) | On screen |
 | --- | --- | --- | --- |
 | Ref and Title (one control across both) | text, "Title or Ref" | `q` | always |
-| Matter | text: reference, the typed pair `343-12`, or name | `matterText` (new) | default |
+| Matter Number (the Matter column, #348; the Matter Name column has no filter of its own) | text: reference, the typed pair `343-12`, or name | `matterText` (new) | default |
 | Client | text: name, or digits of the number | `clientText` (new) | chooser |
 | Project | text: project name | `projectText` (new) | chooser |
 | Task type, Workflow | multi-select | `type`, `workflow` | chooser |
@@ -273,3 +273,14 @@ Screenshots (`<name>-<width>x<height>.png`): `work-queue-filters-open`, `work-qu
 - The Client column is a plain one-line cell with a tooltip and is not in any default set (one click in Columns). The Matter and Project task grids (`hideContext`) have neither column.
 - Default sets: Task Queue and Pod Work: Ref, Title, Matter, Priority, Assignee, Due, Status; My Work Active and Due soon and overdue: Ref, Title, Matter, Progress, Priority, Due, Status; Closed: Ref, Title, Matter, Status, Closed; Created by me: Ref, Title, Matter, Priority, Assignee, Due, Status, Age (columns are shown in the grid's one column order). A filter on a hidden Matter column still shows as a chip.
 - Stored sets: the one-time migration (`mf.work-columns.v3.migrated.<page>.<userId>`) inserts Matter into My Work sets that lack it; Task Queue and Pod Work sets are kept and the notice offers "Add Matter column".
+
+## Re-review of 2026-10-20 (epic #75 close-out)
+
+`re-review-2026-10-20.md` walks the 36 surfaces of the inventory at 1366, 1920, 768 and 375 px (screenshots in `re-review/`). What changed in the code because of it, and what the shared parts now guarantee in addition to the rules above:
+
+- **One Clear filters.** `ListFilters.emptyClear` is true while the grid's own empty state offers Clear filters; the bar (row 1 and the stacked row 2) then shows none. `tbody[mfGridBody]` sets it itself when it is given `[filters]="filters"`; the work lists and the scoped task grids set it from their load state; `ServerListPage` pages set `emptyOffersClear`. A new screen gets the rule by passing `[filters]` to its grid body.
+- **Hidden records are named in an empty list.** `tbody[mfGridBody]` and `mf-record-card-list` take `[hidden]`, `hiddenLabel` and `(showAll)`: "No projects match these filters / 1 archived hidden  Show all / Clear filters". The count is the same second request that feeds the pager hint.
+- **A tab-owned filter is never an empty box.** Pod Work's Unassigned tab shows "Unassigned" in its Assignee cell (`fixedValue`), as the My Work tabs do.
+- **`mf-quick-views`** no longer calls `inject()` inside `afterNextRender` (it threw NG0203 on every Task Queue load and never let go of its ResizeObserver).
+- **Users:** First seen is the day only (the time is the tooltip) and the row actions are sticky at the right edge while the grid scrolls (at 1366 px its nine columns are wider than the box, so the filters are in the sheet by design).
+- Regression tests: `e2e/tests/column-filters-rereview.spec.ts` (RR-01 to RR-04) and the unit specs of `quick-views`, `filters-bar`, `grid-body`, `record-card-list`, `users-page`, `pod-work-page`.

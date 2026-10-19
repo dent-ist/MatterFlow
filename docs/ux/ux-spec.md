@@ -200,7 +200,7 @@ Left nav collapses to icons under 1100 px. Skip link first in DOM. A page with a
 ### 5.2 Tables (all queues and lists)
 - Server-side pagination (default 50; 25/50/100), sort and filter. Footer: "Showing 1-50 of 312", Rows per page, and the pager (see the grid contract below).
 - Sortable headers are buttons with `aria-sort`. Column chooser and density toggle per user (remembered); Ref and Title cannot be hidden.
-- Filters: chip bar above the table, removable chips, "Clear filters". Filter state lives in the URL (shareable, back-button safe). Drawer on narrow widths.
+- Filters: **inline column filters** (one `FilterDef[]` per grid; the standard is `docs/ux/column-filters-review.md` section 4 and the parts are in `docs/ux/column-filters/README.md`): a filter row under the column headers, a Filters toggle (`Filters (n)`: defaults are not counted), removable chips while the row is closed or for a filter on a hidden column, and **one** Clear filters (the bar shows none while an empty list offers its own). Filter state lives in the URL (shareable, back-button safe; any change resets the page). Below 768 px or when the grid overflows sideways the row is a **Filters sheet** with the same controls. A filtered grid prints with a "Filters: ..." line. See "Inline column filters" below for the rules and the surfaces.
 - Loading: skeleton rows with the final column widths and row height of the density, `aria-busy`; refresh keeps old rows dimmed. Empty: message + primary action when permitted. Empty after filtering: "No tasks match these filters." + Clear filters. Error: inline alert ("Couldn't load tasks.") with Retry, keeping previous rows.
 - Row actions: title link; overflow menu for secondary actions; inline edit of Priority/Assignee/Pod only with `Task.SetPriority`/`Task.Assign`/`Task.Reassign` (saves on change, toast with Undo for 8 s [UX-PROPOSAL]).
 - No selection checkboxes in Phase 1 (bulk reassign dropped).
@@ -250,6 +250,19 @@ Every other cell (Client, Task type, Workflow, Pod, names, dates, Age, Progress)
 *Print.* Print and PDF show the title, a filters line, one print line (page and view "Task Queue: Overdue", "Sorted by Due date, ascending" or "Sorted by default order", "Page 1 of 9, 442 tasks, showing 1-50", "Printed Oct 18, 2026, 3:05 PM EDT") and the grid with a repeating header. Hidden in print: the app header and rail, quick views, filter bar and row, resize handles, tabs, strip, the footer and pager, toasts. Fixed layout and widths are kept (scaled to the sheet); the red bar and pills print.
 
 **Record lists (Clients, Matters, Projects and the client's Matters tab; epic #245).** They use the table contract above with these differences, specified in 5.9 and S05 to S07: rows exactly 44 px (`.pg-table`, `shared/ui/page.scss`), names clamped at two lines with a tooltip, **the name is the only link**, the filter row is open by default from 640 px (remembered per list and person) with the Filters button and the one Clear filters in the page header, the default Status is not counted or chipped and the pager says how many records it hides (`of 37 active - 3 inactive hidden  Show all`), the Open tasks and Overdue count columns link to the Task Queue and sort server-side, there is no column chooser, resizing or density, and below 640 px the list is a column of cards with Sort by in the Filters sheet. The states are the shared ones: skeleton rows with the final widths, "No clients yet." with the creation button, "No clients match these filters" with Clear filters, "You don't have access to clients.", "Couldn't load clients." with the reference and Retry (focus then moves to the first row).
+
+**Inline column filters (epic #75; verified by the re-review of 2026-10-20, `docs/ux/column-filters/re-review-2026-10-20.md`).** Every grid that has a column per attribute filters inline; the others keep a toolbar control (Search results, Advanced search, the Dashboard board toolbar, pickers) and the ordered configuration lists (Roles, Labels, Link roles, Custom Fields) have no filters.
+
+| Rule | Behaviour |
+|---|---|
+| Surfaces (18) | Task Queue, My Work (four tabs), Pod Work (four tabs), the Tasks grids of a Matter and a Project, Clients, Matters, the client's Matters tab, Projects, Assets, the Matter's Assets tab, Users, Pods, Task Types, Workflows, Workflow Steps, Asset Types, Audit Logs. The Matter's Projects tab (a short in-memory list) has none. |
+| Open or closed | Open by default on Task Queue, My Work, Pod Work and (from 640 px) Clients, Matters, Projects and the client's Matters tab; closed on every other grid. The choice is remembered per screen and person; an address that carries filters opens the row. |
+| Controls | Text (contains, live after 300 ms, Enter at once, Esc clears a filled box, the placeholder is the column name), select, multi-select popover (checkboxes, find box above 8 options, applies 400 ms after the last tick or on close, Esc and an outside click close it, focus returns to the button), user (Me and Unassigned first), date range with presets (From and To; From after To is reported and not applied), tri-state. |
+| Defaults | The default (Status Active, Open for tasks) is shown in its cell, never written to the address, never counted and never a chip; "All" is a filter with a chip. Clear filters returns to the defaults and shows only while something differs. |
+| Empty | A filtered empty list keeps the headers and the row, says "No clients match these filters" with Clear filters and, when the default Status hides records that match ("2 inactive hidden  Show all"), says so. |
+| Tabs | A tab owns some filters (My Work, Pod Work): they show as muted text with the reason ("Set by the Due soon tab") and are not sent. Changing tab drops the filters the new tab owns. |
+| Keyboard | `/` opens the row (or the sheet) and focuses the first text filter; Esc clears, closes the popover or the sheet (nearest first). Shortcuts are unchanged by the re-review (see the Phase 2 backlog). |
+| Live region | One polite message after a filter change has loaded ("23 results", "Filters cleared. 40 assets"); never per keystroke. |
 
 ### 5.3 Forms and validation
 - Single column; label above input; "(required)" text after labels; help text beneath; errors beneath with icon.
@@ -1003,11 +1016,11 @@ Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comment
 
 ### S12 Admin: Users, Pending Users, Roles and Permissions
 
-**Users page.** Two tabs: **Users** and **Roles** (the roles and permissions screen). The Users tab lists users with a **Status** filter next to the search box: **Pending access (N)**, **Active**, **Inactive**, **All**; it opens on Pending access when someone is waiting, otherwise Active, and the choice lives in the URL (`status`, `q`, `page`).
+**Users page.** Three tabs: **Users**, **Roles** (the roles and permissions screen) and **Pods** (S13). The Users tab is a grid with inline column filters (Name, Windows account, First seen with presets, Email, Roles, Availability, and the **Status** column: **Pending access (N)**, **Active**, **Inactive**, **All**); it opens on Pending access when someone is waiting, otherwise Active (shown in the cell, not counted), and the filters live in the URL (`name`, `account`, `email`, `roleId`, `availability`, `registeredFrom`, `registeredTo`, `status`, `page`). First seen shows the day only (the time is the tooltip). Its nine columns are wider than the box at 1366 px, so the grid scrolls sideways there, the filters are in the Filters sheet (the row appears from about 1600 px) and the row actions (Open, Grant access) stay pinned at the right edge.
 ```text
-Administration > Users                                   [ Users ] [ Roles ]
-Search [____________]  Status [Pending access (3) v]   (3 waiting for access)
-Pending table: Name | Windows account | First seen | Email | Roles | Pods | [Grant access]
+Administration > Users                                   [ Users ] [ Roles ] [ Pods ]
+[ filter row: Name | Windows account | First seen | Email | Roles | Availability | Status [Pending access v] ]   (3 waiting for access)
+Table: Name | Windows account | First seen | Email | Roles | Pods | Availability | Status | [Open] [Grant access]
 ```
 - **Pending access** lists newly registered users with zero roles (the admin queue instead of notifications). Badge count also appears on the Administration nav item for users with `User.Manage`/`Role.Manage` [UX-PROPOSAL]. Row action "Grant access" opens the user drawer.
 **User drawer/detail.**
@@ -1115,12 +1128,12 @@ The step library is the **third tab ("Workflow Steps") of the Task Types page**;
 ```text
 Administration > Task Types > Workflow Steps                [+ New step]
 Task Types | Workflows | Workflow Steps
-Search [Title, description or tag]  Status [Active v]  [Tags v]  (o) Match all ( ) Match any   [Relativity x] [QC x]
+[ filter row: Title | Description | Tags [Any tag v] + [Match all tags v] | Used in [Any v] | Status [Active v] ]   chips: [Relativity x] [QC x]
 +----------------------+--------------------+-------------------------+--------------------+
 | Title                | Description        | Tags                    | Used in            |
 | Deduplicate          | Remove duplicates  | (Relativity) (QC) +2 more | Used in 3 workflows (link) |
 ```
-**Tags.** Each step has free-form tags (examples: Relativity, Processing). The Tags column shows chips (first three, then "+n more", long tags cut with an ellipsis). The free-text search also matches tag text. The **Tags** button opens a panel of checkboxes of the existing tags with counts ("Relativity (3)"; a find box above eight tags); chosen tags show as removable chips ("Remove tag filter X"); "Match all" (default: a step needs every chosen tag) or "Match any". The state is in the address (`q`, `tags` repeated, `tagMatch=any`, `status`, `sort`, `page`). The workflow designer's step picker shows the same chips, searches tag text and has the same Tags filter.
+**Tags.** Each step has free-form tags (examples: Relativity, Processing). The Tags column shows chips (first three, then "+n more", long tags cut with an ellipsis). The **Tags** filter of the filter row (a button under the Tags header) opens a panel of checkboxes of the existing tags with counts ("Relativity (3)"; a find box above eight tags); chosen tags show as removable chips ("Remove tag filter X"); "Match all" (default: a step needs every chosen tag) or "Match any". The state is in the address (`title`, `description`, `tags` repeated, `tagMatch=any`, `used`, `status`, `sort`, `page`); the Match all / Match any select sits under the Tags control and is idle until a tag is chosen. The workflow designer's step picker shows the same chips, searches tag text and has the same Tags filter.
 **Tag input (step editor).** Type and press Enter or comma to make a chip (leaving the box also commits), Backspace on an empty box removes the last chip, every chip has a "Remove tag X" button, existing tags are suggested as you type (a combobox with a listbox; free text is always allowed), a polite live region announces added and removed tags. Rules: trimmed, inner whitespace collapsed, at most 40 characters per tag, at most 20 per step, no control characters, case-insensitive uniqueness per step (the first spelling wins; an existing tag keeps its stored spelling across steps). Tags are library metadata: editing them never changes a published workflow version, and the change is audited (field `Tags`).
 **Step editor.**
 ```text
@@ -1286,8 +1299,7 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-task-count` | One Open tasks or Overdue cell or card count; links to the Task Queue above 0; the overdue style | `kind`, `scope`, `recordId`, `count`, `word` | S05-S07 lists |
 | `mf-record-card-list` / `mf-record-card` | Phone cards (below 640 px) with the table's states; the name is the one link | `noun`, `state`, `empty`, `filtered` | S05-S07 lists |
 | `mf-data-table` | Server-paged sortable table with column chooser, density, skeleton/empty/error | `columns`, `rows`, `sort`, `page`, `state` | S02-S04, lists |
-| `mf-filter-bar` / `mf-filter-drawer` / `mf-filter-chip` | Filters with URL state | `filterDefs`, `(change)` | S02-S04, S11 |
-| `mf-filters-bar` / `mf-column-filter-row` / `mf-filter-chips` / `mf-filter-sheet` (shared/filters) | Inline column filters generated from one `FilterDef[]` with URL state (`ListFilters`); see docs/ux/column-filters/README.md | `filters`, `columns`, `controls` | Assets (more screens: epic #75) |
+| `mf-filters-bar` / `mf-column-filter-row` / `mf-filter-chips` / `mf-filter-sheet` (shared/filters) | Inline column filters generated from one `FilterDef[]` with URL state (`ListFilters`); see docs/ux/column-filters/README.md | `filters`, `columns`, `controls` | Every filtered grid (the 18 surfaces of 5.2, epic #75) |
 | `mf-task-table` | Task columns, default sort, inline edit hooks on top of data-table | `scope`, `columnsPreset` | S02-S04, Matter/Project |
 | `mf-status-badge` | Lifecycle badge from code + label map | `code` | tasks everywhere |
 | `mf-priority-badge` | Priority label + glyph | `priority` | tasks |
@@ -1773,7 +1785,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S15-5 One "Task Types" menu item with the tabs Task Types, Workflows and Workflow Steps; /admin/task-types, /admin/workflows and /admin/steps open their tab; the step pages' breadcrumb is Administration > Task Types > Workflow Steps > step.
 - [ ] UAT-S15-8 The Workflow Steps list has a Used in column ("Used in 3 workflows", "Not used" when none); the link opens the Workflows tab filtered by that step (`?step=:id`, a removable chip "Step: X" and the line "Filtered by step X"). The Task Types tab lists each type's workflows as chips (default starred and marked "default", three then "+n more", "No workflow" as a warning) that open the workflow, and "+n more" / "Workflows (n)" open the Workflows tab filtered by the task type (`?taskType=:id`); the Workflows tab lists the task types per workflow the same way (`?workflow=:id` on the Task Types tab).
 - [ ] UAT-S15-6 Tags: add with Enter or comma, remove with Backspace or the "Remove tag X" button, suggestions from existing tags, limits explained (40 characters, 20 tags).
-- [ ] UAT-S15-7 The Workflow Steps list shows a Tags column, searches tag text and filters by tags (Match all by default, Match any on request); the designer's step picker shows tags and finds steps by tag.
+- [ ] UAT-S15-7 The Workflow Steps list shows a Tags column and filters by title, description and tags (Match all by default, Match any on request); the designer's step picker shows tags and finds steps by tag.
 
 ### S16 Workflow designer
 - [ ] UAT-S16-1 Choose Ordered/Unordered; ordering UI only meaningful for ordered; mode change confirm.

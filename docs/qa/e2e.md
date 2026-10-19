@@ -141,6 +141,7 @@ The counts are tests at the time of writing (`--list`); the names in a row are t
 | `nav-phone` (8) | Below 640 px the rail collapses behind a Menu button (focus trap, Esc) (#164) |
 | `wp9-density` (6) | Rows in view at 1366x768 and 1920x1080, no sideways scroll, skeleton rows with final widths, reduced motion (#176, #191) |
 | `column-filters`, `-admin`, `-records`, `-work-lists` (8, 11, 12, 13) and the `*-screens` helpers (1 each) | The shared column filter row: chips, live region, keyboard order, per-list filters on the server (Assets, administration lists, record lists, Task Queue / My Work / Pod Work) |
+| `column-filters-rereview` (4) | Re-review regressions (epic #75): no Angular error in the Task Queue console, one Clear filters on every filtered empty list, Users rows and row actions at 1366 px, the "N archived hidden  Show all" sentence of an empty filtered list (table and phone cards) |
 
 **Task Queue and the shared grid (epic #195)**
 
