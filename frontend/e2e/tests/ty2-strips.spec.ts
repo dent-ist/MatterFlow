@@ -280,12 +280,12 @@ test.describe('health strips (#367, #368)', () => {
     await admin.post('/api/v1/workflows', { name: `${token} Draft only`, isOrdered: true });
     await seedMix(admin, 'workflows', token, 0, 1);
 
-    type Summary = {
+    interface Summary {
       published: number;
       draftInProgress: number;
       notPublished: number;
       inactive: number;
-    };
+    }
     // The summary of the list answer the page itself received (library-wide, whatever the name filter above shows).
     const answer = page.waitForResponse(
       (r) =>
@@ -339,7 +339,12 @@ test.describe('health strips (#367, #368)', () => {
   }) => {
     const token = uid();
     await seedMix(admin, 'steps', token, 2, 1);
-    type Summary = { active: number; notUsed: number; inputsInDraft: number; inactive: number };
+    interface Summary {
+      active: number;
+      notUsed: number;
+      inputsInDraft: number;
+      inactive: number;
+    }
     const answer = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/step-definitions' &&

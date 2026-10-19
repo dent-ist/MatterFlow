@@ -15,7 +15,7 @@ describe('taskQueueQuery', () => {
     });
   });
 
-  it('scopes a Task Type with the Task Queue\'s `type` filter (#373)', () => {
+  it("scopes a Task Type with the Task Queue's `type` filter (#373)", () => {
     expect(taskQueueQuery('type', 12, 'open')).toEqual({
       type: '12',
       status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],

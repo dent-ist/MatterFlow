@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { StepDefinitionsClient, WorkflowsClient } from '../../../api/generated/api-client';
@@ -8,7 +8,7 @@ import { Permission } from '../../../core/auth/permissions';
 import { AdminCounts } from './admin-counts';
 import { TaskTypesApi } from './task-types-api';
 
-@Component({ template: '' })
+@Component({ template: '', changeDetection: ChangeDetectionStrategy.OnPush })
 class Tab {
   readonly report = AdminCounts.report('workflows');
 }
