@@ -28,7 +28,7 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
         <span class="dc-l1" aria-hidden="true">-</span>
       } @else {
         <time class="dc-l1" aria-hidden="true" [attr.datetime]="iso()">{{
-          layout() === 'inline' ? c.dateText : c.line1
+          lead() + (layout() === 'inline' ? c.dateText : c.line1)
         }}</time>
         @if (c.line2 && !closed()) {
           <span class="dc-l2" aria-hidden="true">
@@ -123,8 +123,11 @@ export class DueCell {
   readonly layout = input<'two-line' | 'inline'>('two-line');
   /** Extra tooltip line after the full date (the Dashboard lists put "Created 3 days ago" here). */
   readonly extraTip = input('');
+  /** A closed task says "Was due Oct 14" (the Task page's Due tile, B2 #302); the work lists show the plain date. */
+  readonly wasDue = input(false);
 
   protected readonly closed = computed(() => CLOSED_STATUSES.includes(this.status() ?? ''));
+  protected readonly lead = computed(() => (this.wasDue() && this.closed() ? 'Was due ' : ''));
   protected readonly cell = computed(() =>
     describeDueCell(this.due(), this.clock.now(), this.zone, this.status()),
   );

@@ -3,8 +3,8 @@ import { TaskStep } from './task-step';
 import { TaskDetailStore } from './task-detail.store';
 
 /**
- * Workflow section (UX S10): the stepper for ordered and unordered workflows, the progress summary, an explanation when step
- * actions are blocked (On Hold, closed). The Complete task action is in the page header (#298).
+ * Workflow section (UX S10): the stepper for ordered and unordered workflows and the progress summary. Why the steps are read-only on an On Hold,
+ * Completed or Cancelled task is said once, by the status note under the header (#301). The Complete task action is in the page header (#298).
  */
 @Component({
   selector: 'mf-task-workflow-tab',
@@ -38,10 +38,6 @@ import { TaskDetailStore } from './task-detail.store';
             </p>
           </div>
         </div>
-
-        @if (notice(); as n) {
-          <div class="pg-banner" role="note" data-workflow-notice>{{ n }}</div>
-        }
 
         @if (!w.isOrdered) {
           <div class="wf__filter" role="group" aria-label="Show steps">
@@ -169,25 +165,4 @@ export class TaskWorkflowTab {
   protected readonly currentSequenceNo = computed(
     () => this.wf()?.steps.find((s) => s.isCurrent)?.sequenceNo ?? null,
   );
-
-  /** Why step actions are unavailable at the task level. */
-  protected readonly notice = computed(() => {
-    const t = this.store.task();
-    if (!t) return null;
-    if (this.store.viewOnly()) {
-      return t.status === 'ON_HOLD' || t.status === 'COMPLETED' || t.status === 'CANCELLED'
-        ? `This task is ${t.statusLabel}.`
-        : null;
-    }
-    switch (t.status) {
-      case 'ON_HOLD':
-        return 'This task is On Hold. Resume it before working on its steps.';
-      case 'COMPLETED':
-        return 'This task is Completed. Reopen a step to change it; the task moves back to In Progress.';
-      case 'CANCELLED':
-        return 'This task is Cancelled. Reopen the task to work on its steps.';
-      default:
-        return null;
-    }
-  });
 }

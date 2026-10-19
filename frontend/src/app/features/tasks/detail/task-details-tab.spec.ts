@@ -247,7 +247,8 @@ describe('Details tab', () => {
       }),
     );
     expect(q(el, '[data-action="edit"]')).toBeNull();
-    expect(q(el, '[data-closed-banner]')!.textContent).toContain('Reopen it to edit');
+    expect(q(el, '[data-closed-banner]')).toBeNull();
+    expect(q(el, '[data-status-note]')!.textContent).toContain('Cancelled');
     expect(q(el, '[data-readonly-note]')).toBeNull();
   });
 

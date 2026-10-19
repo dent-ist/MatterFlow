@@ -7,16 +7,27 @@ import { DueCell } from './due-cell';
 @Component({
   imports: [DueCell],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<mf-due-cell [due]="due()" [status]="status()" [layout]="layout()" />`,
+  template: `<mf-due-cell
+    [due]="due()"
+    [status]="status()"
+    [layout]="layout()"
+    [wasDue]="wasDue()"
+  />`,
 })
 class Host {
   readonly due = signal<DueInput>({});
   readonly status = signal<string | null>('NEW');
   readonly layout = signal<'two-line' | 'inline'>('two-line');
+  readonly wasDue = signal(false);
 }
 
 describe('DueCell (#209)', () => {
-  function render(due: DueInput, status = 'NEW', layout: 'two-line' | 'inline' = 'two-line') {
+  function render(
+    due: DueInput,
+    status = 'NEW',
+    layout: 'two-line' | 'inline' = 'two-line',
+    wasDue = false,
+  ) {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -28,6 +39,7 @@ describe('DueCell (#209)', () => {
     f.componentInstance.due.set(due);
     f.componentInstance.status.set(status);
     f.componentInstance.layout.set(layout);
+    f.componentInstance.wasDue.set(wasDue);
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
     const q = (s: string) => el.querySelector(s);
@@ -78,6 +90,15 @@ describe('DueCell (#209)', () => {
     expect(closed.l2).toBeUndefined();
     expect(closed.el.querySelector('.pi-exclamation-circle')).toBeNull();
     expect(closed.spoken).toBe('Was due Oct 1');
+  });
+
+  it('wasDue (the Task page): a closed task with a due date says "Was due Oct 1"; no due date keeps the dash; an open task is unchanged (#302)', () => {
+    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline', true).l1).toBe('Was due Oct 1');
+    expect(render({ dueDate: '2026-10-01' }, 'CANCELLED', 'inline', true).l1).toBe('Was due Oct 1');
+    expect(render({}, 'COMPLETED', 'inline', true).l1).toBe('-');
+    expect(render({ dueDate: '2026-10-20' }, 'NEW', 'inline', true).l1).toBe('Oct 20');
+    // The work lists do not ask for it.
+    expect(render({ dueDate: '2026-10-01' }, 'COMPLETED', 'inline').l1).toBe('Oct 1');
   });
 
   it('inline layout: the date without time, then the relative text on the same line, no icon', () => {

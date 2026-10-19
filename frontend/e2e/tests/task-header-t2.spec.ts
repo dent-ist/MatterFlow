@@ -473,7 +473,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(page.locator('[data-action="complete"]')).toHaveCount(0);
     // No Reopen/Complete/Cancel button in the Workflow section or in a banner.
     await expect(
-      page.locator('[data-closed-banner] button, [data-workflow-tab] [data-reopen-task]'),
+      page.locator('[data-status-note] button, [data-workflow-tab] [data-reopen-task]'),
     ).toHaveCount(0);
     await waitForToastsToGo(page);
     await atEverySize(page, 'completed', async () => {

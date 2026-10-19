@@ -167,9 +167,14 @@ export class TaskDetailPage {
     await expect(heading).toBeVisible();
   }
 
-  /** Opens the Activity drawer from the header and returns it. */
+  /** Opens the Activity drawer from the header (from its overflow menu on a phone, where the header folds Edit and Activity into it) and returns it. */
   async openActivity(): Promise<Locator> {
-    await this.header.locator('[data-action="activity"]').click();
+    const button = this.header.locator('[data-action="activity"]');
+    if (await button.isVisible()) await button.click();
+    else {
+      await this.header.locator('[data-overflow]').click();
+      await this.page.getByRole('menuitem', { name: /Activity/ }).click();
+    }
     const drawer = this.page.getByRole('dialog', { name: /^Activity:/ });
     await expect(drawer).toBeVisible();
     return drawer;

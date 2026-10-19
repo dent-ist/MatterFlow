@@ -4,6 +4,7 @@ import {
   formatDateOnly,
   formatInstant,
   parseDateOnly,
+  formatStatusStamp,
   zoneAbbreviation,
   zonedLocalToUtc,
 } from './time';
@@ -37,6 +38,20 @@ describe('formatInstant', () => {
     // 2026-11-01 06:00Z is the instant New York falls back 2:00 EDT -> 1:00 EST.
     expect(formatInstant('2026-11-01T05:30:00Z', NY)).toBe('Nov 1, 2026, 1:30 AM EDT');
     expect(formatInstant('2026-11-01T06:30:00Z', NY)).toBe('Nov 1, 2026, 1:30 AM EST');
+  });
+});
+
+describe('formatStatusStamp (T3 status note)', () => {
+  const NOW = new Date('2026-10-19T16:00:00Z');
+  it('is "Oct 18, 4:03 PM" in the viewer zone, in two zones', () => {
+    expect(formatStatusStamp('2026-10-18T20:03:00Z', NY, NOW)).toBe('Oct 18, 4:03 PM');
+    expect(formatStatusStamp('2026-10-18T20:03:00Z', 'Asia/Tokyo', NOW)).toBe('Oct 19, 5:03 AM');
+  });
+  it('adds the year outside the current year of the viewer zone', () => {
+    expect(formatStatusStamp('2025-12-31T23:30:00Z', NY, NOW)).toBe('Dec 31, 2025, 6:30 PM');
+    expect(formatStatusStamp('2025-12-31T23:30:00Z', 'Asia/Tokyo', NOW)).toBe(
+      'Jan 1, 8:30 AM',
+    );
   });
 });
 

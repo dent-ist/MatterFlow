@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
@@ -36,7 +37,8 @@ public sealed class TaskPresenter(
     IWorkflowCatalog workflowCatalog,
     IPermissionChecker permissions,
     IUserTimeZone timeZone,
-    IClock clock)
+    IClock clock,
+    IAuditReader auditReader)
 {
     private static readonly IReadOnlyDictionary<string, JsonElement> NoValues = new Dictionary<string, JsonElement>();
 
@@ -54,7 +56,11 @@ public sealed class TaskPresenter(
         var priority = await priorities.GetAsync(t.PriorityId, ct);
         var statusLabel = await labels.GetLabelAsync(t.Status.ToCode(), ct);
         var pod = t.AssignedPodId is { } podId ? await pods.FindAsync(podId, ct) : null;
-        var userIds = new[] { t.AssignedUserId, t.CreatedByUserId }.OfType<int>().ToList();
+        // Who made the status change the page shows as a note (Completed, Cancelled, On Hold): the actor of the newest status event.
+        var statusActorId = t.Status is TaskStatusCode.Completed or TaskStatusCode.Cancelled or TaskStatusCode.OnHold
+            ? (await auditReader.LatestForTaskAsync(t.Id, AuditEventTypes.TaskStatusChanged, ct))?.ActorUserId
+            : null;
+        var userIds = new[] { t.AssignedUserId, t.CreatedByUserId, statusActorId }.OfType<int>().Distinct().ToList();
         var userMap = await users.FindManyAsync(userIds, ct);
 
         IReadOnlyDictionary<string, JsonElement> formValues = NoValues;
@@ -115,7 +121,8 @@ public sealed class TaskPresenter(
             TaskSupport.Encode(t.RowVersion),
             notes.Warnings,
             notes.Dropped,
-            notes.BulkCompleted);
+            notes.BulkCompleted,
+            UserRef(userMap, statusActorId));
     }
 
     /// <summary>The page of list items for already-loaded Tasks (names resolved once per distinct id).</summary>

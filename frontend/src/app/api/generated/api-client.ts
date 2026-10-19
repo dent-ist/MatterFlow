@@ -13342,6 +13342,7 @@ export interface TaskResponse {
     warnings: string[];
     droppedFields: string[];
     bulkCompletedStepInstanceIds: number[];
+    statusChangedBy?: TaskUserRef | undefined;
 
     [key: string]: any;
 }

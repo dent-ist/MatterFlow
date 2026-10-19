@@ -182,13 +182,17 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
         reason.GetProperty("purpose").GetString().ShouldBe("ON_HOLD");
         reason.GetProperty("bodyHtml").GetString().ShouldBe("<p>Waiting for &lt;b&gt;client&lt;/b&gt; &amp; &quot;counsel&quot;<br>second line</p>");
         reason.GetProperty("authorName").GetString().ShouldNotBeNullOrWhiteSpace();
+        held.GetProperty("statusChangedBy").GetProperty("displayName").GetString().ShouldBe(reason.GetProperty("authorName").GetString());
 
         var resumed = await _h.StatusAsync(held, "IN_PROGRESS");
         resumed.GetProperty("statusReason").ValueKind.ShouldBe(JsonValueKind.Null);
+        resumed.GetProperty("statusChangedBy").ValueKind.ShouldBe(JsonValueKind.Null);
 
         var cancelled = await _h.PostAsync(TaskId(resumed), "cancel", new { comment = "Duplicate of another request", rowVersion = RowVersion(resumed) });
         cancelled.GetProperty("statusReason").GetProperty("purpose").GetString().ShouldBe("CANCEL");
         cancelled.GetProperty("statusReason").GetProperty("bodyHtml").GetString().ShouldBe("<p>Duplicate of another request</p>");
+        cancelled.GetProperty("statusChangedBy").GetProperty("userId").GetInt32().ShouldBe(cancelled.GetProperty("statusReason").GetProperty("authorUserId").GetInt32());
+        (await _h.GetTaskAsync(TaskId(cancelled))).GetProperty("statusChangedBy").GetProperty("displayName").GetString().ShouldNotBeNullOrWhiteSpace();
 
         var events = await _h.AuditAsync(TaskId(task));
         events.Count(e => e.EventType == "COMMENT_ADDED").ShouldBe(2);
@@ -388,6 +392,10 @@ public sealed class TaskLifecycleApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         Status(completed).ShouldBe("COMPLETED");
         completed.GetProperty("bulkCompletedStepInstanceIds").GetArrayLength().ShouldBe(0);
+        // Who completed it, for the status note of the Task page (the actor of the newest status event).
+        completed.GetProperty("statusChangedBy").GetProperty("displayName").GetString().ShouldNotBeNullOrWhiteSpace();
+        (await _h.GetTaskAsync(TaskId(task))).GetProperty("statusChangedBy").GetProperty("userId").GetInt32()
+            .ShouldBe(completed.GetProperty("statusChangedBy").GetProperty("userId").GetInt32());
         var check = await OkAsync(await _h.Admin.GetAsync($"/api/v1/tasks/{TaskId(task)}/completion"));
         check.GetProperty("isReady").GetBoolean().ShouldBeTrue();
     }

@@ -49,11 +49,12 @@ test.describe('Status changes and closed tasks', () => {
     );
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('On Hold');
-    await expect(page.locator('[data-status-reason]')).toContainText('Waiting for the client');
-    await expect(page.locator('[data-status-reason]')).toContainText('ke\\kekim');
+    await expect(page.locator('[data-status-note]')).toContainText('Waiting for the client');
+    await expect(page.locator('[data-status-note]')).toContainText('ke\\kekim');
 
     await detail.showSection('Workflow');
-    await expect(page.locator('[data-workflow-notice]')).toContainText('This task is On Hold');
+    // The status note says it once; the Workflow repeats nothing.
+    await expect(page.locator('[data-workflow-notice]')).toHaveCount(0);
     const first = detail.step(world.workflow.stepTitles[0]);
     await first.expand();
     await expect(first.completeButton).toHaveCount(0);
@@ -98,7 +99,7 @@ test.describe('Status changes and closed tasks', () => {
     await detail.submitReason('Cancel task', 'Wrong task type, recreated as another task');
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('Cancelled');
-    await expect(page.locator('[data-status-reason]')).toContainText('Wrong task type');
+    await expect(page.locator('[data-status-note]')).toContainText('Wrong task type');
     expect(await new TaskApi(admin, task.taskId).stepStatuses()).toEqual([
       'PENDING',
       'PENDING',
@@ -112,7 +113,7 @@ test.describe('Status changes and closed tasks', () => {
     await page.locator('[data-action="reopen"]').click();
     await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
     await detail.expectStatus('In Progress');
-    await expect(page.locator('[data-closed-banner]')).toHaveCount(0);
+    await expect(page.locator('[data-status-note]')).toHaveCount(0);
   });
 
   test('a completed task cannot be edited until it is reopened', async ({ page, seed, admin }) => {
@@ -126,7 +127,7 @@ test.describe('Status changes and closed tasks', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.expectStatus('Completed');
-    await expect(page.locator('[data-closed-banner]')).toContainText('Reopen it to edit');
+    await expect(page.locator('[data-status-note]')).toContainText(/Completed .* by ke\\kekim/);
     await expect(page.locator('[data-readonly-note]')).toHaveCount(0);
     await expect(page.locator('[data-task-header] [data-action="edit"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);

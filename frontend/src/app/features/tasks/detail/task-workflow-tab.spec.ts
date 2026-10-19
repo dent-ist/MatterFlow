@@ -192,7 +192,7 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-step-id="104"] [data-locked]')!.textContent).toContain('step 1 first');
   });
 
-  it('explains why actions are unavailable while the task is On Hold', async () => {
+  it('says nothing about the On Hold status itself (the status note does, once): no notice, no step line, no step actions', async () => {
     const { el } = await mountWorkflow(
       aTask({
         status: 'ON_HOLD',
@@ -204,10 +204,12 @@ describe('Workflow tab: ordered stepper', () => {
         }),
       }),
     );
-    expect(q(el, '[data-workflow-notice]')!.textContent).toContain('On Hold');
+    expect(q(el, '[data-workflow-notice]')).toBeNull();
+    expect(el.textContent).not.toContain('On Hold');
+    expect(el.textContent).not.toContain('Resume it');
     const step = q(el, '[data-step-id="103"]')!;
     expect(step.querySelector('[data-complete]')).toBeNull();
-    expect(step.querySelector('[data-blocked-reason]')!.textContent).toContain('Resume it');
+    expect(step.querySelector('[data-blocked-reason]')).toBeNull();
     expect(q(el, '[data-step-id="101"] [data-reopen]')).toBeNull();
   });
 });

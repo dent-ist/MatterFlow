@@ -117,7 +117,11 @@ public sealed record TaskAllowedActions(
 
 // ---- task
 
-/// <summary>A Task in full. <c>warnings</c>, <c>droppedFields</c> and <c>bulkCompletedStepInstanceIds</c> are filled only on the response to a write.</summary>
+/// <summary>
+/// A Task in full. <c>warnings</c>, <c>droppedFields</c> and <c>bulkCompletedStepInstanceIds</c> are filled only on the response to a write.
+/// <c>statusChangedBy</c> is who made the latest status change (from the audit trail); set only while the Task is Completed, Cancelled or On Hold and
+/// null when the trail has no such event.
+/// </summary>
 public sealed record TaskResponse(
     [property: Required] long TaskId,
     [property: Required] string TaskNumber,
@@ -155,7 +159,8 @@ public sealed record TaskResponse(
     [property: Required] string RowVersion,
     [property: Required] IReadOnlyList<string> Warnings,
     [property: Required] IReadOnlyList<string> DroppedFields,
-    [property: Required] IReadOnlyList<int> BulkCompletedStepInstanceIds);
+    [property: Required] IReadOnlyList<int> BulkCompletedStepInstanceIds,
+    TaskUserRef? StatusChangedBy = null);
 
 /// <summary>A Task in the minimal list.</summary>
 public sealed record TaskListItem(

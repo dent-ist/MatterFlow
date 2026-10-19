@@ -22,6 +22,9 @@ import { TaskDetailStore } from './task-detail.store';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { Badge, BadgeTone } from '../../../shared/ui/badge';
 
+/** The Task statuses the status note under the header explains (so the step does not repeat them). */
+const STATUS_NOTE_STATES: readonly string[] = ['ON_HOLD', 'COMPLETED', 'CANCELLED'];
+
 const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string; tone: BadgeTone }>> = {
   PENDING: { text: 'Pending', icon: 'pi-circle', tone: 'neutral' },
   IN_PROGRESS: { text: 'In progress', icon: 'pi-play-circle', tone: 'info' },
@@ -44,8 +47,8 @@ export function valuesPatch(
 
 /**
  * One step of the stepper (UX S10): state, tags, instructions, documentation link, the step's input form and the
- * Save / Complete / Skip / Reopen actions. Ordered workflows lock steps that are not yet current; actions are disabled with
- * a visible reason while the Task is On Hold or closed.
+ * Save / Complete / Skip / Reopen actions. Ordered workflows lock steps that are not yet current; the actions are left out while the Task is On
+ * Hold or closed (the status note under the header says why, once) and a line says why only for a missing permission or an inactive Matter.
  */
 @Component({
   selector: 'mf-task-step',
@@ -521,18 +524,12 @@ export class TaskStep {
     if (!task || this.locked() || this.store.viewOnly()) return null;
     const a = task.allowedActions;
     if (!this.resolved() && !a.canExecuteSteps) {
-      if (task.status === 'ON_HOLD')
-        return 'This task is On Hold. Resume it before working on its steps.';
-      if (task.status === 'COMPLETED') return 'This task is Completed. Reopen a step to change it.';
-      if (task.status === 'CANCELLED')
-        return 'This task is Cancelled. Reopen the task to work on its steps.';
+      // On Hold, Completed and Cancelled are explained once, by the status note under the header (#301).
+      if (STATUS_NOTE_STATES.includes(task.status)) return null;
       return "You don't have permission to work on workflow steps.";
     }
     if (this.resolved() && !a.canReopenSteps) {
-      if (task.status === 'ON_HOLD')
-        return 'This task is On Hold. Resume it before reopening steps.';
-      if (task.status === 'CANCELLED')
-        return 'This task is Cancelled. Reopen the task to change its steps.';
+      if (task.status === 'ON_HOLD' || task.status === 'CANCELLED') return null;
       if (!task.matter.isActive) return "Matter is inactive. This step can't be reopened.";
       return "You don't have permission to reopen steps.";
     }

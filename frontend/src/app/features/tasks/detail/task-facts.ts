@@ -88,6 +88,7 @@ function rowOfTask(t: TaskResponse): TaskQueueRow {
               layout="inline"
               [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
               [status]="t.status"
+              [wasDue]="true"
             />
           </span>
         </li>

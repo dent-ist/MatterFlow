@@ -20,6 +20,7 @@ import { TaskActionDialogs } from './task-action-dialogs';
 import { TaskDetailStore, TaskSection } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
+import { TaskStatusNote } from './task-status-note';
 import { TaskWorkflowTab } from './task-workflow-tab';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
@@ -44,7 +45,8 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
 
 /**
  * Task detail (UX S10, `/tasks/:id`): one page in the layout of the Client, Matter and Project pages. The header (the shared record header
- * and the facts strip) carries Edit, Activity, Complete task or Reopen task and the overflow; then the banners (conflict, closed, hold or cancel reason); then the
+ * and the facts strip) carries Edit, Activity, Complete task or Reopen task and the overflow; then the one status note (Completed, Cancelled or
+ * On Hold: who, when, why; T3) and the banners (conflict, warnings); then the
  * Workflow and Comments sections in the main column and the Details and Assets sections in the side panel. Below 1100 px the order is
  * Details (collapsible), Workflow, Comments, Assets, with a "Jump to" row. The old `?tab=` links scroll to the section
  * (`workflow`, `comments`, `assets`), open the drawer (`activity`) or just show the page (`details`); `?step=<id>` opens that step.
@@ -55,6 +57,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
     RecordSkeleton,
     RecordState,
     TaskHeader,
+    TaskStatusNote,
     DetailLayout,
     ActivityDrawer,
     TaskDetailsTab,
@@ -87,28 +90,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
 
           <mf-task-header />
 
-          @if (store.closed()) {
-            <div class="pg-banner" role="note" data-closed-banner>
-              This task is {{ t.statusLabel }}.
-              @if (reopen(); as r) {
-                @if (r.permitted) {
-                  Reopen it to edit.
-                } @else if (r.blockedReason === 'MATTER_INACTIVE') {
-                  <span data-matter-inactive>Matter is inactive. This task can't be reopened.</span>
-                }
-              }
-            </div>
-          }
-
-          @if ((t.status === 'ON_HOLD' || t.status === 'CANCELLED') && t.statusReason; as reason) {
-            <div class="pg-banner" role="note" data-status-reason>
-              <strong
-                >{{ t.status === 'ON_HOLD' ? 'On hold' : 'Cancelled' }} by
-                {{ reason.authorName }}:</strong
-              >
-              <span [innerHTML]="reason.bodyHtml"></span>
-            </div>
-          }
+          <mf-task-status-note />
 
           @for (w of warnings(); track w) {
             <div class="pg-banner" role="status" data-warning>{{ w }}</div>
@@ -314,10 +296,6 @@ export class TaskDetailPage implements HasUnsavedChanges {
   protected readonly assetsOpen = linkedSignal(() => readOpen(this.openKeys()[1]) ?? false);
   /** The `?tab=` / `?step=` pair already acted on for the loaded Task, so a reload does not scroll again. */
   private handledLink: string | null = null;
-
-  protected readonly reopen = computed(
-    () => this.store.task()?.allowedActions.transitions.find((o) => o.action === 'REOPEN') ?? null,
-  );
 
   protected readonly warnings = computed(() =>
     this.store.warnings().map((w) => WARNING_TEXT[w] ?? w),

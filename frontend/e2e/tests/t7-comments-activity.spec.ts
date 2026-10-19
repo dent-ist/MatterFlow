@@ -72,6 +72,8 @@ const drawer = (page: Page): Locator => page.getByRole('dialog', { name: /^Activ
 
 /** Presses "Load more" in the Activity drawer until the whole history is there. */
 async function loadAllActivity(dlg: Locator, page: Page): Promise<void> {
+  // The first page must be there: before it arrives there is no "Load more" yet, and the loop would end at once (flaky under load).
+  await expect(dlg.locator('[data-event-id]').first()).toBeVisible();
   while (await dlg.locator('[data-more]').count()) {
     await dlg.locator('[data-more]').click();
     await page.waitForTimeout(300);
@@ -381,7 +383,7 @@ test.describe('T7: Activity (A1 and A2, #316, #317, #318)', () => {
     }
     await page.keyboard.press('Escape');
     await expect(drawer(page)).toHaveCount(0);
-    await expect(detail.header.locator('[data-activity-button]')).toBeFocused();
+    await expect(detail.header.locator('[data-action="activity"]')).toBeFocused();
   });
 
   test('Load more extends a fold: 112 comments, the first page is one group of 25 and then grows', async ({
@@ -474,6 +476,8 @@ test.describe('T7: Activity (A1 and A2, #316, #317, #318)', () => {
       await detail.open(thread.taskId);
       await detail.showSection('Comments');
       await expect(commentsRegion(page).locator('[data-composer-quick]')).toBeVisible();
+      // From the top: scrolled to Comments, the fixed app bar can cover the facts strip's chips partly, which axe's target-size rule reports.
+      await page.evaluate(() => window.scrollTo(0, 0));
       await checkPage(page, `comments 48 ${size.name}`);
       await shot(page, `comments-48-${size.name}`);
 

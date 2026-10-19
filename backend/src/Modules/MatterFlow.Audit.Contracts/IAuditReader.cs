@@ -31,4 +31,7 @@ public interface IAuditReader
         int limit,
         IReadOnlyCollection<string>? excludedEventTypes = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>The newest event of one type scoped to a Task (for example who made the last status change); null when there is none.</summary>
+    Task<AuditRecord?> LatestForTaskAsync(long taskId, string eventType, CancellationToken cancellationToken = default);
 }

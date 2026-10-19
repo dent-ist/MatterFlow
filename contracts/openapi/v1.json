@@ -15200,6 +15200,16 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "statusChangedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
           }
         }
       },

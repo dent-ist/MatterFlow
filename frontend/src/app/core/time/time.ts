@@ -172,6 +172,21 @@ export function formatInstant(instant: Date | string | number, zone: string): st
   return `${formatInstantDate(instant, zone)}, ${formatInstantTime(instant, zone)}`;
 }
 
+/**
+ * "Oct 18, 4:03 PM" for an instant in the viewer's zone: the stamp of the Task status note (Completed, Cancelled, On Hold). The year shows
+ * only outside the current year (`now`, in the same zone); the full date with the zone is the tooltip (`formatInstant`).
+ */
+export function formatStatusStamp(
+  instant: Date | string | number,
+  zone: string,
+  now: Date = new Date(),
+): string {
+  const day = calendarDayInZone(instant, zone);
+  const text =
+    day.year === calendarDayInZone(now, zone).year ? formatMonthDay(day) : formatCalendarDay(day);
+  return `${text}, ${formatTimeOnly(toDate(instant), zone)}`;
+}
+
 export type MfDateKind = 'auto' | 'date' | 'datetime';
 
 /**

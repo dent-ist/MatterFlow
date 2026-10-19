@@ -367,22 +367,27 @@ describe('TaskDetailPage header', () => {
     });
   });
 
-  it('closed tasks show the reopen banner; reopening confirms then calls reopen', async () => {
+  it('a closed task shows its one status note; reopening is the header action, confirms, then calls reopen', async () => {
     const task = aTask({
       status: 'COMPLETED',
       statusLabel: 'Completed',
+      statusChangedAtUtc: '2026-10-13T15:03:00Z',
+      completedAtUtc: '2026-10-13T15:03:00Z',
+      statusChangedBy: { userId: 3, displayName: 'Dana P.', isActive: true },
       allowedActions: allowed({
         canEdit: false,
         transitions: [transition('REOPEN'), transition('CANCEL')],
       }),
     });
     const { fixture, el, fakes } = await mountTaskPage(task);
-    expect(q(el, '[data-closed-banner]')!.textContent).toMatch(
-      /This task is Completed\.\s+Reopen it to edit\./,
+    expect(el.querySelectorAll('[data-status-note]').length).toBe(1);
+    expect(q(el, '[data-status-note]')!.textContent).toMatch(
+      /Completed Oct 13, \d{1,2}:\d{2} [AP]M by Dana P/,
     );
+    expect(q(el, '[data-closed-banner]')).toBeNull();
     expect(q(el, '[data-action="edit"]')).toBeNull();
-    // No Reopen button in the banner or the Workflow: it is the header's primary action, and Complete task is gone.
-    expect(q(el, '[data-closed-banner] button')).toBeNull();
+    // No Reopen button in the note or the Workflow: it is the header's primary action, and Complete task is gone.
+    expect(q(el, '[data-status-note] button')).toBeNull();
     expect(q(el, '[data-action="complete"]')).toBeNull();
     expect(q(el, '[data-workflow-tab] button[data-reopen-task]')).toBeNull();
 
@@ -406,8 +411,10 @@ describe('TaskDetailPage header', () => {
         },
       }),
     );
-    expect(q(el, '[data-status-reason]')!.textContent).toContain('Waiting for the vendor');
-    expect(q(el, '[data-status-reason]')!.textContent).toContain('Dana P.');
+    expect(el.querySelectorAll('[data-status-note]').length).toBe(1);
+    expect(q(el, '[data-status-note]')!.textContent).toContain('Waiting for the vendor');
+    expect(q(el, '[data-status-note]')!.textContent).toContain('Dana P.');
+    expect(q(el, '[data-status-reason]')).toBeNull();
   });
 });
 
