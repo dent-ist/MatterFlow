@@ -1,0 +1,210 @@
+# Task Types administration review: delivery plan
+
+Owner approval: "I like all your recommendations go ahead to create epics and issues and start working" (2026-10-19), with product decisions delegated to the PM ("you can make decisions for me"). Decisions are recorded as "Decision (PM)" in each issue's "PM requirements review" comment and summarised below. Date of this plan: 2026-10-19, base `origin/dev` (Clients epic #245 and Task Detail epic #288 built and verified; their shared components are on dev). Source review: `README.md` in this folder (59 findings, 10 cross-cutting points, BUG-1 to BUG-9, 114 screenshots in `screenshots/`, two mocks in `mocks/`).
+
+Structure on GitHub: one epic **#352** (labels `epic` + `phase-9`), 67 sub-issues **#353 to #419** (label `phase-9`; the numbers are in creation order: the six first-release issues come first, then the packages in order). None is decided "not now". Folded IDs (named in the host issue title, nothing dropped): BUG-6 in #353; P5 and TE6 and the form stack in #361; FD6 and VP9 in #359; TT4 in #371; TT6 and SL5 in #355 (with BUG-2); WL1, SL1, SL2, SL3 in #356; WL3 in #376; WL5 in #377; TE7 and TE9 in #380/#381; WE5 in #387; SE1 and SE2 in #404; SE5 in #403; BUG-9 in #370; FD2 and FD3 in #409; VP1 is split in #357 (sticky bar, first release) and #393 (fixed-height page); VP2 in #394/#395; VP7 in #401/#402; TE1 in #380/#381; TE2 in #382/#383; FD1 in #407/#408. "Verified good" items (P6 permissions, TT10, VP10, tab model, Alt+Arrow on the version page, dirty guards, conflict banners, 0 axe violations on the lists and edit pages) are regression tests only.
+
+Issues blocked on an owner decision: **none**. The five questions the review put to the owner (section 6) are decided by the PM: (1) Option A, inline editing under a record header; (2) tab counts show **active** records; (3) the open-task counts are **added to the API**; (4) **no drag handle** on steps or fields; (5) the library is a **drawer below 1280 px and a left pane above**.
+
+Effort is in **AI-agent hours** (wall-clock of one developer agent, including unit, integration, e2e, axe and screenshots). The review estimated 141 hours; the plan is **161.5** because the review's package totals were lower than the sum of its own finding estimates (the lists and the version editor alone differ by about 12 hours), the four API items are separate backend issues (9 hours), and the shared form pattern, the impact helper and the designer regression check became explicit issues. The first release is **15 hours** (review: about 17).
+
+## 1. Issue list
+
+| # | ID | Title (short) | Agent-h | Depends on | Package |
+|---|---|---|---|---|---|
+| #353 | BUG-1 (with BUG-6) | Not-found, no-access and failure states on the admin pages use the shared record state (one wordi... | 3.5 | Reuses Clients #246/#247 and Task Detail #290/#292 (all done). First release. | WP-TY1 (R1) |
+| #354 | BUG-3 | Focus returns to the row on Back and the breadcrumb keeps the list state on the three admin lists | 3 | Clients #281 (done, `drill.ts`), Task Detail #324. After #355 and #356 in the same lane (same list files).... | WP-TY1 (R1) |
+| #355 | BUG-2, TT6, SL5 | Row overflow menu on the three lists so the Actions are never off screen | 2.5 | Clients #275-#278 pattern for overflow; #354 follows in the same lane. First release. | WP-TY3 (R1) |
+| #356 | WL1, SL1, SL2, SL3 | Workflows and Steps rows are exactly 44 px (clamps, Title is the spring, Used in nowrap) | 3 | First release. Clients #269 (44 px rows, done). | WP-TY3 (R1) |
+| #357 | VP1 (sticky bar) | Sticky action bar on the version page (Publish, Save draft, overflow, Unsaved changes) | 2 | First release. No dependencies. | WP-TY6 (R1) |
+| #358 | BUG-4 | The publish dialog's scrollable content is reachable by keyboard | 1 | First release. After #357 in the same lane. | WP-TY6 (R1) |
+| #359 | BUG-7 (FD6, VP9) | Document titles name the record on all 12 admin routes | 1 | #353 for the state titles. Task Detail #295 (done). | WP-TY1 |
+| #360 | BUG-5 | The wrapped breadcrumb link meets the 24 px target size on the version page and the form designer... | 1 | None. The record-header pages (WP-TY4/5/7) already get this from #253. | WP-TY1 |
+| #361 | TE6, P5, section 3 item 3 | One form-page pattern for the three edit pages: 720 px card, validation summary plus inline messa... | 2.5 | Create task pattern (Task Detail #322, done). Before #380, #387, #403. | WP-TY1 |
+| #362 | Section 2.10 | Dialog wording table and one impact-line helper for deactivate, retire, publish and discard dialogs | 1.5 | None. Consumed by #379, #390, #400, #402, #406. | WP-TY1 |
+| #363 | P1 | Short one-line descriptions on the three tabs | 1 | None. | WP-TY2 |
+| #364 | P2 | Tabs show counts of active records (Task Types 61, Workflows 30, Workflow Steps 66) | 3 | Clients #279 (done), Task Detail #347 (`mf-tabs` counts). After #363. | WP-TY2 |
+| #365 | P3 | Filter row open by default from 640 px with the Filters button in the header | 1 | Clients #270 (done). | WP-TY2 |
+| #366 | P4, WL2, SL4 (API) | list fields and strip counts for Workflows and Steps | 3.5 | None. Blocks #368, #376, #378; sibling of #372 and #391. | WP-TY2 |
+| #367 | P4 (Task Types) | Health strip on the Task Types tab (Active, Not usable, Form in draft, Inactive) | 2 | Clients #260 (done), #364. | WP-TY2 |
+| #368 | P4 (Workflows, Steps) | Health strips on the Workflows and Workflow Steps tabs | 2.5 | #366, #367. | WP-TY2 |
+| #369 | TT5 | Say what the default status filter hides and make Status sortable | 1.5 | Clients #271 (done), #367. | WP-TY2 |
+| #370 | TT8, BUG-9 | List loading, error and empty states follow the grid-body contract | 2 | Clients #251 (done), #353. | WP-TY2 |
+| #371 | TT1, TT4 | Task Types rows 44 px with a Default workflow column, Workflows count and a neutral Not usable badge | 3.5 | #356 (pattern), #367 (Not usable chip), #355. | WP-TY3 |
+| #372 | TT3 (API), TT7 | openTaskCount on Task Type list and detail, workflows lost on deactivate | 3 | None. Blocks #373, #379, #380 (strip). Serial with #366 and #391 for the OpenAPI file. | WP-TY3 |
+| #373 | TT3 (UI) | Open tasks column (sortable, links to the Task Queue filtered to the type) | 1.5 | #372, #371; Clients #264/#266 task-count cell (done). | WP-TY3 |
+| #374 | TT2 | Task Types phone cards below 640 px and the narrow-window column drop at 768 | 2.5 | Clients #275-#278 (done), #355, #371. | WP-TY3 |
+| #375 | WL6, steps phone | Workflows and Workflow Steps phone cards and narrow-window columns | 3 | #355, #356, #376. | WP-TY3 |
+| #376 | WL2, WL3 | Workflows columns Versions, Steps, Task types (count) and Last published | 2.5 | #366, #356. | WP-TY3 |
+| #377 | WL4, WL5 | The Draft badge links to the draft; Not published is a neutral badge | 1.5 | #376. | WP-TY3 |
+| #378 | SL4 | Steps list shows Inputs readiness (none, n fields, draft) | 2 | #366, #356. | WP-TY3 |
+| #379 | TT7 | The deactivate confirm says how many open tasks keep the type and which workflows lose their last... | 1.5 | #372, #362. | WP-TY3 |
+| #380 | TE1, TE7, TE9 | Task Type record header with status badge, Edit/Activity/primary action rule and overflow with De... | 5 | Clients header #253-#256, Task Detail #296/#298/#301, #353, #361, #372, #362. | WP-TY4 |
+| #381 | TE1, TE9 | Task Type tabs Overview, Workflows (n) and Request form with a save per tab | 5 | #380, #361; Task Detail #347 (`mf-tabs` use). | WP-TY4 |
+| #382 | TE2 | Eligible workflows as a table of chosen workflows with a Default radio and Remove | 3.5 | #381. | WP-TY4 |
+| #383 | TE2 | Searchable Add workflow list with published and active workflows only | 2.5 | #382. | WP-TY4 |
+| #384 | TE3 | One neutral status note under the header names each reason a type is not usable, with the fix as... | 1.5 | #381; Task Detail #301 (note pattern). | WP-TY4 |
+| #385 | TE4 | Request form tab shows the published state and the Edit form button | 1 | #381. | WP-TY4 |
+| #386 | TE5 | Name and description counters and a clamped H1 and crumb on the Task Type page | 1.5 | #380; Task Detail #320 (`mf-title-area`). | WP-TY4 |
+| #387 | WE1, WE5 | Workflow record header, summary strip and long-name handling | 5 | Clients #253-#256, Task Detail #296, #353, #361, #391. | WP-TY5 |
+| #388 | WE1 | Workflow tabs Overview, Versions (n) and Task types (n) | 4 | #387. | WP-TY5 |
+| #389 | WE2 | Task types tab shows which task types use the workflow (data already returned by the API) | 2 | #388. | WP-TY5 |
+| #390 | WE3 | Workflow deactivation names the task types that lose it | 1.5 | #387, #362, #389. | WP-TY5 |
+| #391 | WE4 (API) | open task counts per workflow version | 2.5 | None. Blocks #387 (tile), #392, #400, #402. Serial with #366, #372. | WP-TY5 |
+| #392 | WE4 | Version table with Created, By, Tasks, version link and a row overflow | 3 | #388, #391. | WP-TY5 |
+| #393 | VP1 | Version page on the fixed-height pattern (header and bar stay, the steps pane scrolls inside) | 2.5 | #357, #358. | WP-TY6 |
+| #394 | VP2 (row) | Step rows are 44 px (number, one-line title, one rule badge) | 2.5 | #393. | WP-TY6 |
+| #395 | VP2 (actions) | Step row overflow (Move up/down, Skip rules popover, Preview inputs, Remove with Undo) | 2.5 | #394. | WP-TY6 |
+| #396 | VP3 | Steps first at every width; library as a drawer below 1280 px and a left pane above | 4 | #393. | WP-TY6 |
+| #397 | VP4 | Execution mode is an inline control in the action bar | 1.5 | #393. | WP-TY6 |
+| #398 | VP8 | Leaving a dirty draft offers Save draft and leave | 1 | #393. | WP-TY6 |
+| #399 | VP5 | Version page tabs Steps (n) and Used by (n) | 2 | #394, #388, #389. | WP-TY6 |
+| #400 | VP6 | Read-only version states: neutral note, Open draft in place of the disabled button, retire dialog... | 2 | #399, #391, #362. | WP-TY6 |
+| #401 | VP7 (a, b) | Publish dialog diff folds position shifts into one line and handles long step titles | 1.5 | #358. | WP-TY6 |
+| #402 | VP7 (c) | Publish dialog states impact ("Tasks already running keep v2 (14 open). New tasks use v3.") | 1.5 | #401, #391, #362. | WP-TY6 |
+| #403 | SE5, strip, tabs | Step record header, summary strip and tabs Details, Inputs and Used by (SE5: H1 is the step title) | 3.5 | Clients #253-#256, #353, #361. | WP-TY7 |
+| #404 | SE1, SE2 | Used by lists link to the workflow versions; the amber banner becomes one muted sentence | 2.5 | #403. | WP-TY7 |
+| #405 | SE3 | Inputs tab shows the field list read-only with status and the Edit inputs button | 3 | #403. | WP-TY7 |
+| #406 | SE4 | Step deactivation moves to the header overflow and says how many drafts contain the step | 1.5 | #403, #362. | WP-TY7 |
+| #407 | FD1 (panes) | Form designer as three fixed panes with sticky Save draft and Publish | 4.5 | None. #353 touches the same file's 404 branch: land #353 first or rebase. | WP-TY8 |
+| #408 | FD1 (tabs) | Preview and Validation as tabs of the Properties column with the error count | 3 | #407. | WP-TY8 |
+| #409 | FD2, FD3 | Read-only designer shows Fields and Preview side by side; the version badge sits in the title | 2.5 | #407. | WP-TY8 |
+| #410 | FD4 | Designer phone order: Fields first, Add field as one button opening the palette | 3 | #408. | WP-TY8 |
+| #411 | FD5 | Designer keyboard model: Alt+Arrow reorder with a spoken position and Undo on Remove | 2 | #407. | WP-TY8 |
+| #412 | Section 7 (shared) | Designer regression check on Asset Types and Custom Fields | 1.5 | #407 to #411. | WP-TY8 |
+| #413 | TT9 | Tab stops on the three lists are recorded and cut to about 55 per page | 2 | #371, #376, #378. | WP-TY9 |
+| #414 | Section 5 | Focus and announcement after publish, retire, deactivate and discard | 2 | #400, #402, #380, #390, #406, #407. | WP-TY9 |
+| #415 | Section 5, BUG-3 follow-up | Keyboard and axe audit of the new pages with Tab-stop evidence | 2 | WP-TY3 to WP-TY8 done. | WP-TY9 |
+| #416 | BUG-8 | One denial rule for tab URLs and create/edit URLs | 1.5 | None (any time after WP-TY2). | WP-TY10 |
+| #417 | P6 | Permission matrix for the Task Types area: no dead links, toasts or 403s | 1.5 | #416, WP-TY3 to WP-TY8. | WP-TY10 |
+| #418 | Section 3 item 10 | ux-spec S14 to S16, decisions section X, UAT rows, e2e catalogue | 3.5 | All code issues. | WP-TY11 |
+| #419 | Verification | Final verification pass for the Task Types area | 4.5 | All issues. | WP-TY11 |
+
+Total: **161.5 agent-hours** (67 issues). R1 = first release. Review ID to issue: BUG-1 #353, BUG-2 #355, BUG-3 #354, BUG-4 #358, BUG-5 #360, BUG-6 #353, BUG-7 #359, BUG-8 #416, BUG-9 #370; P1 #363, P2 #364, P3 #365, P4 #367 and #368 (API #366), P5 #361, P6 #417; TT1 #371, TT2 #374, TT3 #372 and #373, TT4 #371, TT5 #369, TT6 #355, TT7 #379, TT8 #370, TT9 #413; WL1 #356, WL2 #376, WL3 #376, WL4 #377, WL5 #377, WL6 #375; SL1 to SL3 #356, SL4 #378, SL5 #355; TE1 #380 and #381, TE2 #382 and #383, TE3 #384, TE4 #385, TE5 #386, TE6 #361, TE7 #380, TE9 #381; FD1 #407 and #408, FD2 and FD3 #409, FD4 #410, FD5 #411, FD6 #359; WE1 #387 and #388, WE2 #389, WE3 #390, WE4 #392 (API #391), WE5 #387; VP1 #357 and #393, VP2 #394 and #395, VP3 #396, VP4 #397, VP5 #399, VP6 #400, VP7 #401 and #402, VP8 #398, VP9 #359; SE1 and SE2 #404, SE3 #405, SE4 #406, SE5 #403.
+
+## 2. Decisions (PM) in one place
+
+- **Record pages (WP-TY4, 5, 7).** Task Type, Workflow and Step become record pages with `mf-record-header` (new `RecordKind`s `taskType`, `workflow`, `workflowVersion`, `step`), a status badge, the action rule **Edit, Activity, primary action, overflow**, a summary strip and `mf-tabs` with counts: Task Type Overview | Workflows (n) | Request form (primary **Edit form**); Workflow Overview | Versions (n) | Task types (n) (primary **Open draft vN** or **Create new draft**); Step Details | Inputs | Used by (n) (primary **Edit inputs**). **Option A**: editing stays inline, each tab saves on its own with the existing guard; the read-only-plus-Edit-dialog option is not built. Overview tabs scroll normally (fixed-height does not fit short forms).
+- **Version editor (WP-TY6).** Fixed-height page: header and a sticky action bar (Publish..., Save draft, overflow with Discard draft, Unsaved changes badge, inline execution mode), steps first at every width, 44 px step rows with one rule badge and an overflow (Move up/down, Skip rules popover, Preview inputs, Remove with Undo), the library as a **drawer below 1280 px and a left pane above**. No drag handle. Tabs Steps (n) | Used by (n) with a version switcher; there is no Versions tab (the list lives on the Workflow page). Read-only states use one neutral note, **Open draft vN** replaces the disabled button.
+- **Impact statements.** Deactivate, retire and publish dialogs state impact through one helper (#362): open tasks keep their version, which task types lose their only published workflow, how many drafts contain a step. A number that the API did not return is never shown (the sentence is dropped). Vocabulary: records are deactivated, published versions are retired, drafts are discarded.
+- **Publish diff.** Pure position shifts fold into "13 steps moved"; only real reorders, additions, removals, skip-rule and mode changes are listed (fixes the "Moved" on every row bug).
+- **Eligible workflows (WP-TY4).** A table of chosen workflows with a Default radio and an "Add workflow" combobox listing published, active workflows only (draft-only and inactive ones disabled with the reason); the first added becomes the default.
+- **Lists (WP-TY2, 3).** One grid contract: 44 px rows, name is the only link, number columns plain, one row overflow (always visible), clamps with tooltips, phone cards below 640 px (also for Steps), narrow-window column drop at 768, filter row open from 640, tab counts of **active** records, health strips (Task Types client-side, Workflows and Steps from API summaries). Not usable and Not published are neutral badges.
+- **Shared form stack (#361).** 720 px card, one validation rule (summary plus inline with icon, focus to the first error), one button component for the three edit pages.
+- **Additive API (all backend, no SQL).** #366: Workflows list `publishedAtUtc`, `taskTypeCount`, `stepCount`, draft info and summary counts, Steps list input state and summary counts; #372: `openTaskCount` on Task Type list and Get (no `lastUsedAt`); #391: `openTaskCount` and created-by/at per workflow version. **UI only, no API:** the workflow's task types in the record (`GET /workflows/{id}` already returns `taskTypes`), the step `publishedFormVersionId` and `draftFormFieldCount` (already on the detail); none of the bugs BUG-1 to BUG-9 needs an API change.
+- **Scope boundary with Asset Types and Custom Fields.** The form designer (`TaskTypeFormPage`) is one component for Task Types, Steps, Asset Types and Custom Fields: designer changes are built once and apply to all four (#407 to #411), with a regression walk of the two other owners (#412). No separate work for Asset Types' and Custom Fields' own list and edit screens; the shared `mf-page-header` crumb fix (#360) also benefits them.
+- **Denial rule (#416).** A tab URL falls back to the first allowed tab; a create, edit or form URL shows the 403 page. Written down, one guard helper, tested.
+- **Keyboard.** Focus returns to the row on Back and the crumb keeps the list state (#354); Tab stops are recorded, never gated (#413); one focus and announcement rule after publish, retire, deactivate and discard (#414).
+- **Task Queue filter.** The address parameter name for the task-type filter used by the Open tasks link is confirmed inside #373.
+- **Out of scope.** Option B record pages, drag and drop, `lastUsedAt`, per-pod or per-step counts, a Versions tab on the version page, Labels (no work here), Asset Types and Custom Fields own screens, a dark theme, real screen-reader testing, forced colours, exports, saved views, workflow Validate button and per-step settings drawer of the old spec (S14 to S16 are rewritten to the code in #418).
+
+## 3. Work packages (ranked)
+
+Rules for developer agents: branch from `origin/dev`, rebase before each push, touch only the files of your package unless the issue says otherwise, regenerate OpenAPI and the client (nswag) when the API changes and never hand-merge them, run unit + integration + e2e + axe (0 violations at 1366, 1920, 768 and 375, with menus, dialogs and drawers open) and assert no page-level horizontal scroll, attach screenshots in `docs/ux/task-types-review/fixes/<package>/` (`ty1-foundations` ... `ty10-permissions`, `final`), keep the initial bundle at its current size (about 645 kB of 700 kB), do not add rules to `task-table.scss`, update the docs named in the issue (WP-TY11). Shared files (`record-state.ts`, `record-skeleton.ts`, `record-header.ts`, `page-header.ts`, `drill.ts`, `grid-body.ts`, `action-menu.ts`, `confirm-dialog.ts`, `task-type-form-page.*`) serve other pages: their specs are regression tests and changes are additive. **SQL scripts:** the next free number is **28** (latest `27-dashboard-unassigned.sql`); **none planned**; if a count query needs an index it is script 28 and is recorded on the issue (#372 is the likely one). **Backend work:** #366 (3.5 h), #372 (3 h), #391 (2.5 h): `WorkflowAdminService.cs`, `StepDefinitionService.cs`, `TaskTypeService.cs`, DTOs, `contracts/openapi/v1.json`, TS client; merge order APILIST, APITT, APIVER, regenerating the client after each rebase.
+
+| Rank | WP | Issues | Main files / areas | Agent-h | Parallel with | Waits for | Backend / SQL |
+|---|---|---|---|---|---|---|---|
+| 1 | WP-TY1 Foundations and bugs | #353, #354, #359, #360, #361, #362 | `shared/ui/record-state.ts`, `shared/ui/page-header.ts`, `shared/ui/form-field.scss`, new `form-page`, `drill.ts` (use), the three edit pages (error branch), `task-type-form-page.html` (dialogs), `admin.routes.ts`, `task-types.routes.ts` | 12.5 | WP-TY8 (designer), WP-TY3 first release items (lane A) and VP1/BUG-4 (lane C) | - | Frontend only |
+| 2 | WP-TY2 Page shell | #363, #364, #365, #366, #367, #368, #369, #370 | `task-types-admin-page.ts`, the three list pages, `work-strip.ts` (use), WorkflowAdminService / StepDefinitionService (APILIST) | 16.5 | WP-TY4, WP-TY5, WP-TY6, WP-TY8 | WP-TY1 for BUG-3 and BUG-1 (same list files) | **#366 backend** (additive, no SQL) |
+| 3 | WP-TY3 Lists on the grid contract | #355, #356, #371, #372, #373, #374, #375, #376, #377, #378, #379 | `task-types-page.*`, `workflows-list-page.ts`, `steps-list-page.ts`, `admin-lookup.scss`, `workflows.scss`, TaskTypeService (APITT) | 26.5 | WP-TY4, WP-TY5, WP-TY6, WP-TY7, WP-TY8 | WP-TY2 (strip and chrome), #355 before the rest | **#372 backend** (additive, no SQL) |
+| 4 | WP-TY4 Task Type record page | #380, #381, #382, #383, #384, #385, #386 | `task-type-edit-page.*`, new `task-type-workflows-tab.ts`, `record-header.ts` / `record-skeleton.ts` (additive kinds) | 20 | WP-TY2, WP-TY3, WP-TY5, WP-TY6, WP-TY8 | WP-TY1 (BUG-1, form pattern, impact helper), #372 | Frontend only (uses #372) |
+| 5 | WP-TY5 Workflow record page | #387, #388, #389, #390, #391, #392 | `workflow-edit-page.ts`, new tab components, WorkflowAdminService (APIVER), `record-header.ts` (kind) | 18 | WP-TY2, WP-TY3, WP-TY4, WP-TY8 | WP-TY1, #391 | **#391 backend** (additive, no SQL) |
+| 6 | WP-TY6 Version editor | #357, #358, #393, #394, #395, #396, #397, #398, #399, #400, #401, #402 | `workflow-version-page.ts` (1,100 lines), `workflow-diff.ts`, `workflows.scss`, new library component | 24 | WP-TY2, WP-TY3, WP-TY4, WP-TY8 (first slices); after WP-TY5 data: VP5, VP6, VP7B | first slices: none; VP5, VP6, VP7B: WP-TY5 (#389, #391) | Frontend only (uses #391) |
+| 7 | WP-TY7 Step record page | #403, #404, #405, #406 | `step-edit-page.ts`, `record-header.ts` (kind) | 10.5 | WP-TY3, WP-TY4, WP-TY5, WP-TY6, WP-TY8 | WP-TY1 | Frontend only |
+| 8 | WP-TY8 Form designer layout | #407, #408, #409, #410, #411, #412 | `task-type-form-page.ts/.html/.scss` (shared with Step, Asset Type and Custom Field routes) | 16.5 | everything except `task-type-form-page` work | #353 lands first on `task-type-form-page` (small) | Frontend only |
+| 9 | WP-TY9 Keyboard, focus and a11y | #413, #414, #415 | e2e specs, small fixes across the pages | 6 | none (late) | WP-TY3 to WP-TY8 | none |
+| 10 | WP-TY10 Permissions and denial rule | #416, #417 | `admin.routes.ts`, `task-types.routes.ts`, guards, e2e | 3 | BUG-8 any time after WP-TY2; the matrix last | WP-TY2; matrix after WP-TY3 to 8 | none |
+| 11 | WP-TY11 Docs and final verification | #418, #419 | `docs/ux/*`, `docs/requirements/decisions-addendum.md`, `docs/qa/e2e.md`, `frontend/e2e/*` | 8 | none | all code | none |
+
+Total: about **161.5 agent-hours**.
+
+### First release (do these first, about 15 hours)
+
+The five items the review names as the cheapest wins, as six issues, all independent of the record-page work and safe to ship alone: #353 BUG-1 (shared not-found/403/failure states, 3.5 h), #354 BUG-3 (focus and crumb list state, 3 h), #355 BUG-2 row overflow so Actions are never off screen (2.5 h), #356 clamps for the visible 80% of the list work (3 h), #357 sticky Publish bar (2 h), #358 BUG-4 keyboard-reachable publish dialog (1 h). Three lanes run in parallel: lane A #355 then #356 then #354 (the list files, serial, 8.5 h), lane B #353 (3.5 h, then its wave-1 companions), lane C #357 then #358 (3 h, `workflow-version-page.ts`). Wall-clock of the release is about 8.5 hours.
+
+### Waves for 3 to 4 parallel developer agents
+
+Lanes are file owners, not people: one agent owns one lane's files for the whole epic, which is what removes merge conflicts. Lane A owns the three list pages (and the shell), lane B the Task Type page and the shared foundations, lane C the version page and the Step page, lane D the designer, the Workflow page and the two list/version APIs.
+
+- **Wave 1 (first release plus the designer start)**
+  - Lane A (8.5 h): #354, #355, #356
+  - Lane B (8 h): #353, #359, #360, #361
+  - Lane C (3 h): #357, #358
+  - Lane D (8 h): #366, #407
+- **Wave 2**
+  - Lane A (13 h): #363, #364, #365, #367, #368, #369, #370
+  - Lane B (24.5 h): #362, #372, #380, #381, #382, #383, #384, #385, #386
+  - Lane C (15.5 h): #393, #394, #395, #396, #397, #398, #401
+  - Lane D (18 h): #387, #388, #389, #390, #391, #392
+- **Wave 3**
+  - Lane A (18 h): #371, #373, #374, #375, #376, #377, #378, #379
+  - Lane C (10.5 h): #403, #404, #405, #406
+  - Lane D (12 h): #408, #409, #410, #411, #412
+- **Wave 4 (late, serial)**
+  - Lane A (2 h): #413
+  - Lane B (5 h): #414, #416, #417
+  - Lane C (5.5 h): #399, #400, #402
+  - Lane D (2 h): #415
+- **Wave 5 (docs)**
+  - Lane A (3.5 h): #418
+- **Wave 6 (verification)**
+  - Lane A (4.5 h): #419
+
+Lane totals: A 49.5 h, B 37.5 h, C 34.5 h, D 40 h. With four agents the wall-clock is about **50 hours** (lane A is the longest because it owns the three list pages, the strips and then the docs and the final pass); one agent alone needs 161.5. Three agents: fold lane D into B and C and the wall-clock is about 65 hours.
+
+Dependency rules between lanes: wave 2 lane B (#380) needs #372, #362, #361 and #353 (all in its own lane or wave 1); lane D's #387 needs #391, #361, #353; lane C's #399, #400, #402 wait for lane D's #389 and #391; lane A's wave 3 needs #366 (lane D, wave 1) and #372 (lane B, wave 2); #379 needs #362.
+
+### Exact first wave
+
+1. Lane A: #355, #356, #354 (serial). 2. Lane B: #353, then #359, #360, #361. 3. Lane C: #357, #358. 4. Lane D (optional fourth agent): #366 (backend), then #407 after #353 has merged.
+
+### Critical path
+
+Lane A: #355 2.5, #356 3, #354 3, then WP-TY2 (#363 to #370, 13 h), WP-TY3 rest (#371, #373, #374, #375, #376, #377, #378, #379, 18 h), #413 2, #418 3.5 and #419 4.5 = 49.5 hours. Lane B (37.5 h) and lane D (40 h) have 10 to 12 hours of slack; lane C (34.5 h) has about 15.
+
+### Hot spots (merge-conflict watch)
+
+- **`task-types-page.*`, `workflows-list-page.ts`, `steps-list-page.ts`, `task-types-admin-page.ts`, `admin-lookup.scss`, `workflows.scss`**: #355, #356, #354, WP-TY2, WP-TY3, #413, in lane order; #353 touches only the list error toast (small, lane B, land first or rebase).
+- **`workflow-version-page.ts`** (1,100 lines): #357, #358, #393, #394, #395, #396, #397, #398, #401, then #399, #400, #402; one agent. #353 touches its error branch only, #359 its title, #360 the shared crumb: land those first.
+- **`task-type-form-page.*`**: #353, #359, #360, #362 (dialog markup), then #407 to #411, #412; one agent. It is the page of four routes (Task Type, Step, Asset Type, Custom Field): the e2e of all four must stay green.
+- **`task-type-edit-page.*`**: #361, #353, then #380, #381, #382, #383, #384, #385, #386 strictly in that order. **`workflow-edit-page.ts`**: #387, #388, #389, #390, #392. **`step-edit-page.ts`**: #403, #404, #405, #406.
+- **`shared/ui/record-header.ts`, `record-state.ts`, `record-skeleton.ts`**: additive kinds only (#353, #380, #387, #403); the Client, Matter, Project and Task page specs are the regression tests. **`page-header.ts`** (#360) is used by many admin pages.
+- **OpenAPI and the TS client**: #366, #372, #391 each regenerate the same two files: merge order as above.
+- **Tests**: older e2e (`task-types-tabs`, `workflow-version`, `workflow-steps`, `admin-form-designer-pages`, `task-type-icons`, `task-types-tabs-screens`, `workflow-tabs-tags-screens`) select the old text links, banners, checkboxes and headings; the package that changes the behaviour updates them.
+
+### Extension points (for the packages that follow)
+
+- **Record state and header (WP-TY1, 4, 5, 7):** `RecordKind` gains four kinds; header actions are data (`RecordAction`), so later issues add overflow items without header code.
+- **Impact helper (WP-TY1):** `impactLine()` and the dialog wording table are the only place dialog text lives.
+- **Form-page pattern (WP-TY1):** the three edit pages and later admin forms share it.
+- **List contract (WP-TY3):** the row overflow, clamp and card definitions are shared by the three lists so a fourth admin list can reuse them.
+
+### Definition of done per package
+
+Issues closed, tests green twice (including permission variants), axe clean at four sizes with overlays open, no page-level horizontal scroll, screenshots in `fixes/<package>/`, bundle and style budgets kept, API changes additive with regenerated OpenAPI and client, the docs named in the issue noted for WP-TY11, the epic #352 tasklist ticked, and the line below added to the Status section.
+
+### Docs package (WP-TY11, #418)
+
+`ux-spec.md` S14 to S16 rewritten to the code (tabs, record pages, version editor, designer, copy deck, UAT rows), section **X** of the decisions addendum (every Decision (PM) above; the last section on dev is W), `docs/qa/e2e.md`, `architecture.md` for the additive fields, `tokens.css` note (target: no new token), a banner in the review README. Where the code differs from the issues, the docs follow the code and say so.
+
+### Final verification package (WP-TY11, #419)
+
+Contract e2e over the seeded data of the review at four sizes (axe 0 including `target-size`, no sideways scroll, 44 px list rows, fixed-height panes, one primary action, no nested scroller), the state matrix (loading, 404, 403, 5xx, offline, reduced motion), the permission matrix, regression subsets for every shared file touched (Clients, Task Detail, Asset Types, Custom Fields), the before/after table of the review's measurements, bundle report, screenshots in `fixes/final/`, and a comment on the epic with the open items. It uses its own e2e stack and ports and never stops processes or containers of another agent's verification run.
+
+## 4. Status
+
+(One line per work package; keep other packages' lines when merging. Format: `WP name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
+
+- Planning (2026-10-19): epic #352 and issues #353 to #419 created and linked as sub-issues; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned.
+- First release (#353, #354, #355, #356, #357, #358): not started.
+- WP-TY1 Foundations and bugs: not started.
+- WP-TY2 Page shell: not started.
+- WP-TY3 Lists on the grid contract: not started.
+- WP-TY4 Task Type record page: not started.
+- WP-TY5 Workflow record page: not started.
+- WP-TY6 Version editor: not started.
+- WP-TY7 Step record page: not started.
+- WP-TY8 Form designer layout: not started.
+- WP-TY9 Keyboard, focus and a11y: not started.
+- WP-TY10 Permissions and denial rule: not started.
+- WP-TY11 Docs and final verification: not started.
