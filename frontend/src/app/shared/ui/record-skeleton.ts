@@ -174,19 +174,13 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       width: 55%;
       height: 12px;
     }
-    /* The section nav of the Task page (same box as mf-section-nav, so nothing moves when the page arrives). */
+    /* The tab strip of the Task page (same box as the dense mf-tabs: 2.5rem tall, 4px below), so nothing moves when the page arrives. */
     .rk__nav {
       display: block;
       width: 16rem;
       max-width: 100%;
-      height: 1.75rem;
-      margin-bottom: var(--mf-s2);
-    }
-    @media (min-width: 640px) {
-      .rk__nav {
-        height: 2.25rem;
-        margin-bottom: var(--mf-s3);
-      }
+      height: 2.5rem;
+      margin-bottom: var(--mf-s1);
     }
     .rk__h2 {
       display: block;
@@ -202,7 +196,12 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     }
     .rk__facts {
       margin-top: var(--mf-s2);
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s2);
+    }
+    @media (max-width: 639px) {
+      .rk__facts {
+        margin-bottom: var(--mf-s1);
+      }
     }
     .rk__label {
       width: 3rem;

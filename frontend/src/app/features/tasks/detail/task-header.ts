@@ -110,7 +110,13 @@ function blockedText(action: string, reason: string | undefined): string {
   `,
   styles: `
     .th {
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s2);
+    }
+    /* On a phone the tabs follow the strip almost at once: the Workflow still starts where the old section nav let it (T5, #347). */
+    @media (max-width: 639px) {
+      .th {
+        margin-bottom: var(--mf-s1);
+      }
     }
     /* The type icon is centred on the first line of the title (the title is 1.3 times its font size tall). */
     .th__icon {

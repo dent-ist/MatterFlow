@@ -45,7 +45,7 @@ test.describe('Comments and history (SCN-018)', () => {
     await expect(comment.locator('[data-body] :is(b, strong)')).toHaveText('Urgent');
     await expect(comment.locator('[data-body] :is(i, em)')).toHaveText('load file');
     await expect(comment.locator('[data-body] li')).toHaveText('first item');
-    await expect(panel.getByRole('heading', { name: 'Comments (1)' })).toBeVisible();
+    await expect(detail.tab('Comments')).toHaveText(/\(1\)/);
     // After a post the composer is one line again.
     await expect(panel.getByPlaceholder('Write a comment...')).toBeVisible();
     await expect(editor).toHaveCount(0);

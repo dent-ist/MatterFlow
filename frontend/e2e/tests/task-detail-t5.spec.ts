@@ -10,10 +10,11 @@ import { TaskApi } from '../support/tasks';
 import { FIRM_ZONE, dateInZone } from '../support/time';
 
 /**
- * Task Detail T5 "Layout" (#307, #308, #309): below 1100 px the Workflow comes first and Details is a closed disclosure with a one-line
- * summary (remembered per person); a section nav with counts (`Workflow 2/3  Comments 48  Assets 0`) shows at every width, sticks from
- * 640 px and is static below; the wide Details panel is sized by its content, never traps the wheel and shows a bottom fade while more is
- * below. Every test seeds its own records. Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/task-detail-review/fixes/t5).
+ * Task Detail T5 "Layout" (#307, #308, #309), updated for the tabs of #347: below 1100 px the Workflow comes first and Details is a closed
+ * disclosure with a one-line summary (remembered per person); the tab strip with counts (`Workflow (1/3)  Assets (0)  Comments (48)`) replaces
+ * the section nav (#308) and the stacked Assets and Comments sections, at every width; the wide Details panel is sized by its content, never
+ * traps the wheel and shows a bottom fade while more is below. Every test seeds its own records. Screenshots go to E2E_SCREENSHOTS when it is
+ * set (docs/ux/task-detail-review/fixes/t5).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
@@ -78,13 +79,13 @@ async function openFresh(page: Page, detail: TaskDetailPage, taskId: number): Pr
   await detail.open(taskId);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  await expect(page.locator('[data-section-link="workflow"]')).toBeVisible();
+  await expect(tab(page, 'Workflow')).toBeVisible();
 }
 
 const top = (loc: Locator) => loc.evaluate((el) => Math.round(el.getBoundingClientRect().top));
-const nav = (page: Page): Locator => page.getByRole('navigation', { name: 'Sections' });
-const link = (page: Page, name: string): Locator =>
-  nav(page).getByRole('link', { name: new RegExp(`^${name}`) });
+const tablist = (page: Page): Locator => page.getByRole('tablist', { name: 'Task sections' });
+const tab = (page: Page, name: string): Locator =>
+  tablist(page).getByRole('tab', { name: new RegExp(`^${name}`) });
 const detailsToggle = (page: Page): Locator => page.locator('[data-detail-toggle]');
 
 interface Fixture {
@@ -144,7 +145,7 @@ const SENTENCE =
 const LONG_DESCRIPTION = `<p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(4)}</p><p>${SENTENCE.repeat(3)}</p>`;
 
 test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
-  test('Workflow comes first, Details is last and closed with a one-line summary at 375, 768 and 1024; opening it with the keyboard keeps focus and is remembered', async ({
+  test('the tabs and the Workflow come first, Details is last and closed with a one-line summary at 375, 768 and 1024; opening it with the keyboard keeps focus and is remembered', async ({
     seed,
     admin,
     page,
@@ -159,17 +160,13 @@ test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
       const y = await page.evaluate(() => {
         const at = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().top;
         return {
-          nav: at('[data-section-nav]'),
+          tabs: at('[role="tablist"]'),
           wf: at('[data-section="workflow"]'),
-          comments: at('[data-section="comments"]'),
-          assets: at('[data-section="assets"]'),
           details: at('[data-detail-panel]'),
         };
       });
-      expect(y.nav, `nav before Workflow at ${size.width}`).toBeLessThan(y.wf);
-      expect(y.wf).toBeLessThan(y.assets);
-      expect(y.assets).toBeLessThan(y.comments);
-      expect(y.comments).toBeLessThanOrEqual(y.details);
+      expect(y.tabs, `tabs before Workflow at ${size.width}`).toBeLessThan(y.wf);
+      expect(y.wf, `Workflow before Details at ${size.width}`).toBeLessThan(y.details);
       await expect(detailsToggle(page)).toHaveAttribute('aria-expanded', 'false');
       const summary = page.locator('[data-detail-summary]');
       await expect(summary).toHaveText(/^Requestor Dana W-M/);
@@ -261,8 +258,8 @@ test.describe('Task T5: narrow order and the Details disclosure (#307)', () => {
   });
 });
 
-test.describe('Task T5: the section nav (#308)', () => {
-  test('shows Workflow 1/3, Assets 0 and Comments 48 at every width; Comments opens the 48-comment section and moves focus to its heading; keyboard order puts the nav before the Workflow', async ({
+test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', () => {
+  test('shows Workflow (1/3), Assets (0) and Comments (48) at every width; Comments shows the 48-comment pane under it; the old nav is gone', async ({
     seed,
     admin,
     page,
@@ -274,32 +271,31 @@ test.describe('Task T5: the section nav (#308)', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await openFresh(page, detail, task.taskId);
-      await expect(nav(page).getByRole('link')).toHaveText([
-        /^Workflow\s*1\/3$/,
-        /^Assets\s*0$/,
-        /^Comments\s*48$/,
+      await expect(tablist(page).getByRole('tab')).toHaveText([
+        /^\s*Workflow\s*\(1\/3\)$/,
+        /^\s*Assets\s*\(0\)$/,
+        /^\s*Comments\s*\(48\)$/,
       ]);
-      await expect(link(page, 'Workflow')).toHaveAttribute('title', '1 of 3 steps resolved');
-      await expect(page.locator('[data-section="comments"] [data-toggle]')).toHaveAttribute(
-        'aria-expanded',
-        'false',
+      await expect(tab(page, 'Workflow')).toHaveAttribute(
+        'aria-label',
+        'Workflow, 1 of 3 steps resolved',
       );
-      await link(page, 'Comments').click();
-      await expect(page.locator('[data-section="comments"] [data-toggle]')).toHaveAttribute(
-        'aria-expanded',
-        'true',
-      );
-      await expect(page.locator('[data-section="comments"] [data-section-heading]')).toBeFocused();
-      // The section starts in view, under the app header and the sticky row.
+      await expect(page.locator('mf-section-nav, [data-section-nav]')).toHaveCount(0);
+      await expect(tab(page, 'Workflow')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('[data-section="comments"]')).toBeHidden();
+      await tab(page, 'Comments').click();
+      await expect(tab(page, 'Comments')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('[data-section="comments"]')).toBeVisible();
+      await expect(page.locator('[data-section="workflow"]')).toBeHidden();
+      // The pane starts right under the strip (no scroll needed), under the app header.
       const t = await top(page.locator('[data-section="comments"]'));
       expect(t, `Comments top at ${size.width}`).toBeGreaterThanOrEqual(0);
       expect(t).toBeLessThan(size.height / 2);
-      await expect(link(page, 'Comments')).toHaveAttribute('aria-current', 'location');
-      await shot(page, 'nav-comments');
+      await shot(page, 'tabs-comments');
     }
   });
 
-  test('keyboard only: Tab reaches the nav before the Workflow steps, Enter on Assets opens and focuses it, deep links still work', async ({
+  test('keyboard only: Tab reaches the strip before the Workflow steps, one tab stop, the arrows, Home and End move and select, ?tab= links work', async ({
     seed,
     admin,
     page,
@@ -316,34 +312,46 @@ test.describe('Task T5: the section nav (#308)', () => {
       const idx = (sel: string) => items.indexOf(document.querySelector<HTMLElement>(sel)!);
       return {
         header: idx('[data-task-header] h1, [data-task-header] [data-action]'),
-        nav: idx('[data-section-link="workflow"]'),
+        tab: idx('[role="tab"][data-tab="workflow"]'),
+        otherTabs: items.filter((el) => el.matches('[role="tab"][tabindex="-1"]')).length,
         step: idx('[data-workflow-tab] button'),
       };
     });
-    expect(order.nav).toBeGreaterThan(order.header);
-    expect(order.nav).toBeLessThan(order.step);
+    expect(order.tab).toBeGreaterThan(order.header);
+    expect(order.tab).toBeLessThan(order.step);
+    // Roving tabindex: the other two tabs are not tab stops (they are not in the list of tab stops at all).
+    expect(order.otherTabs).toBe(2);
 
-    await link(page, 'Workflow').focus();
+    await tab(page, 'Workflow').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(tab(page, 'Assets')).toBeFocused();
+    await expect(tab(page, 'Assets')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-section="assets"]')).toBeVisible();
+    await page.keyboard.press('End');
+    await expect(tab(page, 'Comments')).toBeFocused();
+    await expect(page.locator('[data-section="comments"]')).toBeVisible();
+    await page.keyboard.press('ArrowRight');
+    await expect(tab(page, 'Workflow')).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(tab(page, 'Comments')).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(tab(page, 'Workflow')).toBeFocused();
+    await expect(page.locator('[data-section="workflow"]')).toBeVisible();
+    // Tab from the strip goes into the visible pane (the first step), not to the hidden panes.
     await page.keyboard.press('Tab');
-    await expect(link(page, 'Assets')).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(link(page, 'Comments')).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-section="comments"] [data-toggle]')).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await expect(page.locator('[data-section="comments"] [data-section-heading]')).toBeFocused();
-    // Shift+Tab goes back to the nav (the nav is before the section in the tab order).
-    await expect(link(page, 'Comments')).toHaveAttribute('aria-current', 'location');
+    await expect(page.locator('[data-workflow-tab] button').first()).toBeFocused();
 
-    for (const tab of ['comments', 'assets', 'workflow']) {
-      await page.goto(`/tasks/${task.taskId}?tab=${tab}`);
-      await expect(page.locator(`[data-section="${tab}"] [data-section-heading]`)).toBeFocused();
+    for (const name of ['comments', 'assets', 'workflow']) {
+      await page.goto(`/tasks/${task.taskId}${name === 'workflow' ? '' : `?tab=${name}`}`);
+      await expect(page.locator(`[role="tab"][data-tab="${name}"]`)).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.locator(`[data-section="${name}"]`)).toBeVisible();
     }
   });
 
-  test('sticky from 640 px under the app header, static on a phone; scroll-spy marks the section being read', async ({
+  test('the strip is not sticky and scrolls sideways on its own at 375 without moving the page; it keeps the selected tab in view', async ({
     seed,
     admin,
     page,
@@ -354,44 +362,20 @@ test.describe('Task T5: the section nav (#308)', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await openFresh(page, detail, task.taskId);
-      await expect(link(page, 'Comments')).toContainText('30');
-      await link(page, 'Comments').click();
-      await expect(page.locator('[data-section="comments"] [data-toggle]')).toHaveAttribute(
-        'aria-expanded',
-        'true',
-      );
-      const headerH = await page
-        .locator('header')
-        .first()
-        .evaluate((el) => el.getBoundingClientRect().bottom);
-      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-      await page.waitForTimeout(250);
-      const navTop = await top(page.locator('mf-section-nav'));
-      if (size.width >= 640) {
-        expect(navTop, `sticky nav at ${size.width}`).toBeLessThanOrEqual(Math.ceil(headerH) + 2);
-        expect(navTop).toBeGreaterThanOrEqual(0);
-      } else {
-        expect(navTop, `static nav at ${size.width}`).toBeLessThan(0);
-      }
-      // Scrolled to the end of the page the last section is the one being read; at the top it is the Workflow.
-      await expect(nav(page).locator('[aria-current="location"]')).toHaveCount(1);
-      await page.evaluate(() => window.scrollTo(0, 0));
-      await page.mouse.wheel(0, 1); // a hand scroll lets go of the section chosen with a click
-      await page.waitForTimeout(250);
-      await expect(link(page, 'Workflow')).toHaveAttribute('aria-current', 'location');
-      await page.evaluate(() =>
-        document.querySelector('[data-section="comments"]')!.scrollIntoView({ block: 'start' }),
-      );
-      await page.evaluate(() => window.scrollBy(0, 40));
-      await page.mouse.wheel(0, 1);
-      await page.waitForTimeout(250);
-      // Comments is being read; when the page ends before Comments can reach the top, Assets (the last section) is.
-      await expect(nav(page).locator('[aria-current="location"]')).toHaveText(/^(Comments|Assets)/);
-      await shot(page, 'nav-sticky');
+      await tab(page, 'Comments').click();
+      await expect(tab(page, 'Comments')).toHaveText(/30/);
+      await noHorizontalScroll(page);
+      const inStrip = await tab(page, 'Comments').evaluate((el) => {
+        const strip = el.parentElement!.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return r.left >= strip.left - 1 && r.right <= strip.right + 1;
+      });
+      expect(inStrip, `selected tab inside the strip at ${size.width}`).toBe(true);
+      await shot(page, 'tabs-strip');
     }
   });
 
-  test('reduced motion: the section is reached with an instant scroll', async ({
+  test('reduced motion: choosing a tab does not scroll the page at all', async ({
     seed,
     admin,
     page,
@@ -400,18 +384,14 @@ test.describe('Task T5: the section nav (#308)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 768, height: 1024 });
     await new TaskDetailPage(page).open(task.taskId);
-    await link(page, 'Assets').click();
-    // Instant: the scroll has finished by the time the heading has focus.
-    await expect(page.locator('[data-section="assets"] [data-section-heading]')).toBeFocused();
-    const behaviour = await page.evaluate(
-      () => getComputedStyle(document.documentElement).scrollBehavior,
-    );
-    expect(behaviour).not.toBe('smooth');
+    await tab(page, 'Assets').click();
+    await expect(page.locator('[data-section="assets"]')).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 });
 
-test.describe('Task T5 owner request: Assets first, Comments below it, each full width', () => {
-  test('stacked in that order at 375, 768, 1024, 1366 and 1920, collapsed and open, never side by side', async ({
+test.describe('Task T5 owner request: Assets first, Comments after it, each the full width of the column', () => {
+  test('tabs in that order at 375, 768, 1024, 1366 and 1920; each pane fills the left column; only one is on screen, never side by side', async ({
     seed,
     admin,
     page,
@@ -422,24 +402,26 @@ test.describe('Task T5 owner request: Assets first, Comments below it, each full
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await openFresh(page, detail, task.taskId);
-      for (const open of [false, true]) {
-        if (open) {
-          await link(page, 'Assets').click();
-          await link(page, 'Comments').click();
-        }
-        const b = await page.evaluate(() => {
-          const r = (k: string) =>
-            document.querySelector(`[data-section="${k}"]`)!.getBoundingClientRect().toJSON();
-          return { wf: r('workflow'), assets: r('assets'), comments: r('comments') };
-        });
-        const where = `${size.width} ${open ? 'open' : 'collapsed'}`;
-        expect(b.assets.top, where).toBeGreaterThan(b.wf.bottom - 1);
-        expect(b.comments.top, where).toBeGreaterThan(b.assets.bottom - 1);
-        expect(Math.abs(b.assets.width - b.wf.width), where).toBeLessThanOrEqual(2);
-        expect(Math.abs(b.comments.width - b.wf.width), where).toBeLessThanOrEqual(2);
-        expect(Math.abs(b.assets.left - b.comments.left), where).toBeLessThanOrEqual(1);
+      const order = await tablist(page)
+        .getByRole('tab')
+        .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset['tab']));
+      expect(order, `tab order at ${size.width}`).toEqual(['workflow', 'assets', 'comments']);
+      const column = (await page.locator('[data-detail-left]').boundingBox())!;
+      for (const name of ['Workflow', 'Assets', 'Comments']) {
+        await tab(page, name).click();
+        await expect(page.locator(`[data-section="${name.toLowerCase()}"]`)).toBeVisible();
+        const where = `${size.width} ${name}`;
+        const visible = await page.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLElement>('[role="tabpanel"] > [data-section]'))
+            .filter((el) => el.getBoundingClientRect().height > 0)
+            .map((el) => el.dataset['section']),
+        );
+        expect(visible, where).toEqual([name.toLowerCase()]);
+        const box = (await page.locator(`[data-section="${name.toLowerCase()}"]`).boundingBox())!;
+        expect(Math.abs(box.width - column.width), where).toBeLessThanOrEqual(2);
+        expect(Math.abs(box.x - column.x), where).toBeLessThanOrEqual(1);
+        await check(page, `tab-${name.toLowerCase()}`);
       }
-      await check(page, 'assets-then-comments');
     }
   });
 });
@@ -474,11 +456,8 @@ test.describe('Task T5: the Details panel without a nested scroll trap (#309)', 
     await check(page, 'panel-fade');
 
     // The wheel over the panel scrolls the panel; at its end the same wheel scrolls the page (chaining).
-    await link(page, 'Comments').click();
-    await expect(page.locator('[data-section="comments"] [data-toggle]')).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    await tab(page, 'Comments').click();
+    await expect(page.locator('[data-section="comments"]')).toBeVisible();
     await page.evaluate(() => window.scrollTo(0, 0));
     const ab = (await aside.boundingBox())!;
     await page.mouse.move(ab.x + 60, Math.min(ab.y + 200, 700));
@@ -534,7 +513,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     const detail = new TaskDetailPage(page);
     await atEverySize(page, 'long-title', async () => {
       await detail.open(task.taskId);
-      await expect(link(page, 'Workflow')).toBeVisible();
+      await expect(tab(page, 'Workflow')).toBeVisible();
     });
     // Details open too, at the two narrow sizes.
     for (const size of SIZES.filter((s) => s.width < 1100)) {
@@ -545,7 +524,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     }
   });
 
-  test('100+ comments: the nav shows 112, the thread loads on demand, nothing scrolls sideways', async ({
+  test('100+ comments: the tab shows 112, the thread loads on demand, nothing scrolls sideways', async ({
     seed,
     admin,
     page,
@@ -556,21 +535,24 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     const detail = new TaskDetailPage(page);
     await atEverySize(page, 'comments-112', async () => {
       await detail.open(task.taskId);
-      await expect(link(page, 'Comments')).toContainText('112');
+      await expect(tab(page, 'Comments')).toContainText('112');
     });
     await page.setViewportSize({ width: 375, height: 812 });
-    await link(page, 'Comments').click();
-    await expect(page.locator('[data-section="comments"] [data-section-heading]')).toBeFocused();
+    await tab(page, 'Comments').click();
+    await expect(page.locator('[data-comment-id]').first()).toBeVisible();
     await check(page, 'comments-112-open');
   });
 
-  test('closed task (Completed and Cancelled): same layout, nav and Details disclosure', async ({
+  test('closed task (Completed and Cancelled): same layout, tabs and Details disclosure', async ({
     seed,
     admin,
     page,
   }) => {
     const done = await seeded(seed, admin, { stepCount: 2 });
-    await new TaskApi(admin, done.task.taskId).complete(true);
+    // A Completed task: start it, resolve both steps, complete it (an earlier version of this test never closed the task).
+    const doneApi = new TaskApi(admin, done.task.taskId);
+    await doneApi.completeSteps(1, 2);
+    expect((await doneApi.complete()).status).toBe(200);
     const cancelled = await seeded(seed, admin);
     await new TaskApi(admin, cancelled.task.taskId).cancel('Not needed any more');
     const detail = new TaskDetailPage(page);
@@ -580,7 +562,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     ] as const) {
       await atEverySize(page, `closed-${name}`, async () => {
         await detail.open(fx.task.taskId);
-        await expect(link(page, 'Workflow')).toBeVisible();
+        await expect(tab(page, 'Workflow')).toBeVisible();
       });
     }
     await page.setViewportSize({ width: 375, height: 812 });
@@ -588,7 +570,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     expect(await workflowTop(page)).toBeLessThanOrEqual(480);
   });
 
-  test('no steps, no assets right: Workflow shows no count; Assets has no count without Asset.View', async ({
+  test('view-only: the counts the person may see; Assets has no count without Asset.View', async ({
     seed,
     admin,
     page,
@@ -597,7 +579,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     const { task } = await seeded(seed, admin);
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(page).open(task.taskId);
-    await expect(link(page, 'Assets')).toHaveText(/^Assets\s*0$/);
+    await expect(tab(page, 'Assets')).toHaveText(/^\s*Assets\s*\(0\)$/);
 
     const role = await seed.role(['Task.View'], 'E2E view only');
     const viewer = await seed.user([role.name], 'viewonly');
@@ -605,27 +587,27 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     for (const size of SIZES) {
       await v.setViewportSize(size);
       await new TaskDetailPage(v).open(task.taskId);
-      await expect(nav(v).getByRole('link')).toHaveText([
-        /^Workflow\s*0\/3$/,
-        /^Assets$/,
-        /^Comments\s*0$/,
+      await expect(tablist(v).getByRole('tab')).toHaveText([
+        /^\s*Workflow\s*\(0\/3\)$/,
+        /^\s*Assets\s*$/,
+        /^\s*Comments\s*\(0\)$/,
       ]);
       await expect(v.locator('[data-detail-summary]')).toHaveCount(size.width < 1100 ? 1 : 0);
       await check(v, 'task-view-only');
     }
 
-    // No Task.View: the access state, no nav.
+    // No Task.View: the access state, no tabs.
     const none = await seed.role(['Matter.View'], 'E2E no task');
     const nobody = await seed.user([none.name], 'notask');
     const n = await asUser(nobody.username);
     await n.setViewportSize({ width: 375, height: 812 });
     await n.goto(`/tasks/${task.taskId}`);
     await n.waitForLoadState('networkidle');
-    await expect(nav(n)).toHaveCount(0);
+    await expect(tablist(n)).toHaveCount(0);
     await check(n, 'no-task-view');
   });
 
-  test('System Admin and assignee Data Technician: nav and disclosure behave the same', async ({
+  test('System Admin and assignee Data Technician: tabs and disclosure behave the same', async ({
     seed,
     admin,
     page,
@@ -636,7 +618,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     for (const p of [page, techPage]) {
       await p.setViewportSize({ width: 768, height: 1024 });
       await new TaskDetailPage(p).open(task.taskId);
-      await expect(nav(p).getByRole('link')).toHaveCount(3);
+      await expect(tablist(p).getByRole('tab')).toHaveCount(3);
       await expect(detailsToggle(p)).toHaveAttribute('aria-expanded', 'false');
       await detailsToggle(p).click();
       await expect(p.locator('[data-section="details"] [data-view]')).toBeVisible();
@@ -644,7 +626,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
     }
   });
 
-  test('the skeleton reserves the nav, so the page does not shift when the task arrives (CLS)', async ({
+  test('the skeleton reserves the tab strip, so the page does not shift when the task arrives (CLS)', async ({
     seed,
     admin,
     page,
@@ -664,7 +646,7 @@ test.describe('Task T5: states, axe and no sideways scroll at five widths', () =
         }).observe({ type: 'layout-shift', buffered: true });
       });
       await new TaskDetailPage(page).open(task.taskId);
-      await expect(link(page, 'Workflow')).toBeVisible();
+      await expect(tab(page, 'Workflow')).toBeVisible();
       await page.waitForTimeout(500);
       const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
       expect(cls, `CLS at ${size.width}`).toBeLessThan(0.05);

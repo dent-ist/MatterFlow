@@ -27,6 +27,8 @@ describe('TaskAssetLinks', () => {
   };
   let assets: { lookupAssets: ReturnType<typeof vi.fn>; getAsset: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<TaskAssetLinks>;
+  /** What the component told the host about the number of links (the count on the tab), in order. */
+  let counts: number[] = [];
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement>(selector: string): T => el().querySelector<T>(selector)!;
 
@@ -58,17 +60,18 @@ describe('TaskAssetLinks', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(TaskAssetLinks);
+    counts = [];
+    fixture.componentInstance.countChange.subscribe((n) => counts.push(n));
     fixture.componentRef.setInput('taskId', 42);
     fixture.componentRef.setInput('matterId', 7);
-    for (const [name, value] of Object.entries({ open: true, ...inputs }))
-      fixture.componentRef.setInput(name, value);
+    for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
     await settle(fixture);
   }
 
   it('lists the linked assets with type, external reference and relationship', async () => {
     await create();
 
-    expect(q('h2').textContent).toContain('Assets (1)');
+    expect(counts.at(-1)).toBe(1);
     const row = q('[data-asset-id="9"]');
     expect(row.textContent).toContain('Contract bundle');
     expect(row.textContent).toContain('Document Set');
@@ -92,7 +95,7 @@ describe('TaskAssetLinks', () => {
     expect(region.getAttribute('tabindex')).toBe('0');
     expect(region.getAttribute('aria-label')).toBe('Linked assets, scrollable');
     expect(region.querySelector('[data-asset-id="9"] [data-unlink]')).not.toBeNull();
-    expect(region.querySelector('[data-link-open]')).toBeNull(); // the Link asset button stays in the heading row
+    expect(region.querySelector('[data-link-open]')).toBeNull(); // the Link asset button sits above it
     expect(q('section').getAttribute('aria-label')).toBe('Assets');
   });
 
@@ -274,69 +277,33 @@ describe('TaskAssetLinks', () => {
     expect(el().querySelector('[data-asset-id]')).not.toBeNull();
   });
 
-  describe('collapsible section', () => {
-    const toggle = (): HTMLButtonElement => q<HTMLButtonElement>('[data-toggle]');
+  describe('tab body', () => {
     const links = (n: number) =>
       Array.from({ length: n }, (_, i) =>
         aLink({ assetId: i + 1, displayName: ['Workspace Name', 'Review set', 'Laptop'][i] }),
       );
 
-    it('is a disclosure button inside the h2 with aria-expanded and aria-controls', async () => {
-      await create({ items: links(2), canEdit: true }, { open: false });
-      expect(q('h2').contains(toggle())).toBe(true);
-      expect(toggle().getAttribute('aria-expanded')).toBe('false');
-      expect(q('h2').textContent).toContain('Assets (2)');
-      const panel = q('#' + toggle().getAttribute('aria-controls'));
-      expect(panel.hidden).toBe(true);
-      expect(el().querySelector('[data-asset-id]')).toBeNull();
+    it('has no disclosure bar: the list renders at once under a heading for screen readers (the tab carries the count)', async () => {
+      await create({ items: links(2), canEdit: true });
+      expect(q('h2[data-section-heading]').textContent?.trim()).toBe('Assets');
+      expect(el().querySelector('[data-toggle], [data-preview]')).toBeNull();
+      expect(el().querySelectorAll('[data-asset-id]').length).toBe(2);
       expect(api.listTaskAssets).toHaveBeenCalledTimes(1);
     });
 
-    it('previews the first two names and the rest as "+N more"', async () => {
-      await create({ items: links(3), canEdit: true }, { open: false });
-      expect(q('[data-preview]').textContent).toBe('Workspace Name, Review set +1 more');
-      expect(q('[data-preview]').getAttribute('title')).toBe(q('[data-preview]').textContent);
-    });
-
-    it('previews two names without a tail and "No linked assets" when empty', async () => {
-      await create({ items: links(2), canEdit: true }, { open: false });
-      expect(q('[data-preview]').textContent).toBe('Workspace Name, Review set');
-      TestBed.resetTestingModule();
-      await create({ items: [], canEdit: true }, { open: false });
-      expect(q('[data-preview]').textContent).toBe('No linked assets');
-    });
-
-    it('toggles on click and remembers the choice per user; storage errors are ignored', async () => {
-      await create({ items: links(1), canEdit: true }, { open: false });
-      const key = `mf.task-detail.assets.open.${TestBed.inject(AuthStore).profile()?.userId}`;
-      toggle().click();
-      await settle(fixture);
-      expect(fixture.componentInstance.open()).toBe(true);
-      expect(el().querySelector('[data-asset-id]')).not.toBeNull();
-      expect(localStorage.getItem(key)).toBe('1');
-      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-        throw new Error('blocked');
-      });
-      toggle().click();
-      await settle(fixture);
-      expect(fixture.componentInstance.open()).toBe(false);
-      vi.restoreAllMocks();
-    });
-
-    it('Link asset in the bar opens the section, shows the form and focuses the picker', async () => {
-      await create({ items: links(1), canEdit: true }, { open: false });
+    it('Link asset shows the form and focuses the picker', async () => {
+      await create({ items: links(1), canEdit: true });
       document.body.appendChild(el());
       q<HTMLButtonElement>('[data-link-open]').click();
       await settle(fixture);
       await new Promise((r) => setTimeout(r, 10));
-      expect(fixture.componentInstance.open()).toBe(true);
       expect(q('[data-link-form]')).not.toBeNull();
       expect(document.activeElement?.id).toBe('tl-asset');
       el().remove();
     });
 
     it('has no Link asset action when links cannot be changed', async () => {
-      await create({ items: links(1), canEdit: false }, { open: false });
+      await create({ items: links(1), canEdit: false });
       expect(el().querySelector('[data-link-open]')).toBeNull();
     });
   });

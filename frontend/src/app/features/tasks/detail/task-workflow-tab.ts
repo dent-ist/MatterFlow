@@ -6,7 +6,7 @@ import { TaskDetailStore } from './task-detail.store';
 export const FILTER_MIN_STEPS = 6;
 
 /**
- * Workflow section (UX S10): the stepper for ordered and unordered workflows. Progress is in the facts strip and the section nav. Why the steps are read-only on an On Hold,
+ * Workflow section (UX S10): the stepper for ordered and unordered workflows. Progress is in the facts strip and on the Workflow tab. The heading is for screen readers: the tab already names the pane. Why the steps are read-only on an On Hold,
  * Completed or Cancelled task is said once, by the status note under the header (#301). The Complete task action is in the page header (#298).
  */
 @Component({
@@ -18,7 +18,9 @@ export const FILTER_MIN_STEPS = 6;
     @if (wf(); as w) {
       <section aria-labelledby="wf-h" data-workflow-tab>
         <div class="wf__head">
-          <h2 id="wf-h" class="wf__title" tabindex="-1" data-section-heading>Workflow</h2>
+          <h2 id="wf-h" class="wf__title mf-sr-only" tabindex="-1" data-section-heading>
+            Workflow
+          </h2>
           <p class="wf__mode" data-mode>
             {{
               w.isOrdered

@@ -511,6 +511,8 @@ test.describe('Task T6: long values and permission variants', () => {
     page,
     asUser,
   }) => {
+    // Four people at five widths: close to the default 60 s on a busy machine (58 s alone).
+    test.setTimeout(180_000);
     const { task, tech } = await seeded(seed, admin, {
       stepCount: 6,
       fieldCount: 8,

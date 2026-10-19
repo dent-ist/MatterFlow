@@ -26,6 +26,8 @@ describe('TaskComments', () => {
   let fixture: ComponentFixture<TaskComments>;
   /** When set, the signed-in user's last visit to Task 42 is stored at this time before the component opens. */
   let seeded: string | null = null;
+  /** What the component told the host about the number of comments (the count on the tab), in order. */
+  let counts: number[] = [];
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement>(selector: string): T => el().querySelector<T>(selector)!;
   /** Picks an option of the single "Sort comments" dropdown. */
@@ -87,9 +89,10 @@ describe('TaskComments', () => {
       localStorage.setItem(`mf.task-detail.comments.seen.${user}.42`, String(Date.parse(seeded)));
     }
     fixture = TestBed.createComponent(TaskComments);
+    counts = [];
+    fixture.componentInstance.countChange.subscribe((n) => counts.push(n));
     fixture.componentRef.setInput('taskId', 42);
-    for (const [name, value] of Object.entries({ open: true, ...inputs }))
-      fixture.componentRef.setInput(name, value);
+    for (const [name, value] of Object.entries(inputs)) fixture.componentRef.setInput(name, value);
     await settle(fixture);
   }
 
@@ -129,7 +132,7 @@ describe('TaskComments', () => {
   it('lists the comments with author, time and rendered rich text, and the count', async () => {
     await create([aComment(), aComment({ commentId: 2, bodyHtml: '<ul><li>one</li></ul>' })]);
 
-    expect(q('h2').textContent).toContain('Comments (2)');
+    expect(counts.at(-1)).toBe(2);
     const items = el().querySelectorAll('[data-comment-id]');
     expect(items.length).toBe(2);
     expect(items[0].querySelector('.tc__author')?.textContent).toBe('Dana P.');
@@ -458,7 +461,7 @@ describe('TaskComments', () => {
     it('shows only the 3 most recent comments by default, with "Showing latest 3 of 12. Show all"', async () => {
       await create(twelve());
 
-      expect(q('h2').textContent).toContain('Comments (12)');
+      expect(counts.at(-1)).toBe(12);
       expect(shownIds()).toEqual([10, 11, 12]);
       expect(q('[data-limit-note]').textContent!.replace(/\s+/g, ' ').trim()).toBe(
         'Showing latest 3 of 12. Show all',
@@ -572,7 +575,6 @@ describe('TaskComments', () => {
       fixture.destroy();
       fixture = TestBed.createComponent(TaskComments);
       fixture.componentRef.setInput('taskId', 42);
-      fixture.componentRef.setInput('open', true);
       await settle(fixture);
       expect(shownIds().length).toBe(12);
     });
@@ -584,7 +586,6 @@ describe('TaskComments', () => {
       localStorage.setItem(key, '7');
       fixture = TestBed.createComponent(TaskComments);
       fixture.componentRef.setInput('taskId', 42);
-      fixture.componentRef.setInput('open', true);
       await settle(fixture);
       expect(shownIds().length).toBe(COMMENT_LIMIT_DEFAULT);
 
@@ -597,7 +598,6 @@ describe('TaskComments', () => {
       });
       fixture = TestBed.createComponent(TaskComments);
       fixture.componentRef.setInput('taskId', 42);
-      fixture.componentRef.setInput('open', true);
       await settle(fixture);
       expect(shownIds().length).toBe(3);
       setLimit('all'); // still works for this view
@@ -649,7 +649,7 @@ describe('TaskComments', () => {
       setLimit('all');
       await settle(fixture);
 
-      expect(q('h2').textContent).toContain('Comments (50)');
+      expect(counts.at(-1)).toBe(50);
       expect(shown()).toBe(20);
       expect(q('[data-more-note]').textContent).toContain('Showing 20 of 50 comments.');
       expect(api.listTaskComments).toHaveBeenLastCalledWith(42, true);
@@ -673,7 +673,7 @@ describe('TaskComments', () => {
     it('offers no button when the whole thread fits the first page', async () => {
       await create([aComment(), aComment({ commentId: 2 })]);
       expect(el().querySelector('[data-more]')).toBeNull();
-      expect(q('h2').textContent).toContain('Comments (2)');
+      expect(counts.at(-1)).toBe(2);
     });
 
     it('reports the total to the host and keeps the loaded part after posting a comment', async () => {
@@ -785,10 +785,8 @@ describe('TaskComments', () => {
     });
   });
 
-  describe('collapsible section', () => {
-    const toggle = (): HTMLButtonElement => q<HTMLButtonElement>('[data-toggle]');
+  describe('tab body', () => {
     const userId = (): number | undefined => TestBed.inject(AuthStore).profile()?.userId;
-    const openKey = (): string => `mf.task-detail.comments.open.${userId()}`;
     const seenKey = (): string => `mf.task-detail.comments.seen.${userId()}.42`;
     /** A comment by someone else (the signed-in user is not 5). */
     const byOther = (id: number, createdAtUtc: string, extra = {}) =>
@@ -807,103 +805,59 @@ describe('TaskComments', () => {
         author: { userId: 1, displayName: 'Me', isActive: true },
       });
 
-    it('is a disclosure: a heading holding a full-width button with aria-expanded and aria-controls', async () => {
-      await create(
-        [aComment(), aComment({ commentId: 2 }), aComment({ commentId: 3 })],
-        undefined,
-        {
-          open: false,
-        },
-      );
+    it('has no disclosure bar: the thread and the composer render at once under a heading for screen readers (the tab carries the count)', async () => {
+      await create([aComment(), aComment({ commentId: 2 }), aComment({ commentId: 3 })]);
 
       const heading = q('h2[data-section-heading]');
-      expect(heading.querySelector('button')).toBe(toggle());
-      expect(toggle().getAttribute('aria-expanded')).toBe('false');
-      expect(heading.textContent).toContain('Comments (3)');
-      const panel = el().querySelector('#' + toggle().getAttribute('aria-controls'))!;
-      expect(panel).not.toBeNull();
-      expect((panel as HTMLElement).hidden).toBe(true);
-      // The list was requested on load, but the thread and the composer are not rendered.
+      expect(heading.textContent?.trim()).toBe('Comments');
+      expect(el().querySelector('[data-toggle], [data-preview], [data-add-comment]')).toBeNull();
       expect(api.listTaskComments).toHaveBeenCalledTimes(1);
-      expect(el().querySelector('[data-comment-id]')).toBeNull();
-      expect(el().querySelector('[data-composer]')).toBeNull();
-      // The actions are beside the toggle, not inside it.
-      expect(toggle().contains(q('[data-add-comment]'))).toBe(false);
-    });
-
-    it('toggles on click and remembers the choice per user', async () => {
-      await create([aComment()], undefined, { open: false });
-      toggle().click();
-      await settle(fixture);
-      expect(toggle().getAttribute('aria-expanded')).toBe('true');
-      expect(fixture.componentInstance.open()).toBe(true);
       expect(el().querySelector('[data-comment-id]')).not.toBeNull();
-      expect(localStorage.getItem(openKey())).toBe('1');
-
-      toggle().click();
-      await settle(fixture);
-      expect(toggle().getAttribute('aria-expanded')).toBe('false');
-      expect(localStorage.getItem(openKey())).toBe('0');
+      expect(el().querySelector('[data-composer]')).not.toBeNull();
     });
 
-    it('still toggles when storage is blocked', async () => {
-      await create([aComment()], undefined, { open: false });
-      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-        throw new Error('blocked');
-      });
-      toggle().click();
-      await settle(fixture);
-      expect(fixture.componentInstance.open()).toBe(true);
-      vi.restoreAllMocks();
+    it('reports the number of comments to the host (the count on the tab), also on a tab that is not showing', async () => {
+      await create([aComment(), aComment({ commentId: 2 })], undefined, { active: false });
+      expect(counts).toEqual([2]);
     });
 
-    it('previews the latest comment in one line with the full text in the title', async () => {
-      await create(
-        [
-          byOther(1, '2026-10-12T10:00:00Z', { bodyHtml: '<p>Older</p>' }),
-          byOther(2, '2026-10-13T10:00:00Z', {
-            bodyHtml: '<p>Sent the <b>index</b></p><p>today</p>',
-          }),
-        ],
-        undefined,
-        { open: false },
-      );
-      const preview = q('[data-preview]');
-      expect(preview.textContent).toMatch(/^Latest: Ola K\., .+: Sent the indextoday$/);
-      expect(preview.getAttribute('title')).toBe(preview.textContent);
+    it('has no composer for a view-only user, only the note', async () => {
+      await create([aComment()], ['Task.View']);
+      expect(el().querySelector('[data-composer]')).toBeNull();
+      expect(el().querySelectorAll('[data-internal-note]').length).toBe(1);
     });
 
-    it('says "No comments yet" when there are none', async () => {
-      await create([], undefined, { open: false });
-      expect(q('[data-preview]').textContent).toBe('No comments yet');
-      expect(q('h2').textContent).toContain('Comments (0)');
-    });
-
-    it('has no Add comment action for a view-only user', async () => {
-      await create([aComment()], ['Task.View'], { open: false });
-      expect(el().querySelector('[data-add-comment]')).toBeNull();
-    });
-
-    it('Add comment opens the section and puts the cursor in the editor', async () => {
-      await create([aComment()], undefined, { open: false });
+    it('a composer request (shortcut C) puts the cursor in the editor', async () => {
+      await create([aComment()]);
       document.body.appendChild(el());
-      q<HTMLButtonElement>('[data-add-comment]').click();
+      fixture.componentRef.setInput('composerRequest', 1);
       await settle(fixture);
       await new Promise((r) => setTimeout(r, 10));
-      expect(fixture.componentInstance.open()).toBe(true);
+      expect(document.activeElement).toBe(q('[data-composer] [role=textbox]'));
+      // Again with the editor already open and the cursor elsewhere.
+      (document.activeElement as HTMLElement).blur();
+      fixture.componentRef.setInput('composerRequest', 2);
+      await settle(fixture);
+      await new Promise((r) => setTimeout(r, 10));
       expect(document.activeElement).toBe(q('[data-composer] [role=textbox]'));
       el().remove();
     });
 
+    it('a composer request does nothing without Task.Comment', async () => {
+      await create([aComment()], ['Task.View']);
+      fixture.componentRef.setInput('composerRequest', 1);
+      await settle(fixture);
+      expect(el().querySelector('[data-composer]')).toBeNull();
+    });
+
     describe('new comments', () => {
-      it('records the visit on a first visit: no cue, stays collapsed', async () => {
-        await create([byOther(1, '2026-10-13T10:00:00Z')], undefined, { open: false });
+      it('records the visit on a first visit: no cue', async () => {
+        await create([byOther(1, '2026-10-13T10:00:00Z')], undefined, { active: false });
         expect(el().querySelector('[data-new-badge]')).toBeNull();
-        expect(fixture.componentInstance.open()).toBe(false);
         expect(Number(localStorage.getItem(seenKey()))).toBeGreaterThan(0);
       });
 
-      it('counts comments by others after the last visit, shows "N new", opens by itself and announces once', async () => {
+      it('counts comments by others after the last visit, shows "N new" and announces once', async () => {
         // Seen on Oct 13 noon: two newer comments by others, one newer by the user themself.
         await createWithSeen('2026-10-13T12:00:00Z', [
           byOther(1, '2026-10-13T10:00:00Z'),
@@ -912,9 +866,7 @@ describe('TaskComments', () => {
           mine(4, '2026-10-13T15:00:00Z'),
         ]);
         expect(q('[data-new-badge]').textContent).toBe('2 new');
-        expect(fixture.componentInstance.open()).toBe(true);
         expect(q('[data-live]').textContent).toBe('2 new comments');
-        expect(q('h2').textContent).toContain('Comments (4)');
       });
 
       it("does not count the user's own comments or older ones", async () => {
@@ -923,16 +875,21 @@ describe('TaskComments', () => {
           mine(4, '2026-10-13T15:00:00Z'),
         ]);
         expect(el().querySelector('[data-new-badge]')).toBeNull();
-        expect(fixture.componentInstance.open()).toBe(false);
       });
 
-      it('marks the comments as seen when the section is open and clears the cue when it is collapsed again', async () => {
+      it('marks the comments as seen while the tab is showing and clears the cue when the tab is left', async () => {
         await createWithSeen('2026-10-13T12:00:00Z', [byOther(2, '2026-10-13T13:00:00Z')]);
         expect(q('[data-new-badge]').textContent).toBe('1 new');
+        // The tab is not showing: not yet seen.
+        expect(localStorage.getItem(seenKey())).toBe(String(Date.parse('2026-10-13T12:00:00Z')));
+        fixture.componentRef.setInput('active', true);
+        await settle(fixture);
         expect(Number(localStorage.getItem(seenKey()))).toBeGreaterThan(
           Date.parse('2026-10-13T13:00:00Z'),
         );
-        toggle().click();
+        // The cue stays while the person reads, and goes when they leave.
+        expect(q('[data-new-badge]').textContent).toBe('1 new');
+        fixture.componentRef.setInput('active', false);
         await settle(fixture);
         expect(el().querySelector('[data-new-badge]')).toBeNull();
       });
@@ -950,10 +907,10 @@ describe('TaskComments', () => {
         expect(keys.length).toBe(SEEN_CAP);
       });
 
-      /** Opens the component, collapsed, for a user whose last visit to Task 42 was at `seen`. */
+      /** Opens the component on a tab that is not showing, for a user whose last visit to Task 42 was at `seen`. */
       async function createWithSeen(seen: string, comments: ReturnType<typeof aComment>[]) {
         seeded = seen;
-        await create(comments, undefined, { open: false });
+        await create(comments, undefined, { active: false });
       }
     });
 
@@ -1038,8 +995,8 @@ describe('TaskComments', () => {
       await settle(fixture);
     };
 
-    it('opens a collapsed section, shows the whole thread, highlights the comment and focuses it', async () => {
-      await create([], undefined, { open: false });
+    it('shows the whole thread, highlights the comment and focuses it', async () => {
+      await create([]);
       serve(30);
       fixture.componentRef.setInput('refresh', 'x');
       await settle(fixture);
@@ -1047,7 +1004,6 @@ describe('TaskComments', () => {
       await settle(fixture);
       await settleLong();
 
-      expect(fixture.componentInstance.open()).toBe(true);
       const row = q('[data-comment-id="28"]');
       expect(row.classList).toContain('tc__item--hit');
       expect(document.activeElement).toBe(row);

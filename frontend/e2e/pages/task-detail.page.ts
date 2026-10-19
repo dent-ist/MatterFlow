@@ -70,7 +70,7 @@ export class StepPanel {
   }
 }
 
-/** Task detail (UX S10): one page with the header, status actions, Workflow and Comments, the Details and Assets side panel and the Activity drawer. */
+/** Task detail (UX S10): one page with the header, status actions, the tabs Workflow, Assets and Comments (#347), the Details side panel and the Activity drawer. */
 export class TaskDetailPage {
   readonly header: Locator;
   readonly number: Locator;
@@ -97,7 +97,7 @@ export class TaskDetailPage {
     await expect(this.header).toBeVisible();
   }
 
-  /** A section of the single-page layout (Workflow and Comments in the main column, Assets in the side panel). */
+  /** A pane of the tab panel (Workflow, Assets or Comments); it is on screen only while its tab is the selected one. */
   section(name: 'Workflow' | 'Comments' | 'Assets'): Locator {
     return this.page.locator(`[data-section="${name.toLowerCase()}"]`);
   }
@@ -127,25 +127,31 @@ export class TaskDetailPage {
     return this.page.locator('[data-comment-id]');
   }
 
-  /** The toggle button of the Comments or Assets bar (a disclosure: aria-expanded / aria-controls). */
-  toggle(name: 'Comments' | 'Assets'): Locator {
-    return this.section(name).locator('[data-toggle]');
+  /** The tab strip's tab of a pane (#347): Workflow, Assets or Comments. */
+  tab(name: 'Workflow' | 'Comments' | 'Assets'): Locator {
+    return this.page.locator(`[role="tab"][data-tab="${name.toLowerCase()}"]`);
   }
 
-  /** Expands a collapsible section (they start collapsed) and waits until it is open. */
-  async ensureOpen(name: 'Comments' | 'Assets'): Promise<void> {
-    const toggle = this.toggle(name);
-    await toggle.scrollIntoViewIfNeeded();
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  /** Shows a tab (a click on the strip) and waits until it is the selected one and its pane is on screen. */
+  async selectTab(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
+    const tab = this.tab(name);
+    await tab.scrollIntoViewIfNeeded();
+    if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    await expect(this.section(name)).toBeVisible();
+  }
+
+  /** Shows the Comments or Assets tab (they used to be collapsed bars; now they are tabs). */
+  ensureOpen(name: 'Comments' | 'Assets'): Promise<void> {
+    return this.selectTab(name);
   }
 
   ensureCommentsOpen(): Promise<void> {
-    return this.ensureOpen('Comments');
+    return this.selectTab('Comments');
   }
 
   ensureAssetsOpen(): Promise<void> {
-    return this.ensureOpen('Assets');
+    return this.selectTab('Assets');
   }
 
   /** The rich-text editor of the composer: the one-line "Write a comment..." input is clicked first when the composer is collapsed. */
@@ -159,12 +165,10 @@ export class TaskDetailPage {
     return editor;
   }
 
-  /** Brings a section into view, expanding Comments and Assets (collapsed by default), and waits for its heading. */
+  /** Shows a pane (its tab) and waits for its heading, which is there for screen readers. */
   async showSection(name: 'Workflow' | 'Comments' | 'Assets'): Promise<void> {
-    if (name !== 'Workflow') await this.ensureOpen(name);
-    const heading = this.section(name).locator('[data-section-heading]');
-    await heading.scrollIntoViewIfNeeded();
-    await expect(heading).toBeVisible();
+    await this.selectTab(name);
+    await expect(this.section(name).locator('[data-section-heading]')).toBeAttached();
   }
 
   /** Opens the Activity drawer from the header (from its overflow menu on a phone, where the header folds Edit and Activity into it) and returns it. */
@@ -229,7 +233,7 @@ export class TaskDetailPage {
   }
 }
 
-/** Opens a task and waits until the header, the steps and the (expanded) Comments are there. */
+/** Opens a task and waits until the header, the steps and the Comments (their tab is shown last) are there. */
 export async function busyTaskPage(page: Page, taskId: number): Promise<void> {
   await page.goto(`/tasks/${taskId}`);
   await expect(page.locator('[data-task-header]')).toBeVisible();

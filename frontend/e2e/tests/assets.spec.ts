@@ -30,7 +30,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
 
     await link(source.displayName, 'Source');
     await link(target.displayName, 'Destination');
-    await expect(panel.getByRole('heading', { name: 'Assets (2)' })).toBeVisible();
+    await expect(detail.tab('Assets')).toHaveText(/\(2\)/);
     await expect(
       panel.locator(`li[data-asset-id="${source.assetId}"] [data-role-select]`),
     ).toHaveValue(/\d+/);
@@ -49,7 +49,7 @@ test.describe('Linking assets to a task (SCN-016)', () => {
     await panel.locator(`li[data-asset-id="${source.assetId}"] [data-unlink]`).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Remove link' }).click();
     await expect(panel.locator(`li[data-asset-id="${source.assetId}"]`)).toHaveCount(0);
-    await expect(panel.getByRole('heading', { name: 'Assets (1)' })).toBeVisible();
+    await expect(detail.tab('Assets')).toHaveText(/\(1\)/);
   });
 
   test('SCN-016: the asset picker never offers assets of another matter', async ({

@@ -19,6 +19,8 @@ export interface MfTab {
   label: string;
   /** Count shown in parentheses; omitted while unknown (a string such as `--` while it loads). */
   count?: number | string | null;
+  /** The accessible name when the visible label and count do not read well aloud (`Workflow, 2 of 3 steps resolved`); it starts with the label. */
+  name?: string;
 }
 
 /**
@@ -33,7 +35,7 @@ export interface MfTab {
 @Component({
   selector: 'mf-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.tabs--pinned]': 'pinned' },
+  host: { '[class.tabs--pinned]': 'pinned', '[class.tabs--dense]': 'dense()' },
   template: `
     <div class="strip" [attr.data-more-start]="cues().start" [attr.data-more-end]="cues().end">
       <div
@@ -185,6 +187,13 @@ export interface MfTab {
       color: var(--mf-text-muted);
       font-weight: 400;
     }
+    /* Dense (the Task page, #347): a shorter strip with little room under it, so the pane starts about where the old section nav let it. */
+    :host(.tabs--dense) {
+      margin-bottom: var(--mf-s1);
+    }
+    :host(.tabs--dense) .tab {
+      min-height: 2.5rem;
+    }
     /* Pinned under the title of a fixed-header page: tighter, so the grid keeps its height. */
     @media (min-width: 768px) and (min-height: 561px) {
       :host(.tabs--pinned) {
@@ -210,6 +219,8 @@ export class Tabs {
   readonly tabs = input.required<readonly MfTab[]>();
   readonly selected = input.required<string>();
   readonly label = input('Views');
+  /** A shorter strip with less room under it (the Task page, where the pane should start high). */
+  readonly dense = input(false);
   /** Prefix of the element ids (`<prefix>-tab-<key>`; the page's panel is `<prefix>-panel`). */
   readonly idPrefix = input('mf');
   /** The tab the person chose (click or keyboard). */
@@ -217,6 +228,7 @@ export class Tabs {
 
   /** The accessible name of a counted tab: `Matters, 63` (the count spoken once, not "Matters, left parenthesis 63"); null while the count is unknown. */
   protected nameOf(t: MfTab): string | null {
+    if (t.name) return t.name;
     return typeof t.count === 'number' || (typeof t.count === 'string' && /^\d+$/.test(t.count))
       ? `${t.label}, ${t.count}`
       : null;

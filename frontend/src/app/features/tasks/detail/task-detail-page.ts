@@ -4,7 +4,6 @@ import {
   computed,
   DestroyRef,
   effect,
-  ElementRef,
   inject,
   input,
   linkedSignal,
@@ -14,11 +13,11 @@ import { Router } from '@angular/router';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { TaskActivity } from '../panels/task-activity';
 import { TaskAssetLinks } from '../panels/task-asset-links';
-import { detailsOpenKey, readOpen, saveOpen, sectionOpenKey } from '../panels/section-state';
+import { detailsOpenKey, readOpen, saveOpen } from '../panels/section-state';
 import { TaskComments } from '../panels/task-comments';
 import { TaskActionDialogs } from './task-action-dialogs';
 import { detailsSummary } from './details-summary';
-import { TaskDetailStore, TaskSection } from './task-detail.store';
+import { TaskDetailStore, TaskPageTab } from './task-detail.store';
 import { TaskDetailsTab } from './task-details-tab';
 import { TaskHeader } from './task-header';
 import { TaskStatusNote } from './task-status-note';
@@ -28,7 +27,7 @@ import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
-import { SectionNav, SectionNavItem } from '../../../shared/ui/section-nav';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { RecordState } from '../../../shared/ui/record-state';
 import { AuthStore } from '../../../core/auth/auth.store';
 
@@ -43,17 +42,18 @@ const STATE_TITLE: Readonly<Record<string, string>> = {
   error: 'Task could not be loaded',
 };
 
-const SECTIONS: readonly string[] = ['workflow', 'comments', 'assets'];
-const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as string);
+const TABS: readonly string[] = ['workflow', 'assets', 'comments'];
+const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
 
 /**
  * Task detail (UX S10, `/tasks/:id`): one page in the layout of the Client, Matter and Project pages. The header (the shared record header
  * and the facts strip) carries Edit, Activity, Complete task or Reopen task and the overflow; then the one status note (Completed, Cancelled or
- * On Hold: who, when, why; T3) and the banners (conflict, warnings); then the
- * Workflow and Comments sections in the main column and the Details and Assets sections in the side panel. Below 1100 px the order is
- * Workflow, Assets, Comments (each full width, owner request), then Details as a closed disclosure with a one-line summary (#307). A section nav with counts
- * (`mf-section-nav`, #308) sits above the Workflow at every width and sticks from 640 px. The old `?tab=` links scroll to the section
- * (`workflow`, `comments`, `assets`), open the drawer (`activity`) or just show the page (`details`); `?step=<id>` opens that step.
+ * On Hold: who, when, why; T3) and the banners (conflict, warnings); then, in the left column, the tabs Workflow (the default), Assets and
+ * Comments (#347, shared `mf-tabs` with counts), and Details in the side panel. Below 1100 px Details is a closed disclosure with a one-line
+ * summary after the tab's content (#307). All three tab panes stay on the page (the inactive ones hidden), so counts are live, a step being
+ * filled in or a comment being written survives a change of tab, and a link into a comment finds its thread. The tab is kept in `?tab=`
+ * (`assets`, `comments`; the default Workflow is not written); `?tab=activity` opens the drawer, `?tab=details` shows Details, and
+ * `?step=<id>` opens that step on the Workflow tab.
  */
 @Component({
   selector: 'mf-task-detail-page',
@@ -63,7 +63,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
     TaskHeader,
     TaskStatusNote,
     DetailLayout,
-    SectionNav,
+    Tabs,
     ActivityDrawer,
     TaskDetailsTab,
     TaskWorkflowTab,
@@ -108,25 +108,28 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
             [(narrowOpen)]="detailsOpen"
             (narrowOpenChange)="rememberDetails($event)"
           >
-            <mf-section-nav
+            <mf-tabs
               mfTop
-              class="topnav"
-              label="Sections"
-              [items]="navItems()"
-              (navigate)="jump($event)"
+              label="Task sections"
+              idPrefix="task"
+              [dense]="true"
+              [tabs]="tabs()"
+              [selected]="current()"
+              (tabChange)="select($event)"
             />
             <div mfMain>
-              <div class="sec" id="task-workflow" data-section="workflow">
-                <mf-task-workflow-tab />
-              </div>
-            </div>
-
-            <div mfBelow class="below">
-              <div class="bottom">
+              <div
+                class="tp"
+                role="tabpanel"
+                id="task-panel"
+                [attr.aria-labelledby]="'task-tab-' + current()"
+              >
+                <div class="tp__pane" [hidden]="current() !== 'workflow'" data-section="workflow">
+                  <mf-task-workflow-tab />
+                </div>
                 <div
-                  class="sec panel panel--assets"
-                  [class.panel--closed]="!assetsOpen()"
-                  id="task-assets"
+                  class="tp__pane tp__pane--assets"
+                  [hidden]="current() !== 'assets'"
                   data-section="assets"
                 >
                   <mf-task-asset-links
@@ -134,22 +137,20 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
                     [matterId]="t.matter.matterId"
                     [readOnly]="store.closed()"
                     [taskStatus]="t.status"
-                    [(open)]="assetsOpen"
                     (countChange)="assetCount.set($event)"
                   />
                 </div>
-
                 <div
-                  class="sec panel panel--comments"
-                  [class.panel--closed]="!commentsOpen()"
-                  id="task-comments"
+                  class="tp__pane tp__pane--comments"
+                  [hidden]="current() !== 'comments'"
                   data-section="comments"
                 >
                   <mf-task-comments
                     [taskId]="t.taskId"
                     [refresh]="t.rowVersion"
                     [focusRequest]="store.commentFocus()"
-                    [(open)]="commentsOpen"
+                    [active]="current() === 'comments'"
+                    [composerRequest]="store.composerRequest()"
                     (countChange)="commentCount.set($event)"
                   />
                 </div>
@@ -202,51 +203,22 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
       cursor: pointer;
     }
     /*
-     * Under the Workflow: Assets, then Comments, each the full width of the main column at every width (owner request: stacked, never
-     * side by side). Each panel's list is its own scroll area, capped at 60vh (--mf-panel-max); on phones everything flows.
+     * The three tab panes fill the left column. Each list is its own scroll area, capped at 60vh (--mf-panel-max); on phones everything flows.
      */
-    .bottom {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--mf-s4);
-    }
-    .panel {
+    .tp {
       min-width: 0;
-      padding: var(--mf-s3) var(--mf-s4) var(--mf-s4);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
     }
-    .panel.panel--closed {
-      padding: var(--mf-s1) var(--mf-s3);
+    .tp__pane[hidden] {
+      display: none;
     }
     @media (min-width: 600px) {
-      .panel--assets {
+      .tp__pane--assets {
         --mf-panel-max: 60vh;
       }
     }
     @media (min-width: 1100px) {
-      .panel--comments {
+      .tp__pane--comments {
         --mf-panel-max: 60vh;
-      }
-    }
-    /*
-     * The section nav (#308): above the Workflow at every width, sticky from 640 px inside the left column (the layout puts it first
-     * there). A section link scrolls to the section's box under the app header and the sticky row, so the section starts in view.
-     */
-    .topnav {
-      margin-bottom: var(--mf-s2);
-    }
-    .sec {
-      scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + var(--mf-s2));
-    }
-    @media (min-width: 640px) {
-      .topnav {
-        margin-bottom: var(--mf-s2);
-      }
-      .sec {
-        scroll-margin-top: calc(var(--mf-header-h, 3.75rem) + 3rem);
       }
     }
   `,
@@ -254,7 +226,7 @@ const isSection = (v: unknown): v is TaskSection => SECTIONS.includes(v as strin
 export class TaskDetailPage implements HasUnsavedChanges {
   /** Route parameter `:id`. */
   readonly id = input.required<string>();
-  /** Query parameter `?tab=` (old links): a section to scroll to, `activity` for the drawer. */
+  /** Query parameter `?tab=`: the tab to show (`assets`, `comments`; `workflow` is the default), `activity` for the drawer, `details` for Details. */
   readonly tab = input<string | undefined>();
   /** Query parameter `?step=<stepInstanceId>`: opens that step and moves focus to it. */
   readonly step = input<string | undefined>();
@@ -262,7 +234,6 @@ export class TaskDetailPage implements HasUnsavedChanges {
   protected readonly store = inject(TaskDetailStore);
   private readonly pageTitle = inject(PageTitle);
   private readonly router = inject(Router);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly auth = inject(AuthStore);
 
   /** Where this person's Details width is remembered (the splitter of the two-column layout). */
@@ -270,17 +241,12 @@ export class TaskDetailPage implements HasUnsavedChanges {
     () => `mf.task-detail.split.${this.auth.profile()?.userId ?? 'anon'}`,
   );
 
-  /**
-   * Whether Comments and Assets are expanded: the choice remembered for this person (read before the first render), collapsed by default.
-   * Links, the section nav and new comments open a section without changing what is remembered. Reset when another Task is shown.
-   */
-  private readonly openKeys = computed(() => {
-    const user = this.auth.profile()?.userId;
-    return [sectionOpenKey('comments', user), sectionOpenKey('assets', user), this.id()];
+  /** The tab showing: the address's `?tab=` (Workflow when absent or not a tab), or what the person chose since. */
+  protected readonly current = linkedSignal<string | undefined, TaskPageTab>({
+    source: () => this.tab(),
+    computation: (t) => (isTab(t) ? t : 'workflow'),
   });
-  protected readonly commentsOpen = linkedSignal(() => readOpen(this.openKeys()[0]) ?? false);
-  protected readonly assetsOpen = linkedSignal(() => readOpen(this.openKeys()[1]) ?? false);
-  /** The counts the section nav shows after Comments and Assets: what the sections' own headers report (null until they have loaded). */
+  /** The counts the tabs show after Comments and Assets: what the panes themselves report (null until they have loaded). */
   protected readonly commentCount = linkedSignal<string, number | null>({
     source: () => this.id(),
     computation: () => null,
@@ -289,30 +255,20 @@ export class TaskDetailPage implements HasUnsavedChanges {
     source: () => this.id(),
     computation: () => null,
   });
-  protected readonly navItems = computed<SectionNavItem[]>(() => {
+  protected readonly tabs = computed<MfTab[]>(() => {
     const p = this.store.task()?.workflow.progress;
     const steps = p && p.total > 0 ? p : null;
     const canSeeAssets = this.auth.has('Asset.View');
+    const known = (n: number | null): number | string => (n === null ? '--' : n);
     return [
       {
         key: 'workflow',
         label: 'Workflow',
-        target: 'task-workflow',
         count: steps ? `${steps.resolved}/${steps.total}` : null,
-        hint: steps ? `${steps.resolved} of ${steps.total} steps resolved` : null,
+        name: steps ? `Workflow, ${steps.resolved} of ${steps.total} steps resolved` : undefined,
       },
-      {
-        key: 'assets',
-        label: 'Assets',
-        target: 'task-assets',
-        count: canSeeAssets && this.assetCount() !== null ? String(this.assetCount()) : null,
-      },
-      {
-        key: 'comments',
-        label: 'Comments',
-        target: 'task-comments',
-        count: this.commentCount() === null ? null : String(this.commentCount()),
-      },
+      { key: 'assets', label: 'Assets', count: canSeeAssets ? known(this.assetCount()) : null },
+      { key: 'comments', label: 'Comments', count: known(this.commentCount()) },
     ];
   });
   /** What a closed Details holds, in one line (#307). */
@@ -369,19 +325,26 @@ export class TaskDetailPage implements HasUnsavedChanges {
         if (tab === 'activity') this.store.activityOpen.set(true);
         // ?tab=details: the Details are on the page; below 1100 px they sit in a closed disclosure, so show them (not remembered).
         else if (tab === 'details') this.detailsOpen.set(true);
-        // A link to a step (`?tab=workflow&step=5`, from My Work) lands on that step: the section heading must not take the focus.
-        else if (isSection(tab) && !(tab === 'workflow' && hasStep)) this.store.showSection(tab);
-        if (hasStep) this.store.focusStepId.set(stepId);
+        if (hasStep && this.current() === 'workflow') this.store.focusStepId.set(stepId);
       });
     });
-    // A request to show a section (the section nav, ?tab=): scroll there and put focus on the section's heading.
+    // Something other than the tab strip asks for a tab: a shortcut, a link into a comment, a link to a step.
     effect(() => {
-      const request = this.store.sectionRequest();
+      const request = this.store.tabRequest();
       untracked(() => {
-        if (!request) return;
-        if (request.section === 'comments') this.commentsOpen.set(true);
-        if (request.section === 'assets') this.assetsOpen.set(true);
-        setTimeout(() => this.focusSection(request.section));
+        if (request) this.show(request.tab);
+      });
+    });
+    effect(() => {
+      const step = this.store.focusStepId();
+      untracked(() => {
+        if (step !== null) this.show('workflow', false);
+      });
+    });
+    effect(() => {
+      const comment = this.store.commentFocus();
+      untracked(() => {
+        if (comment) this.show('comments');
       });
     });
   }
@@ -390,8 +353,28 @@ export class TaskDetailPage implements HasUnsavedChanges {
     return this.store.editing() && this.store.dirty();
   }
 
-  protected jump(section: string): void {
-    if (isSection(section)) this.store.showSection(section);
+  /** The person chose a tab (click or key). */
+  protected select(key: string): void {
+    if (isTab(key)) this.show(key);
+  }
+
+  /**
+   * Shows a tab and keeps `?tab=` in step with it. The address is replaced, not added to, so Back still leaves the task for the page it was
+   * opened from (T9) however many tabs were visited. `clearStep` drops a `?step=` link, which belongs to the Workflow as it was opened.
+   */
+  private show(tab: TaskPageTab, clearStep = true): void {
+    this.current.set(tab);
+    const now = this.tab();
+    const inAddress = tab === 'workflow' ? now === 'assets' || now === 'comments' : now !== tab;
+    if (!inAddress && !(clearStep && this.step())) return;
+    void this.router.navigate([], {
+      queryParams: {
+        ...(inAddress ? { tab: tab === 'workflow' ? null : tab } : {}),
+        ...(clearStep ? { step: null } : {}),
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected rememberDetails(open: boolean | null): void {
@@ -409,22 +392,12 @@ export class TaskDetailPage implements HasUnsavedChanges {
     }
   }
 
-  /** A comment chosen in the Activity: close the drawer and let the Comments section show it. */
+  /** A comment chosen in the Activity: close the drawer and let the Comments tab show it. */
   protected showComment(commentId: number): void {
-    this.setActivityOpen(false);
+    this.store.activityOpen.set(false);
     this.store.commentFocus.set({
       commentId,
       seq: (this.store.commentFocus()?.seq ?? 0) + 1,
     });
-  }
-
-  private focusSection(section: TaskSection): void {
-    const root = this.host.nativeElement;
-    const box = root.querySelector<HTMLElement>(`[data-section="${section}"]`);
-    const heading = box?.querySelector<HTMLElement>('[data-section-heading]');
-    if (!box || !heading) return;
-    // The section's box is scrolled to (its scroll margin clears the app header and the sticky nav), then the heading takes the focus.
-    box.scrollIntoView?.({ block: 'start' });
-    heading.focus({ preventScroll: true });
   }
 }

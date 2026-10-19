@@ -292,7 +292,7 @@ Total **72 h**. Independent of the Clients epic (can start now): WP-T1 (8, the c
 - `docs/ux/ux-spec.md` S10 and the addendum: the Clients WP14 (#286) writes section V; Task Detail would write the next letter.
 
 **Product decisions needed before issues (my recommendations in brackets).**
-a) Keep one page with no tabs, UAT-S10-2 [yes; add the section nav instead].
+a) Keep one page with no tabs, UAT-S10-2 [yes; add the section nav instead. Reversed later by #347: the page now has the tabs Workflow, Assets and Comments].
 b) Complete task as the header's primary action, with Reopen replacing it on closed tasks [yes].
 c) Comment excerpts and grouping in Activity [yes; additive API field].
 d) Task-page single-key shortcuts [optional, behind the existing switch].

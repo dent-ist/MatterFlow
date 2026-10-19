@@ -1,13 +1,6 @@
-import { TaskAssetLinkResponse, TaskCommentResponse } from '../../../api/generated/api-client';
-import { htmlToText } from './rich-text';
-
-/** The two collapsible bottom sections of the Task page. */
-export type PanelSection = 'comments' | 'assets';
+import { TaskCommentResponse } from '../../../api/generated/api-client';
 
 const who = (userId: number | null | undefined): string => String(userId ?? 'anon');
-/** Where a person's open / closed choice for a section is remembered (`localStorage`). */
-export const sectionOpenKey = (section: PanelSection, userId: number | null | undefined): string =>
-  `mf.task-detail.${section}.open.${who(userId)}`;
 /** Where a person's choice for the Details disclosure below 1100 px is remembered (closed until opened). */
 export const detailsOpenKey = (userId: number | null | undefined): string =>
   `mf.task-detail.details.open.${who(userId)}`;
@@ -94,34 +87,3 @@ export const countNew = (
   seenAt === null
     ? 0
     : items.filter((c) => c.author.userId !== userId && timeOf(c) > seenAt).length;
-
-/** `just now`, `5m ago`, `3h ago`, `2d ago`, then the date. */
-export function shortAgo(iso: string, now = Date.now()): string {
-  const t = Date.parse(iso);
-  if (!t) return '';
-  const min = Math.max(0, Math.floor((now - t) / 60_000));
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min}m ago`;
-  if (min < 1440) return `${Math.floor(min / 60)}h ago`;
-  if (min < 10_080) return `${Math.floor(min / 1440)}d ago`;
-  return new Date(t).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-export function commentsPreview(latest: TaskCommentResponse | null, now = Date.now()): string {
-  if (!latest) return 'No comments yet';
-  const text = htmlToText(latest.bodyHtml).replace(/\s+/g, ' ').trim().slice(0, 200);
-  return `Latest: ${latest.author.displayName}, ${shortAgo(latest.createdAtUtc, now)}: ${text}`;
-}
-
-export function assetsPreview(items: readonly TaskAssetLinkResponse[]): string {
-  if (items.length === 0) return 'No linked assets';
-  const names = items
-    .slice(0, 2)
-    .map((a) => a.displayName)
-    .join(', ');
-  return items.length > 2 ? `${names} +${items.length - 2} more` : names;
-}

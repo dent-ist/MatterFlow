@@ -560,7 +560,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   }
 
-  test('with the switch on: C opens Comments and focuses the composer, A opens the Assignee menu, S the Status menu; Esc returns to the button', async ({
+  test('with the switch on: C shows the Comments tab and focuses the composer, A opens the Assignee menu, S the Status menu; Esc returns to the button', async ({
     seed,
     admin,
     page,
@@ -573,6 +573,10 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
     await page.keyboard.press('c');
     const editor = page.locator('[data-section="comments"] [data-composer] [role=textbox]');
     await expect(editor).toBeFocused();
+    await expect(page.getByRole('tab', { name: /^Comments/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     // Letters typed into the editor are text, not shortcuts.
     await page.keyboard.type('cas');
     await expect(editor).toContainText('cas');
@@ -582,7 +586,7 @@ test.describe('T9 #327: shortcuts C, A and S behind the "Keyboard shortcuts" swi
 
     await page.keyboard.press('a');
     await expect(page.locator('.im-pop')).toBeVisible();
-    // Comments was opened and scrolled to above: the menu still comes up where it can be seen (the button is scrolled into view first).
+    // The Comments tab is showing: the menu still comes up where it can be seen (the button is scrolled into view first).
     await expect(page.locator('.im-pop')).toBeInViewport();
     await expect(page.getByRole('textbox', { name: 'Search people' })).toBeFocused();
     await shot(page, 'shortcut-assignee-menu');

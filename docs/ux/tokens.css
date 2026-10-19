@@ -85,8 +85,8 @@
   /* Task page (Task Detail epic #288, ux-spec S10 and S09): NO token was added. The page is built on the tokens above. Numbers it relies on:
      the facts strip (src/styles/_facts-strip.scss, mf-task-facts and its skeleton) is one rounded box of six tiles with 1px dividers drawn by
      the gap over --mf-border: six across from 1100px, three by two from 640px, two by three below; a tile is at least 54px tall (label
-     fs-xs, value fs-md semibold); the title is the H2 size (22px, 18px below 640px) in the shared record header (--rh-fs); the section nav
-     sticks under the app header (--mf-header-h) from 640px and is static below; the Details panel and its disclosure switch at 1100px
+     fs-xs, value fs-md semibold); the title is the H2 size (22px, 18px below 640px) in the shared record header (--rh-fs); the Task tab strip
+     is dense (2.5rem tabs, 4px below, #347); the Details panel and its disclosure switch at 1100px
      (DETAIL_WIDE_QUERY); the Workflow head is one row of at most 56px; the Description is cut at 12 lines (line height 1.4); the Edit dialog
      is 720px wide; the Create task column is 720px with one input width, --mf-field-max (default 480px for every other form). Status and
      Hold colours follow section T of the decisions addendum (grey, never a warning colour, for the status note). Phone breakpoint 640px.

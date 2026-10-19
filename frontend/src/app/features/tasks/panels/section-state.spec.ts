@@ -1,7 +1,5 @@
-import { aComment, aLink } from './task-panels-testing';
+import { aComment } from './task-panels-testing';
 import {
-  assetsPreview,
-  commentsPreview,
   countNew,
   latestOf,
   readOpen,
@@ -10,7 +8,6 @@ import {
   requestOpenKey,
   saveOpen,
   saveSeen,
-  shortAgo,
 } from './section-state';
 
 describe('section-state', () => {
@@ -70,35 +67,6 @@ describe('section-state', () => {
     expect(countNew(items, null, 5)).toBe(0);
     expect(latestOf(items)?.commentId).toBe(3);
     expect(latestOf([])).toBeNull();
-  });
-
-  it('words the time shortly', () => {
-    const now = Date.parse('2026-10-15T12:00:00Z');
-    expect(shortAgo('2026-10-15T11:59:40Z', now)).toBe('just now');
-    expect(shortAgo('2026-10-15T11:55:00Z', now)).toBe('5m ago');
-    expect(shortAgo('2026-10-15T09:00:00Z', now)).toBe('3h ago');
-    expect(shortAgo('2026-10-13T12:00:00Z', now)).toBe('2d ago');
-    expect(shortAgo('2026-09-01T12:00:00Z', now)).toBe('Sep 1, 2026');
-    expect(shortAgo('nonsense', now)).toBe('');
-  });
-
-  it('previews the latest comment as plain text, or says there are none', () => {
-    const now = Date.parse('2026-10-15T12:00:00Z');
-    const c = aComment({
-      bodyHtml: '<p>Sent <b>the</b>   index</p>',
-      createdAtUtc: '2026-10-15T09:00:00Z',
-    });
-    expect(commentsPreview(c, now)).toBe('Latest: Dana P., 3h ago: Sent the index');
-    expect(commentsPreview(null)).toBe('No comments yet');
-  });
-
-  it('previews the first two asset names and how many more', () => {
-    const names = ['Workspace Name', 'Review set', 'Laptop'];
-    const links = names.map((displayName, i) => aLink({ assetId: i, displayName }));
-    expect(assetsPreview([])).toBe('No linked assets');
-    expect(assetsPreview(links.slice(0, 1))).toBe('Workspace Name');
-    expect(assetsPreview(links.slice(0, 2))).toBe('Workspace Name, Review set');
-    expect(assetsPreview(links)).toBe('Workspace Name, Review set +1 more');
   });
 });
 

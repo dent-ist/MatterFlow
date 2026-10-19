@@ -24,8 +24,8 @@ export const TASK_TABS: readonly TaskTab[] = [
   'assets',
   'activity',
 ];
-/** The sections of the page that links, the section nav and `?tab=` can scroll to. */
-export type TaskSection = 'workflow' | 'comments' | 'assets';
+/** The tabs of the page (#347): what `?tab=` and the shortcuts can show. */
+export type TaskPageTab = 'workflow' | 'assets' | 'comments';
 
 /** The dialog currently asking the user to confirm or explain a status change. */
 export type ActionDialog =
@@ -80,8 +80,10 @@ export class TaskDetailStore {
   readonly busy = signal(false);
   /** Non-blocking warnings of the last write (for example USER_NOT_IN_POD). */
   readonly warnings = signal<string[]>([]);
-  /** The section a link asked for; the page scrolls to it and moves focus to its heading. `seq` makes a repeated request count. */
-  readonly sectionRequest = signal<{ section: TaskSection; seq: number } | null>(null);
+  /** The tab something other than the tab strip asked for (a shortcut, a link into a comment); the page shows it. `seq` makes a repeated request count. */
+  readonly tabRequest = signal<{ tab: TaskPageTab; seq: number } | null>(null);
+  /** Counts the requests to put the cursor in the comment composer (shortcut C); the Comments tab answers it. */
+  readonly composerRequest = signal(0);
   /** Whether the Activity drawer is open. */
   readonly activityOpen = signal(false);
   /** The comment the Activity asked to show; the Comments section scrolls to it and highlights it. `seq` makes a repeated request count. */
@@ -310,15 +312,21 @@ export class TaskDetailStore {
     this.dialog.set(null);
   }
 
-  /** Jumps to a step of the Workflow section (links in the blocked-completion dialog). */
+  /** Jumps to a step of the Workflow tab (links in the blocked-completion dialog). */
   showStep(stepInstanceId: number): void {
     this.dialog.set(null);
     this.focusStepId.set(stepInstanceId);
   }
 
-  /** Scrolls to a section of the page and moves focus to its heading. */
-  showSection(section: TaskSection): void {
-    this.sectionRequest.update((r) => ({ section, seq: (r?.seq ?? 0) + 1 }));
+  /** Shows a tab of the page. */
+  showTab(tab: TaskPageTab): void {
+    this.tabRequest.update((r) => ({ tab, seq: (r?.seq ?? 0) + 1 }));
+  }
+
+  /** Shortcut C: shows the Comments tab and puts the cursor in the composer. */
+  openComposer(): void {
+    this.showTab('comments');
+    this.composerRequest.update((n) => n + 1);
   }
 
   // ---- step actions

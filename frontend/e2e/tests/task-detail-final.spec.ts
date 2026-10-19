@@ -88,7 +88,7 @@ async function openFresh(page: Page, detail: TaskDetailPage, taskId: number): Pr
   await detail.open(taskId);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  await expect(page.locator('[data-section-link="workflow"]')).toBeVisible();
+  await expect(page.getByRole('tab', { name: /^Workflow/ })).toBeVisible();
 }
 
 const ROLE = [

@@ -391,12 +391,13 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         !canChangeSomething && (!known(role) || !has(role, 'Task.Comment') || true),
       );
 
-      // Sections: Assets by Asset.View, Comments composer by Task.Comment, step buttons by Workflow.Execute.
-      const assetsNav = page.locator('[data-section-link="assets"]');
-      await expect(assetsNav).toBeVisible();
+      // Tabs: Assets by Asset.View (the tab stays, with the sentence and no count, without it), Comments composer by Task.Comment, step
+      // buttons by Workflow.Execute.
+      const assetsTab = detail.tab('Assets');
+      await expect(assetsTab).toBeVisible();
       if (known(role)) {
-        const count = await assetsNav.locator('[data-count]').count();
-        expect(count > 0, 'Assets count in the section nav').toBe(has(role, 'Asset.View'));
+        const counted = /\(\S+\)/.test((await assetsTab.textContent()) ?? '');
+        expect(counted, 'Assets count on the tab').toBe(has(role, 'Asset.View'));
       }
       await detail.ensureAssetsOpen();
       if (known(role) && !has(role, 'Asset.View')) {
@@ -432,12 +433,12 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       await expect(detail.section('Comments').locator('[data-comment-id]')).toHaveCount(3);
       await noErrors(page, 'task sections open');
 
-      // Section nav: every link goes to a section that is on the page.
-      for (const key of ['workflow', 'assets', 'comments']) {
-        const link = page.locator(`[data-section-link="${key}"]`);
-        await link.click();
-        await expect(page.locator(`[data-section="${key}"] [data-section-heading]`)).toBeFocused();
+      // Tabs: every tab shows a pane that is on the page.
+      for (const name of ['Workflow', 'Assets', 'Comments'] as const) {
+        await detail.selectTab(name);
+        await expect(detail.section(name).locator('[data-section-heading]')).toBeAttached();
       }
+      await detail.selectTab('Workflow');
       await page.evaluate(() => window.scrollTo(0, 0));
 
       // Menus: every offered item is enabled (or says why), and opening them asks the server for nothing the person may not have.
@@ -494,7 +495,8 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         await expect(dialog).toBeHidden();
       }
 
-      // Asset link form: opens and its lookup works.
+      // Asset link form: opens and its lookup works (on the Assets tab).
+      await detail.selectTab('Assets');
       if (canLinkAssets && !(await detail.section('Assets').locator('[data-link-form]').count())) {
         await detail.section('Assets').locator('[data-link-open]').click();
         await expect(detail.section('Assets').locator('[data-link-form]')).toBeVisible();
@@ -508,6 +510,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
       }
 
       // Workflow step: the first step opens; its buttons exist only with Workflow.Execute.
+      await detail.selectTab('Workflow');
       const firstStep = page.locator('[data-workflow-tab] [data-step-id]').first();
       await expect(firstStep).toBeVisible();
 

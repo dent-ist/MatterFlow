@@ -9,11 +9,11 @@ import {
   TASK_SHORTCUTS,
   isShortcut,
 } from '../../../shared/layout/shortcut-registry';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { TaskDetailStore } from './task-detail.store';
 
 /** What a Task shortcut does: the control it clicks, found by the hooks the page already has (so a missing control means "not allowed"). */
 const TARGETS: Readonly<Record<string, string>> = {
-  'task-comment': '[data-section="comments"] [data-add-comment]',
   'task-assignee': '[data-facts] [data-assignee] [data-inline-trigger]',
   'task-status': '[data-facts] [data-status] [data-inline-trigger]',
 };
@@ -50,7 +50,7 @@ function pressAfterScroll(control: HTMLElement): void {
 }
 
 /**
- * The Task page's single-key shortcuts (K2, #327): `C`, `A` and `S`. They are listed in the `?` help while the page is open and act only
+ * The Task page's single-key shortcuts (K2, #327): `C` (opens the Comments tab and focuses the composer), `A` and `S`. They are listed in the `?` help while the page is open and act only
  * while the person's "Keyboard shortcuts" switch is on (WCAG 2.1.4), no modifier is held, focus is not in a field, menu or dialog, and the
  * `g` chord is not pending. A key whose control is not on the page (no Task.Comment, Task.Assign or status right; a closed task) does
  * nothing. Call it once, from the Task page's constructor.
@@ -59,6 +59,7 @@ export function registerTaskShortcuts(): void {
   const store = inject(TaskDetailStore);
   const shortcuts = inject(KeyboardShortcuts);
   const registry = inject(ShortcutRegistry);
+  const auth = inject(AuthStore);
 
   const offs = TASK_SHORTCUTS.map((def) => registry.register(def));
   const onKey = (event: KeyboardEvent): void => {
@@ -68,6 +69,13 @@ export function registerTaskShortcuts(): void {
     if (!id || store.state() !== 'ready') return;
     const target = event.target as HTMLElement | null;
     if (isEditable(target) || target?.closest(OWNED) || overlayOpen() || store.editing()) return;
+    // C: the Comments tab opens and the cursor goes to the composer (there is no button to press; without Task.Comment there is no composer).
+    if (id === 'task-comment') {
+      if (!auth.has('Task.Comment')) return;
+      event.preventDefault();
+      store.openComposer();
+      return;
+    }
     const control = document.querySelector<HTMLElement>(TARGETS[id]);
     if (
       !control ||
@@ -77,7 +85,7 @@ export function registerTaskShortcuts(): void {
       return;
     event.preventDefault();
     // A menu anchored off screen would open out of sight, and the scroll that brings it in would close it: bring the button into view first.
-    if (id !== 'task-comment' && !inView(control)) {
+    if (!inView(control)) {
       pressAfterScroll(control);
       return;
     }

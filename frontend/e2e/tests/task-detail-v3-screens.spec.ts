@@ -50,38 +50,36 @@ test.describe('task detail v3 screenshots', () => {
         await reset();
         await page.reload();
         await expect(detail.header).toBeVisible();
-        await expect(detail.toggle('Comments')).toHaveAttribute('aria-expanded', 'false');
-        await shoot(page, `${at}-1-collapsed`);
+        await expect(detail.tab('Workflow')).toHaveAttribute('aria-selected', 'true');
+        await shoot(page, `${at}-1-workflow-tab`);
 
         await detail.ensureCommentsOpen();
-        await shoot(page, `${at}-2-comments-open`);
+        await shoot(page, `${at}-2-comments-tab`);
         await detail.ensureAssetsOpen();
-        await shoot(page, `${at}-3-both-open`);
+        await shoot(page, `${at}-3-assets-tab`);
+        await detail.ensureCommentsOpen();
         await detail.composer();
         await shoot(page, `${at}-5-composer-editor`);
         await page.keyboard.type('Thanks, loading the second batch now.');
         await shoot(page, `${at}-6-composer-with-text`);
 
-        // Collapse, then another user comments: the next visit shows the cue and opens Comments.
+        // Leave the tab (marks the comments read), then another user comments: the next visit shows the cue in the Comments tab.
         await page.evaluate(() => localStorage.clear());
         await page.reload();
         await expect(detail.header).toBeVisible();
         await detail.ensureCommentsOpen();
-        await detail.ensureAssetsOpen();
-        await detail.toggle('Comments').click();
-        await detail.toggle('Assets').click();
+        await detail.selectTab('Workflow');
         await page.waitForTimeout(1100);
         await asTech.post(`/api/v1/tasks/${task.taskId}/comments`, {
           bodyHtml: `<p>Batch B-00${size.w === 1366 ? 2 : 3} is loaded, QC can start.</p>`,
         });
         await page.reload();
+        await detail.ensureCommentsOpen();
         await expect(detail.section('Comments').locator('[data-new-badge]')).toBeVisible();
         await shoot(page, `${at}-4-new-cue`);
 
-        // The bar with only Comments open (one open section takes the whole row), then the one-line composer.
-        await detail.toggle('Comments').click();
-        await page.reload();
-        await expect(detail.header).toBeVisible();
+        // Leave the tab and come back: the cue is gone and the composer is one line.
+        await detail.selectTab('Workflow');
         await detail.ensureCommentsOpen();
         await shoot(page, `${at}-7-composer-one-line`);
       }

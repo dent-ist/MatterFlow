@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { KeyboardShortcuts } from '../../../shared/layout/keyboard-shortcuts';
 import { ShortcutRegistry } from '../../../shared/layout/shortcut-registry';
 import { Permission } from '../../../core/auth/permissions';
+import { TaskDetailStore } from './task-detail.store';
+import { settle } from '../../../shared/testing/org-testing';
 import { aTask, allowed, mountTaskPage, q, transition } from './task-detail-testing';
 
 const PERMS: Permission[] = ['Task.View', 'Task.Edit', 'Task.Comment', 'Workflow.Execute'];
@@ -24,7 +26,6 @@ function spyClick(el: HTMLElement, selector: string): () => number {
   return () => n;
 }
 
-const COMMENT = '[data-section="comments"] [data-add-comment]';
 const ASSIGNEE = '[data-facts] [data-assignee] [data-inline-trigger]';
 const STATUS = '[data-facts] [data-status] [data-inline-trigger]';
 
@@ -34,16 +35,21 @@ describe('Task page shortcuts C, A and S (K2, #327)', () => {
     localStorage.clear();
   });
 
-  it('C adds a comment, A opens the Assignee menu, S opens the Status menu', async () => {
-    const { el } = await mountTaskPage(aTask(), PERMS);
-    const comment = spyClick(el, COMMENT);
+  it('C opens the Comments tab and asks for the composer, A opens the Assignee menu, S opens the Status menu', async () => {
+    const { fixture, el } = await mountTaskPage(aTask(), PERMS);
+    const store = fixture.debugElement.injector.get(TaskDetailStore);
+    const comment = () => store.composerRequest();
+    expect(q(el, '[role=tab][aria-selected=true]')!.getAttribute('data-tab')).toBe('workflow');
     const assignee = spyClick(el, ASSIGNEE);
     const status = spyClick(el, STATUS);
     expect(press({ key: 'c' }).defaultPrevented).toBe(true);
     press({ key: 'a' });
     press({ key: 's' });
     expect([comment(), assignee(), status()]).toEqual([1, 1, 1]);
+    await settle(fixture);
+    expect(q(el, '[role=tab][aria-selected=true]')!.getAttribute('data-tab')).toBe('comments');
     // Upper case without Shift (Caps Lock) counts too; Shift + letter does not.
+    (document.activeElement as HTMLElement | null)?.blur(); // C put the cursor in the composer, where letters are typed
     press({ key: 'C' });
     expect(comment()).toBe(2);
     press({ key: 'C', shiftKey: true });
@@ -102,7 +108,7 @@ describe('Task page shortcuts C, A and S (K2, #327)', () => {
       allowedActions: allowed({ canComment: false, canAssign: false, transitions: [] }),
     });
     const { el } = await mountTaskPage(task, ['Task.View']);
-    expect(q(el, COMMENT)).toBeNull();
+    expect(q(el, '[data-composer], [data-composer-quick]')).toBeNull();
     expect(q(el, ASSIGNEE)).toBeNull();
     expect(q(el, STATUS)).toBeNull();
     for (const key of ['c', 'a', 's']) expect(press({ key }).defaultPrevented).toBe(false);

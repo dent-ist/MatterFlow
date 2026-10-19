@@ -12,7 +12,7 @@ const FIVE_STEPS = [
   { title: 'Handover' },
 ];
 
-/** The Task page is one page: Workflow with Comments and Assets under it on the left (60 %), Details on the right (40 %, resizable) (docs/ux/task-detail-v2). */
+/** The Task page is one page: the tabs Workflow, Assets and Comments on the left (60 %, #347; stacked sections before that), Details on the right (40 %, resizable) (docs/ux/task-detail-v2). */
 test.describe('Task detail: single page layout', () => {
   const noHorizontalScroll = async (page: Page): Promise<void> => {
     const overflow = await page.evaluate(
@@ -27,7 +27,7 @@ test.describe('Task detail: single page layout', () => {
     [1366, 768],
     [1920, 1080],
   ] as const) {
-    test(`${width} px: Workflow above Assets above Comments, each full width, on the left (60 %), Details on the right (40 %), nothing clipped`, async ({
+    test(`${width} px: the tabs Workflow, Assets and Comments, each pane the full width of the left column (60 %), Details on the right (40 %), nothing clipped`, async ({
       page,
       seed,
       admin,
@@ -37,14 +37,18 @@ test.describe('Task detail: single page layout', () => {
       const detail = new TaskDetailPage(page);
       await detail.open(task.taskId);
       await detail.ensureCommentsOpen();
-      await detail.ensureAssetsOpen();
       await expect(detail.commentItems.first()).toBeVisible();
 
-      await expect(page.getByRole('tab')).toHaveCount(0);
+      await expect(page.getByRole('tab')).toHaveText([
+        /^\s*Workflow/,
+        /^\s*Assets\s*\(8\)$/,
+        /^\s*Comments\s*\(12\)$/,
+      ]);
       await expect(page.getByRole('heading', { level: 1 })).toContainText(task.title);
+      // The pane on screen has its heading (for screen readers); Details has its own.
       await expect(
         page.getByRole('heading', { level: 2, name: /^(Workflow|Comments|Details|Assets)/ }),
-      ).toHaveText([/Workflow/, /Assets/, /Comments/, /Details/]);
+      ).toHaveText([/Comments/, /Details/]);
 
       const aside = page.getByRole('complementary', { name: 'Details' });
       await expect(aside.locator('[data-view]')).toBeVisible();
@@ -52,27 +56,30 @@ test.describe('Task detail: single page layout', () => {
       await expect(aside.getByRole('button', { name: 'Edit details' })).toHaveCount(0);
       await expect(aside.locator('[data-section="assets"]')).toHaveCount(0);
 
-      const workflow = await box(detail.section('Workflow'));
-      const comments = await box(detail.section('Comments'));
-      const assets = await box(detail.section('Assets'));
       const side = await box(aside);
       const layout = await box(page.locator('[data-detail-layout]'));
-
-      // Assets first, Comments below it, both under the Workflow and as wide as it (owner request: stacked, never side by side).
-      expect(assets.y).toBeGreaterThan(workflow.y + workflow.height - 1);
-      expect(comments.y).toBeGreaterThan(assets.y + assets.height - 1);
-      expect(Math.abs(assets.width - workflow.width)).toBeLessThanOrEqual(2);
-      expect(Math.abs(comments.width - workflow.width)).toBeLessThanOrEqual(2);
-      expect(Math.abs(assets.x - comments.x)).toBeLessThanOrEqual(1);
+      await detail.selectTab('Workflow');
+      const workflow = await box(detail.section('Workflow'));
+      // Assets first, Comments after it (the tab order); each pane is as wide as the left column and starts at the same place under the
+      // strip (owner request: Assets before Comments; #347: tabs instead of stacked sections).
+      for (const name of ['Assets', 'Comments'] as const) {
+        await detail.selectTab(name);
+        const pane = await box(detail.section(name));
+        expect(Math.abs(pane.width - workflow.width), name).toBeLessThanOrEqual(2);
+        expect(Math.abs(pane.x - workflow.x), name).toBeLessThanOrEqual(1);
+        expect(Math.abs(pane.y - workflow.y), name).toBeLessThanOrEqual(2);
+      }
       // Left column about 60 % of the layout, Details about 40 % and to its right.
       expect(side.x).toBeGreaterThan(workflow.x + workflow.width - 1);
       expect(workflow.width / layout.width).toBeGreaterThan(0.56);
       expect(workflow.width / layout.width).toBeLessThan(0.61);
       expect(side.width / layout.width).toBeGreaterThan(0.36);
       expect(side.width / layout.width).toBeLessThan(0.41);
-      await expect(page.getByRole('navigation', { name: 'Sections' })).toBeVisible();
+      await expect(page.getByRole('tablist', { name: 'Task sections' })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Sections' })).toHaveCount(0);
 
       // Nothing clipped: no sideways scroll, every step row inside its box, the status badge inside the row.
+      await detail.selectTab('Workflow');
       await noHorizontalScroll(page);
       const clipped = await page.evaluate(() =>
         Array.from(document.querySelectorAll<HTMLElement>('[data-step-id], [data-comment-id]'))
@@ -208,7 +215,7 @@ test.describe('Task detail: single page layout', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await expect(detail.splitter).toHaveCount(0);
-    await expect(page.getByRole('navigation', { name: 'Sections' })).toBeVisible();
+    await expect(page.getByRole('tablist', { name: 'Task sections' })).toBeVisible();
     await noHorizontalScroll(page);
   });
 
@@ -223,9 +230,7 @@ test.describe('Task detail: single page layout', () => {
     await detail.open(task.taskId);
     await detail.showSection('Comments');
     await expect(detail.commentItems).toHaveCount(3);
-    await expect(detail.section('Comments').getByRole('heading', { level: 2 })).toHaveText(
-      'Comments (12)',
-    );
+    await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(12\)\s*$/);
     await expect(page.getByText('Showing latest 3 of 12.')).toBeVisible();
     await expect(detail.commentItems.last()).toContainText('load template agreed');
     await expect(detail.commentItems.first()).toContainText('Vendor re-sent B-003');
@@ -276,7 +281,6 @@ test.describe('Task detail: single page layout', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await detail.ensureCommentsOpen();
     await detail.showSection('Assets');
 
     const assets = page.getByRole('region', { name: 'Linked assets, scrollable' });
@@ -304,12 +308,14 @@ test.describe('Task detail: single page layout', () => {
 
     await assets.focus();
     await expect(assets).toBeFocused();
+    const a = await box(detail.section('Assets'));
+    // The Comments tab: its thread is a scroll region too (the pane is as wide as the Assets pane and starts where it did: tabs, never
+    // stacked or side by side; owner request: Assets before Comments).
+    await detail.showSection('Comments');
     const comments = page.getByRole('region', { name: 'Comment thread, scrollable' });
     await expect(comments).toHaveAttribute('tabindex', '0');
-    // Stacked, Assets first, each as wide as the other (owner request: never side by side).
-    const a = await box(detail.section('Assets'));
     const c = await box(detail.section('Comments'));
-    expect(c.y).toBeGreaterThan(a.y + a.height - 1);
+    expect(Math.abs(c.y - a.y)).toBeLessThanOrEqual(2);
     expect(Math.abs(a.width - c.width)).toBeLessThanOrEqual(1);
   });
 
@@ -403,7 +409,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(detail.step(load).root.locator('[data-current]')).toBeVisible();
   });
 
-  test('375 px: Workflow, Assets, Comments, then Details (collapsed) in one column with the section nav and no sideways scroll', async ({
+  test('375 px: the tabs, the selected pane, then Details (collapsed) in one column and no sideways scroll', async ({
     page,
     seed,
   }) => {
@@ -422,20 +428,15 @@ test.describe('Task detail: single page layout', () => {
 
     const y = async (locator: ReturnType<Page['locator']>) => (await locator.boundingBox())!.y;
     const details = await y(page.getByRole('complementary', { name: 'Details' }));
-    const workflow = await y(detail.section('Workflow'));
-    const comments = await y(detail.section('Comments'));
-    const assets = await y(detail.section('Assets'));
-    expect(workflow).toBeLessThan(assets);
-    expect(assets).toBeLessThan(comments);
-    expect(comments).toBeLessThan(details);
-
-    const jump = page.getByRole('navigation', { name: 'Sections' });
-    await expect(jump.getByRole('link')).toHaveText([/^Workflow/, /^Assets/, /^Comments/]);
-    await jump.getByRole('link', { name: 'Assets' }).click();
-    await expect(detail.section('Assets').locator('[data-section-heading]')).toBeFocused();
-    await jump.getByRole('link', { name: 'Comments' }).click();
-    await expect(detail.section('Comments').locator('[data-section-heading]')).toBeFocused();
-    await noHorizontalScroll(page);
+    const strip = await y(page.getByRole('tablist', { name: 'Task sections' }));
+    for (const name of ['Workflow', 'Assets', 'Comments'] as const) {
+      await detail.selectTab(name);
+      const pane = await y(detail.section(name));
+      expect(strip, `tabs above the ${name} pane`).toBeLessThan(pane);
+      expect(pane, `${name} pane above Details`).toBeLessThan(details);
+      await noHorizontalScroll(page);
+    }
+    await expect(page.getByRole('navigation', { name: 'Sections' })).toHaveCount(0);
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -448,7 +449,7 @@ test.describe('Task detail: single page layout', () => {
     await noHorizontalScroll(page);
   });
 
-  test('old ?tab= links: sections take focus, activity opens the drawer, details just shows the page', async ({
+  test('?tab= links: assets and comments show their tab, workflow and no tab the Workflow, activity opens the drawer, details just shows the page', async ({
     page,
     seed,
   }) => {
@@ -460,7 +461,8 @@ test.describe('Task detail: single page layout', () => {
     for (const [param, name] of Object.entries(sections)) {
       await page.goto(`/tasks/${task.taskId}?tab=${param}`);
       await expect(detail.header).toBeVisible();
-      await expect(detail.section(name).locator('[data-section-heading]')).toBeFocused();
+      await expect(detail.tab(name)).toHaveAttribute('aria-selected', 'true');
+      await expect(detail.section(name)).toBeVisible();
       await expect(page.getByRole('dialog')).toHaveCount(0);
     }
 
@@ -538,7 +540,7 @@ test.describe('Task detail: single page layout', () => {
     await expect(open).toBeFocused();
   });
 
-  test('a person without Asset.View sees a note in the Assets section instead of a gap', async ({
+  test('a person without Asset.View sees a note in the Assets tab instead of a gap', async ({
     seed,
     asUser,
   }) => {
@@ -551,7 +553,8 @@ test.describe('Task detail: single page layout', () => {
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await expect(detail.toggle('Assets')).toHaveAttribute('aria-expanded', 'false');
+    // The Assets tab stays (T10 matrix), without a count; its pane carries the sentence.
+    await expect(detail.tab('Assets')).toHaveText(/^\s*Assets\s*$/);
     await detail.ensureAssetsOpen();
     await expect(detail.section('Assets')).toContainText("don't have permission to view assets");
     await expect(page.locator('[data-view-only]')).toContainText('View only');

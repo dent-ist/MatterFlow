@@ -99,7 +99,7 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     await detail.showSection('Comments');
     const panel = commentsRegion(page);
 
-    await expect(panel.getByRole('heading', { level: 2 })).toHaveText('Comments (48)');
+    await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(48\)\s*$/);
     await expect(detail.commentItems).toHaveCount(3);
     await expect(panel.locator('[data-limit-note]')).toHaveText(
       /^\s*Showing latest 3 of 48\.\s*Show all\s*$/,
@@ -182,9 +182,7 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     await page.keyboard.type('Reply from the top');
     await commentsRegion(page).locator('[data-post]').click();
     await expect(detail.commentItems.last()).toContainText('Reply from the top');
-    await expect(commentsRegion(page).getByRole('heading', { level: 2 })).toHaveText(
-      'Comments (13)',
-    );
+    await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(13\)\s*$/);
     await expect(commentsRegion(page).locator('[data-limit-note]')).toContainText(
       'Showing latest 3 of 13.',
     );
@@ -200,9 +198,7 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(thread.taskId);
     await detail.showSection('Comments');
-    await expect(commentsRegion(page).getByRole('heading', { level: 2 })).toHaveText(
-      'Comments (112)',
-    );
+    await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(112\)\s*$/);
     await expect(commentsRegion(page).locator('[data-limit-note]')).toContainText(
       'Showing latest 3 of 112.',
     );
@@ -305,7 +301,7 @@ test.describe('T7: Activity (A1 and A2, #316, #317, #318)', () => {
     await expect(dlg.locator('[data-group-items]')).toHaveCount(0);
   });
 
-  test('choosing an excerpt closes the drawer, opens the Comments section, shows that comment (even an old one), highlights and focuses it', async ({
+  test('choosing an excerpt closes the drawer, shows the Comments tab, shows that comment (even an old one), highlights and focuses it', async ({
     page,
     seed,
     admin,
@@ -313,8 +309,9 @@ test.describe('T7: Activity (A1 and A2, #316, #317, #318)', () => {
     const thread = await seedBusyActivity(seed, admin);
     const detail = new TaskDetailPage(page);
     await detail.open(thread.taskId);
-    // Comments start collapsed: the link must open them.
-    await expect(detail.toggle('Comments')).toHaveAttribute('aria-expanded', 'false');
+    // The Workflow tab is showing: the link must show the Comments tab.
+    await expect(detail.tab('Comments')).toHaveAttribute('aria-selected', 'false');
+    await expect(detail.section('Comments')).toBeHidden();
     const dlg = await detail.openActivity();
     await loadAllActivity(dlg, page);
     await dlg.locator('[data-group-toggle]').last().click();
@@ -324,7 +321,7 @@ test.describe('T7: Activity (A1 and A2, #316, #317, #318)', () => {
       .click();
 
     await expect(drawer(page)).toHaveCount(0);
-    await expect(detail.toggle('Comments')).toHaveAttribute('aria-expanded', 'true');
+    await expect(detail.tab('Comments')).toHaveAttribute('aria-selected', 'true');
     const target = page.locator('[data-comment-id]', { hasText: numbered(2) }).first();
     await expect(target).toBeVisible();
     await expect(target).toHaveClass(/tc__item--hit/);
@@ -535,7 +532,7 @@ test.describe('T7: permission variants', () => {
     await detail.open(thread.taskId);
     await detail.showSection('Comments');
     const panel = commentsRegion(page);
-    await expect(panel.getByRole('heading', { level: 2 })).toHaveText('Comments (9)');
+    await expect(detail.tab('Comments')).toHaveText(/^\s*Comments\s*\(9\)\s*$/);
     await expect(panel.locator('[data-composer]')).toHaveCount(0);
     await expect(panel.locator('[data-add-comment]')).toHaveCount(0);
     await expect(panel.locator('[data-internal-note]')).toHaveCount(1);
