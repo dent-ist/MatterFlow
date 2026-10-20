@@ -155,4 +155,129 @@ test.describe('Page-header contract (#600)', () => {
       await atEverySize(page, `header-axe-${p.name.replace(/ /g, '-').toLowerCase()}`);
     }
   });
+
+  test('Dashboard, Search, Advanced search, My profile and Create task use the same title numbers and top edge as the list pages (#602, #603, #604)', async ({
+    page,
+  }) => {
+    const MORE = [
+      { path: '/dashboard', name: 'Dashboard' },
+      { path: '/search?q=acme', name: 'Search results' },
+      { path: '/search/advanced', name: 'Advanced search' },
+      { path: '/profile', name: 'My profile' },
+    ] as const;
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto('/clients');
+      const reference = await geometry(page, 'Clients');
+      for (const p of MORE) {
+        await page.goto(p.path);
+        const g = await geometry(page, p.name);
+        const label = `${p.name} at ${size.width}`;
+        expect(g.fontSize, `${label}: font size`).toBe(size.width < 640 ? 18 : 22);
+        expect(Number(g.fontWeight), `${label}: weight`).toBeGreaterThanOrEqual(700);
+        expect(g.offset, `${label}: top offset`).toBeCloseTo(12, 0);
+        expect(Math.abs(g.left - reference.left), `${label}: left edge`).toBeLessThanOrEqual(0.5);
+        await noHorizontalScroll(page);
+        if (size.width === 1366 || size.width === 375)
+          await shot(page, `header-${p.name.replace(/ /g, '-').toLowerCase()}`);
+      }
+    }
+  });
+
+  test('Create task: the title sits where a record page title sits (breadcrumb row above it), at four sizes (#602)', async ({
+    page,
+    seed,
+  }) => {
+    const client = await seed.client({ name: `Header ${uid()}` });
+    const matter = await seed.matter({ client });
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      const top = () =>
+        page.evaluate(() => {
+          const main = document.querySelector('main')!.getBoundingClientRect();
+          const header = document.querySelector('mf-record-header')!.getBoundingClientRect();
+          return { top: header.top - main.top, left: header.left };
+        });
+      await page.goto(`/matters/${matter.matterId}`);
+      const record = { ...(await geometry(page, /./)), ...(await top()) };
+      await page.goto('/tasks/new');
+      const create = { ...(await geometry(page, 'Create task')), ...(await top()) };
+      expect(create.fontSize).toBe(record.fontSize);
+      // The header (breadcrumb row, then the title) starts at the same height as a record page's: 12 px below the top of the main area.
+      expect(create.top, `header top at ${size.width}`).toBeCloseTo(record.top, 0);
+      expect(Math.abs(create.left - record.left)).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  test('Dashboard: the tab strip is under the title, Scope and Refresh are at the right of the title row, a long scope name does not widen the page (#603)', async ({
+    page,
+    seed,
+  }) => {
+    const pod = await seed.pod(longName(76, `Pod ${uid()}`), []);
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto(`/dashboard?pod=${pod.podId}`);
+      const h1 = page.getByRole('heading', { name: 'Dashboard', level: 1 });
+      await expect(h1).toBeVisible();
+      const scope = page.getByLabel('Scope');
+      await expect(scope).toBeVisible();
+      const refresh = page.locator('[data-refresh]');
+      await expect(refresh).toBeVisible();
+      const [h, tab, sc, rf] = await Promise.all([
+        h1.boundingBox(),
+        page.getByRole('tab').first().boundingBox(),
+        scope.boundingBox(),
+        refresh.boundingBox(),
+      ]);
+      expect(tab!.y, `tabs under the title at ${size.width}`).toBeGreaterThanOrEqual(
+        h!.y + h!.height - 1,
+      );
+      // Scope and Refresh share the title row: they start above the tab strip.
+      expect(sc!.y + sc!.height, `scope in the title row at ${size.width}`).toBeLessThanOrEqual(
+        tab!.y + 1,
+      );
+      expect(rf!.y + rf!.height).toBeLessThanOrEqual(tab!.y + 1);
+      expect(sc!.width, `scope width at ${size.width}`).toBeLessThanOrEqual(22 * 16);
+      await noHorizontalScroll(page);
+    }
+    await page.setViewportSize({ width: 1366, height: 768 });
+    // Arrow keys still move between the tabs, as built.
+    const first = page.getByRole('tab').first();
+    await first.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('tab').nth(1)).toBeFocused();
+    await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('Dashboard header axe at four sizes', async ({ page }) => {
+    await page.goto('/dashboard');
+    await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
+    await atEverySize(page, 'header-axe-dashboard');
+  });
+
+  test('permission variants: the header numbers hold for every kind of person (#602)', async ({
+    personas,
+    asUser,
+  }) => {
+    const cases = [
+      { who: 'director' as const, path: '/dashboard', name: 'Dashboard' },
+      { who: 'technician' as const, path: '/tasks', name: 'Task Queue' },
+      { who: 'readOnlyObserver' as const, path: '/clients', name: 'Clients' },
+      { who: 'complianceAuditor' as const, path: '/matters', name: 'Matters' },
+      { who: 'intakeCoordinator' as const, path: '/projects', name: 'Projects' },
+      { who: 'taskViewOnly' as const, path: '/search?q=acme', name: 'Search results' },
+      { who: 'technician' as const, path: '/profile', name: 'My profile' },
+    ];
+    for (const c of cases) {
+      const person = await personas.named(c.who);
+      const page = await asUser(person.username);
+      for (const size of [SIZES[0], SIZES[2]]) {
+        await page.setViewportSize(size);
+        await page.goto(c.path);
+        const g = await geometry(page, c.name);
+        expect(g.fontSize, `${c.who} ${c.name} at ${size.width}`).toBe(size.width < 640 ? 18 : 22);
+        expect(g.offset, `${c.who} ${c.name} top`).toBeCloseTo(12, 0);
+      }
+    }
+  });
 });

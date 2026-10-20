@@ -1,3 +1,11 @@
+/* The page header sits where a record page's header sits (S20, #602): the shell's padding is 24px here (a page that scrolls) and 12px on a
+   record page (a fixed page), so the header is pulled up by the difference from 640px. */
+@media (min-width: 640px) {
+  mf-record-header {
+    margin-top: calc(-1 * var(--mf-s3));
+  }
+}
+
 .ct {
   display: grid;
   gap: var(--mf-s4);
