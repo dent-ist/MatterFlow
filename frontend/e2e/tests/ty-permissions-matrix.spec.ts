@@ -197,7 +197,11 @@ async function settle(page: Page): Promise<void> {
   await expect(page.locator('[data-loading], [data-skeleton]')).toHaveCount(0);
 }
 
-const isForbiddenPage = (page: Page): boolean => /\/403(\?|$)/.test(page.url());
+/** The 403 page is shown (it keeps the address that was asked for, #598, so the URL no longer says `/403`). */
+const isForbiddenPage = async (page: Page): Promise<boolean> =>
+  (await page
+    .getByRole('heading', { level: 1, name: "You don't have permission to view this." })
+    .count()) > 0;
 
 /** The links of the page content (not the navigation rail or the header search). */
 async function contentLinks(page: Page): Promise<string[]> {
@@ -260,14 +264,13 @@ test.describe('#417: permission matrix of the Task Types area', () => {
   for (const role of ROLES) {
     test(`${role.label}: every route, tab address, link and action`, async ({
       asUser,
-      seed,
+      personas,
       page: adminPage,
     }) => {
       test.setTimeout(480_000);
       let page = adminPage;
       if (role.perms !== null) {
-        const r = await seed.role(role.perms, `E2E ty-perm ${role.key}`);
-        const user = await seed.user([r.name], `typ-${role.key}`);
+        const user = await personas.create({ permissions: role.perms, label: `typ-${role.key}` });
         page = await asUser(user.username);
       }
       await page.setViewportSize({ width: 1366, height: 768 });
@@ -283,11 +286,11 @@ test.describe('#417: permission matrix of the Task Types area', () => {
         await settle(page);
         if (!allowedTargets(need)) {
           // Designed denial: a create / edit / version / form address shows the 403 page; a tab address of a person with no tab at all too.
-          if (!isForbiddenPage(page))
+          if (!(await isForbiddenPage(page)))
             problems.push(`${name} (${url}): expected the 403 page, got ${page.url()}`);
           return false;
         }
-        if (isForbiddenPage(page)) {
+        if (await isForbiddenPage(page)) {
           problems.push(`${name} (${url}): the 403 page for a permitted person`);
           return false;
         }
@@ -365,7 +368,8 @@ test.describe('#417: permission matrix of the Task Types area', () => {
           await button.click();
           await page.waitForTimeout(400);
           await settle(page);
-          if (isForbiddenPage(page)) problems.push(`${t.name}: action ${id} leads to the 403 page`);
+          if (await isForbiddenPage(page))
+            problems.push(`${t.name}: action ${id} leads to the 403 page`);
           if (seen.failed.length > 0)
             problems.push(`${t.name}: action ${id}: ${seen.failed.join(', ')}`);
           await expect(page.locator('[data-toast]'), `${t.name}: toast after ${id}`).toHaveCount(0);

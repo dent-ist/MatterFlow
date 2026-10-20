@@ -99,3 +99,8 @@ a:not([class]) {
 .wt-row--leaving td {
   color: var(--mf-text-muted);
 }
+
+/* A page's skip-link target is focusable only by script (#586); a click inside it must not draw a ring around the whole list. */
+#mf-list:focus {
+  outline: none;
+}

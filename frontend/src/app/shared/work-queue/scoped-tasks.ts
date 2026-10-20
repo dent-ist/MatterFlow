@@ -372,6 +372,7 @@ export class ScopedTasks {
       onCleanup(
         skip.register({
           label: 'Skip to task list',
+          element: host.nativeElement,
           focus: () =>
             (
               host.nativeElement.querySelector<HTMLElement>('tbody a.wt-title, [data-task] a') ??

@@ -190,7 +190,11 @@ export class WorkList {
     // and the row keys are listed in the shortcut help while a list is on screen.
     const destroyRef = inject(DestroyRef);
     const offs = [
-      inject(SkipTarget).register({ label: 'Skip to task list', focus: () => this.focusList() }),
+      inject(SkipTarget).register({
+        label: 'Skip to task list',
+        element: this.host.nativeElement,
+        focus: () => this.focusList(),
+      }),
       ...ROW_SHORTCUTS.map((def) => inject(ShortcutRegistry).register(def)),
     ];
     destroyRef.onDestroy(() => offs.forEach((off) => off()));

@@ -1,6 +1,6 @@
-@if (skipTarget.target(); as skip) {
-  <a class="mf-skip" href="#mf-list" data-skip-list (click)="skipToList($event)">{{
-    skip.label
+@if (skipHref(); as href) {
+  <a class="mf-skip" [attr.href]="href" data-skip-list (click)="skipToList($event)">{{
+    skipTarget.target()?.label
   }}</a>
 }
 <a class="mf-skip" href="#mf-main" (click)="skipToMain($event)">Skip to main content</a>
@@ -21,7 +21,7 @@
   <a class="mf-logo" routerLink="/" aria-label="MatterFlow home">MatterFlow</a>
 
   @if (canSearch()) {
-    <mf-global-search class="mf-search" />
+    <mf-global-search id="mf-search-row" class="mf-search" />
     <button
       #searchButton
       type="button"
