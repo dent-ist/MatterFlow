@@ -168,7 +168,7 @@ export class WorkflowVersionsTab {
   /** True while a request of the page is running. */
   readonly busy = input(false);
   /** Router state that carries the list address on to the version page. */
-  readonly carry = input<{ returnTo: string } | undefined>(undefined);
+  readonly carry = input<{ returnTo?: string; keepRow?: boolean } | undefined>(undefined);
   /** May the viewer create drafts and retire (the page is `Workflow.Manage`, so this is normally true). */
   readonly canChange = input(true);
 
