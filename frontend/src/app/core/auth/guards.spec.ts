@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from './auth-testing';
 import {
+  ErrorRequest,
   ForbiddenRequest,
   accessGuard,
   landingGuard,
@@ -47,6 +48,30 @@ describe('accessGuard', () => {
   it('redirects to /error when /me cannot be loaded', async () => {
     setup(ApiError.from(new HttpErrorResponse({ status: 500 })));
     expect(await run(accessGuard)).toBe('/error');
+  });
+});
+
+describe('the error page remembers the address (#608)', () => {
+  it('a permission guard that cannot load /me keeps the address that was asked for', async () => {
+    setup(ApiError.from(new HttpErrorResponse({ status: 500 })));
+    const guard = permissionGuard('Task.View');
+    const result = await TestBed.runInInjectionContext(() =>
+      guard(undefined, { url: '/tasks?view=mine' } as RouterStateSnapshot),
+    );
+    expect(result instanceof UrlTree && TestBed.inject(Router).serializeUrl(result)).toBe('/error');
+    expect(TestBed.inject(ErrorRequest).url()).toBe('/tasks?view=mine');
+  });
+
+  it('the access guard keeps it too, and never remembers /error itself', async () => {
+    setup(ApiError.from(new HttpErrorResponse({ status: 500 })));
+    await TestBed.runInInjectionContext(() =>
+      accessGuard(undefined, { url: '/clients' } as RouterStateSnapshot),
+    );
+    expect(TestBed.inject(ErrorRequest).url()).toBe('/clients');
+    await TestBed.runInInjectionContext(() =>
+      accessGuard(undefined, { url: '/error' } as RouterStateSnapshot),
+    );
+    expect(TestBed.inject(ErrorRequest).url()).toBeNull();
   });
 });
 

@@ -2,7 +2,9 @@ import { Location } from '@angular/common';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ApiError } from '../../../core/http/api-error';
 import { ForbiddenRequest } from '../../../core/auth/guards';
 import {
   FakeMeApi,
@@ -117,5 +119,37 @@ describe('the state pages are one family', () => {
     const fb = TestBed.createComponent(ForbiddenPage);
     await settle(fb);
     expect((fb.nativeElement as HTMLElement).querySelector('input')).toBeNull();
+  });
+});
+
+/** S11 (#608): the error page shows the Reference with Copy, and Retry offers "Go to home" only after it failed too. */
+describe('the error page', () => {
+  async function render(me: ConstructorParameters<typeof FakeMeApi>[0]) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideFakeMe(new FakeMeApi(me))],
+    });
+    const { ErrorPage } = await import('./error-page');
+    const { ErrorReferenceStore } = await import('../../../core/http/error-reference-store');
+    TestBed.inject(ErrorReferenceStore).reference.set('trace-abc-123');
+    const fixture = TestBed.createComponent(ErrorPage);
+    await settle(fixture);
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('shows the Reference of the failed call with a Copy button, and no "Go to home" at first', async () => {
+    const { el } = await render(ApiError.from(new HttpErrorResponse({ status: 500 })));
+    const ref = el.querySelector('[data-error-reference]')!;
+    expect(ref.textContent).toContain('trace-abc-123');
+    expect(ref.querySelector('button')!.getAttribute('aria-label')).toBe('Copy reference');
+    expect(el.querySelector('[data-go-home]')).toBeNull();
+    expect(el.querySelector('[data-retry]')).not.toBeNull();
+  });
+
+  it('after a Retry that fails again it says so and offers "Go to home"', async () => {
+    const { fixture, el } = await render(ApiError.from(new HttpErrorResponse({ status: 500 })));
+    el.querySelector<HTMLButtonElement>('[data-retry]')!.click();
+    await settle(fixture);
+    expect(el.querySelector('[data-failed-again]')).not.toBeNull();
+    expect(el.querySelector('[data-go-home]')!.getAttribute('href')).toBe('/');
   });
 });

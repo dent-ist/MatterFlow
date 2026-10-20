@@ -63,17 +63,37 @@ export function landingLink(store: AuthStore): LandingLink | null {
  * Root access guard: loads /me, sends pending or disabled users to Access Pending (the only
  * route they can reach) and anything unrecoverable to /error.
  */
-export const accessGuard = async (): Promise<boolean | UrlTree> => {
+export const accessGuard = async (
+  _route?: ActivatedRouteSnapshot,
+  state?: RouterStateSnapshot,
+): Promise<boolean | UrlTree> => {
   const store = inject(AuthStore);
   const router = inject(Router);
+  const failed = inject(ErrorRequest);
   await store.ensureLoaded();
-  if (!store.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
+  if (!store.isAuthenticated()) return errorPage(router, failed, state);
   if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
   return true;
 };
 
 /** Alias for places that only need "signed in and allowed in at all". */
 export const authenticatedGuard = accessGuard;
+
+/**
+ * The address that was open when /me could not be loaded and a guard sent the person to the error page (`/error`): its Retry reloads that address
+ * instead of the home page (S11, #608). Kept in memory only, never in storage.
+ */
+@Injectable({ providedIn: 'root' })
+export class ErrorRequest {
+  readonly url = signal<string | null>(null);
+}
+
+/** The redirect to `/error`, remembering the address the person asked for. */
+function errorPage(router: Router, failed: ErrorRequest, state?: RouterStateSnapshot): UrlTree {
+  const asked = state?.url ?? router.getCurrentNavigation()?.extractedUrl.toString() ?? null;
+  failed.url.set(asked && !asked.startsWith(APP_PATHS.error) ? asked : null);
+  return router.createUrlTree([APP_PATHS.error]);
+}
 
 /**
  * The address a permission guard turned away (`/admin/users?x=1`), kept for the 403 page, which shows it ("You asked for ...") and puts it
@@ -97,8 +117,9 @@ export const permissionGuard = (...codes: Permission[]) => {
     const store = inject(AuthStore);
     const router = inject(Router);
     const forbidden = inject(ForbiddenRequest);
+    const failed = inject(ErrorRequest);
     await store.ensureLoaded();
-    if (!store.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
+    if (!store.isAuthenticated()) return errorPage(router, failed, state);
     if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
     if (store.hasAny(codes)) return true;
     forbidden.url.set(state?.url ?? router.getCurrentNavigation()?.extractedUrl.toString() ?? null);
@@ -107,20 +128,28 @@ export const permissionGuard = (...codes: Permission[]) => {
 };
 
 /** Guards the Access Pending route: only restricted users stay; everyone else goes to landing. */
-export const pendingOnlyGuard = async (): Promise<boolean | UrlTree> => {
+export const pendingOnlyGuard = async (
+  _route?: ActivatedRouteSnapshot,
+  state?: RouterStateSnapshot,
+): Promise<boolean | UrlTree> => {
   const store = inject(AuthStore);
   const router = inject(Router);
+  const failed = inject(ErrorRequest);
   await store.ensureLoaded();
-  if (!store.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
+  if (!store.isAuthenticated()) return errorPage(router, failed, state);
   return store.isRestricted() ? true : router.createUrlTree([defaultLandingPath(store)]);
 };
 
 /** Redirects `/` to the user's default landing page. */
-export const landingGuard = async (): Promise<UrlTree> => {
+export const landingGuard = async (
+  _route?: ActivatedRouteSnapshot,
+  state?: RouterStateSnapshot,
+): Promise<UrlTree> => {
   const store = inject(AuthStore);
   const router = inject(Router);
+  const failed = inject(ErrorRequest);
   await store.ensureLoaded();
-  if (!store.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
+  if (!store.isAuthenticated()) return errorPage(router, failed, state);
   if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
   return router.createUrlTree([defaultLandingPath(store)]);
 };
