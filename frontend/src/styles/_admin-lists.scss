@@ -55,6 +55,13 @@
   max-width: 25rem;
 }
 
+/* A narrow window keeps the grid inside its wrap (so the filter row can stay open): the Name column is capped lower. */
+@media (max-width: 899px) {
+  .mf-table-wrap table td.ad-name {
+    max-width: 16rem;
+  }
+}
+
 .mf-table-wrap table td.ad-spring {
   width: 100%;
   min-width: 240px;

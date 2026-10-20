@@ -213,6 +213,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await page.goto(flowsUrl);
     const flowId = flows.ids[26];
     await rowLink(page, flowId).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flowId}$`));
     await page.getByRole('button', { name: /Open draft v1/ }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flowId}/versions/\\d+$`));
     await crumb(page, 'Workflows').click();
@@ -281,6 +282,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     const flowsUrl = `/admin/workflows?name=${flows.token}&size=25&page=2`;
     await page.goto(flowsUrl);
     await rowLink(page, flows.ids[25]).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}$`));
     await page.getByRole('link', { name: /Open draft v1/ }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}/versions/\\d+$`));
     await crumb(page, 'Workflows').click();
@@ -289,12 +291,14 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
 
     // Browser Back twice does the same (it always did) and a reload in between is not a return.
     await rowLink(page, flows.ids[25]).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}$`));
     await page.getByRole('link', { name: /Open draft v1/ }).click();
     await page.goBack();
     await page.goBack();
     expect(urlOf(page)).toBe(flowsUrl);
     await expect(rowLink(page, flows.ids[25])).toBeFocused();
     await rowLink(page, flows.ids[25]).click();
+    await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}$`));
     await page.getByRole('link', { name: /Open draft v1/ }).click();
     await page.reload();
     await crumb(page, 'Workflows').click();
