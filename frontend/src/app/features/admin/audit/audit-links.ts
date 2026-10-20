@@ -6,25 +6,32 @@ import {
   objectTypeLabel,
 } from '../../../shared/ui/audit-format';
 
-/** Where an audited object lives in the app, or null when it has no page. Events of a Task's parts (comments, steps, links) open the Task. */
-export function auditObjectRoute(item: AuditSearchItem): string[] | null {
+/** Whether the viewer holds a permission (`AuthStore.has` bound to the store, or a set lookup in a test). */
+export type CanFn = (permission: string) => boolean;
+
+/**
+ * Where an audited object lives in the app, or null when it has no page or the viewer may not open it (decision V of the Clients epic:
+ * a link exists only when its target opens; an `Audit.View`-only person gets plain text, never the 403 page). Events of a Task's parts
+ * (comments, steps, links) open the Task, so they need `Task.View` too.
+ */
+export function auditObjectRoute(item: AuditSearchItem, can: CanFn): string[] | null {
   const { type, id } = item.object;
   const numeric = /^\d+$/.test(id);
   switch (type) {
     case 'Task':
-      return numeric ? ['/tasks', id] : null;
+      return numeric && can('Task.View') ? ['/tasks', id] : null;
     case 'Matter':
-      return numeric ? ['/matters', id] : null;
+      return numeric && can('Matter.View') ? ['/matters', id] : null;
     case 'Client':
-      return numeric ? ['/clients', id] : null;
+      return numeric && can('Client.View') ? ['/clients', id] : null;
     case 'Asset':
-      return numeric ? ['/assets', id] : null;
+      return numeric && can('Asset.View') ? ['/assets', id] : null;
     case 'Project':
-      return numeric ? ['/projects', id] : null;
+      return numeric && can('Project.View') ? ['/projects', id] : null;
     case 'User':
-      return ['/admin/users'];
+      return can('User.View') ? ['/admin/users'] : null;
     default:
-      return item.taskId != null ? ['/tasks', String(item.taskId)] : null;
+      return item.taskId != null && can('Task.View') ? ['/tasks', String(item.taskId)] : null;
   }
 }
 

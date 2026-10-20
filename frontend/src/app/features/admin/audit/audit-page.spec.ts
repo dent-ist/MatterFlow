@@ -118,6 +118,16 @@ describe('AuditPage', () => {
   const click = (selector: string) => el().querySelector<HTMLElement>(selector)!.click();
   const lastCall = () => api.searchAuditEvents.mock.calls.at(-1)!;
 
+  it('shows plain text for every object to an Audit.View-only person, and links to the ones they may open', async () => {
+    await create(['Audit.View']);
+    expect(el().querySelectorAll('a.au-linkout').length).toBe(0);
+    expect(el().textContent).toContain('Task: TSK-1042 Process Smith custodians');
+    TestBed.resetTestingModule();
+
+    await create(['Audit.View', 'Task.View']);
+    expect(el().querySelectorAll('a.au-linkout').length).toBeGreaterThan(0);
+  });
+
   it('shows nothing and loads nothing without Audit.View', async () => {
     await create(['Task.View']);
 
@@ -126,7 +136,7 @@ describe('AuditPage', () => {
   });
 
   it('loads the newest events, shows the actor, a readable sentence and the time in the viewer zone', async () => {
-    await create(['Audit.View']);
+    await create(['Audit.View', 'Task.View']);
 
     expect(lastCall()[9]).toBe(50); // page size
     const row = el().querySelector('tr[data-event="100"]')!;
@@ -409,10 +419,11 @@ describe('AuditPage', () => {
 });
 
 describe('audit links', () => {
-  it('routes known objects and falls back to the owning task', () => {
-    const route = (type: string, id: string, taskId?: number) =>
-      auditObjectRoute(anItem({ object: { type, id, label: undefined }, taskId }));
+  const ALL = () => true;
+  const route = (type: string, id: string, taskId?: number, can: (p: string) => boolean = ALL) =>
+    auditObjectRoute(anItem({ object: { type, id, label: undefined }, taskId }), can);
 
+  it('routes known objects and falls back to the owning task', () => {
     expect(route('Task', '5')).toEqual(['/tasks', '5']);
     expect(route('Matter', '7')).toEqual(['/matters', '7']);
     expect(route('Client', '1')).toEqual(['/clients', '1']);
@@ -422,6 +433,25 @@ describe('audit links', () => {
     expect(route('StepInstance', '55', 12)).toEqual(['/tasks', '12']);
     expect(route('Role', '2')).toBeNull();
     expect(route('Task', 'abc')).toBeNull();
+  });
+
+  it('links an object only when the viewer holds the permission to open it (every type x permission)', () => {
+    const cases: [string, string, string, string[]][] = [
+      ['Task', '5', 'Task.View', ['/tasks', '5']],
+      ['Matter', '7', 'Matter.View', ['/matters', '7']],
+      ['Client', '1', 'Client.View', ['/clients', '1']],
+      ['Asset', '9', 'Asset.View', ['/assets', '9']],
+      ['Project', '3', 'Project.View', ['/projects', '3']],
+      ['User', '4', 'User.View', ['/admin/users']],
+    ];
+    for (const [type, id, needed, expected] of cases) {
+      expect(route(type, id, undefined, (p) => p === needed)).toEqual(expected);
+      expect(route(type, id, undefined, (p) => p !== needed)).toBeNull();
+      expect(route(type, id, undefined, () => false)).toBeNull();
+    }
+    // Parts of a task open the task, so they need Task.View.
+    expect(route('StepInstance', '55', 12, (p) => p === 'Task.View')).toEqual(['/tasks', '12']);
+    expect(route('StepInstance', '55', 12, (p) => p !== 'Task.View')).toBeNull();
   });
 
   it('labels an object by its resolved name or by type and id', () => {

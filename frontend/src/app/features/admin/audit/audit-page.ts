@@ -251,7 +251,8 @@ export class AuditPage {
   protected split = splitGroup;
   protected isOpen = (item: AuditSearchItem) => this.expanded().has(item.auditEventId);
   protected isGroupOpen = (group: AuditGroup) => this.openGroups().has(group.key);
-  protected route = auditObjectRoute;
+  protected route = (item: AuditSearchItem) =>
+    auditObjectRoute(item, (permission) => this.auth.has(permission));
   protected objectText = auditObjectText;
   protected friendly = friendlyText;
   protected fieldName = fieldLabel;
