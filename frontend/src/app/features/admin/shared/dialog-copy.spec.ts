@@ -1,5 +1,6 @@
 import {
   DIALOG_COPY,
+  dialogCopy,
   DialogCopy,
   impactLine,
   listNames,
@@ -175,5 +176,105 @@ describe('listNames (#379)', () => {
     expect(listNames(['A', 'B', 'C'])).toBe('A, B and C');
     expect(listNames(['A', 'B', 'C', 'D'])).toBe('A, B, C and 1 other');
     expect(listNames(['A', 'B', 'C', 'D', 'E'])).toBe('A, B, C and 2 others');
+  });
+});
+
+describe('admin kit dialogs (#542)', () => {
+  const kit = {
+    deactivateAssetType: dialogCopy.deactivateAssetType({ assets: 12 }),
+    deactivatePriority: dialogCopy.deactivatePriority({ openTasks: 31 }),
+    deactivateLinkRole: dialogCopy.deactivateLinkRole({ links: 14 }),
+    deleteUnusedPriority: dialogCopy.deleteUnusedPriority({ openTasks: 0 }),
+    deleteUnusedLinkRole: dialogCopy.deleteUnusedLinkRole({ links: 0 }),
+    setDefaultPriority: dialogCopy.setDefaultPriority({ name: 'Normal', previousName: 'High' }),
+    renameStatusLabel: dialogCopy.renameStatusLabel({ code: 'IN_PROGRESS' }),
+  };
+
+  it('gives every entry a title, a body, a confirm and a cancel label', () => {
+    for (const [key, c] of Object.entries(kit)) {
+      expect(c.title, key).toBeTruthy();
+      expect(c.body, key).toBeTruthy();
+      expect(c.confirm, key).toBeTruthy();
+      expect(c.cancel, key).toBeTruthy();
+      // The safe button is the cancel one: it says what is kept, or just cancels the form.
+      expect(c.cancel, key).toMatch(/^(Keep |Cancel$)/);
+    }
+  });
+
+  it('says what stays for a deactivation, with the number the API returned', () => {
+    expect(kit.deactivateAssetType.body).toBe(
+      "12 assets keep this type. It won't be offered for new assets. You can activate it again.",
+    );
+    expect(kit.deactivatePriority.body).toBe(
+      "31 open tasks keep this priority. It won't be offered for new or changed tasks. You can activate it again.",
+    );
+    expect(kit.deactivateLinkRole.body).toBe(
+      "14 links keep this role. It won't be offered for new links. You can activate it again.",
+    );
+    expect(dialogCopy.deactivateAssetType({ assets: 1 }).body).toMatch(/^1 asset keeps this type/);
+    expect(dialogCopy.deactivatePriority({ openTasks: 1 }).body).toMatch(
+      /^1 open task keeps this priority/,
+    );
+    expect(dialogCopy.deactivateLinkRole({ links: 1 }).body).toMatch(/^1 link keeps this role/);
+    expect(dialogCopy.deactivatePriority({ openTasks: 0 }).body).toMatch(
+      /^No open task uses this priority/,
+    );
+  });
+
+  it('drops the sentence of a number the API did not return, and never prints a made-up 0', () => {
+    expect(dialogCopy.deactivateAssetType().body).toBe(
+      "It won't be offered for new assets. You can activate it again.",
+    );
+    expect(dialogCopy.deactivatePriority({ openTasks: null }).body).toBe(
+      "It won't be offered for new or changed tasks. You can activate it again.",
+    );
+    expect(dialogCopy.deactivateLinkRole({ links: undefined }).body).toBe(
+      "It won't be offered for new links. You can activate it again.",
+    );
+    expect(impactLine('deactivatePriority', {}).text).not.toMatch(/\b0\b/);
+  });
+
+  it('allows Delete only for the two unused-delete dialogs, and Deactivate everywhere else', () => {
+    for (const [key, c] of Object.entries(kit)) {
+      if (key.startsWith('deleteUnused')) {
+        expect(c.confirm, key).toMatch(/^Delete (priority|link role)$/);
+        expect(c.danger, key).toBe(true);
+      } else {
+        expect(c.confirm, key).not.toMatch(/delete|remove|archive/i);
+      }
+      if (key.startsWith('deactivate')) {
+        expect(c.confirm, key).toMatch(/^Deactivate /);
+        expect(c.danger, key).toBe(true);
+      }
+    }
+    expect(kit.deleteUnusedPriority.body).toBe(
+      "No task uses this priority. Deleting it can't be undone.",
+    );
+    expect(kit.deleteUnusedLinkRole.body).toBe(
+      "No link uses this role. Deleting it can't be undone.",
+    );
+    // Asked for a used record anyway, the dialog says why it cannot and points to Deactivate.
+    expect(dialogCopy.deleteUnusedPriority({ openTasks: 3 }).body).toBe(
+      "3 open tasks use this priority, so it can't be deleted. Deactivate it instead.",
+    );
+    expect(dialogCopy.deleteUnusedLinkRole({ links: 1 }).body).toBe(
+      "1 link uses this role, so it can't be deleted. Deactivate it instead.",
+    );
+  });
+
+  it('sets the default with one calm sentence, and renames a status label without touching its code', () => {
+    expect(kit.setDefaultPriority.title).toBe('Make Normal the default priority?');
+    expect(kit.setDefaultPriority.body).toBe(
+      'Normal is the default priority. New tasks start with it. High stays available.',
+    );
+    expect(kit.setDefaultPriority.danger).toBe(false);
+    expect(dialogCopy.setDefaultPriority().body).toBe('New tasks start with it.');
+    expect(kit.renameStatusLabel.body).toBe(
+      "Only the name changes. The code IN_PROGRESS and every task's status stay as they are.",
+    );
+    expect(dialogCopy.renameStatusLabel().body).toBe(
+      "Only the name changes. Every task's status stays as it is.",
+    );
+    expect(kit.renameStatusLabel.danger).toBe(false);
   });
 });

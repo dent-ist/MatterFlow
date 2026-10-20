@@ -6,6 +6,8 @@
  */
 export interface DialogCopy {
   title: string;
+  /** The sentence(s) under the title (the admin kit dialogs of #542; the Task Types dialogs build theirs from `impactLine`). */
+  body?: string;
   confirm: string;
   cancel: string;
   /** Destructive: the confirm button is red. */
@@ -77,13 +79,82 @@ export function retireCopy(versionNo: number | string): DialogCopy {
   };
 }
 
+/**
+ * The dialogs of the admin list kit (#542): every one has a title, a body, a confirm label and a cancel label. The safe button is the
+ * cancel one ("Keep ...") and takes the default focus. The body is the `impactLine` of the same kind, so a number the API did not return
+ * leaves its sentence out. Vocabulary: Deactivate/Activate everywhere; Delete only for Priorities and Link roles, only when unused, only
+ * from the row overflow. Pages call `dialogCopy.deactivatePriority({ openTasks })` and never spell dialog text themselves.
+ */
+export const dialogCopy = {
+  deactivateAssetType: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Deactivate asset type?',
+    body: impactLine('deactivateAssetType', facts).text,
+    confirm: 'Deactivate asset type',
+    cancel: 'Keep active',
+    danger: true,
+  }),
+  deactivatePriority: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Deactivate priority?',
+    body: impactLine('deactivatePriority', facts).text,
+    confirm: 'Deactivate priority',
+    cancel: 'Keep active',
+    danger: true,
+  }),
+  deactivateLinkRole: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Deactivate link role?',
+    body: impactLine('deactivateLinkRole', facts).text,
+    confirm: 'Deactivate link role',
+    cancel: 'Keep active',
+    danger: true,
+  }),
+  deleteUnusedPriority: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Delete priority?',
+    body: impactLine('deleteUnusedPriority', facts).text,
+    confirm: 'Delete priority',
+    cancel: 'Keep priority',
+    danger: true,
+  }),
+  deleteUnusedLinkRole: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Delete link role?',
+    body: impactLine('deleteUnusedLinkRole', facts).text,
+    confirm: 'Delete link role',
+    cancel: 'Keep link role',
+    danger: true,
+  }),
+  /** One-line confirm; not destructive. */
+  setDefaultPriority: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: facts.name
+      ? `Make ${facts.name} the default priority?`
+      : 'Make this the default priority?',
+    body: impactLine('setDefaultPriority', facts).text,
+    confirm: 'Set as default',
+    cancel: 'Keep current default',
+    danger: false,
+  }),
+  /** The rename dialog's helper text is the body; Cancel just closes the form. */
+  renameStatusLabel: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Rename status label',
+    body: impactLine('renameStatusLabel', facts).text,
+    confirm: 'Save name',
+    cancel: 'Cancel',
+    danger: false,
+  }),
+} as const;
+
 /** What a dialog is about, for `impactLine`. */
 export type ImpactKind =
   | 'deactivateTaskType'
   | 'deactivateWorkflow'
   | 'retireVersion'
   | 'publishVersion'
-  | 'deactivateStep';
+  | 'deactivateStep'
+  | 'deactivateAssetType'
+  | 'deactivatePriority'
+  | 'deactivateLinkRole'
+  | 'deleteUnusedPriority'
+  | 'deleteUnusedLinkRole'
+  | 'setDefaultPriority'
+  | 'renameStatusLabel';
 
 /**
  * The numbers an impact sentence can use. Every one is optional: a number the API did not return is `null` or absent and its sentence
@@ -104,6 +175,16 @@ export interface ImpactFacts {
   /** Publishing the workflow's first version: there are no running tasks to keep, and `usableTaskTypes` task types become usable. */
   firstVersion?: boolean;
   usableTaskTypes?: number | null;
+  /** Assets of an asset type (#542). */
+  assets?: number | null;
+  /** Links that use an asset link role (#542). */
+  links?: number | null;
+  /** The record's own name (a priority being made the default, a status label being renamed). */
+  name?: string | null;
+  /** The priority that is the default now, when another one is being made the default. */
+  previousName?: string | null;
+  /** The code of a status label (it never changes with the name). */
+  code?: string | null;
 }
 
 export interface Impact {
@@ -192,6 +273,65 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
             : `${plural(facts.publishedVersions, 'published workflow version uses', 'published workflow versions use')} it and ${facts.publishedVersions === 1 ? 'is' : 'are'} not changed.`,
         );
       }
+      break;
+    case 'deactivateAssetType':
+      if (known(facts.assets)) {
+        parts.push(
+          facts.assets === 0
+            ? 'No asset has this type.'
+            : `${plural(facts.assets, 'asset keeps', 'assets keep')} this type.`,
+        );
+      }
+      parts.push("It won't be offered for new assets. You can activate it again.");
+      break;
+    case 'deactivatePriority':
+      if (known(open)) {
+        parts.push(
+          open === 0
+            ? 'No open task uses this priority.'
+            : `${plural(open, 'open task keeps', 'open tasks keep')} this priority.`,
+        );
+      }
+      parts.push("It won't be offered for new or changed tasks. You can activate it again.");
+      break;
+    case 'deactivateLinkRole':
+      if (known(facts.links)) {
+        parts.push(
+          facts.links === 0
+            ? 'No link uses this role.'
+            : `${plural(facts.links, 'link keeps', 'links keep')} this role.`,
+        );
+      }
+      parts.push("It won't be offered for new links. You can activate it again.");
+      break;
+    case 'deleteUnusedPriority':
+      parts.push(
+        known(open) && open > 0
+          ? `${plural(open, 'open task uses', 'open tasks use')} this priority, so it can't be deleted. Deactivate it instead.`
+          : "No task uses this priority. Deleting it can't be undone.",
+      );
+      break;
+    case 'deleteUnusedLinkRole':
+      parts.push(
+        known(facts.links) && facts.links > 0
+          ? `${plural(facts.links, 'link uses', 'links use')} this role, so it can't be deleted. Deactivate it instead.`
+          : "No link uses this role. Deleting it can't be undone.",
+      );
+      break;
+    case 'setDefaultPriority':
+      parts.push(
+        facts.name
+          ? `${facts.name} is the default priority. New tasks start with it.`
+          : 'New tasks start with it.',
+      );
+      if (facts.previousName) parts.push(`${facts.previousName} stays available.`);
+      break;
+    case 'renameStatusLabel':
+      parts.push(
+        facts.code
+          ? `Only the name changes. The code ${facts.code} and every task's status stay as they are.`
+          : "Only the name changes. Every task's status stays as it is.",
+      );
       break;
   }
   // The names of a retirement are part of its sentence ("A and 3 other task types ..."), so they are not listed again.
