@@ -205,7 +205,10 @@ test.describe('Step record page', () => {
       for (const size of SIZES) {
         await page.setViewportSize({ width: size.w, height: size.h });
         const button = page.locator('[data-action=activity]');
-        const inOverflow = !(await button.isVisible());
+        // From 1024 px Activity is a button of the header; below that it moves to the overflow (tablet: Edit and the primary action stay).
+        const inOverflow = size.w < 1024;
+        if (inOverflow) await expect(button).toHaveCount(0);
+        else await expect(button).toBeVisible();
         if (inOverflow) {
           await overflowButton(page).click();
           await page.getByRole('menuitem', { name: 'Activity' }).click();
