@@ -12,6 +12,7 @@ import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
+import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { UsersPage } from './users-page';
 
 describe('UsersPage', () => {
@@ -265,14 +266,164 @@ describe('UsersPage', () => {
     row.querySelector<HTMLButtonElement>('button')!.click();
     await settle();
 
+    expect(button('Save changes')).toBeDefined();
     q<HTMLInputElement>('[data-status-inactive]').click();
     await settle();
-    await press('Save changes');
+    // BUG-3: the question is on screen as soon as Inactive is chosen, focus is on it, the button says what it does and it is announced.
     expect(q('[data-confirm]').textContent).toContain('assigned until you reassign them');
+    expect(document.activeElement).toBe(q('[data-confirm]'));
+    expect(button('Save changes')).toBeUndefined();
+    expect(button('Deactivate user')!.disabled).toBe(false);
+    expect(q('[data-confirm-live]').textContent).toContain('Confirm deactivation of');
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
 
-    await press('Confirm and save');
+    await press('Deactivate user');
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(false);
+    expect(el().querySelector('[data-confirm]')).toBeNull();
+    expect(button('Deactivate user')).toBeUndefined();
+  });
+
+  it('takes the deactivation question and the button label back when Active is chosen again', async () => {
+    await create('User.View', 'User.Manage');
+    await chooseStatus('active');
+    el().querySelector<HTMLButtonElement>('[data-user="2"] button')!.click();
+    await settle();
+    q<HTMLInputElement>('[data-status-inactive]').click();
+    await settle();
+    expect(el().querySelector('[data-confirm]')).not.toBeNull();
+    await press('Cancel');
+    expect(el().querySelector('[data-confirm]')).toBeNull();
+    expect(q('[data-confirm-live]').textContent!.trim()).toBe('');
+    expect(button('Deactivate user')).toBeUndefined();
+    expect(q<HTMLInputElement>('[data-status-active]').checked).toBe(true);
+  });
+
+  describe('open tasks (BUG-4)', () => {
+    const open = async (id: number): Promise<void> => {
+      await chooseStatus('active');
+      el().querySelector<HTMLButtonElement>(`[data-user="${id}"] button`)!.click();
+      await settle();
+    };
+
+    it('shows the count, the extended sentence and a View their tasks link to the Task Queue for that person', async () => {
+      await createWith(
+        (a) => (a.users.find((u) => u.userId === 2)!.openTaskCount = 7),
+        'User.View',
+        'User.Manage',
+      );
+      await open(2);
+      expect(q('[data-open-tasks]').textContent!.trim()).toBe('Open tasks: 7');
+      q<HTMLInputElement>('[data-status-inactive]').click();
+      await settle();
+      expect(q('[data-confirm]').textContent).toContain(
+        'This user has 7 open tasks. They stay assigned until you reassign them one by one.',
+      );
+      const link = q<HTMLAnchorElement>('[data-view-tasks]');
+      expect(link.textContent!.trim()).toBe('View their tasks');
+      expect(link.getAttribute('href')).toBe(
+        '/tasks?assignee=2&status=NEW&status=IN_PROGRESS&status=ON_HOLD',
+      );
+    });
+
+    it('says "No open tasks" for zero and offers no link', async () => {
+      await createWith(
+        (a) => (a.users.find((u) => u.userId === 2)!.openTaskCount = 0),
+        'User.View',
+        'User.Manage',
+      );
+      await open(2);
+      expect(q('[data-open-tasks]').textContent!.trim()).toBe('No open tasks');
+      q<HTMLInputElement>('[data-status-inactive]').click();
+      await settle();
+      expect(q('[data-confirm]').textContent).toContain('No open tasks are assigned to them.');
+      expect(el().querySelector('[data-view-tasks]')).toBeNull();
+    });
+
+    it('shows no number and no link when the API returned none (no Task.View), keeping the plain sentence', async () => {
+      await create('User.View', 'User.Manage');
+      await open(2);
+      expect(el().querySelector('[data-open-tasks]')).toBeNull();
+      q<HTMLInputElement>('[data-status-inactive]').click();
+      await settle();
+      expect(q('[data-confirm]').textContent).toContain(
+        'Their assigned tasks stay assigned until you reassign them one by one.',
+      );
+      expect(q('[data-confirm]').textContent).not.toMatch(/\d+ open task|No open tasks/);
+      expect(el().querySelector('[data-view-tasks]')).toBeNull();
+    });
+
+    it('says "1 open task" in the singular', async () => {
+      await createWith(
+        (a) => (a.users.find((u) => u.userId === 2)!.openTaskCount = 1),
+        'User.View',
+        'User.Manage',
+      );
+      await open(2);
+      q<HTMLInputElement>('[data-status-inactive]').click();
+      await settle();
+      expect(q('[data-confirm]').textContent).toContain('This user has 1 open task.');
+    });
+  });
+
+  describe('focus and Esc (BUG-2)', () => {
+    const rowButton = (id: number): HTMLButtonElement =>
+      el().querySelector<HTMLButtonElement>(`[data-user="${id}"] .mf-row-actions button`)!;
+
+    it('moves focus to the panel heading on open, closes on Esc and puts focus back on the row button', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      rowButton(2).focus();
+      rowButton(2).click();
+      await settle();
+      expect(document.activeElement).toBe(q('[data-panel-heading]'));
+
+      q('[data-panel-heading]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await settle();
+      expect(el().querySelector('[data-panel]')).toBeNull();
+      expect(document.activeElement).toBe(rowButton(2));
+    });
+
+    it('closes with Close and returns focus to the row; the name of the panel is unchanged', async () => {
+      await create('User.View');
+      await chooseStatus('active');
+      rowButton(2).click();
+      await settle();
+      expect(q('[data-panel]').getAttribute('aria-label')).toBe('User details');
+      await press('Close');
+      expect(el().querySelector('[data-panel]')).toBeNull();
+      expect(document.activeElement).toBe(rowButton(2));
+    });
+
+    it('asks before closing with unsaved edits and keeps the panel when the answer is no', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      rowButton(2).click();
+      await settle();
+      const name = q<HTMLInputElement>('[data-name]');
+      name.value = 'Someone Else';
+      name.dispatchEvent(new Event('input'));
+      await settle();
+
+      const leave = TestBed.inject(LeaveConfirmService);
+      q('[data-panel-heading]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await settle();
+      expect(leave.open()).toBe(true);
+      leave.answer(false);
+      await settle();
+      expect(el().querySelector('[data-panel]')).not.toBeNull();
+
+      q('[data-panel-heading]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await settle();
+      leave.answer(true);
+      await settle();
+      expect(el().querySelector('[data-panel]')).toBeNull();
+    });
   });
 
   it('shows the last-admin guard message instead of silently failing', async () => {

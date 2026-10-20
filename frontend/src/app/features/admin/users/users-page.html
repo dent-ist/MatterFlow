@@ -132,13 +132,13 @@
   @if (selected(); as u) {
     <aside class="mf-panel" aria-label="User details" data-panel>
       <header>
-        <h2>{{ u.displayName }}</h2>
+        <h2 #panelHeading tabindex="-1" data-panel-heading>{{ u.displayName }}</h2>
         <p-button
           label="Close"
           icon="pi pi-times"
           [text]="true"
           size="small"
-          (onClick)="closePanel()"
+          (onClick)="requestClose()"
         />
       </header>
       @if (selectedAvailability(); as a) {
@@ -154,6 +154,12 @@
           &middot; Last seen {{ u.lastLoginAtUtc | mfDate }}
         }
       </p>
+
+      @if (openTasks(); as open) {
+        <p class="mf-open-tasks" data-open-tasks>Open tasks: {{ open }}</p>
+      } @else if (openTasks() === 0) {
+        <p class="mf-open-tasks" data-open-tasks>No open tasks</p>
+      }
 
       @if (panelError()) {
         <p class="mf-error" role="alert" data-panel-error>{{ panelError() }}</p>
@@ -238,27 +244,51 @@
         } @else if (u.effectivePermissions.length === 0) {
           <p class="mf-muted">No permissions. This user stays in Access Pending.</p>
         } @else {
-          <ul>
-            @for (code of u.effectivePermissions; track code) {
-              <li>{{ code }}</li>
-            }
-          </ul>
+          <div class="mf-effective-list" mfScrollRegion="Effective permissions list">
+            <ul>
+              @for (code of u.effectivePermissions; track code) {
+                <li>{{ code }}</li>
+              }
+            </ul>
+          </div>
         }
       </section>
 
+      <p class="mf-sr" role="status" aria-live="polite" data-confirm-live>
+        @if (confirmDeactivate()) {
+          Confirm deactivation of {{ u.displayName }}. Choose Deactivate user to continue or Cancel.
+        }
+      </p>
       @if (confirmDeactivate()) {
-        <div class="mf-confirm" role="alertdialog" aria-label="Confirm deactivation" data-confirm>
-          <p>
-            Deactivate {{ u.displayName }}? They can no longer sign in. Their assigned tasks stay
-            assigned until you reassign them one by one.
-          </p>
+        <div
+          class="mf-confirm"
+          role="group"
+          aria-label="Confirm deactivation"
+          #confirmBox
+          tabindex="-1"
+          data-confirm
+        >
+          <p>Deactivate {{ u.displayName }}? They can no longer sign in. {{ deactivateText() }}</p>
+          @if (openTasks()) {
+            <p>
+              <a
+                class="mf-link"
+                data-view-tasks
+                routerLink="/tasks"
+                [queryParams]="openTasksQuery(u.userId)"
+                >View their tasks</a
+              >
+            </p>
+          }
         </div>
       }
 
       @if (canManage()) {
         <div class="mf-actions mf-form-actions--sticky">
           <p-button
-            [label]="confirmDeactivate() ? 'Confirm and save' : 'Save changes'"
+            [label]="deactivating() ? 'Deactivate user' : 'Save changes'"
+            [severity]="deactivating() ? 'danger' : 'primary'"
+            [styleClass]="deactivating() ? 'mf-btn--solid' : ''"
             [disabled]="!dirty() || saving()"
             (onClick)="save()"
           />

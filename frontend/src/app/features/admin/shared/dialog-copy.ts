@@ -164,7 +164,8 @@ export type ImpactKind =
   | 'deleteUnusedPriority'
   | 'deleteUnusedLinkRole'
   | 'setDefaultPriority'
-  | 'renameStatusLabel';
+  | 'renameStatusLabel'
+  | 'deactivateUser';
 
 /**
  * The numbers an impact sentence can use. Every one is optional: a number the API did not return is `null` or absent and its sentence
@@ -283,6 +284,16 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
             : `${plural(facts.publishedVersions, 'published workflow version uses', 'published workflow versions use')} it and ${facts.publishedVersions === 1 ? 'is' : 'are'} not changed.`,
         );
       }
+      break;
+    case 'deactivateUser':
+      // The Users panel (#427): the open tasks of the person. Without a number (no Task.View) the plain sentence stays, never a made-up 0.
+      parts.push(
+        known(open)
+          ? open === 0
+            ? 'No open tasks are assigned to them.'
+            : `This user has ${plural(open, 'open task', 'open tasks')}. They stay assigned until you reassign them one by one.`
+          : 'Their assigned tasks stay assigned until you reassign them one by one.',
+      );
       break;
     case 'deactivateAssetType':
       if (known(facts.assets)) {

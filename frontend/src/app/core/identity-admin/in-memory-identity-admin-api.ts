@@ -44,6 +44,8 @@ interface MemUser {
   primaryPodId?: number;
   /** Set by tests to show a person as out of office or off hours; unset = available. */
   availability?: { state: string; outUntil: string | undefined; note: string | undefined };
+  /** Set by tests: the open tasks assigned to the person; unset = the API returns no number (the caller may not see tasks). */
+  openTaskCount?: number;
 }
 
 const fail = (status: number, code: string, message: string): Observable<never> =>
@@ -385,6 +387,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       lastLoginAtUtc: u.lastLoginAtUtc,
       pods: this.userPods(u),
       availability: u.availability ?? { state: 'AVAILABLE', outUntil: undefined, note: undefined },
+      openTaskCount: u.openTaskCount,
     };
   }
 

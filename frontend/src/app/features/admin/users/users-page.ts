@@ -13,7 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -29,6 +29,7 @@ import {
   UserSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
+import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
@@ -36,6 +37,7 @@ import { AvailabilityChip } from '../../../shared/availability/availability-chip
 import { AvailabilityDialog } from '../../../shared/availability/availability-dialog';
 import { Badge } from '../../../shared/ui/badge';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { parsePage } from '../../../shared/ui/list-helpers';
 import { Pager } from '../../../shared/ui/pager';
@@ -43,6 +45,7 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { impactLine } from '../shared/dialog-copy';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
 import { podsText } from './user-pods-draft';
 
@@ -83,6 +86,8 @@ const AVAILABILITY_OPTIONS = [
   selector: 'mf-users-page',
   imports: [
     Button,
+    RouterLink,
+    ScrollRegion,
     MfDatePipe,
     ScrollArea,
     Pager,
@@ -95,7 +100,7 @@ const AVAILABILITY_OPTIONS = [
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill' },
+  host: { class: 'mf-fill', '(keydown.escape)': 'onPanelEscape($event)' },
   templateUrl: './users-page.html',
   styleUrls: ['./users-page.scss', '../../../shared/ui/page.scss'],
 })
@@ -105,12 +110,18 @@ export class UsersPage implements OnInit {
   private readonly pending = inject(PendingUsersStore);
   private readonly notify = inject(NotificationService);
   private readonly undo = inject(UndoService);
+  private readonly leave = inject(LeaveConfirmService);
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   private readonly destroyRef = inject(DestroyRef);
+  private readonly panelHeading = viewChild<ElementRef<HTMLElement>>('panelHeading');
+  private readonly confirmBox = viewChild<ElementRef<HTMLElement>>('confirmBox');
+  /** Set when focus should move to the panel heading / the deactivation question as soon as that element is on the page. */
+  private readonly wantHeadingFocus = signal(false);
+  private readonly wantConfirmFocus = signal(false);
   /** True while the list is wider than its box (drives the "Scroll sideways" hint). */
   protected readonly overflowing = signal(false);
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
@@ -221,6 +232,19 @@ export class UsersPage implements OnInit {
   protected readonly draftName = signal('');
   protected readonly draftEmail = signal('');
   protected readonly confirmDeactivate = signal(false);
+  /** Open tasks of the person in the panel; null when the API did not return a number (no Task.View), so nothing is shown or linked. */
+  protected readonly openTasks = computed<number | null>(
+    () => this.selected()?.openTaskCount ?? null,
+  );
+  /** The consequence sentence of the deactivation question: "This user has 7 open tasks. ..." (shared wording with the other admin dialogs). */
+  protected readonly deactivateText = computed(
+    () => impactLine('deactivateUser', { openTasks: this.openTasks() }).text,
+  );
+  /** True while the saved user is active and the draft says Inactive: the primary button then reads "Deactivate user" (BUG-3). */
+  protected readonly deactivating = computed(() => {
+    const u = this.selected();
+    return !!u && u.isActive && !this.draftActive();
+  });
   protected readonly saving = signal(false);
   protected readonly panelError = signal('');
 
@@ -241,6 +265,21 @@ export class UsersPage implements OnInit {
   });
 
   constructor() {
+    effect(() => {
+      const heading = this.panelHeading();
+      if (heading && this.wantHeadingFocus()) {
+        untracked(() => this.wantHeadingFocus.set(false));
+        heading.nativeElement.focus();
+      }
+    });
+    effect(() => {
+      const box = this.confirmBox();
+      if (box && this.wantConfirmFocus()) {
+        untracked(() => this.wantConfirmFocus.set(false));
+        box.nativeElement.scrollIntoView?.({ block: 'nearest' });
+        box.nativeElement.focus();
+      }
+    });
     // Any change of a filter or of the page in the address reloads the list.
     effect(() => {
       if (!this.ready()) return;
@@ -322,17 +361,78 @@ export class UsersPage implements OnInit {
   protected async open(user: UserSummaryDto): Promise<void> {
     this.panelError.set('');
     this.confirmDeactivate.set(false);
+    this.openerUserId = user.userId;
     try {
       this.showDetail(await firstValueFrom(this.api.getUser(user.userId)));
+      // BUG-2: the panel sits after the grid in the page, so focus goes to its heading (a keyboard user would otherwise Tab past every row).
+      this.wantHeadingFocus.set(true);
     } catch {
       this.panelError.set('We could not load this user. Try again.');
     }
   }
 
+  /** The person whose row button opened the panel; focus goes back to that row when the panel closes (BUG-2). */
+  private openerUserId: number | null = null;
+
+  /** The Task Queue address behind "View their tasks": that person's open tasks (the same statuses the count uses). */
+  protected openTasksQuery(userId: number): Record<string, string | string[]> {
+    return { assignee: String(userId), status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] };
+  }
+
+  /** Close and Esc: asks first when there are unsaved edits (the same question as leaving the Roles tab), then returns focus to the row. */
+  protected async requestClose(): Promise<void> {
+    const opener = this.openerUserId;
+    const asked = this.dirty();
+    if (asked && !(await this.leave.ask())) return;
+    this.closePanel();
+    // The question's dialog hands focus to the control that had it (the name box, now gone) once it has left the page: row again after that.
+    if (asked && opener !== null) this.focusRowAfterDialog(opener);
+  }
+
   protected closePanel(): void {
+    const opener = this.openerUserId;
+    // Focus goes back first: the row is already on the page, the panel (and the focus inside it) goes away after.
+    if (opener !== null) this.focusRow(opener);
     this.selected.set(null);
     this.panelError.set('');
     this.confirmDeactivate.set(false);
+    this.wantHeadingFocus.set(false);
+    this.wantConfirmFocus.set(false);
+    this.openerUserId = null;
+  }
+
+  /** Esc inside the panel closes it (standard dialog behaviour, not an application shortcut). The availability dialog and popovers own their own Esc. */
+  protected onPanelEscape(event: Event): void {
+    if (event.defaultPrevented || this.saving() || !this.selected()) return;
+    // Only an Esc pressed inside the panel closes it; the grid's popovers and the availability dialog keep their own.
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest('[data-panel]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void this.requestClose();
+  }
+
+  private focusRowAfterDialog(userId: number): void {
+    const done = (): void => {
+      watcher.disconnect();
+      clearTimeout(giveUp);
+      setTimeout(() => this.focusRow(userId), 50);
+    };
+    const watcher = new MutationObserver(() => {
+      if (!document.querySelector('.p-dialog-mask')) done();
+    });
+    const giveUp = setTimeout(done, 1500);
+    watcher.observe(document.body, { childList: true, subtree: true });
+    if (!document.querySelector('.p-dialog-mask')) done();
+  }
+
+  /** Puts focus on the row control that opened the panel; when the row is gone (the status filter dropped it) on the list itself. */
+  private focusRow(userId: number): void {
+    const host = this.scroll()?.nativeElement;
+    const button = host?.querySelector<HTMLElement>(
+      `tr[data-user="${userId}"] .mf-row-actions button`,
+    );
+    (button ?? host)?.focus();
   }
 
   protected toggleRole(roleId: number, checked: boolean): void {
@@ -342,17 +442,23 @@ export class UsersPage implements OnInit {
     this.draftRoleIds.set([...ids].sort((a, b) => a - b));
   }
 
+  /**
+   * Chooses Active or Inactive. Choosing Inactive for an active person shows the consequence at once, scrolls it into view and moves focus
+   * to it (BUG-3): the button then reads "Deactivate user"; choosing Active again takes both back.
+   */
   protected setActive(active: boolean): void {
     this.draftActive.set(active);
-    this.confirmDeactivate.set(false);
+    const asking = !active && !!this.selected()?.isActive;
+    this.confirmDeactivate.set(asking);
+    this.wantConfirmFocus.set(asking);
   }
 
-  /** Save; deactivating asks for an inline confirmation first (UX 8.4: work stays assigned until reassigned). */
+  /** Save; deactivating is confirmed in the panel first (UX 8.4: work stays assigned until reassigned), so the button then deactivates. */
   protected async save(): Promise<void> {
     const user = this.selected();
     if (!user || !this.dirty()) return;
     if (user.isActive && !this.draftActive() && !this.confirmDeactivate()) {
-      this.confirmDeactivate.set(true);
+      this.setActive(false);
       return;
     }
 
@@ -387,7 +493,8 @@ export class UsersPage implements OnInit {
       await this.handleSaveError(err, user.userId);
     } finally {
       this.saving.set(false);
-      this.confirmDeactivate.set(false);
+      // After a refused deactivation (last System Admin, a conflict) the question stays where it is; after a save the user is inactive and it goes.
+      this.confirmDeactivate.set(this.deactivating());
     }
   }
 

@@ -96,6 +96,27 @@ td {
   border-bottom: 1px solid var(--mf-border);
 }
 
+/* BUG-1: the status badge is never cut ("Pending acces" at 1920): the cell is as wide as its badge. */
+td[data-status] {
+  white-space: nowrap;
+  min-width: 11rem;
+}
+
+.mf-open-tasks {
+  margin: 0 0 var(--mf-s2);
+  font-weight: 600;
+}
+
+.mf-confirm {
+  /* Scrolled into view it stops above the sticky Save bar, not under it (BUG-3). */
+  scroll-margin-bottom: 5rem;
+}
+
+.mf-confirm:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+
 /* First seen is the day, on one line (the full time is the tooltip): the time wrapped the cell to five lines and made every row 119 px high. */
 td.us-seen {
   white-space: nowrap;
@@ -185,13 +206,25 @@ tr.mf-selected {
     align-items: center;
     gap: var(--mf-s2);
   }
+
+  /* WCAG 2.2 target size: the radio and the check boxes are 24 px (they were 16 px; axe target-size). */
+  .mf-inline input[type='radio'],
+  .mf-inline input[type='checkbox'] {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+  }
+}
+
+.mf-effective-list {
+  max-height: 160px;
+  overflow: auto;
 }
 
 .mf-effective ul {
   margin: 0;
   padding-left: var(--mf-s4);
-  max-height: 160px;
-  overflow: auto;
   font-family: var(--mf-font-mono);
   font-size: var(--mf-fs-sm);
 }
