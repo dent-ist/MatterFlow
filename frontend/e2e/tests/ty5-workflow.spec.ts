@@ -117,6 +117,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
   }) => {
     const s = await build(seed, admin, { types: 1 });
     await page.goto(url(s));
+    await expect(page.locator('[data-strip]')).toBeVisible();
     await tab(page, 'Overview').focus();
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Versions')).toHaveAttribute('aria-selected', 'true');
