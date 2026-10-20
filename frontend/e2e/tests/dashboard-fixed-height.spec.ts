@@ -384,12 +384,14 @@ test.describe('page chrome and width (#92, #93, #100)', () => {
   }) => {
     await open(page, TABS[0], { width: 1366, height: 768 });
     const h1 = page.getByRole('heading', { level: 1, name: 'Dashboard' });
-    await expect(h1).toHaveCSS('font-size', '20px');
+    // The page-header contract (#603): 22 px / 700 title, the tab strip under the title (shape B, as on My Work).
+    await expect(h1).toHaveCSS('font-size', '22px');
+    await expect(h1).toHaveCSS('font-weight', '700');
     const tab = (await page.getByRole('tab', { name: 'Summary' }).boundingBox())!;
     const h = (await h1.boundingBox())!;
-    expect(Math.abs(h.y + h.height / 2 - (tab.y + tab.height / 2))).toBeLessThanOrEqual(4);
+    expect(tab.y).toBeGreaterThanOrEqual(h.y + h.height - 1);
     const head = (await page.locator('[data-dash-head]').boundingBox())!;
-    expect(head.height).toBeLessThanOrEqual(56);
+    expect(head.height).toBeLessThanOrEqual(96);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await shoot(page, 'header-1366');
   });

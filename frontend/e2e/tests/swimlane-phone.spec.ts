@@ -349,7 +349,7 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     await expect(page.locator('[data-board]')).toHaveAttribute('data-density', name.toLowerCase());
   }
 
-  test('1920x1080: the board spans the content width and the window height; a lane shows 14 compact (and 5 whole comfortable) cards', async ({
+  test('1920x1080: the board spans the content width and the window height; a lane shows 14 compact (and 4 whole comfortable) cards', async ({
     page,
   }) => {
     await openBoard(page, { width: 1920, height: 1080 });
@@ -384,8 +384,10 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     for (const [i, code] of CODES.entries()) {
       const total = await lane(page, code).locator('mf-swimlane-card').count();
       expect(compact[i], `compact ${code}`).toBeGreaterThanOrEqual(Math.min(14, total));
-      // Known gap (#126): a comfortable card is 162 px high, so 5 whole cards fit (the sixth is cut); the target of 6 is reported on #87.
-      expect(comfortable[i], `comfortable ${code}`).toBeGreaterThanOrEqual(Math.min(5, total));
+      // Known gap (#126): a comfortable card is 162 px high, so only a few whole cards fit (the last is cut); the target of 6 is reported on #87.
+      // The page-header contract (#603) puts the tab strip under the 22 px title as on My Work, which takes one more card's worth of height
+      // from the board at this size: 5 whole cards became 4. Compact still shows 14.
+      expect(comfortable[i], `comfortable ${code}`).toBeGreaterThanOrEqual(Math.min(4, total));
     }
     await density(page, 'Comfortable');
   });

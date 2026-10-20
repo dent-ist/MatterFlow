@@ -36,8 +36,8 @@ export const tabId = (key: string) => `mf-dash-tab-${key}`;
 export const panelId = (key: string) => `mf-dash-panel-${key}`;
 
 /**
- * The header row of the Dashboard (UX review 2, P4 and R3): the page heading (H1, 20 px), the tab list and, at the right end, the controls
- * projected into it (stale text, Refresh), all on one line from 600 px. The row sticks to the top while the page scrolls (600 px and
+ * The header of the Dashboard (UX review 2, P4 and R3; page-header contract S20, #603): the page heading (H1, 22 px / 700) with the controls
+ * projected into it (stale text, Scope, Refresh) at the right of the title row, and the tab list under the title. The row sticks to the top while the page scrolls (600 px and
  * wider; the fixed-height layout never scrolls it away). With one permitted tab (or none) the tab list is not rendered and the heading
  * names the tab.
  *
@@ -50,14 +50,18 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
   selector: 'mf-dash-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="row" data-dash-head>
-      <h1 class="h1" data-page-title id="mf-dash-h1">
-        <!-- The section icon of every page title (UXR-02), the same one the left navigation shows; decorative, so the heading's name is the text. -->
-        @if (icon) {
-          <i class="h1__icon" [class]="icon" aria-hidden="true" data-page-icon></i>
-        }
-        {{ heading() }}
-      </h1>
+    <div class="head" data-dash-head>
+      <div class="row" data-dash-title-row>
+        <h1 class="h1" data-page-title id="mf-dash-h1">
+          <!-- The section icon of every page title (UXR-02), the same one the left navigation shows; decorative, so the heading's name is the text. -->
+          @if (icon) {
+            <i class="h1__icon" [class]="icon" aria-hidden="true" data-page-icon></i>
+          }
+          {{ heading() }}
+        </h1>
+        <!-- Stale text, Scope and Refresh: at the right of the title row (the page-header contract, shape B). -->
+        <div class="end" data-page-actions><ng-content /></div>
+      </div>
       @if (showTabs()) {
         <div
           class="strip"
@@ -86,11 +90,7 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
           <i class="hint hint--start pi pi-chevron-left" aria-hidden="true"></i>
           <i class="hint hint--end pi pi-chevron-right" aria-hidden="true"></i>
         </div>
-      } @else {
-        <span class="spacer"></span>
       }
-      <!-- Controls that belong to the tab row (for example the Swimlane's refresh icon) sit at its right end, on the same line as the labels. -->
-      <div class="end"><ng-content /></div>
     </div>
   `,
   styles: `
@@ -109,21 +109,50 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
         z-index: 9;
       }
     }
+    /* The page-header contract (S20, #603, shape B workspace page): the title row is the H1 (22px / 700, 18px below 640px, one 36px row) with
+       the stale text, Scope and Refresh at its right; the tab strip is under the title, as on My Work. The first row sits 12px below the top
+       of the main area: the shell's padding is 12px on a fixed page, 24px on a page that scrolls and 16px on a phone, so the header is pulled
+       up by the difference (the same numbers as mf-page-header). */
+    :host {
+      margin-top: calc(-1 * var(--mf-s3));
+    }
+    @media (max-width: 639.98px) {
+      :host {
+        margin-top: calc(-1 * var(--mf-s1));
+      }
+    }
+    @media (min-width: 768px) and (min-height: 561px) {
+      :host {
+        margin-top: 0;
+      }
+    }
+    .head {
+      min-width: 0;
+      max-width: 100%;
+      box-shadow: inset 0 -1px 0 var(--mf-border);
+    }
     .row {
       display: flex;
       flex-wrap: wrap;
       min-width: 0;
       max-width: 100%;
-      align-items: center;
-      column-gap: var(--mf-s4);
-      box-shadow: inset 0 -1px 0 var(--mf-border);
+      align-items: flex-start;
+      justify-content: space-between;
+      column-gap: var(--mf-s3);
     }
     .h1 {
-      flex: none;
+      flex: 0 1 auto;
+      min-width: 0;
       margin: 0;
-      font-size: 20px;
-      line-height: 1.25;
-      font-weight: 600;
+      padding-block: max(0px, calc((36px - 1.3em) / 2));
+      font-size: var(--mf-fs-h2);
+      line-height: 1.3;
+      font-weight: 700;
+    }
+    @media (max-width: 639.98px) {
+      .h1 {
+        font-size: var(--mf-fs-h3);
+      }
     }
     .h1__icon {
       margin-right: var(--mf-s2);
@@ -131,20 +160,17 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
       font-size: 0.75em;
       vertical-align: 0.04em;
     }
-    .spacer {
-      flex: 1 1 0;
-    }
-    @media (max-width: 599px) {
-      .h1 {
-        flex: 1 0 100%;
-        padding-top: var(--mf-s1);
-      }
-    }
     .end {
       display: flex;
-      flex: none;
+      flex: 0 1 auto;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: flex-end;
       gap: var(--mf-s2);
+      min-width: 0;
+      min-height: 36px;
+      max-width: 100%;
+      margin-left: auto;
     }
     .end:empty {
       display: none;
@@ -153,7 +179,6 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
        adds to the width of the row or the document, whatever the number or the width of the tabs). */
     .strip {
       position: relative;
-      flex: 1 1 0;
       min-width: 0;
       max-width: 100%;
     }
@@ -225,18 +250,6 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     .tab:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
-    }
-    /* Last, so it wins over the base rules above: the tab list keeps a line of its own on a phone and the Scope select and Refresh wrap below it (P1)
-       instead of squeezing the tabs to nothing. */
-    @media (max-width: 599px) {
-      .strip {
-        flex: 1 0 100%;
-      }
-      .end {
-        flex: 1 0 100%;
-        justify-content: flex-end;
-        padding: var(--mf-s1) 0;
-      }
     }
   `,
 })

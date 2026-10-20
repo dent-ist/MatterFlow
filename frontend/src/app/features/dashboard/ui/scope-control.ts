@@ -54,6 +54,7 @@ let nextId = 0;
     }
     .sc {
       display: flex;
+      max-width: 22rem;
       align-items: center;
       gap: var(--mf-s2);
       min-width: 0;
