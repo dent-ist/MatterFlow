@@ -25,6 +25,8 @@ public static class WorkViewsModule
         services.AddScoped<IOrganizationTaskCounts, OrganizationTaskCounts>();
         services.RemoveAll<IConfigurationTaskCounts>();
         services.AddScoped<IConfigurationTaskCounts, ConfigurationTaskCounts>();
+        services.RemoveAll<IUserTaskCounts>();
+        services.AddScoped<IUserTaskCounts, UserTaskCounts>();
         services.Configure<DashboardOptions>(configuration.GetSection(DashboardOptions.SectionName));
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<DashboardCache>();

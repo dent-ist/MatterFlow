@@ -36,3 +36,21 @@ public sealed class NoTasksConfigurationTaskCounts : IConfigurationTaskCounts
     public Task<IReadOnlyDictionary<string, int>> CountByStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<string, int>>(new Dictionary<string, int>());
 }
+
+/// <summary>
+/// Open Task counts per assignee for the Users administration (#426): the offboarding aid "this person still has 7 open tasks". Open means
+/// exactly what the Task Queue means (New, In Progress, On Hold). Every Task counts, in every pod and Matter state; the caller decides who
+/// may see the number (<c>Task.View</c>).
+/// </summary>
+public interface IUserTaskCounts
+{
+    /// <summary>Open Tasks assigned to each of the users, in one grouped statement. Users with none are absent (a missing key means 0).</summary>
+    Task<IReadOnlyDictionary<int, int>> OpenByAssigneeAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Default <see cref="IUserTaskCounts"/> until the WorkViews module registers the real one: no Task is counted.</summary>
+public sealed class NoTasksUserTaskCounts : IUserTaskCounts
+{
+    public Task<IReadOnlyDictionary<int, int>> OpenByAssigneeAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
+}

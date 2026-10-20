@@ -13770,6 +13770,7 @@ export interface UserDetailDto {
     registeredAtUtc: string;
     lastLoginAtUtc: string | undefined;
     rowVersion: string;
+    openTaskCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -13805,6 +13806,7 @@ export interface UserSummaryDto {
     lastLoginAtUtc: string | undefined;
     pods: UserPodDto[];
     availability?: UserAvailabilitySummary | undefined;
+    openTaskCount?: number | undefined;
 
     [key: string]: any;
 }

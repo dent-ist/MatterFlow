@@ -16642,6 +16642,13 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -16769,6 +16776,13 @@
                 "$ref": "#/components/schemas/UserAvailabilitySummary"
               }
             ]
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

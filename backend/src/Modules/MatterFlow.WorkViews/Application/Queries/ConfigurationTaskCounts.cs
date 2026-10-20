@@ -67,3 +67,22 @@ public sealed class ConfigurationTaskCounts(DbContext db) : IConfigurationTaskCo
         return rows.ToDictionary(r => r.Key.ToCode(), r => r.Count);
     }
 }
+
+/// <summary>The open Task count per assignee behind the Users list and drawer (#426); same open rule as the Task Queue, one grouped statement.</summary>
+public sealed class UserTaskCounts(DbContext db) : IUserTaskCounts
+{
+    public async Task<IReadOnlyDictionary<int, int>> OpenByAssigneeAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        if (userIds.Count == 0)
+            return new Dictionary<int, int>();
+
+        var ids = userIds.Distinct().ToList();
+        var rows = await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
+            .Where(t => t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(r => r.Key, r => r.Count);
+    }
+}

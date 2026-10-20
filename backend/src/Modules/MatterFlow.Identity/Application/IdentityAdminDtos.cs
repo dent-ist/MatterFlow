@@ -18,7 +18,8 @@ public sealed record UserSummaryDto(
     [property: Required] DateTime RegisteredAtUtc,
     DateTime? LastLoginAtUtc,
     [property: Required] UserPodDto[] Pods,
-    UserAvailabilitySummary? Availability = null);
+    UserAvailabilitySummary? Availability = null,
+    int? OpenTaskCount = null);
 
 /// <summary>A user with the data of the detail drawer. Pod membership belongs to the Organization module and is added by that ticket.</summary>
 public sealed record UserDetailDto(
@@ -35,7 +36,8 @@ public sealed record UserDetailDto(
     [property: Required] string[] EffectivePermissions,
     [property: Required] DateTime RegisteredAtUtc,
     DateTime? LastLoginAtUtc,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OpenTaskCount = null);
 
 /// <summary>Counts for the tabs of the users screen.</summary>
 public sealed record UserCountsDto([property: Required] int Pending, [property: Required] int Active, [property: Required] int Inactive);

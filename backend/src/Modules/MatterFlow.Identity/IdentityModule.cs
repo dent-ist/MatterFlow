@@ -55,6 +55,7 @@ public static class IdentityModule
         services.AddScoped<PodService>();
         services.AddScoped<IPodDirectory, PodDirectory>();
         services.AddScoped<IUserDirectory, Application.UserDirectory>();
+        services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IUserTaskCounts, MatterFlow.SharedKernel.Tasks.NoTasksUserTaskCounts>();
         services.AddScoped<Application.UserAdministration>();
         services.AddScoped<Application.UserAvailabilityService>();
         services.AddScoped<IUserAvailabilityReader>(sp => sp.GetRequiredService<Application.UserAvailabilityService>());

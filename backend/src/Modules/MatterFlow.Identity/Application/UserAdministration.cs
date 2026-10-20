@@ -7,6 +7,7 @@ using MatterFlow.SharedKernel.Availability;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -57,11 +58,15 @@ public sealed class UserAdministration(
     IPermissionChecker callerPermissions,
     IClock clock,
     IUserAvailabilityReader availability,
-    IUserTimeZone timeZone)
+    IUserTimeZone timeZone,
+    IUserTaskCounts taskCounts)
 {
     /// <summary>Access Pending: active with no effective permission (same rule as <c>AccessSnapshot.IsPending</c>).</summary>
     private static readonly Expression<Func<AppUser, bool>> PendingExpr = u =>
         u.IsActive && !u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive)));
+
+    /// <summary>The open-task numbers are task data: only a caller who may see tasks gets them (the UI then drops the sentence).</summary>
+    private bool CanSeeTaskCounts => currentUser.IsSystemAdmin || callerPermissions.Has(Permissions.Task.View);
 
     private IQueryable<AppUser> Users => db.Set<AppUser>().AsNoTracking();
 
@@ -170,8 +175,13 @@ public sealed class UserAdministration(
             .ToListAsync(ct);
         var podsByUser = podRows.ToLookup(p => p.UserId, p => p.Pod);
 
+        // One grouped statement for the page; without Task.View the number is left out, never shown as 0.
+        var openTasks = CanSeeTaskCounts ? await taskCounts.OpenByAssigneeAsync(userIds, ct) : null;
+
         var items = rows
-            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles, podsByUser[r.User.Id].ToArray()) with { Availability = UserAvailabilitySummary.From(states[r.User.Id]) })
+            .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles, podsByUser[r.User.Id].ToArray())
+                with
+            { Availability = UserAvailabilitySummary.From(states[r.User.Id]), OpenTaskCount = openTasks is null ? null : openTasks.GetValueOrDefault(r.User.Id) })
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }
@@ -224,7 +234,8 @@ public sealed class UserAdministration(
             permissions.Order(StringComparer.Ordinal).ToArray(),
             Utc(row.User.CreatedAtUtc),
             row.LastLogin is { } login ? Utc(login) : null,
-            Convert.ToBase64String(row.User.RowVersion));
+            Convert.ToBase64String(row.User.RowVersion),
+            CanSeeTaskCounts ? (await taskCounts.OpenByAssigneeAsync([userId], ct)).GetValueOrDefault(userId) : null);
     }
 
     /// <summary>
