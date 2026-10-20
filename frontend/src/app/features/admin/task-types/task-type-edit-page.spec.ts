@@ -87,12 +87,15 @@ describe('TaskTypeEditPage', () => {
   describe('the record header, strip and tabs (#380, #381)', () => {
     beforeEach(() => open('1'));
 
-    it('shows the name, the Active badge, Edit, Activity, the primary Edit form and Deactivate in the overflow', () => {
+    it('shows the name, the Active badge, Edit and the primary Edit form last (Activity too where the width allows it)', () => {
       expect(q('[data-page-title]').textContent).toContain('Data Processing');
       expect(q('[data-status-badge], mf-active-badge').textContent).toContain('Active');
-      expect(
-        all('[data-page-actions] button[data-action]').map((b) => b.getAttribute('data-action')),
-      ).toEqual(['edit', 'activity', 'edit-form']);
+      const ids = all('[data-page-actions] button[data-action]').map((b) =>
+        b.getAttribute('data-action'),
+      );
+      // The buttons that fit the window are in the header (Activity moves to the overflow on a narrow one); Edit form is always one.
+      expect(ids[ids.length - 1]).toBe('edit-form');
+      expect(ids).toContain('edit');
       expect(q('[data-action="edit-form"]').classList).toContain('mf-btn--primary');
     });
 

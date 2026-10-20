@@ -110,6 +110,8 @@ describe('HttpFormDesignerApi', () => {
         status: 'PUBLISHED',
         note: undefined,
         updatedAtUtc: '2026-10-02T00:00:00Z',
+        fieldCount: 1,
+        publishedAtUtc: '2026-10-02T00:00:00Z',
         rowVersion: 'rv-1',
       },
     ]);
