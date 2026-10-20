@@ -272,7 +272,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     const stepsUrl = `/admin/steps?title=${steps.token}&size=25&page=2`;
     await page.goto(stepsUrl);
     await rowLink(page, steps.ids[26]).click();
-    await page.getByRole('link', { name: 'Edit inputs in the form designer' }).click();
+    await page.locator('[data-action=edit-inputs]').click();
     await expect(page).toHaveURL(new RegExp(`/admin/steps/${steps.ids[26]}/form$`));
     await crumb(page, 'Workflow Steps').click();
     expect(urlOf(page)).toBe(stepsUrl);
@@ -300,9 +300,11 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await rowLink(page, flows.ids[25]).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flows.ids[25]}$`));
     await page.getByRole('button', { name: /Open draft v1/ }).click();
+    await expect(page).toHaveURL(/\/versions\/\d+$/);
     await page.reload();
+    await page.waitForLoadState('networkidle');
     await crumb(page, 'Workflows').click();
-    expect(urlOf(page)).toBe(flowsUrl);
+    await expect.poll(() => urlOf(page)).toBe(flowsUrl);
   });
 
   test('a row that left the filtered result puts focus on the page heading; a return address from another section is ignored', async ({
