@@ -267,4 +267,58 @@ describe('filter definitions', () => {
       expect(printText(DUE, { from: '2026-10-01', to: '' })).toBe('Due from Oct 1, 2026');
     });
   });
+
+  describe('a select that writes several parameters (paramMap)', () => {
+    const VERSIONS: FilterDef = {
+      key: 'versions',
+      label: 'Versions',
+      column: 'versions',
+      type: 'select',
+      allLabel: 'Any',
+      options: [
+        { value: 'published', label: 'Published' },
+        { value: 'draft', label: 'Draft in progress' },
+        { value: 'notPublished', label: 'Not published' },
+      ],
+      paramMap: {
+        published: { hasPublished: 'true' },
+        draft: { hasDraft: 'true' },
+        notPublished: { hasPublished: 'false' },
+        both: { hasPublished: 'true', hasDraft: 'true' },
+      },
+      valueLabel: (v) => (v === 'both' ? 'Published, with a draft' : v),
+    };
+    const read = (q: string) =>
+      parseValue(VERSIONS, convertToParamMap(Object.fromEntries(new URLSearchParams(q))));
+
+    it('reads the option whose parameters the address carries exactly', () => {
+      expect(read('')).toBe('');
+      expect(read('hasPublished=true')).toBe('published');
+      expect(read('hasDraft=true')).toBe('draft');
+      expect(read('hasPublished=false')).toBe('notPublished');
+      expect(read('hasPublished=true&hasDraft=true')).toBe('both');
+      expect(read('hasPublished=true&hasDraft=false')).toBe('other');
+    });
+
+    it('writes every mapped parameter and clears the ones it does not use', () => {
+      expect(serializeValue(VERSIONS, 'draft')).toEqual({ hasPublished: null, hasDraft: 'true' });
+      expect(serializeValue(VERSIONS, 'notPublished')).toEqual({
+        hasPublished: 'false',
+        hasDraft: null,
+      });
+      expect(serializeValue(VERSIONS, '')).toEqual({ hasPublished: null, hasDraft: null });
+      expect(hasFilterParams([VERSIONS], convertToParamMap({ hasDraft: 'true' }))).toBe(true);
+    });
+
+    it('makes one chip, "Versions: Draft in progress", and reads the link-only combination in words', () => {
+      expect(buildChips(VERSIONS, 'draft', false).map((c) => c.label)).toEqual([
+        'Versions: Draft in progress',
+      ]);
+      expect(buildChips(VERSIONS, 'both', false).map((c) => c.label)).toEqual([
+        'Versions: Published, with a draft',
+      ]);
+      expect(isActive(VERSIONS, '')).toBe(false);
+      expect(printText(VERSIONS, 'notPublished')).toBe('Versions Not published');
+    });
+  });
 });

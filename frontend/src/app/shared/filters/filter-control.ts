@@ -7,6 +7,7 @@ import {
   FilterOption,
   RangeValue,
   isRange,
+  optionLabel,
   optionsOf,
   selectOptions,
   valueText,
@@ -211,7 +212,15 @@ export class FilterControl {
 
   protected readonly reason = computed(() => this.def().disabledReason?.() ?? null);
   protected readonly fixed = computed(() => this.def().fixedValue?.() ?? null);
-  protected readonly selectOpts = computed(() => selectOptions(this.def()));
+  protected readonly selectOpts = computed((): readonly FilterOption[] => {
+    const def = this.def();
+    const options = selectOptions(def);
+    // A combination only a link can make (a `paramMap` option that is not offered) shows while it is the current value.
+    const now = this.filters().text(def.key);
+    return def.paramMap && now && !options.some((o) => o.value === now)
+      ? [...options, { value: now, label: optionLabel(def, now) }]
+      : options;
+  });
   protected readonly triOptions = computed(() => optionsOf(this.def()));
   protected readonly range = computed<RangeValue>(() => {
     const v = this.filters().value(this.def().key);

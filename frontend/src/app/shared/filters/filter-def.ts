@@ -60,6 +60,13 @@ export interface FilterDef {
   readonly toParam?: string;
   /** Options of select, multiSelect, user (and the wording of a triState: any, yes, no). A function is read on every render. */
   readonly options?: readonly FilterOption[] | (() => readonly FilterOption[]);
+  /**
+   * select: one control that writes several URL parameters (Workflows "Versions": `hasPublished` and `hasDraft`). Option value to the
+   * parameters it sets; the filter reads as the option whose parameters the address carries exactly (and none of the other mapped
+   * parameters), `'other'` for any other combination of them. Options that are in the map but not in `options` (the combinations that
+   * only a link can make) show in the control only while they are the current value.
+   */
+  readonly paramMap?: Readonly<Record<string, Readonly<Record<string, string>>>>;
   /** select: the label of the leading "no filter" option (`''`), for example "All types". */
   readonly allLabel?: string;
   /** multiSelect / user: options that travel as their own boolean parameter, keyed by option value. */
@@ -148,6 +155,7 @@ export function selectOptions(def: FilterDef): readonly FilterOption[] {
 
 /** Every URL parameter a def reads and writes. */
 export function paramsOf(def: FilterDef): string[] {
+  if (def.paramMap) return [...new Set(Object.values(def.paramMap).flatMap((m) => Object.keys(m)))];
   const out: string[] = isRangeType(def.type) ? [fromParamOf(def), toParamOf(def)] : [paramOf(def)];
   for (const flag of Object.values(def.flagOptions ?? {})) out.push(flag.param);
   return out;
@@ -215,6 +223,7 @@ export function parseValue(def: FilterDef, params: ParamMap): FilterValue {
         : (clean(def, raw.trim().slice(0, def.maxLength ?? 200)) ?? '');
     }
     case 'select': {
+      if (def.paramMap) return parseMapped(def, params);
       const raw = params.get(paramOf(def));
       return raw === null ? (defaultValue(def) as string) : (clean(def, raw.trim()) ?? '');
     }
@@ -259,6 +268,23 @@ export function parseValue(def: FilterDef, params: ParamMap): FilterValue {
   }
 }
 
+/** A select with `paramMap`: the option whose parameters the address carries exactly. */
+function parseMapped(def: FilterDef, params: ParamMap): string {
+  const all = paramsOf(def);
+  const present = all.filter((p) => params.has(p));
+  if (present.length === 0) return defaultValue(def) as string;
+  for (const [value, map] of Object.entries(def.paramMap ?? {})) {
+    const keys = Object.keys(map);
+    if (
+      keys.length === present.length &&
+      keys.every((k) => params.get(k)?.toLowerCase() === map[k].toLowerCase())
+    ) {
+      return value;
+    }
+  }
+  return 'other';
+}
+
 /** The query parameters that make `value` for `def`: the default is not written (`null` removes the parameter). */
 export function serializeValue(def: FilterDef, value: FilterValue): QueryParams {
   const out: QueryParams = {};
@@ -269,6 +295,10 @@ export function serializeValue(def: FilterDef, value: FilterValue): QueryParams 
     case 'select':
     case 'triState': {
       const v = value as string;
+      if (def.paramMap) {
+        if (!sameValue(v, dflt)) Object.assign(out, def.paramMap[v] ?? {});
+        return out;
+      }
       if (!sameValue(v, dflt)) out[paramOf(def)] = v; // '' keeps "explicitly nothing" against a default
       return out;
     }
@@ -328,7 +358,8 @@ export function serializeExplicit(def: FilterDef, value: FilterValue): QueryPara
   const out: QueryParams = {};
   for (const p of paramsOf(def)) out[p] = null;
   if (typeof value === 'string') {
-    out[paramOf(def)] = value;
+    if (def.paramMap) Object.assign(out, def.paramMap[value] ?? {});
+    else out[paramOf(def)] = value;
   } else if (!isRange(value)) {
     const plain: string[] = [];
     for (const v of value) {

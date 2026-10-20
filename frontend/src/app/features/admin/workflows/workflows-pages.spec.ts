@@ -417,7 +417,8 @@ describe('WorkflowsListPage', () => {
     const control = (name: string) =>
       el.querySelector<HTMLInputElement | HTMLSelectElement>(`[aria-label="Filter by ${name}"]`);
     expect(control('Name')?.value).toBe('std');
-    expect(headerFilters().activeCount()).toBe(4);
+    // Name, Status All and Versions (Published with No draft is not one of the offered choices: it reads as its own, "Other combination").
+    expect(headerFilters().activeCount()).toBe(3);
   });
 
   it('says what the default Active hides and makes Status sortable (#369)', async () => {
@@ -475,7 +476,7 @@ describe('WorkflowsListPage', () => {
     // Open by default (from 640 px, #365); the Filters button sits in the page header, not in this tab.
     expect(el.querySelector('[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('[data-filters-toggle]')).toBeNull();
-    for (const column of ['Name', 'Latest published', 'Draft', 'Status']) {
+    for (const column of ['Name', 'Versions', 'Status']) {
       expect(el.querySelector(`[aria-label="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!.value).toBe(

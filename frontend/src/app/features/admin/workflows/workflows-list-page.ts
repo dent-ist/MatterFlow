@@ -464,7 +464,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
   /**
-   * Inline column filters: Name (`name`), Latest published (`hasPublished`), Draft (`hasDraft`) and Status (`status`, Active by default).
+   * Inline column filters: Name (`name`), Versions (one select over `hasPublished` and `hasDraft`) and Status (`status`, Active by default).
    * Besides these, `?taskType=<id>` (from a task type's Workflows chips) and `?step=<id>` (from a step's "Used in" link): no control, a removable
    * chip each, shown with a "Filtered by ..." line. The server filters (`taskTypeId`, `stepId`).
    */
@@ -477,26 +477,32 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       {
-        key: 'hasPublished',
-        label: 'Latest published',
+        // One control for the two parameters the health strip and old links use (`hasPublished`, `hasDraft`), so the cell is one labelled select.
+        key: 'versions',
+        label: 'Versions',
         column: 'versions',
-        type: 'triState',
+        type: 'select',
+        allLabel: 'Any',
         options: [
-          { value: '', label: 'Any' },
-          { value: 'true', label: 'Published' },
-          { value: 'false', label: 'Not published' },
+          { value: 'published', label: 'Published' },
+          { value: 'draft', label: 'Draft in progress' },
+          { value: 'notPublished', label: 'Not published' },
         ],
-      },
-      {
-        key: 'hasDraft',
-        label: 'Draft',
-        column: 'versions',
-        type: 'triState',
-        options: [
-          { value: '', label: 'Any' },
-          { value: 'true', label: 'Has a draft' },
-          { value: 'false', label: 'No draft' },
-        ],
+        paramMap: {
+          published: { hasPublished: 'true' },
+          draft: { hasDraft: 'true' },
+          notPublished: { hasPublished: 'false' },
+          both: { hasPublished: 'true', hasDraft: 'true' },
+          noDraft: { hasDraft: 'false' },
+        },
+        valueLabel: (v) =>
+          v === 'both'
+            ? 'Published, with a draft'
+            : v === 'noDraft'
+              ? 'No draft'
+              : v === 'other'
+                ? 'Other combination'
+                : v,
       },
       statusDef(),
       {
@@ -554,13 +560,12 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   /** The chip that matches the address exactly, or none. */
   protected readonly stripActive = computed<string | null>(() => {
     const status = parseStatus(this.filters.text('status'));
-    const published = this.filters.text('hasPublished');
-    const draft = this.filters.text('hasDraft');
-    if (status === 'inactive') return !published && !draft ? 'inactive' : null;
+    const versions = this.filters.text('versions');
+    if (status === 'inactive') return !versions ? 'inactive' : null;
     if (status !== 'active') return null;
-    if (published === 'true' && !draft) return 'published';
-    if (draft === 'true' && !published) return 'draft';
-    return published === 'false' && !draft ? 'notPublished' : null;
+    return versions === 'published' || versions === 'draft' || versions === 'notPublished'
+      ? versions
+      : null;
   });
 
   /** A chip puts its filters in the address and takes the others off; the pressed chip again clears them. */
@@ -775,8 +780,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
         undefined,
         this.filters.text('name') || undefined,
         isActive,
-        triBool(this.filters.text('hasPublished')),
-        triBool(this.filters.text('hasDraft')),
+        triBool(this.filters.params().get('hasPublished') ?? ''),
+        triBool(this.filters.params().get('hasDraft') ?? ''),
         this.taskTypeId(),
         this.stepId(),
         page,

@@ -222,14 +222,14 @@ test.describe('Column filters on the administration lists', () => {
       await expect(page).not.toHaveURL(/workflow=/);
     });
 
-    test('Workflows: Name, Latest published and Draft filter on the server', async ({
+    test('Workflows: Name and the one Versions select (Published, Draft in progress, Not published) filter on the server', async ({
       page,
       seed,
       admin,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       const token = uid();
-      const published = await seed.workflow({ name: `Published ${token}`, stepCount: 1 });
+      await seed.workflow({ name: `Published ${token}`, stepCount: 1 });
       const both = await seed.workflow({ name: `Both ${token}`, stepCount: 1 });
       await admin.post(`/api/v1/workflows/${both.workflowDefinitionId}/versions`, {});
       await admin.post('/api/v1/workflows', { name: `Draft only ${token}`, isOrdered: true });
@@ -238,23 +238,38 @@ test.describe('Column filters on the administration lists', () => {
       const rows = grid(page, 'Workflows list').locator('tbody tr');
       await expect(rows).toHaveCount(3);
       await expect(page.locator('#wf-search, #wf-status')).toHaveCount(0);
+      // One labelled select in the Versions cell (it used to be two unlabelled "Any" selects).
+      await expect(select(page, 'Versions')).toHaveCount(1);
+      await expect(select(page, 'Latest published')).toHaveCount(0);
+      await expect(select(page, 'Draft')).toHaveCount(0);
+      await expect(select(page, 'Versions').locator('option')).toHaveText([
+        'Any',
+        'Published',
+        'Draft in progress',
+        'Not published',
+      ]);
 
-      await select(page, 'Latest published').selectOption('false');
+      await select(page, 'Versions').selectOption('notPublished');
       await expect(page).toHaveURL(/hasPublished=false/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Draft only ${token}`);
-      await select(page, 'Latest published').selectOption('true');
+      await expect(page.getByRole('list', { name: 'Active filters' })).toHaveCount(0); // the row is open: the value is in the cell
+      await select(page, 'Versions').selectOption('published');
+      await expect(page).toHaveURL(/hasPublished=true/);
       await expect(rows).toHaveCount(2);
-      await select(page, 'Draft').selectOption('true');
+      await select(page, 'Versions').selectOption('draft');
       await expect(page).toHaveURL(/hasDraft=true/);
+      await expect(page).not.toHaveURL(/hasPublished=/);
+      await expect(rows).toHaveCount(2); // Both and Draft only
+      // The combination only a link can make still works and shows as its own choice.
+      await page.goto(`/admin/workflows?name=${token}&hasPublished=true&hasDraft=true`);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Both ${token}`);
-      await select(page, 'Draft').selectOption('false');
-      await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText(`Published ${token}`);
-      expect(published.name).toBe(`Published ${token}`);
-      await text(page, 'Name').fill(`zzz-${token}`);
-      await expect(grid(page, 'Workflows list').locator('td[data-empty="filtered"]')).toBeVisible();
+      await expect(select(page, 'Versions')).toHaveValue('both');
+      // Closed row: the chip reads "Versions: Draft in progress".
+      await page.goto(`/admin/workflows?name=${token}&hasDraft=true`);
+      await toggle(page).click();
+      await expect(chips(page)).toContainText('Versions: Draft in progress');
     });
 
     test('Workflow Steps: Title, Description, Tags with Match all or any, and Used in', async ({

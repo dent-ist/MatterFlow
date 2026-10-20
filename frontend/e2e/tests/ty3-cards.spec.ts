@@ -310,6 +310,6 @@ test.describe('narrow-window columns: the grid never scrolls sideways and the ro
     await expect(tableRows(page)).toHaveCount(2);
     await expect(page.getByText('Not published', { exact: false }).first()).toBeVisible();
     await page.setViewportSize({ width: 1366, height: 900 });
-    await expect(page.locator('[aria-label="Filter by Latest published"]')).toBeVisible();
+    await expect(page.locator('[aria-label="Filter by Versions"]')).toBeVisible();
   });
 });
