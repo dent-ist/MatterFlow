@@ -139,6 +139,9 @@ test.describe('#415: Tab stops per page (recorded)', () => {
       await page.goto(url());
       await expect(page.locator('[data-page-title]').first()).toBeVisible();
       await page.waitForLoadState('networkidle');
+      // The page is on screen when its skeleton and busy markers are gone and nothing has moved for a moment.
+      await expect(page.locator('[data-skeleton], [aria-busy="true"]')).toHaveCount(0);
+      await page.waitForTimeout(800);
       const walk = await walkPage(page);
       expect(walk.hidden, `${name}: Tab stops that cannot be seen`).toEqual([]);
       expect(walk.total, `${name}: reached something`).toBeGreaterThan(walk.shell);
