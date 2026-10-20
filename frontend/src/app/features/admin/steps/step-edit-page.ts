@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -10,22 +11,52 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { StepDefinitionDetail, StepDefinitionsClient } from '../../../api/generated/api-client';
+import {
+  FormVersionStatus,
+  FormVersionSummary,
+  FormsClient,
+  StepDefinitionDetail,
+  StepDefinitionsClient,
+  WorkflowsClient,
+} from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { ApiError } from '../../../core/http/api-error';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
-import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import {
+  HasUnsavedChanges,
+  LeaveConfirmService,
+} from '../../../shared/guards/unsaved-changes.guard';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TagInput } from '../../../shared/ui/tag-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
-import { DIALOG_COPY } from '../shared/dialog-copy';
+import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
+import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { Crumb } from '../../../shared/ui/page-header';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { WorkStrip } from '../../../shared/work-queue/work-strip';
+import { DIALOG_COPY, impactLine } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
-import { PageHeader } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
+import { StepInputsTab } from './step-inputs-tab';
+import {
+  STEP_TAB_LABEL,
+  STEP_TAB_REASON,
+  StepTab,
+  inputsFacts,
+  stepStripItems,
+  stepTabOf,
+  usageCounts,
+  usedByWorkflows,
+  usedWorkflowCount,
+} from './step-record';
+import { StepUsedByTab } from './step-used-by-tab';
 
 /** True for an empty value or a full http(s) address (mirrors the server rule). */
 export function isValidDocumentationUrl(value: string): boolean {
@@ -45,198 +76,46 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
 }
 
 /**
- * Admin: create or edit a library step (UX S15). Title, description, instructions, documentation link and tags live here; the data inputs are
- * the step's form, edited with the form designer at `/admin/steps/:id/form`. Editing never changes published workflows (addendum A);
- * deactivating hides the step from new workflow drafts. Needs `Workflow.Manage` (route guard).
+ * Admin: the Step record page (UX S15, SE1 to SE5, #403 to #406). Option A of the review: inline editing under a record header
+ * (`mf-record-header`: the step title as the H1 with Active / Inactive, Edit, Activity, the primary Edit inputs and an overflow with Deactivate
+ * or Activate), a summary strip (Status, Used in n workflows, Inputs, Tags) and tabs Details | Inputs | Used by (n) (`?tab=`, replaced not
+ * added). Details is the only tab with edits and saves on its own; switching tabs or leaving with edits asks first and offers Save and leave.
+ * Inputs lists the step's form read-only (the designer is `/admin/steps/:id/form`); Used by links to every workflow version that contains the
+ * step. A new step opens on Inputs after it is saved; until then those two tabs are disabled. Needs `Workflow.Manage` (route guard); the
+ * list of inputs also needs `Task.View` (a server rule of the form endpoints), without it the tab says so.
  */
 @Component({
   selector: 'mf-step-edit-page',
-  imports: [PageHeader, RecordState, RouterLink, Button, TextField, TagInput, ConfirmDialog],
+  imports: [
+    ActivityDrawer,
+    ConfirmDialog,
+    RecordHeader,
+    RecordSkeleton,
+    RecordState,
+    StepInputsTab,
+    StepUsedByTab,
+    Tabs,
+    TagInput,
+    TextField,
+    WorkStrip,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styleUrl: '../../../shared/ui/page.scss',
-  template: `
-    @if (flow.failed()) {
-      <mf-record-state
-        kind="step"
-        [state]="state()"
-        [busy]="flow.retrying()"
-        [focusHeading]="true"
-        (retried)="load()"
-      />
-    } @else {
-      <mf-page-header
-        [crumbs]="[
-          { label: 'Administration' },
-          { label: 'Task Types', link: '/admin/task-types' },
-          listCrumb,
-          { label: isEdit() ? original()?.title || 'Edit' : 'New' },
-        ]"
-        [heading]="isEdit() ? 'Edit step' : 'New step'"
-      />
-
-      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
-      @if (state() === 'loading') {
-        <div class="pg-state" role="status" aria-busy="true">Loading the step...</div>
-      } @else {
-        @if (isEdit()) {
-          <div class="pg-banner" data-banner>
-            Editing this step doesn't change workflows that are already published. Workflows pick up
-            changes only when you publish a new workflow version.
-          </div>
-        }
-        @if (conflict()) {
-          <div class="pg-alert" role="alert" data-conflict>
-            This step was changed by someone else.
-            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
-          </div>
-        }
-        @if (summary().length > 0) {
-          <div class="pg-summary" role="alert" data-summary>
-            Fix the following to save:
-            <ul>
-              @for (message of summary(); track message) {
-                <li>{{ message }}</li>
-              }
-            </ul>
-          </div>
-        }
-
-        <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
-          <mf-text-field
-            inputId="step-title"
-            label="Title"
-            [required]="true"
-            [maxLength]="200"
-            [error]="titleError()"
-            [(value)]="title"
-          />
-          <mf-text-field
-            inputId="step-description"
-            label="Description"
-            help="A short explanation shown in the workflow."
-            [maxLength]="1000"
-            [error]="fieldError('description')"
-            [(value)]="description"
-          />
-          <mf-tag-input
-            inputId="step-tags"
-            label="Tags"
-            placeholder="Add a tag"
-            help="Optional labels such as Relativity or Processing, used to find the step. Press Enter or comma to add one. Up to 20 tags, 40 characters each."
-            [error]="fieldError('tags')"
-            [suggestions]="tagSuggestions()"
-            (queryChange)="suggestTags($event)"
-            [(value)]="tags"
-          />
-          <mf-text-field
-            inputId="step-instructions"
-            label="Instructions"
-            help="The detailed procedure. Plain text with line breaks."
-            [multiline]="true"
-            [maxLength]="20000"
-            [error]="fieldError('instructions')"
-            [(value)]="instructions"
-          />
-          <mf-text-field
-            inputId="step-url"
-            label="Documentation URL"
-            help="Optional link to the full procedure, starting with https://"
-            [maxLength]="1000"
-            [error]="urlError()"
-            [(value)]="documentationUrl"
-          />
-
-          <section aria-labelledby="step-inputs-heading" data-inputs>
-            <h2 id="step-inputs-heading" class="pg-label">Data inputs</h2>
-            <p class="pg-muted">
-              Operational values recorded on the task (for example items in, items out, QC result).
-              These are not staff or billing metrics.
-            </p>
-            @if (original(); as o) {
-              <p class="pg-muted" data-inputs-state>{{ inputsSummary() }}</p>
-              @if (o.formDefinitionId) {
-                <a
-                  class="pg-link"
-                  data-form-link
-                  [routerLink]="['/admin/steps', o.stepDefinitionId, 'form']"
-                  [state]="back.carry"
-                  >Edit inputs in the form designer</a
-                >
-              }
-            } @else {
-              <p class="pg-muted" data-inputs-state>Save the step first, then add its inputs.</p>
-            }
-          </section>
-
-          @if (original(); as o) {
-            <section aria-labelledby="step-usage-heading" data-usage>
-              <h2 id="step-usage-heading" class="pg-label">Used by</h2>
-              @if (o.usage.length === 0) {
-                <p class="pg-muted">No workflow uses this step yet.</p>
-              } @else {
-                <ul>
-                  @for (u of o.usage; track u.workflowVersionId) {
-                    <li>
-                      {{ u.workflowName }} v{{ u.versionNo }}
-                      <span class="pg-muted">({{ statusLabel(u.status) }})</span>
-                    </li>
-                  }
-                </ul>
-              }
-            </section>
-          }
-
-          <div class="pg-actions mf-form-actions--sticky">
-            <p-button
-              type="submit"
-              [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step'"
-              [disabled]="busy()"
-            />
-            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-            @if (original(); as o) {
-              @if (o.isActive) {
-                <p-button
-                  label="Deactivate"
-                  severity="secondary"
-                  [disabled]="busy()"
-                  (onClick)="deactivateOpen.set(true)"
-                />
-              } @else {
-                <p-button
-                  label="Activate"
-                  severity="secondary"
-                  [disabled]="busy()"
-                  (onClick)="activate()"
-                />
-              }
-            }
-          </div>
-        </form>
-      }
-    }
-
-    <mf-confirm-dialog
-      [title]="copy.title"
-      [confirmLabel]="copy.confirm"
-      [cancelLabel]="copy.cancel"
-      [danger]="copy.danger"
-      [busy]="busy()"
-      [(visible)]="deactivateOpen"
-      (confirmed)="deactivate()"
-    >
-      <p>
-        This step will be hidden from new workflow drafts. Published workflows that already use it
-        are not changed, and you can activate it again later.
-      </p>
-    </mf-confirm-dialog>
-  `,
+  templateUrl: './step-edit-page.html',
+  styleUrls: ['../../../shared/ui/page.scss', './step-edit-page.scss'],
 })
 export class StepEditPage implements HasUnsavedChanges {
   /** Route parameter; absent when creating. */
   readonly stepId = input<string>();
+  /** `?tab=`: `inputs` or `used-by`; absent (or anything else) is Details. */
+  readonly tab = input<string | undefined>(undefined);
 
   private readonly api = inject(StepDefinitionsClient);
+  private readonly forms = inject(FormsClient);
+  private readonly workflowsApi = inject(WorkflowsClient);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthStore);
+  private readonly leave = inject(LeaveConfirmService);
+  private readonly quiet = inject(QuietRequests);
   /** The exact list view this page was opened from (#354): the crumb, Cancel and the links on to the record's other pages return to it. */
   protected readonly back = new ListReturn(ADMIN_LIST.steps, this.router);
   protected readonly listCrumb = this.back.crumb('Workflow Steps');
@@ -262,8 +141,19 @@ export class StepEditPage implements HasUnsavedChanges {
   protected readonly conflict = signal(false);
   protected readonly copy = DIALOG_COPY.deactivateStep;
   protected readonly deactivateOpen = signal(false);
+  protected readonly activityOpen = signal(false);
+  protected readonly announcement = signal('');
+  /** The versions of the step's form (published and draft ids, field counts); null until read, and when they cannot be read. */
+  private readonly versions = signal<readonly FormVersionSummary[] | null>(null);
+  /** The version list answered 403: reading forms needs `Task.View`. */
+  private readonly versionsDenied = signal(false);
+  /** Which workflows that use the step are active, by id; null while unknown (then every workflow counts). */
+  private readonly workflowActive = signal<ReadonlyMap<number, boolean> | null>(null);
   private saved = false;
   private suggestRequest = 0;
+
+  protected readonly current = computed<StepTab>(() => stepTabOf(this.tab(), !this.isEdit()));
+  protected readonly canSeeActivity = computed(() => this.auth.has('Audit.View'));
 
   protected readonly titleError = computed(() => {
     if (this.submitted() && this.title().trim() === '') return 'Enter a title.';
@@ -277,35 +167,8 @@ export class StepEditPage implements HasUnsavedChanges {
     return this.fieldError('documentationUrl');
   });
 
-  protected readonly inputsSummary = computed(() => {
-    const o = this.original();
-    if (!o) return '';
-    if (o.publishedFormVersionId) {
-      return o.draftFormFieldCount > 0
-        ? 'The inputs are published. A newer draft is in progress.'
-        : 'The inputs are published.';
-    }
-    return o.draftFormFieldCount > 0
-      ? 'The inputs are in draft. Publish them before this step can be published in a workflow.'
-      : 'This step has no inputs yet.';
-  });
-
-  constructor() {
-    effect(() => {
-      if (this.stepId() !== undefined) untracked(() => void this.load());
-      else untracked(() => this.flow.state.set('ready'));
-    });
-    effect(() => {
-      const state = this.state();
-      const title = this.original()?.title;
-      if (state === 'notFound' || state === 'forbidden' || state === 'error') {
-        this.pageTitle.set(recordStateTitle('step', state));
-      } else if (title) this.pageTitle.set(shortTitleText(title));
-    });
-  }
-
-  hasUnsavedChanges(): boolean {
-    if (this.saved) return false;
+  /** The Details tab has edits (a new step: anything typed). */
+  protected readonly dirty = computed(() => {
     const o = this.original();
     if (this.isEdit()) {
       return (
@@ -324,15 +187,164 @@ export class StepEditPage implements HasUnsavedChanges {
       this.documentationUrl().trim() !== '' ||
       this.tags().length > 0
     );
+  });
+  /** Save and Cancel show on a new step, and on Details while it has edits. */
+  protected readonly showFooter = computed(
+    () => this.current() === 'details' && (!this.isEdit() || this.dirty()),
+  );
+
+  /** The title the header shows: the saved one (edits in the field do not retitle the page until they are saved). */
+  protected readonly headerName = computed(() =>
+    this.isEdit() ? (this.original()?.title ?? 'Step') : 'New step',
+  );
+  /** Administration > Task Types > Workflow Steps > the step: the Workflow Steps list is the third tab of the Task Types page. */
+  protected readonly parents = computed<Crumb[]>(() => [
+    { label: 'Administration', plain: true },
+    { label: 'Task Types', link: '/admin/task-types' },
+    this.listCrumb,
+  ]);
+  protected readonly backTo = computed(() => ({
+    label: 'Workflow Steps',
+    link: this.back.tree,
+    state: this.listCrumb.state,
+  }));
+
+  protected readonly usedBy = computed(() => {
+    const o = this.original();
+    return o ? usedByWorkflows(o.usage, this.workflowActive()) : [];
+  });
+  protected readonly usedCount = computed(() => usedWorkflowCount(this.usedBy()));
+  protected readonly facts = computed(() => {
+    const o = this.original();
+    return inputsFacts(
+      o ?? { publishedFormVersionId: undefined, draftFormFieldCount: 0 },
+      this.versions(),
+    );
+  });
+  protected readonly strip = computed(() => {
+    const o = this.original();
+    return o ? stepStripItems(o, this.usedCount(), this.facts()) : [];
+  });
+  /** The version the Inputs tab lists: the published one, else the open draft. */
+  protected readonly shownVersionId = computed(() => {
+    const o = this.original();
+    if (!o) return null;
+    if (o.publishedFormVersionId !== undefined && o.publishedFormVersionId !== null) {
+      return o.publishedFormVersionId;
+    }
+    return (
+      this.versions()?.find((v) => v.status === FormVersionStatus.Draft)?.formVersionId ?? null
+    );
+  });
+  /** The draft is the only version and the version list cannot be read, so there is nothing to list. */
+  protected readonly inputsUnreadable = computed(
+    () =>
+      this.versionsDenied() &&
+      this.facts().state === 'draft' &&
+      this.original()?.publishedFormVersionId == null,
+  );
+
+  /** Reading forms was refused (no `Task.View`), and the form designer reads them too, so Edit inputs is not offered. */
+  protected readonly canEditInputs = computed(() => !this.versionsDenied());
+
+  protected readonly tabs = computed<MfTab[]>(() => {
+    const isNew = !this.isEdit();
+    const reason = isNew ? { disabledReason: STEP_TAB_REASON } : {};
+    return [
+      { key: 'details', label: STEP_TAB_LABEL.details },
+      { key: 'inputs', label: STEP_TAB_LABEL.inputs, ...reason },
+      {
+        key: 'used-by',
+        label: STEP_TAB_LABEL['used-by'],
+        ...(isNew ? reason : { count: this.usedCount() }),
+      },
+    ];
+  });
+
+  /** The actions of the header: Edit, Activity, the primary Edit inputs and, in the overflow, Deactivate or Activate. None on a new step. */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const o = this.original();
+    if (!this.isEdit() || !o) return [];
+    const list: RecordAction[] = [
+      { id: 'edit', role: 'edit', label: 'Edit', run: () => void this.editHere() },
+    ];
+    if (this.canSeeActivity()) {
+      list.push({
+        id: 'activity',
+        role: 'activity',
+        label: 'Activity',
+        icon: 'pi-history',
+        run: () => this.activityOpen.set(true),
+      });
+    }
+    // The designer reads the form, which needs Task.View: without it the page would answer "no access", so the button is not offered.
+    if (this.canEditInputs()) {
+      list.push({
+        id: 'edit-inputs',
+        role: 'primary',
+        label: 'Edit inputs',
+        icon: 'pi-pencil',
+        run: () => void this.openInputs(),
+      });
+    }
+    list.push({
+      id: o.isActive ? 'deactivate' : 'activate',
+      role: 'state',
+      label: o.isActive ? 'Deactivate' : 'Activate',
+      run: () => (o.isActive ? this.deactivateOpen.set(true) : void this.activate()),
+    });
+    return list;
+  });
+
+  /** The sentence of the deactivate dialog: how many workflow drafts keep the step and how many published versions use it (both from the step). */
+  protected readonly impact = computed(() => {
+    const o = this.original();
+    if (!o) return { text: '', names: [] as string[] };
+    const { drafts, published } = usageCounts(o.usage);
+    return impactLine('deactivateStep', { drafts, publishedVersions: published });
+  });
+
+  constructor() {
+    effect(() => {
+      if (this.stepId() !== undefined) untracked(() => void this.load());
+      else untracked(() => this.flow.state.set('ready'));
+    });
+    effect(() => {
+      const state = this.state();
+      const title = this.original()?.title;
+      if (state === 'notFound' || state === 'forbidden' || state === 'error') {
+        this.pageTitle.set(recordStateTitle('step', state));
+      } else if (title) this.pageTitle.set(shortTitleText(title));
+    });
+    // Which workflows that use the step are active (the Used by count and the badge on an inactive one) and the versions of its form (the
+    // strip and the Inputs tab): read once per step, quietly; what cannot be read is left out, never shown as a made-up number.
+    const stepKey = computed(() => this.original()?.stepDefinitionId ?? null);
+    const formKey = computed(() => this.original()?.formDefinitionId ?? null);
+    effect(() => {
+      const id = stepKey();
+      if (id !== null) untracked(() => void this.loadWorkflowStates(id));
+    });
+    effect(() => {
+      const id = formKey();
+      if (id !== null) untracked(() => void this.loadVersions(id));
+    });
+  }
+
+  hasUnsavedChanges(): boolean {
+    if (this.saved) return false;
+    return this.dirty();
+  }
+
+  readonly saveForLeaveLabel = 'Save and leave';
+
+  /** "Save and leave" of the leave question: saves the Details edits; false (the person stays) when it did not save. */
+  async saveForLeave(): Promise<boolean> {
+    return this.save();
   }
 
   @HostListener('window:beforeunload', ['$event'])
   protected onBeforeUnload(event: BeforeUnloadEvent): void {
     if (this.hasUnsavedChanges()) event.preventDefault();
-  }
-
-  protected statusLabel(status: string): string {
-    return status === 'Published' ? 'published' : status === 'Draft' ? 'draft' : 'retired';
   }
 
   async load(): Promise<void> {
@@ -344,7 +356,44 @@ export class StepEditPage implements HasUnsavedChanges {
     );
   }
 
-  protected async save(): Promise<void> {
+  private async loadWorkflowStates(stepId: number): Promise<void> {
+    try {
+      const page = await this.quiet.run(() =>
+        firstValueFrom(
+          this.workflowsApi.listWorkflows(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            stepId,
+            1,
+            100,
+          ),
+        ),
+      );
+      if (page.total > page.items.length) return; // more than one page: leave the count as the API's usage shows it
+      this.workflowActive.set(new Map(page.items.map((w) => [w.workflowDefinitionId, w.isActive])));
+    } catch {
+      this.workflowActive.set(null);
+    }
+  }
+
+  private async loadVersions(formDefinitionId: number): Promise<void> {
+    this.versionsDenied.set(false);
+    try {
+      this.versions.set(
+        await this.quiet.run(() => firstValueFrom(this.forms.listFormVersions(formDefinitionId))),
+      );
+    } catch (e) {
+      this.versions.set(null);
+      this.versionsDenied.set(e instanceof ApiError && e.status === 403);
+    }
+  }
+
+  protected async save(): Promise<boolean> {
     this.submitted.set(true);
     this.resetErrors();
 
@@ -356,7 +405,7 @@ export class StepEditPage implements HasUnsavedChanges {
     if (problems.length > 0) {
       this.summary.set(problems);
       focusFirstInvalid(this.injector);
-      return;
+      return false;
     }
 
     const body = {
@@ -377,14 +426,21 @@ export class StepEditPage implements HasUnsavedChanges {
           )
         : firstValueFrom(this.api.createStepDefinition(body)),
     );
-    if (!result) return;
+    if (!result) return false;
     this.notify.success(`Step ${result.title} saved`);
     if (this.isEdit()) {
       this.apply(result);
+      this.submitted.set(false);
+      this.announcement.set(`${result.title} saved.`);
     } else {
       this.saved = true;
-      await this.router.navigate(['/admin/steps', result.stepDefinitionId]);
+      // Lands on Inputs (the next thing to set up); the address is replaced so Back returns to where Create was opened.
+      await this.router.navigate(['/admin/steps', result.stepDefinitionId], {
+        queryParams: { tab: 'inputs' },
+        replaceUrl: true,
+      });
     }
+    return true;
   }
 
   protected async deactivate(): Promise<void> {
@@ -397,7 +453,8 @@ export class StepEditPage implements HasUnsavedChanges {
       ),
     );
     if (result) {
-      this.apply(result);
+      this.apply(result, true);
+      this.announcement.set(`${result.title} deactivated.`);
       this.notify.success('Step deactivated');
     }
   }
@@ -412,7 +469,8 @@ export class StepEditPage implements HasUnsavedChanges {
       ),
     );
     if (result) {
-      this.apply(result);
+      this.apply(result, true);
+      this.announcement.set(`${result.title} activated.`);
       this.notify.success('Step activated');
     }
   }
@@ -421,8 +479,59 @@ export class StepEditPage implements HasUnsavedChanges {
     return this.serverErrors()[key] ?? null;
   }
 
+  /** Cancel: a new step goes back to the list; an existing one drops the edits and shows what is saved. */
   protected cancel(): void {
-    void this.router.navigateByUrl(this.back.tree, { state: this.listCrumb.state });
+    if (!this.isEdit()) {
+      void this.router.navigateByUrl(this.back.tree, { state: this.listCrumb.state });
+      return;
+    }
+    this.revert();
+    this.announcement.set('Changes discarded.');
+  }
+
+  /** Edit in the header: the fields are always editable, so it takes the person to the title. */
+  protected async editHere(): Promise<void> {
+    if (this.current() !== 'details' && !(await this.select('details'))) return;
+    afterNextRender(() => document.getElementById('step-title')?.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  /** Edit inputs (header and Inputs tab): the form designer of the step; a page with edits asks first (the route's leave guard). */
+  protected async openInputs(): Promise<void> {
+    const o = this.original();
+    if (o)
+      await this.router.navigate(['/admin/steps', o.stepDefinitionId, 'form'], this.back.extras);
+  }
+
+  /**
+   * Opens a tab. Details with edits asks first (Stay, Leave, or Save and leave); leaving drops its edits. Resolves true when the tab was
+   * opened. The address is replaced, not added, so Back leaves the page.
+   */
+  protected async select(key: string): Promise<boolean> {
+    const to = stepTabOf(key, !this.isEdit());
+    if (to === this.current()) return true;
+    if (this.isEdit() && this.current() === 'details' && this.dirty()) {
+      const ok = await this.leave.ask({
+        label: this.saveForLeaveLabel,
+        run: () => this.saveForLeave(),
+      });
+      if (!ok) return false;
+      if (this.dirty()) this.revert();
+    }
+    await this.router.navigate([], {
+      queryParams: { tab: to === 'details' ? null : to },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    return true;
+  }
+
+  private revert(): void {
+    const o = this.original();
+    if (o) this.fill(o);
+    this.resetErrors();
+    this.submitted.set(false);
   }
 
   private resetErrors(): void {
@@ -451,13 +560,18 @@ export class StepEditPage implements HasUnsavedChanges {
     }
   }
 
-  private apply(step: StepDefinitionDetail): void {
-    this.original.set(step);
+  private fill(step: StepDefinitionDetail): void {
     this.title.set(step.title);
     this.description.set(step.description ?? '');
     this.instructions.set(step.instructions ?? '');
     this.documentationUrl.set(step.documentationUrl ?? '');
     this.tags.set([...step.tags]);
+  }
+
+  /** The record as the server has it. With `keepEdits` (Deactivate, Activate) the fields of Details keep what the person typed. */
+  private apply(step: StepDefinitionDetail, keepEdits = false): void {
+    this.original.set(step);
+    if (!keepEdits) this.fill(step);
   }
 
   /** Existing tags that match what was typed, for the tag box (the latest answer wins; failures just offer nothing). */

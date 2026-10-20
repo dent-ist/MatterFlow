@@ -1,0 +1,191 @@
+@if (flow.failed()) {
+  <mf-record-state
+    kind="step"
+    [state]="state()"
+    [busy]="flow.retrying()"
+    [focusHeading]="true"
+    (retried)="load()"
+  />
+} @else if (state() === 'loading') {
+  <span class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ flow.live() }}</span>
+  <mf-record-skeleton kind="step" [activeTab]="current()" />
+} @else {
+  <div class="sp" data-step-page>
+    <mf-record-header
+      kind="step"
+      [parents]="parents()"
+      [current]="headerName()"
+      [name]="headerName()"
+      [backTo]="backTo()"
+      [showStatus]="isEdit()"
+      [active]="original()?.isActive ?? true"
+      [actions]="headerActions()"
+    >
+      @if (isEdit() && original()?.description; as d) {
+        <span mfContext class="sp__ctx" [attr.title]="d" data-context>{{ d }}</span>
+      }
+    </mf-record-header>
+
+    <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
+      {{ announcement() || flow.live() }}
+    </div>
+
+    @if (original(); as o) {
+      <mf-work-strip label="Step summary" [items]="strip()" />
+    }
+
+    @if (conflict()) {
+      <div class="pg-alert" role="alert" data-conflict>
+        This step was changed by someone else.
+        <button type="button" class="mf-btn mf-btn--text" (click)="load()" data-reload>
+          Reload latest
+        </button>
+        (your unsaved edits will be discarded).
+      </div>
+    }
+    @if (summary().length > 0) {
+      <div class="pg-summary" role="alert" data-summary>
+        Fix the following to save:
+        <ul>
+          @for (message of summary(); track message) {
+            <li>{{ message }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <mf-tabs
+      label="Step sections"
+      idPrefix="st"
+      [tabs]="tabs()"
+      [selected]="current()"
+      (tabChange)="select($event)"
+    />
+    <div
+      class="sp__panel"
+      role="tabpanel"
+      id="st-panel"
+      [attr.aria-labelledby]="'st-tab-' + current()"
+    >
+      @switch (current()) {
+        @case ('details') {
+          <form
+            id="step-details-form"
+            class="pg-form"
+            novalidate
+            (submit)="$event.preventDefault(); save()"
+            data-details-tab
+          >
+            <mf-text-field
+              inputId="step-title"
+              label="Title"
+              [required]="true"
+              [maxLength]="200"
+              [error]="titleError()"
+              [(value)]="title"
+            />
+            <mf-text-field
+              inputId="step-description"
+              label="Description"
+              help="A short explanation shown in the workflow."
+              [maxLength]="1000"
+              [error]="fieldError('description')"
+              [(value)]="description"
+            />
+            <mf-tag-input
+              inputId="step-tags"
+              label="Tags"
+              placeholder="Add a tag"
+              help="Optional labels such as Relativity or Processing, used to find the step. Press Enter or comma to add one. Up to 20 tags, 40 characters each."
+              [error]="fieldError('tags')"
+              [suggestions]="tagSuggestions()"
+              (queryChange)="suggestTags($event)"
+              [(value)]="tags"
+            />
+            <mf-text-field
+              inputId="step-instructions"
+              label="Instructions"
+              help="The detailed procedure. Plain text with line breaks."
+              [multiline]="true"
+              [maxLength]="20000"
+              [error]="fieldError('instructions')"
+              [(value)]="instructions"
+            />
+            <mf-text-field
+              inputId="step-url"
+              label="Documentation URL"
+              help="Optional link to the full procedure, starting with https://"
+              [maxLength]="1000"
+              [error]="urlError()"
+              [(value)]="documentationUrl"
+            />
+          </form>
+          @if (showFooter()) {
+            <div class="pg-actions mf-form-actions--sticky" data-footer>
+              <button
+                type="submit"
+                form="step-details-form"
+                class="mf-btn mf-btn--primary"
+                [disabled]="busy()"
+                data-save
+              >
+                {{ busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create step' }}
+              </button>
+              <button
+                type="button"
+                class="mf-btn"
+                [disabled]="busy()"
+                (click)="cancel()"
+                data-cancel
+              >
+                Cancel
+              </button>
+            </div>
+          }
+        }
+        @case ('inputs') {
+          @if (original(); as o) {
+            <mf-step-inputs-tab
+              [facts]="facts()"
+              [versionId]="shownVersionId()"
+              [unreadable]="inputsUnreadable()"
+              [canEdit]="canEditInputs()"
+              (edit)="openInputs()"
+            />
+          }
+        }
+        @case ('used-by') {
+          <mf-step-used-by-tab [workflows]="usedBy()" />
+        }
+      }
+    </div>
+
+    @if (canSeeActivity() && original(); as o) {
+      <mf-activity-drawer
+        objectType="StepDefinition"
+        [objectId]="o.stepDefinitionId"
+        [name]="o.title"
+        [visible]="activityOpen()"
+        (visibleChange)="activityOpen.set($event)"
+      />
+    }
+  </div>
+
+  <mf-confirm-dialog
+    [title]="copy.title"
+    [confirmLabel]="copy.confirm"
+    [cancelLabel]="copy.cancel"
+    [danger]="copy.danger"
+    [busy]="busy()"
+    [(visible)]="deactivateOpen"
+    (confirmed)="deactivate()"
+  >
+    <p>
+      This step will be hidden from new workflow drafts. Published workflows that already use it are
+      not changed, and you can activate it again later.
+    </p>
+    @if (impact().text) {
+      <p data-impact>{{ impact().text }}</p>
+    }
+  </mf-confirm-dialog>
+}

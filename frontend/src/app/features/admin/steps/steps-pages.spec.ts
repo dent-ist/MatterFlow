@@ -3,9 +3,11 @@ import { Router, provideRouter } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 import {
+  FormsClient,
   StepDefinitionDetail,
   StepDefinitionSummary,
   StepDefinitionsClient,
+  WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import {
@@ -14,6 +16,7 @@ import {
   buttonByLabel,
   fakeQuery,
   ok,
+  openOverflow,
   provideFakeMe,
   settle,
   withPermissions,
@@ -87,6 +90,12 @@ async function setup(api: Record<string, unknown>) {
       MessageService,
       provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
       { provide: StepDefinitionsClient, useValue: api },
+      // The Step page also reads which workflows are active and the versions of the step's form (both quiet, so empty answers are enough).
+      {
+        provide: WorkflowsClient,
+        useValue: { listWorkflows: vi.fn().mockReturnValue(of({ items: [], total: 0 })) },
+      },
+      { provide: FormsClient, useValue: { listFormVersions: vi.fn().mockReturnValue(of([])) } },
     ],
   });
   await TestBed.inject(AuthStore).ensureLoaded();
@@ -317,7 +326,11 @@ describe('StepEditPage', () => {
     };
 
     expect(el.querySelector('[data-banner]')).toBeNull();
-    expect(el.querySelector('[data-inputs-state]')?.textContent).toContain('Save the step first');
+    expect(el.querySelector('h1')?.textContent).toContain('New step');
+    // Inputs and Used by wait for the saved step (disabled with a reason, still in the tab order).
+    expect(el.querySelector('[role=tab][data-tab="inputs"]')?.getAttribute('aria-disabled')).toBe(
+      'true',
+    );
 
     buttonByLabel(el, 'Create step')!.click();
     await settle(fixture);
@@ -341,10 +354,14 @@ describe('StepEditPage', () => {
       documentationUrl: 'https://sharepoint.example.firm/dedupe',
       tags: [],
     });
-    expect(navigate).toHaveBeenCalledWith(['/admin/steps', 12]);
+    // A saved step opens on its Inputs tab, the next thing to set up (the address is replaced).
+    expect(navigate).toHaveBeenCalledWith(['/admin/steps', 12], {
+      queryParams: { tab: 'inputs' },
+      replaceUrl: true,
+    });
   });
 
-  it('shows the snapshot banner, usage and the form designer link when editing', async () => {
+  it('shows the record header, strip and tabs of a saved step; no banner, no form footer without edits', async () => {
     const api = { getStepDefinition: vi.fn().mockReturnValue(ok(detail())) };
     await setup(api);
     const fixture = TestBed.createComponent(StepEditPage);
@@ -352,13 +369,19 @@ describe('StepEditPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    expect(el.querySelector('[data-banner]')?.textContent).toContain(
-      "doesn't change workflows that are already published",
+    expect(el.querySelector('h1')?.textContent).toContain('Deduplicate');
+    expect(el.querySelector('[data-status-badge], mf-active-badge')?.textContent).toContain(
+      'Active',
     );
+    expect(el.querySelector('[data-banner]')).toBeNull();
     expect(el.querySelector<HTMLInputElement>('#step-title')!.value).toBe('Deduplicate');
-    expect(el.querySelector('[data-usage]')?.textContent).toContain('Standard Processing v2');
-    expect(el.querySelector('[data-form-link]')?.getAttribute('href')).toBe('/admin/steps/4/form');
-    expect(el.querySelector('[data-inputs-state]')?.textContent).toContain('no inputs yet');
+    expect(
+      Array.from(el.querySelectorAll('[role=tab]')).map((t) =>
+        t.textContent!.replace(/\s+/g, ' ').trim(),
+      ),
+    ).toEqual(['Details', 'Inputs', 'Used by (1)']);
+    expect(el.querySelector('[data-footer]')).toBeNull();
+    expect(buttonByLabel(el, 'Deactivate')).toBeUndefined();
   });
 
   it('saves edits with the row version and reports a concurrency conflict', async () => {
@@ -377,6 +400,7 @@ describe('StepEditPage', () => {
     title.value = 'Dedupe';
     title.dispatchEvent(new Event('input'));
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    await settle(fixture);
 
     buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
@@ -401,6 +425,7 @@ describe('StepEditPage', () => {
     );
     title.value = 'Dedupe 2';
     title.dispatchEvent(new Event('input'));
+    await settle(fixture);
     buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-conflict]')).not.toBeNull();
@@ -419,7 +444,8 @@ describe('StepEditPage', () => {
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    buttonByLabel(el, 'Deactivate')!.click();
+    const menu = await openOverflow(fixture);
+    menu!.querySelector<HTMLElement>('[data-action="deactivate"]')!.click();
     await settle(fixture);
     const confirm = Array.from(document.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Deactivate step' && b.closest('p-dialog, .p-dialog'),
@@ -429,7 +455,10 @@ describe('StepEditPage', () => {
     await settle(fixture);
 
     expect(api.deactivateStepDefinition).toHaveBeenCalledWith(4, { rowVersion: 'BBBB' });
-    expect(buttonByLabel(el, 'Activate')).toBeDefined();
+    expect(el.querySelector('[data-status-badge], mf-active-badge')?.textContent).toContain(
+      'Inactive',
+    );
+    expect((await openOverflow(fixture))?.querySelector('[data-action="activate"]')).not.toBeNull();
   });
 });
 
@@ -662,6 +691,7 @@ describe('StepEditPage tags', () => {
     );
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    await settle(fixture);
 
     buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
@@ -695,6 +725,7 @@ describe('StepEditPage tags', () => {
     const title = el.querySelector<HTMLInputElement>('#step-title')!;
     title.value = 'Dedupe';
     title.dispatchEvent(new Event('input'));
+    await settle(fixture);
     buttonByLabel(el, 'Save changes')!.click();
     await settle(fixture);
     expect(el.querySelector('#step-tags-error')?.textContent).toContain('at most 40 characters');
@@ -711,7 +742,7 @@ describe('StepEditPage tags', () => {
     await settle(fixture);
     const crumbs = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll('nav[aria-label="Breadcrumb"] li'),
-    ).map((li) => li.textContent!.trim());
+    ).map((li) => li.querySelector('.mf-sr-only')?.textContent ?? li.textContent!.trim());
     expect(crumbs).toEqual(['Administration', 'Task Types', 'Workflow Steps', 'Deduplicate']);
   });
 });

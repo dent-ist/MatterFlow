@@ -1,0 +1,156 @@
+:host {
+  display: block;
+}
+
+.st {
+  display: grid;
+  gap: var(--mf-s3);
+  justify-items: start;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 720px;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+
+  > * {
+    min-width: 0;
+    max-width: 100%;
+    margin-block: 0;
+  }
+}
+
+.st__h {
+  margin: 0;
+  font-size: var(--mf-fs-h3);
+}
+
+.st__muted {
+  color: var(--mf-text-muted);
+}
+
+.st__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+}
+
+/* Used by: one 44 px line per workflow version, the link is the spring and the badges sit at the end. */
+.ub {
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+}
+
+.ub__row {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+  box-sizing: border-box;
+  min-height: var(--mf-grid-row-h, 44px);
+  padding: 2px var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.ub__link {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 18px;
+  color: var(--mf-link);
+}
+
+.ub__badges {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--mf-s1);
+}
+
+/* Inputs: label, type and required, rows of exactly 44 px (the label is cut at two lines, the whole text is the tooltip). */
+.it {
+  align-self: stretch;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--mf-border);
+
+  th,
+  td {
+    box-sizing: border-box;
+    height: var(--mf-grid-row-h, 44px);
+    padding: 2px var(--mf-s3);
+    border-bottom: 1px solid var(--mf-border);
+    text-align: left;
+    vertical-align: middle;
+    line-height: 18px;
+  }
+
+  thead th {
+    height: auto;
+    padding-block: var(--mf-s2);
+    background: var(--mf-surface-alt);
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-sm);
+    font-weight: 600;
+  }
+
+  tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+}
+
+.it__label {
+  width: 100%;
+  max-width: 0;
+  font-weight: 600;
+}
+
+.it__type {
+  width: 9rem;
+}
+
+.it__req {
+  width: 5.5rem;
+}
+
+/* A control name such as "Dropdown" is never broken in the middle of the word. */
+.it__type .it__clamp {
+  overflow-wrap: break-word;
+}
+
+.it__clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639.98px) {
+  .st {
+    padding: var(--mf-s4);
+  }
+
+  .it__type {
+    width: 7rem;
+  }
+
+  .it__req {
+    width: 4.5rem;
+  }
+}

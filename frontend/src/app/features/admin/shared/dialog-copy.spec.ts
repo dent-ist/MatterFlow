@@ -85,10 +85,23 @@ describe('impactLine (#362)', () => {
       '14 open tasks keep this type.',
     );
     expect(impactLine('deactivateStep', { drafts: 1 }).text).toBe(
-      '1 workflow draft contains this step.',
+      '1 workflow draft contains this step; it keeps it.',
     );
     expect(impactLine('deactivateStep', { drafts: 3 }).text).toBe(
-      '3 workflow drafts contain this step.',
+      '3 workflow drafts contain this step; they keep it.',
+    );
+    expect(impactLine('deactivateStep', { drafts: 2, publishedVersions: 1 }).text).toBe(
+      '2 workflow drafts contain this step; they keep it. 1 published workflow version uses it and is not changed.',
+    );
+    expect(impactLine('deactivateStep', { drafts: 0, publishedVersions: 3 }).text).toBe(
+      'No workflow draft contains this step. 3 published workflow versions use it and are not changed.',
+    );
+    expect(impactLine('deactivateStep', { drafts: 0, publishedVersions: 0 }).text).toBe(
+      'No workflow draft contains this step. No published workflow version uses it.',
+    );
+    // A number the API did not return is left out, never shown as 0.
+    expect(impactLine('deactivateStep', { drafts: null, publishedVersions: undefined }).text).toBe(
+      '',
     );
   });
 

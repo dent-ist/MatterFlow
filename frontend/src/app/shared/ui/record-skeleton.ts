@@ -260,6 +260,13 @@ export class RecordSkeleton {
         { key: 'form', label: 'Request form' },
       ];
     }
+    if (kind === 'step') {
+      return [
+        { key: 'details', label: 'Details' },
+        { key: 'inputs', label: 'Inputs' },
+        { key: 'used-by', label: 'Used by', count: '--' },
+      ];
+    }
     if (kind !== 'client' && kind !== 'matter' && kind !== 'project') return [];
     return recordTabs(
       kind,
@@ -287,6 +294,13 @@ export class RecordSkeleton {
         return [
           { label: 'Administration', plain: true },
           { label: 'Task Types', link: '/admin/task-types' },
+          { label: '' },
+        ];
+      case 'step':
+        return [
+          { label: 'Administration', plain: true },
+          { label: 'Task Types', link: '/admin/task-types' },
+          { label: 'Workflow Steps', link: '/admin/steps' },
           { label: '' },
         ];
       case 'client':

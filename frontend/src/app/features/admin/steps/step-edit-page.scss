@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.sp {
+  display: block;
+  min-width: 0;
+}
+
+.sp__ctx {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sp__panel {
+  min-width: 0;
+}

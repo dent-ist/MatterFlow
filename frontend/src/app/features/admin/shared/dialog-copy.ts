@@ -96,6 +96,8 @@ export interface ImpactFacts {
   names?: readonly string[] | null;
   /** Workflow drafts that contain the step. */
   drafts?: number | null;
+  /** Published workflow versions that use the step. */
+  publishedVersions?: number | null;
   /** The version being published or retired, and the one that replaces it. */
   versionNo?: number | null;
   newVersionNo?: number | null;
@@ -180,7 +182,14 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
         parts.push(
           facts.drafts === 0
             ? 'No workflow draft contains this step.'
-            : `${plural(facts.drafts, 'workflow draft contains', 'workflow drafts contain')} this step.`,
+            : `${plural(facts.drafts, 'workflow draft contains', 'workflow drafts contain')} this step; ${facts.drafts === 1 ? 'it keeps' : 'they keep'} it.`,
+        );
+      }
+      if (known(facts.publishedVersions)) {
+        parts.push(
+          facts.publishedVersions === 0
+            ? 'No published workflow version uses it.'
+            : `${plural(facts.publishedVersions, 'published workflow version uses', 'published workflow versions use')} it and ${facts.publishedVersions === 1 ? 'is' : 'are'} not changed.`,
         );
       }
       break;
