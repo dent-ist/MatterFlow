@@ -31,7 +31,7 @@ import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { SummaryStrip } from '../../../shared/work-queue/summary-strip';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
-import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
@@ -418,7 +418,7 @@ export class MatterDetailPage {
       this.pageTitle.pin(
         m
           ? recordTitle(m.matterRef + ' ' + m.name, recordTabLabel('matter', this.current()))
-          : 'Matter',
+          : recordStateTitle('matter', this.state()),
       );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());

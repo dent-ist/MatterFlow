@@ -21,7 +21,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
-import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
@@ -280,7 +280,9 @@ export class ProjectDetailPage {
     effect(() => {
       const p = this.state() === 'ready' ? this.project() : null;
       this.pageTitle.pin(
-        p ? recordTitle(p.name, recordTabLabel('project', this.current())) : 'Project',
+        p
+          ? recordTitle(p.name, recordTabLabel('project', this.current()))
+          : recordStateTitle('project', this.state()),
       );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());

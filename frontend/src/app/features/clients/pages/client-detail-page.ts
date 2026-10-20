@@ -19,7 +19,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ClientMatters } from './client-matters';
 import { ClientOverview } from './client-overview';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
-import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
@@ -232,7 +232,7 @@ export class ClientDetailPage {
       this.pageTitle.pin(
         c
           ? recordTitle(c.clientNumber + ' ' + c.name, recordTabLabel('client', this.current()))
-          : 'Client',
+          : recordStateTitle('client', this.state()),
       );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());

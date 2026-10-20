@@ -28,18 +28,11 @@ import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { DetailLayout } from '../../../shared/ui/detail-layout';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
-import { RecordState } from '../../../shared/ui/record-state';
+import { RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { AuthStore } from '../../../core/auth/auth.store';
 
 const WARNING_TEXT: Readonly<Record<string, string>> = {
   USER_NOT_IN_POD: "The assignee isn't a member of the assigned Pod. The change was saved.",
-};
-
-/** The tab title of a task that could not be shown. */
-const STATE_TITLE: Readonly<Record<string, string>> = {
-  notFound: 'Task not found',
-  forbidden: 'No access to this task',
-  error: 'Task could not be loaded',
 };
 
 const TABS: readonly string[] = ['workflow', 'assets', 'comments'];
@@ -299,7 +292,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
           ? this.store.activityOpen()
             ? `Activity - ${base}`
             : base
-          : (STATE_TITLE[state] ?? 'Task'),
+          : recordStateTitle('task', state),
       );
     });
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
