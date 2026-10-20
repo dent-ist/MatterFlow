@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, Injector, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
   PrioritiesClient,
@@ -6,6 +6,7 @@ import {
   StatusLabelView,
   StatusLabelsClient,
 } from '../../api/generated/api-client';
+import { AuthStore } from '../auth/auth.store';
 
 export type StatusCode = 'NEW' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 
@@ -29,6 +30,7 @@ export type LookupLoadState = 'idle' | 'loading' | 'ready' | 'error';
 export class LookupStore {
   private readonly prioritiesApi = inject(PrioritiesClient);
   private readonly statusApi = inject(StatusLabelsClient);
+  private readonly injector = inject(Injector);
 
   private readonly _priorities = signal<PriorityView[]>([]);
   private readonly _statusLabels = signal<StatusLabelView[]>([]);
@@ -82,15 +84,38 @@ export class LookupStore {
     this._statusLabels.set([...list].sort((a, b) => a.sortOrder - b.sortOrder));
   }
 
+  /**
+   * Which lists this person may read (AD-D #519): priorities with `Task.View` or `Priority.Manage`, status labels with `Task.View` or
+   * `StatusLabel.Manage`, so the Labels page of a person who manages only one of them asks for that one only (no refused request, no
+   * toast). Until the profile is loaded (specs, early calls) both lists are asked for, as before.
+   */
+  private permitted(): { priorities: boolean; statusLabels: boolean } {
+    let auth: AuthStore | null = null;
+    try {
+      auth = this.injector.get(AuthStore);
+    } catch {
+      auth = null;
+    }
+    if (!auth || auth.state() !== 'ready') return { priorities: true, statusLabels: true };
+    const view = auth.has('Task.View');
+    return {
+      priorities: view || auth.has('Priority.Manage'),
+      statusLabels: view || auth.has('StatusLabel.Manage'),
+    };
+  }
+
   private async load(): Promise<void> {
     this._state.set('loading');
+    const may = this.permitted();
     try {
+      if (!may.priorities && !may.statusLabels)
+        throw new Error('No permission to read the lookups.');
       const [priorities, labels] = await Promise.all([
-        firstValueFrom(this.prioritiesApi.listPriorities()),
-        firstValueFrom(this.statusApi.listStatusLabels()),
+        may.priorities ? firstValueFrom(this.prioritiesApi.listPriorities()) : null,
+        may.statusLabels ? firstValueFrom(this.statusApi.listStatusLabels()) : null,
       ]);
-      this.setPriorities(priorities);
-      this.setStatusLabels(labels);
+      if (priorities) this.setPriorities(priorities);
+      if (labels) this.setStatusLabels(labels);
       this._state.set('ready');
     } catch {
       this._state.set('error');

@@ -15,6 +15,7 @@ import { StatusLabelsPage } from './status-labels-page';
 
 describe('StatusLabelsPage', () => {
   let api: FakeStatusLabelsClient;
+  let priorityApi: FakePrioritiesClient;
   let fixture: ComponentFixture<StatusLabelsPage>;
   const el = (): HTMLElement => fixture.nativeElement;
   const row = (code: string): HTMLElement =>
@@ -30,12 +31,13 @@ describe('StatusLabelsPage', () => {
 
   async function open(...permissions: Permission[]): Promise<void> {
     api = new FakeStatusLabelsClient();
+    priorityApi = new FakePrioritiesClient();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: StatusLabelsClient, useValue: api },
-        { provide: PrioritiesClient, useValue: new FakePrioritiesClient() },
+        { provide: PrioritiesClient, useValue: priorityApi },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -60,6 +62,27 @@ describe('StatusLabelsPage', () => {
     input.form!.dispatchEvent(new Event('submit'));
     await settle();
   }
+
+  describe('as a status label manager only (AD-D #523)', () => {
+    beforeEach(() => open('StatusLabel.Manage'));
+
+    it('loads no priorities, offers no tab strip and shows no error', () => {
+      expect(priorityApi.calls).toEqual([]);
+      expect(el().querySelector('nav.tabs')).toBeNull();
+      expect(el().querySelector('[data-failure], [role="alert"]')).toBeNull();
+    });
+  });
+
+  describe('with both Labels permissions (AD-D #523)', () => {
+    beforeEach(() => open('Priority.Manage', 'StatusLabel.Manage'));
+
+    it('offers both tabs', () => {
+      const tabs = Array.from(el().querySelectorAll('nav.tabs a')).map((a) =>
+        a.textContent!.trim(),
+      );
+      expect(tabs).toEqual(['Priorities', 'Status labels']);
+    });
+  });
 
   describe('as a status label manager', () => {
     beforeEach(() => open('StatusLabel.Manage'));

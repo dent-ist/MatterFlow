@@ -23,6 +23,7 @@ import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { hasBothLabelTabs } from '../labels-tabs';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -69,6 +70,9 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
+
+  /** The tab strip is offered only to a person who may use both tabs (a lone tab needs no strip). */
+  protected readonly hasBothTabs = computed(() => hasBothLabelTabs(this.auth));
 
   protected readonly canManage = computed(() => this.auth.has('Priority.Manage'));
 

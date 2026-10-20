@@ -14,6 +14,7 @@ import { PrioritiesPage } from './priorities-page';
 
 describe('PrioritiesPage', () => {
   let api: FakePrioritiesClient;
+  let statusApi: FakeStatusLabelsClient;
   let fixture: ComponentFixture<PrioritiesPage>;
   const el = (): HTMLElement => fixture.nativeElement;
   const all = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = el()): T[] =>
@@ -50,12 +51,13 @@ describe('PrioritiesPage', () => {
 
   async function open(...permissions: Permission[]): Promise<void> {
     api = new FakePrioritiesClient();
+    statusApi = new FakeStatusLabelsClient();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: PrioritiesClient, useValue: api },
-        { provide: StatusLabelsClient, useValue: new FakeStatusLabelsClient() },
+        { provide: StatusLabelsClient, useValue: statusApi },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -245,6 +247,28 @@ describe('PrioritiesPage', () => {
 
       expect(el().querySelector('[data-failure]')!.textContent).toContain('Someone else changed');
       expect(api.calls.filter((c) => c === 'list').length).toBe(listsBefore + 1);
+    });
+  });
+
+  describe('as a priority manager only (AD-D #523)', () => {
+    beforeEach(() => open('Priority.Manage'));
+
+    it('loads no status labels, offers no tab strip and shows no error', () => {
+      expect(statusApi.calls).toEqual([]);
+      expect(el().querySelector('nav.tabs')).toBeNull();
+      expect(el().querySelector('[data-failure], [role="alert"]')).toBeNull();
+      expect(labels().length).toBe(4);
+    });
+  });
+
+  describe('with both Labels permissions (AD-D #523)', () => {
+    beforeEach(() => open('Priority.Manage', 'StatusLabel.Manage'));
+
+    it('offers both tabs', () => {
+      expect(all('nav.tabs a').map((a) => a.textContent!.trim())).toEqual([
+        'Priorities',
+        'Status labels',
+      ]);
     });
   });
 

@@ -4,10 +4,12 @@
     [crumbs]="[{ label: 'Administration' }, { label: 'Labels' }]"
     description="You can rename how statuses appear. You can't add or remove them."
   >
-    <nav class="tabs" aria-label="Priorities and status labels">
-      <a *mfHasPermission="'Priority.Manage'" routerLink="/admin/priorities">Priorities</a>
-      <a routerLink="/admin/status-labels" aria-current="page">Status labels</a>
-    </nav>
+    @if (hasBothTabs()) {
+      <nav class="tabs" aria-label="Priorities and status labels">
+        <a routerLink="/admin/priorities">Priorities</a>
+        <a routerLink="/admin/status-labels" aria-current="page">Status labels</a>
+      </nav>
+    }
   </mf-page-header>
 
   <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>

@@ -4,6 +4,7 @@ import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
+import { labelsTabGuard } from './labels-tabs';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { TASK_TYPE_TAB_PROVIDERS } from './task-types/task-types-providers';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
@@ -204,12 +205,19 @@ export const ADMIN_ROUTES: Routes = [
     import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
   ),
   customFieldForm('custom-fields/:ownerId/form'),
-  lazyGuarded('priorities', 'Labels - Priorities', 'Priority.Manage', () =>
-    import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
-  ),
-  lazyGuarded('status-labels', 'Labels - Status labels', 'StatusLabel.Manage', () =>
-    import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
-  ),
+  {
+    // The two tabs of Labels: each needs its own permission; the other tab's address falls back to the allowed one (labelsTabGuard).
+    ...lazyGuarded('priorities', 'Labels - Priorities', 'Priority.Manage', () =>
+      import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
+    ),
+    canActivate: [labelsTabGuard('priorities')],
+  },
+  {
+    ...lazyGuarded('status-labels', 'Labels - Status labels', 'StatusLabel.Manage', () =>
+      import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
+    ),
+    canActivate: [labelsTabGuard('status-labels')],
+  },
   lazy('audit', 'Audit Logs', 'Audit.View', () =>
     import('./audit/audit-page').then((m) => m.AuditPage),
   ),

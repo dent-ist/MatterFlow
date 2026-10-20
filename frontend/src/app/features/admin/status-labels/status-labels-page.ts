@@ -9,6 +9,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { StatusLabelView, StatusLabelsClient } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { NotificationService } from '../../../core/notify/notification.service';
@@ -22,6 +23,7 @@ import { LookupDialog } from '../../../shared/ui/lookup-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 import { dialogCopy } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
+import { hasBothLabelTabs } from '../labels-tabs';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -50,6 +52,10 @@ export class StatusLabelsPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(StatusLabelsClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
+  private readonly auth = inject(AuthStore);
+
+  /** The tab strip is offered only to a person who may use both tabs (a lone tab needs no strip). */
+  protected readonly hasBothTabs = computed(() => hasBothLabelTabs(this.auth));
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<StatusLabelView[]>([]);

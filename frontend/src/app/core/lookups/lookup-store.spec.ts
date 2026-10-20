@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { PrioritiesClient, StatusLabelsClient } from '../../api/generated/api-client';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../auth/auth-testing';
+import { AuthStore } from '../auth/auth.store';
+import { Permission } from '../auth/permissions';
 import { LookupStore } from './lookup-store';
 import { FakePrioritiesClient, FakeStatusLabelsClient, apiError } from './lookups-testing';
 
@@ -72,5 +75,51 @@ describe('LookupStore', () => {
     ]);
 
     expect(store.priorities().map((p) => p.label)).toEqual(['Critical', 'High']);
+  });
+
+  describe('permission-aware loading (AD-D #523)', () => {
+    async function storeFor(...permissions: Permission[]): Promise<LookupStore> {
+      TestBed.resetTestingModule();
+      priorities = new FakePrioritiesClient();
+      statuses = new FakeStatusLabelsClient();
+      TestBed.configureTestingModule({
+        providers: [
+          provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
+          { provide: PrioritiesClient, useValue: priorities },
+          { provide: StatusLabelsClient, useValue: statuses },
+        ],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      return TestBed.inject(LookupStore);
+    }
+
+    it('asks only for the priorities of a Priority.Manage-only person', async () => {
+      const own = await storeFor('Priority.Manage');
+      await own.ensureLoaded();
+      expect(priorities.calls).toEqual(['list']);
+      expect(statuses.calls).toEqual([]);
+      expect(own.state()).toBe('ready');
+    });
+
+    it('asks only for the status labels of a StatusLabel.Manage-only person', async () => {
+      const own = await storeFor('StatusLabel.Manage');
+      await own.ensureLoaded();
+      expect(priorities.calls).toEqual([]);
+      expect(statuses.calls).toEqual(['list']);
+      expect(own.state()).toBe('ready');
+    });
+
+    it('asks for both with Task.View and for neither without a permission', async () => {
+      const viewer = await storeFor('Task.View');
+      await viewer.ensureLoaded();
+      expect(priorities.calls).toEqual(['list']);
+      expect(statuses.calls).toEqual(['list']);
+
+      const nobody = await storeFor('Client.View');
+      await nobody.ensureLoaded();
+      expect(priorities.calls).toEqual([]);
+      expect(statuses.calls).toEqual([]);
+      expect(nobody.state()).toBe('error');
+    });
   });
 });

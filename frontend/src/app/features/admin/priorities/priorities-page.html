@@ -4,10 +4,12 @@
     [crumbs]="[{ label: 'Administration' }, { label: 'Labels' }]"
     description="Order from most to least urgent. Users see labels, not numbers."
   >
-    <nav class="tabs" aria-label="Priorities and status labels">
-      <a routerLink="/admin/priorities" aria-current="page">Priorities</a>
-      <a *mfHasPermission="'StatusLabel.Manage'" routerLink="/admin/status-labels">Status labels</a>
-    </nav>
+    @if (hasBothTabs()) {
+      <nav class="tabs" aria-label="Priorities and status labels">
+        <a routerLink="/admin/priorities" aria-current="page">Priorities</a>
+        <a routerLink="/admin/status-labels">Status labels</a>
+      </nav>
+    }
   </mf-page-header>
 
   <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
