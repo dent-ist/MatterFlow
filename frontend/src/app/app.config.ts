@@ -5,7 +5,12 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
+import {
+  TitleStrategy,
+  provideRouter,
+  withComponentInputBinding,
+  withNavigationErrorHandler,
+} from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 
@@ -18,6 +23,7 @@ import { HttpIdentityAdminApi } from './core/identity-admin/http-identity-admin-
 import { IdentityAdminApi } from './core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from './core/identity-admin/in-memory-identity-admin-api';
 import { MF_HTTP_INTERCEPTORS } from './core/http/interceptors';
+import { handleNavigationError } from './shared/layout/nav-error';
 import { MfPreset } from './core/theme/mf-preset';
 import { suppressImplicitAutofocus } from './core/theme/no-autofocus';
 import { MfTitleStrategy } from './core/title/page-title';
@@ -26,7 +32,11 @@ import { environment } from '../environments/environment';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes, withComponentInputBinding()),
+    provideRouter(
+      routes,
+      withComponentInputBinding(),
+      withNavigationErrorHandler(handleNavigationError),
+    ),
     provideHttpClient(withInterceptors(MF_HTTP_INTERCEPTORS)),
     { provide: TitleStrategy, useExisting: MfTitleStrategy },
     MessageService,
