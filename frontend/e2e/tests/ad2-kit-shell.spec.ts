@@ -228,8 +228,10 @@ test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554
         expect(await axeViolations(page), `${tab.key} at ${size.width}`).toEqual([]);
         await shot(page, `shell-${tab.key}`);
       }
-      // The last row's menu opens in view (floating), one Tab stop per row, and axe is clean with it open.
-      await page.goto('/admin/task-types');
+      // The last row's menu opens in view (floating), one Tab stop per row, and axe is clean with it open. The list is limited to the rows
+      // seeded above: on a long list the rows that scroll under the sticky header are part-covered links, which axe reports whatever the
+      // list is (the data volume of the shared database must not decide this test).
+      await page.goto(`/admin/task-types?name=${token}`);
       await page.locator('tbody tr[data-row], li.rc').first().waitFor();
       const menus = page.locator('[data-overflow]');
       const last = size.width >= 640 ? menus.last() : menus.first();
