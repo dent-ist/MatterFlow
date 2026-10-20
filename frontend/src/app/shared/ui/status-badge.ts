@@ -31,16 +31,19 @@ const STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
         [attr.data-status]="code()"
       >
         <i class="pi" [class]="style().icon" aria-hidden="true"></i>
-        {{ t }}
+        <span class="txt">{{ t }}</span>
       </span>
     }
   `,
   styles: `
     :host {
       display: inline-flex;
+      max-width: 100%;
     }
     .badge {
       display: inline-flex;
+      min-width: 0;
+      max-width: 100%;
       align-items: center;
       gap: var(--mf-s1);
       padding: 2px var(--mf-s2);
@@ -51,7 +54,14 @@ const STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
       line-height: 1.5;
       white-space: nowrap;
     }
+    /* A long label ends in an ellipsis inside a narrow cell or card instead of spilling out of the badge (admin lists, #622). */
+    .txt {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .pi {
+      flex: none;
       font-size: var(--mf-fs-xs);
     }
     .pi-circle-fill {

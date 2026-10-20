@@ -490,7 +490,7 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
           problems.push(`${url}: ${e.message.split('\n')[0]}`),
         );
         if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
-        const tabLinks = await page.locator('#mf-main nav.tabs a').count();
+        const tabLinks = await page.locator('#mf-main [role="tab"]').count();
         if (mine && other ? tabLinks !== 2 : tabLinks !== 0)
           problems.push(`${url}: ${tabLinks} tab links for Priority=${canPr}, Status=${canSl}`);
         // The page lists its rows, so the data loaded (not an empty error state).

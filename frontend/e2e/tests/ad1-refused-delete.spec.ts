@@ -33,24 +33,25 @@ async function noSideScroll(page: Page, what: string): Promise<void> {
 }
 
 test.describe('a refused delete is reported once (#537)', () => {
-  test('Priorities: one inline message, no toast, axe clean at four widths', async ({
+  test('Priorities: one inline message, no toast, axe clean at four widths (a delete the server refuses after the page offered it)', async ({
     page,
     seed,
   }) => {
-    const label = `Used ${uid().slice(0, 6)}`;
-    const priority = await seed.admin.post('/api/v1/priorities', {
-      label,
-      color: 'normal',
-      isActive: true,
-    });
     const world = await seed.world();
-    await seed.task(world, { priorityId: priority.id });
-
     for (const size of SIZES) {
+      const label = `Used ${uid().slice(0, 6)}`;
+      const priority = await seed.admin.post('/api/v1/priorities', {
+        label,
+        color: 'normal',
+        isActive: true,
+      });
       await page.setViewportSize(size);
       await page.goto('/admin/priorities');
-      const row = page.locator(`[data-row="${label}"]`);
-      await row.getByRole('button', { name: `Delete ${label}` }).click();
+      // Unused when the page loaded, so Delete is offered; a task is filed on it before the confirm (the race the server must refuse).
+      const row = page.locator(`tbody tr[data-row="${label}"], li.rc:has-text("${label}")`);
+      await row.getByRole('button', { name: /^Actions for / }).click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await seed.task(world, { priorityId: priority.id });
       await page.getByRole('dialog').getByRole('button', { name: 'Delete priority' }).click();
 
       const failure = page.locator('[data-failure]');
@@ -61,7 +62,8 @@ test.describe('a refused delete is reported once (#537)', () => {
       await expect(toasts(page)).toHaveCount(0);
       await expect(page.getByText("so it can't be deleted")).toHaveCount(1);
       await noSideScroll(page, `priorities at ${size.width}`);
-      if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
+      expect(axeAvailable(), 'axe-core is available').toBe(true);
+      expect(await axeViolations(page)).toEqual([]);
       await shot(page, 'refused-delete-priorities');
     }
   });
@@ -90,7 +92,8 @@ test.describe('a refused delete is reported once (#537)', () => {
       await expect(toasts(page)).toHaveCount(0);
       await expect(page.getByText("so it can't be deleted")).toHaveCount(1);
       await noSideScroll(page, `link roles at ${size.width}`);
-      if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
+      expect(axeAvailable(), 'axe-core is available').toBe(true);
+      expect(await axeViolations(page)).toEqual([]);
       await shot(page, 'refused-delete-link-roles');
     }
   });

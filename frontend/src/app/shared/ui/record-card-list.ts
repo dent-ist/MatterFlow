@@ -255,6 +255,7 @@ export class RecordCardList {
       class="rc-name"
       [routerLink]="link()"
       [state]="state()"
+      [queryParams]="queryParams()"
       [attr.title]="name()"
       [mfRowLink]="list()"
       [rowKey]="rowKey()"
@@ -271,6 +272,8 @@ export class RecordCard {
   readonly name = input.required<string>();
   /** Router commands to the record. */
   readonly link = input.required<string | unknown[]>();
+  /** Query parameters of the link (a card that opens a dialog of its own list page, `?edit=<id>`). */
+  readonly queryParams = input<Record<string, string | number> | undefined>(undefined);
   /** The list this card belongs to and the record's key: Back to the list then focuses this link (#281). Leave empty to opt out. */
   readonly list = input('');
   readonly rowKey = input<string | number>('');

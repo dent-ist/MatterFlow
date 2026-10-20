@@ -1,0 +1,47 @@
+/* Priorities on the admin grid contract (#605): only what the kit stylesheet does not cover. */
+:host {
+  display: block;
+}
+
+.pr-failure {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  margin: var(--mf-s2) 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+/* The name cell: the priority badge (the link that opens Edit) and the Default badge on one line. */
+.pr-name {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  min-width: 0;
+}
+
+.pr-open {
+  display: inline-flex;
+  min-width: 0;
+  border-radius: var(--mf-radius);
+  text-decoration: none;
+}
+
+.pr-open:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+
+.pr-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: var(--mf-s1);
+  border: 1px solid var(--mf-border);
+  border-radius: 3px;
+  vertical-align: -2px;
+}
+
+tr[draggable='true'] {
+  cursor: grab;
+}

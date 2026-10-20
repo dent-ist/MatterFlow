@@ -1,27 +1,8 @@
 @use '../../../styles/form-mixins' as m;
 
-/* Admin lookup lists (priorities, status labels, link roles): full content width like every other table (UXR-33). */
+/* Admin lookup lists that are not on the kit grid yet (link roles, the Task Types lists; #658 removes this file): full content width (UXR-33). Priorities and Status labels moved to the grid contract (#605, #622). */
 :host {
   display: block;
-}
-
-.tabs {
-  display: flex;
-  gap: var(--mf-s1);
-  margin-top: var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
-
-  a {
-    padding: var(--mf-s2) var(--mf-s4);
-    border-bottom: 3px solid transparent;
-    color: var(--mf-text);
-    text-decoration: none;
-
-    &[aria-current='page'] {
-      border-bottom-color: var(--mf-primary);
-      font-weight: 600;
-    }
-  }
 }
 
 .muted {
@@ -78,10 +59,6 @@
   }
 }
 
-.code {
-  font-family: var(--mf-font-mono);
-}
-
 .order {
   white-space: nowrap;
 
@@ -108,25 +85,12 @@
   gap: var(--mf-s2);
 }
 
-/* Inline editors inside table rows: the shared control look at the compact height. */
-.text,
-.select {
+/* Inline editors inside table rows (Task Types, Link roles): the shared control look at the compact height. */
+.text {
   @include m.mf-control;
   @include m.mf-control-states;
   min-height: var(--mf-row-h-compact);
   padding: 0 var(--mf-s2);
-}
-
-.swatch {
-  width: 40px;
-  height: 32px;
-  padding: 0;
-}
-
-.color {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s2);
 }
 
 .check {
@@ -179,10 +143,4 @@
   margin: var(--mf-s2) 0 0;
   color: var(--mf-danger);
   font-size: var(--mf-fs-sm);
-}
-
-/* The helper line of the rename dialog (#564). */
-.rename-help {
-  margin: 0;
-  color: var(--mf-text-muted);
 }

@@ -1,88 +1,120 @@
-<mf-fixed-page>
-  <mf-page-header
-    heading="Labels"
-    [crumbs]="[{ label: 'Administration' }, { label: 'Labels' }]"
-    description="You can rename how statuses appear. You can't add or remove them."
-  >
-    @if (hasBothTabs()) {
-      <nav class="tabs" aria-label="Priorities and status labels">
-        <a routerLink="/admin/priorities">Priorities</a>
-        <a routerLink="/admin/status-labels" aria-current="page">Status labels</a>
-      </nav>
-    }
-  </mf-page-header>
+<div class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 
-  <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+@if (failure()) {
+  <p class="sl-failure" role="alert" data-failure>
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
+  </p>
+}
 
-  @if (failure()) {
-    <p class="error" role="alert" data-failure>{{ failure() }}</p>
-  }
-
-  <mf-list-state noun="status labels" [state]="state()" [columns]="3" (retry)="load()">
-    <div class="mf-table-wrap" mfScrollArea="Status labels list">
-      <div class="mf-scroll">
-        <table class="grid" data-status-labels>
-          <caption class="sr-only">
-            Task statuses and their display labels
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Internal code</th>
-              <th scope="col">Preview</th>
-              <th scope="col">Display label</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.code) {
-              <tr [attr.data-row]="row.code">
-                <th scope="row" class="code">{{ row.code }}</th>
-                <td>
-                  <mf-status-badge [code]="row.code" [label]="row.displayLabel" />
-                </td>
-                <td>
-                  <span>{{ row.displayLabel }}</span>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    *mfHasPermission="'StatusLabel.Manage'"
-                    [attr.aria-label]="'Rename ' + row.displayLabel"
-                    (click)="startEdit(row)"
-                    data-rename
-                  >
-                    Rename
-                  </button>
-                </td>
-              </tr>
+@if (phone()) {
+  <mf-admin-card-list
+    noun="status labels"
+    label="Status labels"
+    [items]="rows()"
+    [spec]="cardOf"
+    [state]="ls.state()"
+    [empty]="ls.empty()"
+    [filtered]="false"
+    (retry)="load()"
+  />
+} @else {
+  <div class="mf-table-wrap" mfScrollArea="Status labels list">
+    <div class="mf-scroll">
+      <table class="mf-grid" id="labels-table" data-status-labels>
+        <caption class="mf-sr-only">
+          Task statuses and their display labels
+        </caption>
+        <thead>
+          <tr>
+            <th class="mf-cell-name" scope="col">Status</th>
+            @if (canViewTasks()) {
+              <th class="mf-cell-num" scope="col">Tasks</th>
             }
-          </tbody>
-        </table>
-      </div>
+            <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody
+          mfGridBody
+          noun="status labels"
+          [columnSpec]="columnSpec()"
+          [state]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="false"
+          (retry)="load()"
+        >
+          @for (row of rows(); track row.code) {
+            <tr [attr.data-row]="row.code">
+              <td class="mf-cell-name">
+                <span class="sl-name">
+                  <a
+                    class="sl-open"
+                    mfRowLink="status-labels"
+                    [rowKey]="row.code"
+                    [routerLink]="['/admin/status-labels']"
+                    [queryParams]="{ edit: row.code }"
+                    [attr.title]="'Internal code: ' + row.code"
+                    data-edit
+                  >
+                    <mf-status-badge [code]="row.code" [label]="row.displayLabel" />
+                  </a>
+                  @if (wasName(row); as was) {
+                    <span class="sl-was" data-was>was {{ was }}</span>
+                  }
+                </span>
+              </td>
+              @if (canViewTasks()) {
+                <td class="mf-cell-num" data-tasks>
+                  @if (hasCount(row)) {
+                    @if (row.taskCount! > 0) {
+                      <a
+                        mfRowStop
+                        routerLink="/tasks"
+                        [queryParams]="tasksQuery(row.code)"
+                        [attr.aria-label]="countSentence(row)"
+                        [attr.title]="countSentence(row)"
+                        >{{ row.taskCount }}</a
+                      >
+                    } @else {
+                      <span class="sl-zero" [attr.title]="countSentence(row)">0</span>
+                    }
+                  }
+                </td>
+              }
+              <td class="mf-cell-actions">
+                @if (menus().get(row.code); as menu) {
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-  </mf-list-state>
+  </div>
+}
 
-  <mf-lookup-dialog
-    [title]="renameCopy().title"
-    [submitLabel]="renameCopy().confirm"
-    [cancelLabel]="renameCopy().cancel"
-    [visible]="editingCode() !== null"
-    (visibleChange)="!$event && cancelEdit()"
-    [dirty]="isDirty()"
-    [saving]="busy()"
-    [error]="saveError()"
-    [summary]="summary()"
-    (save)="commit()"
-    (cancel)="cancelEdit()"
-  >
-    <p class="rename-help" data-rename-help>{{ renameCopy().body }}</p>
-    <mf-text-field
-      inputId="status-label-name"
-      label="Display label"
-      [required]="true"
-      [maxLength]="limits.statusLabel"
-      [counter]="true"
-      [error]="fieldError()"
-      [(value)]="draft"
-    />
-    <mf-status-badge mfPreview [code]="editingCode() ?? ''" [label]="draft().trim() || 'Label'" />
-  </mf-lookup-dialog>
-</mf-fixed-page>
+<mf-lookup-dialog
+  [title]="renameCopy().title"
+  [submitLabel]="renameCopy().confirm"
+  [cancelLabel]="renameCopy().cancel"
+  [visible]="editingCode() !== null"
+  (visibleChange)="onDialogOpen($event)"
+  [dirty]="isDirty()"
+  [saving]="busy()"
+  [error]="saveError()"
+  [summary]="summary()"
+  (save)="commit()"
+  (cancel)="closeDialog()"
+>
+  <p class="sl-help" data-rename-help>{{ renameCopy().body }}</p>
+  <mf-text-field
+    inputId="status-label-name"
+    label="Display label"
+    [required]="true"
+    [maxLength]="limits.statusLabel"
+    [counter]="true"
+    [error]="fieldError()"
+    [(value)]="draft"
+  />
+  <mf-status-badge mfPreview [code]="editingCode() ?? ''" [label]="draft().trim() || 'Label'" />
+</mf-lookup-dialog>

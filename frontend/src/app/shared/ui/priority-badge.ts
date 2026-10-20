@@ -43,16 +43,19 @@ export function priorityColors(tone: string | null | undefined): { bg: string; f
             <span class="bar" [class.on]="on"></span>
           }
         </span>
-        {{ t }}
+        <span class="txt">{{ t }}</span>
       </span>
     }
   `,
   styles: `
     :host {
       display: inline-flex;
+      max-width: 100%;
     }
     .badge {
       display: inline-flex;
+      min-width: 0;
+      max-width: 100%;
       align-items: center;
       gap: var(--mf-s1);
       padding: 2px var(--mf-s2);
@@ -63,8 +66,15 @@ export function priorityColors(tone: string | null | undefined): { bg: string; f
       line-height: 1.5;
       white-space: nowrap;
     }
+    /* A long label ends in an ellipsis inside a narrow cell instead of spilling out of the badge (admin lists, #605). */
+    .txt {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .bars {
       display: inline-flex;
+      flex: none;
       align-items: flex-end;
       gap: 1px;
       height: 10px;

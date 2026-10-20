@@ -251,17 +251,26 @@ export class LookupDialog {
 
   /**
    * `DialogFocus` returns focus too, but the leave question ("Stay / Leave") closes at the same moment and takes it to a button that is
-   * gone; once every dialog layer is away, a focus that fell to the page body goes back to the opener.
+   * gone; once every dialog layer is away, a focus that fell to the page body (or to the page's `main`, where the browser puts it after a
+   * navigation that only changed the address, the `?edit=` of a Labels dialog) goes back to the opener.
    */
   private restoreFocus(): void {
     let tries = 0;
+    const lost = (): boolean => {
+      const active = document.activeElement;
+      return !active || active === document.body || active.matches('main');
+    };
     const settle = (): void => {
       if (document.querySelector('.p-dialog-mask') && tries++ < 40) {
         setTimeout(settle, 50);
         return;
       }
-      const active = document.activeElement;
-      if ((!active || active === document.body) && this.opener?.isConnected) this.opener.focus();
+      if (lost() && this.opener?.isConnected) this.opener.focus();
+      // The leave question's own focus restore runs a tick after the last mask is gone and may take the focus to <main> (its opener, the
+      // Cancel button in this dialog, no longer exists): look once more after it, so the focus ends on the control that opened this dialog.
+      setTimeout(() => {
+        if (lost() && this.opener?.isConnected) this.opener.focus();
+      }, 150);
     };
     setTimeout(settle, 0);
   }

@@ -135,6 +135,13 @@ function usersRolesMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     : null;
 }
 
+/** `priorities` and `status-labels` are the two tabs of the Labels page; `:tab` is the segment. */
+function labelsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  return segments.length === 1 && ['priorities', 'status-labels'].includes(segments[0].path)
+    ? { consumed: segments, posParams: { tab: segments[0] } }
+    : null;
+}
+
 /** `task-types`, `workflows` and `steps` are the three tabs of one page (the Task Types menu item); `:tab` is the segment. */
 function taskTypesTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return segments.length === 1 && ['task-types', 'workflows', 'steps'].includes(segments[0].path)
@@ -206,17 +213,14 @@ export const ADMIN_ROUTES: Routes = [
   ),
   customFieldForm('custom-fields/:ownerId/form'),
   {
-    // The two tabs of Labels: each needs its own permission; the other tab's address falls back to the allowed one (labelsTabGuard).
-    ...lazyGuarded('priorities', 'Labels - Priorities', 'Priority.Manage', () =>
-      import('./priorities/priorities-page').then((m) => m.PrioritiesPage),
-    ),
-    canActivate: [labelsTabGuard('priorities')],
-  },
-  {
-    ...lazyGuarded('status-labels', 'Labels - Status labels', 'StatusLabel.Manage', () =>
-      import('./status-labels/status-labels-page').then((m) => m.StatusLabelsPage),
-    ),
-    canActivate: [labelsTabGuard('status-labels')],
+    // /admin/priorities and /admin/status-labels are the two tabs of one page (Labels, #593); the component stays alive when the tab
+    // changes. Each tab needs its own permission: the other tab's address falls back to the allowed one (labelsTabGuard).
+    matcher: labelsTabsMatcher,
+    title: (route) =>
+      route.params['tab'] === 'status-labels' ? 'Labels - Status labels' : 'Labels - Priorities',
+    canActivate: [labelsTabGuard()],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./labels-admin-page').then((m) => m.LabelsAdminPage),
   },
   lazy('audit', 'Audit Logs', 'Audit.View', () =>
     import('./audit/audit-page').then((m) => m.AuditPage),

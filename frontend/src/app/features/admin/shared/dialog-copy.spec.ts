@@ -280,10 +280,10 @@ describe('admin kit dialogs (#542)', () => {
     expect(kit.setDefaultPriority.danger).toBe(false);
     expect(dialogCopy.setDefaultPriority().body).toBe('New tasks start with it.');
     expect(kit.renameStatusLabel.body).toBe(
-      "Only the name changes. The code IN_PROGRESS and every task's status stay as they are.",
+      "Only the name changes. The code IN_PROGRESS and every task's status stay as they are. The name shows in the Task Queue, My Work, the Dashboard and on task pages.",
     );
     expect(dialogCopy.renameStatusLabel().body).toBe(
-      "Only the name changes. Every task's status stays as it is.",
+      "Only the name changes. Every task's status stays as it is. The name shows in the Task Queue, My Work, the Dashboard and on task pages.",
     );
     expect(kit.renameStatusLabel.danger).toBe(false);
   });

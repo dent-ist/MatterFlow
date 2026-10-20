@@ -34,20 +34,20 @@ async function noSideScroll(page: Page, what: string): Promise<void> {
 }
 
 const rename = (page: Page, code: string) =>
-  page.locator(`[data-row="${code}"]`).locator('[data-rename]');
+  page.locator(`[data-row="${code}"]`).locator('[data-edit]');
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Rename status label' });
 const field = (page: Page) => page.locator('#status-label-name');
 
 test.describe('lookup dialog on the Status labels rename (#564)', () => {
-  test('opens on the first field, previews live, saves, and puts focus back on Rename', async ({
+  test('opens on the first field, previews live, saves, and puts focus back on the status name', async ({
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/status-labels');
     const opener = rename(page, 'ON_HOLD');
-    const original = (await page.locator('[data-row="ON_HOLD"] td').last().innerText())
-      .replace('Rename', '')
-      .trim();
+    const original = (
+      await page.locator('[data-row="ON_HOLD"] mf-status-badge').innerText()
+    ).trim();
     const name = `Waiting ${uid().slice(0, 6)}`;
     try {
       await opener.click();
@@ -139,8 +139,8 @@ test.describe('lookup dialog on the Status labels rename (#564)', () => {
       page,
     }) => {
       await page.setViewportSize(size);
-      await page.goto('/admin/status-labels');
-      await rename(page, 'IN_PROGRESS').click();
+      // The dialog is opened by the address (`?edit=<code>`, what the name link and the phone card go to): below 640 px the page shows cards.
+      await page.goto('/admin/status-labels?edit=IN_PROGRESS');
       await expect(dialog(page)).toBeVisible();
       await field(page).fill('');
       await dialog(page).getByRole('button', { name: 'Save name' }).click();

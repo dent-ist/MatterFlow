@@ -67,6 +67,8 @@ export interface AdminCardSpec {
   title: string;
   /** Router commands to the record. */
   link: string | unknown[];
+  /** Query parameters of the link, for a record that opens in a dialog of its own list page (`{ edit: id }`). */
+  queryParams?: Record<string, string | number>;
   /** The record's key: Back to the list focuses this card's link (the list-return rule). */
   rowKey: string | number;
   /** Router state for the link (the list address). */
@@ -170,6 +172,7 @@ export function columnDropOrder<const K extends string>(ids: readonly K[]): Reco
         <mf-record-card
           [name]="c.spec.title"
           [link]="c.spec.link"
+          [queryParams]="c.spec.queryParams"
           [state]="c.spec.state"
           [list]="listId()"
           [rowKey]="c.spec.rowKey"

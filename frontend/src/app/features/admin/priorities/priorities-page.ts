@@ -1,84 +1,89 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Injector,
   OnInit,
+  afterNextRender,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PrioritiesClient, PriorityView } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { hasReadableText, isHexColor } from '../../../shared/ui/color-contrast';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
-import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { PageHeader } from '../../../shared/ui/page-header';
-import { hasBothLabelTabs } from '../labels-tabs';
-import { refusedDeleteMessage } from '../shared/dialog-copy';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
+import { adminListState } from '../../../shared/ui/admin-list-state';
+import { ActiveBadge, Badge } from '../../../shared/ui/badge';
+import { priorityColors, PriorityBadge } from '../../../shared/ui/priority-badge';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { phoneCards } from '../../../shared/ui/record-card-list';
+import { RowLink } from '../../../shared/ui/row-nav';
+import { rowActions } from '../../../shared/ui/row-actions';
+import { TaskCount } from '../../../shared/ui/task-count';
+import { AdminTabCounts } from '../admin-tabs';
+import { dialogCopy, refusedDeleteMessage } from '../shared/dialog-copy';
+import { PriorityDialog, PriorityDraft, priorityColorName } from './priority-dialog';
+
+export { CONTRAST_MESSAGE, PRIORITY_COLOR_TOKENS } from './priority-dialog';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Moves focus to an invalid field after a failed submit (the message is announced by its role=alert). */
-function focusById(id: string): void {
-  queueMicrotask(() => document.getElementById(id)?.focus());
-}
-
-/** Color choices offered in the picker; `custom` reveals the color input. */
-export const PRIORITY_COLOR_TOKENS = [
-  { value: 'critical', label: 'Critical red' },
-  { value: 'high', label: 'High amber' },
-  { value: 'normal', label: 'Normal gray' },
-  { value: 'low', label: 'Low gray' },
-  { value: 'neutral', label: 'Neutral' },
-] as const;
-
-export const CONTRAST_MESSAGE = 'Text must be readable: 4.5:1 minimum';
+/** The columns of the grid (#605): the optional ones leave at the widths of the grid contract (Color at 900, Order at 768). */
+const DROP_COLOR = 900;
+const DROP_ORDER = 768;
 
 /**
- * Admin: Priorities (UX S18). Labels only (users never see numbers); drag a row or use the arrow buttons to order from most to
- * least urgent; exactly one default; existing tasks keep a deactivated priority. Needs `Priority.Manage`.
+ * Admin: Priorities (UX S18), the first tab of the Labels page (`LabelsAdminPage` holds the header, tabs and the New priority action).
+ * Labels only (users never see numbers). The grid (#605) shows Order, the priority badge with a Default badge, Color, Open tasks, Status
+ * and ONE row menu; a pointer drag on a row still reorders (as shipped; no handle, no shortcut). Everything else is in the row menu
+ * (#614): Edit (a dialog, #609), Move up and Move down (announced politely, focus stays on the menu button), Set as default (one-line
+ * confirm), Deactivate with the impact line or Activate, and Delete only for a priority no open task uses (#618). The default priority
+ * is neither deactivated nor deleted and says why in the menu. Existing tasks keep a deactivated priority. Needs `Priority.Manage`.
  */
 @Component({
   selector: 'mf-priorities-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FixedPage,
-    ScrollArea,
-    PageHeader,
-    ListState,
-    ConfirmDialog,
-    FormsModule,
     RouterLink,
-    Button,
-    HasPermissionDirective,
+    ActionMenu,
+    ActiveBadge,
+    AdminCardList,
+    Badge,
+    ConfirmDialog,
+    GridBody,
+    ScrollArea,
     PriorityBadge,
+    PriorityDialog,
+    RowLink,
+    TaskCount,
   ],
   templateUrl: './priorities-page.html',
-  styleUrl: '../admin-lookup.scss',
+  styleUrl: './priorities-page.scss',
 })
 export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(PrioritiesClient);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly report = AdminTabCounts.report('priorities');
 
-  /** The tab strip is offered only to a person who may use both tabs (a lone tab needs no strip). */
-  protected readonly hasBothTabs = computed(() => hasBothLabelTabs(this.auth));
+  /** `?edit=<id>` opens Edit priority, `?edit=new` opens New priority (the name link, the row menu and the New button all go there). */
+  readonly edit = input<string | undefined>(undefined);
 
   protected readonly canManage = computed(() => this.auth.has('Priority.Manage'));
-
-  protected readonly colorTokens = PRIORITY_COLOR_TOKENS;
-  protected readonly contrastMessage = CONTRAST_MESSAGE;
+  protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
+  protected readonly phone = phoneCards();
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<PriorityView[]>([]);
@@ -86,29 +91,58 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   protected readonly failure = signal('');
   /** Polite live-region text for reorder and save results. */
   protected readonly announcement = signal('');
+  protected readonly ls = adminListState({ state: this.state, rows: this.rows });
 
-  protected readonly editingId = signal<number | null>(null);
-  protected readonly draftLabel = signal('');
-  protected readonly editError = signal('');
-  /** The priority the delete dialog is asking about. */
+  protected readonly dropColor = DROP_COLOR;
+  protected readonly dropOrder = DROP_ORDER;
+  protected readonly columnSpec = computed(() => [
+    { cls: 'mf-cell-num', bone: '1.5rem', drop: DROP_ORDER },
+    { cls: 'mf-cell-name', bone: '9rem' },
+    { cls: 'mf-cell-muted', bone: '6rem', drop: DROP_COLOR },
+    ...(this.canViewTasks() ? [{ cls: 'mf-cell-num', bone: '2rem' }] : []),
+    { cls: 'mf-cell-badge', bone: '4.5rem' },
+    { cls: 'mf-cell-actions', bone: '1.5rem' },
+  ]);
+
+  // ---- the dialogs
+
+  /** The priority the Edit dialog is about (null: a new one, or the dialog is closed). */
+  protected readonly editing = computed(() => {
+    const id = this.edit();
+    return id && id !== 'new' ? (this.rows().find((r) => String(r.id) === id) ?? null) : null;
+  });
+  protected readonly dialogOpen = computed(
+    () =>
+      this.canManage() &&
+      this.state() === 'ready' &&
+      (this.edit() === 'new' || this.editing() !== null),
+  );
+  protected readonly labelError = signal('');
+  protected readonly saveError = signal('');
+
+  protected readonly deactivating = signal<PriorityView | null>(null);
+  protected readonly deactivateOpen = computed(() => this.deactivating() !== null);
+  protected readonly deactivateCopy = computed(() => {
+    const p = this.deactivating();
+    return dialogCopy.deactivatePriority({ openTasks: p?.openTaskCount ?? null });
+  });
+  protected readonly makingDefault = signal<PriorityView | null>(null);
+  protected readonly defaultCopy = computed(() => {
+    const p = this.makingDefault();
+    const current = this.rows().find((r) => r.isDefault);
+    return dialogCopy.setDefaultPriority({
+      name: p?.label ?? null,
+      previousName: current && current.id !== p?.id ? current.label : null,
+    });
+  });
   protected readonly deleting = signal<PriorityView | null>(null);
+  protected readonly deleteCopy = computed(() => dialogCopy.deleteUnusedPriority({ openTasks: 0 }));
 
-  protected readonly newLabel = signal('');
-  protected readonly newColor = signal('normal');
-  protected readonly newCustom = signal('#336699');
-  protected readonly addError = signal('');
   private dragIndex: number | null = null;
 
-  protected readonly newColorValue = computed(() =>
-    this.newColor() === 'custom' ? this.newCustom() : this.newColor(),
-  );
-  protected readonly newContrastOk = computed(
-    () => this.newColor() !== 'custom' || hasReadableText(this.newCustom()),
-  );
-
-  /** An half-typed new label or a rename in progress is unsaved work (UXR-39). */
+  /** An open Edit or New dialog holding edits is asked about by the dialog itself; the page has no other unsaved text. */
   hasUnsavedChanges(): boolean {
-    return this.newLabel().trim().length > 0 || this.editingId() !== null;
+    return false;
   }
 
   ngOnInit(): void {
@@ -127,25 +161,19 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
 
   // ---- helpers
 
-  protected isCustom(color: string): boolean {
-    return isHexColor(color);
+  protected swatch(color: string): string {
+    return priorityColors(color).bg;
   }
 
-  protected selectValue(color: string): string {
-    return isHexColor(color) ? 'custom' : color;
-  }
-
-  protected hexOf(color: string): string {
-    return isHexColor(color) ? color : '#336699';
-  }
-
-  protected contrastOk(color: string): boolean {
-    return !isHexColor(color) || hasReadableText(color);
+  protected colorName(color: string): string {
+    return priorityColorName(color);
   }
 
   private apply(list: PriorityView[]): void {
     this.rows.set(list);
     this.lookups.setPriorities(list);
+    // The tab counts ACTIVE priorities (the kit's rule).
+    this.report(list.filter((p) => p.isActive).length);
   }
 
   private async run<T>(
@@ -172,116 +200,118 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
     }
   }
 
-  private replace(updated: PriorityView): void {
-    this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
+  private fieldMessage(e: ApiError, field: string): string {
+    return e.problem?.errors?.[field]?.[0]?.message ?? e.message;
   }
 
-  // ---- add
+  // ---- New and Edit (the lookup dialog, #609)
 
-  protected async add(): Promise<void> {
-    const label = this.newLabel().trim();
-    this.addError.set('');
-    if (!label) {
-      this.addError.set('Enter a label.');
-      focusById('new-label');
-      return;
-    }
-    if (!this.newContrastOk()) {
-      this.addError.set(CONTRAST_MESSAGE);
-      return;
-    }
-    const created = await this.run(
-      () =>
-        firstValueFrom(
-          this.api.createPriority({ label, color: this.newColorValue(), isActive: true }),
-        ),
-      (e) => this.addError.set(this.fieldMessage(e, 'label')),
-    );
-    if (created) {
-      this.apply([...this.rows(), created]);
-      this.newLabel.set('');
-      this.announcement.set(`Priority ${created.label} added.`);
-      this.notify.success('Saved.');
+  protected closeDialog(): void {
+    this.labelError.set('');
+    this.saveError.set('');
+    if (this.edit() !== undefined) {
+      void this.router.navigate([], {
+        queryParams: { edit: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
     }
   }
 
-  // ---- edit
-
-  protected startRename(p: PriorityView): void {
-    this.editingId.set(p.id);
-    this.draftLabel.set(p.label);
-    this.editError.set('');
+  protected onDialogOpen(open: boolean): void {
+    if (!open) this.closeDialog();
   }
 
-  protected cancelRename(): void {
-    this.editingId.set(null);
-    this.editError.set('');
-  }
-
-  protected async commitRename(p: PriorityView): Promise<void> {
-    const label = this.draftLabel().trim();
-    if (!label) {
-      this.editError.set('Enter a label.');
-      return;
-    }
-    if (label === p.label) {
-      this.cancelRename();
-      return;
-    }
-    const ok = await this.save(p, { label }, (e) =>
-      this.editError.set(this.fieldMessage(e, 'label')),
-    );
-    if (ok) this.cancelRename();
-  }
-
-  protected async setColor(p: PriorityView, value: string): Promise<void> {
-    await this.save(p, { color: value === 'custom' ? this.hexOf(p.color) : value });
-  }
-
-  protected async setCustomColor(p: PriorityView, hex: string): Promise<void> {
-    if (!hasReadableText(hex)) {
-      this.failure.set(CONTRAST_MESSAGE);
-      return;
-    }
-    await this.save(p, { color: hex.toUpperCase() });
-  }
-
-  protected async toggleActive(p: PriorityView, active: boolean): Promise<void> {
-    const ok = await this.save(p, { isActive: active });
-    if (ok) {
-      this.announcement.set(`${p.label} ${active ? 'activated' : 'deactivated'}.`);
+  protected async saveDialog(draft: PriorityDraft): Promise<void> {
+    this.labelError.set('');
+    this.saveError.set('');
+    const failWith = (e: ApiError) => {
+      const duplicate = e.problem?.errors?.['label']?.[0]?.message;
+      if (duplicate) this.labelError.set(duplicate);
+      else this.saveError.set(e.message);
+    };
+    const target = this.editing();
+    if (target) {
+      const updated = await this.run(
+        () =>
+          firstValueFrom(
+            this.api.updatePriority(target.id, {
+              label: draft.label,
+              color: draft.color,
+              isActive: target.isActive,
+              rowVersion: target.rowVersion,
+            }),
+          ),
+        failWith,
+      );
+      if (!updated) return;
+      this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
+      this.announcement.set(`${updated.label} saved.`);
     } else {
-      this.rows.set([...this.rows()]); // re-render the checkbox with the server value
+      const created = await this.run(
+        () =>
+          firstValueFrom(
+            this.api.createPriority({ label: draft.label, color: draft.color, isActive: true }),
+          ),
+        failWith,
+      );
+      if (!created) return;
+      this.apply([...this.rows(), created]);
+      this.announcement.set(`Priority ${created.label} added.`);
     }
-  }
-
-  private async save(
-    p: PriorityView,
-    patch: Partial<Pick<PriorityView, 'label' | 'color' | 'isActive'>>,
-    fail?: (e: ApiError) => void,
-  ): Promise<boolean> {
-    const updated = await this.run(
-      () =>
-        firstValueFrom(
-          this.api.updatePriority(p.id, {
-            label: patch.label ?? p.label,
-            color: patch.color ?? p.color,
-            isActive: patch.isActive ?? p.isActive,
-            rowVersion: p.rowVersion,
-          }),
-        ),
-      fail ??
-        ((e) => {
-          this.failure.set(e.message);
-        }),
-    );
-    if (!updated) return false;
-    this.replace(updated);
     this.notify.success('Saved.');
-    return true;
+    this.closeDialog();
   }
 
-  protected async makeDefault(p: PriorityView): Promise<void> {
+  // ---- activate, deactivate (#614)
+
+  protected askDeactivate(p: PriorityView): void {
+    this.deactivating.set(p);
+  }
+
+  protected cancelDeactivate(): void {
+    this.deactivating.set(null);
+  }
+
+  protected async confirmDeactivate(): Promise<void> {
+    const p = this.deactivating();
+    if (!p) return;
+    this.deactivating.set(null);
+    await this.setActive(p, false);
+  }
+
+  protected async setActive(p: PriorityView, active: boolean): Promise<void> {
+    const updated = await this.run(() =>
+      firstValueFrom(
+        this.api.updatePriority(p.id, {
+          label: p.label,
+          color: p.color,
+          isActive: active,
+          rowVersion: p.rowVersion,
+        }),
+      ),
+    );
+    if (!updated) return;
+    this.apply(this.rows().map((r) => (r.id === updated.id ? updated : r)));
+    this.announcement.set(`${p.label} ${active ? 'activated' : 'deactivated'}.`);
+    this.notify.success('Saved.');
+    this.focusMenuOf(p.id);
+  }
+
+  // ---- default (#614)
+
+  protected askDefault(p: PriorityView): void {
+    this.makingDefault.set(p);
+  }
+
+  protected cancelDefault(): void {
+    this.makingDefault.set(null);
+  }
+
+  protected async confirmDefault(): Promise<void> {
+    const p = this.makingDefault();
+    if (!p) return;
+    this.makingDefault.set(null);
     const list = await this.run(
       () => firstValueFrom(this.api.setDefaultPriority(p.id)),
       (e) => this.failure.set(e.message),
@@ -290,10 +320,11 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
       this.apply(list);
       this.announcement.set(`${p.label} is now the default priority.`);
       this.notify.success('Saved.');
+      this.focusMenuOf(p.id);
     }
   }
 
-  // ---- delete
+  // ---- delete (#618): offered only for a priority no open task uses
 
   protected askDelete(p: PriorityView): void {
     this.deleting.set(p);
@@ -311,6 +342,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
         await firstValueFrom(this.api.deletePriority(p.id));
         return true;
       },
+      // A race, or closed tasks that still use it: the server refuses once and the line names the row (the toast is suppressed).
       (e) =>
         this.failure.set(
           e.code === 'IN_USE' ? refusedDeleteMessage('priority', p.label) : e.message,
@@ -323,15 +355,17 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
     }
   }
 
-  // ---- order
+  // ---- order (#614): Move up / Move down in the menu, the pointer drag as shipped
 
   protected canMove(index: number, delta: number): boolean {
     const target = index + delta;
     return target >= 0 && target < this.rows().length;
   }
 
-  protected async move(index: number, delta: number): Promise<void> {
+  protected async move(p: PriorityView, delta: number): Promise<void> {
+    const index = this.rows().findIndex((r) => r.id === p.id);
     await this.reorder(index, index + delta);
+    this.focusMenuOf(p.id);
   }
 
   protected onDragStart(index: number, event: DragEvent): void {
@@ -369,7 +403,138 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
     }
   }
 
-  private fieldMessage(e: ApiError, field: string): string {
-    return e.problem?.errors?.[field]?.[0]?.message ?? e.message;
+  /** The row's menu button gets focus back after a change that re-renders the row (a moved row is a new element). */
+  private focusMenuOf(id: number): void {
+    afterNextRender(
+      () => {
+        const host = document.querySelector<HTMLElement>(`[data-actions-of="${id}"]`);
+        host?.querySelector<HTMLElement>('button[data-overflow]')?.focus();
+      },
+      { injector: this.injector },
+    );
   }
+
+  // ---- the row menu and the phone cards
+
+  protected readonly menus = computed(() => {
+    const map = new Map<number, ReturnType<typeof rowActions>>();
+    const list = this.rows();
+    list.forEach((p, i) => {
+      const knownCount = typeof p.openTaskCount === 'number' ? p.openTaskCount : null;
+      const deletable = !p.isDefault && knownCount === 0;
+      map.set(
+        p.id,
+        rowActions(
+          p.label,
+          [
+            {
+              id: 'edit',
+              label: 'Edit priority',
+              icon: 'pi-pencil',
+              permission: 'Priority.Manage',
+              run: () =>
+                void this.router.navigate([], {
+                  queryParams: { edit: p.id },
+                  queryParamsHandling: 'merge',
+                }),
+            },
+            {
+              id: 'up',
+              label: 'Move up',
+              icon: 'pi-arrow-up',
+              permission: 'Priority.Manage',
+              reason: i === 0 ? 'Already the most urgent.' : undefined,
+              run: () => void this.move(p, -1),
+            },
+            {
+              id: 'down',
+              label: 'Move down',
+              icon: 'pi-arrow-down',
+              permission: 'Priority.Manage',
+              reason: i === list.length - 1 ? 'Already the least urgent.' : undefined,
+              run: () => void this.move(p, 1),
+            },
+            ...(p.isDefault
+              ? []
+              : [
+                  {
+                    id: 'default',
+                    label: 'Set as default',
+                    icon: 'pi-star',
+                    permission: 'Priority.Manage',
+                    reason: p.isActive ? undefined : 'Activate it first.',
+                    run: () => this.askDefault(p),
+                  },
+                ]),
+            p.isActive
+              ? {
+                  id: 'deactivate',
+                  label: 'Deactivate',
+                  kind: 'state' as const,
+                  permission: 'Priority.Manage',
+                  reason: p.isDefault
+                    ? "The default priority can't be deactivated. Make another priority the default first."
+                    : undefined,
+                  run: () => this.askDeactivate(p),
+                }
+              : {
+                  id: 'activate',
+                  label: 'Activate',
+                  kind: 'state' as const,
+                  permission: 'Priority.Manage',
+                  run: () => void this.setActive(p, true),
+                },
+            ...(deletable || p.isDefault
+              ? [
+                  {
+                    id: 'delete',
+                    label: 'Delete',
+                    danger: true,
+                    permission: 'Priority.Manage',
+                    reason: p.isDefault
+                      ? "The default priority can't be deleted. Make another priority the default first."
+                      : undefined,
+                    run: () => this.askDelete(p),
+                  },
+                ]
+              : []),
+          ],
+          { can: (permission) => this.auth.has(permission) },
+        ),
+      );
+    });
+    return map;
+  });
+
+  /** The phone card of a priority (#605): the same data and the same row menu as the table row. */
+  protected readonly cardOf = (p: PriorityView): AdminCardSpec => ({
+    title: p.label,
+    link: ['/admin/priorities'],
+    queryParams: { edit: p.id },
+    rowKey: p.id,
+    badges: [
+      ...(p.isDefault ? [{ text: 'Default', tone: 'neutral' as const, icon: 'pi-star' }] : []),
+      activeCardBadge(p.isActive),
+    ],
+    meta: [
+      `Color: ${this.colorName(p.color)}`,
+      ...(this.canViewTasks() && typeof p.openTaskCount === 'number'
+        ? [
+            {
+              text: p.openTaskCount === 1 ? '1 open task' : `${p.openTaskCount} open tasks`,
+              ...(p.openTaskCount > 0
+                ? {
+                    link: {
+                      commands: ['/tasks'],
+                      queryParams: { priority: p.id, status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] },
+                    },
+                  }
+                : {}),
+              attrs: { 'data-card-open-tasks': '' },
+            },
+          ]
+        : []),
+    ],
+    actions: this.menus().get(p.id) ?? null,
+  });
 }

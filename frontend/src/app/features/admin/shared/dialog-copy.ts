@@ -342,6 +342,7 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
           ? `Only the name changes. The code ${facts.code} and every task's status stay as they are.`
           : "Only the name changes. Every task's status stays as it is.",
       );
+      parts.push('The name shows in the Task Queue, My Work, the Dashboard and on task pages.');
       break;
   }
   // The names of a retirement are part of its sentence ("A and 3 other task types ..."), so they are not listed again.

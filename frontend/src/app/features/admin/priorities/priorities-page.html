@@ -1,288 +1,163 @@
-<mf-fixed-page>
-  <mf-page-header
-    heading="Labels"
-    [crumbs]="[{ label: 'Administration' }, { label: 'Labels' }]"
-    description="Order from most to least urgent. Users see labels, not numbers."
-  >
-    @if (hasBothTabs()) {
-      <nav class="tabs" aria-label="Priorities and status labels">
-        <a routerLink="/admin/priorities" aria-current="page">Priorities</a>
-        <a routerLink="/admin/status-labels">Status labels</a>
-      </nav>
-    }
-  </mf-page-header>
+<div class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 
-  <div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+@if (failure()) {
+  <p class="pr-failure" role="alert" data-failure>
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
+  </p>
+}
 
-  @if (failure()) {
-    <p class="error" role="alert" data-failure>{{ failure() }}</p>
-  }
-
-  <mf-list-state noun="priorities" [state]="state()" [columns]="6" (retry)="load()">
-    <p class="muted hint">
-      Drag a row or use the arrows to reorder. Exactly one priority is the default.
-    </p>
-    <div class="mf-table-wrap" mfScrollArea="Priorities list">
-      <div class="mf-scroll">
-        <table class="grid" data-priorities>
-          <caption class="sr-only">
-            Priorities, most urgent first
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Order</th>
-              <th scope="col">Priority</th>
-              <th scope="col">Label</th>
-              <th scope="col">Color</th>
-              <th scope="col">Active</th>
-              <th scope="col">Default</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+@if (phone()) {
+  <mf-admin-card-list
+    noun="priorities"
+    label="Priorities"
+    [items]="rows()"
+    [spec]="cardOf"
+    emptyText="No priorities yet. Use New priority above to add the first one."
+    [state]="ls.state()"
+    [empty]="ls.empty()"
+    [filtered]="false"
+    (retry)="load()"
+  />
+} @else {
+  <div class="mf-table-wrap" mfScrollArea="Priorities list">
+    <div class="mf-scroll">
+      <table class="mf-grid" id="labels-table" data-priorities>
+        <caption class="mf-sr-only">
+          Priorities, most urgent first
+        </caption>
+        <thead>
+          <tr>
+            <th class="mf-cell-num" scope="col" [attr.data-drop]="dropOrder">Order</th>
+            <th class="mf-cell-name" scope="col">Priority</th>
+            <th class="mf-cell-muted" scope="col" [attr.data-drop]="dropColor">Color</th>
+            @if (canViewTasks()) {
+              <th class="mf-cell-num" scope="col">Open tasks</th>
+            }
+            <th class="mf-cell-badge" scope="col">Status</th>
+            <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody
+          mfGridBody
+          noun="priorities"
+          [columnSpec]="columnSpec()"
+          emptyText="No priorities yet. Use New priority above to add the first one."
+          [state]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="false"
+          (retry)="load()"
+        >
+          @for (p of rows(); track p.id; let i = $index) {
+            <tr
+              [attr.data-row]="p.label"
+              [class.inactive]="!p.isActive"
+              [attr.draggable]="busy() || !canManage() ? 'false' : 'true'"
+              (dragstart)="onDragStart(i, $event)"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop(i, $event)"
+            >
+              <td class="mf-cell-num" [attr.data-drop]="dropOrder" data-order>{{ i + 1 }}</td>
+              <td class="mf-cell-name">
+                <span class="pr-name">
+                  <a
+                    class="pr-open"
+                    mfRowLink="priorities"
+                    [rowKey]="p.id"
+                    [routerLink]="['/admin/priorities']"
+                    [queryParams]="{ edit: p.id }"
+                    [attr.title]="p.label"
+                    data-edit
+                  >
+                    <mf-priority-badge [label]="p.label" [color]="p.color" [rank]="i + 1" />
+                  </a>
+                  @if (p.isDefault) {
+                    <mf-badge tone="neutral" icon="pi-star" data-default>Default</mf-badge>
+                  }
+                </span>
+              </td>
+              <td class="mf-cell-muted" [attr.data-drop]="dropColor" data-color-cell>
+                <span
+                  class="pr-swatch"
+                  [style.background]="swatch(p.color)"
+                  aria-hidden="true"
+                ></span>
+                {{ colorName(p.color) }}
+              </td>
+              @if (canViewTasks()) {
+                <td class="mf-cell-num" data-open-tasks>
+                  @if (p.openTaskCount !== null && p.openTaskCount !== undefined) {
+                    <mf-task-count
+                      kind="open"
+                      scope="priority"
+                      [rowStop]="true"
+                      [recordId]="p.id"
+                      [name]="p.label"
+                      [count]="p.openTaskCount"
+                    />
+                  }
+                </td>
+              }
+              <td class="mf-cell-badge"><mf-active-badge [active]="p.isActive" /></td>
+              <td class="mf-cell-actions" [attr.data-actions-of]="p.id">
+                @if (menus().get(p.id); as menu) {
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                }
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            @for (p of rows(); track p.id; let i = $index) {
-              <tr
-                [attr.data-row]="p.label"
-                [class.inactive]="!p.isActive"
-                [attr.draggable]="busy() || !canManage() ? 'false' : 'true'"
-                (dragstart)="onDragStart(i, $event)"
-                (dragover)="onDragOver($event)"
-                (drop)="onDrop(i, $event)"
-              >
-                <td class="order">
-                  <span class="grip pi pi-bars" aria-hidden="true"></span>
-                  <span class="movers" *mfHasPermission="'Priority.Manage'">
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      [attr.aria-label]="'Move ' + p.label + ' up'"
-                      [disabled]="busy() || !canMove(i, -1)"
-                      (click)="move(i, -1)"
-                      data-move-up
-                    >
-                      <span class="pi pi-arrow-up" aria-hidden="true"></span>
-                    </button>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      [attr.aria-label]="'Move ' + p.label + ' down'"
-                      [disabled]="busy() || !canMove(i, 1)"
-                      (click)="move(i, 1)"
-                      data-move-down
-                    >
-                      <span class="pi pi-arrow-down" aria-hidden="true"></span>
-                    </button>
-                  </span>
-                </td>
-                <td>
-                  <mf-priority-badge [label]="p.label" [color]="p.color" [rank]="i + 1" />
-                  @if (!p.isActive) {
-                    <span class="muted tag">Inactive</span>
-                  }
-                </td>
-                <td>
-                  @if (editingId() === p.id) {
-                    <form class="inline" (submit)="$event.preventDefault(); commitRename(p)">
-                      <label class="sr-only" [for]="'rename-' + p.id"
-                        >Label for {{ p.label }}</label
-                      >
-                      <input
-                        [id]="'rename-' + p.id"
-                        class="text"
-                        name="label"
-                        maxlength="50"
-                        [ngModel]="draftLabel()"
-                        (ngModelChange)="draftLabel.set($event)"
-                        (keydown.escape)="cancelRename()"
-                        [attr.aria-invalid]="editError() ? 'true' : null"
-                        [attr.aria-describedby]="editError() ? 'rename-error-' + p.id : null"
-                        data-rename-input
-                      />
-                      <p-button type="submit" label="Save" size="small" [disabled]="busy()" />
-                      <p-button
-                        label="Cancel"
-                        size="small"
-                        severity="secondary"
-                        (onClick)="cancelRename()"
-                      />
-                    </form>
-                    @if (editError()) {
-                      <p class="error" role="alert" [id]="'rename-error-' + p.id">
-                        {{ editError() }}
-                      </p>
-                    }
-                  } @else {
-                    <span>{{ p.label }}</span>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text"
-                      *mfHasPermission="'Priority.Manage'"
-                      [attr.aria-label]="'Rename ' + p.label"
-                      (click)="startRename(p)"
-                      data-rename
-                    >
-                      Rename
-                    </button>
-                  }
-                </td>
-                <td>
-                  <span *mfHasPermission="'Priority.Manage'; else readOnlyColor" class="color">
-                    <label class="sr-only" [for]="'color-' + p.id">Color for {{ p.label }}</label>
-                    <select
-                      [id]="'color-' + p.id"
-                      class="select"
-                      [ngModel]="selectValue(p.color)"
-                      (ngModelChange)="setColor(p, $event)"
-                      [disabled]="busy()"
-                      data-color
-                    >
-                      @for (c of colorTokens; track c.value) {
-                        <option [value]="c.value">{{ c.label }}</option>
-                      }
-                      <option value="custom">Custom...</option>
-                    </select>
-                    @if (isCustom(p.color)) {
-                      <input
-                        type="color"
-                        class="swatch"
-                        [attr.aria-label]="'Custom color for ' + p.label"
-                        [value]="hexOf(p.color)"
-                        (change)="setCustomColor(p, $any($event.target).value)"
-                        [disabled]="busy()"
-                        data-custom-color
-                      />
-                    }
-                  </span>
-                  <ng-template #readOnlyColor>{{ p.color }}</ng-template>
-                </td>
-                <td>
-                  <input
-                    type="checkbox"
-                    class="check"
-                    [checked]="p.isActive"
-                    [disabled]="busy() || p.isDefault || !canManage()"
-                    [attr.aria-label]="'Active: ' + p.label"
-                    (change)="toggleActive(p, $any($event.target).checked)"
-                    data-active
-                  />
-                </td>
-                <td>
-                  <input
-                    type="radio"
-                    class="check"
-                    name="default-priority"
-                    [checked]="p.isDefault"
-                    [disabled]="busy() || !p.isActive || !canManage()"
-                    [attr.aria-label]="'Default: ' + p.label"
-                    (change)="makeDefault(p)"
-                    data-default
-                  />
-                </td>
-                <td class="actions mf-col-actions">
-                  <span class="mf-row-actions">
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text mf-btn--danger"
-                      *mfHasPermission="'Priority.Manage'"
-                      [disabled]="busy() || p.isDefault"
-                      [attr.title]="
-                        p.isDefault
-                          ? 'The default priority can\'t be deleted. Choose another default first.'
-                          : null
-                      "
-                      [attr.aria-label]="'Delete ' + p.label"
-                      (click)="askDelete(p)"
-                      data-delete
-                    >
-                      Delete
-                    </button>
-                  </span>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+          }
+        </tbody>
+      </table>
     </div>
-    <p class="muted hint">
-      Existing tasks keep a deactivated priority. It isn't offered for new or changed tasks. A
-      priority in use can only be deactivated.
-    </p>
+  </div>
+}
 
-    <section class="add" *mfHasPermission="'Priority.Manage'" aria-labelledby="add-heading">
-      <h2 id="add-heading">Add priority</h2>
-      <form class="add-form" novalidate (submit)="$event.preventDefault(); add()">
-        <div class="fld">
-          <label for="new-label">Label <span class="mf-req">(required)</span></label>
-          <input
-            id="new-label"
-            class="mf-control"
-            name="newLabel"
-            maxlength="50"
-            [ngModel]="newLabel()"
-            (ngModelChange)="newLabel.set($event)"
-            [attr.aria-invalid]="addError() ? 'true' : null"
-            [attr.aria-describedby]="addError() ? 'add-error' : null"
-            data-new-label
-          />
-        </div>
-        <div class="fld">
-          <label for="new-color">Color</label>
-          <select
-            id="new-color"
-            class="mf-control"
-            name="newColor"
-            [ngModel]="newColor()"
-            (ngModelChange)="newColor.set($event)"
-          >
-            @for (c of colorTokens; track c.value) {
-              <option [value]="c.value">{{ c.label }}</option>
-            }
-            <option value="custom">Custom...</option>
-          </select>
-        </div>
-        @if (newColor() === 'custom') {
-          <input
-            type="color"
-            class="swatch"
-            aria-label="Custom color"
-            [value]="newCustom()"
-            (input)="newCustom.set($any($event.target).value)"
-          />
-        }
-        <mf-priority-badge
-          [label]="newLabel().trim() || 'Preview'"
-          [color]="newColorValue()"
-          [rank]="rows().length + 1"
-        />
-        <p-button type="submit" label="Add priority" icon="pi pi-plus" [disabled]="busy()" />
-      </form>
-      @if (!newContrastOk()) {
-        <p class="add-error" role="alert" data-contrast>
-          <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ contrastMessage }}
-        </p>
-      }
-      @if (addError()) {
-        <p id="add-error" class="add-error" role="alert" data-add-error>
-          <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ addError() }}
-        </p>
-      }
-    </section>
-  </mf-list-state>
-</mf-fixed-page>
+<mf-priority-dialog
+  [open]="dialogOpen()"
+  (openChange)="onDialogOpen($event)"
+  [priority]="editing()"
+  [rank]="editing() ? rows().indexOf(editing()!) + 1 : rows().length + 1"
+  [busy]="busy()"
+  [labelError]="labelError()"
+  [saveError]="saveError()"
+  (save)="saveDialog($event)"
+  (cancelled)="closeDialog()"
+/>
 
 <mf-confirm-dialog
-  title="Delete priority?"
-  confirmLabel="Delete priority"
-  cancelLabel="Keep priority"
+  [title]="deactivateCopy().title"
+  [confirmLabel]="deactivateCopy().confirm"
+  [cancelLabel]="deactivateCopy().cancel"
+  [danger]="deactivateCopy().danger"
+  [busy]="busy()"
+  [visible]="deactivateOpen()"
+  (visibleChange)="!$event && cancelDeactivate()"
+  (confirmed)="confirmDeactivate()"
+>
+  <p data-deactivate-body>{{ deactivateCopy().body }}</p>
+</mf-confirm-dialog>
+
+<mf-confirm-dialog
+  [title]="defaultCopy().title"
+  [confirmLabel]="defaultCopy().confirm"
+  [cancelLabel]="defaultCopy().cancel"
+  [danger]="false"
+  [busy]="busy()"
+  [visible]="makingDefault() !== null"
+  (visibleChange)="!$event && cancelDefault()"
+  (confirmed)="confirmDefault()"
+>
+  <p data-default-body>{{ defaultCopy().body }}</p>
+</mf-confirm-dialog>
+
+<mf-confirm-dialog
+  [title]="deleteCopy().title"
+  [confirmLabel]="deleteCopy().confirm"
+  [cancelLabel]="deleteCopy().cancel"
   [danger]="true"
   [busy]="busy()"
   [visible]="deleting() !== null"
   (visibleChange)="!$event && cancelDelete()"
   (confirmed)="confirmDelete()"
 >
-  <p data-delete-body>
-    {{ deleting()?.label }} will be removed from the list. A priority that tasks use can't be
-    deleted; deactivate it instead. This can't be undone.
-  </p>
+  <p data-delete-body>{{ deleteCopy().body }}</p>
 </mf-confirm-dialog>

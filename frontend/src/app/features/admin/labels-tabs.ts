@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
 import { APP_PATHS } from '../../core/auth/guards';
 import { AuthStore } from '../../core/auth/auth.store';
 import { AdminTab, allowedAdminTabs, adminMenuTarget, resolveAdminTab } from './admin-tabs';
@@ -34,16 +34,18 @@ export function hasBothLabelTabs(auth: AuthStore): boolean {
  * address (and with it the Labels menu item, whose path is the first tab) goes to the first tab the person may open
  * (`adminMenuTarget`); a person who may use neither sees the 403 page.
  */
-export const labelsTabGuard = (requested: LabelsTab) => async (): Promise<boolean | UrlTree> => {
-  const auth = inject(AuthStore);
-  const router = inject(Router);
-  await auth.ensureLoaded();
-  if (!auth.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
-  if (auth.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
-  const can = (p: string) => auth.has(p);
-  const target = adminMenuTarget(LABEL_TABS, can);
-  if (target === null) return router.createUrlTree([APP_PATHS.forbidden]);
-  return resolveAdminTab(LABEL_TABS, requested, can)?.id === requested
-    ? true
-    : router.parseUrl(target);
-};
+export const labelsTabGuard =
+  (requested?: LabelsTab) =>
+  async (route?: ActivatedRouteSnapshot): Promise<boolean | UrlTree> => {
+    // The Labels page is one route for both tabs (`:tab` segment, #593); a test or a single-tab route names the tab itself.
+    const tab = (requested ?? route?.params['tab']) as LabelsTab;
+    const auth = inject(AuthStore);
+    const router = inject(Router);
+    await auth.ensureLoaded();
+    if (!auth.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
+    if (auth.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
+    const can = (p: string) => auth.has(p);
+    const target = adminMenuTarget(LABEL_TABS, can);
+    if (target === null) return router.createUrlTree([APP_PATHS.forbidden]);
+    return resolveAdminTab(LABEL_TABS, tab, can)?.id === tab ? true : router.parseUrl(target);
+  };

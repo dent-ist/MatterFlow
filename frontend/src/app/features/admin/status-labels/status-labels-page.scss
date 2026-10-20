@@ -1,0 +1,46 @@
+/* Status labels on the admin grid contract (#622): only what the kit stylesheet does not cover. */
+:host {
+  display: block;
+}
+
+.sl-failure {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  margin: var(--mf-s2) 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+/* The name cell: the status badge (the link that opens Rename) and, when renamed, what the status was called. */
+.sl-name {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  min-width: 0;
+}
+
+.sl-open {
+  display: inline-flex;
+  min-width: 0;
+  border-radius: var(--mf-radius);
+  text-decoration: none;
+}
+
+.sl-open:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+
+.sl-was,
+.sl-zero {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  white-space: nowrap;
+}
+
+/* The helper line of the rename dialog (#564). */
+.sl-help {
+  margin: 0;
+  color: var(--mf-text-muted);
+}
