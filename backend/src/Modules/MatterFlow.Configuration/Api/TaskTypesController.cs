@@ -25,14 +25,14 @@ public class TaskTypesController(TaskTypeService taskTypes) : ControllerBase
     /// <c>-name</c>, <c>openTaskCount</c> or <c>-openTaskCount</c> (equal counts keep the name order); the list is not paged.
     /// </summary>
     [HttpGet(Name = "ListTaskTypes")]
-    [Authorize(Policy = ConfigurationPolicies.TaskView)]
+    [Authorize(Policy = ConfigurationPolicies.TaskTypeRead)]
     [ProducesResponseType<IReadOnlyList<TaskTypeView>>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, [FromQuery] string? sort, CancellationToken cancellationToken) =>
         Ok((await taskTypes.ListViewsAsync(workflowId, sort, cancellationToken)).OrThrow());
 
     /// <summary>One Task Type with its form status, eligible workflows and open Task count (null without <c>Task.View</c>).</summary>
     [HttpGet("{id:int}", Name = "GetTaskType")]
-    [Authorize(Policy = ConfigurationPolicies.TaskView)]
+    [Authorize(Policy = ConfigurationPolicies.TaskTypeRead)]
     [ProducesResponseType<TaskTypeView>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<TaskTypeView>> Get(int id, CancellationToken cancellationToken) =>
         (await taskTypes.GetViewAsync(id, cancellationToken)).OrThrow();

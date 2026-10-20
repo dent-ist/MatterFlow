@@ -5,6 +5,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { firstAllowedTab } from '../denial';
 import { StepsListPage } from '../steps/steps-list-page';
 import { WorkflowsListPage } from '../workflows/workflows-list-page';
 import { TaskTypesPage } from './task-types-page';
@@ -157,10 +158,8 @@ export class TaskTypesAdminPage {
   });
 
   protected readonly current = computed<TaskTypesTab>(() => {
-    const raw = this.tab();
-    const wanted: TaskTypesTab = raw === 'workflows' || raw === 'steps' ? raw : 'task-types';
-    const keys = this.tabs().map((t) => t.key);
-    return (keys.includes(wanted) ? wanted : (keys[0] ?? wanted)) as TaskTypesTab;
+    const keys = this.tabs().map((t) => t.key as TaskTypesTab);
+    return firstAllowedTab<TaskTypesTab>(this.tab(), keys, 'task-types');
   });
 
   protected readonly description = computed(() => TAB_TEXT[this.current()]);

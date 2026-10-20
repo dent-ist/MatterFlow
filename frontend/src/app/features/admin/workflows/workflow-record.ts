@@ -8,6 +8,7 @@ import { OPEN_STATUSES } from '../../../shared/work-queue/queue-filters';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { BadgeTone } from '../../../shared/ui/badge';
 import { MfTab } from '../../../shared/ui/tabs';
+import { firstAllowedTab } from '../denial';
 
 /** The three tabs of the Workflow page (WE1, #388). Overview is the default and is not written to the address. */
 export type WorkflowTab = 'overview' | 'versions' | 'task-types';
@@ -20,7 +21,7 @@ export const WORKFLOW_TAB_LABEL: Readonly<Record<WorkflowTab, string>> = {
 
 /** The tab `?tab=` names; anything else is Overview. */
 export function workflowTabOf(raw: string | null | undefined): WorkflowTab {
-  return raw === 'versions' || raw === 'task-types' ? raw : 'overview';
+  return firstAllowedTab<WorkflowTab>(raw, ['overview', 'versions', 'task-types']);
 }
 
 /** The task types of the workflow that count: tab counts show active records (decision PM). */

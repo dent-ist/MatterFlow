@@ -7,6 +7,7 @@ import {
   WorkflowVersionStatus,
 } from '../../../api/generated/api-client';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { firstAllowedTab } from '../denial';
 
 /** The three tabs of the Step page; `details` is the default and is not written to the address. */
 export type StepTab = 'details' | 'inputs' | 'used-by';
@@ -22,10 +23,7 @@ export const STEP_TAB_REASON = 'Save the step first';
 
 /** The tab `?tab=` names; anything else, and the tabs of an unsaved step, is Details. */
 export function stepTabOf(raw: string | null | undefined, isNew: boolean): StepTab {
-  if (isNew) return 'details';
-  if (raw === 'inputs') return 'inputs';
-  if (raw === 'used-by') return 'used-by';
-  return 'details';
+  return firstAllowedTab<StepTab>(raw, isNew ? ['details'] : ['details', 'inputs', 'used-by']);
 }
 
 /** The muted sentence at the top of Used by (SE2): shown in full only when the step is used. */
@@ -102,7 +100,7 @@ export function usageCounts(usage: readonly StepUsage[]): { drafts: number; publ
 /** What the Inputs tab and the strip say about the step's inputs. */
 export interface InputsFacts {
   state: 'none' | 'draft' | 'published' | 'both';
-  /** Version numbers and field counts, known once the versions of the form were read (not for a viewer without `Task.View`). */
+  /** Version numbers and field counts, known once the versions of the form were read. */
   published: { versionNo: number; fieldCount: number } | null;
   draft: { versionNo: number; fieldCount: number } | null;
 }

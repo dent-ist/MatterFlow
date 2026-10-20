@@ -82,7 +82,7 @@ function sameTags(a: readonly string[], b: readonly string[]): boolean {
  * added). Details is the only tab with edits and saves on its own; switching tabs or leaving with edits asks first and offers Save and leave.
  * Inputs lists the step's form read-only (the designer is `/admin/steps/:id/form`); Used by links to every workflow version that contains the
  * step. A new step opens on Inputs after it is saved; until then those two tabs are disabled. Needs `Workflow.Manage` (route guard); the
- * list of inputs also needs `Task.View` (a server rule of the form endpoints), without it the tab says so.
+ * list of inputs needs only `Workflow.Manage`; if the server refuses the read anyway the tab says so.
  */
 @Component({
   selector: 'mf-step-edit-page',
@@ -145,7 +145,7 @@ export class StepEditPage implements HasUnsavedChanges {
   protected readonly announcement = signal('');
   /** The versions of the step's form (published and draft ids, field counts); null until read, and when they cannot be read. */
   private readonly versions = signal<readonly FormVersionSummary[] | null>(null);
-  /** The version list answered 403: reading forms needs `Task.View`. */
+  /** The version list answered 403 (the server refused to read the step's form). */
   private readonly versionsDenied = signal(false);
   /** Which workflows that use the step are active, by id; null while unknown (then every workflow counts). */
   private readonly workflowActive = signal<ReadonlyMap<number, boolean> | null>(null);
@@ -244,9 +244,6 @@ export class StepEditPage implements HasUnsavedChanges {
       this.original()?.publishedFormVersionId == null,
   );
 
-  /** Reading forms was refused (no `Task.View`), and the form designer reads them too, so Edit inputs is not offered. */
-  protected readonly canEditInputs = computed(() => !this.versionsDenied());
-
   protected readonly tabs = computed<MfTab[]>(() => {
     const isNew = !this.isEdit();
     const reason = isNew ? { disabledReason: STEP_TAB_REASON } : {};
@@ -277,16 +274,13 @@ export class StepEditPage implements HasUnsavedChanges {
         run: () => this.activityOpen.set(true),
       });
     }
-    // The designer reads the form, which needs Task.View: without it the page would answer "no access", so the button is not offered.
-    if (this.canEditInputs()) {
-      list.push({
-        id: 'edit-inputs',
-        role: 'primary',
-        label: 'Edit inputs',
-        icon: 'pi-pencil',
-        run: () => void this.openInputs(),
-      });
-    }
+    list.push({
+      id: 'edit-inputs',
+      role: 'primary',
+      label: 'Edit inputs',
+      icon: 'pi-pencil',
+      run: () => void this.openInputs(),
+    });
     list.push({
       id: o.isActive ? 'deactivate' : 'activate',
       role: 'state',

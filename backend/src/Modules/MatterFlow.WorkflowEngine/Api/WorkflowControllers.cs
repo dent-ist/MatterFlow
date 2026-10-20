@@ -18,6 +18,9 @@ internal static class WorkflowPolicies
     /// <summary>Design the step library and workflows.</summary>
     public const string Manage = Prefix + Permissions.Workflow.Manage;
 
+    /// <summary>Read the workflow library: <c>Workflow.Manage</c>, or <c>TaskType.Manage</c> (the Task Types administration names and picks the eligible workflows, TY-P).</summary>
+    public const string ManageOrTaskTypeManage = Prefix + Permissions.Workflow.Manage + "|" + Permissions.TaskType.Manage;
+
     /// <summary>Read published workflows (Task screens, Task Type eligibility pickers).</summary>
     public const string TaskView = Prefix + Permissions.Task.View;
 
@@ -116,7 +119,7 @@ public class WorkflowsController(WorkflowAdminService workflows, IWorkflowCatalo
     /// do not depend on the filters or the page.
     /// </summary>
     [HttpGet(Name = "ListWorkflows")]
-    [Authorize(Policy = WorkflowPolicies.Manage)]
+    [Authorize(Policy = WorkflowPolicies.ManageOrTaskTypeManage)]
     [ProducesResponseType<WorkflowListPage>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<WorkflowListPage>> List([FromQuery] WorkflowListQuery query, CancellationToken cancellationToken)
     {

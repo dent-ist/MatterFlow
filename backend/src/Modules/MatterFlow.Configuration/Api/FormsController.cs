@@ -9,18 +9,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace MatterFlow.Configuration.Api;
 
 /// <summary>
-/// Form definitions, versions and the publish workflow (architecture 7). Every action needs <c>Task.View</c> to reach it (renderers read published
-/// schemas with it); the design operations additionally require the management permission of the form's owner kind
-/// (<c>TaskType.Manage</c>, <c>Workflow.Manage</c>, <c>AssetType.Manage</c> or <c>CustomField.Manage</c>), enforced in the service because it depends
-/// on the definition (architecture 6.5).
+/// Form definitions, versions and the publish workflow (architecture 7). Every action needs <c>Task.View</c> (renderers read published schemas with
+/// it) or one of the four management permissions (<c>TaskType.Manage</c>, <c>Workflow.Manage</c>, <c>AssetType.Manage</c>, <c>CustomField.Manage</c>:
+/// each is enough to read the forms its screens edit, TY-P) to reach it; reading a definition and every design operation additionally require the
+/// management permission of the form's owner kind, enforced in the service because it depends on the definition (architecture 6.5).
 /// </summary>
 [ApiController]
 [Route("api/v1/forms")]
 [Authorize(Policy = FormsController.ReadPolicy)]
 public class FormsController(FormAdminService forms, IFormSubmissionValidator validator) : ControllerBase
 {
-    /// <summary>Policy name of <c>Task.View</c> (the same string <c>[RequirePermission]</c> produces; modules cannot reference the Identity internals).</summary>
-    internal const string ReadPolicy = "Perm:" + Permissions.Task.View;
+    /// <summary>
+    /// Policy name: any of <c>Task.View</c> and the four form-owner management permissions (the same any-of syntax <c>[RequirePermission]</c> produces;
+    /// modules cannot reference the Identity internals).
+    /// </summary>
+    internal const string ReadPolicy = "Perm:" + Permissions.Task.View + "|" + Permissions.TaskType.Manage + "|" + Permissions.Workflow.Manage + "|"
+        + Permissions.AssetType.Manage + "|" + Permissions.CustomField.Manage;
 
     /// <summary>Finds or creates the form definition of an owner (idempotent). Owner modules normally do this when they create the owner.</summary>
     [HttpPost(Name = "EnsureFormDefinition")]

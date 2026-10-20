@@ -23,8 +23,8 @@ import { DRAFT_INPUTS_NOTE, InputRow, InputsFacts, inputRows } from './step-reco
  * they must be published before the step can be published in a workflow), published, and published with a newer draft (the published fields
  * are listed, the draft is named).
  *
- * Reading a form needs `Task.View` on the server; a person without it (a `Workflow.Manage`-only administrator) gets one explanatory sentence
- * and the state the step record itself knows, never a toast or an empty list that looks like "no inputs".
+ * `Workflow.Manage` is enough to read the step's form (TY-P). If the server still refuses the read, the tab gives one explanatory sentence and
+ * the state the step record itself knows, never a toast or an empty list that looks like "no inputs".
  */
 @Component({
   selector: 'mf-step-inputs-tab',
@@ -65,10 +65,7 @@ import { DRAFT_INPUTS_NOTE, InputRow, InputsFacts, inputRows } from './step-reco
           <p class="st__muted" role="status" data-inputs-loading>Loading the inputs...</p>
         } @else if (denied()) {
           <p class="st__muted" data-inputs-denied>
-            The list of inputs is not shown because reading forms needs permission to view tasks.
-            @if (!canEdit()) {
-              The form designer needs it too.
-            }
+            You don't have permission to see the inputs of this step.
           </p>
         } @else if (failed()) {
           <p class="st__muted" role="alert" data-inputs-failed>
@@ -108,13 +105,11 @@ import { DRAFT_INPUTS_NOTE, InputRow, InputsFacts, inputRows } from './step-reco
         }
       }
 
-      @if (canEdit()) {
-        <div>
-          <button type="button" class="mf-btn" (click)="edit.emit()" data-open-inputs>
-            Edit inputs
-          </button>
-        </div>
-      }
+      <div>
+        <button type="button" class="mf-btn" (click)="edit.emit()" data-open-inputs>
+          Edit inputs
+        </button>
+      </div>
     </section>
   `,
 })
@@ -122,10 +117,8 @@ export class StepInputsTab {
   readonly facts = input.required<InputsFacts>();
   /** The version whose fields are listed: the published one, else the draft. Absent when it is not known. */
   readonly versionId = input<number | null>(null);
-  /** The version list could not be read for lack of permission (so the draft's id is not known either). */
+  /** The server refused to read the step's form (so the draft's id is not known either). */
   readonly unreadable = input(false);
-  /** The form designer can be opened (reading forms is allowed). */
-  readonly canEdit = input(true);
   /** Edit inputs: the page opens the form designer. */
   readonly edit = output<void>();
 

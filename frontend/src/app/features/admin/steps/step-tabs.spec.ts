@@ -239,14 +239,13 @@ describe('Step page, Inputs tab (#405)', () => {
       },
     });
     expect(el.querySelector('[data-inputs-denied]')?.textContent).toContain(
-      'permission to view tasks',
+      "don't have permission to see the inputs",
     );
     expect(el.querySelector('[data-status-published]')?.textContent).toContain('Published');
     expect(el.querySelector('[data-inputs-table]')).toBeNull();
     expect(el.querySelector('[data-inputs-failed]')).toBeNull();
-    // The designer reads the form too, so no button leads to a page that would refuse.
-    expect(el.querySelector('[data-open-inputs]')).toBeNull();
-    expect(el.querySelector('[data-action="edit-inputs"]')).toBeNull();
+    // Workflow.Manage opens the designer, so the button stays.
+    expect(el.querySelector('[data-open-inputs]')).not.toBeNull();
   });
 });
 

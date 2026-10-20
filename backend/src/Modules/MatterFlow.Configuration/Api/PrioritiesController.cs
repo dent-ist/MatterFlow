@@ -21,12 +21,18 @@ internal static class ConfigurationPolicies
 
     public const string TaskTypeManage = Prefix + Permissions.TaskType.Manage;
 
+    /// <summary>Read Task Types: either <c>Task.View</c> or <c>TaskType.Manage</c> (the Task Types administration works without <c>Task.View</c>).</summary>
+    public const string TaskTypeRead = Prefix + Permissions.Task.View + "|" + Permissions.TaskType.Manage;
+
     public const string PriorityManage = Prefix + Permissions.Priority.Manage;
 
     public const string StatusLabelManage = Prefix + Permissions.StatusLabel.Manage;
 
     /// <summary>The catalog groups asset link roles under asset types ("Manage asset types and asset link roles").</summary>
     public const string AssetLinkRoleManage = Prefix + Permissions.AssetType.Manage;
+
+    /// <summary>Read the asset link roles: <c>Task.View</c> or <c>AssetType.Manage</c> (the Link Roles tab of the Asset Types page).</summary>
+    public const string AssetLinkRoleRead = Prefix + Permissions.Task.View + "|" + Permissions.AssetType.Manage;
 }
 
 /// <summary>Task priorities: lookup for Task screens and admin maintenance (UX S18). Failures surface as problem+json with a stable code.</summary>

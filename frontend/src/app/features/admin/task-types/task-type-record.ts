@@ -2,6 +2,7 @@ import { FormVersionStatus } from '../../../api/generated/api-client';
 import { WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { OPEN_STATUSES } from '../../../shared/work-queue/queue-filters';
 import { WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { firstAllowedTab } from '../denial';
 import { TaskTypeView } from './task-types-api';
 
 /** The three tabs of the Task Type page; `overview` is the default and is not written to the address. */
@@ -18,9 +19,7 @@ export const FORM_TAB_REASON = 'Save the task type first';
 
 /** The tab `?tab=` names; anything else, and the Request form tab of an unsaved type, is Overview. */
 export function tabOf(raw: string | null | undefined, isNew: boolean): TaskTypeTab {
-  if (raw === 'workflows') return 'workflows';
-  if (raw === 'form' && !isNew) return 'form';
-  return 'overview';
+  return firstAllowedTab<TaskTypeTab>(raw, isNew ? ['overview', 'workflows'] : ['overview', 'workflows', 'form']);
 }
 
 /** The header badge: Inactive and Not usable are neutral (derived states, never red), Active is green. Nothing for an unsaved type. */

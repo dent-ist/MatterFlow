@@ -18,6 +18,9 @@ internal static class AssetPolicies
     public const string AssetCreate = Prefix + Permissions.Asset.Create;
     public const string AssetEdit = Prefix + Permissions.Asset.Edit;
     public const string AssetTypeManage = Prefix + Permissions.AssetType.Manage;
+
+    /// <summary>Read Asset Types: <c>Asset.View</c> or <c>AssetType.Manage</c> (the Asset Types administration works without <c>Asset.View</c>).</summary>
+    public const string AssetTypeRead = Prefix + Permissions.Asset.View + "|" + Permissions.AssetType.Manage;
 }
 
 internal static class ListFilters
@@ -28,7 +31,7 @@ internal static class ListFilters
 }
 
 /// <summary>
-/// Asset Types. Reading needs <c>Asset.View</c> (every Asset screen shows the type); changing needs <c>AssetType.Manage</c>.
+/// Asset Types. Reading needs <c>Asset.View</c> (every Asset screen shows the type) or <c>AssetType.Manage</c>; changing needs <c>AssetType.Manage</c>.
 /// A type's own fields are its form (see <c>/api/v1/forms</c>, owner kind AssetType).
 /// </summary>
 [ApiController]
@@ -37,7 +40,7 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
 {
     /// <summary>Lists Asset Types. <c>name</c> is the column filter (fragment of the name). Sort: sortOrder (default), name, createdAt.</summary>
     [HttpGet(Name = "ListAssetTypes")]
-    [Authorize(Policy = AssetPolicies.AssetView)]
+    [Authorize(Policy = AssetPolicies.AssetTypeRead)]
     [ProducesResponseType<PagedResult<AssetTypeResponse>>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> List([FromQuery] AssetTypeListQuery query, CancellationToken cancellationToken)
     {
@@ -49,7 +52,7 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
 
     /// <summary>Gets one Asset Type with the status of its field form.</summary>
     [HttpGet("{assetTypeId:int}", Name = "GetAssetType")]
-    [Authorize(Policy = AssetPolicies.AssetView)]
+    [Authorize(Policy = AssetPolicies.AssetTypeRead)]
     [ProducesResponseType<AssetTypeResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Get(int assetTypeId, CancellationToken cancellationToken) =>
         this.ToActionResult(await types.GetAsync(assetTypeId, cancellationToken));

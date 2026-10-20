@@ -610,7 +610,9 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     effect(() => {
       const id = this.taskTypeId();
       untracked(() => {
+        // The task type is read with Task.View or TaskType.Manage; a Workflow.Manage-only person gets the id (no request that would be refused).
         if (id === undefined || this.taskTypeTitle()?.id === id) return;
+        if (!this.auth.hasAny(['TaskType.Manage', 'Task.View'])) return;
         void firstValueFrom(this.injector.get(TaskTypesClient).getTaskType(id))
           .then((t) => this.taskTypeTitle.set({ id, name: t.name }))
           .catch(() => undefined);

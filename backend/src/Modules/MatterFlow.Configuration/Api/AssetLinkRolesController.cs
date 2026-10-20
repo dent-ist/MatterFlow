@@ -14,7 +14,7 @@ public class AssetLinkRolesController(AssetLinkRoleService roles) : ControllerBa
 {
     /// <summary>Lists all link roles in order, including inactive ones (existing links still display them; pickers hide inactive).</summary>
     [HttpGet(Name = "ListAssetLinkRoles")]
-    [Authorize(Policy = ConfigurationPolicies.TaskView)]
+    [Authorize(Policy = ConfigurationPolicies.AssetLinkRoleRead)]
     [ProducesResponseType<IReadOnlyList<AssetLinkRoleView>>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<AssetLinkRoleView>>> List(CancellationToken cancellationToken) =>
         Ok(await roles.ListViewsAsync(cancellationToken));
