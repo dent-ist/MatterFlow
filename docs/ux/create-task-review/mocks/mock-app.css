@@ -1,0 +1,45 @@
+/* Shared look of the Create task mocks. Tokens copied from docs/ux/tokens.css. Static HTML, no script. */
+:root{--bg:#F5F6F8;--surface:#fff;--alt:#EEF0F4;--border:#C9CED8;--bs:#6B7280;--text:#1B1F27;--muted:#4B5563;--primary:#1F4E9C;--primary-h:#173C79;--sel:#E3ECFA;--danger:#B42318;--danger-bg:#FDECEA;--warn:#8A4B00;--warn-bg:#FFF4DB;--ok:#146C2E;--ok-bg:#E5F5EA;--focus:#B45309;--sh1:0 1px 2px rgba(0,0,0,.12);--sh2:0 4px 16px rgba(0,0,0,.18)}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.s{width:16px;height:16px}svg.i.l{width:28px;height:28px}
+.app{display:grid;grid-template-columns:200px 1fr;grid-template-rows:48px 1fr;min-height:100vh}
+.top{grid-column:1/-1;background:#14243F;color:#fff;display:flex;align-items:center;gap:16px;padding:0 16px}
+.top b{font-size:16px}.top .srch{flex:1;max-width:420px;background:#22385c;border-radius:4px;padding:6px 12px;color:#c7d3e8;font-size:13px}.top .btn{margin-left:auto}
+.rail{background:#fff;border-right:1px solid var(--border);padding:12px 8px;display:grid;gap:2px;align-content:start}
+.rail span{padding:8px 12px;border-radius:4px;color:var(--muted)}.rail .on{background:var(--sel);color:var(--primary);font-weight:600}
+.page{padding:16px 24px 96px;min-width:0}
+.crumb{font-size:13px;color:var(--muted)}h1{font-size:22px;margin:2px 0 4px}h2{font-size:18px;margin:0}h3{font-size:15px;margin:0}
+.ctx{color:var(--muted);margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--muted);border-radius:4px;padding:6px 14px;font-weight:600;background:#fff;color:var(--text);font-size:14px;min-height:36px}
+.btn.p{background:var(--primary);border-color:var(--primary);color:#fff}.btn.t{border-color:transparent;color:var(--primary);background:none}.btn.sm{padding:3px 10px;min-height:28px;font-size:13px}
+.btn.d{border-color:var(--danger);color:var(--danger)}
+.card{background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--sh1)}
+.pad{padding:16px}.row{display:flex;align-items:center;gap:12px}.sp{margin-left:auto}.mut{color:var(--muted)}.sm{font-size:13px}.xs{font-size:12px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.drop{border:2px dashed var(--bs);border-radius:8px;background:#fff;padding:20px 16px;display:grid;justify-items:center;gap:6px;text-align:center}
+.drop.over{border-color:var(--primary);background:var(--sel)}
+.drop .big{font-size:16px;font-weight:600}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:0 8px;font-size:12px;background:#F1F3F6;color:var(--muted);font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}.pill.wn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}.pill.in{background:var(--sel);color:var(--primary);border-color:var(--primary)}.pill.dg{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+.demo{background:var(--warn-bg);border:1px solid var(--warn);color:var(--warn);border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.alert{border-radius:6px;border:1px solid;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.alert.dg{background:var(--danger-bg);border-color:var(--danger);color:#7a1810}.alert.wn{background:var(--warn-bg);border-color:var(--warn);color:#5c3200}.alert.ok{background:var(--ok-bg);border-color:var(--ok);color:#0d4a1f}.alert.in{background:var(--sel);border-color:var(--primary);color:#173C79}
+.sepline{display:flex;align-items:center;gap:12px;color:var(--muted);margin:14px 0 10px}.sepline:before,.sepline:after{content:"";height:1px;background:var(--border);flex:1}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+.tile{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--bs);border-radius:8px;padding:0 10px;min-height:44px;font-weight:600;font-size:13px;line-height:1.2;box-shadow:var(--sh1)}
+.tile .ti{width:28px;height:28px;border-radius:6px;background:var(--sel);color:var(--primary);display:grid;place-items:center;flex:none}
+.tile .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile.sel{border:2px solid var(--primary);background:var(--sel)}
+.field{display:grid;gap:4px;margin-bottom:12px}.field label{font-weight:600;font-size:13px}.inp{flex-wrap:wrap;border:1px solid var(--bs);border-radius:4px;background:#fff;padding:6px 10px;min-height:36px;display:flex;align-items:center;gap:8px}
+.inp.pre{background:#F7FAFF;border-color:var(--primary)}.hint{font-size:12px;color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--alt);overflow:hidden}.bar i{display:block;height:100%;background:var(--primary)}
+.sticky{position:static;margin:16px -24px -96px;background:#fff;border-top:1px solid var(--border);padding:10px 24px;display:flex;gap:8px;box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+mark{background:#FFE9A8;padding:0 2px;border-radius:2px}
+.steps{display:grid;gap:8px}.st{display:flex;gap:10px;align-items:center}.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.dot.done{background:var(--ok);color:#fff}.dot.now{background:var(--primary);color:#fff}.dot.wait{background:var(--alt);color:var(--muted)}
+.spin{width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;display:inline-block}
+.sec{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
+/* phone */
+.ph .app{grid-template-columns:1fr;grid-template-rows:48px 1fr}.ph .rail{display:none}.ph .page{padding:12px 16px 88px}.ph .grid2{grid-template-columns:1fr}.ph .sticky{margin:16px -16px -88px;padding:8px 16px;flex-wrap:wrap}
+.ph .top .srch{display:none}.ph .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ph .hide-ph{display:none}.ph .tile{min-height:48px}
