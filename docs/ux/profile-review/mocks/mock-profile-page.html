@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock: My profile</title><link rel="stylesheet" href="mock.css"><body>
+<span class="tag">Before (shipped, 1366x768): plain page header, one 644 px column, 5 of 7 days on the first screen, no identity</span>
+<img class="shot" src="../screenshots/profile-default-1366x768.png" width="1100">
+<hr class="sep">
+<span class="tag g">After (mock): record-style header with identity and one primary action; two columns; compact work hours; first screen holds everything</span>
+<div style="width:1100px;background:var(--mf-bg)">
+ <div class="row" style="align-items:center">
+  <div style="display:flex;gap:12px;align-items:center"><span class="av">T4</span>
+   <div><h1 style="margin:0">Test User 04 <span class="pill m">Off hours</span></h1>
+   <div class="sub"><span class="mono">KE\testuser04</span> &middot; Data Technician &middot; Demo Workspace Support Pod (primary), Demo Processing Pod</div></div></div>
+  <div><span class="btn p">Set out of office...</span></div>
+ </div>
+ <div class="cols" style="margin-top:14px">
+  <div>
+   <div class="card"><h2>Availability</h2>
+     <label><input type="radio" checked> <b>Available</b> <span class="sub">Shown as available during work hours, off hours outside them.</span></label><br>
+     <label><input type="radio"> <b>Out of office</b> <span class="sub">Work can still be assigned.</span></label>
+     <div class="sub" style="margin-top:6px">Colleagues see this on assignee lists and the dashboard.</div></div>
+   <div class="card" style="margin-top:12px"><h2>Work hours</h2>
+     <div style="display:flex;gap:6px;margin-bottom:8px"><span class="chip on">Mon</span><span class="chip on">Tue</span><span class="chip on">Wed</span><span class="chip on">Thu</span><span class="chip on">Fri</span><span class="chip">Sat</span><span class="chip">Sun</span></div>
+     <div>From <span class="btn">09:00 AM</span> to <span class="btn">05:00 PM</span> <span class="sub">on the days above</span></div>
+     <div style="margin-top:6px"><span class="btn t">Different hours on some days</span> <span class="btn t">Reset to Mon-Fri 9-5</span></div>
+     <div style="margin-top:10px"><label class="sub">Time zone</label><br><span class="btn" style="font-weight:400;min-width:320px">Eastern Time (New York) &nbsp; v</span><div class="sub">It is 9:41 AM there now. Dates elsewhere in MatterFlow use your browser's time zone.</div></div>
+   </div>
+  </div>
+  <div>
+   <div class="card"><h2>Account</h2><div class="sub" style="margin-bottom:8px">Managed by your administrator.</div>
+    <table style="border:0"><tr><td class="sub" style="border:0;height:30px;width:120px">Name</td><td style="border:0;height:30px">Test User 04</td></tr>
+    <tr><td class="sub" style="border:0;height:30px">Windows account</td><td style="border:0;height:30px" class="mono">KE\testuser04</td></tr>
+    <tr><td class="sub" style="border:0;height:30px">Email</td><td style="border:0;height:30px">testuser04@example.test</td></tr>
+    <tr><td class="sub" style="border:0;height:30px">Role</td><td style="border:0;height:30px"><span class="pill">Data Technician</span></td></tr>
+    <tr><td class="sub" style="border:0;height:30px">Pods</td><td style="border:0;height:30px"><span class="pill">Demo Workspace Support Pod (primary)</span> <span class="pill">Demo Processing Pod</span></td></tr></table>
+    <div class="sub" style="margin-top:6px">Something wrong? Ask an administrator.</div></div>
+  </div>
+ </div>
+ <div style="position:sticky;margin-top:12px;background:#fff;border:1px solid var(--mf-border);border-radius:8px;padding:10px 16px"><span class="btn p" style="opacity:.55">Save changes</span> <span class="btn" style="opacity:.55">Discard changes</span> <span class="sub" style="margin-left:8px">No unsaved changes</span></div>
+</div>
+<p class="sub" style="width:1100px">Same data and API. Header uses the record-header pattern (22 px title, context line, one primary action; no Edit or Activity because the page is edited in place). Weekday toggles replace seven rows: about 16 Tab stops instead of about 50, and the page needs no scrolling at 1366x768.</p>
+</body></html>
