@@ -17,6 +17,8 @@ export interface MenuAction {
   /** PrimeIcons class, for example `pi-plus`. */
   icon?: string;
   disabled?: boolean;
+  /** The entry names what the page is on now (a version switcher's current version): `aria-current`. */
+  current?: boolean;
   /** Dangerous action (Cancel task): red text. */
   danger?: boolean;
   /** A divider above the entry (the last, dangerous entry of a menu is set apart). */
@@ -45,21 +47,28 @@ let nextId = 0;
         #trigger
         type="button"
         class="mf-btn am__trigger"
+        [class.am__trigger--text]="triggerText()"
         data-overflow
         aria-haspopup="menu"
         [attr.aria-expanded]="open()"
         [attr.aria-controls]="open() ? uid + '-menu' : null"
-        [attr.aria-label]="label()"
+        [attr.aria-label]="triggerText() ? label() + ': ' + triggerText() : label()"
         [attr.title]="label()"
         (click)="toggle()"
         (keydown)="onTriggerKey($event)"
       >
-        <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+        @if (triggerText()) {
+          <span data-trigger-text>{{ triggerText() }}</span>
+          <i class="pi pi-chevron-down" aria-hidden="true"></i>
+        } @else {
+          <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+        }
       </button>
       @if (open()) {
         <div
           class="am__menu"
           [class.am__menu--fixed]="pos() !== null"
+          [class.am__menu--start]="align() === 'start'"
           [style.top.px]="pos()?.top"
           [style.bottom.px]="pos()?.bottom"
           [style.right.px]="pos()?.right"
@@ -81,6 +90,7 @@ let nextId = 0;
               [class.am__item--sep]="item.separated"
               tabindex="-1"
               [attr.data-action]="item.id"
+              [attr.aria-current]="item.current ? 'true' : null"
               [attr.aria-disabled]="item.disabled ? 'true' : null"
               [attr.aria-describedby]="item.disabled && item.reason ? uid + '-r-' + item.id : null"
               (click)="pick(item)"
@@ -112,6 +122,10 @@ export class ActionMenu {
    * box scrolls, or the window is resized, because the button it hangs from has then moved.
    */
   readonly floating = input(false);
+  /** Text on the button instead of the ellipsis (a switcher: "v3 Draft"), followed by a chevron; `label` then names the menu. */
+  readonly triggerText = input('');
+  /** Which edge of the button the menu lines up with: `end` (default, the overflow at the right of a header) or `start` (a button at the left). */
+  readonly align = input<'start' | 'end'>('end');
 
   protected readonly uid = `am-${nextId++}`;
   protected readonly open = signal(false);

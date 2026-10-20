@@ -189,3 +189,31 @@
 .wf-impact p {
   margin: var(--mf-s1) 0 0;
 }
+
+/* A read-only version's note (VP6): a neutral note, not a warning (decision W). */
+.wf-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+  padding: var(--mf-s2) var(--mf-s3);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+  color: var(--mf-text);
+}
+
+.wf-note > i {
+  margin-top: 3px;
+  color: var(--mf-text-muted);
+}
+
+/* The version switcher: its own line in the header, under the title (full width, so a long name or the compact header never clips it). */
+.wf-switch-row {
+  margin-top: var(--mf-s2);
+}
+
+/* The Used by tab: one pane that scrolls inside the fixed-height page. */
+.wf-used {
+  min-height: 0;
+  overflow: auto;
+}

@@ -21,11 +21,15 @@ import {
   FormsClient,
   StepDefinitionSummary,
   StepDefinitionsClient,
+  TaskTypesClient,
   WorkflowSummary,
   WorkflowVersionDetail,
+  WorkflowVersionSummary,
   WorkflowVersionStatus,
   WorkflowsClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { HttpWorkflowLookup, WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
@@ -37,7 +41,13 @@ import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { WorkflowDiff, diffVersions } from './workflow-diff';
 import { workflowErrors } from './workflow-errors';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
+import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { Badge, workflowStatusTone } from '../../../shared/ui/badge';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { Impact, impactLine, retireCopy } from '../shared/dialog-copy';
+import { dependentTaskTypes } from './workflow-impact';
+import { WorkflowTaskTypesTab } from './workflow-task-types-tab';
+import { activeTaskTypes } from './workflow-record';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
@@ -66,6 +76,9 @@ const LIBRARY_PANE_MIN = 1280;
     WorkflowStepRow,
     WorkflowStepLibrary,
     Badge,
+    ActionMenu,
+    Tabs,
+    WorkflowTaskTypesTab,
     RecordState,
     RouterLink,
     Button,
@@ -74,6 +87,8 @@ const LIBRARY_PANE_MIN = 1280;
     ConfirmDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The version switcher and the impact lines read the other workflows (their published versions) through the shared lookup.
+  providers: [{ provide: WorkflowLookup, useClass: HttpWorkflowLookup }],
   styleUrls: ['../../../shared/ui/page.scss', './workflows.scss', './workflow-version-page.scss'],
   // A block, so the sticky action bar is held by the whole page and not by an inline box.
   styles: ':host { display: block; }',
@@ -132,6 +147,16 @@ const LIBRARY_PANE_MIN = 1280;
               <span data-publish-hint>Add at least one step before you can publish.</span>
             }
           </span>
+          <div class="wf-switch-row">
+            <mf-action-menu
+              class="wf-switch"
+              label="Switch version"
+              align="start"
+              [triggerText]="switcherText()"
+              [items]="switcherItems()"
+              data-version-switcher
+            />
+          </div>
         </mf-page-header>
 
         <mf-workflow-version-bar
@@ -149,7 +174,7 @@ const LIBRARY_PANE_MIN = 1280;
           (save)="save()"
           (publish)="startPublish()"
           (discard)="discardOpen.set(true)"
-          (retire)="retireOpen.set(true)"
+          (retire)="askRetire()"
           (newDraft)="newDraft()"
           (modeRequest)="requestMode($event)"
         />
@@ -157,19 +182,23 @@ const LIBRARY_PANE_MIN = 1280;
         @if (!editable() || conflict() || messages().length > 0) {
           <div class="wf-alerts">
             @if (!editable()) {
-              <div class="pg-banner" data-readonly-banner>
-                This version is {{ v.version.status === 'Published' ? 'published' : 'retired' }} and
-                cannot be edited.
-                @if (workflow()?.draftVersionId; as d) {
-                  <a
-                    class="pg-link"
-                    [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
-                    [state]="back.carry"
-                    >Open the draft (v{{ workflow()?.draftVersionNo }})</a
-                  >
-                } @else {
-                  Create a new draft to make changes.
-                }
+              <div class="wf-note" data-readonly-banner>
+                <i class="pi pi-info-circle" aria-hidden="true"></i>
+                <span>
+                  This version is
+                  {{ v.version.status === 'Published' ? 'published' : 'retired' }} and cannot be
+                  edited.
+                  @if (workflow()?.draftVersionId; as d) {
+                    <a
+                      class="pg-link"
+                      [routerLink]="['/admin/workflows', workflowId(), 'versions', d]"
+                      [state]="back.carry"
+                      >Open the draft (v{{ workflow()?.draftVersionNo }})</a
+                    >
+                  } @else {
+                    Create a new draft to make changes.
+                  }
+                </span>
               </div>
             }
             @if (conflict()) {
@@ -191,85 +220,112 @@ const LIBRARY_PANE_MIN = 1280;
           </div>
         }
 
-        <div class="wf-body mf-fill">
-          @if (editable() && libraryPane()) {
-            <section class="wf-pane wf-pane--lib" aria-labelledby="wf-lib-heading">
-              <div class="wf-pane__head">
-                <h2 id="wf-lib-heading">Workflow Steps</h2>
-                <p class="pg-reason">Pick active steps from the library to add to this version.</p>
-              </div>
-              <mf-workflow-step-library
-                [model]="library"
-                [addedIds]="addedIds()"
-                (add)="add($event)"
-              />
-            </section>
-          }
+        <mf-tabs
+          label="Version sections"
+          idPrefix="wv"
+          [tabs]="tabs()"
+          [selected]="current()"
+          (tabChange)="selectTab($event)"
+        />
 
-          <section class="wf-pane wf-pane--steps" aria-labelledby="wf-steps-heading" data-steps>
-            <div class="wf-pane__head">
-              <div class="wf-pane__top">
-                <h2 id="wf-steps-heading">Steps in this version ({{ rows().length }})</h2>
-                @if (editable() && !libraryPane()) {
-                  <p-button
-                    label="Add step"
-                    icon="pi pi-plus"
-                    severity="secondary"
-                    data-add-step
-                    aria-haspopup="dialog"
-                    (onClick)="openLibrary()"
-                  />
+        @if (current() === 'used-by') {
+          <div
+            class="wf-body mf-fill"
+            role="tabpanel"
+            id="wv-panel"
+            aria-labelledby="wv-tab-used-by"
+            data-used-by-panel
+          >
+            <div class="wf-used" mfScrollArea="Task types that use this workflow">
+              <mf-workflow-task-types-tab
+                [taskTypes]="workflow()?.taskTypes ?? []"
+                [canOpen]="auth.has('TaskType.Manage')"
+              />
+            </div>
+          </div>
+        } @else {
+          <div class="wf-body mf-fill" role="tabpanel" id="wv-panel" aria-labelledby="wv-tab-steps">
+            @if (editable() && libraryPane()) {
+              <section class="wf-pane wf-pane--lib" aria-labelledby="wf-lib-heading">
+                <div class="wf-pane__head">
+                  <h2 id="wf-lib-heading">Workflow Steps</h2>
+                  <p class="pg-reason">
+                    Pick active steps from the library to add to this version.
+                  </p>
+                </div>
+                <mf-workflow-step-library
+                  [model]="library"
+                  [addedIds]="addedIds()"
+                  (add)="add($event)"
+                />
+              </section>
+            }
+
+            <section class="wf-pane wf-pane--steps" aria-labelledby="wf-steps-heading" data-steps>
+              <div class="wf-pane__head">
+                <div class="wf-pane__top">
+                  <h2 id="wf-steps-heading">Steps in this version ({{ rows().length }})</h2>
+                  @if (editable() && !libraryPane()) {
+                    <p-button
+                      label="Add step"
+                      icon="pi pi-plus"
+                      severity="secondary"
+                      data-add-step
+                      aria-haspopup="dialog"
+                      (onClick)="openLibrary()"
+                    />
+                  }
+                </div>
+                @if (editable() && rows().length > 0) {
+                  <p class="pg-reason" id="wf-reorder-help">
+                    Reorder from the menu of a step (Move up, Move down), or press Alt+Up or
+                    Alt+Down on a step.
+                    @if (!isOrdered()) {
+                      The order is for display only in an unordered workflow.
+                    }
+                  </p>
                 }
               </div>
-              @if (editable() && rows().length > 0) {
-                <p class="pg-reason" id="wf-reorder-help">
-                  Reorder from the menu of a step (Move up, Move down), or press Alt+Up or Alt+Down
-                  on a step.
-                  @if (!isOrdered()) {
-                    The order is for display only in an unordered workflow.
-                  }
-                </p>
+              <div class="pg-sr" role="status" aria-live="polite" data-live>{{ live() }}</div>
+              @if (rows().length === 0) {
+                <div class="pg-state" data-steps-empty>
+                  {{
+                    editable()
+                      ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
+                      : 'This version has no steps.'
+                  }}
+                </div>
+              } @else {
+                <div class="wf-steps-scroll" mfScrollArea="Steps in this version">
+                  <ol
+                    class="wf-steps"
+                    aria-labelledby="wf-steps-heading"
+                    [attr.aria-describedby]="editable() ? 'wf-reorder-help' : null"
+                  >
+                    @for (r of rows(); track r.stepId; let i = $index; let last = $last) {
+                      <li class="wf-step-item">
+                        <mf-workflow-step-row
+                          [row]="r"
+                          [index]="i"
+                          [last]="last"
+                          [editable]="editable()"
+                          [ordered]="isOrdered()"
+                          [previewOpen]="isPreviewOpen(r.stepId)"
+                          [preview]="previewOf(r.stepId)"
+                          (move)="move(i, $event)"
+                          (remove)="remove(i)"
+                          (skippable)="setSkippable(i, $event)"
+                          (commentRequired)="setCommentRequired(i, $event)"
+                          (togglePreview)="togglePreview(r)"
+                        />
+                      </li>
+                    }
+                  </ol>
+                </div>
               }
-            </div>
-            <div class="pg-sr" role="status" aria-live="polite" data-live>{{ live() }}</div>
-            @if (rows().length === 0) {
-              <div class="pg-state" data-steps-empty>
-                {{
-                  editable()
-                    ? 'No steps yet. Add steps from Workflow Steps. A workflow needs at least one step to be published.'
-                    : 'This version has no steps.'
-                }}
-              </div>
-            } @else {
-              <div class="wf-steps-scroll" mfScrollArea="Steps in this version">
-                <ol
-                  class="wf-steps"
-                  aria-labelledby="wf-steps-heading"
-                  [attr.aria-describedby]="editable() ? 'wf-reorder-help' : null"
-                >
-                  @for (r of rows(); track r.stepId; let i = $index; let last = $last) {
-                    <li class="wf-step-item">
-                      <mf-workflow-step-row
-                        [row]="r"
-                        [index]="i"
-                        [last]="last"
-                        [editable]="editable()"
-                        [ordered]="isOrdered()"
-                        [previewOpen]="isPreviewOpen(r.stepId)"
-                        [preview]="previewOf(r.stepId)"
-                        (move)="move(i, $event)"
-                        (remove)="remove(i)"
-                        (skippable)="setSkippable(i, $event)"
-                        (commentRequired)="setCommentRequired(i, $event)"
-                        (togglePreview)="togglePreview(r)"
-                      />
-                    </li>
-                  }
-                </ol>
-              </div>
-            }
-          </section>
-        </div>
+            </section>
+          </div>
+        }
 
         @if (editable() && !libraryPane()) {
           <p-dialog
@@ -402,9 +458,11 @@ const LIBRARY_PANE_MIN = 1280;
           }
           <div class="wf-impact" data-impact>
             <strong>Impact</strong>
+            @if (publishImpact().text) {
+              <p data-publish-impact>{{ publishImpact().text }}</p>
+            }
             <p>
-              Existing tasks stay on their current version. New tasks use this version. Publishing
-              copies the current step content, so later library edits will not change it.
+              Publishing copies the current step content, so later library edits will not change it.
             </p>
           </div>
         </div>
@@ -427,14 +485,18 @@ const LIBRARY_PANE_MIN = 1280;
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
-      title="Retire version"
-      confirmLabel="Retire"
-      [danger]="true"
+      [title]="retireDialog().title"
+      [confirmLabel]="retireDialog().confirm"
+      [cancelLabel]="retireDialog().cancel"
+      [danger]="retireDialog().danger"
       [busy]="busy()"
       [(visible)]="retireOpen"
       (confirmed)="retire()"
     >
-      <p>New tasks will no longer use this version. Tasks already running on it are not changed.</p>
+      @if (retireImpact().text) {
+        <p data-retire-impact>{{ retireImpact().text }}</p>
+      }
+      <p>Tasks already running on it are not changed.</p>
     </mf-confirm-dialog>
 
     <mf-confirm-dialog
@@ -454,9 +516,12 @@ const LIBRARY_PANE_MIN = 1280;
 export class WorkflowVersionPage implements HasUnsavedChanges {
   readonly workflowId = input.required<string>();
   readonly versionId = input.required<string>();
+  /** `?tab=`: `used-by`; Steps (the default) is not written to the address. */
+  readonly tab = input<string>();
 
   private readonly api = inject(WorkflowsClient);
   private readonly steps = inject(StepDefinitionsClient);
+  protected readonly auth = inject(AuthStore);
   private readonly forms = inject(FormsClient);
   private readonly router = inject(Router);
   /** The exact list view this page was opened from (#354): the crumb and the links back to the workflow return to it. */
@@ -485,6 +550,10 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   });
   protected readonly version = signal<WorkflowVersionDetail | null>(null);
   protected readonly workflow = signal<WorkflowSummary | null>(null);
+  /** Every version of the workflow, for the version switcher. */
+  protected readonly versions = signal<WorkflowVersionSummary[]>([]);
+  /** The task types for which this workflow is the only published one (loaded with `Task.View`, when a dialog opens); null when unknown. */
+  private readonly dependents = signal<string[] | null>(null);
   protected readonly rows = signal<PlacementRow[]>([]);
   protected readonly isOrdered = signal(true);
   private readonly baseline = signal('');
@@ -513,6 +582,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly modeOpen = signal(false);
   protected readonly pendingMode = signal(true);
   protected readonly retireOpen = signal(false);
+  protected readonly publishImpact = signal<Impact>({ text: '', names: [] });
   protected readonly discardOpen = signal(false);
   private leaving = false;
   private undoOffer: number | null = null;
@@ -529,6 +599,49 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   protected readonly dirty = computed(
     () => this.editable() && this.currentKey() !== this.baseline(),
   );
+
+  protected readonly current = computed<'steps' | 'used-by'>(() =>
+    this.tab() === 'used-by' ? 'used-by' : 'steps',
+  );
+  /** Steps (n) counts the rows now (live while editing); Used by (n) the active task types that offer the workflow. */
+  protected readonly tabs = computed<MfTab[]>(() => {
+    const w = this.workflow();
+    return [
+      { key: 'steps', label: 'Steps', count: this.rows().length },
+      { key: 'used-by', label: 'Used by', count: w ? activeTaskTypes({ workflow: w }).length : 0 },
+    ];
+  });
+
+  /** The version switcher in the header ("v3 Draft"): the version list lives on the Workflow page, so there is no Versions tab here. */
+  protected readonly switcherText = computed(() => {
+    const v = this.version()?.version;
+    return v ? `v${v.versionNo} ${v.status}` : '';
+  });
+  protected readonly switcherItems = computed<MenuAction[]>(() => {
+    const now = this.version()?.version.workflowVersionId;
+    const published = this.workflow()?.publishedVersionId;
+    return [...this.versions()]
+      .sort((a, b) => b.versionNo - a.versionNo)
+      .map((v) => ({
+        id: `v${v.versionNo}`,
+        label: `v${v.versionNo} ${v.status}${v.workflowVersionId === published ? ' (current)' : ''}`,
+        icon: v.workflowVersionId === now ? 'pi-check' : undefined,
+        current: v.workflowVersionId === now,
+        run: () => void this.switchTo(v),
+      }));
+  });
+
+  protected readonly retireDialog = computed(() =>
+    retireCopy(this.version()?.version.versionNo ?? ''),
+  );
+  protected readonly retireImpact = computed(() => {
+    const v = this.version()?.version;
+    return impactLine('retireVersion', {
+      versionNo: v?.versionNo,
+      openTasks: v?.openTaskCount,
+      names: this.dependents(),
+    });
+  });
 
   constructor() {
     // The tab title names the state ("Workflow version not found"); the record title is #359's.
@@ -595,6 +708,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       },
       ({ detail, workflow }) => {
         this.workflow.set(workflow.workflow);
+        this.versions.set(workflow.versions);
         this.apply(detail);
       },
     );
@@ -602,6 +716,47 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
       void this.library.load();
       void this.library.loadTags();
     }
+  }
+
+  protected selectTab(key: string): void {
+    void this.router.navigate([], {
+      queryParams: { tab: key === 'used-by' ? 'used-by' : null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /** Another version of the same workflow, on the same tab; a dirty draft asks first (the route's leave guard). */
+  protected async switchTo(v: WorkflowVersionSummary): Promise<void> {
+    if (v.workflowVersionId === this.version()?.version.workflowVersionId) return;
+    await this.router.navigate(
+      ['/admin/workflows', this.workflowId(), 'versions', v.workflowVersionId],
+      {
+        queryParams: { tab: this.current() === 'used-by' ? 'used-by' : null },
+        ...this.back.extras,
+      },
+    );
+  }
+
+  /**
+   * The task types for which this workflow is the only published one: read when a dialog needs them (`Task.View`; the lists are the task
+   * types of the workflow and the workflows with their published versions). Unknown (null) without the permission or when a request fails.
+   */
+  private async loadDependents(): Promise<void> {
+    this.dependents.set(
+      this.auth.has('Task.View')
+        ? await dependentTaskTypes(
+            this.injector.get(TaskTypesClient),
+            this.injector.get(WorkflowLookup),
+            Number(this.workflowId()),
+          )
+        : null,
+    );
+  }
+
+  protected async askRetire(): Promise<void> {
+    await this.loadDependents();
+    this.retireOpen.set(true);
   }
 
   protected openLibrary(): void {
@@ -781,6 +936,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     this.resetErrors();
     this.diff.set(null);
     this.previousNo.set(null);
+    this.publishImpact.set({ text: '', names: [] });
     this.shiftedOpen.set(false);
     this.publishOpen.set(true);
     this.diffLoading.set(true);
@@ -792,6 +948,23 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         );
       }
       this.previousNo.set(previous?.version.versionNo ?? null);
+      if (previous) {
+        this.publishImpact.set(
+          impactLine('publishVersion', {
+            versionNo: previous.version.versionNo,
+            newVersionNo: v.version.versionNo,
+            openTasks: previous.version.openTaskCount ?? null,
+          }),
+        );
+      } else {
+        await this.loadDependents();
+        this.publishImpact.set(
+          impactLine('publishVersion', {
+            firstVersion: true,
+            usableTaskTypes: this.dependents()?.length ?? null,
+          }),
+        );
+      }
       this.diff.set(
         diffVersions(previous && { isOrdered: previous.version.isOrdered, steps: previous.steps }, {
           isOrdered: this.isOrdered(),

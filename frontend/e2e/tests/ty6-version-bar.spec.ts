@@ -203,10 +203,10 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     await more.focus();
     await page.keyboard.press('Enter');
     await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: 'Retire version' });
+    const dialog = page.getByRole('dialog', { name: 'Retire v1?' });
     await expect(dialog).toBeVisible();
     await expectNoViolations(page, 'retire dialog');
-    await dialog.getByRole('button', { name: 'Retire', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Retire v1', exact: true }).click();
     await expect(page.locator('[data-status]')).toContainText('Retired');
     await expect(bar(page).locator('[data-overflow]')).toHaveCount(0);
     await expect(bar(page).getByRole('link', { name: 'Open draft v2' })).toBeVisible();

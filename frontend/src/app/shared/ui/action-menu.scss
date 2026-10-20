@@ -8,6 +8,13 @@
   padding: 0 var(--mf-s2);
 }
 
+.am__trigger--text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: 32px;
+}
+
 .am__menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -21,6 +28,12 @@
   border-radius: var(--mf-radius);
   background: var(--mf-surface);
   box-shadow: var(--mf-shadow-2);
+}
+
+/* A button at the left of its line: the menu opens to the right of its left edge. */
+.am__menu--start {
+  right: auto;
+  left: 0;
 }
 
 /* A floating menu (row menus in a scrolling table): placed against the window by the component. */
