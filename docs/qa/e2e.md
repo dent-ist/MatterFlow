@@ -74,6 +74,8 @@ frontend/e2e/
     time.ts              dates in a given IANA zone, the two extreme zones used by the overdue test
     board.ts             seedBoard: 150+ tasks across clients, matters, priorities, statuses and assignees for the Swimlane tests and screenshots
     axe.ts               axe-core runner (wcag2a, wcag2aa, wcag21aa, wcag22aa); reads axe from E2E_AXE_PATH or an installed axe-core, tests skip without it
+    personas.ts          Personas: users with a given permission set, signInAs, failApi / failMe / delayApi / goOffline, SHELL_ROUTES
+    screens.ts           the four sizes, screenshots, no sideways scroll, axe at every size
   pages/                 page objects: create-task, task-detail (+ StepPanel), queues (Task Queue, My Work, Pod Work), organization
   fixtures/email/        sample .eml files (copies of tools/spike-outlook-dnd/samples, kept byte exact)
   tests/*.spec.ts        the tests
@@ -87,6 +89,33 @@ Fixtures (from `support/fixtures.ts`):
 | `asUser(username, { timezoneId? })` | A page in a fresh browser context signed in as another user, optionally in another browser time zone. Closed automatically. |
 | `admin` (worker) | `Api` as System Admin. |
 | `seed` (worker) | `Seeder` over `admin`. |
+| `personas` (worker) | `Personas` over `seed`: people with a known set of permissions (below). |
+
+### Personas and failure helpers (`support/personas.ts`, `support/screens.ts`)
+
+Any spec that needs "a person who has exactly these permissions" uses `personas`, not a private `seed.role` plus `seed.user` pair. Dev authentication names the user by `X-Dev-User`, so signing in is `asUser(persona.username)`.
+
+```ts
+test('...', async ({ personas, asUser }) => {
+  const viewer = await personas.create({ permissions: ['Client.View'] });   // a custom role with exactly these codes
+  const director = await personas.named('director');                       // a catalogue entry (below)
+  const tech = await personas.named('technician', { label: 'mine' });      // catalogue entry with an override
+  const page = await asUser(viewer.username);
+});
+```
+
+| Piece | Use |
+|---|---|
+| `personas.create(spec)` | `spec`: `roles` (built-in role names), `permissions` (one new custom role with exactly these codes), neither (Access Pending), `displayName` or `displayNameLength`, `disabled`, `label` (part of the account name `ke\e2e-<label>-<id>`, unique per call, nothing to clean up). Returns `{ username, userId, roleNames, permissions, displayName }`. |
+| `personas.named(key, overrides?)` | `PERSONAS`: `director`, `readOnlyObserver`, `complianceAuditor`, `technician`, `podLead`, `intakeCoordinator`, `configurationAdmin`, `clientViewOnly`, `taskViewOnly`, `userManageOnly`, `podViewWithoutTaskView`, `pending`, `disabled`, `longName` (66 characters). Add a person to `PERSONAS` (one line and a comment) rather than writing a helper in a spec. |
+| `PERMISSION_VARIANTS` | A ready matrix of eight kinds of person for "who may see this" tests. Loop over it, or over your own `PersonaSpec[]`. |
+| `signInAs(browser, username, { width, height, timezoneId })` | The same as the `asUser` fixture for code outside a test (the caller closes the context). |
+| `failApi(page, url, status, { times, method })`, `failMe(page, status)` | Answer matching requests with a problem response (401, 403, 404, 500, 502, 503) and a trace id; `times: 1` lets Retry succeed; they return a function that removes the rule. `failMe` makes the shell fail to start (the error page). |
+| `delayApi(page, url, ms)`, `goOffline(page, offline?)` | Hold matching requests for `ms` (the "still loading" cases); cut or restore the connection. |
+| `SHELL_ROUTES` | The routes of the App shell review with their H1, header shape (A list, B workspace, C record, D administration) and the permission that opens each. Specs loop over it; `sh-personas` proves the table. |
+| `SIZES`, `shot`, `noHorizontalScroll`, `atEverySize(page, name)` (`support/screens.ts`) | The four sizes (375x812, 768x1024, 1366x768, 1920x1080), screenshots into `E2E_SCREENSHOTS`, "no page-level horizontal scroll", and axe plus both at every size. |
+
+Other epics' permission matrices should reuse it (and add their own people to `PERSONAS`) instead of forking it.
 
 ## Coverage
 
@@ -109,6 +138,7 @@ Fixtures (from `support/fixtures.ts`):
 | `swimlane-board` | Dashboard > Swimlane WP9a (#122, #123, #124): one-line Compact card (44 px, at least 8 cards per lane at 1366x768, 10 at 1920x1080), remembered Compact, one-row toolbar from 1100 px and the "..." menu button (keyboard, Esc, focus return, settings chips), no client or matter on tree cards and wrapped tree labels, one "client / matter" line, no repeated assignee, lane count links equal the Task Queue totals (no filters, task type, pod scope, Done window, search caveat), axe at 1366, 1920 and 375, no `aria-prohibited-attr` (also not as needs review) |
 | `dashboard-scope` (10 + screenshots) | Dashboard > page-wide Scope (issue #89): a pod member opens on My pods and a person in no pod on All pods (membership, not role names), the tiles equal the Task Queue for the same pods (the Overdue tile's link carries both `pod` filters), the options (own pods first, other pods only with `Pod.View`), a shared `?pod=` link on every tab and after a reload, a pod the person may not see (note, default scope, API 403), every tab reads `podScope` and has no Pod control (Summary, Breakdowns, Trends, Swimlane, Users, Coverage), choosing a pod (address, live region, memory, address wins over memory), the no-pod hint and its link, the old `upod` link, the Technician variant, axe at 1366, 1920 and 375 on all five tabs with the target size, row placement and no horizontal scroll |
 | `dashboard-summary-deltas` (12 + screenshots) | Dashboard > Summary deltas (issue #102) and the Technician Summary (issue #108). Deltas: the four tiles (Overdue and Open vs yesterday, Created and Completed vs the previous 30 days) read glyph, signed number and words for a pod with a backdated history (needs the SQL container of `run-local.sh`; `Seeder.ageTask`), none on Unassigned, On hold, Due soon and ASAP, the screen-reader sentence is part of the tile's link name, only Overdue going up is coloured, tile minus delta equals the Trends point of yesterday for the same pod (API), a pod younger than the comparison shows no line (no NaN, no +0), This month says "same days last month", axe at 1366, 1920 and 375, the line fits the tile at 375 and 320. Technician: the heading "Unassigned work", no tab row, My pods by default, queue limited to the pod, the own-work line and its My Work link, Priority and Task type filters (address `sprio` and `stype`, list, count and "View all" equal the Task Queue, a reload keeps them), the two empty states with their way out, Assign to me still removes the row and drops the count, a person in no pod, the Director unchanged, axe at 1366, 1920 and 375, filters wrap at 375 and 320 |
+| `sh-personas` (3) | The personas helper (#596): a persona has exactly its permissions, pending / disabled / 66-character-name personas look as named, `SHELL_ROUTES` (every route opens for the System Admin with its H1, a person without the permission gets the 403), `failMe`, `failApi` with `times`, `goOffline` |
 | `dashboard-audit` (7) | Dashboard tiles drill through to the queue with the same filter (my overdue, my open, department ASAP and Unassigned), department section needs its permission; audit log browser smoke (filter by object, event type and text, details, read only, who may open it) |
 
 `rich-description-screens` is not a test: it photographs the rich description at 1366x768 and 375x812 for `docs/ux/rich-description` when `E2E_SCREENSHOTS` names the output folder (with `E2E_AXE_PATH` it also runs axe on every shot).

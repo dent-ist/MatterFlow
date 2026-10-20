@@ -1,5 +1,6 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { ADMIN_USER, Api, BASE_URL } from './api';
+import { Personas } from './personas';
 import { Seeder } from './seed';
 
 interface TestFixtures {
@@ -14,6 +15,8 @@ interface WorkerFixtures {
   admin: Api;
   /** Builders for isolated test data on top of `admin`. */
   seed: Seeder;
+  /** People with a known permission set, created through the API (see `support/personas.ts`); sign in with `asUser(persona.username)`. */
+  personas: Personas;
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
@@ -29,6 +32,13 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   seed: [
     async ({ admin }, use) => {
       await use(new Seeder(admin));
+    },
+    { scope: 'worker' },
+  ],
+
+  personas: [
+    async ({ seed }, use) => {
+      await use(new Personas(seed));
     },
     { scope: 'worker' },
   ],

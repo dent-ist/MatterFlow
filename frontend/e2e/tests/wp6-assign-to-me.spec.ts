@@ -137,10 +137,11 @@ test.describe('WP6: Assign to me', () => {
 
   test('#234: a Read-Only Observer gets no Assignee menu and no Assign to me', async ({
     seed,
+    personas,
     asUser,
   }) => {
     const token = uid();
-    const observer = await seed.user(['Read-Only Observer'], `wp6r-${token}`);
+    const observer = await personas.named('readOnlyObserver', { label: `wp6r-${token}` });
     const world = await seed.world();
     const title = `Watch ${token}`;
     const task = await seed.task(world, { title });
@@ -242,9 +243,13 @@ test.describe('WP6: Assign to me', () => {
     });
   }
 
-  test('#199: a Read-Only Observer sees no Assign to me in Pod Work', async ({ seed, asUser }) => {
+  test('#199: a Read-Only Observer sees no Assign to me in Pod Work', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
     const token = uid();
-    const observer = await seed.user(['Read-Only Observer'], `wp6q-${token}`);
+    const observer = await personas.named('readOnlyObserver', { label: `wp6q-${token}` });
     const pod = await seed.pod(undefined, [observer.userId]);
     const world = await seed.world();
     const title = `Pod watch ${token}`;

@@ -8,10 +8,10 @@ import { uid } from '../support/seed';
 test.describe('Access Pending and role grant', () => {
   test('a user without roles sees Access Pending and gets in after an administrator grants a role', async ({
     page,
-    seed,
+    personas,
     asUser,
   }) => {
-    const newcomer = await seed.user([], 'newcomer');
+    const newcomer = await personas.named('pending', { label: 'newcomer' });
     const pendingPage = await asUser(newcomer.username);
     await pendingPage.goto('/');
     await expect(pendingPage).toHaveURL(/\/access-pending$/);
@@ -45,16 +45,10 @@ test.describe('Access Pending and role grant', () => {
   });
 
   test('a disabled account is told so instead of being offered a way in', async ({
-    seed,
+    personas,
     asUser,
-    admin,
   }) => {
-    const user = await seed.user(['Data Technician'], 'disabled');
-    const detail = await admin.get(`/api/v1/users/${user.userId}`);
-    await admin.put(`/api/v1/users/${user.userId}/status`, {
-      isActive: false,
-      rowVersion: detail.rowVersion,
-    });
+    const user = await personas.named('disabled');
 
     const page = await asUser(user.username);
     await page.goto('/');
@@ -70,10 +64,10 @@ test.describe('Access Pending and role grant', () => {
 
 test.describe('Permission denial in the UI and the API (SCN-019)', () => {
   test('SCN-019: a technician has no administration menu and a direct link ends on the denied page', async ({
-    seed,
+    personas,
     asUser,
   }) => {
-    const tech = await seed.user(['Data Technician'], 'tech');
+    const tech = await personas.named('technician');
     const page = await asUser(tech.username);
 
     await page.goto('/tasks');
@@ -155,10 +149,10 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
   test('SCN-019: a view-only role cannot create tasks and the UI does not offer it', async ({
     seed,
+    personas,
     asUser,
   }) => {
-    const role = await seed.role(['Task.View', 'Matter.View', 'Client.View'], 'E2E viewer');
-    const viewer = await seed.user([role.name], 'viewer');
+    const viewer = await personas.named('taskViewOnly', { label: 'viewer' });
     const page = await asUser(viewer.username);
 
     const queue = new TaskQueuePage(page);
@@ -189,10 +183,12 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
   test('SCN-019: without Task.Assign the UI offers no assignment and the API names the missing permission', async ({
     seed,
+    personas,
     asUser,
   }) => {
-    const role = await seed.role(
-      [
+    const user = await personas.create({
+      label: 'noassign',
+      permissions: [
         'Task.View',
         'Task.Create',
         'Task.Edit',
@@ -201,9 +197,7 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
         'Project.View',
         'Pod.View',
       ],
-      'E2E no-assign',
-    );
-    const user = await seed.user([role.name], 'noassign');
+    });
     const world = await seed.world();
     const task = await seed.task(world);
     const page = await asUser(user.username);
@@ -234,10 +228,10 @@ test.describe('Permission denial in the UI and the API (SCN-019)', () => {
 
   test('a person with only Task.View can read a task but sees no edit, status or workflow actions', async ({
     seed,
+    personas,
     asUser,
   }) => {
-    const role = await seed.role(['Task.View', 'Matter.View', 'Client.View'], 'E2E reader');
-    const reader = await seed.user([role.name], 'reader');
+    const reader = await personas.named('taskViewOnly', { label: 'reader' });
     const world = await seed.world();
     const task = await seed.task(world);
     const page = await asUser(reader.username);
