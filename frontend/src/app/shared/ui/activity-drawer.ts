@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from '@ang
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from './dialog-focus';
 import { EntityActivity } from './entity-activity';
+import { ScrollRegion } from './scroll-region';
 
 /**
  * The Activity of a record in a right-side drawer, opened from the "Activity" button of the page header. It is an accessible modal
@@ -13,7 +14,7 @@ import { EntityActivity } from './entity-activity';
  */
 @Component({
   selector: 'mf-activity-drawer',
-  imports: [Dialog, DialogFocus, EntityActivity],
+  imports: [Dialog, DialogFocus, EntityActivity, ScrollRegion],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     /* A long record name (a 200-character task title) takes at most 2 lines; the whole text is in the tooltip and is the dialog's name. */
@@ -28,6 +29,13 @@ import { EntityActivity } from './entity-activity';
       line-clamp: 2;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+    }
+    /* The history scrolls inside the drawer: that box is a named, focusable region while it overflows (axe scrollable-region-focusable,
+       TY-K #415), so a keyboard user can scroll a long history. The dialog's own content area does not scroll. */
+    .mf-drawer__scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
     }
   `,
   template: `
@@ -53,6 +61,7 @@ import { EntityActivity } from './entity-activity';
         margin: '0',
         borderRadius: '0',
       }"
+      [contentStyle]="{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }"
     >
       <ng-template #header let-labelId="ariaLabelledBy">
         <span class="mf-drawer__title" data-drawer-title [id]="labelId" [title]="title()">{{
@@ -60,15 +69,17 @@ import { EntityActivity } from './entity-activity';
         }}</span>
       </ng-template>
       @if (visible()) {
-        @if (objectType() !== null && objectId() !== null) {
-          <mf-entity-activity
-            [objectType]="objectType()!"
-            [objectId]="objectId()!"
-            [compact]="true"
-          />
-        } @else {
-          <ng-content />
-        }
+        <div class="mf-drawer__scroll" mfScrollRegion="Activity" data-drawer-scroll>
+          @if (objectType() !== null && objectId() !== null) {
+            <mf-entity-activity
+              [objectType]="objectType()!"
+              [objectId]="objectId()!"
+              [compact]="true"
+            />
+          } @else {
+            <ng-content />
+          }
+        </div>
       }
     </p-dialog>
   `,

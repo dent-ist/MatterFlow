@@ -114,7 +114,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     if (axeAvailable()) expect(await axeViolations(page), 'workflows columns').toEqual([]);
   });
 
-  test('the Draft badge is the link into the draft: one Tab stop, Back puts focus on the name; Not published is a neutral badge', async ({
+  test('the Draft badge is the link into the draft: reached with the right arrow from the name (not a Tab stop, #413), Back puts focus on the name; Not published is a neutral badge', async ({
     page,
     seed,
     admin,
@@ -132,12 +132,14 @@ test.describe('Workflows columns (#376, #377)', () => {
     );
     await shot(page, 'p377-draft-badge');
     if (axeAvailable()) expect(await axeViolations(page), 'draft badge link').toEqual([]);
-    // One Tab stop in the row for it, after the name link (and before the row menu).
+    // The row has two Tab stops, the name and the menu (#413); the draft link is the stop the right arrow reaches from the name.
     await page.locator(`a[data-row-key="${wf.workflowDefinitionId}"]`).focus();
-    await page.keyboard.press('Tab');
-    await expect(link).toBeFocused();
+    await expect(link).toHaveAttribute('tabindex', '-1');
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: `Actions for ${wf.name}` })).toBeFocused();
+    await page.locator(`a[data-row-key="${wf.workflowDefinitionId}"]`).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(link).toBeFocused();
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(

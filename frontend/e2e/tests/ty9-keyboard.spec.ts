@@ -28,6 +28,14 @@ const ROWS = 30;
 
 /** Tab-stop counts, written once for the issue comment. */
 const stops: Record<string, number | string> = {};
+
+async function shot(page: Page, name: string): Promise<void> {
+  if (!OUT) return;
+  fs.mkdirSync(OUT, { recursive: true });
+  const size = page.viewportSize()!;
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: path.join(OUT, `${name}-${size.width}x${size.height}.png`) });
+}
 test.afterAll(() => {
   if (!OUT || Object.keys(stops).length === 0) return;
   fs.mkdirSync(OUT, { recursive: true });
@@ -130,6 +138,7 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
           page.getByRole('link', { name: 'Skip to table' }),
           `${kind} ${w}`,
         ).toBeFocused();
+        await shot(page, `${kind}-skip-to-table`);
         await page.keyboard.press('Enter');
         await expect(firstName(page), `${kind} ${w}: first row`).toBeFocused();
         // One more Tab goes to the next stop of the row (its menu), not back to the top.
@@ -554,5 +563,29 @@ test.describe('#414: form designer', () => {
     await expect(titleBadge(page)).toContainText('Draft v2');
     await expect(titleBadge(page)).toBeFocused();
     await expect.poll(() => said(page)).toContain('Draft v2 created');
+  });
+});
+
+test.describe('#414: a failed deactivate stays in the dialog (screenshots)', () => {
+  test('Task Types list at four widths', async ({ page }) => {
+    for (const [w, h] of SIZES) {
+      await page.setViewportSize({ width: w, height: h });
+      await freshTop(page, urlOf('types'));
+      await failNext(page, /\/api\/v1\/task-types\/\d+$/, 'PUT');
+      const first = page
+        .locator(
+          'tr[data-row] button[aria-label^="Actions for"], li[data-record-card] button[aria-label^="Actions for"]',
+        )
+        .first();
+      await first.click();
+      await page.getByRole('menuitem', { name: 'Deactivate' }).click();
+      const button = await confirm(page, /^Deactivate/);
+      await expect(dialogError(page)).toBeVisible();
+      await expect(button).toBeFocused();
+      if (axeAvailable()) expect(await axeViolations(page), `error dialog at ${w}`).toEqual([]);
+      await shot(page, 'types-deactivate-failed');
+      await page.unroute(/\/api\/v1\/task-types\/\d+$/);
+      await page.keyboard.press('Escape');
+    }
   });
 });
