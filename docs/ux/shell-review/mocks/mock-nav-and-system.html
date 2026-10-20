@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock: navigation and system pages</title><link rel="stylesheet" href="mock.css"><body style="width:1240px">
+<div style="display:flex;gap:18px;align-items:flex-start">
+ <div style="width:330px"><span class="tag">Before: rail (1366)</span><br><img class="shot" src="nav-before.png" width="230" style="margin-bottom:10px">
+  <span class="tag g">After (mock): grouped rail</span>
+  <div style="width:230px;background:#fff;border:1px solid var(--mf-border);padding:8px 10px;font-size:14px;line-height:34px">
+   <div style="font:600 11px var(--mf-font);color:var(--mf-text-muted);letter-spacing:.05em;line-height:20px;margin-top:4px">WORK</div>
+   Dashboard<br>My Work<br><b style="background:var(--mf-sel);color:var(--mf-primary);display:block;padding:0 8px;border-radius:4px;line-height:34px">Task Queue</b>Pod Work
+   <div style="font:600 11px var(--mf-font);color:var(--mf-text-muted);letter-spacing:.05em;line-height:20px;margin-top:6px;border-top:1px solid var(--mf-border);padding-top:6px">RECORDS</div>
+   Clients<br>Matters<br>Projects<br>Assets
+   <div style="font:600 11px var(--mf-font);color:var(--mf-text-muted);letter-spacing:.05em;line-height:20px;margin-top:6px;border-top:1px solid var(--mf-border);padding-top:6px">ADMINISTRATION</div>
+   Users <span class="pill r" style="float:right;margin-top:6px">1</span><br>Task Types<br>Labels<br><b style="font-weight:400">Asset types</b><br>Custom Fields<br>Audit Logs</div>
+  <div class="sub" style="margin-top:6px;width:230px">Two small group labels, the admin "Assets" becomes "Asset types" (its page is "Asset types and link roles"), and its icon stays the tag.</div></div>
+ <div style="flex:1"><span class="tag">Before: 404 (1366)</span><br><img class="shot" src="../screenshots/sys-404-1366x768.png" width="420"> <img class="shot" src="../screenshots/sys-error-1366x768.png" width="420" style="margin-top:6px">
+ </div>
+ <div style="flex:1"><span class="tag g">After (mock): the shared state card, same on 403, 404, error</span>
+  <div style="background:var(--mf-bg);border:1px solid var(--mf-border);padding:14px;margin-bottom:10px;width:420px"><div class="card" style="text-align:center;padding:26px 16px"><div style="font-size:26px">&#128269;</div><h1 style="justify-content:center;margin:6px 0">We couldn't find that page</h1><p class="sub">The link may be wrong or the page may have moved. You asked for <span class="mono">/clients/99999</span>.</p><p><span class="btn p">Go to My Work</span> <span class="btn">Search</span></p></div></div>
+  <div style="background:var(--mf-bg);border:1px solid var(--mf-border);padding:14px;margin-bottom:10px;width:420px"><div class="card" style="text-align:center;padding:26px 16px"><h1 style="justify-content:center;margin:6px 0">You don't have permission to view this</h1><p class="sub">Your role does not include Task Queue. Ask an administrator if you think you should have access.</p><p><span class="btn p">Go to Clients</span> <span class="btn">Copy link to this page</span></p></div></div>
+  <div style="background:var(--mf-bg);border:1px solid var(--mf-border);padding:14px;width:420px"><div class="card" style="text-align:center;padding:26px 16px"><h1 style="justify-content:center;margin:6px 0">Something went wrong</h1><p class="sub">We could not load your profile. Nothing was lost.</p><p class="sub">Reference <span class="mono">00-abc123</span> <span class="btn t">Copy</span></p><p><span class="btn p">Try again</span></p></div></div>
+ </div>
+</div></body></html>

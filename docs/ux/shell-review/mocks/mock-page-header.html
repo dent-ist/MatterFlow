@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock: one page-header contract</title><link rel="stylesheet" href="mock.css"><body style="width:1240px">
+<span class="tag">Before (shipped, 1366): nine different title positions, sizes and action placements</span>
+<img class="shot" src="../screenshots/header-comparison-1-work-pages.png" width="1180">
+<hr class="sep">
+<span class="tag g">After (mock): one contract, four shapes. Title 22 px / 700 with the page icon at 12 px from the top; context line 13 px muted; actions right in the order [secondary] [Filters] [primary]; strip and tabs underneath</span>
+<div style="width:1180px;display:flex;flex-direction:column;gap:14px;margin-top:8px">
+ <div class="card" style="background:var(--mf-bg)"><div class="sub" style="margin-bottom:4px"><b>A. List page</b> (Clients, Matters, Projects, Assets, Task Queue, Admin lists)</div>
+  <div class="row" style="align-items:center"><h1 style="margin:0">Clients</h1><div><span class="btn">Filters</span> <span class="btn p">+ New client</span></div></div></div>
+ <div class="card" style="background:var(--mf-bg)"><div class="sub" style="margin-bottom:4px"><b>B. Workspace page with a scope and a strip</b> (Dashboard, My Work, Pod Work)</div>
+  <div class="row" style="align-items:center"><div><h1 style="margin:0">Pod Work</h1><div class="sub">Demo Processing Pod &middot; 23 members &middot; you are a member (primary)</div></div><div><span class="sub">Pod</span> <span class="btn" style="font-weight:400;min-width:240px">Demo Processing Pod v</span></div></div>
+  <div class="strip"><span class="chip r">Overdue <b>4</b></span><span class="chip">Due today <b>2</b></span><span class="chip">ASAP <b>3</b></span><span class="chip">On hold <b>6</b></span></div>
+  <div class="tabs"><span class="on">Unassigned (3)</span><span>By member (7)</span><span>Overdue and on hold (9)</span><span>All open (24)</span></div></div>
+ <div class="card" style="background:var(--mf-bg)"><div class="sub" style="margin-bottom:4px"><b>C. Record page</b> (Client, Matter, Project, Asset, Task) &mdash; unchanged, Assets joins it</div>
+  <div class="crumb"><a>Assets</a> &gt; Hartwell export 2026-10</div><div class="row" style="align-items:center"><h1 style="margin:0">Hartwell export 2026-10 <span class="pill g">Active</span></h1><div><span class="btn">Edit</span> <span class="btn">Activity</span> <span class="btn p">+ Link to matter</span> <span class="btn">...</span></div></div><div class="tabs"><span class="on">Overview</span><span>Links (3)</span></div></div>
+ <div class="card" style="background:var(--mf-bg)"><div class="sub" style="margin-bottom:4px"><b>D. Administration page</b> (every admin page gets the same breadcrumb; Users and Labels had none)</div>
+  <div class="crumb">Administration &gt; Users</div><div class="row" style="align-items:center"><h1 style="margin:0">Users</h1><div><span class="btn">Filters</span></div></div><div class="tabs"><span class="on">Users (51)</span><span>Roles (10)</span><span>Pods (6)</span></div></div>
+ <div class="note" style="margin:0">Same on every page: H1 22 px / 700 (18 px below 640), no 28 px headers, icon left of the title, description only as the muted context line, no sentence next to the title, a selector is a control on the right (or a title-menu), never a replacement for an action. Document title always <code>&lt;Page&gt;: &lt;Tab or record&gt; - MatterFlow</code>.</div>
+</div></body></html>
