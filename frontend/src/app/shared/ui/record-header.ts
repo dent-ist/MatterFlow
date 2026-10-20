@@ -167,6 +167,8 @@ let nextId = 0;
           <mf-action-menu [items]="menu()" />
         </div>
       </div>
+      <!-- More state badges of a record (the Workflow's Published v2 and Draft v3 in progress): their own wrapping line under the title. -->
+      <div class="rh__badges" data-record-badges><ng-content select="[mfBadges]" /></div>
       <p class="rh__ctx" data-record-context><ng-content select="[mfContext]" /></p>
       @if (skeleton() && kind() !== 'client') {
         <p class="rh__ctx rh__ctx--sk"><span class="rh__sk rh__sk--ctx"></span></p>

@@ -64,8 +64,9 @@ test.describe('Dialog wording and focus (#362)', () => {
   test('Deactivate workflow and Deactivate step use the same wording', async ({ page, seed }) => {
     const wf = await seed.workflow({});
     await page.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await page.getByLabel('Active (offered when creating tasks)').uncheck();
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    // The Active checkbox is gone on an existing workflow (#390): Deactivate is in the header menu.
+    await page.locator('[data-record-header] [data-overflow]').click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Deactivate workflow' })).toBeVisible();
     await expect(dialog(page).getByRole('button', { name: 'Keep active' })).toBeVisible();
     await atEverySize(page, 'dialog-deactivate-workflow');
@@ -129,8 +130,8 @@ test.describe('Dialog wording and focus (#362)', () => {
     const wfRole = await seed.role(['Workflow.Manage'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     await wfPage.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await wfPage.getByLabel('Active (offered when creating tasks)').uncheck();
-    await wfPage.getByRole('button', { name: 'Save changes' }).click();
+    await wfPage.locator('[data-record-header] [data-overflow]').click();
+    await wfPage.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(
       wfPage.getByRole('dialog').getByRole('button', { name: 'Deactivate workflow' }),
     ).toBeVisible();

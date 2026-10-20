@@ -28,6 +28,7 @@ function action(id: string, role: RecordAction['role'], extra: Partial<RecordAct
       [actions]="actions()"
     >
       <span mfContext data-ctx>Client 00107 Hartwell</span>
+      <span mfBadges data-extra-badge>Published v2</span>
     </mf-record-header>
   `,
 })
@@ -71,6 +72,14 @@ describe('mf-record-header', () => {
     expect(q('h1 .mf-ref')?.textContent).toBe('00107-00001');
     expect(q('h1 [data-name]')?.textContent).toBe('Short');
     expect(q('[data-ctx]')?.textContent).toBe('Client 00107 Hartwell');
+  });
+
+  it('puts extra state badges in their own wrapping line under the title (mfBadges)', async () => {
+    await create();
+    const line = q('[data-record-badges]');
+    expect(line).not.toBeNull();
+    expect(line?.textContent).toContain('Published v2');
+    expect(q('h1')?.contains(line)).toBe(false);
   });
 
   it('cuts only the last crumb: 40 characters visible, the full text as tooltip and for screen readers, aria-current on it', async () => {

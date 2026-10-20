@@ -85,7 +85,7 @@ test.describe('Version editor: leaving a dirty draft (VP8, #398)', () => {
     const world = await draftWorld(seed, admin, 3);
     // Arrive from the Workflow page, so Back has an in-app page to go to.
     await page.goto(`/admin/workflows/${world.wf.workflowDefinitionId}`);
-    await page.getByRole('link', { name: /^Open draft v2/ }).click();
+    await page.getByRole('button', { name: /^Open draft v2/ }).click();
     await expect(page.locator('[data-step-row]')).toHaveCount(3);
     await makeDirty(page, world.wf.stepTitles[0]);
     await page.route(

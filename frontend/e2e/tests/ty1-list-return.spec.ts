@@ -213,7 +213,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await page.goto(flowsUrl);
     const flowId = flows.ids[26];
     await rowLink(page, flowId).click();
-    await page.getByRole('link', { name: /Open draft v1/ }).click();
+    await page.getByRole('button', { name: /Open draft v1/ }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/workflows/${flowId}/versions/\\d+$`));
     await crumb(page, 'Workflows').click();
     expect(urlOf(page)).toBe(flowsUrl);

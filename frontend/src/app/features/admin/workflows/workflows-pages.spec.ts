@@ -15,6 +15,7 @@ import {
   WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { UndoService } from '../../../core/notify/undo.service';
 import {
   FakeMeApi,
@@ -632,15 +633,17 @@ describe('WorkflowEditPage', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(WorkflowEditPage);
     fixture.componentRef.setInput('workflowId', '1');
+    fixture.componentRef.setInput('tab', 'versions');
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
 
-    const rows = Array.from(el.querySelectorAll('[data-history] tbody tr'));
+    const rows = Array.from(el.querySelectorAll('[data-versions-tab] tbody tr'));
     expect(rows.map((r) => r.getAttribute('data-version'))).toEqual(['2', '1']);
     expect(rows[0].textContent).toContain('Published');
     expect(rows[1].textContent).toContain('Retired');
 
-    buttonByLabel(el, 'Create new draft from v2')!.click();
+    // The primary action of a workflow without a draft creates one from the published version.
+    el.querySelector<HTMLElement>('[data-action="new-draft"]')!.click();
     await settle(fixture);
     expect(api.createWorkflowDraft).toHaveBeenCalledWith(1, { fromVersionId: 11 });
     expect(navigate).toHaveBeenCalledWith(['/admin/workflows', 1, 'versions', 12], {});
@@ -652,16 +655,18 @@ describe('WorkflowEditPage', () => {
     });
     const fixture = TestBed.createComponent(WorkflowEditPage);
     fixture.componentRef.setInput('workflowId', '1');
+    fixture.componentRef.setInput('tab', 'versions');
     await settle(fixture);
     const el: HTMLElement = fixture.nativeElement;
-    const meta = el.querySelector('[data-meta]')!.textContent!;
-    expect(meta).toContain('Published v2');
-    expect(meta).toContain('Draft v3 in progress');
-    expect(el.querySelector('[data-open-draft]')?.getAttribute('href')).toBe(
-      '/admin/workflows/1/versions/12',
+    const header = el.querySelector('[data-record-header]')!.textContent!;
+    expect(header).toContain('Published v2');
+    expect(header).toContain('Draft v3 in progress');
+    // One primary action: Open draft v3, never also Create new draft.
+    expect(el.querySelector('[data-action="open-draft"]')?.textContent).toContain('Open draft v3');
+    expect(el.querySelector('[data-action="new-draft"]')).toBeNull();
+    expect(el.querySelector('[data-versions-tab] [data-version="2"]')?.textContent).toContain(
+      'Current',
     );
-    expect(el.querySelector('.wf-stack [data-history]')).not.toBeNull();
-    expect(el.querySelector('[data-history] [data-version="2"]')?.textContent).toContain('Current');
   });
 
   it('saves details with the row version and reports a conflict', async () => {
@@ -1000,8 +1005,8 @@ describe('WorkflowVersionPage draft editor', () => {
     );
     expect(items).toContain('Added"Step 5"');
     expect(items).toContain('Removed"Old step"');
-    expect(document.querySelector('[data-impact]')?.textContent).toContain(
-      'Existing tasks stay on their current version',
+    expect(document.querySelector('[data-publish-impact]')?.textContent).toBe(
+      'Tasks already running keep v2. New tasks use v3.',
     );
 
     expect(a.workflows['publishWorkflowVersion']).not.toHaveBeenCalled();
@@ -1094,7 +1099,11 @@ describe('WorkflowVersionPage published version', () => {
   it('is read-only and offers a new draft and retire', async () => {
     const { workflows, fixture, el } = await openPublished();
     expect(el.querySelector('[data-status]')?.textContent).toContain('Published');
-    expect(el.querySelector('[data-readonly-banner]')).not.toBeNull();
+    // A neutral note, never a warning (decision W): the neutral class, an info icon, no alert role.
+    const note = el.querySelector('[data-readonly-banner]')!;
+    expect(note.classList.contains('wf-note')).toBe(true);
+    expect(note.querySelector('.pi-info-circle')).not.toBeNull();
+    expect(note.getAttribute('role')).toBeNull();
     expect(el.querySelector('[data-add]')).toBeNull();
     expect(el.querySelector('[data-steps] [data-overflow]')).toBeNull();
     expect(el.querySelector('[data-skippable]')).toBeNull();
@@ -1118,7 +1127,7 @@ describe('WorkflowVersionPage published version', () => {
     el.querySelector<HTMLButtonElement>('[data-action="retire"]')!.click();
     await settle(fixture);
     Array.from(document.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === 'Retire')!
+      .find((b) => b.textContent?.trim() === 'Retire v2')!
       .click();
     await settle(fixture);
     expect(workflows.retireWorkflowVersion).toHaveBeenCalledWith(1, 11, { rowVersion: 'VVVV' });
@@ -1135,5 +1144,177 @@ describe('WorkflowVersionPage published version', () => {
     expect(el.querySelector('[data-readonly-banner] a')?.getAttribute('href')).toBe(
       '/admin/workflows/1/versions/12',
     );
+  });
+});
+
+describe('WorkflowVersionPage tabs, switcher and impact lines (WP-TY6)', () => {
+  const ref = (id: number, name: string, isActive = true) => ({
+    taskTypeId: id,
+    name,
+    isActive,
+    isDefault: false,
+  });
+  const detail = (): WorkflowDetail => {
+    const d = wfDetail({
+      draftVersionId: 12,
+      draftVersionNo: 3,
+      taskTypes: [ref(1, 'Billing request 02'), ref(2, 'Refunds'), ref(3, 'Old', false)],
+    });
+    d.versions.unshift(
+      versionSummary({ workflowVersionId: 12, versionNo: 3, status: WorkflowVersionStatus.Draft }),
+    );
+    return d;
+  };
+
+  async function open(
+    versionId: number,
+    opts: { permissions?: string[]; tab?: string; extra?: Record<string, unknown> } = {},
+    taskTypes: Record<string, unknown> = {},
+    lookup: unknown[] = [],
+  ) {
+    const versions = {
+      11: versionDetail({
+        workflowVersionId: 11,
+        versionNo: 2,
+        status: WorkflowVersionStatus.Published,
+        openTaskCount: 14,
+      }),
+      12: versionDetail({
+        workflowVersionId: 12,
+        versionNo: 3,
+        status: WorkflowVersionStatus.Draft,
+      }),
+    } as Record<number, WorkflowVersionDetail>;
+    const workflows = {
+      getWorkflow: vi.fn().mockReturnValue(ok(detail())),
+      getWorkflowVersion: vi.fn().mockImplementation((_w: number, v: number) => ok(versions[v])),
+      retireWorkflowVersion: vi.fn().mockReturnValue(ok(versions[11])),
+      ...opts.extra,
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        MessageService,
+        provideFakeMe(
+          new FakeMeApi(withPermissions(...((opts.permissions ?? ['Workflow.Manage']) as never[]))),
+        ),
+        { provide: WorkflowsClient, useValue: workflows },
+        { provide: StepDefinitionsClient, useValue: { listStepDefinitions: vi.fn() } },
+        { provide: FormsClient, useValue: {} },
+        { provide: TaskTypesClient, useValue: taskTypes },
+      ],
+    });
+    TestBed.overrideComponent(WorkflowVersionPage, {
+      set: { providers: [{ provide: WorkflowLookup, useValue: { list: () => ok(lookup) } }] },
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(WorkflowVersionPage);
+    fixture.componentRef.setInput('workflowId', '1');
+    fixture.componentRef.setInput('versionId', String(versionId));
+    if (opts.tab) fixture.componentRef.setInput('tab', opts.tab);
+    await settle(fixture);
+    return { workflows, fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('has the tabs Steps (n) and Used by (n) with the active task types, and no Versions tab', async () => {
+    const { el } = await open(12);
+    const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
+      t.textContent!.replace(/\s+/g, ' ').trim(),
+    );
+    expect(tabs).toEqual(['Steps (2)', 'Used by (2)']);
+    expect(el.querySelector('[data-steps]')).not.toBeNull();
+    expect(el.querySelector('[data-used-by-panel]')).toBeNull();
+  });
+
+  it('shows the task types of the workflow on the Used by tab, names plain without TaskType.Manage', async () => {
+    const { el } = await open(12, { tab: 'used-by' });
+    expect(el.querySelector('[data-steps]')).toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('[data-task-type]')).map((r) =>
+        r.getAttribute('data-task-type'),
+      ),
+    ).toEqual(['1', '2', '3']);
+    expect(el.querySelector('[data-task-types-tab] a')).toBeNull();
+  });
+
+  it('switches version from the header, keeping the tab; the current version is marked', async () => {
+    const { fixture, el } = await open(12);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const trigger = el.querySelector<HTMLElement>('[data-version-switcher] [data-overflow]')!;
+    expect(trigger.textContent).toContain('v3 Draft');
+    trigger.click();
+    await settle(fixture);
+    const items = Array.from(
+      el.querySelectorAll<HTMLElement>('[data-version-switcher] [role="menuitem"]'),
+    );
+    expect(items.map((i) => i.textContent!.trim())).toEqual([
+      'v3 Draft',
+      'v2 Published (current)',
+      'v1 Retired',
+    ]);
+    expect(items[0].getAttribute('aria-current')).toBe('true');
+    items[1].click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenCalledWith(
+      ['/admin/workflows', '1', 'versions', 11],
+      expect.objectContaining({ queryParams: { tab: null } }),
+    );
+  });
+
+  it('retire dialog says which task types have no other published workflow and keeps the open tasks (Task.View)', async () => {
+    const taskTypes = {
+      listTaskTypes: vi.fn().mockReturnValue(
+        ok([
+          { id: 1, name: 'Billing request 02', isActive: true, eligibleWorkflowIds: [1] },
+          { id: 2, name: 'Refunds', isActive: true, eligibleWorkflowIds: [1, 2] },
+        ]),
+      ),
+    };
+    const { workflows, fixture, el } = await open(
+      11,
+      { permissions: ['Workflow.Manage', 'Task.View'] },
+      taskTypes,
+      [
+        { id: 1, name: 'This', publishedVersionNo: 2, isActive: true },
+        { id: 2, name: 'Other', publishedVersionNo: 1, isActive: true },
+      ],
+    );
+    el.querySelector<HTMLButtonElement>('[data-action-bar] [data-overflow]')!.click();
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('[data-action="retire"]')!.click();
+    await settle(fixture);
+    expect(taskTypes.listTaskTypes).toHaveBeenCalledWith(1);
+    expect(document.body.querySelector('[data-retire-impact]')?.textContent).toBe(
+      'Billing request 02 has no other published workflow. 14 open tasks keep running on v2. New tasks cannot use it.',
+    );
+    expect(buttonByLabel(document.body, 'Keep published')).toBeDefined();
+    buttonByLabel(document.body, 'Retire v2')!.click();
+    await settle(fixture);
+    expect(workflows.retireWorkflowVersion).toHaveBeenCalled();
+  });
+
+  it('retire dialog without Task.View leaves the unknown parts out (no made-up numbers)', async () => {
+    const { workflows, fixture, el } = await open(11, {
+      extra: {
+        getWorkflowVersion: vi.fn().mockReturnValue(
+          ok(
+            versionDetail({
+              workflowVersionId: 11,
+              versionNo: 2,
+              status: WorkflowVersionStatus.Published,
+              openTaskCount: undefined,
+            }),
+          ),
+        ),
+      },
+    });
+    el.querySelector<HTMLButtonElement>('[data-action-bar] [data-overflow]')!.click();
+    await settle(fixture);
+    el.querySelector<HTMLButtonElement>('[data-action="retire"]')!.click();
+    await settle(fixture);
+    expect(document.body.querySelector('[data-retire-impact]')?.textContent).toBe(
+      'New tasks cannot use it.',
+    );
+    expect(workflows.retireWorkflowVersion).not.toHaveBeenCalled();
   });
 });

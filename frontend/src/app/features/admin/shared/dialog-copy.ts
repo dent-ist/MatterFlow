@@ -99,6 +99,9 @@ export interface ImpactFacts {
   /** The version being published or retired, and the one that replaces it. */
   versionNo?: number | null;
   newVersionNo?: number | null;
+  /** Publishing the workflow's first version: there are no running tasks to keep, and `usableTaskTypes` task types become usable. */
+  firstVersion?: boolean;
+  usableTaskTypes?: number | null;
 }
 
 export interface Impact {
@@ -145,6 +148,7 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
       break;
     case 'retireVersion': {
       const on = facts.versionNo ? `v${facts.versionNo}` : 'this version';
+      if (names.length > 0) parts.push(`${dependents(names)} no other published workflow.`);
       if (known(open) && open > 0) {
         parts.push(`${plural(open, 'open task keeps', 'open tasks keep')} running on ${on}.`);
       }
@@ -152,6 +156,15 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
       break;
     }
     case 'publishVersion': {
+      if (facts.firstVersion) {
+        parts.push('New tasks use this version.');
+        if (known(facts.usableTaskTypes) && facts.usableTaskTypes > 0) {
+          parts.push(
+            `This makes ${plural(facts.usableTaskTypes, 'task type', 'task types')} usable.`,
+          );
+        }
+        break;
+      }
       const old = facts.versionNo ? `v${facts.versionNo}` : 'their version';
       const count = known(open) ? ` (${open} open)` : '';
       parts.push(`Tasks already running keep ${old}${count}.`);
@@ -172,5 +185,16 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
       }
       break;
   }
-  return { text: parts.join(' '), names };
+  // The names of a retirement are part of its sentence ("A and 3 other task types ..."), so they are not listed again.
+  return { text: parts.join(' '), names: kind === 'retireVersion' ? [] : names };
+}
+
+/** "A has", "A and B have", "A, B and C have", "A and 3 other task types have" (the sentence goes on with "no other published workflow"). */
+function dependents(names: readonly string[]): string {
+  if (names.length === 1) return `${names[0]} has`;
+  if (names.length <= 3) {
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} have`;
+  }
+  const more = names.length - 1;
+  return `${names[0]} and ${more} other task types have`;
 }

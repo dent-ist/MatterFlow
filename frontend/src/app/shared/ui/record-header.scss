@@ -109,6 +109,18 @@
   white-space: nowrap;
 }
 
+.rh__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2);
+  margin: var(--mf-s1) 0 0;
+}
+
+.rh__badges:empty {
+  display: none;
+}
+
 .rh__ctx:empty {
   display: none;
 }
@@ -219,6 +231,7 @@
   }
 
   .rh__ctx,
+  .rh__badges,
   .rh__note {
     grid-column: 1 / -1;
   }

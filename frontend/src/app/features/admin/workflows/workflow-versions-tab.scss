@@ -1,0 +1,116 @@
+/* The Versions tab of the Workflow page (WE4, #392). The table is the shared `pg-table` (44 px rows, sticky overflow column from _admin-lists). */
+.wv {
+  display: grid;
+  gap: var(--mf-s3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--mf-s4);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+}
+
+.wv__head {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.wv__title {
+  margin: 0;
+  font-size: var(--mf-fs-h3);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.wv__help,
+.wv__empty {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.wv__link {
+  font-weight: 600;
+}
+
+.wv__current {
+  margin-left: var(--mf-s2);
+}
+
+.wv .pg-table {
+  box-shadow: none;
+}
+
+.wv .pg-table td,
+.wv .pg-table th {
+  white-space: nowrap;
+}
+
+.wv .pg-table td:not(.mf-col-menu),
+.wv .pg-table th:not(.mf-col-menu) {
+  padding-inline: var(--mf-s2);
+}
+
+.wv .pg-table td.wv__by {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phone: one card per version. */
+.wv__cards {
+  display: grid;
+  gap: var(--mf-s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wv__card {
+  display: grid;
+  gap: var(--mf-s2);
+  padding: var(--mf-s3);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-md, 8px);
+  min-width: 0;
+}
+
+.wv__card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.wv__card-top .wv__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--mf-s1);
+}
+
+.wv__menu {
+  margin-left: auto;
+}
+
+.wv__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mf-s2) var(--mf-s3);
+  margin: 0;
+}
+
+.wv__facts div {
+  display: grid;
+  min-width: 0;
+}
+
+.wv__facts dt {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.wv__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

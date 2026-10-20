@@ -108,12 +108,17 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     await expect(crumbs(page)).toHaveText(['Administration', 'Task Types', type.name, 'Form']);
 
     await page.goto(`/admin/workflows/${workflow.workflowDefinitionId}`);
+    // The record header's last step is the current page: shortened text for the eye plus the full name for screen readers (#387).
     await expect(crumbs(page)).toHaveText([
       'Administration',
       'Task Types',
       'Workflows',
-      workflow.name,
+      new RegExp(`^${workflow.name}`),
     ]);
+    await expect(crumbs(page).locator('[data-crumb-current]')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await crumbs(page).getByRole('link', { name: 'Workflows' }).click();
     await expect(page).toHaveURL(/\/admin\/workflows$/);
     await expect(page.getByRole('tab', { name: 'Workflows' })).toHaveAttribute(

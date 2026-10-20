@@ -74,3 +74,43 @@
 .wf-current {
   margin-left: var(--mf-s2);
 }
+
+/* Overview tab of an existing workflow (WE1): the editable fields, then the read-only status and mode. */
+.wf-overview {
+  max-width: 48rem;
+}
+
+.wf-facts {
+  display: grid;
+  gap: var(--mf-s3);
+  margin: 0;
+}
+
+.wf-facts > div {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.wf-facts dt {
+  font-weight: 600;
+  font-size: var(--mf-fs-sm);
+}
+
+.wf-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2);
+  margin: 0;
+}
+
+/* The names a deactivation affects: a short list of task types. */
+.wf-names {
+  margin: 0 0 var(--mf-s3);
+  padding-left: var(--mf-s5, 1.5rem);
+  overflow-wrap: anywhere;
+}
+
+.wf-panel-wrap {
+  min-width: 0;
+}

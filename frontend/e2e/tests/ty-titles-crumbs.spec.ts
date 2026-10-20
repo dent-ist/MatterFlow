@@ -61,7 +61,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
       [`/admin/task-types/${tt.id}`, `${tt.name} - MatterFlow`],
       [`/admin/task-types/${tt.id}/form`, `Form: ${tt.name} - MatterFlow`],
       ['/admin/workflows/new', 'New workflow - MatterFlow'],
-      [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name} - MatterFlow`],
+      [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name}: Overview - MatterFlow`],
       [
         `/admin/workflows/${wf.workflowDefinitionId}/versions/${versionId}`,
         `${wf.name} v1 (Published) - MatterFlow`,
@@ -94,8 +94,8 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const name = `Large Production Workflow With An Extremely Long Name ${uid()}`;
     const wf = await seed.workflow({ name });
     await page.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await expect(page).toHaveTitle(`${name.slice(0, 60).trimEnd()}… - MatterFlow`);
-    const crumb = page.locator('[data-crumb-clamped]');
+    await expect(page).toHaveTitle(`${name.slice(0, 60).trimEnd()}…: Overview - MatterFlow`);
+    const crumb = page.locator('[data-crumb-current]');
     await expect(crumb).toHaveAttribute('title', name);
     await expect(crumb.locator('[aria-hidden="true"]')).toHaveText(
       `${name.slice(0, 39).trimEnd()}…`,
@@ -142,7 +142,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const wfRole = await seed.role(['Workflow.Manage'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     await wfPage.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await expect(wfPage).toHaveTitle(`${wf.name} - MatterFlow`);
+    await expect(wfPage).toHaveTitle(`${wf.name}: Overview - MatterFlow`);
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'tt-viewer')).username);
     await viewer.goto(`/admin/task-types/${tt.id}`);

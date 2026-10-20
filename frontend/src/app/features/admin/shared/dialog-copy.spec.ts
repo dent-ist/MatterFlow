@@ -109,4 +109,40 @@ describe('impactLine (#362)', () => {
       impactLine('publishVersion', { versionNo: 2, newVersionNo: 3, openTasks: 14 }).text,
     ).toBe('Tasks already running keep v2 (14 open). New tasks use v3.');
   });
+
+  it('names the task types that have no other published workflow when a version is retired', () => {
+    expect(impactLine('retireVersion', { versionNo: 2, names: ['Billing request 02'] }).text).toBe(
+      'Billing request 02 has no other published workflow. New tasks cannot use it.',
+    );
+    expect(
+      impactLine('retireVersion', { versionNo: 2, names: ['A', 'B'], openTasks: 3 }).text,
+    ).toBe(
+      'A and B have no other published workflow. 3 open tasks keep running on v2. New tasks cannot use it.',
+    );
+    const many = impactLine('retireVersion', {
+      versionNo: 2,
+      names: ['Billing request 02', 'B', 'C', 'D'],
+      openTasks: 14,
+    });
+    expect(many.text).toBe(
+      'Billing request 02 and 3 other task types have no other published workflow. 14 open tasks keep running on v2. New tasks cannot use it.',
+    );
+    expect(many.names).toEqual([]);
+  });
+
+  it('says what the first publication does: no running tasks to keep, task types become usable', () => {
+    expect(impactLine('publishVersion', { firstVersion: true, usableTaskTypes: 3 }).text).toBe(
+      'New tasks use this version. This makes 3 task types usable.',
+    );
+    expect(impactLine('publishVersion', { firstVersion: true, usableTaskTypes: 1 }).text).toBe(
+      'New tasks use this version. This makes 1 task type usable.',
+    );
+    // A count the API did not return is left out, and so is a zero.
+    expect(impactLine('publishVersion', { firstVersion: true, usableTaskTypes: null }).text).toBe(
+      'New tasks use this version.',
+    );
+    expect(impactLine('publishVersion', { firstVersion: true, usableTaskTypes: 0 }).text).toBe(
+      'New tasks use this version.',
+    );
+  });
 });
