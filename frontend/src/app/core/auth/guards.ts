@@ -1,5 +1,5 @@
-import { inject } from '@angular/core';
-import { Router, UrlTree } from '@angular/router';
+import { Injectable, inject, signal } from '@angular/core';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '../../shared/layout/nav-items';
 import { AuthStore } from './auth.store';
 import { Permission } from './permissions';
@@ -76,17 +76,33 @@ export const accessGuard = async (): Promise<boolean | UrlTree> => {
 export const authenticatedGuard = accessGuard;
 
 /**
+ * The address a permission guard turned away (`/admin/users?x=1`), kept for the 403 page, which shows it ("You asked for ...") and puts it
+ * back in the address bar, so a reload retries it and the link can be copied (#598). Empty when the 403 page was opened directly.
+ */
+@Injectable({ providedIn: 'root' })
+export class ForbiddenRequest {
+  readonly url = signal<string | null>(null);
+}
+
+/**
  * Permission guard for `canMatch`/`canActivate`: allowed when the user holds ANY of the codes.
- * Pending users are redirected to Access Pending, others without permission to /403.
+ * Pending users are redirected to Access Pending, others without permission to /403 (which shows the address they asked for, see
+ * `ForbiddenRequest`).
  */
 export const permissionGuard = (...codes: Permission[]) => {
-  return async (): Promise<boolean | UrlTree> => {
+  return async (
+    _route?: ActivatedRouteSnapshot,
+    state?: RouterStateSnapshot,
+  ): Promise<boolean | UrlTree> => {
     const store = inject(AuthStore);
     const router = inject(Router);
+    const forbidden = inject(ForbiddenRequest);
     await store.ensureLoaded();
     if (!store.isAuthenticated()) return router.createUrlTree([APP_PATHS.error]);
     if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
-    return store.hasAny(codes) ? true : router.createUrlTree([APP_PATHS.forbidden]);
+    if (store.hasAny(codes)) return true;
+    forbidden.url.set(state?.url ?? router.getCurrentNavigation()?.extractedUrl.toString() ?? null);
+    return router.createUrlTree([APP_PATHS.forbidden]);
   };
 };
 

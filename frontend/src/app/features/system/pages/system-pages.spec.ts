@@ -1,7 +1,9 @@
+import { Location } from '@angular/common';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ForbiddenRequest } from '../../../core/auth/guards';
 import {
   FakeMeApi,
   provideFakeMe,
@@ -46,5 +48,35 @@ describe('the generic 403 and 404 pages', () => {
     expect((await render(ForbiddenPage, [])).querySelector('[data-back-link]')).toBeNull();
     TestBed.resetTestingModule();
     expect((await render(NotFoundPage, [])).querySelector('[data-back-link]')).toBeNull();
+  });
+});
+
+/** #598: the 403 page keeps the address the person asked for. */
+describe('the 403 page keeps the address', () => {
+  async function render(asked: string | null) {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    TestBed.inject(ForbiddenRequest).url.set(asked);
+    const replace = vi.spyOn(TestBed.inject(Location), 'replaceState');
+    const fixture = TestBed.createComponent(ForbiddenPage);
+    await settle(fixture);
+    return { el: fixture.nativeElement as HTMLElement, replace };
+  }
+
+  it('says what was asked for, offers Copy link and puts the address back in the address bar', async () => {
+    const { el, replace } = await render('/admin/users?status=all');
+    expect(el.querySelector('[data-asked-path]')!.textContent).toBe('/admin/users?status=all');
+    expect(el.querySelector('[data-asked] button')!.getAttribute('aria-label')).toBe('Copy link');
+    expect(el.querySelector('[data-asked] button')!.textContent).toContain('Copy link');
+    expect(replace).toHaveBeenCalledWith('/admin/users?status=all', '', null);
+    expect(el.querySelector('h1')!.textContent).toContain("You don't have permission");
+  });
+
+  it('shows nothing about an address when /403 was opened directly', async () => {
+    const { el, replace } = await render(null);
+    expect(el.querySelector('[data-asked]')).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
   });
 });

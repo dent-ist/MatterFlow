@@ -964,7 +964,8 @@ test.describe('Task Type record page', () => {
       const wfUser = await seed.user([wfRole.name], 'ty4-wf');
       const wfPage = await asUser(wfUser.username);
       await wfPage.goto(typeUrl(w));
-      await expect(wfPage).toHaveURL(/\/403$/);
+      // The 403 renders in place and keeps the address that was asked for (#598).
+      await expect(wfPage).toHaveURL(new RegExp(`${typeUrl(w).replace(/\//g, '\\/')}$`));
       await expect(
         wfPage.getByRole('heading', { name: "You don't have permission to view this." }),
       ).toBeVisible();
