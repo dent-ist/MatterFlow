@@ -92,20 +92,46 @@ describe('Workflow tab: ordered stepper', () => {
     expect(q(el, '[data-workflow-tab] progress')).toBeNull();
   });
 
-  it('keeps the status and the resolved date in a fixed right-hand column, outside the toggle button', async () => {
+  it('shows one plain-text status line per step under the title, outside the toggle button, with no pill', async () => {
     const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
     const done = q(el, '[data-step-id="101"]')!;
-    const aside = done.querySelector('.step__aside')!;
-    expect(aside.querySelector('[data-state]')!.textContent).toContain('Completed');
-    expect(aside.querySelector('[data-resolved-at]')!.textContent).toMatch(/2026/);
+    const meta = done.querySelector('.step__meta')!;
+    expect(meta.querySelectorAll('[data-state]')).toHaveLength(1);
+    expect(meta.querySelector('[data-state]')!.textContent).toContain('Completed');
+    expect(meta.querySelector('[data-resolved-at]')!.textContent).toMatch(/2026/);
     expect(done.querySelector('.step__toggle [data-state]')).toBeNull();
-    // Only resolved steps have a date; the status column is still there for the others.
-    const pending = q(el, '[data-step-id="104"]')!;
-    expect(pending.querySelector('[data-resolved-at]')!.textContent!.trim()).toBe('');
-    expect(pending.querySelector('.step__aside [data-state]')!.textContent).toContain('Pending');
+    // Only resolved steps have a date.
+    const pending = q(el, '[data-step-id]:has([data-locked])')!;
+    expect(pending.querySelector('[data-resolved-at]')).toBeNull();
+    expect(pending.querySelector('[data-state]')!.textContent).toContain('Pending');
+    // Required / Skippable and Current are plain text, never badges.
+    expect(el.querySelector('mf-badge')).toBeNull();
+    expect(q(el, '[data-step-id="103"] [data-current]')!.textContent!.trim()).toBe('Current');
     // The colour treatment follows the status attribute (completed = green, skipped = dashed).
     expect(done.getAttribute('data-step-status')).toBe('COMPLETED');
     expect(q(el, '[data-step-id="102"]')!.getAttribute('data-step-status')).toBe('SKIPPED');
+  });
+
+  it('the current step says "Up next" until somebody starts it and "In progress" after; later steps stay "Pending"', async () => {
+    const steps = orderedSteps();
+    steps[2] = aStep({ ...steps[2], status: 'PENDING' });
+    const { el } = await mountWorkflow(aTask({ workflow: { steps } as never }));
+    const state = (id: number) => q(el, `[data-step-id="${id}"] [data-state]`)!.textContent!.trim();
+    expect(state(103)).toBe('Up next');
+    expect(state(104)).toBe('Pending');
+    expect(q(el, '[data-step-id="103"] [data-current]')).not.toBeNull();
+  });
+
+  it('puts the step actions in the header, right after the title toggle, and the primary one last', async () => {
+    const { el } = await mountWorkflow(aTask({ workflow: { steps: orderedSteps() } as never }));
+    const step = q(el, '[data-step-id="103"]')!;
+    const actions = step.querySelector('[data-step-actions]')!;
+    expect(step.querySelector('.step__body [data-complete], .step__body [data-skip]')).toBeNull();
+    expect(step.querySelector('.step__head')!.nextElementSibling).toBe(actions);
+    const buttons = Array.from(actions.querySelectorAll('button'));
+    expect(buttons.at(-1)!.hasAttribute('data-complete')).toBe(true);
+    expect(buttons.at(-1)!.classList.contains('mf-btn--primary')).toBe(true);
+    expect(buttons.filter((b) => b.classList.contains('mf-btn--primary'))).toHaveLength(1);
   });
 
   it('has no Complete task block: the action is the header primary button (#298)', async () => {

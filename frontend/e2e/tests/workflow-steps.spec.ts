@@ -23,8 +23,10 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     await detail.open(task.taskId);
     await detail.showSection('Workflow');
 
-    await expect(detail.step(intake).state).toHaveText('Pending');
+    // One status per step (#666): the current step is "Up next" until somebody starts it; only later steps are "Pending".
+    await expect(detail.step(intake).state).toHaveText('Up next');
     for (const title of [validate, load, report]) {
+      await expect(detail.step(title).state).toHaveText('Pending');
       await expect(detail.step(title).locked).toContainText(
         'Locked. Complete or skip step 1 first.',
       );

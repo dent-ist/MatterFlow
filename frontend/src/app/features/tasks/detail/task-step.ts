@@ -20,7 +20,7 @@ import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TaskDetailStore } from './task-detail.store';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
-import { Badge, BadgeTone } from '../../../shared/ui/badge';
+import type { BadgeTone } from '../../../shared/ui/badge';
 
 /** The Task statuses the status note under the header explains (so the step does not repeat them). */
 const STATUS_NOTE_STATES: readonly string[] = ['ON_HOLD', 'COMPLETED', 'CANCELLED'];
@@ -31,6 +31,8 @@ const STATUS_TEXT: Readonly<Record<string, { text: string; icon: string; tone: B
   COMPLETED: { text: 'Completed', icon: 'pi-check-circle', tone: 'success' },
   SKIPPED: { text: 'Skipped', icon: 'pi-minus-circle', tone: 'neutral' },
 };
+
+const UP_NEXT = { text: 'Up next', icon: 'pi-arrow-circle-right', tone: 'info' as BadgeTone };
 
 /** Patch of `current` against `original`: changed values, and `null` for values the user cleared. */
 export function valuesPatch(
@@ -52,7 +54,7 @@ export function valuesPatch(
  */
 @Component({
   selector: 'mf-task-step',
-  imports: [Badge, DynamicForm, ConfirmDialog, MfDatePipe],
+  imports: [DynamicForm, ConfirmDialog, MfDatePipe],
   // The step's asset inputs (ASSET_REF) offer the assets of the task's own matter.
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -88,28 +90,81 @@ export function valuesPatch(
                 ><span class="step__no">{{ s.sequenceNo }}.</span>{{ ' '
                 }}<span class="step__title">{{ s.title }}</span></span
               >
-              @if (s.isCurrent && ordered()) {
-                <mf-badge tone="info" data-current>Current step</mf-badge>
-              }
-              @if (open()) {
-                <mf-badge tone="neutral">{{ s.isSkippable ? 'Skippable' : 'Required' }}</mf-badge>
-              }
-              @if (s.isReopenedPrerequisite) {
-                <mf-badge tone="warning" data-reopened>Reopened</mf-badge>
-              }
             </span>
           </button>
         </h3>
-        <div class="step__aside">
-          <span class="step__when" data-resolved-at>
-            @if (s.resolvedAtUtc && (s.status === 'COMPLETED' || s.status === 'SKIPPED')) {
-              {{ s.resolvedAtUtc | mfDate }}
+        @if (open() && hasActions()) {
+          <!-- Step actions sit in the header, right after the title in tab order (#666). Only the real controls look like buttons. -->
+          <div
+            class="step__actions"
+            role="group"
+            [attr.aria-label]="'Actions for step ' + s.sequenceNo"
+            data-step-actions
+          >
+            @if (canAct()) {
+              @if (s.status === 'PENDING') {
+                <button
+                  type="button"
+                  class="mf-btn"
+                  data-start
+                  [disabled]="busy()"
+                  (click)="start()"
+                >
+                  Start step
+                </button>
+              }
+              @if (schema()) {
+                <button type="button" class="mf-btn" data-save [disabled]="busy()" (click)="save()">
+                  Save inputs
+                </button>
+              }
+              <button
+                type="button"
+                class="mf-btn"
+                data-skip
+                [disabled]="busy() || !s.isSkippable"
+                [attr.aria-describedby]="s.isSkippable ? null : 'step-noskip-' + s.stepInstanceId"
+                (click)="skipOpen.set(true)"
+              >
+                Skip step
+              </button>
+              <button
+                type="button"
+                class="mf-btn mf-btn--primary"
+                data-complete
+                [disabled]="busy()"
+                (click)="complete()"
+              >
+                Mark complete
+              </button>
             }
-          </span>
-          <span class="step__state">
-            <mf-badge [tone]="status().tone" data-state>{{ status().text }}</mf-badge>
-          </span>
-        </div>
+            @if (canReopen()) {
+              <button
+                type="button"
+                class="mf-btn"
+                data-reopen
+                [disabled]="busy()"
+                (click)="reopenOpen.set(true)"
+              >
+                Reopen step
+              </button>
+            }
+          </div>
+        }
+        <!-- One status per step, as plain text under the title: not a button-like pill (#666). -->
+        <p class="step__meta">
+          @if (s.isCurrent && ordered()) {
+            <span class="step__current" data-current>Current</span>
+          }
+          <span class="step__status" data-state>{{ status().text }}</span>
+          <span class="step__tag" data-tag>{{ s.isSkippable ? 'Skippable' : 'Required' }}</span>
+          @if (s.isReopenedPrerequisite) {
+            <span class="step__tag step__tag--warn" data-reopened>Reopened</span>
+          }
+          @if (s.resolvedAtUtc && resolved()) {
+            <span class="step__when" data-resolved-at>{{ s.resolvedAtUtc | mfDate }}</span>
+          }
+        </p>
         <div class="step__notes">
           @if (s.status === 'SKIPPED' && s.skipComment) {
             <p class="step__note" data-skip-comment>Skipped: "{{ s.skipComment }}"</p>
@@ -164,61 +219,11 @@ export function valuesPatch(
             <p class="error" role="alert" data-step-error>{{ e }}</p>
           }
 
-          <div class="step__actions">
-            @if (canAct()) {
-              @if (s.status === 'PENDING') {
-                <button
-                  type="button"
-                  class="mf-btn"
-                  data-start
-                  [disabled]="busy()"
-                  (click)="start()"
-                >
-                  Start step
-                </button>
-              }
-              @if (schema()) {
-                <button type="button" class="mf-btn" data-save [disabled]="busy()" (click)="save()">
-                  Save inputs
-                </button>
-              }
-              <button
-                type="button"
-                class="mf-btn mf-btn--primary"
-                data-complete
-                [disabled]="busy()"
-                (click)="complete()"
-              >
-                Mark complete
-              </button>
-              <button
-                type="button"
-                class="mf-btn"
-                data-skip
-                [disabled]="busy() || !s.isSkippable"
-                [attr.aria-describedby]="s.isSkippable ? null : 'step-noskip-' + s.stepInstanceId"
-                (click)="skipOpen.set(true)"
-              >
-                Skip step
-              </button>
-              @if (!s.isSkippable) {
-                <span class="step__hint" data-no-skip [id]="'step-noskip-' + s.stepInstanceId"
-                  >This step is required and can't be skipped.</span
-                >
-              }
-            }
-            @if (canReopen()) {
-              <button
-                type="button"
-                class="mf-btn"
-                data-reopen
-                [disabled]="busy()"
-                (click)="reopenOpen.set(true)"
-              >
-                Reopen step
-              </button>
-            }
-          </div>
+          @if (canAct() && !s.isSkippable) {
+            <span class="step__hint" data-no-skip [id]="'step-noskip-' + s.stepInstanceId"
+              >This step is required and can't be skipped.</span
+            >
+          }
           @if (blockedReason(); as r) {
             <p class="step__hint" data-blocked-reason>{{ r }}</p>
           }
@@ -298,7 +303,7 @@ export function valuesPatch(
       border-color: var(--mf-primary);
       box-shadow: inset 3px 0 0 var(--mf-primary);
     }
-    /* A collapsed step is one line: the toggle (number, title, status) and its short notes side by side. */
+    /* The header: the toggle (number, title) at the left, the step actions at the top right; the status line sits under the title. */
     .step__row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -310,24 +315,39 @@ export function valuesPatch(
       margin: 0;
       font-size: inherit;
     }
-    /* Date/time, then the status: both sit in fixed-width columns at the right edge, so the status is in the same place whatever the step name. */
-    .step__aside {
+    .step__actions {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: flex-end;
-      gap: var(--mf-s3);
+      gap: var(--mf-s2);
     }
-    .step__when {
-      min-width: 10.5rem;
+    /* One status per step, plain text with a middle dot between the parts: nothing here is a control, so nothing has a border or a fill. */
+    .step__meta {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      margin: 0;
+      padding-left: calc(var(--mf-s2) * 2 + 1.6rem);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-      text-align: right;
-      white-space: nowrap;
     }
-    .step__state {
-      display: flex;
-      justify-content: flex-end;
-      min-width: 6.5rem;
+    .step__meta > span + span::before {
+      content: '\\00b7';
+      margin-inline: var(--mf-s2);
+    }
+    .step__current {
+      color: var(--mf-primary);
+      font-weight: 600;
+    }
+    .step__status {
+      color: var(--mf-text);
+      font-weight: 600;
+    }
+    .step__tag--warn {
+      color: var(--mf-warning);
+      font-weight: 600;
     }
     /* Completed steps are tinted green (with the label and icon, not colour alone); skipped steps are muted and dashed. */
     .step[data-step-status='COMPLETED'] {
@@ -344,13 +364,8 @@ export function valuesPatch(
         grid-template-columns: minmax(0, 1fr);
         row-gap: var(--mf-s1);
       }
-      .step__aside {
+      .step__actions {
         justify-content: flex-start;
-      }
-      .step__when {
-        min-width: 0;
-        order: 2;
-        text-align: left;
       }
     }
     .step__toggle {
@@ -433,12 +448,6 @@ export function valuesPatch(
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
     }
-    .step__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
     .step__hint {
       margin: 0;
       color: var(--mf-text-muted);
@@ -502,14 +511,15 @@ export class TaskStep {
   private wasResolved = false;
 
   protected readonly busy = this.store.busy;
-  protected readonly status = computed(
-    () =>
-      STATUS_TEXT[this.step().status] ?? {
-        text: this.step().status,
-        icon: 'pi-circle',
-        tone: 'neutral' as BadgeTone,
-      },
-  );
+  /** One status per step: the current step of an ordered workflow is "Up next" until somebody starts it, then "In progress"; "Pending" is for later steps (#666). */
+  protected readonly status = computed(() => {
+    const s = this.step();
+    if (s.status === 'PENDING' && s.isCurrent && this.ordered()) return UP_NEXT;
+    return (
+      STATUS_TEXT[s.status] ?? { text: s.status, icon: 'pi-circle', tone: 'neutral' as BadgeTone }
+    );
+  });
+  protected readonly hasActions = computed(() => this.canAct() || this.canReopen());
   protected readonly resolved = computed(() =>
     ['COMPLETED', 'SKIPPED'].includes(this.step().status),
   );

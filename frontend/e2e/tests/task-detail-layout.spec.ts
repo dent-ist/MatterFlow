@@ -118,7 +118,7 @@ test.describe('Task detail: single page layout', () => {
     expect(await aside.evaluate((el) => getComputedStyle(el).overflowY)).toBe('auto');
   });
 
-  test('step rows adapt to the width of the Workflow column: the date moves under the status when it is narrow', async ({
+  test('step rows adapt to the width of the Workflow column: the status line stays under the title and the actions wrap under it when narrow', async ({
     page,
     seed,
     admin,
@@ -130,13 +130,24 @@ test.describe('Task detail: single page layout', () => {
     const firstStep = page.locator('[data-step-id]').first();
     const when = firstStep.locator('[data-resolved-at]');
     const state = firstStep.locator('[data-state]');
-    // At 60 % the date and the status sit on one line, the status at the right.
+    // The date and the status share one plain-text line under the title (#666).
     expect(Math.abs((await box(when)).y - (await box(state)).y)).toBeLessThan(12);
+    expect((await box(state)).y).toBeGreaterThan((await box(firstStep.getByRole('heading'))).y);
+    // The open step has its actions at the top right of the header, on the title's line.
+    const open = page.locator('[data-step-id]:has([data-step-actions])').first();
+    const actions = open.locator('[data-step-actions]');
+    const title = open.getByRole('heading');
+    const wide = { actions: await box(actions), title: await box(title), step: await box(open) };
+    expect(
+      Math.abs(wide.actions.y + wide.actions.height / 2 - (wide.title.y + wide.title.height / 2)),
+    ).toBeLessThan(24);
+    expect(wide.actions.x + wide.actions.width).toBeGreaterThan(wide.step.x + wide.step.width - 40);
 
     await detail.splitter.focus();
     await page.keyboard.press('Home'); // left column at its minimum: a narrow Workflow
     await expect(detail.splitter).toHaveAttribute('aria-valuenow', '35');
     expect((await box(state)).y).toBeGreaterThan((await box(firstStep.getByRole('heading'))).y);
+    expect((await box(actions)).y).toBeGreaterThan((await box(title)).y);
     await noHorizontalScroll(page);
     await detail.splitter.dblclick();
   });
