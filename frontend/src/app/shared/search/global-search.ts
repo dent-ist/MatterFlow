@@ -4,7 +4,9 @@ import {
   DestroyRef,
   ElementRef,
   Injector,
+  afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -22,8 +24,11 @@ import {
   isSearchable,
   noResultsMessage,
   searchTypeInfo,
+  suggestionLines,
 } from './search-meta';
 import { Badge, SensitiveBadge } from '../ui/badge';
+import { LookupStore } from '../../core/lookups/lookup-store';
+import { ScrollRegion } from '../ui/scroll-region';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -48,7 +53,7 @@ interface DisplayGroup {
  * Result counts and states are announced through a live region. Only the types the user may view come back (the server filters by permission).
  */
 @Component({
-  imports: [Badge, SensitiveBadge],
+  imports: [Badge, SensitiveBadge, ScrollRegion],
   selector: 'mf-global-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)', '(focusout)': 'onFocusOut($event)' },
@@ -101,82 +106,94 @@ interface DisplayGroup {
             }
           }
           @if (groups().length > 0 || panelState() === 'empty') {
-            <ul class="mf-gs__list" role="listbox" [id]="listId" aria-label="Search results">
-              @for (group of groups(); track group.type) {
-                <li role="presentation">
-                  <span class="mf-gs__group" [id]="listId + '-' + group.type" role="presentation">{{
-                    group.label
-                  }}</span>
-                  <ul
-                    role="group"
-                    [attr.aria-labelledby]="listId + '-' + group.type"
-                    class="mf-gs__items"
-                  >
-                    @for (option of group.options; track option.id) {
-                      <li
-                        role="option"
-                        class="mf-gs__option"
-                        data-hit
-                        [id]="option.id"
-                        [class.mf-gs__option--active]="option.id === activeId()"
-                        [attr.aria-selected]="option.id === activeId()"
-                        (mousedown)="$event.preventDefault()"
-                        tabindex="-1"
-                        (click)="choose(option)"
-                        (keydown.enter)="choose(option)"
-                        (mousemove)="hover(option)"
-                      >
-                        <span class="mf-gs__main">
-                          @if (option.hit!.reference; as reference) {
-                            <span class="mf-gs__ref">{{ reference }}</span>
-                          }
-                          <span class="mf-gs__label">
-                            @for (part of parts(option.hit!.label); track $index) {
-                              @if (part.match) {
-                                <mark>{{ part.text }}</mark>
-                              } @else {
-                                <span>{{ part.text }}</span>
-                              }
+            <div class="mf-gs__scroll" mfScrollRegion="Search suggestions" data-search-scroll>
+              <ul class="mf-gs__list" role="listbox" [id]="listId" aria-label="Search results">
+                @for (group of groups(); track group.type) {
+                  <li role="presentation">
+                    <span
+                      class="mf-gs__group"
+                      [id]="listId + '-' + group.type"
+                      role="presentation"
+                      >{{ group.label }}</span
+                    >
+                    <ul
+                      role="group"
+                      [attr.aria-labelledby]="listId + '-' + group.type"
+                      class="mf-gs__items"
+                    >
+                      @for (option of group.options; track option.id) {
+                        @let lines = linesOf(option.hit!);
+                        <li
+                          role="option"
+                          class="mf-gs__option"
+                          data-hit
+                          [id]="option.id"
+                          [attr.title]="lines.tooltip"
+                          [class.mf-gs__option--active]="option.id === activeId()"
+                          [attr.aria-selected]="option.id === activeId()"
+                          (mousedown)="$event.preventDefault()"
+                          tabindex="-1"
+                          (click)="choose(option)"
+                          (keydown.enter)="choose(option)"
+                          (mousemove)="hover(option)"
+                        >
+                          <span class="mf-gs__main">
+                            @if (lines.reference; as reference) {
+                              <span class="mf-gs__ref">{{ reference }}</span>
                             }
-                          </span>
-                          @if (option.hit!.isSensitive && option.hit!.type === 'matter') {
-                            <mf-sensitive-badge />
-                          }
-                          @if (!option.hit!.isActive) {
-                            <mf-badge>Inactive</mf-badge>
-                          }
-                        </span>
-                        @if (context(option.hit!); as line) {
-                          <span class="mf-gs__sub">
-                            {{ line }}
-                            @if (option.hit!.isSensitive && option.hit!.type !== 'matter') {
+                            <span class="mf-gs__label">
+                              @for (part of parts(option.hit!.label); track $index) {
+                                @if (part.match) {
+                                  <mark>{{ part.text }}</mark>
+                                } @else {
+                                  <span>{{ part.text }}</span>
+                                }
+                              }
+                            </span>
+                            @if (option.hit!.isSensitive && option.hit!.type === 'matter') {
                               <mf-sensitive-badge />
                             }
+                            @if (!option.hit!.isActive) {
+                              <mf-badge>Inactive</mf-badge>
+                            }
                           </span>
-                        }
-                      </li>
-                    }
-                  </ul>
-                </li>
-              }
-              @if (viewAll(); as all) {
-                <li
-                  role="option"
-                  class="mf-gs__option mf-gs__all"
-                  data-view-all
-                  [id]="all.id"
-                  [class.mf-gs__option--active]="all.id === activeId()"
-                  [attr.aria-selected]="all.id === activeId()"
-                  (mousedown)="$event.preventDefault()"
-                  tabindex="-1"
-                  (click)="choose(all)"
-                  (keydown.enter)="choose(all)"
-                  (mousemove)="hover(all)"
-                >
-                  View all results for "{{ trimmed() }}"
-                </li>
-              }
-            </ul>
+                          @if (lines.lock || lines.context.length > 0) {
+                            <span class="mf-gs__sub">
+                              @if (lines.lock) {
+                                <i
+                                  class="pi pi-lock mf-gs__lock"
+                                  role="img"
+                                  aria-label="Sensitive matter"
+                                  data-sensitive-marker
+                                ></i>
+                              }
+                              <span class="mf-gs__sub-text">{{ lines.context.join(' · ') }}</span>
+                            </span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </li>
+                }
+                @if (viewAll(); as all) {
+                  <li
+                    role="option"
+                    class="mf-gs__option mf-gs__all"
+                    data-view-all
+                    [id]="all.id"
+                    [class.mf-gs__option--active]="all.id === activeId()"
+                    [attr.aria-selected]="all.id === activeId()"
+                    (mousedown)="$event.preventDefault()"
+                    tabindex="-1"
+                    (click)="choose(all)"
+                    (keydown.enter)="choose(all)"
+                    (mousemove)="hover(all)"
+                  >
+                    View all results for "{{ trimmed() }}"
+                  </li>
+                }
+              </ul>
+            </div>
           }
         </div>
       }
@@ -223,12 +240,21 @@ interface DisplayGroup {
       left: 0;
       right: 0;
       z-index: 30;
+      display: flex;
+      flex-direction: column;
       max-height: min(70vh, 32rem);
-      overflow: auto;
+      overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
       box-shadow: var(--mf-shadow-2);
+    }
+    /* The only scroller of the panel: a named region while it overflows (BUG-1); the footer sticks to its bottom edge (BUG-3). */
+    .mf-gs__scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      scroll-padding-bottom: var(--mf-row-h);
     }
     .mf-gs__list,
     .mf-gs__items {
@@ -248,32 +274,63 @@ interface DisplayGroup {
     .mf-gs__option {
       display: grid;
       gap: 2px;
+      min-width: 0;
+      min-height: var(--mf-row-h);
+      align-content: center;
       padding: var(--mf-s2) var(--mf-s3);
       cursor: pointer;
     }
     .mf-gs__option--active {
       background: var(--mf-selected-bg);
     }
+    /* One line per row: the name is cut with an ellipsis, never wrapped, so a long name or reference cannot widen the panel. */
     .mf-gs__main {
       display: flex;
-      flex-wrap: wrap;
       align-items: baseline;
       gap: var(--mf-s2);
+      min-width: 0;
     }
     .mf-gs__ref {
+      flex: none;
       font-family: var(--mf-font-mono);
     }
     .mf-gs__label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       font-weight: 600;
     }
     .mf-gs__sub {
+      display: flex;
+      align-items: baseline;
+      gap: var(--mf-s1);
+      min-width: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .mf-gs__sub-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mf-gs__lock {
+      flex: none;
+      font-size: var(--mf-fs-xs);
+    }
+    /* Pinned to the bottom of the scroller, so it is on screen without scrolling and one ArrowDown from the last hit. */
     .mf-gs__all {
+      position: sticky;
+      bottom: 0;
+      z-index: 1;
+      background: var(--mf-surface);
       border-top: 1px solid var(--mf-border);
       color: var(--mf-link);
       font-weight: 600;
+    }
+    .mf-gs__all.mf-gs__option--active {
+      background: var(--mf-selected-bg);
     }
     .mf-gs__note {
       margin: 0;
@@ -321,6 +378,7 @@ export class GlobalSearch {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly lookups = inject(LookupStore);
   private readonly box = viewChild.required<ElementRef<HTMLInputElement>>('box');
 
   protected readonly query = signal('');
@@ -401,6 +459,16 @@ export class GlobalSearch {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
+    // Keyboard moves keep the active option on screen; the focus stays in the input (aria-activedescendant).
+    effect(() => {
+      const id = this.activeId();
+      if (!id) return;
+      afterNextRender(
+        () =>
+          this.host.nativeElement.querySelector(`#${id}`)?.scrollIntoView?.({ block: 'nearest' }),
+        { injector: this.injector },
+      );
+    });
   }
 
   /** Moves focus to the box (the shell's Ctrl+K). */
@@ -414,9 +482,9 @@ export class GlobalSearch {
     return highlightParts(text, this.trimmed());
   }
 
-  /** The grey context line of a hit: the client for a matter, "00343-00012 Merger Review" for records inside a matter. */
-  protected context(hit: SearchHit): string {
-    return hit.secondary ?? '';
+  /** What an option shows besides its name (reference, tooltip, muted line, lock): see `suggestionLines`. */
+  protected linesOf(hit: SearchHit) {
+    return suggestionLines(hit, (code) => this.lookups.statusLabel(code));
   }
 
   protected onInput(value: string): void {
@@ -456,7 +524,11 @@ export class GlobalSearch {
       case 'ArrowUp':
         if (!this.searchable()) return;
         event.preventDefault();
-        if (count > 0) this.activeIndex.set((this.activeIndex() - 1 + count) % count);
+        // From the input (nothing active) the first ArrowUp wraps to the last option, "View all results".
+        if (count > 0)
+          this.activeIndex.set(
+            this.activeIndex() < 0 ? count - 1 : (this.activeIndex() - 1 + count) % count,
+          );
         break;
       case 'Home':
       case 'End':

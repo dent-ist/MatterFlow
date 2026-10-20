@@ -4,6 +4,7 @@ import {
   isSearchable,
   noResultsMessage,
   searchableTypes,
+  suggestionLines,
 } from './search-meta';
 
 describe('search-meta', () => {
@@ -50,5 +51,39 @@ describe('search-meta', () => {
     expect(noResultsMessage('x1')).toBe(
       "No results for 'x1'. Try a client or matter number, a task title, or an asset name.",
     );
+  });
+
+  describe('suggestionLines', () => {
+    const base = { isSensitive: false, matterRef: '00343-00012', matterName: 'Merger Review' };
+
+    it('moves an asset reference into the tooltip and never onto the first line', () => {
+      const lines = suggestionLines({
+        ...base,
+        type: 'asset',
+        reference: 'https://x/y',
+        secondary: 'Laptop',
+      });
+      expect(lines.reference).toBeNull();
+      expect(lines.tooltip).toBe('https://x/y');
+      expect(lines.context).toEqual(['Laptop', '00343-00012', 'Merger Review']);
+    });
+
+    it('drops the requestor of a task and adds the labelled status', () => {
+      const lines = suggestionLines(
+        { ...base, type: 'task', reference: 'TSK-1', secondary: 'Pat Partner', status: 'NEW' },
+        (c) => (c === 'NEW' ? 'New' : c),
+      );
+      expect(lines.reference).toBe('TSK-1');
+      expect(lines.context).toEqual(['00343-00012', 'Merger Review', 'New']);
+    });
+
+    it('asks for the lock on every sensitive hit except a matter (which keeps the badge)', () => {
+      const sensitive = { ...base, isSensitive: true };
+      expect(suggestionLines({ ...sensitive, type: 'matter' }).lock).toBe(false);
+      for (const type of ['task', 'project', 'asset', 'client']) {
+        expect(suggestionLines({ ...sensitive, type }).lock, type).toBe(true);
+      }
+      expect(suggestionLines({ ...base, type: 'task' }).lock).toBe(false);
+    });
   });
 });

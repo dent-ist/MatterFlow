@@ -152,6 +152,7 @@ Contract e2e over the seeded data of the review at four sizes (axe 0 including `
 - Coordination (2026-10-20): Admin pages epic #518 owns the list kit (#543, #544, #545, #575, #579, #554); App-shell epic #585 owns the header and the box placement (#587, #604 touch Search); Users #422 and Assets #485 regenerate OpenAPI too.
 - First release (#455, #456, #458, #459, #461): not started.
 - WP-SR1 Bugs and trust: not started.
+- WP-SR1 lane A (2026-10-20): #455, #456, #458, #459 done (header suggestion panel: named single scroller, asset lines without the URL, one named lock and no requestor, sticky footer as a combobox option); #461 open (lane B); unit and e2e green, axe 0 at four sizes with the panel open; bundle unchanged; screenshots `fixes/sr1-bugs/`; known limit: the footer shows no count until #463.
 - WP-SR2 Suggestion panel: not started.
 - WP-SR3 Results tabs: not started.
 - WP-SR4 Phone cards: not started.

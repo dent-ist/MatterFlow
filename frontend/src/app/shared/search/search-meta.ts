@@ -62,3 +62,64 @@ export function noResultsMessage(query: string): string {
 }
 
 export const SEARCH_ERROR_MESSAGE = 'Search is unavailable. Try again.';
+
+/** What a suggestion option shows besides its (highlighted) name; the panel and any later hit list read the same rules. */
+export interface SuggestionLines {
+  /** The reference on the first line (monospace): matter, client, project and task numbers. An asset never has one (a URL can be 1,000 characters). */
+  reference: string | null;
+  /** Hover text of the option: for an asset its external reference, which stays out of the lines. */
+  tooltip: string | null;
+  /** The muted second line, in order, each part present only when there is a value. */
+  context: string[];
+  /** A lock with the name "Sensitive matter" before the second line; a matter carries the Sensitive badge on its first line instead. */
+  lock: boolean;
+}
+
+interface HitFields {
+  type: string;
+  reference?: string | null;
+  secondary?: string | null;
+  matterRef?: string | null;
+  matterName?: string | null;
+  isSensitive: boolean;
+  status?: string | null;
+}
+
+/**
+ * The lines of a suggestion option (Search review BUG-2, BUG-6, S4):
+ * - Matter: reference and name, the client on the second line.
+ * - Client: reference and name only.
+ * - Project: the name, then the matter number and name.
+ * - Task: reference and title, then matter number, matter name and status (never the requestor).
+ * - Asset: the name only, then type, matter number and matter name (never the URL reference).
+ * Matter number and name are empty for a caller who may not view Matters (the API leaves them out).
+ */
+export function suggestionLines(
+  hit: HitFields,
+  statusLabel: (code: string) => string = (c) => c,
+): SuggestionLines {
+  const matter = [hit.matterRef, hit.matterName].filter((p): p is string => !!p);
+  const context: string[] = [];
+  let reference: string | null = hit.reference || null;
+  let tooltip: string | null = null;
+  switch (hit.type) {
+    case 'matter':
+    case 'client':
+      if (hit.secondary) context.push(hit.secondary);
+      break;
+    case 'task':
+      context.push(...matter);
+      if (hit.status) context.push(statusLabel(hit.status));
+      break;
+    case 'project':
+      context.push(...matter);
+      break;
+    case 'asset':
+      tooltip = reference;
+      reference = null;
+      if (hit.secondary) context.push(hit.secondary);
+      context.push(...matter);
+      break;
+  }
+  return { reference, tooltip, context, lock: hit.isSensitive && hit.type !== 'matter' };
+}

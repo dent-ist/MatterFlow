@@ -293,31 +293,191 @@ describe('mf-global-search (header typeahead)', () => {
     expect(labels).toEqual(['Clients']); // the matter and task groups of the (over-generous) response are not rendered
   });
 
-  it('marks sensitive matters and inactive records, and shows the matter reference under other records', async () => {
+  it('marks sensitive matters with the badge and inactive records with Inactive', async () => {
     await create(
       ALL,
-      aResponse([
-        aGroup('matter', [aHit({ isSensitive: true, isActive: false })]),
-        aGroup('asset', [
-          aHit({
-            type: 'asset',
-            id: 5,
-            reference: 'EVID-1',
-            label: 'Laptop',
-            secondary: '00343-00012 Merger Review',
-            isSensitive: true,
-            path: '/assets/5',
-          }),
-        ]),
-      ]),
+      aResponse([aGroup('matter', [aHit({ isSensitive: true, isActive: false })])]),
     );
     await type('merger');
 
-    const [matter, asset] = options();
+    const [matter] = options();
     expect(matter.querySelector('mf-sensitive-badge')!.textContent).toContain('Sensitive');
     expect(matter.textContent).toContain('Inactive');
-    expect(asset.querySelector('.mf-gs__sub')!.textContent).toContain('00343-00012 Merger Review');
-    expect(asset.querySelector('mf-sensitive-badge')!.textContent).toContain('Sensitive');
+  });
+
+  describe('option lines (BUG-2, BUG-6, S4)', () => {
+    const url = 'https://share.example.com/' + 'x'.repeat(1000);
+    const asset = (overrides = {}) =>
+      aHit({
+        type: 'asset',
+        id: 5,
+        reference: url,
+        label: 'Review laptop',
+        secondary: 'Laptop',
+        matterRef: '00343-00012',
+        matterName: 'Merger Review',
+        path: '/assets/5',
+        ...overrides,
+      });
+    const task = (overrides = {}) =>
+      aHit({
+        type: 'task',
+        id: 9,
+        reference: 'TSK-9',
+        label: 'Review documents',
+        secondary: 'Pat Partner',
+        status: 'NEW',
+        path: '/tasks/9',
+        ...overrides,
+      });
+    const sub = (o: HTMLElement) => o.querySelector('.mf-gs__sub')?.textContent?.trim();
+
+    it('shows an asset as its name, then Type and Matter number, never the URL as text', async () => {
+      await create(ALL, aResponse([aGroup('asset', [asset()])]));
+      await type('review');
+
+      const [option] = options();
+      expect(option.querySelector('.mf-gs__ref')).toBeNull();
+      expect(option.querySelector('.mf-gs__main')!.textContent).not.toContain('https://');
+      expect(option.textContent).not.toContain('xxxx');
+      expect(option.querySelector('.mf-gs__label')!.textContent!.trim()).toBe('Review laptop');
+      expect(sub(option)).toBe('Laptop · 00343-00012 · Merger Review');
+      expect(option.getAttribute('title')).toBe(url);
+    });
+
+    it('shows an asset without a Matter permission with its type only', async () => {
+      await create(
+        ALL,
+        aResponse([aGroup('asset', [asset({ matterRef: undefined, matterName: undefined })])]),
+      );
+      await type('review');
+      expect(sub(options()[0])).toBe('Laptop');
+    });
+
+    it('keeps the reference-first line for matters, clients, projects and tasks', async () => {
+      await create(
+        ALL,
+        aResponse([
+          aGroup('matter', [aHit()]),
+          aGroup('task', [task()]),
+          aGroup('project', [
+            aHit({
+              type: 'project',
+              id: 3,
+              reference: undefined,
+              label: 'Data room',
+              path: '/projects/3',
+            }),
+          ]),
+        ]),
+      );
+      await type('review');
+      const [matter, task1, project] = options();
+      expect(matter.querySelector('.mf-gs__ref')!.textContent).toBe('00343-00012');
+      expect(sub(matter)).toBe('Acme Corp');
+      expect(task1.querySelector('.mf-gs__ref')!.textContent).toBe('TSK-9');
+      expect(project.querySelector('.mf-gs__ref')).toBeNull();
+      expect(sub(project)).toBe('00343-00012 · Merger Review');
+    });
+
+    it('shows Matter number, Matter name and Status for a task and never the requestor', async () => {
+      await create(ALL, aResponse([aGroup('task', [task()])]));
+      await type('review');
+      const text = options()[0].textContent!;
+      expect(sub(options()[0])).toBe('00343-00012 · Merger Review · New');
+      expect(text).not.toContain('Pat Partner');
+      expect(text).not.toContain('[');
+    });
+
+    it('marks a sensitive matter once per task, project and asset option with a named lock, not the badge', async () => {
+      await create(
+        ALL,
+        aResponse([
+          aGroup('matter', [aHit({ isSensitive: true })]),
+          aGroup('task', [task({ isSensitive: true }), task({ id: 10, isSensitive: false })]),
+          aGroup('project', [
+            aHit({
+              type: 'project',
+              id: 3,
+              reference: undefined,
+              label: 'Data room',
+              isSensitive: true,
+              path: '/projects/3',
+            }),
+          ]),
+          aGroup('asset', [asset({ isSensitive: true })]),
+        ]),
+      );
+      await type('review');
+
+      const [matter, sensitiveTask, ordinaryTask, project, assetOption] = options();
+      expect(matter.querySelectorAll('mf-sensitive-badge')).toHaveLength(1);
+      expect(matter.querySelector('[data-sensitive-marker]')).toBeNull();
+      for (const o of [sensitiveTask, project, assetOption]) {
+        expect(o.querySelector('mf-sensitive-badge')).toBeNull();
+        const markers = o.querySelectorAll('[data-sensitive-marker]');
+        expect(markers).toHaveLength(1);
+        expect(markers[0].getAttribute('role')).toBe('img');
+        expect(markers[0].getAttribute('aria-label')).toBe('Sensitive matter');
+      }
+      expect(ordinaryTask.querySelector('[data-sensitive-marker]')).toBeNull();
+    });
+  });
+
+  describe('panel structure (BUG-1, BUG-3)', () => {
+    it('makes the one scroller a named, focusable region while the list overflows, and not before', async () => {
+      await create();
+      await type('343');
+      const scroller = el().querySelector<HTMLElement>('[data-search-scroll]')!;
+      expect(scroller.contains(el().querySelector('[role=listbox]'))).toBe(true);
+      expect(scroller.getAttribute('role')).toBeNull(); // everything fits: no empty Tab stop
+
+      Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 100 });
+      window.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+
+      expect(scroller.getAttribute('role')).toBe('region');
+      expect(scroller.getAttribute('aria-label')).toBe('Search suggestions');
+      expect(scroller.getAttribute('tabindex')).toBe('0');
+      // The focus stays in the input: it is still the combobox with the active descendant.
+      expect(box().getAttribute('role')).toBe('combobox');
+    });
+
+    it('puts "View all results" last, inside the listbox, and ArrowUp from the input reaches it', async () => {
+      await create();
+      await type('343');
+      const all = el().querySelector<HTMLElement>('[data-view-all]')!;
+      expect(all.getAttribute('role')).toBe('option');
+      expect(el().querySelector('[role=listbox]')!.contains(all)).toBe(true);
+      expect(options().at(-1)).toBe(all);
+      key('ArrowUp');
+      expect(box().getAttribute('aria-activedescendant')).toBe(all.id);
+      expect(all.getAttribute('aria-selected')).toBe('true');
+      expect(all.textContent!.trim()).toBe('View all results for "343"');
+    });
+
+    it('opens the full results page with Enter on the footer', async () => {
+      await create();
+      await type('343');
+      key('ArrowUp');
+      key('Enter');
+      expect(router.navigate).toHaveBeenCalledWith(['/search'], { queryParams: { q: '343' } });
+    });
+
+    it('scrolls the active option into view as the arrows move', async () => {
+      await create();
+      await type('343');
+      const scrolled: string[] = [];
+      for (const o of options()) {
+        o.scrollIntoView = vi.fn(() => void scrolled.push(o.id));
+      }
+      key('ArrowDown');
+      key('ArrowDown');
+      await settle(fixture);
+      expect(scrolled.length).toBeGreaterThan(0);
+      expect(scrolled.at(-1)).toBe(box().getAttribute('aria-activedescendant'));
+    });
   });
 
   it('highlights the typed text in labels', async () => {
