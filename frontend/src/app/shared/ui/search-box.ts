@@ -31,8 +31,12 @@ export const SEARCH_DEBOUNCE_MS = 300;
         label()
       }}</label>
       <div class="sb__field">
+        @if (leadingIcon()) {
+          <i class="pi pi-search sb__icon" aria-hidden="true"></i>
+        }
         <input
           class="mf-control sb__input"
+          [class.sb__input--icon]="leadingIcon()"
           type="search"
           autocomplete="off"
           [id]="inputId()"
@@ -89,6 +93,18 @@ export const SEARCH_DEBOUNCE_MS = 300;
       min-width: min(240px, 100%);
       padding-right: calc(var(--mf-s3) + 24px);
     }
+    /* A leading search icon inside the box (decorative; the label stays the accessible name). */
+    .sb__icon {
+      position: absolute;
+      top: 50%;
+      left: var(--mf-s3);
+      transform: translateY(-50%);
+      color: var(--mf-text-muted);
+      pointer-events: none;
+    }
+    .sb__input--icon {
+      padding-left: 2.25rem;
+    }
     /* The browser draws its own clear glyph on type=search; ours replaces it. */
     .sb__input::-webkit-search-cancel-button {
       display: none;
@@ -136,6 +152,8 @@ export const SEARCH_DEBOUNCE_MS = 300;
     }
     .sb__hint--float.sb__hint--show,
     :host(.sb--pinned) .sb__hint--show {
+      /* A floating hint is read, never clicked: a press on what lies under it (the first control below a short toolbar) must reach that control. */
+      pointer-events: none;
       top: calc(100% + var(--mf-s1));
       left: 0;
       z-index: 5;
@@ -199,6 +217,8 @@ export class SearchBox {
   readonly hideLabel = input(false);
   /** Shows the hint only while the box has focus, floating over the page instead of taking a line. */
   readonly hintOnFocus = input(false);
+  /** Draws a decorative search icon at the left inside the box (the look of the global search). */
+  readonly leadingIcon = input(false);
   protected readonly focused = signal(false);
 
   /** The text to search for (trimmed, empty when cleared). Emitted live, on Enter and on clear; never twice for the same text. */

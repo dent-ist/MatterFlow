@@ -110,6 +110,7 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
             placeholder="Search comments"
             [hideLabel]="true"
             [hintOnFocus]="true"
+            [leadingIcon]="true"
             hint="Searches the author and the text of all the comments loaded here, whatever the Show latest setting."
             [value]="query()"
             (searchChange)="query.set($event)"
@@ -424,23 +425,33 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
       display: grid;
       gap: var(--mf-s3);
     }
+    /* One row from 480 px: the search takes the rest of the width, the sort keeps its own; both 36 px tall. Below 480 px the search goes first, full width. */
     .tc__tools {
-      display: grid;
-      gap: var(--mf-s2);
+      --mf-row-h: 36px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s3);
     }
     .tc__search {
-      width: 100%;
+      flex: 1 1 100%;
       min-width: 0;
     }
     .tc__opts {
       display: flex;
-      flex-wrap: wrap;
+      flex: 0 1 auto;
       align-items: center;
       gap: var(--mf-s2) var(--mf-s3);
     }
     .tc__sort {
       width: auto;
       min-width: 8.5rem;
+      max-width: 12rem;
+    }
+    @media (min-width: 480px) {
+      .tc__search {
+        flex: 1 1 12rem;
+      }
     }
     /* The thread scrolls by itself when it is taller than the panel allows (--mf-panel-max); the composer stays below it. */
     .tc__scroll {
