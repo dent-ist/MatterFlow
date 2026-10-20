@@ -223,6 +223,7 @@ export function registerTableSkip(
   const off = [
     skip.register({
       label: 'Skip to table',
+      element: host.nativeElement,
       focus: () => {
         const root = host.nativeElement;
         const target =
