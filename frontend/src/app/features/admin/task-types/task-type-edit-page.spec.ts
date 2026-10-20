@@ -147,7 +147,9 @@ describe('TaskTypeEditPage', () => {
     it('goes to the form designer from the header primary and carries the list view on', async () => {
       q<HTMLButtonElement>('[data-action="edit-form"]').click();
       await settle(fixture);
-      expect(navigate).toHaveBeenCalledWith(['/admin/task-types', 1, 'form'], {});
+      expect(navigate).toHaveBeenCalledWith(['/admin/task-types', 1, 'form'], {
+        state: { keepRow: true },
+      });
     });
 
     it('replaces the address for a tab and does not add a history entry', async () => {
@@ -475,7 +477,9 @@ describe('TaskTypeEditPage', () => {
       expect(el().textContent).not.toContain('Open the form designer');
       q<HTMLButtonElement>('[data-open-form]').click();
       await settle(fixture);
-      expect(navigate).toHaveBeenCalledWith(['/admin/task-types', 1, 'form'], {});
+      expect(navigate).toHaveBeenCalledWith(['/admin/task-types', 1, 'form'], {
+        state: { keepRow: true },
+      });
     });
 
     it('says there is no form yet and offers Create form', async () => {
