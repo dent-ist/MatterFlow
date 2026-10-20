@@ -12,6 +12,7 @@ import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { APP_ENV } from '../../../core/config/app-env';
 import { defaultLandingPath } from '../../../core/auth/guards';
+import { sameIdentity } from '../../../shared/layout/same-identity';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { TitleIcon } from '../../../shared/ui/page-header';
@@ -30,6 +31,7 @@ export class AccessPendingPage implements AfterViewInit {
   protected readonly helpContact = inject(APP_ENV).helpContact;
   private readonly heading = viewChild<ElementRef<HTMLElement>>('heading');
 
+  protected readonly sameIdentity = sameIdentity;
   protected readonly checking = signal(false);
   /** Polite live-region text after "Check again". */
   protected readonly message = signal('');

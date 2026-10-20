@@ -37,7 +37,11 @@ describe('UserMenu (header user area)', () => {
     saveMyAvailability: ReturnType<typeof vi.fn>;
   };
 
-  async function create(permissions: Permission[], current = dto()) {
+  async function create(
+    permissions: Permission[],
+    current = dto(),
+    who: { displayName?: string; windowsAccount?: string } = {},
+  ) {
     client = {
       getMyAvailability: vi.fn().mockReturnValue(ok(current)),
       saveMyAvailability: vi.fn(),
@@ -47,7 +51,9 @@ describe('UserMenu (header user area)', () => {
         provideRouter([]),
         MessageService,
         provideFakeMe(
-          new FakeMeApi(profileOf({ displayName: 'Kim Admin', permissions, roles: ['Test'] })),
+          new FakeMeApi(
+            profileOf({ displayName: 'Kim Admin', permissions, roles: ['Test'], ...who }),
+          ),
         ),
         { provide: MyAvailabilityClient, useValue: client },
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
@@ -67,6 +73,28 @@ describe('UserMenu (header user area)', () => {
     );
 
   afterEach(() => TestBed.resetTestingModule());
+
+  it('shows a name that differs from the account only by case once, and different names both (#592)', async () => {
+    let fixture = await create(['Task.View'], dto(), {
+      displayName: 'KE\\kekim',
+      windowsAccount: 'ke\\kekim',
+    });
+    expect(fixture.nativeElement.querySelector('.um-account')).toBeNull();
+    TestBed.resetTestingModule();
+    fixture = await create(['Task.View'], dto(), {
+      displayName: 'Kim Lee',
+      windowsAccount: 'ke\\kekim',
+    });
+    expect(fixture.nativeElement.querySelector('.um-account').textContent.trim()).toBe('ke\\kekim');
+  });
+
+  it('carries the full name as tooltip and accessible name; the visible name is clamped by CSS (#592)', async () => {
+    const long = 'A'.repeat(66);
+    const fixture = await create(['Task.View'], dto(), { displayName: long });
+    const button = trigger(fixture);
+    expect(button.getAttribute('title')).toBe(long);
+    expect(button.getAttribute('aria-label')).toContain(long);
+  });
 
   it('is a menu button with the name; clicking opens My profile, Set out of office and Keyboard shortcuts', async () => {
     const fixture = await create(['Task.View']);
