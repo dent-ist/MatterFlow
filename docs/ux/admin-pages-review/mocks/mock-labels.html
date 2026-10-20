@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock labels</title><link rel="stylesheet" href="mock.css">
+<body><div class="wrap">
+<div class="panel"><div class="cap b">Before (shipped)</div><div class="pg">
+<h1>Labels</h1><div class="crumb">Order from most to least urgent. Users see labels, not numbers.</div>
+<div class="tabs"><span class="tab on">Priorities</span><span class="tab">Status labels</span></div>
+<div class="crumb" style="margin-bottom:4px">Drag a row or use the arrows to reorder. Exactly one priority is the default.</div>
+<table><tr><th>Order</th><th>Priority</th><th>Label</th><th>Color</th><th>Active</th><th>Default</th><th></th></tr>
+<tr><td style="height:49px">&#8801; &#8593; &#8595;</td><td><span class="pri" style="background:#B42318;color:#fff">Critical</span></td><td>Critical <span class="link">Rename</span></td><td>[Critical red &#9662;]</td><td>&#9745;</td><td>&#9675;</td><td><span class="link" style="color:var(--danger)">Delete</span></td></tr>
+<tr><td style="height:49px">&#8801; &#8593; &#8595;</td><td><span class="pri" style="background:#FFE0B0;color:#6a3b00">High</span></td><td>High <span class="link">Rename</span></td><td>[High amber &#9662;]</td><td>&#9745;</td><td>&#9675;</td><td><span class="link" style="color:var(--danger)">Delete</span></td></tr>
+<tr><td style="height:49px">&#8801; &#8593; &#8595;</td><td><span class="pri" style="background:#EEF0F4;color:#1B1F27;border:1px solid #6B7280">Normal</span></td><td>Normal <span class="link">Rename</span></td><td>[Normal gray &#9662;]</td><td>&#9745;</td><td>&#9679;</td><td><span class="link" style="color:var(--danger);opacity:.5">Delete</span></td></tr></table>
+<div class="note">Seven controls per row (6 Tab stops), the same word shown twice (badge and Label), "Delete" in red next to an in-use priority that cannot be deleted (found out in a dialog and then three repeated messages), the Add form below a table that scrolls inside the page; at 768 Active, Default and Delete are off screen; there is no count of tasks per priority.</div></div></div>
+<div class="panel"><div class="cap a">After (recommended)</div><div class="pg">
+<div class="row"><h1>Labels</h1><span class="btn p">+ New priority</span></div>
+<div class="tabs"><span class="tab on">Priorities <span class="cnt">(8)</span></span><span class="tab">Status labels <span class="cnt">(5)</span></span></div>
+<table><tr><th style="width:56px">Order</th><th>Priority</th><th>Color</th><th style="text-align:right">Open tasks</th><th>Status</th><th></th></tr>
+<tr class="r44"><td>1 &#8597;</td><td><span class="pri" style="background:#B42318;color:#fff">Critical</span></td><td><span class="sw" style="background:#B42318"></span>Critical red</td><td style="text-align:right"><span class="link">14</span></td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr>
+<tr class="r44"><td>2 &#8597;</td><td><span class="pri" style="background:#FFE0B0;color:#6a3b00">High</span></td><td><span class="sw" style="background:#FFE0B0"></span>High amber</td><td style="text-align:right"><span class="link">31</span></td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr>
+<tr class="r44"><td>3 &#8597;</td><td><span class="pri" style="background:#EEF0F4;color:#1B1F27;border:1px solid #6B7280">Normal</span> <span class="badge nt">Default</span></td><td><span class="sw" style="background:#EEF0F4"></span>Normal gray</td><td style="text-align:right"><span class="link">96</span></td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr></table>
+<div class="note">Rows 44 px, one name (rename in a small dialog, with the badge preview and the contrast check), the color a swatch plus name (edited in the same dialog), Default as a badge, "Open tasks" tells at once which priority can only be deactivated, the row overflow holds Rename, Move up, Move down, Set as default, Deactivate and Delete (Delete only when unused, otherwise absent with the reason in the dialog). Same chrome as Task Types; cards below 640 px.</div></div></div>
+</div></body></html>

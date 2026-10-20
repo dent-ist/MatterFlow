@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock asset types</title><link rel="stylesheet" href="mock.css">
+<body><div class="wrap">
+<div class="panel"><div class="cap b">Before (shipped)</div><div class="pg">
+<div class="crumb">Administration &gt; Assets</div>
+<h1>Asset Types &amp; Link Roles</h1>
+<div class="tabs"><span class="tab on">Asset Types</span><span class="tab">Asset Link Roles</span></div>
+<div class="row" style="align-items:center"><span class="crumb">Each type has its own fields. Fields are versioned; changing them never alters saved values.</span><span class="btn p">+ New asset type</span></div>
+<div style="text-align:right;margin:6px 0"><span class="btn">Filters</span></div>
+<table><tr><th>Name</th><th>Fields</th><th>Assets</th><th>Status</th><th></th></tr>
+<tr><td style="height:59px"><b>Relativity Workspace</b><br><span class="crumb">Display Name follows the firm convention: #####-##### - Short matter name (e.g. 00343-00012 - Smith v Acme).</span></td><td>Published v1<br><span class="link">Edit fields</span></td><td>12</td><td><span class="badge ok">Active</span></td><td><span class="link">Edit</span> &nbsp;<span class="link" style="color:var(--danger)">Deactivate</span></td></tr>
+<tr><td style="height:59px"><b>Harvey Vault</b></td><td>Published v1<br><span class="link">Edit fields</span></td><td>12</td><td><span class="badge ok">Active</span></td><td><span class="link">Edit</span> &nbsp;<span class="link" style="color:var(--danger)">Deactivate</span></td></tr>
+<tr><td style="height:113px"><b>Forensic image of a mobile device under litigation hold (2019 merger investigation)</b><br><span class="crumb">Long-name type. Deliberately long description to test clamping in rows and cards.</span></td><td>No published fields<br><span class="link">Edit fields</span></td><td>0</td><td><span class="badge ok">Active</span></td><td><span class="link">Edit</span> &nbsp;<span class="link" style="color:var(--danger)">Deactivate</span></td></tr></table>
+<div class="note">Rows 59 to 113 px (815 px at 375), two tabs without counts, no summary, two ways in (Edit opens an inline form above the list, Edit fields opens the designer), the Filters button on its own row, a hidden inactive type is not mentioned, history is not reachable.</div></div></div>
+<div class="panel"><div class="cap a">After (recommended)</div><div class="pg">
+<div class="crumb">Administration &gt; Assets</div>
+<div class="row"><h1>Assets</h1><span><span class="btn">Filters</span> <span class="btn p">+ New asset type</span></span></div>
+<div class="tabs"><span class="tab on">Asset Types <span class="cnt">(9)</span></span><span class="tab">Link Roles <span class="cnt">(5)</span></span></div>
+<div class="strip"><div class="tile"><b>9</b><span>Active</span></div><div class="tile w"><b>2</b><span>No published fields</span></div><div class="tile"><b>1</b><span>Inactive</span></div></div>
+<table><tr><th>Name</th><th>Fields</th><th>Assets</th><th>Status</th><th></th></tr>
+<tr class="r44"><td><span class="link">Relativity Workspace</span></td><td>v1 &middot; 8 fields</td><td><span class="link">12</span></td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr>
+<tr class="r44"><td><span class="link">Harvey Vault</span></td><td>v1 &middot; 5 fields</td><td><span class="link">12</span></td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr>
+<tr class="r44"><td><span class="link" title="full name in tooltip">Forensic image of a mobile device under litigation&hellip;</span></td><td><span class="badge wn">No published fields</span></td><td>0</td><td><span class="badge ok">Active</span></td><td><span class="kebab">&hellip;</span></td></tr>
+<tr><td colspan="5" style="font-size:12px;color:var(--muted)">Showing 1-9 of 9 active &middot; 1 inactive hidden &nbsp;<span class="link">Show all</span></td></tr></table>
+<div class="note">Same list chrome as Task Types: Filters and New in the header, tabs with counts, a strip that filters, exactly 44 px rows, name is the link (opens the record page with Overview / Fields / Assets tabs), the row overflow holds Edit fields, History (Audit filtered to this type) and Deactivate, the inactive hint with Show all. Phone: cards.</div></div></div>
+</div></body></html>
