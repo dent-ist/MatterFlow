@@ -128,18 +128,19 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
 
     await page.goto('/admin/steps/new');
     await expect(page.getByRole('heading', { name: 'New step', level: 1 })).toBeVisible();
+    // The record header's last crumb carries the full name once more for screen readers (the short text is aria-hidden).
     await expect(crumbs(page)).toHaveText([
       'Administration',
       'Task Types',
       'Workflow Steps',
-      'New',
+      'New stepNew step',
     ]);
     await page.goto(`/admin/steps/${step.id}`);
     await expect(crumbs(page)).toHaveText([
       'Administration',
       'Task Types',
       'Workflow Steps',
-      step.title,
+      `${step.title}${step.title}`,
     ]);
     await crumbs(page).getByRole('link', { name: 'Workflow Steps' }).click();
     await expect(page).toHaveURL(/\/admin\/steps$/);

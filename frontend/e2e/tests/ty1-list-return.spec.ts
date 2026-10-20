@@ -119,8 +119,8 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
       expect(urlOf(page)).toBe(before);
       await expect(rowLink(page, id)).toBeFocused();
 
-      // Cancel on the edit page is the same way back (the Task Type record page has no Cancel until a tab has edits, #380).
-      if (kind !== 'types') {
+      // Cancel on the edit page is the same way back (the Task Type and Step record pages have no Cancel until a tab has edits, #380, #403).
+      if (kind === 'workflows') {
         await rowLink(page, id).click();
         await expect(page).toHaveURL(new RegExp(`${list}/${id}$`));
         await page
@@ -282,7 +282,11 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
       const url = `/admin/steps?title=${steps.token}&size=25&page=2`;
       await page.goto(url);
       await rowLink(page, steps.ids[28]).click();
-      await crumb(page, 'Workflow Steps').click();
+      // A phone shows "Back to Workflow Steps" in place of the crumb trail (record header, #403): the same way back.
+      await expect(page.locator('[data-record-header]')).toBeVisible();
+      const back = page.locator('[data-back-link]');
+      if (await back.isVisible()) await back.click();
+      else await crumb(page, 'Workflow Steps').click();
       await expect(rowLink(page, steps.ids[28])).toBeFocused();
       expect(urlOf(page)).toBe(url);
       expect(

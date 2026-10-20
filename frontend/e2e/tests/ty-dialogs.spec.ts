@@ -73,7 +73,9 @@ test.describe('Dialog wording and focus (#362)', () => {
 
     const step = await seed.step({ title: `Wording ${uid()}` });
     await page.goto(`/admin/steps/${step.id}`);
-    await page.getByRole('button', { name: 'Deactivate', exact: true }).click();
+    // Deactivate is in the overflow of the record header (#406), not beside Save.
+    await page.locator('[data-page-actions] button[data-overflow]').click();
+    await page.getByRole('menuitem', { name: 'Deactivate' }).click();
     await expect(dialog(page).getByRole('button', { name: 'Deactivate step' })).toBeVisible();
     await expect(dialog(page).getByRole('button', { name: 'Keep active' })).toBeVisible();
     await atEverySize(page, 'dialog-deactivate-step');
