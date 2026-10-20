@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { CopyParts, CopyPart } from './copy-parts';
+import type { AdminColumn } from './admin-list-state';
 import { LoadState } from './data-table';
 import { ErrorReference } from './error-reference';
 import type { ListFilters } from '../filters/list-filters';
@@ -47,7 +48,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
         <tr>
           <td
             class="mf-sr-only"
-            [attr.colspan]="columns()"
+            [attr.colspan]="colCount()"
             role="status"
             aria-busy="true"
             data-loading
@@ -58,7 +59,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
         @for (n of skeletonRows; track n) {
           <tr class="gb-sk" aria-hidden="true" data-skeleton>
             @for (w of bones(); track $index) {
-              <td [class]="cellClasses()[$index]">
+              <td [class]="cellClasses()[$index]" [attr.data-drop]="drops()[$index]">
                 <span class="gb-bone" [style.width]="w"></span>
               </td>
             }
@@ -67,17 +68,17 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       }
       @case ('forbidden') {
         <tr class="gb-state">
-          <td [attr.colspan]="columns()" data-forbidden>
+          <td [attr.colspan]="colCount()" data-forbidden>
             <div class="gb-alert" role="alert">You don't have access to {{ noun() }}.</div>
           </td>
         </tr>
       }
       @case ('error') {
         <tr class="gb-state">
-          <td [attr.colspan]="columns()" data-error>
+          <td [attr.colspan]="colCount()" data-error>
             <div class="gb-alert" role="alert">
               Couldn't load {{ noun() }}.
-              <mf-error-reference />
+              <mf-error-reference [reference]="errorRef()" />
             </div>
             <p-button label="Retry" severity="secondary" (onClick)="onRetry()" />
           </td>
@@ -86,7 +87,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
       @default {
         @if (empty()) {
           <tr class="gb-state">
-            <td [attr.colspan]="columns()" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
+            <td [attr.colspan]="colCount()" [attr.data-empty]="filtered() ? 'filtered' : 'none'">
               @if (filtered()) {
                 <p>No {{ noun() }} match these filters</p>
                 @if (hidden() > 0) {
@@ -188,20 +189,40 @@ export class GridBody {
   readonly emptyText = input('');
   /** First-run text with links in it; replaces `emptyText` when set. */
   readonly emptyParts = input<readonly CopyPart[] | null>(null);
-  /** Number of columns of the grid (the state row spans them). */
-  readonly columns = input.required<number>();
+  /** Number of columns of the grid (the state row spans them). Not needed when `columnSpec` is given. */
+  readonly columns = input(0);
+  /**
+   * The page's real columns (#575): their count, bone widths, cell classes and `data-drop` widths, so the skeleton has the shape of the
+   * loaded table and drops the same columns at the same window widths. Replaces `columns`, `skeleton` and `skeletonCells`.
+   */
+  readonly columnSpec = input<readonly AdminColumn[] | null>(null);
+  /** The error reference to show (an explicit one, for an error that did not come through the HTTP layer); by default the last one the server sent. */
+  readonly errorRef = input<string | null>(null);
   /** Width of the bone in each column of a skeleton row (CSS lengths); repeats when shorter than `columns`. */
   readonly skeleton = input<readonly string[]>(DEFAULT_BONES);
   /** CSS classes of the skeleton cell of each column (the classes the loaded cell has), so a column that is sized by its class keeps its width while loading. */
   readonly skeletonCells = input<readonly string[]>([]);
 
   protected readonly skeletonRows = SKELETON_ROWS;
-  protected readonly cellClasses = computed(() =>
-    Array.from({ length: this.columns() }, (_, i) => this.skeletonCells()[i] ?? ''),
-  );
+  protected readonly colCount = computed(() => this.columnSpec()?.length ?? this.columns());
+  protected readonly cellClasses = computed(() => {
+    const spec = this.columnSpec();
+    return Array.from(
+      { length: this.colCount() },
+      (_, i) => (spec ? spec[i].cls : this.skeletonCells()[i]) ?? '',
+    );
+  });
+  protected readonly drops = computed(() => {
+    const spec = this.columnSpec();
+    return Array.from({ length: this.colCount() }, (_, i) => spec?.[i].drop ?? null);
+  });
   protected readonly bones = computed(() => {
+    const spec = this.columnSpec();
     const widths = this.skeleton().length > 0 ? this.skeleton() : DEFAULT_BONES;
-    return Array.from({ length: this.columns() }, (_, i) => widths[i % widths.length]);
+    return Array.from(
+      { length: this.colCount() },
+      (_, i) => (spec ? spec[i].bone : undefined) ?? widths[i % widths.length],
+    );
   });
 
   constructor() {

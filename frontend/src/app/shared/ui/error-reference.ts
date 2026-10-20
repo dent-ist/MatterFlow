@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { ErrorReferenceStore } from '../../core/http/error-reference-store';
 import { CopyButton } from './copy-button';
 
@@ -8,7 +8,7 @@ import { CopyButton } from './copy-button';
   imports: [CopyButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (store.reference(); as ref) {
+    @if (shown(); as ref) {
       <span class="mf-errref" data-error-reference>
         Reference: <code>{{ ref }}</code>
         <mf-copy-button [text]="ref" label="reference" [showText]="true" />
@@ -35,6 +35,9 @@ import { CopyButton } from './copy-button';
 })
 export class ErrorReference {
   protected readonly store = inject(ErrorReferenceStore);
+  /** An explicit reference (an error that did not come through the HTTP layer); by default the last one the server sent. */
+  readonly reference = input<string | null>(null);
+  protected readonly shown = computed(() => this.reference() || this.store.reference());
 
   constructor() {
     this.store.claim();

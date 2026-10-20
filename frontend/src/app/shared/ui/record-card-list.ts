@@ -23,6 +23,7 @@ import { CopyPart, CopyParts } from './copy-parts';
 import { LoadState } from './data-table';
 import { RowLink } from './row-nav';
 import { ErrorReference } from './error-reference';
+import type { ListFilters } from '../filters/list-filters';
 
 /** Below this width (the work lists' 640 px: 639 is cards, 640 is the table) a record list is cards instead of a table (WP12, #275). */
 export const RECORD_CARDS_QUERY = '(max-width: 639.98px)';
@@ -108,7 +109,7 @@ export class RecordCardDef<T = unknown> {
         <div class="rc-state" data-error>
           <div class="rc-alert" role="alert">
             Couldn't load {{ noun() }}.
-            <mf-error-reference />
+            <mf-error-reference [reference]="errorRef()" />
           </div>
           <button type="button" class="mf-btn" (click)="onRetry()">Retry</button>
         </div>
@@ -182,6 +183,14 @@ export class RecordCardList {
   /** First-run text with links in it; replaces `emptyText` when set. */
   readonly emptyParts = input<readonly CopyPart[] | null>(null);
 
+  /**
+   * The page's filters (as `mfGridBody`'s): while the cards show "No ... match these filters" with Clear filters, the bar above shows none
+   * (one Clear filters at a time, RR-10).
+   */
+  readonly filters = input<ListFilters | null>(null);
+  /** The error reference to show (see `mfGridBody`); by default the last one the server sent. */
+  readonly errorRef = input<string | null>(null);
+
   /** Records the default Status hides ("3"): a filtered empty list then says "3 inactive hidden  Show all". */
   readonly hidden = input(0);
   readonly hiddenLabel = input('inactive');
@@ -193,6 +202,12 @@ export class RecordCardList {
   protected readonly skeletonCards = [1, 2, 3, 4, 5];
 
   constructor() {
+    effect((onCleanup) => {
+      const filters = this.filters();
+      if (!filters) return;
+      filters.emptyClear.set(this.state() === 'ready' && this.empty() && this.filtered());
+      onCleanup(() => filters.emptyClear.set(false));
+    });
     // A Retry that succeeds puts keyboard focus where the cards are.
     effect(() => {
       if (this.state() !== 'ready' || !this.focusAfterRetry) return;
