@@ -217,6 +217,24 @@ describe('HTTP interceptors', () => {
     expect(connectivity.offline()).toBe(false);
   });
 
+  it('a 401 sets the sign-in banner state and adds no toast, however many requests fail (S14, #612)', () => {
+    const { http, ctrl, toasts } = setup();
+    const connectivity = TestBed.inject(Connectivity);
+    for (const url of ['/a', '/b', '/c']) {
+      http.get(url).subscribe({ error: () => undefined });
+      ctrl
+        .expectOne(url)
+        .flush({ title: 'Unauthorized', status: 401 }, { status: 401, statusText: 'Unauthorized' });
+    }
+    expect(connectivity.signInFailed()).toBe(true);
+    expect(connectivity.offline()).toBe(false);
+    expect(toasts()).toEqual([]);
+    // A request that works does not hide the banner: reloading the page does (the state lives in memory).
+    http.get('/ok').subscribe();
+    ctrl.expectOne('/ok').flush({});
+    expect(connectivity.signInFailed()).toBe(true);
+  });
+
   it('honours SKIP_ERROR_TOAST', () => {
     const { http, ctrl, toasts } = setup();
     http
@@ -321,9 +339,10 @@ describe('toastFor', () => {
     expect(toastFor(make(403, { code: 'ACCOUNT_DISABLED' }))).toBeNull();
   });
 
-  it('maps 401, 403 and 404 to copy-deck messages', () => {
+  it('maps 403 and 404 to copy-deck messages, and leaves a 401 to the sign-in banner', () => {
     expect(toastFor(make(403))?.summary).toBe("You don't have permission to do that.");
     expect(toastFor(make(404))?.summary).toBe("We couldn't find that.");
-    expect(toastFor(make(401))?.summary).toContain('verify your sign-in');
+    // A 401 is the sign-in banner (S14, #612), never a toast.
+    expect(toastFor(make(401))).toBeNull();
   });
 });

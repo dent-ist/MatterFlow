@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Connectivity } from '../../core/http/connectivity';
 
 /**
- * The slim banner under the header (S13, #611; one banner slot, the sign-in banner joins it in #612): "You're offline. Pages you have open still
+ * The slim banner under the header (S13, #611 and S14, #612; one banner slot, priority sign-in then offline): "You're offline. Pages you have open still
  * work; changes can't be saved." with a Retry button while the server cannot be reached, then "Back online." for a few seconds once it can.
+ * A 401 from the API shows "We couldn't verify your sign-in." with a Reload page button instead (and no toast); it wins over offline.
  * The always-present wrapper is the polite live region (it is announced when its text appears); focus is never moved to the banner.
  */
 @Component({
@@ -11,7 +12,15 @@ import { Connectivity } from '../../core/http/connectivity';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="cb" role="status" aria-live="polite" data-connection-status>
-      @if (connectivity.offline()) {
+      @if (connectivity.signInFailed()) {
+        <div class="cb__bar cb__bar--signin" data-signin-banner>
+          <i class="pi pi-lock" aria-hidden="true"></i>
+          <span class="cb__text">We couldn't verify your sign-in.</span>
+          <button type="button" class="mf-btn cb__retry" data-signin-reload (click)="reload()">
+            Reload page
+          </button>
+        </div>
+      } @else if (connectivity.offline()) {
         <div class="cb__bar cb__bar--offline" data-offline-banner>
           <i class="pi pi-wifi" aria-hidden="true"></i>
           <span class="cb__text"
@@ -54,6 +63,10 @@ import { Connectivity } from '../../core/http/connectivity';
       background: var(--mf-warning-bg);
       color: var(--mf-warning);
     }
+    .cb__bar--signin {
+      background: var(--mf-danger-bg);
+      color: var(--mf-danger);
+    }
     .cb__bar--back {
       background: var(--mf-success-bg);
       color: var(--mf-success);
@@ -77,5 +90,9 @@ export class ConnectionBanner {
 
   protected retry(): void {
     void this.connectivity.check();
+  }
+
+  protected reload(): void {
+    window.location.reload();
   }
 }

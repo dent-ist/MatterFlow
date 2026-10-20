@@ -51,4 +51,20 @@ describe('ConnectionBanner (#611)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     vi.unstubAllGlobals();
   });
+
+  it('a 401 is the sign-in banner with Reload page, and it wins over offline (S14, #612)', () => {
+    const { fixture, el, c } = render();
+    c.unreachable();
+    c.unreachable();
+    c.signInRejected();
+    fixture.detectChanges();
+    const bar = el.querySelector('[data-signin-banner]')!;
+    expect(bar.textContent).toContain("We couldn't verify your sign-in.");
+    expect(bar.querySelector('button')!.textContent!.trim()).toBe('Reload page');
+    expect(el.querySelector('[data-offline-banner]')).toBeNull();
+    // Other requests that still work do not hide it: only reloading the page does.
+    c.reachable();
+    fixture.detectChanges();
+    expect(el.querySelector('[data-signin-banner]')).not.toBeNull();
+  });
 });

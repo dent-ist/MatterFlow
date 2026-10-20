@@ -89,8 +89,11 @@ export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
           if (inline && !quiet) injector.get(ErrorReferenceStore).reference.set(apiError.traceId);
           // While the offline banner is up it already says so: a failed load produces no toast of its own (S13d, #611). A failed save still
           // answers the person who pressed Save, once (identical toasts fold into one).
+          const connectivity = injector.get(Connectivity);
           const bannerSaysSo =
-            apiError.isNetworkError && req.method === 'GET' && injector.get(Connectivity).offline();
+            (apiError.isNetworkError && req.method === 'GET' && connectivity.offline()) ||
+            // A 401 is one sign-in banner with "Reload page", never a pile of toasts (S14, #612).
+            apiError.status === 401;
           if (!quiet && !inline && !bannerSaysSo && !req.context.get(SKIP_ERROR_TOAST)) {
             const toast = toastFor(apiError);
             if (toast) {
@@ -151,7 +154,9 @@ export const connectivityInterceptor: HttpInterceptorFn = (req, next) => {
       },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 0) connectivity.unreachable();
-        else connectivity.reachable();
+        else if (error instanceof HttpErrorResponse && error.status === 401) {
+          connectivity.signInRejected();
+        } else connectivity.reachable();
       },
     }),
   );
@@ -174,9 +179,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.isNetworkError || err.status >= 500) {
     return { summary: 'Something went wrong. Try again.', detail: reference };
   }
-  if (err.status === 401) {
-    return { summary: "We couldn't verify your sign-in. Reload the page to try again." };
-  }
+  if (err.status === 401) return null; // one sign-in banner with "Reload page" (S14, #612)
   if (err.status === 403) return { summary: "You don't have permission to do that." };
   if (err.status === 404) return { summary: "We couldn't find that." };
   return {

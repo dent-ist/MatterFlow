@@ -14,7 +14,7 @@ const SIZES = [
 
 test.describe('SH-B: toast de-duplication', () => {
   for (const size of SIZES) {
-    test(`a 401 on a list shows the sign-in message once at ${size.name}`, async ({ page }) => {
+    test(`a 401 on a list is one sign-in banner and no toast at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.route(/\/api\/v1\/(?!me\b)/, (route) =>
         route.request().method() !== 'GET'
@@ -26,17 +26,14 @@ test.describe('SH-B: toast de-duplication', () => {
             }),
       );
       await page.goto('/tasks');
-      await expect(toasts(page).first()).toBeVisible();
+      await expect(page.locator('[data-signin-banner]')).toBeVisible();
       await page.waitForTimeout(1500);
-      // Several requests of the page failed with the same 401: one toast, not one per request.
-      await expect(toasts(page).filter({ hasText: "We couldn't verify your sign-in" })).toHaveCount(
-        1,
-      );
-      const texts = await toasts(page).allInnerTexts();
-      expect(new Set(texts).size, texts.join(' | ')).toBe(texts.length);
+      // Several requests of the page failed with the same 401: one banner, no toast (S14, #612).
+      await expect(page.locator('[data-signin-banner]')).toHaveCount(1);
+      await expect(toasts(page)).toHaveCount(0);
       if (OUT) {
         fs.mkdirSync(OUT, { recursive: true });
-        await page.screenshot({ path: path.join(OUT, `one-sign-in-toast-${size.name}.png`) });
+        await page.screenshot({ path: path.join(OUT, `one-sign-in-banner-${size.name}.png`) });
       }
     });
   }

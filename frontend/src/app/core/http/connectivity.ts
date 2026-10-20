@@ -36,6 +36,8 @@ export class Connectivity {
   readonly offline = computed(
     () => !this.browserOnline() || this.failures() >= OFFLINE_AFTER_FAILURES,
   );
+  /** The server answered 401: the sign-in could not be verified (S14, #612). One banner with "Reload page", no toasts; it stays until the page is reloaded. */
+  readonly signInFailed = signal(false);
   /** Counts reconnections; a screen showing a failed load retries once when it changes. */
   readonly recoveries = signal(0);
   /** True for a few seconds after the connection returned ("Back online."). */
@@ -76,6 +78,12 @@ export class Connectivity {
   /** A request got an answer from the server (any status): it is reachable. */
   reachable(): void {
     if (this.failures() > 0) this.failures.set(0);
+  }
+
+  /** A request was answered with 401: the server is reachable but does not accept the sign-in. */
+  signInRejected(): void {
+    if (this.failures() > 0) this.failures.set(0);
+    this.signInFailed.set(true);
   }
 
   /** Asks the server whether it is back (the Retry button). Returns whether it answered. */
