@@ -250,7 +250,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
     await page.goto(typesUrl);
     const typeId = types.ids[27];
     await rowLink(page, typeId).click();
-    await page.getByRole('link', { name: 'Open the form designer' }).click();
+    await page.locator('[data-action=edit-form]').click();
     await expect(page).toHaveURL(new RegExp(`/admin/task-types/${typeId}/form$`));
     await crumb(page, 'Task Types').click();
     expect(urlOf(page)).toBe(typesUrl);
@@ -258,7 +258,7 @@ test.describe('Back and the breadcrumb keep the list view and the row focus (#35
 
     // One level up first (the record's own crumb), then the list crumb from the record page: still the same row.
     await rowLink(page, typeId).click();
-    await page.getByRole('link', { name: 'Open the form designer' }).click();
+    await page.locator('[data-action=edit-form]').click();
     await page
       .getByRole('navigation', { name: 'Breadcrumb' })
       .getByRole('link', { name: types.names[27] })

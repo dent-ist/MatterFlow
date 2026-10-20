@@ -862,7 +862,7 @@ test.describe('Task Type record page', () => {
       const w = await world(seed, admin);
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(`/admin/task-types?name=${w.token}`);
-      await page.getByRole('link', { name: w.type.name }).click();
+      await page.getByRole('link', { name: w.type.name, exact: true }).click();
       await expect(page.locator('[data-task-type-page]')).toBeVisible();
       await page.locator('#tt-description').fill('Saved on the way out');
       await page
