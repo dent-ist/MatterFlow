@@ -42,4 +42,28 @@ public sealed class ConfigurationTaskCounts(DbContext db) : IConfigurationTaskCo
             .ToListAsync(cancellationToken);
         return rows.ToDictionary(r => r.Key, r => r.Count);
     }
+
+    public async Task<IReadOnlyDictionary<int, int>> OpenByPriorityAsync(IReadOnlyCollection<int> priorityIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(priorityIds);
+        if (priorityIds.Count == 0)
+            return new Dictionary<int, int>();
+
+        var ids = priorityIds.Distinct().ToList();
+        var rows = await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
+            .Where(t => ids.Contains(t.PriorityId))
+            .GroupBy(t => t.PriorityId)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(r => r.Key, r => r.Count);
+    }
+
+    public async Task<IReadOnlyDictionary<string, int>> CountByStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var rows = await db.Set<WorkTask>().AsNoTracking()
+            .GroupBy(t => t.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        return rows.ToDictionary(r => r.Key.ToCode(), r => r.Count);
+    }
 }

@@ -12483,6 +12483,13 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -13308,6 +13315,13 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "taskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

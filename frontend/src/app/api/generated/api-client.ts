@@ -12616,6 +12616,7 @@ export interface PriorityView {
     isActive: boolean;
     isDefault: boolean;
     rowVersion: string;
+    openTaskCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -12870,6 +12871,7 @@ export interface StatusLabelView {
     displayLabel: string;
     sortOrder: number;
     rowVersion: string;
+    taskCount?: number | undefined;
 
     [key: string]: any;
 }

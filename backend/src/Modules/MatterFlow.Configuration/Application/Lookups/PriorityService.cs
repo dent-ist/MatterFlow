@@ -3,7 +3,10 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Domain;
 using MatterFlow.Configuration.Infrastructure;
+using MatterFlow.Identity.Contracts;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Tasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Configuration.Application.Lookups;
@@ -16,6 +19,11 @@ namespace MatterFlow.Configuration.Application.Lookups;
 /// <param name="IsActive">False = not offered for new or changed tasks; historical tasks still show it.</param>
 /// <param name="IsDefault">True for exactly one priority: the one pre-selected for new tasks.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
+/// <param name="OpenTaskCount">
+/// Tasks of this priority that are open (New, In Progress or On Hold, the Task Queue definition), over every pod, Matter and Project:
+/// configuration data, not trimmed to what the viewer may open. Null (not 0) when the viewer lacks <c>Task.View</c>. The list and every
+/// create, update, default and reorder response carry it.
+/// </param>
 public sealed record PriorityView(
     [property: Required] int Id,
     [property: Required] string Label,
@@ -23,7 +31,8 @@ public sealed record PriorityView(
     [property: Required] string Color,
     [property: Required] bool IsActive,
     [property: Required] bool IsDefault,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OpenTaskCount = null);
 
 /// <summary>Body to create a priority. It is appended as the least urgent and is never the default.</summary>
 public sealed record CreatePriorityRequest(
@@ -42,19 +51,45 @@ public sealed record UpdatePriorityRequest(
 public sealed record ReorderRequest([Required] IReadOnlyList<int> Ids);
 
 /// <summary>Priorities: admin commands (audited) and the <see cref="IPriorityCatalog"/> read side for other modules.</summary>
-public sealed class PriorityService(DbContext db, IAuditWriter audit, IEnumerable<IPriorityUsage> usage) : IPriorityCatalog
+public sealed class PriorityService(
+    DbContext db,
+    IAuditWriter audit,
+    IEnumerable<IPriorityUsage> usage,
+    IPermissionChecker permissions,
+    IConfigurationTaskCounts taskCounts) : IPriorityCatalog
 {
     private const string ObjectType = "Priority";
 
-    public static PriorityView ToView(Priority p) =>
-        new(p.Id, p.Label, p.SortOrder, p.Color, p.IsActive, p.IsDefault, LookupSupport.FormatRowVersion(p.RowVersion));
+    public static PriorityView ToView(Priority p, int? openTaskCount = null) =>
+        new(p.Id, p.Label, p.SortOrder, p.Color, p.IsActive, p.IsDefault, LookupSupport.FormatRowVersion(p.RowVersion), openTaskCount);
+
+    /// <summary>
+    /// The open Task count of each priority (one grouped statement for the whole list), or null when the viewer may not see Tasks, so the
+    /// responses carry null instead of a made-up 0. A priority with no open Task is 0.
+    /// </summary>
+    private async Task<Dictionary<int, int>?> OpenCountsAsync(IReadOnlyCollection<int> ids, CancellationToken ct)
+    {
+        if (!permissions.Has(Permissions.Task.View))
+            return null;
+        return new Dictionary<int, int>(await taskCounts.OpenByPriorityAsync(ids, ct));
+    }
+
+    private async Task<PriorityView> ToCountedViewAsync(Priority p, CancellationToken ct)
+    {
+        var counts = await OpenCountsAsync([p.Id], ct);
+        return ToView(p, counts is null ? null : counts.GetValueOrDefault(p.Id));
+    }
 
     private static PriorityInfo ToInfo(Priority p) => new(p.Id, p.Label, p.SortOrder, p.Color, p.IsActive, p.IsDefault);
 
     // ---- read side
 
-    public async Task<IReadOnlyList<PriorityView>> ListViewsAsync(CancellationToken ct = default) =>
-        (await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync(ct)).Select(ToView).ToList();
+    public async Task<IReadOnlyList<PriorityView>> ListViewsAsync(CancellationToken ct = default)
+    {
+        var rows = await db.Set<Priority>().AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync(ct);
+        var counts = await OpenCountsAsync([.. rows.Select(p => p.Id)], ct);
+        return [.. rows.Select(p => ToView(p, counts is null ? null : counts.GetValueOrDefault(p.Id)))];
+    }
 
     public async Task<IReadOnlyList<PriorityInfo>> ListAsync(bool includeInactive, CancellationToken cancellationToken = default) =>
         (await db.Set<Priority>().AsNoTracking()
@@ -98,7 +133,7 @@ public sealed class PriorityService(DbContext db, IAuditWriter audit, IEnumerabl
         };
         db.Set<Priority>().Add(priority);
         var failure = await LookupSupport.SaveAsync(db, DuplicateLabel(label.Value), null, ct);
-        return failure is not null ? failure : ToView(priority);
+        return failure is not null ? failure : await ToCountedViewAsync(priority, ct);
     }
 
     public async Task<Result<PriorityView>> UpdateAsync(int id, UpdatePriorityRequest request, CancellationToken ct = default)
@@ -127,7 +162,7 @@ public sealed class PriorityService(DbContext db, IAuditWriter audit, IEnumerabl
         priority.IsActive = request.IsActive;
         LookupSupport.ExpectVersion(db, priority, version);
         var failure = await LookupSupport.SaveAsync(db, DuplicateLabel(label.Value), null, ct);
-        return failure is not null ? failure : ToView(priority);
+        return failure is not null ? failure : await ToCountedViewAsync(priority, ct);
     }
 
     /// <summary>Makes <paramref name="id"/> the single default (it must be active). Clears the previous default first so the unique filtered index holds.</summary>

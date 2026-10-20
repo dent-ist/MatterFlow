@@ -13,6 +13,12 @@ public interface IConfigurationTaskCounts
 
     /// <summary>Open Tasks per workflow version (through the workflow instance each Task runs on), in one grouped statement. Absent means 0.</summary>
     Task<IReadOnlyDictionary<int, int>> OpenByWorkflowVersionAsync(IReadOnlyCollection<int> workflowVersionIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Open Tasks per priority (#599), in one grouped statement. Priorities with no open Task are absent (a missing key means 0).</summary>
+    Task<IReadOnlyDictionary<int, int>> OpenByPriorityAsync(IReadOnlyCollection<int> priorityIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Tasks per status code (<c>NEW</c>, ..., <c>CANCELLED</c>; #599), open or closed, in one grouped statement. Statuses with no Task are absent.</summary>
+    Task<IReadOnlyDictionary<string, int>> CountByStatusAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>Default <see cref="IConfigurationTaskCounts"/> until the WorkViews module registers the real one: no Task is counted.</summary>
@@ -23,4 +29,10 @@ public sealed class NoTasksConfigurationTaskCounts : IConfigurationTaskCounts
 
     public Task<IReadOnlyDictionary<int, int>> OpenByWorkflowVersionAsync(IReadOnlyCollection<int> workflowVersionIds, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
+
+    public Task<IReadOnlyDictionary<int, int>> OpenByPriorityAsync(IReadOnlyCollection<int> priorityIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
+
+    public Task<IReadOnlyDictionary<string, int>> CountByStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<string, int>>(new Dictionary<string, int>());
 }
