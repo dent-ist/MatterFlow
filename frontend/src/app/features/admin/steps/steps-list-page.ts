@@ -40,12 +40,8 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { Pager } from '../../../shared/ui/pager';
-import {
-  RecordCard,
-  RecordCardDef,
-  RecordCardList,
-  phoneCards,
-} from '../../../shared/ui/record-card-list';
+import { phoneCards } from '../../../shared/ui/record-card-list';
+import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
@@ -100,9 +96,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     FiltersBar,
     ColumnFilterRow,
     TagChips,
-    RecordCardList,
-    RecordCardDef,
-    RecordCard,
+    AdminCardList,
     RecordSort,
     WorkStrip,
   ],
@@ -134,10 +128,14 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     </mf-filters-bar>
 
     @if (phone()) {
-      <mf-record-card-list
+      <mf-admin-card-list
         noun="steps"
         label="Workflow Steps"
         emptyText="No steps yet. Use New step above to add the first reusable one."
+        [items]="rows()"
+        [spec]="cardOf"
+        [filters]="filters"
+        [listId]="listId"
         [state]="state()"
         [empty]="rows().length === 0"
         [filtered]="filters.activeCount() > 0"
@@ -146,52 +144,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
         (retry)="load()"
         (clear)="clear()"
         (showAll)="showAll()"
-      >
-        <ng-template [mfRecordCard]="rows()" let-s>
-          <mf-record-card
-            [name]="s.title"
-            [link]="['/admin/steps', s.stepDefinitionId]"
-            [state]="leave.state()"
-            [list]="listId"
-            [rowKey]="s.stepDefinitionId"
-          >
-            <mf-active-badge mfCardBadges [active]="s.isActive" />
-            @if (s.description) {
-              <p mfCardMeta class="rc-line" data-card-meta>
-                <span class="rc-text">{{ s.description }}</span>
-              </p>
-            }
-            <p mfCardMeta class="rc-line" data-card-meta>
-              @if (s.usedInWorkflows === 0) {
-                <span class="rc-text">Not used in a workflow</span>
-              } @else {
-                <a
-                  mfRowStop
-                  data-used-in-link
-                  [routerLink]="['/admin/workflows']"
-                  [queryParams]="workflowsQuery(s)"
-                  >{{ usedLabel(s) }}</a
-                >
-              }
-            </p>
-            @if (inputsState(s) === 'draft') {
-              <p mfCardMeta class="rc-line" data-card-meta data-card-inputs>
-                <span class="rc-text"
-                  >Inputs in draft ({{
-                    s.draftFormFieldCount === 1 ? '1 field' : s.draftFormFieldCount + ' fields'
-                  }})</span
-                >
-              </p>
-            }
-            <mf-action-menu
-              mfCardAside
-              [items]="menuFor(s)"
-              [label]="'Actions for ' + s.title"
-              [floating]="true"
-            />
-          </mf-record-card>
-        </ng-template>
-      </mf-record-card-list>
+      />
     } @else {
       <div class="mf-table-wrap" mfScrollArea="Steps list" #scroll>
         <div class="mf-scroll">
@@ -643,6 +596,34 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     const n = s.draftFormFieldCount;
     return `The inputs are a draft with ${n === 1 ? '1 field' : `${n} fields`}: publish them before this step can be published in a workflow.`;
   }
+
+  /** The phone card of a step (#579): the same data and the same row menu as the table row. */
+  protected readonly cardOf = (s: StepDefinitionSummary): AdminCardSpec => ({
+    title: s.title,
+    link: ['/admin/steps', s.stepDefinitionId],
+    rowKey: s.stepDefinitionId,
+    state: this.leave.state(),
+    subtitle: s.description,
+    badges: [activeCardBadge(s.isActive)],
+    meta: [
+      s.usedInWorkflows === 0
+        ? 'Not used in a workflow'
+        : {
+            text: this.usedLabel(s),
+            link: { commands: ['/admin/workflows'], queryParams: this.workflowsQuery(s) },
+            attrs: { 'data-used-in-link': '' },
+          },
+      ...(this.inputsState(s) === 'draft'
+        ? [
+            {
+              text: `Inputs in draft (${s.draftFormFieldCount === 1 ? '1 field' : s.draftFormFieldCount + ' fields'})`,
+              attrs: { 'data-card-inputs': '' },
+            },
+          ]
+        : []),
+    ],
+    actions: { label: `Actions for ${s.title}`, items: [...this.menuFor(s)] },
+  });
 
   /** The "Used in" text of a card. */
   protected usedLabel(s: StepDefinitionSummary): string {
