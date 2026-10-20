@@ -29,6 +29,21 @@
  * narrower than N px, never the actions cell. Order the optional columns so the least useful has the largest N. Below 640 px a list is
  * cards (#579), not a table. Empty, no-match and error rows (`mf-grid-body`) share one height (9rem).
  * Nothing here adds a colour or a token.
+ *
+ * THE CONTROL RULE (#583): one way to write each control on an admin page, so the five pages migrate without CSS of their own.
+ *   inputs     `.mf-control` on a native input, select or textarea (`.mf-control--compact` 32 px only inside a table row or toolbar,
+ *              `.mf-control--fill` to take the whole width of a cell or a dialog). Where a labelled field exists, use `mf-text-field`:
+ *              it draws the same control (one mixin) with label, help, error and, with `[counter]="true"`, the "n / max" counter.
+ *              `.text`, `.select`, `.pg-input` and `.mf-field__input` outside `mf-text-field` are the old spellings; #658 deletes them.
+ *   labels     `.mf-label` above the control; the required marker is `.mf-req`; the error is `.mf-form-error` with its icon (#361).
+ *   counters   every limited text field has `mf-char-counter` (or `[counter]` of `mf-text-field`) with the API's limit:
+ *              `ADMIN_FIELD_LIMITS` in `app/features/admin/shared/field-limits.ts` (asset type name 100, description 500, link role 50,
+ *              priority label 50, status label 50). Never a `maxlength` without the counter.
+ *   buttons    `p-button`: primary (default), `severity="secondary"` for Cancel and the second choice, `[text]="true"` for a link-like
+ *              action, `severity="danger"` ONLY in a confirm dialog (`mf-confirm-dialog` draws it). `.mf-btn` is the same look for the few
+ *              places that do not use PrimeNG (the "Show all" and "Clear filters" of a list state).
+ *   row level  a row has ONE control: its name link, and ONE overflow menu (`rowActions()`, #554). Edit, Deactivate and Delete are
+ *              menu entries; Delete is the red item at the end of the menu. No button, and no red text link, sits in a row.
  */
 table.mf-grid {
   width: 100%;

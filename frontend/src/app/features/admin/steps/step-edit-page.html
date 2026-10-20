@@ -81,6 +81,7 @@
               label="Title"
               [required]="true"
               [maxLength]="200"
+              [counter]="true"
               [error]="titleError()"
               [(value)]="title"
             />
@@ -89,6 +90,7 @@
               label="Description"
               help="A short explanation shown in the workflow."
               [maxLength]="1000"
+              [counter]="true"
               [error]="fieldError('description')"
               [(value)]="description"
             />

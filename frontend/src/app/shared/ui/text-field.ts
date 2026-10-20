@@ -1,8 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { CharCounter } from './char-counter';
 
-/** Labelled text input or textarea with help and error text (UX forms pattern 5.3: label above, error beneath). */
+/**
+ * Labelled text input or textarea with help and error text (UX forms pattern 5.3: label above, error beneath). The control has the look of
+ * `.mf-control` (the same mixin), so it is the wrapper of the control rule (#583). With `counter` and a `maxLength` it shows the
+ * "n / 100" counter under the field (`mf-char-counter`), named by the field's `aria-describedby`:
+ *
+ *   <mf-text-field inputId="lr-name" label="Name" [required]="true" [maxLength]="50" [counter]="true" [(value)]="name" />
+ */
 @Component({
   selector: 'mf-text-field',
+  imports: [CharCounter],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mf-field">
@@ -38,6 +46,9 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from '@ang
           (input)="onInput($event)"
         />
       }
+      @if (counter() && maxLength(); as max) {
+        <mf-char-counter [countId]="inputId() + '-count'" [value]="value()" [max]="max" />
+      }
       @if (help()) {
         <p class="mf-field__help" [id]="inputId() + '-help'">{{ help() }}</p>
       }
@@ -57,6 +68,8 @@ export class TextField {
   readonly required = input(false);
   readonly multiline = input(false);
   readonly maxLength = input<number | null>(null);
+  /** Show the "n / max" counter under the field (needs `maxLength`). On every limited text field of an admin form (#583). */
+  readonly counter = input(false);
   /** Error message to show (the parent decides when: on submit or from the server). */
   readonly error = input<string | null>(null);
 
@@ -64,9 +77,11 @@ export class TextField {
 
   protected readonly describedBy = computed(() => {
     const id = this.inputId();
-    const parts = [this.error() ? `${id}-error` : null, this.help() ? `${id}-help` : null].filter(
-      Boolean,
-    );
+    const parts = [
+      this.error() ? `${id}-error` : null,
+      this.help() ? `${id}-help` : null,
+      this.counter() && this.maxLength() ? `${id}-count` : null,
+    ].filter(Boolean);
     return parts.length ? parts.join(' ') : null;
   });
 
