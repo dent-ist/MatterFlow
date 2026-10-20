@@ -1,13 +1,152 @@
 /*
- * The three Administration lists (Task Types, Workflows, Workflow Steps; #355, #356). Global because the lists' own style budgets are small.
+ * THE ADMIN GRID CONTRACT (#543, admin list kit; the Users, Assets and Search lists use the same classes). Documented in
+ * docs/ux/admin-pages-review/fixes/ad2-kit/README.md. Global because the lists' own style budgets are small.
  *
- * Row menu (#355): the last column holds ONE overflow button (`mf-action-menu`), a 44 px wide target that stays at the right edge of the
- * box while the other columns scroll sideways, so the actions are never off screen. Put `mf-col-menu` on its th and td and `mf-has-menu`
- * on the table (that one also keeps the filter row's last, empty cell in place).
+ *   <div class="mf-table-wrap">                     the one horizontal scroll box; never a second scroll box inside a page that scrolls
+ *     <table class="mf-grid">
+ *       <thead><tr>
+ *         <th class="mf-cell-name">Name</th>
+ *         <th class="mf-cell-num" data-drop="1100">Assets</th>
+ *         <th class="mf-cell-badge">Status</th>
+ *         <th class="mf-cell-date" data-drop="900">Updated</th>
+ *         <th class="mf-cell-muted" data-drop="1280">Description</th>
+ *         <th class="mf-cell-actions"><span class="mf-sr-only">Actions</span></th>   last; sticky; 44 px wide; ONE mf-action-menu
+ *       </tr></thead>
+ *       <tbody> <tr> ... </tr> </tbody>
+ *     </table>
+ *   </div>
+ *
+ * Rows are exactly 44 px (18 px lines, 2 px above and below, the 1 px rule under the row), so a cell holds 39 px at most.
+ *   mf-cell-name    the ONLY link of the row. Put the link in `.mf-name` (clamped to 2 lines; ONE line when `.mf-desc` sits under it) and the
+ *                   optional one-line muted description in `.mf-desc`. The full text is the `title` of each. It is the spring column:
+ *                   it takes the spare width (at least 14rem).
+ *   mf-cell-num     a count: right aligned, tabular figures, never wraps, as narrow as the number. Header right aligned too.
+ *   mf-cell-badge   one badge (or two on one line), never wraps.
+ *   mf-cell-date    a date "Oct 12"; never wraps; the instant is the tooltip.
+ *   mf-cell-muted   secondary text, one clipped line (14rem), muted colour.
+ *   mf-cell-actions see "Row menu" below.
+ * Column drop (`data-drop="N"`, N one of 640 768 900 1100 1280): the column (th, td, filter and skeleton cells) leaves when the WINDOW is
+ * narrower than N px, never the actions cell. Order the optional columns so the least useful has the largest N. Below 640 px a list is
+ * cards (#579), not a table. Empty, no-match and error rows (`mf-grid-body`) share one height (9rem).
+ * Nothing here adds a colour or a token.
  */
-.mf-table-wrap table th.mf-col-menu,
-.mf-table-wrap table td.mf-col-menu,
-.mf-table-wrap table.mf-has-menu .mf-filter-row td:last-child {
+table.mf-grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mf-surface);
+}
+
+.mf-grid th,
+.mf-grid td {
+  padding: var(--mf-s2) var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.mf-grid th {
+  background: var(--mf-surface-alt);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mf-grid td {
+  height: var(--mf-grid-row-h, 44px);
+  padding-block: 2px;
+  line-height: 18px;
+}
+
+.mf-grid th.mf-cell-name,
+.mf-grid td.mf-cell-name {
+  min-width: 14rem;
+}
+
+.mf-grid td.mf-cell-name {
+  /* The Name column is the spring: it takes the spare width (max-width 0 lets the clamp and the clipped description work inside it). */
+  width: 100%;
+  max-width: 0;
+}
+
+.mf-grid .mf-name {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+/* A description under the name: both are one line, so the cell is still two 18 px lines. */
+.mf-grid .mf-cell-name:has(.mf-desc) .mf-name {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.mf-grid .mf-desc {
+  display: block;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-grid th.mf-cell-num,
+.mf-grid td.mf-cell-num {
+  width: 1%;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mf-grid th.mf-cell-badge,
+.mf-grid td.mf-cell-badge,
+.mf-grid th.mf-cell-date,
+.mf-grid td.mf-cell-date {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.mf-grid td.mf-cell-badge {
+  /* A 26 px badge fits the 39 px content box; two badges stay on one line. */
+  & > * {
+    vertical-align: middle;
+  }
+}
+
+.mf-grid td.mf-cell-muted {
+  max-width: 14rem;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-grid tr.gb-state td {
+  height: 9rem;
+}
+
+/* The column-drop rule: the window width, not the box width, so the same columns leave on every page of a size. */
+@each $w in (640, 768, 900, 1100, 1280) {
+  @media (max-width: #{$w - 1}px) {
+    .mf-grid [data-drop='#{$w}']:not(.mf-cell-actions) {
+      display: none;
+    }
+  }
+}
+
+/*
+ * The three Administration lists (Task Types, Workflows, Workflow Steps; #355, #356) keep the rules below.
+ *
+ * Row menu (#355; the kit's `mf-cell-actions` is the same thing): the last column holds ONE overflow button (`mf-action-menu`), a 44 px wide
+ * target that stays at the right edge of the box while the other columns scroll sideways, so the actions are never off screen. Put
+ * `mf-col-menu` (or `mf-cell-actions`) on its th and td and, for `mf-col-menu`, `mf-has-menu` on the table (that one also keeps the filter row's
+ * last, empty cell in place; a `mf-grid` table does it by itself).
+ */
+.mf-table-wrap table th:is(.mf-col-menu, .mf-cell-actions),
+.mf-table-wrap table td:is(.mf-col-menu, .mf-cell-actions),
+.mf-table-wrap table:is(.mf-has-menu, .mf-grid:has(.mf-cell-actions)) .mf-filter-row td:last-child {
   position: sticky;
   right: 0;
   width: 1%;
@@ -17,31 +156,31 @@
   white-space: nowrap;
 }
 
-.mf-table-wrap table td.mf-col-menu {
+.mf-table-wrap table td:is(.mf-col-menu, .mf-cell-actions) {
   z-index: 2;
   background: var(--mf-surface);
 }
 
 /* Above the other sticky headers (the first column's header is 4) where they slide under it. */
-.mf-table-wrap table th.mf-col-menu {
+.mf-table-wrap table th:is(.mf-col-menu, .mf-cell-actions) {
   z-index: 5;
   background: var(--mf-surface-alt);
 }
 
-.mf-table-wrap table.mf-has-menu .mf-filter-row td:last-child {
+.mf-table-wrap table:is(.mf-has-menu, .mf-grid:has(.mf-cell-actions)) .mf-filter-row td:last-child {
   z-index: 5;
   background: var(--mf-surface-alt);
 }
 
 /* One 44 px wide target; the row stays 44 px tall (the button is as tall as the row's content box). */
-.mf-col-menu button[data-overflow] {
+:is(.mf-col-menu, .mf-cell-actions) button[data-overflow] {
   min-width: 44px;
   min-height: 40px;
   padding: 0;
 }
 
 /* The cell of an open menu paints above the sticky cells of the rows below it, so the menu is never cut by them. */
-.mf-table-wrap table td.mf-col-menu:has([aria-expanded='true']) {
+.mf-table-wrap table td:is(.mf-col-menu, .mf-cell-actions):has([aria-expanded='true']) {
   z-index: 6;
 }
 
@@ -97,7 +236,7 @@
 }
 
 /* A focused link that scrolls into view never lands under the pinned menu button. */
-.mf-table-wrap:has(table.mf-has-menu) {
+.mf-table-wrap:has(table:is(.mf-has-menu, .mf-grid:has(.mf-cell-actions))) {
   scroll-padding-inline-end: 56px;
 }
 
