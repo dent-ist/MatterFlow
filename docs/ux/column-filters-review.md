@@ -303,7 +303,7 @@ Sizing is for one frontend dev plus one backend dev; each item is a shippable PR
 |---|---|---|
 | 4.1 | Pods and Asset Types: inline filters (Asset Types default Active, URL state, pager) | 2.0 |
 | 4.2 | Task Types: inline filters (in memory) incl. Can't create tasks | none |
-| 4.3 | Workflows: inline filters incl. Latest published / Draft | `hasPublished`, `hasDraft`, `name` |
+| 4.3 | Workflows: inline filters incl. Versions (built as one select over hasPublished and hasDraft) | `hasPublished`, `hasDraft`, `name` |
 | 4.4 | Workflow Steps: inline filters; Tags column uses the multi-select with counts and Match all/any | `title`, `description`, `used` |
 | 4.5 | Users: inline filters, new Status column, server-side Availability and Roles | `roleId[]`, `availability`, `registeredFrom/To` |
 | 4.6 | Audit Logs: inline column filters, URL state, live apply, presets on When | none (optional multi event type) |
