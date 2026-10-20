@@ -1,4 +1,4 @@
-# Admin list kit, core (WP-AD2 lane A: #542, #543, #544, #554, #545)
+# Admin list kit (WP-AD2 lane A: core #542, #543, #544, #554, #545; second batch #575, #579, #581, #583, #564, #588, #631)
 
 The shared parts that every Administration list is built from. The Users, Assets (data) and Search epics reference this page and the
 issue numbers instead of building their own chrome. Paths are under `frontend/src/`. **No keyboard shortcut is added or changed** (owner
@@ -16,6 +16,10 @@ move onto them in their own issues.
 | List shell `mf-admin-list-shell` | #544 | `app/shared/ui/admin-list-shell.ts` |
 | Row overflow `rowActions()` | #554 | `app/shared/ui/row-actions.ts` |
 | Counted tabs `AdminTab`, `AdminTabCounts` | #545 | `app/features/admin/admin-tabs.ts` |
+| `AdminListState`, `AdminColumn`; grid-body `columnSpec`, `errorRef`; card list `filters`, `errorRef` | #575 | `app/shared/ui/admin-list-state.ts`, `grid-body.ts`, `record-card-list.ts`, `error-reference.ts` |
+| `mf-admin-card-list`, `AdminCardSpec`, `columnDropOrder` | #579 | `app/shared/ui/admin-card-spec.ts` |
+| `stripItems`, `stripActiveKey`, `stripPick`, `mf-work-strip [segments]` | #581 | `app/shared/ui/strip-items.ts`, `app/shared/work-queue/work-strip.ts` |
+| The control rule, `mf-text-field [counter]`, `ADMIN_FIELD_LIMITS`, `.mf-control--fill` | #583 | `styles/_admin-lists.scss` (header), `styles/_forms.scss`, `app/shared/ui/text-field.ts`, `app/features/admin/shared/field-limits.ts` |
 
 ## 1. Dialog wording (#542)
 
@@ -150,7 +154,98 @@ class LabelsPage {
 - The Task Types `AdminCounts` extends it (same behaviour, three loaders) and `TASK_TYPES_TABS` is its tab data.
 - `resolveAdminTab` uses `firstAllowedTab` of `denial.ts` (the #416 rule).
 
+## 6. List states (#575)
+
+```ts
+readonly ls = adminListState({ state: this.state, rows: this.rows, filters: this.filters, hidden: this.hiddenCount });
+readonly columnSpec: AdminColumn[] = [ { cls: 'mf-cell-name', bone: '12rem' }, { cls: 'mf-cell-num', bone: '2rem', drop: 1100 }, ... ];
+```
+```html
+<tbody mfGridBody noun="asset types" [columnSpec]="columnSpec" [filters]="filters" [state]="ls.state()" [empty]="ls.empty()"
+       [filtered]="ls.filtered()" [hidden]="ls.hidden()" hiddenLabel="inactive" [errorRef]="null"
+       (retry)="load()" (clear)="clear()" (showAll)="showAll()"> ...rows... </tbody>
+```
+
+- `adminListState({ state, rows, filters?, filtered?, hidden? })` derives `state`, `empty`, `filtered`, `hidden` and `view` (`loading | forbidden | error | empty |
+  no-match | rows`; the pure rule is `adminListView`) from the page's signals. Bind the same object to the table body and to the phone cards, so they cannot disagree.
+- `AdminColumn { cls?, bone?, drop? }`: one list of the real columns. `tbody[mfGridBody] [columnSpec]` takes the column count, the bone width, the cell
+  class and the `data-drop` of each column from it, so the skeleton has the shape of the loaded table and drops the same columns at the same widths
+  (`columns`, `skeleton`, `skeletonCells` still work).
+- The states: loading = five 44 px skeleton rows and one polite "Loading ..."; error = one message with the reference (copyable) and Retry, no toast; forbidden
+  (403) = "You don't have access to ..." without Retry; empty = the first-run text with **no second New button** (the header's primary action is the only one;
+  `[mfEmptyAction]` stays for lists that really want one); no-match = "No ... match these filters" with **Clear filters**, and, when the default Status hides
+  records, "n inactive hidden" with **Show all**. Pass `[filters]` (to the grid body and to the card list) so the bar above shows no second Clear filters (RR-10).
+- `[errorRef]` shows an explicit reference (an error that did not come through the HTTP layer); by default the last reference the server sent (`mf-error-reference` got a
+  `reference` input for it).
+- `mf-record-card-list` got `filters` and `errorRef`, so the cards follow the same rules.
+- Proof of use: the Task Types list (`/admin/task-types`) builds its states with `adminListState` and its skeleton from `columnSpec`.
+
+## 7. Phone cards and the column-drop order (#579)
+
+```ts
+readonly drop = columnDropOrder(['note', 'updated', 'assets']);     // { note: 1280, updated: 1100, assets: 900 }: the first leaves first
+readonly cardOf = (r: Row): AdminCardSpec => ({
+  title: r.name, link: ['/admin/asset-types', r.id], rowKey: r.id, state: this.leave.state(),
+  subtitle: r.description,                                     // muted line under the name
+  badges: [activeCardBadge(r.isActive)],                       // or { text, tone, icon }
+  meta: ['Not used', { text: '3 assets', link: { commands: ['/assets'], queryParams: { type: r.id } } }],   // subtitle + meta: 3 lines at most
+  actions: rowActions(r.name, [...], { can }),                 // the SAME menu as the table row
+});
+```
+```html
+@if (phone()) {   <!-- phoneCards(): below 640 px -->
+  <mf-admin-card-list noun="asset types" label="Asset types" [items]="rows()" [spec]="cardOf" listId="admin-asset-types" [filters]="filters"
+    [state]="ls.state()" [empty]="ls.empty()" [filtered]="ls.filtered()" [hidden]="ls.hidden()" (retry)="load()" (clear)="clear()" (showAll)="showAll()">
+    <p-button mfEmptyAction label="..." />   <!-- optional -->
+  </mf-admin-card-list>
+} @else { <div class="mf-table-wrap"> ...table... </div> }
+```
+
+- A card is the name (the one link, the whole card is its target, two lines at most), the badges top right, up to three muted lines, and the row overflow. Cards are 2 to 4 lines
+  tall; the table is kept from 640 px (`phoneCards()` is true below 640). `mf-admin-card-list` is `mf-record-card-list` + `mf-record-card` driven by data, so the stretched link, the focus ring, the
+  44 px targets, Back-to-list focus (`listId`, `rowKey`) and the states are those of Clients (#275-#278, #374).
+- `AdminCardBadge { text, tone?, icon?, active? }`: `activeCardBadge(bool)` draws `mf-active-badge` (same words and icon as the table). `AdminCardLine { text, link?, warn?, attrs? }`; `attrs` puts `data-*` hooks on the line.
+- `columnDropOrder(ids)` gives the `data-drop` of each optional column (thresholds 1280, 1100, 900, 768, 640, at most five): the first id leaves first. The name, the status and the
+  actions are never listed. Put the value on the th, every td, the filter cell and the skeleton cell (`AdminColumn.drop`).
+- Proof of use: the Workflow Steps list (`/admin/steps`) renders its cards through `mf-admin-card-list` (its former `data-used-in-link` and `data-card-inputs` hooks are `attrs`).
+
+## 8. Health strip helper (#581)
+
+```ts
+const defs: StripDef<AssetType>[] = [
+  { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
+  { key: 'noFields', label: 'No published fields', hint: '...', matches: (t) => t.isActive && !t.fieldCount, params: { status: null, fields: 'none' } },
+  { key: 'inactive', label: 'Inactive', matches: (t) => !t.isActive, params: { status: 'inactive' } },
+];
+readonly strip = computed(() => stripItems(this.state() === 'ready' ? this.all() : null, defs, { mode: 'chips' }));
+readonly stripActive = computed(() => stripActiveKey(defs, (p) => this.address(p)));        // address(p): the value as `params` writes it, null when absent/default
+pick(key: string) { const to = stripPick(defs, key, this.stripActive(), { mode: 'chips' }); if (to) this.navigate({ ...to.params, page: null }); }
+```
+```html
+<mf-work-strip label="Asset types summary" [items]="strip()" [interactive]="true" [active]="stripActive()" [segments]="false" (pick)="pick($event)" />
+```
+
+- `stripItems(list, defs, { mode })` -> `WorkStripItem[]`: counts over the whole loaded list in the browser (no filter applies), `null` (shown `--`, width reserved) while loading, zero stays in place and muted.
+- **chips**: counts that are toggles (as Task Types #367); the pressed chip pressed again goes back to the first item (or `home`). **segments**: one status choice, exactly one pressed
+  (Pending / Active / Inactive / All, Users WP U-2); pressing the pressed segment keeps it; segments are never `alert`. Pass `[segments]="true"` to `mf-work-strip` for the connected-group look (same tokens; on a phone the segments share the row).
+- `StripDef.params` is what the item writes to the address (`null` = absent/default); every parameter of the strip is cleared by the items that do not name it. `stripActiveKey` finds the item the address stands for exactly,
+  `stripPick` returns `{ key, params }` for the page's navigate. `inert: true` is a plain count beside the toggles.
+- Proof of use: the Task Types strip (chips) is built with these functions; the segment mode is proven by `strip-items.spec.ts` (a host with the real `mf-work-strip`) until the Users list adopts it.
+
+## 9. Control rule (#583)
+
+The rule is written in the header of `styles/_admin-lists.scss`. In short: inputs are `.mf-control` (`--fill` for the whole width, `--compact` only in a row or toolbar), or `mf-text-field` where a labelled
+field exists (the same look); every limited text field has its counter (`[counter]="true"` on `mf-text-field`, or `mf-char-counter`) with the API's limit from `ADMIN_FIELD_LIMITS`; buttons are `p-button`
+(primary, `severity="secondary"`, `[text]="true"`; danger only in a confirm dialog); a row has its name link and one overflow menu, never a button or a red text link.
+
+- `mf-text-field [counter]` shows "n / max" (polite announcement near the limit) under the field and adds it to `aria-describedby`; it needs `maxLength`. Off by default, so older forms are unchanged.
+- `ADMIN_FIELD_LIMITS`: asset type name 100, asset type description **500** (the API column; the issue text said 1000), link role 50, priority label 50, status label 50.
+- Proof of use: the Workflow Step form (`/admin/steps/new`) counts Title (200) and Description (1000).
+
 ## Tests
+
+Unit (second batch): `admin-list-state.spec.ts`, `admin-card-spec.spec.ts`, `strip-items.spec.ts`, `text-field.spec.ts`; `steps-pages.spec.ts` and the Task Types specs stay as they were.
+E2E (second batch): `ad2-kit-lists` (hidden-count line with Show all at four widths, skeleton columns, Steps cards 2 to 4 lines with the table's menu entries and the 639/640 boundary, keyboard flow, Task Types chips).
 
 Unit: `dialog-copy.spec.ts`, `admin-list-shell.spec.ts`, `row-actions.spec.ts`, `admin-tabs.spec.ts`, `admin-counts.spec.ts`, `task-types-admin-page.spec.ts`.
 E2E: `ad2-kit-grid` (every cell pattern, 44 px rows, column drop, sticky actions, axe incl. target-size at 1920/1366/1024/768/375),
