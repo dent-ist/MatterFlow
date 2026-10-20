@@ -73,11 +73,11 @@ describe('AdminCounts (#364)', () => {
     const { counts } = await setup(['TaskType.Manage', 'Workflow.Manage']);
     const fixture = TestBed.createComponent(Tab);
     fixture.componentInstance.report(29);
-    expect(counts.counts().workflows).toBe(29);
+    expect(counts.counts()['workflows']).toBe(29);
     await counts.load(); // the answer that was on its way does not overwrite the newer number
-    expect(counts.counts().workflows).toBe(29);
+    expect(counts.counts()['workflows']).toBe(29);
     fixture.destroy();
     fixture.componentInstance.report(5); // a tab that is gone reports nothing
-    expect(counts.counts().workflows).toBe(29);
+    expect(counts.counts()['workflows']).toBe(29);
   });
 });

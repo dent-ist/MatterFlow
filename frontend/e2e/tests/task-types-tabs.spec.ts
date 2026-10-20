@@ -159,7 +159,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     ]);
   });
 
-  test('a person with only Workflow.Manage sees two tabs and lands on Workflows; only TaskType.Manage sees one', async ({
+  test('a person with only Workflow.Manage sees two tabs and lands on Workflows; only TaskType.Manage sees no tab strip', async ({
     seed,
     asUser,
   }) => {
@@ -190,7 +190,8 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const typePage = await asUser(typeUser.username);
     await typePage.goto('/admin/workflows');
     await expect(typePage).toHaveURL(/\/admin\/task-types$/);
-    await expect(typePage.getByRole('tab')).toHaveText([/Task Types \(\d+\)$/]);
+    // One allowed tab is a page, not a tab strip (the admin list kit, #545).
+    await expect(typePage.getByRole('tab')).toHaveCount(0);
     await expect(adminMenu(typePage).getByRole('link')).toHaveText(['Task Types']);
     // Without Workflow.Manage the number of workflows is plain text, not a link.
     await expect(typePage.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();

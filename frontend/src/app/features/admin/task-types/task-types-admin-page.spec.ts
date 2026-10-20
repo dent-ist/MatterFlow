@@ -316,9 +316,11 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
     'offers only Task Types to a TaskType.Manage-only person and sends the other URLs there',
     async () => {
       const router = await open('/admin/steps', 'TaskType.Manage');
-      expect(tabNames()).toEqual(['Task Types']);
+      // One allowed tab is a page, not a tab strip (the admin list kit, #545): the H1 and the list are all there is.
+      expect(tabNames()).toEqual([]);
+      expect(el().querySelector('[role="tablist"]')).toBeNull();
+      expect(el().querySelector('h1')?.textContent).toContain('Task Types');
       expect(router.url).toBe('/admin/task-types');
-      expect(selected()).toEqual(['Task Types']);
     },
     SLOW,
   );

@@ -2,15 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { Crumb, PageHeader } from '../../../shared/ui/page-header';
-import { FixedPage } from '../../../shared/ui/fixed-page';
-import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { AdminListShell } from '../../../shared/ui/admin-list-shell';
+import { Crumb } from '../../../shared/ui/page-header';
+import { MfTab } from '../../../shared/ui/tabs';
 import { firstAllowedTab } from '../denial';
 import { StepsListPage } from '../steps/steps-list-page';
 import { WorkflowsListPage } from '../workflows/workflows-list-page';
 import { TaskTypesPage } from './task-types-page';
-import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
-import { AdminCounts } from './admin-counts';
+import { adminTabItems } from '../admin-tabs';
+import { AdminCounts, TASK_TYPES_TABS } from './admin-counts';
 import { AdminShellFilters } from './shell-filters';
 
 export type TaskTypesTab = 'task-types' | 'workflows' | 'steps';
@@ -32,98 +32,67 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
  */
 @Component({
   selector: 'mf-task-types-admin-page',
-  imports: [
-    FixedPage,
-    PageHeader,
-    Tabs,
-    Button,
-    ListFiltersButton,
-    TaskTypesPage,
-    WorkflowsListPage,
-    StepsListPage,
-  ],
+  imports: [AdminListShell, Button, TaskTypesPage, WorkflowsListPage, StepsListPage],
   providers: [AdminShellFilters, AdminCounts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-fixed-page>
-      <mf-page-header heading="Task Types" [crumbs]="crumbs()" [description]="description()">
-        @if (shell.current(); as f) {
-          <mf-list-filters-button
-            mfActions
-            [filters]="f.filters"
-            [controls]="f.controls"
-            [clearAlso]="['q']"
+    <mf-admin-list-shell
+      heading="Task Types"
+      [crumbs]="crumbs()"
+      [description]="description()"
+      [tabs]="tabs()"
+      [tab]="current()"
+      tabsLabel="Task types, workflows and workflow steps"
+      idPrefix="task-types-admin"
+      [filters]="shell.current()?.filters ?? null"
+      [controls]="shell.current()?.controls ?? ''"
+      [clearAlso]="['q']"
+      (tabChange)="select($event)"
+    >
+      @switch (current()) {
+        @case ('task-types') {
+          <p-button
+            mfPrimary
+            label="New task type"
+            icon="pi pi-plus"
+            data-new
+            (onClick)="go('/admin/task-types/new')"
           />
         }
-        @switch (current()) {
-          @case ('task-types') {
-            <p-button
-              mfActions
-              label="New task type"
-              icon="pi pi-plus"
-              data-new
-              (onClick)="go('/admin/task-types/new')"
-            />
-          }
-          @case ('workflows') {
-            <p-button
-              mfActions
-              label="New workflow"
-              icon="pi pi-plus"
-              (onClick)="go('/admin/workflows/new')"
-            />
-          }
-          @case ('steps') {
-            <p-button
-              mfActions
-              label="New step"
-              icon="pi pi-plus"
-              (onClick)="go('/admin/steps/new')"
-            />
-          }
+        @case ('workflows') {
+          <p-button
+            mfPrimary
+            label="New workflow"
+            icon="pi pi-plus"
+            (onClick)="go('/admin/workflows/new')"
+          />
         }
-      </mf-page-header>
-      <mf-tabs
-        label="Task types, workflows and workflow steps"
-        idPrefix="task-types-admin"
-        [tabs]="tabs()"
-        [selected]="current()"
-        (tabChange)="select($event)"
-      />
-      <div
-        class="mf-fill"
-        role="tabpanel"
-        id="task-types-admin-panel"
-        [attr.aria-labelledby]="'task-types-admin-tab-' + current()"
-      >
-        @switch (current()) {
-          @case ('task-types') {
-            <mf-task-types-page
-              [status]="status()"
-              [page]="page()"
-              [size]="size()"
-              [sort]="sort()"
-            />
-          }
-          @case ('workflows') {
-            <mf-workflows-list-page
-              [status]="status()"
-              [page]="page()"
-              [size]="size()"
-              [sort]="sort()"
-            />
-          }
-          @case ('steps') {
-            <mf-steps-list-page
-              [status]="status()"
-              [page]="page()"
-              [size]="size()"
-              [sort]="sort()"
-            />
-          }
+        @case ('steps') {
+          <p-button
+            mfPrimary
+            label="New step"
+            icon="pi pi-plus"
+            (onClick)="go('/admin/steps/new')"
+          />
         }
-      </div>
-    </mf-fixed-page>
+      }
+      @switch (current()) {
+        @case ('task-types') {
+          <mf-task-types-page [status]="status()" [page]="page()" [size]="size()" [sort]="sort()" />
+        }
+        @case ('workflows') {
+          <mf-workflows-list-page
+            [status]="status()"
+            [page]="page()"
+            [size]="size()"
+            [sort]="sort()"
+          />
+        }
+        @case ('steps') {
+          <mf-steps-list-page [status]="status()" [page]="page()" [size]="size()" [sort]="sort()" />
+        }
+      }
+    </mf-admin-list-shell>
   `,
 })
 export class TaskTypesAdminPage {
@@ -139,23 +108,10 @@ export class TaskTypesAdminPage {
   readonly size = input<string>();
   readonly sort = input<string>();
 
-  /** Only the tabs the person may use, in the order of the model. */
-  protected readonly tabs = computed<MfTab[]>(() => {
-    const counts = this.counts.counts();
-    /** `Task Types (61)`: the active records, `--` while the count is on its way, spoken as "Task Types, 61 active" (#364). */
-    const tab = (key: TaskTypesTab, label: string): MfTab => {
-      const n = counts[key];
-      return n === null
-        ? { key, label, count: '--' }
-        : { key, label, count: n, name: `${label}, ${n} active` };
-    };
-    const tabs: MfTab[] = [];
-    if (this.auth.has('TaskType.Manage')) tabs.push(tab('task-types', 'Task Types'));
-    if (this.auth.has('Workflow.Manage')) {
-      tabs.push(tab('workflows', 'Workflows'), tab('steps', 'Workflow Steps'));
-    }
-    return tabs;
-  });
+  /** Only the tabs the person may use, in the order of the model: `Task Types (61)` (the active records, `--` while the count is on its way). */
+  protected readonly tabs = computed<MfTab[]>(() =>
+    adminTabItems(TASK_TYPES_TABS, (p) => this.auth.has(p), this.counts.snapshot()),
+  );
 
   protected readonly current = computed<TaskTypesTab>(() => {
     const keys = this.tabs().map((t) => t.key as TaskTypesTab);
