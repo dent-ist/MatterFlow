@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mock: Pod Work, By member</title><link rel="stylesheet" href="mock.css"><body>
+<span class="tag">Before (shipped, 1366x768): 4 of 23 members visible in a 230 px scroll box, 16 of them 0/0/0, tab count 16 is tasks, strip repeats the tabs</span>
+<img class="shot" src="../screenshots/pod-work-members-1366x768.png" width="1100">
+<hr class="sep">
+<span class="tag g">After (mock): Pod Work with a context line, a clickable strip, and By member as a workload table</span>
+<div style="width:1100px">
+ <div class="row" style="align-items:center"><div><h1 style="margin:0">Pod Work</h1><div class="sub">Demo Processing Pod &middot; 23 members &middot; you are a member (primary)</div></div>
+  <div><span class="sub" style="margin-right:6px">Pod</span><span class="btn" style="font-weight:400;min-width:280px">Demo Processing Pod (primary) &nbsp; v</span></div></div>
+ <div class="strip"><span class="chip r">Overdue <b>4</b></span><span class="chip">Due today <b>2</b></span><span class="chip">ASAP <b>3</b></span><span class="chip">On hold <b>6</b></span></div>
+ <div class="tabs"><span>Unassigned (3)</span><span class="on">By member (7)</span><span>Overdue and on hold (9)</span><span>All open (24)</span></div>
+ <div class="sub" style="margin:8px 0 4px">Open work per person. These are workload facts, not a ranking. Click a column to sort.</div>
+ <table>
+  <tr><th>Member</th><th style="width:230px">Open</th><th style="width:90px">Overdue</th><th style="width:90px">On hold</th><th style="width:130px"></th></tr>
+  <tr style="background:#FAFBFC"><td><i>Not assigned to a person</i></td><td>3</td><td>0</td><td>0</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td><b>Test User 21</b></td><td>5 <span class="bar" style="width:50px"></span></td><td>0</td><td>1</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td><b>Test User 25</b></td><td>1 <span class="bar" style="width:10px"></span></td><td>1</td><td>1</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td><b>Test User 41</b> <span class="pill w">Out of office until Oct 26</span></td><td>7 <span class="bar" style="width:70px"></span></td><td>1</td><td>2</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td><b>Test User 45</b></td><td>3 <span class="bar" style="width:30px"></span></td><td>0</td><td>1</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td><b>Test User 49</b></td><td>2 <span class="bar" style="width:20px"></span></td><td>2</td><td>0</td><td><span class="btn t">View tasks</span></td></tr>
+  <tr><td colspan="5" style="background:var(--mf-surface-alt)"><span class="btn t">Show 16 members with no open work</span> <span class="sub">Test User 01, 04, 05 (out of office), 08, 09 ...</span></td></tr>
+ </table>
+ <p class="sub" style="margin-top:10px">What changed: (1) members with work first, the 16 idle ones folded (an idle member is who you assign to, so they stay one click away and show availability); (2) availability chip next to the name, the same chip as the assignee picker; (3) a neutral bar scaled to the largest load, no colour judgement, no rank numbers, default order stays alphabetical, sorting is the viewer's choice (UX spec S04: workload facts, not a ranking); (4) the table grows with the page, no 230 px scroll box; (5) the row action is one link per row, nearer the name; (6) the tab counts members with work, not tasks; (7) the strip is the same four items as My Work and each is a link.</p>
+</div></body></html>
