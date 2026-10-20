@@ -190,7 +190,7 @@ public sealed class AdminListFieldsApiTests(SqlServerFixture sql, ITestOutputHel
     }
 
     [Fact]
-    public async Task The_workflow_list_needs_Workflow_Manage_and_nothing_else()
+    public async Task The_workflow_list_needs_Workflow_Manage_or_TaskType_Manage_and_nothing_else()
     {
         var manager = await _h.UserWithAsync(@"KE\wfonly", "Workflow.Manage");
         var page = await Ok(await manager.GetAsync("/api/v1/workflows"));
@@ -200,7 +200,7 @@ public sealed class AdminListFieldsApiTests(SqlServerFixture sql, ITestOutputHel
         var viewer = await _h.UserWithAsync(@"KE\viewer", "Task.View");
         (await viewer.GetAsync("/api/v1/workflows")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         var typeAdmin = await _h.UserWithAsync(@"KE\ttonly", "TaskType.Manage", "Task.View");
-        (await typeAdmin.GetAsync("/api/v1/workflows")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await typeAdmin.GetAsync("/api/v1/workflows")).StatusCode.ShouldBe(HttpStatusCode.OK); // TY-P: the Task Types screens name and pick the workflows
         (await typeAdmin.GetAsync("/api/v1/step-definitions")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 

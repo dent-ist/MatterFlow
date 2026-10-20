@@ -699,19 +699,16 @@ test.describe('Step record page', () => {
       await expect(bothPage.locator('[data-input]')).toHaveCount(3);
       await expect(bothPage.locator('[data-action=activity]')).toHaveCount(0);
 
-      // Workflow.Manage only: reading forms needs Task.View on the server, so Inputs explains instead of failing.
+      // Workflow.Manage only (TY-P): the step's form is read with Workflow.Manage, so Inputs lists the fields and Edit inputs is there.
       const only = await seed.role(['Workflow.Manage'], 'Workflow only');
       const onlyPage = await asUser((await seed.user([only.name], 'st-wfonly')).username);
       await onlyPage.goto(`/admin/steps/${step.id}?tab=inputs`);
       await expect(onlyPage.locator('[data-step-page]')).toBeVisible();
-      await expect(onlyPage.locator('[data-inputs-denied]')).toContainText(
-        'permission to view tasks',
-      );
+      await expect(onlyPage.locator('[data-inputs-denied]')).toHaveCount(0);
+      await expect(onlyPage.locator('[data-input]')).toHaveCount(3);
       await expect(onlyPage.locator('[data-status-published]')).toContainText('Published');
-      // The designer reads the form too and would answer "no access", so no button leads there.
-      await expect(onlyPage.locator('[data-open-inputs]')).toHaveCount(0);
-      await expect(onlyPage.locator('[data-action=edit-inputs]')).toHaveCount(0);
-      await expect(onlyPage.locator('[data-inputs-table]')).toHaveCount(0);
+      await expect(onlyPage.locator('[data-open-inputs]')).toBeVisible();
+      await expect(onlyPage.locator('[data-action=edit-inputs]')).toBeVisible();
       await onlyPage.waitForTimeout(900); // a toast would appear after 400 ms
       await expect(onlyPage.locator('.p-toast-message')).toHaveCount(0);
       await expect(onlyPage.locator('[data-strip-item=inputs]')).toContainText('newer draft');
@@ -746,10 +743,11 @@ test.describe('Step record page', () => {
       const only = await seed.role(['Workflow.Manage'], 'Workflow only designer');
       const onlyPage = await asUser((await seed.user([only.name], 'st-wfonly2')).username);
       await onlyPage.goto(`/admin/steps/${step.id}/form`);
-      // The designer reads the form versions (Task.View). It must not leave a blank page: the shared record state or the designer itself answers.
+      // The designer reads the form with Workflow.Manage (TY-P): it opens, with the step's fields.
       await expect(onlyPage.locator('h1')).toBeVisible();
       await onlyPage.waitForTimeout(900);
-      await expect(onlyPage.getByText("You don't have access to this step.")).toBeVisible();
+      await expect(onlyPage.getByText("You don't have access to this step.")).toHaveCount(0);
+      await expect(onlyPage.locator('mf-form-designer')).toBeVisible();
       await shot(onlyPage, 'perm-workflow-only-designer', 1440);
       await expect(onlyPage.locator('.p-toast-message')).toHaveCount(0);
     });

@@ -899,7 +899,7 @@ test.describe('Task Type record page', () => {
   });
 
   test.describe('permission variants', () => {
-    test('TaskType.Manage with Task.View: plain names, no Add search, no Activity; Audit.View adds Activity; TaskType.Manage alone, Workflow.Manage only and Task.View only get the 403 page', async ({
+    test('TaskType.Manage with Task.View: workflow names as plain text, Add search, no Activity; Audit.View adds Activity; TaskType.Manage alone opens the page too; Workflow.Manage only and Task.View only get the 403 page', async ({
       seed,
       admin,
       asUser,
@@ -914,16 +914,15 @@ test.describe('Task Type record page', () => {
         'Edit',
         'Edit form',
       ]);
-      // Task.View gives the Open tasks number as a link; the default workflow is named "Workflow n" without Workflow.Manage.
+      // Task.View gives the Open tasks number as a link; the default workflow is named (TY-P: TaskType.Manage reads the workflow list) but is not a link.
       await expect(ttPage.locator('a[data-strip-item=open]')).toBeVisible();
-      await expect(ttPage.locator('[data-strip-item=default]')).toContainText('Workflow ');
+      await expect(ttPage.locator('[data-strip-item=default]')).toContainText('Flow A');
+      await expect(ttPage.locator('[data-strip-item=default]')).not.toContainText(/Workflow \d/);
       await ttPage.goto(typeUrl(w, 'workflows'));
       await expect(ttPage.locator('[data-workflows] tbody tr')).toHaveCount(2);
       await expect(ttPage.locator('[data-wf-link]')).toHaveCount(0);
-      await expect(ttPage.locator('[data-add-input]')).toHaveCount(0);
-      await expect(ttPage.locator('[data-cannot-add]')).toContainText(
-        'permission to manage workflows',
-      );
+      await expect(ttPage.locator('[data-add-input]')).toBeVisible();
+      await expect(ttPage.locator('[data-cannot-add]')).toHaveCount(0);
       // Remove and Save still work.
       await ttPage.locator('[data-workflows] [data-remove]').first().click();
       await ttPage.locator('[data-save]').click();
@@ -946,14 +945,14 @@ test.describe('Task Type record page', () => {
       await expect(auditPage.locator('[data-wf-link]').first()).toBeVisible();
       await expect(auditPage.locator('[data-add-input]')).toBeVisible();
 
-      // Reading a task type needs Task.View on the server (existing policy, WP-TY10): TaskType.Manage alone gets the no-access state.
+      // Each administration permission reads what it manages (TY-P): TaskType.Manage alone opens the page, the open-task number is left out.
       const bareRole = await seed.role(['TaskType.Manage'], 'TY4 type alone');
       const bare = await seed.user([bareRole.name], 'ty4-bare');
       const barePage = await asUser(bare.username);
       await barePage.goto(typeUrl(w));
-      await expect(
-        barePage.getByRole('heading', { name: "You don't have access to this task type." }),
-      ).toBeVisible();
+      await expect(barePage.locator('[data-task-type-page]')).toBeVisible();
+      await expect(barePage.locator('a[data-strip-item=open]')).toHaveCount(0);
+      await expect(barePage.locator('.p-toast-message')).toHaveCount(0);
 
       const wfRole = await seed.role(['Workflow.Manage', 'Task.View'], 'TY4 workflow only');
       const wfUser = await seed.user([wfRole.name], 'ty4-wf');
