@@ -16,6 +16,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { LandingLink, landingLink } from '../../core/auth/guards';
 import { Permission } from '../../core/auth/permissions';
 import { ApiError } from '../../core/http/api-error';
+import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { QuietRequests } from '../../core/http/interceptors';
 import { ErrorReference } from './error-reference';
 import { Crumb, PageHeader } from './page-header';
@@ -342,4 +343,10 @@ export class RecordState {
   protected retry(): void {
     if (!this.busy()) this.retried.emit();
   }
+
+  /** The connection came back while the record shows "couldn't load": read it again once (S13, #611). */
+  protected readonly autoRetry = retryWhenBackOnline(
+    () => this.failure() === 'error',
+    () => this.retry(),
+  );
 }

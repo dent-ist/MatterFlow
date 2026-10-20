@@ -52,6 +52,9 @@
   <mf-user-menu (shortcuts)="toggleHelp()" />
 </header>
 
+<!-- The one banner slot under the header (S13, #611): offline now, the sign-in banner joins it (#612). -->
+<mf-connection-banner />
+
 @if (helpHost(); as host) {
   <ng-container *ngComponentOutlet="host" />
 }

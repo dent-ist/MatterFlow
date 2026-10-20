@@ -17,6 +17,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CopyPart, CopyParts } from './copy-parts';
@@ -223,6 +224,12 @@ export class RecordCardList {
     this.focusAfterRetry = true;
     this.retry.emit();
   }
+
+  /** The connection came back while the list shows "couldn't load": read it again once (S13, #611). */
+  protected readonly autoRetry = retryWhenBackOnline(
+    () => this.state() === 'error',
+    () => this.retry.emit(),
+  );
 }
 
 /**

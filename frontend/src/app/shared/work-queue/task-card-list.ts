@@ -15,6 +15,7 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { calendarDayInZone, mfDate } from '../../core/time/time';
 import { CopyParts, CopyPart } from '../ui/copy-parts';
+import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { ErrorReference } from '../ui/error-reference';
 import { LoadState } from '../ui/data-table';
 import { MatterRef } from '../ui/matter-ref';
@@ -335,6 +336,12 @@ export class TaskCardList {
   readonly drilled = output<{ event: MouseEvent; row: TaskQueueRow }>();
   readonly retry = output<void>();
   readonly clear = output<void>();
+
+  /** The connection came back while the list shows "couldn't load": read it again once (S13, #611). */
+  protected readonly autoRetry = retryWhenBackOnline(
+    () => this.state() === 'error',
+    () => this.retry.emit(),
+  );
 
   protected readonly skeletonCards = [1, 2, 3, 4, 5, 6];
   protected readonly groupAt = computed(() => new Map(this.groups().map((g) => [g.start, g])));

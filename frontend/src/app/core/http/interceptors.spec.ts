@@ -12,6 +12,7 @@ import { Router, provideRouter } from '@angular/router';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../auth/auth-testing';
 import { AuthStore } from '../auth/auth.store';
 import { USER_TIME_ZONE } from '../time/clock';
+import { Connectivity } from './connectivity';
 import { ErrorReferenceStore } from './error-reference-store';
 import { ApiError } from './api-error';
 import {
@@ -192,6 +193,28 @@ describe('HTTP interceptors', () => {
     expect(toasts()).toEqual([
       expect.objectContaining({ summary: 'Something went wrong. Try again.', count: 2 }),
     ]);
+  });
+
+  it('one network failure still toasts; once two in a row have failed the offline banner speaks: a failed load adds no toast, a failed save still answers once (S13d, #611)', () => {
+    const { http, ctrl, toasts } = setup();
+    const connectivity = TestBed.inject(Connectivity);
+    http.get('/a').subscribe({ error: () => undefined });
+    ctrl.expectOne('/a').error(new ProgressEvent('error'));
+    expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
+    expect(connectivity.offline()).toBe(false);
+    // The second failure in a row: the banner is up, and the load does not add to the toast.
+    http.get('/b').subscribe({ error: () => undefined });
+    ctrl.expectOne('/b').error(new ProgressEvent('error'));
+    expect(connectivity.offline()).toBe(true);
+    expect(toasts()).toEqual([expect.objectContaining({ count: 1 })]);
+    // A save that cannot reach the server still tells the person who pressed Save (folded with the identical toast).
+    http.post('/save', {}).subscribe({ error: () => undefined });
+    ctrl.expectOne('/save').error(new ProgressEvent('error'));
+    expect(toasts()).toEqual([expect.objectContaining({ count: 2 })]);
+    // A server error is not a network failure: it proves the server is reachable again.
+    http.get('/c').subscribe({ error: () => undefined });
+    ctrl.expectOne('/c').flush('boom', { status: 500, statusText: 'Server Error' });
+    expect(connectivity.offline()).toBe(false);
   });
 
   it('honours SKIP_ERROR_TOAST', () => {

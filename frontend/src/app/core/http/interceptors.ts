@@ -1,15 +1,17 @@
 import {
   HttpContextToken,
   HttpErrorResponse,
+  HttpEventType,
   HttpInterceptorFn,
   HttpRequest,
 } from '@angular/common/http';
 import { Injectable, Injector, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, from, map, mergeMap, of, throwError } from 'rxjs';
+import { Observable, catchError, from, map, mergeMap, of, tap, throwError } from 'rxjs';
 import { AuthStore } from '../auth/auth.store';
 import { APP_PATHS } from '../auth/guards';
 import { NotificationService } from '../notify/notification.service';
+import { Connectivity } from './connectivity';
 import { ErrorReferenceStore } from './error-reference-store';
 import { USER_TIME_ZONE } from '../time/clock';
 import { ApiError } from './api-error';
@@ -85,7 +87,11 @@ export const problemDetailsInterceptor: HttpInterceptorFn = (req, next) => {
         mergeMap((decoded) => {
           const apiError = ApiError.from(decoded);
           if (inline && !quiet) injector.get(ErrorReferenceStore).reference.set(apiError.traceId);
-          if (!quiet && !inline && !req.context.get(SKIP_ERROR_TOAST)) {
+          // While the offline banner is up it already says so: a failed load produces no toast of its own (S13d, #611). A failed save still
+          // answers the person who pressed Save, once (identical toasts fold into one).
+          const bannerSaysSo =
+            apiError.isNetworkError && req.method === 'GET' && injector.get(Connectivity).offline();
+          if (!quiet && !inline && !bannerSaysSo && !req.context.get(SKIP_ERROR_TOAST)) {
             const toast = toastFor(apiError);
             if (toast) {
               const show = () =>
@@ -132,10 +138,30 @@ function decodeBlobBody(error: HttpErrorResponse): Observable<HttpErrorResponse>
   );
 }
 
+/**
+ * Tells `Connectivity` whether the server answered (any status) or the request failed at the network level (status 0). The innermost
+ * interceptor, so it sees the raw response or error before `problemDetailsInterceptor` turns it into an `ApiError` (and decides on a toast).
+ */
+export const connectivityInterceptor: HttpInterceptorFn = (req, next) => {
+  const connectivity = inject(Connectivity);
+  return next(req).pipe(
+    tap({
+      next: (event) => {
+        if (event.type === HttpEventType.Response) connectivity.reachable();
+      },
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 0) connectivity.unreachable();
+        else connectivity.reachable();
+      },
+    }),
+  );
+};
+
 export const MF_HTTP_INTERCEPTORS = [
   timeZoneInterceptor,
   csrfInterceptor,
   problemDetailsInterceptor,
+  connectivityInterceptor,
 ];
 
 /** Pure mapping from an error to toast copy (UX copy deck 8.5/8.6). `null` = no toast. */

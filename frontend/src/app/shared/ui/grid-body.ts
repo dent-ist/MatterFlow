@@ -11,6 +11,7 @@ import {
   output,
 } from '@angular/core';
 import { Button } from 'primeng/button';
+import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { CopyParts, CopyPart } from './copy-parts';
 import type { AdminColumn } from './admin-list-state';
 import { LoadState } from './data-table';
@@ -244,6 +245,12 @@ export class GridBody {
     this.focusAfterRetry = true;
     this.retry.emit();
   }
+
+  /** The connection came back while the list shows "couldn't load": read it again once (S13, #611). */
+  protected readonly autoRetry = retryWhenBackOnline(
+    () => this.state() === 'error',
+    () => this.retry.emit(),
+  );
 
   private focusRows(): void {
     const body = this.host.nativeElement;

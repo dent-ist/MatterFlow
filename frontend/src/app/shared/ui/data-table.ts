@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { Button } from 'primeng/button';
+import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { ErrorReference } from './error-reference';
 import { FixedPage } from './fixed-page';
 import { StatusFilter as StatusFilterValue, ariaSort, nextSort } from './list-helpers';
@@ -251,6 +252,12 @@ export class ListState {
 
   readonly retry = output<void>();
   readonly clear = output<void>();
+
+  /** The connection came back while the list shows "couldn't load": read it again once (S13, #611). */
+  protected readonly autoRetry = retryWhenBackOnline(
+    () => this.state() === 'error',
+    () => this.retry.emit(),
+  );
 
   protected readonly rows = SKELETON_ROWS;
   protected readonly cols = computed(() => Array.from({ length: this.columns() }, (_, i) => i));

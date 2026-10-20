@@ -29,6 +29,7 @@ import { SkipTarget, skipId } from './skip-target';
 import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
+import { ConnectionBanner } from './connection-banner';
 
 /** Phones: below this width the navigation rail collapses behind the Menu button (PM decision, #164). */
 const PHONE_QUERY = '(max-width: 639px)';
@@ -44,6 +45,7 @@ const PHONE_QUERY = '(max-width: 639px)';
     HasPermissionDirective,
     NgComponentOutlet,
     UserMenu,
+    ConnectionBanner,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
