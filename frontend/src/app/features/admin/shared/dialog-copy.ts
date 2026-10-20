@@ -141,6 +141,16 @@ export const dialogCopy = {
   }),
 } as const;
 
+/**
+ * The one inline sentence for a delete the server refused because the record is used (409 IN_USE, #537). The page shows it once, on
+ * the row's page; the toast for this expected refusal is suppressed in `toastFor`.
+ */
+export function refusedDeleteMessage(kind: 'priority' | 'linkRole', name: string): string {
+  return kind === 'priority'
+    ? `Tasks use ${name}, so it can't be deleted. Deactivate it instead.`
+    : `Links use ${name}, so it can't be deleted. Deactivate it instead.`;
+}
+
 /** What a dialog is about, for `impactLine`. */
 export type ImpactKind =
   | 'deactivateTaskType'

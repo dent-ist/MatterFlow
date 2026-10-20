@@ -24,6 +24,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { hasBothLabelTabs } from '../labels-tabs';
+import { refusedDeleteMessage } from '../shared/dialog-copy';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -312,9 +313,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
       },
       (e) =>
         this.failure.set(
-          e.code === 'IN_USE'
-            ? `Tasks use ${p.label}, so it can't be deleted. Deactivate it instead.`
-            : e.message,
+          e.code === 'IN_USE' ? refusedDeleteMessage('priority', p.label) : e.message,
         ),
     );
     this.deleting.set(null);

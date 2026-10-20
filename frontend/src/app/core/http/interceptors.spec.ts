@@ -155,13 +155,13 @@ describe('HTTP interceptors', () => {
       .get('/api/v1/priorities', { responseType: 'blob' })
       .subscribe({ error: (e) => (caught = e) });
     const body = new Blob([
-      JSON.stringify({ code: 'IN_USE', detail: 'Tasks use this priority.', status: 409 }),
+      JSON.stringify({ code: 'DEFAULT_REQUIRED', detail: 'Tasks use this priority.', status: 409 }),
     ]);
     ctrl.expectOne('/api/v1/priorities').flush(body, { status: 409, statusText: 'Conflict' });
     await vi.waitFor(() => expect(caught).toBeInstanceOf(ApiError));
 
     const err = caught as ApiError;
-    expect(err.code).toBe('IN_USE');
+    expect(err.code).toBe('DEFAULT_REQUIRED');
     expect(err.message).toBe('Tasks use this priority.');
     expect(toasts()).toContainEqual(
       expect.objectContaining({ summary: 'Tasks use this priority.' }),
@@ -337,6 +337,10 @@ describe('toastFor', () => {
     expect(toastFor(make(409, { code: 'CONCURRENCY_CONFLICT' }))).toBeNull();
     expect(toastFor(make(403, { code: 'ACCESS_PENDING' }))).toBeNull();
     expect(toastFor(make(403, { code: 'ACCOUNT_DISABLED' }))).toBeNull();
+  });
+
+  it('suppresses the expected refusal of deleting a used priority or link role (#537)', () => {
+    expect(toastFor(make(409, { code: 'IN_USE', detail: 'Tasks use this priority.' }))).toBeNull();
   });
 
   it('maps 403 and 404 to copy-deck messages, and leaves a 401 to the sign-in banner', () => {

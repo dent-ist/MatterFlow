@@ -18,6 +18,7 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { ListState } from '../../../shared/ui/data-table';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
+import { refusedDeleteMessage } from '../shared/dialog-copy';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -202,9 +203,7 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
       },
       (e) =>
         this.failure.set(
-          e.code === 'IN_USE'
-            ? `Links use ${r.name}, so it can't be deleted. Deactivate it instead.`
-            : e.message,
+          e.code === 'IN_USE' ? refusedDeleteMessage('linkRole', r.name) : e.message,
         ),
     );
     this.deleting.set(null);

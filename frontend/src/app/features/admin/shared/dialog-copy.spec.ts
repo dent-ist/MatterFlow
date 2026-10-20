@@ -5,6 +5,7 @@ import {
   impactLine,
   listNames,
   publishCopy,
+  refusedDeleteMessage,
   retireCopy,
 } from './dialog-copy';
 
@@ -259,6 +260,15 @@ describe('admin kit dialogs (#542)', () => {
     );
     expect(dialogCopy.deleteUnusedLinkRole({ links: 1 }).body).toBe(
       "1 link uses this role, so it can't be deleted. Deactivate it instead.",
+    );
+  });
+
+  it('words a refused delete once for priorities and link roles (#537)', () => {
+    expect(refusedDeleteMessage('priority', 'High')).toBe(
+      "Tasks use High, so it can't be deleted. Deactivate it instead.",
+    );
+    expect(refusedDeleteMessage('linkRole', 'Owner')).toBe(
+      "Links use Owner, so it can't be deleted. Deactivate it instead.",
     );
   });
 
