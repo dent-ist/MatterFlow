@@ -26,15 +26,30 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
 }
 
 /**
- * The page header of every screen (UXR-02, UXR-03; UX spec `mf-page-header`):
+ * The page header of every screen (UXR-02, UXR-03; UX spec `mf-page-header`) and the one page-header contract (S20, #600). Four shapes use
+ * it (mock `docs/ux/shell-review/mocks/mock-page-header.png`): A list page, B workspace page (Dashboard, My Work, Pod Work: a context
+ * line, chips and tabs under the title, a scope control in the actions), C record page (`mf-record-header`, same title size) and
+ * D administration page (A or B with the breadcrumb "Administration > Page").
  *
  *   Clients > Acme Corp > New matter           breadcrumb row (only on non-top-level pages, real links, `nav aria-label="Breadcrumb"`)
- *   H1 (28px)                                  [secondary action]  [Primary action]   title row; actions right-aligned
- *   One-line description                       optional
+ *   [icon] H1 (22px / 700, 18px below 640px)   [secondary action] [Filters] [Primary action]   title row; actions right-aligned
+ *   One-line context line                      optional, 13px, muted, ONE line under the title (a sentence beside a title is not allowed)
+ *
+ * The numbers every page shares (nothing is set per page; no new token):
+ *   - H1 22px / 700 from 640px, 18px below 640px, on every page (phones included); the title box is one 36px row tall, so it does not
+ *     move when the actions are taller or shorter;
+ *   - the first row of the header sits 12px below the top of the main area on every page (the shell's padding is 12px on a fixed page, 24px on
+ *     a page that scrolls and 16px on a phone; the header levels it), so clicking through the rail does not move the title;
+ *   - actions on the right in the order `[secondary] [Filters] [primary]` (project them in that order, primary last); Filters is a header
+ *     action for every list that has a Filters button, except Task Queue, My Work and Pod Work, which keep it in the toolbar because it also
+ *     hosts Columns and Other filters;
+ *   - a selector in the actions slot (Pod, Scope) is capped at 22rem and truncates; it never wraps the title (mark a custom control
+ *     `data-ph-selector` to get the cap);
+ *   - the context line is the single place for a description: `description` or the `mfDescription` slot.
  *
  * Slots: `mfTitle` (rich H1 content such as reference + name + badge; replaces `heading`), `mfActions` (put the attribute on each
- * action, secondary first and the primary action last so it sits top-right), `mfDescription` (rich description) and the default
- * slot for anything that belongs to the header under the description (a "Matter: ..." line, tabs, a pod picker).
+ * action, secondary first and the primary action last so it sits top-right), `mfDescription` (rich context line) and the default
+ * slot for anything that belongs to the header under the context line (chips, tabs).
  */
 @Component({
   selector: 'mf-page-header',
@@ -86,9 +101,20 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
     </header>
   `,
   styles: `
+    /* The contract's numbers (see the class comment). --ph-row is the height of the title row; the main area's padding is 24px (12px on a
+       fixed page: the compact rule below) and 16px on a phone, so a header that starts the page is pulled up to 12px. */
     :host {
+      --ph-row: 36px;
       display: block;
       margin-bottom: var(--mf-s4);
+    }
+    :host(:first-child) {
+      margin-top: calc(-1 * var(--mf-s3));
+    }
+    @media (max-width: 639.98px) {
+      :host(:first-child) {
+        margin-top: calc(-1 * var(--mf-s1));
+      }
     }
     .ph__crumbs {
       margin: 0 0 var(--mf-s1);
@@ -144,15 +170,25 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
     .ph__row {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: var(--mf-s3);
     }
+    /* H1: 22px / 700, 18px below 640px. The padding makes a one-line title exactly --ph-row tall, so its top edge is the row's top edge
+       whatever the actions are. */
     .ph__title {
       margin: 0;
-      font-size: var(--mf-fs-h1);
-      line-height: 1.25;
+      min-width: 0;
+      padding-block: max(0px, calc((var(--ph-row) - 1.3em) / 2));
+      font-size: var(--mf-fs-h2);
+      font-weight: 700;
+      line-height: 1.3;
       overflow-wrap: anywhere;
+    }
+    @media (max-width: 639.98px) {
+      .ph__title {
+        font-size: var(--mf-fs-h3);
+      }
     }
     /* The section icon: the same one the left navigation shows, neutral, a little smaller than the text, on the baseline. */
     .ph__icon {
@@ -167,11 +203,25 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       align-items: center;
       justify-content: flex-end;
       gap: var(--mf-s2);
+      min-height: var(--ph-row);
+      max-width: 100%;
       margin-left: auto;
     }
+    /* A selector in the actions slot (Pod, Scope): 22rem at most, its text is cut, and it never takes the title's room. */
+    :host ::ng-deep .ph__actions :is(select, .p-select, [data-ph-selector]),
+    :host ::ng-deep .ph__actions > :has(select, .p-select, [data-ph-selector]) {
+      min-width: 0;
+      max-width: min(22rem, 100%);
+      text-overflow: ellipsis;
+    }
+    /* The context line: one line under the title, 13px, muted (its whole text is the tooltip). */
     .ph__desc {
       margin: var(--mf-s1) 0 0;
+      overflow: hidden;
       color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .ph__desc:empty {
       display: none;
@@ -180,21 +230,22 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       display: none;
     }
     /*
-     * Inside a fixed-header page the header is compact (title, one-line description and actions on ONE row, so the grid keeps its height):
-     * the description sits beside the title and is cut off with an ellipsis (its full text is the tooltip), tabs and other content
-     * go below. Only while the fixed layout is on; on phones and short windows the normal header shows.
+     * Inside a fixed-header page the header is compact: the breadcrumb row, then the title and the actions on ONE row, then the context
+     * line under the title, then tabs and other content. The main area's padding is 12px here, so the header needs no pull-up.
+     * Only while the fixed layout is on; on phones and short windows the normal header shows.
      */
     @media (min-width: 768px) and (min-height: 561px) {
       :host(.ph--compact) {
         /* Above the toolbar and the grid under it, so the popovers of the header (Columns, the sort rule) are not painted under them. */
         position: relative;
         z-index: 8;
+        margin-top: 0;
         margin-bottom: var(--mf-s2);
       }
       :host(.ph--compact) .ph {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
+        grid-template-columns: minmax(min(100%, 12rem), 1fr) auto;
+        align-items: start;
         column-gap: var(--mf-s4);
       }
       /* Row 1 belongs to the breadcrumb (empty without one) so tabs and other content always land under the title row. */
@@ -213,24 +264,18 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       :host(.ph--compact) .ph__title {
         grid-column: 1;
         grid-row: 2;
-        font-size: var(--mf-fs-h2);
-        line-height: 1.3;
       }
       :host(.ph--compact) .ph__desc {
-        grid-column: 2;
-        grid-row: 2;
-        margin: 0;
-        overflow: hidden;
-        font-size: var(--mf-fs-sm);
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        grid-column: 1 / -1;
+        grid-row: 3;
       }
       :host(.ph--compact) .ph__actions {
-        grid-column: 3;
+        grid-column: 2;
         grid-row: 2;
       }
       :host(.ph--compact) .ph__extra {
         grid-column: 1 / -1;
+        grid-row: 4;
       }
     }
   `,
