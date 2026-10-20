@@ -98,7 +98,7 @@ async function walkPage(page: Page): Promise<{ total: number; shell: number; hid
       };
     });
     if (!info) break;
-    if (i > 0 && (info.text === seen[0] || /^a:Skip to main content/.test(info.text))) break;
+    if (i > 0 && seen.includes(info.text) && /^a:Skip to /.test(info.text)) break;
     seen.push(info.text);
     if (info.inShell) shell++;
     if (!info.visible) hidden.push(info.text);
