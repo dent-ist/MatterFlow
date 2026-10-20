@@ -4,7 +4,6 @@ import { of } from 'rxjs';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
-import { MessageService } from 'primeng/api';
 import { StubWorkflowLookup, WorkflowLookup } from '../../../core/lookups/workflow-lookup';
 import { InMemoryTaskTypesApi } from './in-memory-task-types-api';
 import { TaskTypeView, TaskTypesApi } from './task-types-api';
@@ -25,7 +24,6 @@ function configure(...permissions: Permission[]): InMemoryTaskTypesApi {
       provideRouter([{ path: '**', children: [] }]),
       { provide: TaskTypesApi, useValue: api },
       { provide: WorkflowLookup, useClass: StubWorkflowLookup },
-      { provide: MessageService, useValue: { add: vi.fn() } },
       provideFakeMe(
         new FakeMeApi(
           withPermissions(
@@ -69,7 +67,6 @@ describe('TaskTypesPage deactivate dialog impact (#379)', () => {
         provideRouter([{ path: '**', children: [] }]),
         { provide: TaskTypesApi, useValue: { list: () => of(rows) } },
         { provide: WorkflowLookup, useClass: StubWorkflowLookup },
-        { provide: MessageService, useValue: { add: vi.fn() } },
         provideFakeMe(new FakeMeApi(withPermissions('TaskType.Manage', 'Workflow.Manage'))),
       ],
     });

@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { TaskCommentsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -78,7 +77,6 @@ describe('TaskComments', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: TaskCommentsClient, useValue: api },
       ],

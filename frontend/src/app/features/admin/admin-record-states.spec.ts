@@ -3,7 +3,6 @@ import { Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { Observable, throwError } from 'rxjs';
 import {
   FormsClient,
@@ -293,7 +292,6 @@ describe('Administration record pages: not found, no access and failure (#353)',
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
         {
           provide: WorkflowsClient,

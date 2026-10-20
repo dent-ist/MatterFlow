@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NEVER, Subject, of, throwError } from 'rxjs';
 import {
@@ -257,7 +256,6 @@ describe('DashboardPage', () => {
         { provide: TasksClient, useValue: { assignTask } },
         { provide: PodsClient, useValue: {} },
         { provide: UsersLookupClient, useValue: { lookupUsers: () => of([]) } },
-        MessageService,
         ...provideLookups(),
         ...provideQueueChoices({
           types: [
@@ -1018,7 +1016,7 @@ describe('DashboardPage', () => {
     expect(text(el.querySelector('[data-dash-live]'))).toContain('TSK-21 assigned to Test User');
     expect(text(el.querySelector('[data-dash-live]'))).toContain('16 unassigned tasks left');
     // The toast says the task moved to In Progress.
-    expect(TestBed.inject(UndoService).current()?.message).toContain('Task moved to In Progress');
+    expect(TestBed.inject(UndoService).current()?.detail).toBe('Task moved to In Progress.');
 
     // A moment later the counts and the lists are read again, bypassing the cache.
     await new Promise((r) => setTimeout(r, 900));

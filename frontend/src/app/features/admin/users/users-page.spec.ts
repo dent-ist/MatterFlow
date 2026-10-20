@@ -3,7 +3,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
-import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -53,7 +52,6 @@ describe('UsersPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        MessageService,
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         InMemoryIdentityAdminApi,

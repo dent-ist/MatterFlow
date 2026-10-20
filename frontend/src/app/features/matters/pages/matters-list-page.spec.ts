@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { MattersClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -53,7 +52,6 @@ describe('MattersListPage', () => {
       providers: [
         provideRouter([]),
         query.provider,
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: api },
       ],

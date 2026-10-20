@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { App } from './app';
 import { routes } from './app.routes';
 import { FakeMeApi, provideFakeMe, withPermissions } from './core/auth/auth-testing';
@@ -18,7 +17,6 @@ function configure(scenario: string) {
   TestBed.configureTestingModule({
     providers: [
       provideRouter(routes),
-      MessageService,
       { provide: USER_TIME_ZONE, useValue: 'America/Chicago' },
       { provide: APP_ENV, useValue: { ...environment, stubScenario: scenario } },
       { provide: MeApi, useClass: StubMeApi },
@@ -46,11 +44,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
 
   it('creates the root component', async () => {
     TestBed.configureTestingModule({
-      providers: [
-        provideRouter([]),
-        MessageService,
-        provideFakeMe(new FakeMeApi(withPermissions('Task.View'))),
-      ],
+      providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
     });
     await TestBed.compileComponents(); // the leave-confirm host is deferred
     expect(TestBed.createComponent(App).componentInstance).toBeTruthy();

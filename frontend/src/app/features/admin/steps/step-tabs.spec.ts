@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 import {
   FormVersionStatus,
@@ -68,7 +67,6 @@ async function open(step: StepDefinitionDetail, tab: string | undefined, s: Setu
     providers: [
       provideRouter([]),
       fakeQuery().provider,
-      MessageService,
       provideFakeMe(
         new FakeMeApi(
           withPermissions(

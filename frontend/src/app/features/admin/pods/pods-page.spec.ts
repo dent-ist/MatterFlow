@@ -1,7 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 
 import {
@@ -83,7 +82,6 @@ describe('PodsPage', () => {
     query = fakeQuery();
     TestBed.configureTestingModule({
       providers: [
-        MessageService,
         provideRouter([]),
         query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),

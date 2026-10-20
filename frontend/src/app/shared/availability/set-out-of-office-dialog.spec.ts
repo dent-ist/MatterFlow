@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
 import { MyAvailability } from '../../core/availability/my-availability';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
@@ -53,7 +52,6 @@ describe('SetOutOfOfficeDialog', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        MessageService,
         { provide: MyAvailabilityClient, useValue: client },
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         { provide: Clock, useValue: { now: () => NOW } },

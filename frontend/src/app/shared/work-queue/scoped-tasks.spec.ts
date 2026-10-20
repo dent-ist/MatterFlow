@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { MattersClient, ProjectsClient, TaskQueueClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
@@ -51,7 +50,6 @@ describe('ScopedTasks', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: TaskQueueClient, useValue: queue },

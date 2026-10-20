@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { NEVER, of, throwError } from 'rxjs';
 import {
   DashboardBoardClient,
@@ -227,7 +226,6 @@ describe('DashSwimlaneTab', () => {
           useValue: { listMyPods: () => of([]), listPods: () => of({ items: [] }) },
         },
         { provide: UsersLookupClient, useValue: { lookupUsers: () => of([]) } },
-        MessageService,
         ...provideLookups(),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
         { provide: Clock, useValue: { now: () => new Date('2026-10-15T15:05:00Z') } },

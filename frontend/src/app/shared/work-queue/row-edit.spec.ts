@@ -360,7 +360,7 @@ describe('RowEdit', () => {
     expect(emitted[0].status).toBe('IN_PROGRESS');
     expect(emitted[0].assignedUser?.displayName).toBe('Sam Kim');
     expect(emitted[1].status).toBe('IN_PROGRESS');
-    expect(undo.current()?.message).toContain('moved to In Progress');
+    expect(undo.current()?.detail).toBe('Task moved to In Progress.');
   });
 
   it('assignee: shows the Pod load ("3 open") next to each candidate, read from the Pod Work answer (#306)', async () => {

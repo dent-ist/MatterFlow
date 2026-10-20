@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { PodsClient, TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -80,7 +79,6 @@ describe('TaskQueuePage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'tasks', component: TaskQueuePage }]),
-        MessageService,
         provideFakeMe(
           new FakeMeApi(
             withPermissions(...(options.permissions ?? ['Task.View', 'Task.Create', 'Pod.View'])),

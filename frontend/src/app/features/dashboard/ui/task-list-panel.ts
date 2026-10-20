@@ -69,12 +69,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.fill]': 'scroll()' },
   template: `
-    <section
-      class="card"
-      [class.card--toast]="toastOpen()"
-      [attr.aria-labelledby]="id"
-      [attr.data-panel]="kind()"
-    >
+    <section class="card" [attr.aria-labelledby]="id" [attr.data-panel]="kind()">
       <header>
         <h3 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h3>
         @if (state() === 'ready' && total() > 0) {
@@ -183,7 +178,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                           <mf-row-edit
                             field="assignee"
                             emptyLabel="Assign"
-                            toastPlacement="start"
                             [row]="row"
                             [assignMe]="true"
                             (rowChange)="rowChange.emit($event)"
@@ -281,12 +275,6 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
-    }
-    /* A toast along the bottom (under 1024px) must not cover the last row: room for it while it is open. */
-    @media (max-width: 1023px) {
-      .card--toast {
-        padding-bottom: 5.5rem;
-      }
     }
     header {
       display: flex;
@@ -610,10 +598,6 @@ export class DashTaskList {
     const order = LIST_ORDER[this.kind()];
     return queueParamsSorted(this.query(), order.sort, order.dir);
   });
-  /** The assignment toast is open and this is the last list of the page: it leaves room for the toast under 1024px (see the styles). */
-  protected readonly toastOpen = computed(
-    () => !this.skippable() && this.undo.current()?.placement === 'start',
-  );
   protected readonly orderNote = computed(() => LIST_ORDER[this.kind()].note);
 
   /** Moves focus to the row now at `index` (or the last one), else to the list heading: used after a row has left the list. */

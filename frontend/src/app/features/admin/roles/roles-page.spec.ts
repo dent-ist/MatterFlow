@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { RolesPage, prerequisiteOf } from './roles-page';
@@ -68,7 +67,6 @@ describe('RolesPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         InMemoryIdentityAdminApi,
         { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
       ],

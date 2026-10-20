@@ -2,7 +2,6 @@ import { lastMain } from '../list-testing';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 import {
   FormsClient,
@@ -89,7 +88,6 @@ async function setup(api: Record<string, unknown>) {
     providers: [
       provideRouter([]),
       query.provider,
-      MessageService,
       provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
       { provide: StepDefinitionsClient, useValue: api },
       // The Step page also reads which workflows are active and the versions of the step's form (both quiet, so empty answers are enough).

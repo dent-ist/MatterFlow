@@ -9,7 +9,6 @@ import {
   provideRouter,
 } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { MessageService } from 'primeng/api';
 import {
   AssetTypesClient,
   AssetsClient,
@@ -170,7 +169,6 @@ describe('Assets pages', { timeout: 20_000 }, () => {
             });
           },
         },
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: AssetsClient, useValue: assets },
         { provide: AssetTypesClient, useValue: types },

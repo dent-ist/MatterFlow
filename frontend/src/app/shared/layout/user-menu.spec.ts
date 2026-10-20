@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -49,7 +48,6 @@ describe('UserMenu (header user area)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(
           new FakeMeApi(
             profileOf({ displayName: 'Kim Admin', permissions, roles: ['Test'], ...who }),

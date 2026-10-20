@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { AssetLinkRolesClient } from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -48,7 +47,6 @@ describe('AssetLinkRolesPage', () => {
       providers: [
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: AssetLinkRolesClient, useValue: api },
-        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();

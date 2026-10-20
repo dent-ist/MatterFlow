@@ -2,7 +2,6 @@ import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { NEVER, of, throwError } from 'rxjs';
 import {
   CoverageBoard,
@@ -188,7 +187,6 @@ describe('DashUsersTab', () => {
               }),
           },
         },
-        MessageService,
         ...provideLookups(),
         { provide: USER_TIME_ZONE, useValue: 'UTC' },
         { provide: Clock, useValue: { now: () => new Date('2026-10-15T15:05:00Z') } },
@@ -846,7 +844,7 @@ describe('DashUsersTab', () => {
       expect(dialog().querySelectorAll('[data-assign-row]').length).toBe(1);
       const offer = TestBed.inject(UndoService).current()!;
       expect(offer.message).toContain('TSK-21 assigned to Cy Tan.');
-      expect(offer.message).toContain('Task moved to In Progress');
+      expect(offer.detail).toBe('Task moved to In Progress.');
       // The board is read again shortly.
       await new Promise((r) => setTimeout(r, 1000));
       await settle();

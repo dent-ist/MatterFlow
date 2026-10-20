@@ -8,8 +8,10 @@ export interface UndoOffer {
   readonly id: number;
   readonly message: string;
   readonly undo: () => Promise<void>;
-  /** Kept so callers compile; the one toast host (`mf-toast-host`) is always bottom right (#616 reverses the bottom-left placement of decision T #158). */
-  readonly placement: 'end' | 'start';
+  /** One more short line under the message (toast copy rule, #617: a short sentence, at most one more line). */
+  readonly detail?: string;
+  /** The long explanation: the tooltip of the Undo button, not more lines in the toast. */
+  readonly hint?: string;
 }
 
 /**
@@ -29,10 +31,10 @@ export class UndoService {
   offer(
     message: string,
     undo: () => Promise<void>,
-    options: { placement?: 'end' | 'start' } = {},
+    extra: { detail?: string; hint?: string } = {},
   ): void {
     this.working.set(false);
-    this.current.set({ id: ++this.seq, message, undo, placement: options.placement ?? 'end' });
+    this.current.set({ id: ++this.seq, message, undo, ...extra });
     this.start();
   }
 

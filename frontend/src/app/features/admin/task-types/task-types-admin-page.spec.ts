@@ -2,7 +2,6 @@ import { lastMain } from '../list-testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 import {
   StepDefinitionsClient,
@@ -68,7 +67,6 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
           ],
           withComponentInputBinding(),
         ),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: WorkflowsClient, useValue: workflows },
         { provide: StepDefinitionsClient, useValue: steps },

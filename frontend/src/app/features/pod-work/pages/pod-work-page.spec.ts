@@ -2,7 +2,6 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { Observable, of, throwError } from 'rxjs';
 import { PodWorkClient, TaskQueueRow, TasksClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -90,7 +89,6 @@ describe('PodWorkPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'pods/work', component: PodWorkPage }]),
-        MessageService,
         provideFakeMe(
           new FakeMeApi(
             withPermissions(...(options.permissions ?? ['Task.View', 'Pod.View', 'Task.Assign'])),
@@ -335,7 +333,7 @@ describe('PodWorkPage', () => {
     expect(assignTask).toHaveBeenCalledWith(1042, { rowVersion: 'AAAA', podId: 5, userId: 1 });
     const offer = TestBed.inject(UndoService).current();
     expect(offer?.message).toContain('Assigned to you.');
-    expect(offer?.message).toContain('Task moved to In Progress');
+    expect(offer?.detail).toBe('Task moved to In Progress.');
     // The row stays on screen (muted) with its new assignee, then leaves; the tab count already follows.
     expect(el.querySelector('tr[data-task="TSK-1042"]')!.textContent).toContain('Test User');
     expect(tab(el, 'Unassigned').textContent).toContain('(5)');

@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 import { TaskWorkflowClient, TasksClient, TaskQueueRow } from '../../api/generated/api-client';
 import { apiError } from '../../core/lookups/lookups-testing';
@@ -41,7 +40,6 @@ describe('InlineStatusFlow', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions())),
         { provide: TasksClient, useValue: tasks },
         { provide: TaskWorkflowClient, useValue: {} },

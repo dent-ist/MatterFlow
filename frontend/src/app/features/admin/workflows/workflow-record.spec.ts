@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import {
   WorkflowDetail,
   WorkflowSummary,
@@ -170,7 +169,6 @@ async function setup(api: Record<string, unknown>, ...permissions: Permission[])
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      MessageService,
       provideFakeMe(
         new FakeMeApi(
           withPermissions(

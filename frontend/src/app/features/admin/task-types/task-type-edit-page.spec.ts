@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -43,7 +42,6 @@ describe('TaskTypeEditPage', () => {
         { provide: TaskTypesApi, useValue: api },
         { provide: WorkflowLookup, useClass: StubWorkflowLookup },
         { provide: FormDesignerApi, useClass: InMemoryFormDesignerApi },
-        { provide: MessageService, useValue: { add: vi.fn() } },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
       ],
     });

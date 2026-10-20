@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { AuditEventsClient, UsersClient } from '../../api/generated/api-client';
 import { ok, settle } from '../testing/org-testing';
 import { ActivityDrawer } from './activity-drawer';
@@ -456,7 +455,6 @@ describe('ActivityDrawer', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         {
           provide: AuditEventsClient,
           useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },

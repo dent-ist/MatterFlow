@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { throwError } from 'rxjs';
 import { MattersClient, ProjectsClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -28,7 +27,6 @@ describe('SummaryStrip', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: matters },
         { provide: ProjectsClient, useValue: projects },

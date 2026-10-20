@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { provideRouter } from '@angular/router';
 import { MyAvailabilityClient, UserAvailabilityClient } from '../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
@@ -24,7 +23,6 @@ describe('ProfilePage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Task.View'))),
         { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => ok(dto) } },
         { provide: UserAvailabilityClient, useValue: {} },

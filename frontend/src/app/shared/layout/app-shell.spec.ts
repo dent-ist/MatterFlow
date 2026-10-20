@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { NEVER } from 'rxjs';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { MyAvailabilityClient, SearchClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
@@ -17,7 +16,6 @@ describe('AppShell header search', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         {
@@ -40,7 +38,6 @@ describe('AppShell header search', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([stub]),
-        MessageService,
         { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
         provideFakeMe(new FakeMeApi(withPermissions('Task.View', 'Pod.View'))),
         { provide: SearchClient, useValue: { search: vi.fn() } },

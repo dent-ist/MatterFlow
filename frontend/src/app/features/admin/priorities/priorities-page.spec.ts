@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { PrioritiesClient, StatusLabelsClient } from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -57,7 +56,6 @@ describe('PrioritiesPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: PrioritiesClient, useValue: api },
         { provide: StatusLabelsClient, useValue: new FakeStatusLabelsClient() },
-        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();

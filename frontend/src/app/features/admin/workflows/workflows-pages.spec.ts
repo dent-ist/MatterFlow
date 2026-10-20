@@ -2,7 +2,6 @@ import { lastMain } from '../list-testing';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import {
   StepDefinitionSummary,
   StepDefinitionsClient,
@@ -125,7 +124,6 @@ async function setup(
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      MessageService,
       provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
       { provide: WorkflowsClient, useValue: workflows },
       { provide: StepDefinitionsClient, useValue: steps },
@@ -246,7 +244,6 @@ describe('WorkflowsListPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage', 'TaskType.Manage'))),
         { provide: WorkflowsClient, useValue: api },
         AdminShellFilters,
@@ -298,7 +295,6 @@ describe('WorkflowsListPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage', 'TaskType.Manage'))),
         { provide: WorkflowsClient, useValue: api },
         { provide: TaskTypesClient, useValue: taskTypes },
@@ -356,7 +352,6 @@ describe('WorkflowsListPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
         { provide: WorkflowsClient, useValue: api },
       ],
@@ -388,7 +383,6 @@ describe('WorkflowsListPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
         { provide: WorkflowsClient, useValue: api },
         AdminShellFilters,
@@ -589,7 +583,6 @@ describe('WorkflowsListPage health strip (#368)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
         { provide: WorkflowsClient, useValue: api },
         AdminShellFilters,
@@ -1436,7 +1429,6 @@ describe('WorkflowVersionPage tabs, switcher and impact lines (WP-TY6)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(
           new FakeMeApi(withPermissions(...((opts.permissions ?? ['Workflow.Manage']) as never[]))),
         ),

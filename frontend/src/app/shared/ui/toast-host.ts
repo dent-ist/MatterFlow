@@ -11,6 +11,8 @@ interface Item {
   readonly severity: ToastSeverity;
   readonly summary: string;
   readonly detail?: string;
+  /** The long explanation of an Undo offer: the Undo button's tooltip. */
+  readonly hint?: string;
   readonly count: number;
   readonly undo: boolean;
   readonly order: number;
@@ -80,7 +82,7 @@ const ICONS: Record<ToastSeverity, string> = {
             class="mf-btn mf-btn--text th__action"
             data-undo
             aria-keyshortcuts="Alt+Z"
-            title="Undo (Alt+Z)"
+            [attr.title]="item.hint ? 'Undo (Alt+Z): ' + item.hint : 'Undo (Alt+Z)'"
             [disabled]="undo.working()"
             (click)="undo.run()"
           >
@@ -212,6 +214,8 @@ export class ToastHost {
         id: -offer.id,
         severity: 'success',
         summary: offer.message,
+        detail: offer.detail,
+        hint: offer.hint,
         count: 1,
         undo: true,
         order: Number.MAX_SAFE_INTEGER,

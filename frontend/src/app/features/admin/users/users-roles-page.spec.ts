@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
 import { PodsClient } from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
@@ -41,7 +40,6 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
           ],
           withComponentInputBinding(),
         ),
-        MessageService,
         {
           provide: PodsClient,
           useValue: {

@@ -53,6 +53,23 @@ interface Person {
 const UNASSIGNED = 'none';
 
 /** What an Undo needs to put a Priority or Assignee change back. */
+/** The words of an Undo toast: the summary, at most one more line, and the long explanation as a tooltip (toast copy rule, #617). */
+export interface ToastText {
+  message: string;
+  detail?: string;
+  hint?: string;
+}
+
+/** "Assigned to you." and, when the assignment started a New task, a second short line; the explanation of Undo is the button's tooltip. */
+export function assignedText(message: string, startedAs: string | null): string | ToastText {
+  if (startedAs === null) return message;
+  return {
+    message,
+    detail: `Task moved to ${startedAs}.`,
+    hint: 'Undo puts the assignee back; the status stays.',
+  };
+}
+
 interface UndoSpec {
   field: 'priority' | 'assignee';
   /** The value this edit set (priority id or user id), to notice when someone changed it again. */
@@ -214,8 +231,6 @@ export class RowEdit {
   readonly emptyLabel = input('Unassigned');
   /** Assignee cell only: shows this PrimeIcons class (for example `pi-user-edit`) as an icon button named "Reassign <number>" instead of the assignee's name. */
   readonly triggerIcon = input<string | null>(null);
-  /** Where the Undo toast of a change is shown: `start` (bottom left of the page) keeps it off a right-aligned column of buttons. */
-  readonly toastPlacement = input<'end' | 'start'>('end');
   readonly rowChange = output<TaskQueueRow>();
   /** The Task as the server returned it after a change (or after a conflict refresh), for screens that show the whole Task. */
   readonly taskChange = output<TaskResponse>();
@@ -551,12 +566,12 @@ export class RowEdit {
           (t) =>
             userId === undefined
               ? `${r.taskNumber} is unassigned.`
-              : (userId === this.myId()
-                  ? 'Assigned to you.'
-                  : `${r.taskNumber} assigned to ${option.label}.`) +
-                (r.status === 'NEW' && t.status !== 'NEW'
-                  ? ` Task moved to ${t.statusLabel}. Undo puts the assignee back; the status stays.`
-                  : ''),
+              : assignedText(
+                  userId === this.myId()
+                    ? 'Assigned to you.'
+                    : `${r.taskNumber} assigned to ${option.label}.`,
+                  r.status === 'NEW' && t.status !== 'NEW' ? t.statusLabel : null,
+                ),
           {
             field: 'assignee',
             applied: userId,
@@ -599,7 +614,7 @@ export class RowEdit {
   private async apply(
     optimistic: Partial<TaskQueueRow>,
     call: (rowVersion: string) => Observable<TaskResponse>,
-    success: (task: TaskResponse) => string,
+    success: (task: TaskResponse) => string | ToastText,
     undo?: UndoSpec,
   ): Promise<void> {
     const before = this.row();
@@ -610,10 +625,19 @@ export class RowEdit {
       this.rowChange.emit(rowFromTask(before, task));
       this.taskChange.emit(task);
       if (undo) {
-        this.undoService.offer(success(task), () => this.undoChange(task.taskId, undo), {
-          placement: this.toastPlacement(),
-        });
-      } else this.notify.success(success(task));
+        const text = success(task);
+        if (typeof text === 'string') {
+          this.undoService.offer(text, () => this.undoChange(task.taskId, undo));
+        } else {
+          this.undoService.offer(text.message, () => this.undoChange(task.taskId, undo), text);
+        }
+      } else {
+        const text = success(task);
+        this.notify.success(
+          typeof text === 'string' ? text : text.message,
+          typeof text === 'string' ? undefined : text.detail,
+        );
+      }
     } catch (error) {
       this.rowChange.emit(before);
       if (error instanceof ApiError && error.code === 'CONCURRENCY_CONFLICT') {

@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { ClientsClient, FormsClient, MattersClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { DOCUMENT_FIELDS, aFormVersion } from '../../../shared/testing/asset-testing';
@@ -29,7 +28,6 @@ describe('MatterFormPage custom fields', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(
           new FakeMeApi(withPermissions('Matter.View', 'Matter.Create', 'Matter.Edit')),
         ),

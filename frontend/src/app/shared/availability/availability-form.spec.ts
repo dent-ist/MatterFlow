@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import {
   MyAvailabilityClient,
   UserAvailabilityClient,
@@ -59,7 +58,6 @@ describe('AvailabilityForm', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions('Task.View', 'User.Manage'))),
         { provide: MyAvailabilityClient, useValue: mine },
         { provide: UserAvailabilityClient, useValue: others },

@@ -105,6 +105,23 @@ describe('ToastHost (#616)', () => {
     expect(el.querySelector('[data-undo-toast]')).toBeNull();
   });
 
+  it('an Undo offer shows a summary and one more line, and the long explanation is the Undo button tooltip (#617)', async () => {
+    const { fixture, el } = setup();
+    undo.offer('Assigned to you.', async () => undefined, {
+      detail: 'Task moved to In Progress.',
+      hint: 'Undo puts the assignee back; the status stays.',
+    });
+    await flush(fixture);
+    const toast = el.querySelector('[data-undo-toast]')!;
+    expect(toast.querySelector('[data-undo-message]')?.textContent).toBe('Assigned to you.');
+    expect(toast.querySelector('[data-toast-detail]')?.textContent).toBe(
+      'Task moved to In Progress.',
+    );
+    expect(toast.querySelector('[data-undo]')!.getAttribute('title')).toBe(
+      'Undo (Alt+Z): Undo puts the assignee back; the status stays.',
+    );
+  });
+
   it('keeps the Undo offer visible when many other toasts are showing', async () => {
     const { fixture, el } = setup();
     undo.offer('Assigned to you.', async () => undefined);

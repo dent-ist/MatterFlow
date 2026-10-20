@@ -36,6 +36,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { DueCell } from '../../../shared/work-queue/due-cell';
+import { assignedText } from '../../../shared/work-queue/row-edit';
 import { ageInDays } from '../ui/task-list-panel';
 import { loadLevelOf, plural } from './users-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
@@ -823,12 +824,14 @@ export class UsersAssign {
       this.rows.update((list) => list.filter((r) => r.taskId !== row.taskId));
       this.total.update((n) => Math.max(0, n - 1));
       const started = row.status === 'NEW' && task.status !== 'NEW';
+      const text = assignedText(
+        `${row.taskNumber} assigned to ${u.displayName}.`,
+        started ? task.statusLabel : null,
+      );
       this.undo.offer(
-        `${row.taskNumber} assigned to ${u.displayName}.` +
-          (started
-            ? ` Task moved to ${task.statusLabel}. Undo puts the assignee back; the status stays.`
-            : ''),
+        typeof text === 'string' ? text : text.message,
         () => this.undoAssign(task, u),
+        typeof text === 'string' ? {} : text,
       );
       this.changed.emit();
       this.focusAfter(index);

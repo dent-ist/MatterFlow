@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
@@ -22,7 +21,6 @@ describe('TaskTable', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         ...provideLookups(),
         ...provideClock('2026-10-14T15:00:00Z', 'America/Chicago'),

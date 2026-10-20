@@ -1,7 +1,6 @@
 import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import {
   EmailSource,
   FormsClient,
@@ -144,7 +143,6 @@ async function create(
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      MessageService,
       provideFakeMe(new FakeMeApi(withPermissions(...(options.permissions ?? ALL)))),
       { provide: USER_TIME_ZONE, useValue: 'UTC' },
       { provide: Clock, useValue: { now: () => new Date('2026-10-14T12:00:00Z') } },

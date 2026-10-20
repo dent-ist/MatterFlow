@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { MessageService } from 'primeng/api';
 import { AssetLinkRolesClient, AssetTypesClient } from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -37,7 +36,6 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
           ],
           withComponentInputBinding(),
         ),
-        MessageService,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         {
           provide: AssetTypesClient,
