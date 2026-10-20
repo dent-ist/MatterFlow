@@ -19,6 +19,9 @@ move onto them in their own issues.
 | `AdminListState`, `AdminColumn`; grid-body `columnSpec`, `errorRef`; card list `filters`, `errorRef` | #575 | `app/shared/ui/admin-list-state.ts`, `grid-body.ts`, `record-card-list.ts`, `error-reference.ts` |
 | `mf-admin-card-list`, `AdminCardSpec`, `columnDropOrder` | #579 | `app/shared/ui/admin-card-spec.ts` |
 | `stripItems`, `stripActiveKey`, `stripPick`, `mf-work-strip [segments]` | #581 | `app/shared/ui/strip-items.ts`, `app/shared/work-queue/work-strip.ts` |
+| `mf-lookup-dialog` | #564 | `app/shared/ui/lookup-dialog.ts` |
+| Titles, crumbs, `formCrumbLabel` | #588 | `app/features/admin/admin.routes.ts`, `task-type-form-page.ts`, `nav-items.ts` |
+| `mf-form-status-cell` | #631 | `app/features/admin/shared/form-status-cell.ts` |
 | The control rule, `mf-text-field [counter]`, `ADMIN_FIELD_LIMITS`, `.mf-control--fill` | #583 | `styles/_admin-lists.scss` (header), `styles/_forms.scss`, `app/shared/ui/text-field.ts`, `app/features/admin/shared/field-limits.ts` |
 
 ## 1. Dialog wording (#542)
@@ -242,10 +245,59 @@ field exists (the same look); every limited text field has its counter (`[counte
 - `ADMIN_FIELD_LIMITS`: asset type name 100, asset type description **500** (the API column; the issue text said 1000), link role 50, priority label 50, status label 50.
 - Proof of use: the Workflow Step form (`/admin/steps/new`) counts Title (200) and Description (1000).
 
+## 10. Lookup dialog (#564)
+
+```html
+<mf-lookup-dialog title="Rename status label" submitLabel="Save name" [(visible)]="open" [dirty]="isDirty()" [saving]="busy()"
+    [error]="saveError()" [summary]="summary()" (save)="commit()" (cancel)="reset()">
+  <p>Only the name changes. ...</p>
+  <mf-text-field inputId="status-label-name" label="Display label" [required]="true" [maxLength]="50" [counter]="true" [error]="fieldError()" [(value)]="draft" />
+  <mf-status-badge mfPreview [code]="code" [label]="draft() || 'Label'" />       <!-- live preview, shown under "Preview" -->
+</mf-lookup-dialog>
+```
+
+| Input / output | Meaning |
+|---|---|
+| `title` (required), `[(visible)]` | The dialog's name (the accessible name too) and whether it is open. The page opens it and closes it after a successful save. |
+| `submitLabel`, `cancelLabel` | Verbs from `dialogCopy` ("Save name" / "Cancel"). |
+| `dirty` | The person changed something: every way out (Cancel, Escape, the X) asks "Leave without saving?" first through `LeaveConfirmService`; **Stay** is the default button. |
+| `saving` | The save is running: "Saving..." is announced, the buttons keep focus but ignore clicks, closing is ignored. |
+| `summary` | Validation messages. Non-empty shows "Fix the following to save:" (role alert) at the top and moves focus to the first field marked `aria-invalid` (the page's fields show their own message with the icon, e.g. `mf-text-field [error]`). The page validates on `(save)`. |
+| `error` | A server failure (role alert); the dialog stays open and focus stays put. |
+| `(save)` | Save button or Enter in a field. |
+| `(cancel)` | The dialog closed without saving (after the leave question when there were edits). |
+| slot `mfPreview` | A live preview of the result under the fields. Absent = no "Preview" group. |
+
+Focus: the first field when it opens; back to the control that opened it (the row's Rename, the New button) when it closes; the dialog's own focus trap. Escape closes. The dialog has its own header and
+handles Escape itself, because PrimeNG closes a dialog by itself on Escape and the X, which left it hidden after "Stay". No keyboard shortcut is added.
+Proof of use: the **Status labels rename** (`/admin/status-labels`) is now this dialog instead of an inline row edit (code, preview and the "only the name changes" sentence are in it). The Priorities and Link Roles pages adopt it in #609 and #640.
+
+## 11. Titles and crumbs (#588)
+
+| Route | Document title | Crumb |
+|---|---|---|
+| `/admin/audit` | Audit Logs | Administration > Audit Logs |
+| `/admin/priorities`, `/admin/status-labels` | Labels - Priorities, Labels - Status labels | Administration > Labels |
+| `/admin/asset-types` (`?tab=link-roles`) | Asset Types (Asset Types - Link Roles) | Administration > Asset Types |
+| `/admin/custom-fields` | Custom Fields | Administration > Custom Fields |
+| `/admin/asset-types/:id/form` | `<asset type>: Fields` | Administration > Asset Types > `<asset type>` > Fields |
+| `/admin/custom-fields/:object/form` | `<object>` custom fields (the owner's own name, "Matter custom fields") | Administration > Custom Fields > `<object>` |
+
+- The Asset Types page H1 is **Asset Types** and the Administration menu item that was "Assets" is **Asset Types** (`nav-items.ts`; the data list keeps "Assets").
+- The form designer page (`TaskTypeFormPage`) got the route-data input `formCrumbLabel` (default "Form"; "Fields" for asset types; empty for none) and sets the document title from the owner once it is loaded; the route title is the
+  fallback while loading. The list pages that are not on `mf-admin-list-shell` yet (Labels, Custom Fields, Audit, Asset Types) pass `[crumbs]` to their page header; pages that move onto the shell get the same crumb from it.
+- Known limit: the record crumb of the asset type designer is plain text; it becomes a link when the asset type record page exists (#635, #638). The designers' back-focus entry is #638/#645.
+
+## 12. Form status cell (#631)
+
+`<mf-form-status-cell [publishedVersion] [fieldCount] [publishedAtUtc] [draftVersion] />` in a `mf-cell-badge` cell: **Published v3** (green, check), **Draft v4** (the app-wide Draft amber, file icon, next to the published
+badge when both exist), **No published fields** (neutral, info icon) when nothing is published; then "8 fields · Updated Oct 12" in muted text (the year only when it is not this year, in the viewer's zone). A value the API did not return
+leaves its words out. The whole sentence is the tooltip. Consumers: Asset Types (#634) and Custom Fields (#644); no list uses it yet, so it is proven by its spec.
+
 ## Tests
 
 Unit (second batch): `admin-list-state.spec.ts`, `admin-card-spec.spec.ts`, `strip-items.spec.ts`, `text-field.spec.ts`; `steps-pages.spec.ts` and the Task Types specs stay as they were.
-E2E (second batch): `ad2-kit-lists` (hidden-count line with Show all at four widths, skeleton columns, Steps cards 2 to 4 lines with the table's menu entries and the 639/640 boundary, keyboard flow, Task Types chips).
+E2E (second batch): `ad2-kit-lookup` (the dialog on the Status labels rename: focus, live preview, summary and focus on the invalid field, Escape with edits asks and Stay keeps it, focus back on Rename, Tab trap, axe and no sideways scroll at five widths with the dialog open, permission variants), `ad2-kit-titles` (titles and crumbs on all routes, the designers, axe at four widths), `ad2-kit-lists` (hidden-count line with Show all at four widths, skeleton columns, Steps cards 2 to 4 lines with the table's menu entries and the 639/640 boundary, keyboard flow, Task Types chips).
 
 Unit: `dialog-copy.spec.ts`, `admin-list-shell.spec.ts`, `row-actions.spec.ts`, `admin-tabs.spec.ts`, `admin-counts.spec.ts`, `task-types-admin-page.spec.ts`.
 E2E: `ad2-kit-grid` (every cell pattern, 44 px rows, column drop, sticky actions, axe incl. target-size at 1920/1366/1024/768/375),
