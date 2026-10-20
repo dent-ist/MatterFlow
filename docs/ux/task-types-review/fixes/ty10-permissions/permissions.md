@@ -16,6 +16,9 @@ Rules (decided by the PM and the owner):
 | step definitions (list, get, tags) | `Workflow.Manage` | unchanged (already enough) |
 | `GET /asset-types`, `GET /asset-types/{id}` | `Asset.View` | `Asset.View` or `AssetType.Manage` |
 | `GET /asset-link-roles` | `Task.View` | `Task.View` or `AssetType.Manage` |
+| `GET /priorities` (AD-D #519) | `Task.View` | `Task.View` or `Priority.Manage` |
+| `GET /status-labels` (AD-D #519) | `Task.View` | `Task.View` or `StatusLabel.Manage` |
+| `GET /audit/search`, `/audit/facets` | `Audit.View` | unchanged |
 | `/forms/...` (all, reads and design) | `Task.View` (class level), then the owner kind's `*.Manage` in the service | any of `Task.View`, `TaskType.Manage`, `Workflow.Manage`, `AssetType.Manage`, `CustomField.Manage` at the controller; the service still requires the `*.Manage` of the form's owner kind to read a definition, its versions, a draft or the diff, and to design |
 
 Integration tests: `AdminReadPermissionsApiTests` (manage-only 200; another admin permission, Task.View alone where it does not apply, and no permission: 403 `PERMISSION_DENIED`). No contract change (`contracts/openapi/v1.json` unchanged).
@@ -29,6 +32,11 @@ Integration tests: `AdminReadPermissionsApiTests` (manage-only 200; another admi
 | `Workflow.Manage` | Workflows and Workflow Steps tabs (`/admin/task-types` falls back to Workflows), their filtered views, New / Workflow / version (all tabs) / New step / Step (Details, Inputs, Used by) pages and the step input form designer | Task Types tab, task type pages (the task type names are plain text, never links) |
 | `AssetType.Manage` | Asset Types, Asset Link Roles tab, Asset Type designer | the rest |
 | `CustomField.Manage` | Custom Fields list and the Client, Matter, Project designers | the rest |
+| `Priority.Manage` only (AD-D) | Labels: Priorities (no tab strip; `/admin/status-labels` falls back to Priorities) | Status labels |
+| `StatusLabel.Manage` only (AD-D) | Labels: Status labels (the menu item and `/admin/priorities` open it) | Priorities |
+| both Labels permissions | Labels with both tabs; the menu item opens Priorities | nothing |
+| `Audit.View` only (AD-D) | Audit Logs; no audit object is a link | everything else |
+| `Audit.View` plus `Task.View` | Audit Logs; task objects (and parts of a task) link to the task | other object links need their own View permission |
 | `Task.View` only, or no admin permission | nothing of the area | every address: 403 page |
 | any of the above plus `Task.View` | the same screens, plus the open-task numbers and links to the Task Queue | unchanged |
 
@@ -57,3 +65,7 @@ Integration tests: `AdminReadPermissionsApiTests` (manage-only 200; another admi
 ## Tab stops to the first row (1366 x 768, recorded, not gated)
 
 From the top of the page to the first row link of each list: 20 for a person with only Task Types or only Workflows permissions, 36 for a System Admin (the navigation rail has more items). Files: `tab-stops-<role>.json`. Screenshots: `matrix-<role>-<size>.png`. No keyboard shortcut was added or changed.
+
+## Labels and Audit (AD-D, Admin pages epic #518)
+
+The matrix is a living file: the AD-D block of `frontend/e2e/tests/ty-permissions-matrix.spec.ts` walks `/admin/priorities`, `/admin/status-labels`, `/admin/audit` and the Labels menu item for System Admin, each Labels permission alone and together, Audit.View alone and with Task.View, Task.View alone and a person with no admin permission (no refused request, no toast, no dead link, tab strip only with both tabs, axe at 375/768/1366/1920, no sideways page scroll). Audit object links need the View permission of the target (`Task.View`, `Matter.View`, `Client.View`, `Asset.View`, `Project.View`, `User.View`); without it the object is plain text in the same typography, with no tooltip.

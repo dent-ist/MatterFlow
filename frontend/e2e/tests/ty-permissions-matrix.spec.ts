@@ -397,3 +397,206 @@ test.describe('#417: permission matrix of the Task Types area', () => {
     });
   }
 });
+
+/**
+ * AD-D (#526, with #523 and #533): the same matrix for the Labels pages (Priorities, Status labels) and the Audit page. Roles are the
+ * Priority.Manage alone, StatusLabel.Manage alone, both, Audit.View alone, Audit.View with Task.View, System Admin, Task.View alone and a
+ * person with no admin permission. For each role the three addresses are opened: a permitted address opens with no refused request, no toast,
+ * no error text; the other Labels tab falls back to the tab the person may use; a forbidden address shows the 403 page. The "Labels" menu
+ * item opens the first allowed tab, the tab strip is offered only to a person who may use both tabs, and an audit object is a link only
+ * when the person can open its target. Living file: later issues add rows for the pages they change.
+ */
+type LabelPerm =
+  'Priority.Manage' | 'StatusLabel.Manage' | 'Audit.View' | 'Task.View' | 'Client.View';
+
+interface LabelRole {
+  key: string;
+  label: string;
+  perms: LabelPerm[] | null;
+}
+
+const LABEL_ROLES: LabelRole[] = [
+  { key: 'admin', label: 'System Admin', perms: null },
+  { key: 'pr', label: 'Priority.Manage only', perms: ['Priority.Manage'] },
+  { key: 'sl', label: 'StatusLabel.Manage only', perms: ['StatusLabel.Manage'] },
+  {
+    key: 'both',
+    label: 'both Labels permissions',
+    perms: ['Priority.Manage', 'StatusLabel.Manage'],
+  },
+  { key: 'au', label: 'Audit.View only', perms: ['Audit.View'] },
+  { key: 'au-tv', label: 'Audit.View and Task.View', perms: ['Audit.View', 'Task.View'] },
+  { key: 'tv', label: 'Task.View only', perms: ['Task.View'] },
+  { key: 'none', label: 'no admin permission (Client.View)', perms: ['Client.View'] },
+];
+
+const holds = (r: LabelRole, ...codes: LabelPerm[]): boolean =>
+  r.perms === null || codes.some((c) => r.perms!.includes(c));
+
+/** What an audit object link needs (null: not a link target of the audit page). */
+function auditNeed(href: string): LabelPerm[] | null {
+  if (href.startsWith('/tasks')) return ['Task.View'];
+  if (/^\/(clients|matters|assets|projects)/.test(href) || href.startsWith('/admin/users'))
+    return ['Client.View']; // none of these roles holds the other View permissions: a link here is always wrong for them
+  return null;
+}
+
+test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
+  test.beforeAll(async ({ seed }: { seed: Seeder }) => {
+    // Audit rows with a Client and a Task object, so the object links can be examined.
+    await seed.task(await seed.world());
+  });
+
+  for (const role of LABEL_ROLES) {
+    test(`${role.label}: addresses, menu item, tab strip, audit links`, async ({
+      asUser,
+      personas,
+      page: adminPage,
+    }) => {
+      test.setTimeout(240_000);
+      let page = adminPage;
+      if (role.perms !== null) {
+        const user = await personas.create({ permissions: role.perms, label: `ad1-${role.key}` });
+        page = await asUser(user.username);
+      }
+      await page.setViewportSize({ width: 1366, height: 768 });
+      const seen = watch(page);
+      const problems: string[] = [];
+      const canPr = holds(role, 'Priority.Manage');
+      const canSl = holds(role, 'StatusLabel.Manage');
+      const canAudit = holds(role, 'Audit.View');
+
+      const visit = async (url: string) => {
+        seen.failed.length = 0;
+        await page.goto(url);
+        await settle(page);
+      };
+
+      // The Labels addresses.
+      for (const [url, mine, other, otherUrl] of [
+        ['/admin/priorities', canPr, canSl, '/admin/status-labels'],
+        ['/admin/status-labels', canSl, canPr, '/admin/priorities'],
+      ] as const) {
+        await visit(url);
+        if (!mine && !other) {
+          if (!(await isForbiddenPage(page))) problems.push(`${url}: expected the 403 page`);
+          continue;
+        }
+        if (await isForbiddenPage(page))
+          problems.push(`${url}: the 403 page for a permitted person`);
+        const want = mine ? url : otherUrl;
+        if (!page.url().endsWith(want)) problems.push(`${url}: expected ${want}, at ${page.url()}`);
+        await expectQuiet(page, url).catch((e: Error) =>
+          problems.push(`${url}: ${e.message.split('\n')[0]}`),
+        );
+        if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
+        const tabLinks = await page.locator('#mf-main nav.tabs a').count();
+        if (mine && other ? tabLinks !== 2 : tabLinks !== 0)
+          problems.push(`${url}: ${tabLinks} tab links for Priority=${canPr}, Status=${canSl}`);
+        // The page lists its rows, so the data loaded (not an empty error state).
+        await expect(page.locator('#mf-main table tbody tr').first(), `${url}: rows`).toBeVisible();
+      }
+
+      // The Labels menu item opens the first allowed tab.
+      if (canPr || canSl) {
+        await visit(
+          role.perms === null || role.perms.includes('Task.View')
+            ? '/dashboard'
+            : '/admin/priorities',
+        );
+        const item = page
+          .getByRole('list', { name: 'Administration' })
+          .getByRole('link', { name: 'Labels' });
+        await item.click();
+        await settle(page);
+        if (!page.url().endsWith(canPr ? '/admin/priorities' : '/admin/status-labels'))
+          problems.push(`Labels menu item opened ${page.url()}`);
+        if (await isForbiddenPage(page)) problems.push('Labels menu item: the 403 page');
+        if (seen.failed.length > 0)
+          problems.push(`Labels menu item: refused ${seen.failed.join(', ')}`);
+      } else {
+        await visit('/403');
+        const count = await page
+          .getByRole('list', { name: 'Administration' })
+          .getByRole('link', { name: 'Labels' })
+          .count();
+        if (count > 0) problems.push('Labels menu item shown without a Labels permission');
+      }
+
+      // Audit.
+      await visit('/admin/audit');
+      if (!canAudit) {
+        if (!(await isForbiddenPage(page))) problems.push('/admin/audit: expected the 403 page');
+      } else {
+        if (await isForbiddenPage(page))
+          problems.push('/admin/audit: the 403 page for a permitted person');
+        await expectQuiet(page, 'audit').catch((e: Error) =>
+          problems.push(`audit: ${e.message.split('\n')[0]}`),
+        );
+        if (seen.failed.length > 0) problems.push(`audit: refused ${seen.failed.join(', ')}`);
+        await expect(page.locator('#mf-main table tbody tr').first()).toBeVisible();
+        const hrefs = [
+          ...new Set(
+            await page
+              .locator('#mf-main table a.au-linkout')
+              .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? '')),
+          ),
+        ];
+        for (const href of hrefs) {
+          if (href.startsWith('/tasks') && !holds(role, 'Task.View'))
+            problems.push(`audit: link ${href} for a person without Task.View`);
+          if (
+            auditNeed(href)?.[0] === 'Client.View' &&
+            !holds(role, 'Client.View') &&
+            role.perms !== null
+          )
+            problems.push(`audit: link ${href} for a person who cannot open it`);
+        }
+        if (role.key === 'au' && hrefs.length > 0)
+          problems.push(`audit: ${hrefs.length} object links for Audit.View only`);
+        if (role.key === 'au-tv' && !hrefs.some((h) => h.startsWith('/tasks')))
+          problems.push('audit: no task link for Audit.View with Task.View');
+        // Every link that is offered opens (never the 403 page).
+        for (const href of hrefs.slice(0, 6)) {
+          await visit(href);
+          if (await isForbiddenPage(page))
+            problems.push(`audit link ${href} leads to the 403 page`);
+        }
+      }
+
+      // Accessibility and widths on every page the person may use (screenshots of the narrowest roles when E2E_SCREENSHOTS is set).
+      {
+        const pages = [
+          ...(canPr ? ['/admin/priorities'] : []),
+          ...(canSl && !canPr ? ['/admin/status-labels'] : []),
+          ...(canAudit ? ['/admin/audit'] : []),
+        ];
+        for (const width of [375, 768, 1366, 1920]) {
+          await page.setViewportSize({ width, height: width < 700 ? 812 : 900 });
+          for (const url of pages) {
+            await visit(url);
+            if (axeAvailable()) {
+              const violations = await axeViolations(page);
+              if (violations.length > 0)
+                problems.push(
+                  `${url} at ${width}: axe ${JSON.stringify(violations).slice(0, 300)}`,
+                );
+            }
+            const overflow = await page.evaluate(
+              () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            );
+            if (overflow > 0)
+              problems.push(`${url} at ${width}: page scrolls sideways by ${overflow}px`);
+            if (OUT && ['pr', 'sl', 'au', 'au-tv'].includes(role.key)) {
+              fs.mkdirSync(OUT, { recursive: true });
+              await page.screenshot({
+                path: path.join(OUT, `${role.key}-${url.split('/').pop()}-${width}.png`),
+              });
+            }
+          }
+        }
+      }
+      expect(problems, problems.join('\n')).toEqual([]);
+    });
+  }
+});
