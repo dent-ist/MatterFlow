@@ -80,6 +80,20 @@ describe('filter control', { timeout: 20_000 }, () => {
     expect(m.router.url).toContain('sensitive=false');
   });
 
+  it('a disabled text stand-in is not an unlabelled empty box: it says what the filter is (the Audit Object id before a type is chosen)', async () => {
+    await mount('/list', [
+      {
+        key: 'objectId',
+        label: 'Object id',
+        type: 'text',
+        disabledReason: () => 'Choose an object type first',
+      },
+    ]);
+    const off = cell('objectId').querySelector<HTMLInputElement>('[data-filter-disabled] input')!;
+    expect(off.disabled).toBe(true);
+    expect(off.getAttribute('placeholder')).toBe('Object id');
+  });
+
   it('shows a disabled stand-in with the reason when the filter is unavailable', async () => {
     const owned = signal<string | null>('Set by the Due soon tab');
     await mount('/list?due' + 'From=2026-10-01', [

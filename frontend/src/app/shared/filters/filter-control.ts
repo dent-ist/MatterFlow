@@ -54,6 +54,7 @@ let nextUid = 0;
             type="text"
             disabled
             [value]="current()"
+            [attr.placeholder]="d.type === 'text' ? (d.placeholder ?? d.label) : null"
             [attr.aria-label]="'Filter by ' + d.label"
             [attr.aria-describedby]="uid + '-why'"
             [attr.data-filter]="d.key"

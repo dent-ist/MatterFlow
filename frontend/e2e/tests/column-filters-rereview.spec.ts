@@ -108,4 +108,48 @@ test.describe('Column filters re-review', () => {
     await cards.getByRole('button', { name: 'Show all' }).click();
     await expect(page.locator('[data-record-card]').filter({ hasText: name })).toHaveCount(1);
   });
+
+  test('no filter cell holds two controls that read alike or an empty unlabelled box (RR-14, RR-15)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    // Workflows: one labelled Versions select (it was two selects that both read "Any").
+    await page.goto('/admin/workflows');
+    await expect(page.getByRole('combobox', { name: 'Filter by Versions' })).toBeVisible();
+    await expect(page.locator('tr[data-filter-row] select')).toHaveCount(2); // Versions and Status
+    // Audit: the Object id box says what it is before an object type is chosen.
+    await page.goto('/admin/audit');
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    const objectId = page.getByRole('textbox', { name: 'Filter by Object id' });
+    await expect(objectId).toBeDisabled();
+    await expect(objectId).toHaveAttribute('placeholder', 'Object id');
+    // Every cell that holds more than one visible control: each one has its own text (a name in the box or on the button).
+    for (const url of ['/matters', '/admin/steps', '/admin/audit']) {
+      await page.goto(url);
+      const toggle = page.getByRole('button', { name: /^Filters/ });
+      if ((await toggle.getAttribute('aria-pressed')) !== 'true') await toggle.click();
+      const cells = await page.locator('tr[data-filter-row] td').evaluateAll((tds) =>
+        tds
+          .map((td) =>
+            Array.from(td.querySelectorAll<HTMLElement>('input:not([aria-hidden]), select, button'))
+              .filter((e) => e.getBoundingClientRect().width > 0)
+              .map((e) =>
+                e instanceof HTMLSelectElement
+                  ? (e.options[e.selectedIndex]?.text ?? '')
+                  : e instanceof HTMLInputElement
+                    ? e.placeholder || e.value
+                    : (e.textContent ?? '').trim(),
+              ),
+          )
+          .filter((texts) => texts.length > 1),
+      );
+      for (const texts of cells) {
+        expect(
+          texts.every((t) => t.length > 0),
+          `${url}: ${texts.join(' | ')}`,
+        ).toBe(true);
+        expect(new Set(texts).size, `${url}: ${texts.join(' | ')}`).toBe(texts.length);
+      }
+    }
+  });
 });
