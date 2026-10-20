@@ -9,25 +9,22 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Toast } from 'primeng/toast';
 import { LeaveConfirmService } from './shared/guards/unsaved-changes.guard';
 import { DevAuthBanner } from './shared/layout/dev-auth-banner';
 import { ShellLayout } from './shared/ui/fixed-page';
-import { ToastNoAutofocus } from './shared/ui/toast-no-autofocus';
-import { UndoToast } from './shared/ui/undo-toast';
+import { ToastHost } from './shared/ui/toast-host';
 
 /** Root: dev-auth banner (stub provider only), routed content, global toast host and the lazy "Leave without saving?" dialog. */
 @Component({
   selector: 'mf-root',
-  imports: [RouterOutlet, Toast, DevAuthBanner, NgComponentOutlet, UndoToast, ToastNoAutofocus],
+  imports: [RouterOutlet, DevAuthBanner, NgComponentOutlet, ToastHost],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // While a fixed-header grid page is shown the root is exactly one window tall (styles/_fixed-page.scss), so the dev banner and the shell share it.
   host: { '[class.mf-root--fixed]': 'layout.fixed()' },
   template: `
     <mf-dev-auth-banner />
     <router-outlet />
-    <p-toast position="bottom-right" mfToastNoAutofocus />
-    <mf-undo-toast />
+    <mf-toast-host />
     @if (leaveHost(); as host) {
       <ng-container *ngComponentOutlet="host" />
     }

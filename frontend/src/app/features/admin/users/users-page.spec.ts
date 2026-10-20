@@ -1,3 +1,4 @@
+import { NotificationService } from '../../../core/notify/notification.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
@@ -534,11 +535,11 @@ describe('UsersPage', () => {
     it('puts the old pods back and says so when the save fails', async () => {
       await createWith(withPods, 'User.View', 'Pod.ManageMembers');
       vi.spyOn(api, 'setUserPods').mockReturnValue(throwError(() => new Error('boom')));
-      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      const notify = TestBed.inject(NotificationService);
       await pick(3, 2);
       await applyPicked();
       expect(chipsOf(3)).toEqual(['Processing Primary', 'Review']);
-      expect(add).toHaveBeenCalledWith(
+      expect(notify.toasts()).toContainEqual(
         expect.objectContaining({
           severity: 'error',
           summary: "We couldn't save the pods. Try again.",
@@ -558,10 +559,10 @@ describe('UsersPage', () => {
       );
       vi.spyOn(api, 'setUserPods').mockReturnValue(throwError(() => conflict));
       const list = vi.spyOn(api, 'listUsers');
-      const add = vi.spyOn(TestBed.inject(MessageService), 'add');
+      const notify = TestBed.inject(NotificationService);
       await pick(3, 2);
       await applyPicked();
-      expect(add).toHaveBeenCalledWith(
+      expect(notify.toasts()).toContainEqual(
         expect.objectContaining({
           severity: 'error',
           summary:

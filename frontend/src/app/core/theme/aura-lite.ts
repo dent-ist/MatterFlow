@@ -12,7 +12,6 @@ import radiobutton from '@primeuix/themes/aura/radiobutton';
 import ripple from '@primeuix/themes/aura/ripple';
 import select from '@primeuix/themes/aura/select';
 import textarea from '@primeuix/themes/aura/textarea';
-import toast from '@primeuix/themes/aura/toast';
 import tooltip from '@primeuix/themes/aura/tooltip';
 import virtualscroller from '@primeuix/themes/aura/virtualscroller';
 
@@ -41,7 +40,6 @@ export const AuraLite = {
     ripple,
     select,
     textarea,
-    toast,
     tooltip,
     virtualscroller,
   },

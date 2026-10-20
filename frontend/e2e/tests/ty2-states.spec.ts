@@ -145,7 +145,7 @@ test.describe('list loading, error and empty states follow the grid-body pattern
         await expect(error.getByRole('button', { name: 'Retry' })).toBeVisible();
         // The header and the tabs stay; one message, no toast.
         await expect(page.getByRole('heading', { name: 'Task Types', level: 1 })).toBeVisible();
-        await expect(page.locator('.p-toast-message')).toHaveCount(0);
+        await expect(page.locator('[data-toast]')).toHaveCount(0);
         if (axeAvailable()) expect(await axeViolations(page), `error at ${size.width}`).toEqual([]);
         await noSideScroll(page, `${kind} error at ${size.width}`);
         await shot(page, `p370-${kind}-error`);

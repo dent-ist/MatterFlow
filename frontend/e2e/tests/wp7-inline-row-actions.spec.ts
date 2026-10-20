@@ -254,7 +254,7 @@ test.describe('WP7: inline row actions', () => {
       const dialog = page.getByRole('dialog').filter({ has: page.locator('[data-reason-body]') });
       await dialog.getByLabel(/Reason/).fill('Waiting');
       await dialog.getByRole('button', { name: 'Put on hold' }).click();
-      const toast = page.locator('.p-toast-message').first();
+      const toast = page.locator('[data-toast]').first();
       await expect(toast).toBeVisible();
       await expectClear(toast, pager, size.name);
       await animationsDone(page);

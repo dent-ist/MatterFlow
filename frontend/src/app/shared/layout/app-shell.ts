@@ -25,7 +25,7 @@ import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
-import { SkipTarget, skipId } from './skip-target';
+import { SkipTarget } from './skip-target';
 import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
@@ -78,12 +78,6 @@ export class AppShell {
   private readonly shortcuts = inject(KeyboardShortcuts);
   /** Set while a page offers a first stop of its own ("Skip to task list" on the work pages, #181). */
   protected readonly skipTarget = inject(SkipTarget);
-  /** Set while the target page's element carrying the skip id is in the document; the link is drawn only then (#586). */
-  private readonly skipPresent = signal(false);
-  protected readonly skipHref = computed(() => {
-    const def = this.skipTarget.target();
-    return def && this.skipPresent() ? '#' + skipId(def) : null;
-  });
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
@@ -120,43 +114,9 @@ export class AppShell {
       phone.addEventListener?.('change', onChange);
       inject(DestroyRef).onDestroy(() => phone.removeEventListener?.('change', onChange));
     }
-    this.watchSkipTarget();
     // The pending-access badge needs User.View; load it once the profile (and so the permissions) are known.
     effect(() => {
       if (this.auth.has('User.View')) untracked(() => void this.pendingUsers.refresh());
-    });
-  }
-
-  /** Keeps `skipPresent` true exactly while an element with the registered id exists (a page's list region mounts after the page). */
-  private watchSkipTarget(): void {
-    if (typeof MutationObserver !== 'function') return;
-    let frame = 0;
-    const check = (): void => {
-      frame = 0;
-      const def = this.skipTarget.target();
-      this.skipPresent.set(!!def && !!document.getElementById(skipId(def)));
-    };
-    const observer = new MutationObserver(() => {
-      if (!frame) frame = requestAnimationFrame(check);
-    });
-    // Watched only while a page offers the link.
-    effect(() => {
-      observer.disconnect();
-      if (!this.skipTarget.target()) {
-        untracked(() => this.skipPresent.set(false));
-        return;
-      }
-      observer.observe(document.body, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['id'],
-      });
-      untracked(check);
-    });
-    inject(DestroyRef).onDestroy(() => {
-      observer.disconnect();
-      if (frame) cancelAnimationFrame(frame);
     });
   }
 

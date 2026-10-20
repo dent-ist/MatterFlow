@@ -221,8 +221,6 @@ describe('row navigation (#281, #282, #283)', () => {
 
   it('focuses the selected tab after a return, unless the row left is in a list inside the page', async () => {
     await create(true);
-    // The list host carries the skip target id (so it keeps its test root alive): take its tab out of the way.
-    fixture.nativeElement.remove();
     const plain = TestBed.createComponent(PlainRecordHost);
     document.body.appendChild(plain.nativeElement);
     plain.detectChanges();

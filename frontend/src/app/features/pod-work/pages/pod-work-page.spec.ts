@@ -1,3 +1,4 @@
+import { NotificationService } from '../../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -62,7 +63,6 @@ describe('PodWorkPage', () => {
   let getPodWork: ReturnType<typeof vi.fn>;
   let assignTask: ReturnType<typeof vi.fn>;
   let harness: RouterTestingHarness;
-  let toasts: { severity?: string; summary?: string }[];
 
   async function open(
     url: string,
@@ -87,7 +87,6 @@ describe('PodWorkPage', () => {
         rowVersion: 'BBBB',
       });
     });
-    toasts = [];
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'pods/work', component: PodWorkPage }]),
@@ -103,10 +102,6 @@ describe('PodWorkPage', () => {
         { provide: PodWorkClient, useValue: { getPodWork } },
         { provide: TasksClient, useValue: { assignTask } },
       ],
-    });
-    TestBed.inject(MessageService).messageObserver.subscribe((m) => {
-      const message = m as { severity?: string; summary?: string };
-      toasts.push(message);
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     harness = await RouterTestingHarness.create();
@@ -366,9 +361,11 @@ describe('PodWorkPage', () => {
     link(el)!.click();
     await settle();
 
-    expect(toasts.map((t) => [t.severity, t.summary])).toEqual([
-      ['error', 'Someone else changed this task. The row was refreshed.'],
-    ]);
+    expect(
+      TestBed.inject(NotificationService)
+        .toasts()
+        .map((t) => [t.severity, t.summary]),
+    ).toEqual([['error', 'Someone else changed this task. The row was refreshed.']]);
   });
 
   it('hides "Assign to me" without Task.Assign and on the By member tab', async () => {

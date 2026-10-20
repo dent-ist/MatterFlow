@@ -8,7 +8,6 @@ import { Permission } from '../../core/auth/permissions';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { ok, settle } from '../testing/org-testing';
 import { AppShell } from './app-shell';
-import { SkipTarget } from './skip-target';
 
 describe('AppShell header search', () => {
   beforeEach(() => localStorage.clear());
@@ -207,63 +206,9 @@ describe('AppShell header search', () => {
       expect(q(fixture, 'header').classList).toContain('mf-header--search-open');
     });
 
-    it('names the search row by id: aria-controls matches an element that exists (#587)', async () => {
-      const fixture = await create(['Task.View']);
-      const button = q(fixture, '[data-testid=search-button]');
-      const id = button.getAttribute('aria-controls')!;
-      expect(id).toBe('mf-search-row');
-      expect(fixture.nativeElement.querySelector('#' + id)).toBe(q(fixture, 'mf-global-search'));
-    });
-
     it('has no search icon when the user may not search', async () => {
       const fixture = await create(['Pod.View']);
       expect(q(fixture, '[data-testid=search-button]')).toBeNull();
-    });
-  });
-
-  describe('skip to list link (#586)', () => {
-    const link = (f: { nativeElement: HTMLElement }) =>
-      f.nativeElement.querySelector('a[data-skip-list]') as HTMLAnchorElement | null;
-
-    it('is drawn only while an element with the target id exists, and its href names that element', async () => {
-      const fixture = await create(['Task.View']);
-      const skip = TestBed.inject(SkipTarget);
-      const focus = vi.fn();
-      const host = document.createElement('section');
-      const off = skip.register({ label: 'Skip to task list', focus, element: host });
-      await settle(fixture);
-      // The element exists but is not in the document yet: no link.
-      expect(link(fixture)).toBeNull();
-      document.body.appendChild(host);
-      await vi.waitFor(() => expect(link(fixture)).not.toBeNull());
-      await settle(fixture);
-      expect(link(fixture)!.getAttribute('href')).toBe('#mf-list');
-      expect(document.getElementById('mf-list')).toBe(host);
-      expect(host.getAttribute('tabindex')).toBe('-1');
-      link(fixture)!.click();
-      expect(focus).toHaveBeenCalled();
-      // The element goes away (loading, error): the link goes with it.
-      host.remove();
-      await vi.waitFor(() => expect(link(fixture)).toBeNull());
-      off();
-    });
-
-    it('follows a page-chosen id and disappears when the page unregisters', async () => {
-      const fixture = await create(['Task.View']);
-      const skip = TestBed.inject(SkipTarget);
-      const host = document.createElement('section');
-      document.body.appendChild(host);
-      const off = skip.register({
-        label: 'Skip to table',
-        id: 'users-table',
-        element: host,
-        focus: vi.fn(),
-      });
-      await vi.waitFor(() => expect(link(fixture)?.getAttribute('href')).toBe('#users-table'));
-      off();
-      await vi.waitFor(() => expect(link(fixture)).toBeNull());
-      expect(host.hasAttribute('id')).toBe(false);
-      host.remove();
     });
   });
 });

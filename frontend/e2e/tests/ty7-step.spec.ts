@@ -710,13 +710,13 @@ test.describe('Step record page', () => {
       await expect(onlyPage.locator('[data-open-inputs]')).toBeVisible();
       await expect(onlyPage.locator('[data-action=edit-inputs]')).toBeVisible();
       await onlyPage.waitForTimeout(900); // a toast would appear after 400 ms
-      await expect(onlyPage.locator('.p-toast-message')).toHaveCount(0);
+      await expect(onlyPage.locator('[data-toast]')).toHaveCount(0);
       await expect(onlyPage.locator('[data-strip-item=inputs]')).toContainText('newer draft');
       await expect(onlyPage.locator('[data-strip-item=used]')).toContainText('1');
       await onlyPage.goto(`/admin/steps/${step.id}?tab=used-by`);
       await expect(onlyPage.locator('[data-used-link]')).toHaveCount(1);
       await onlyPage.waitForTimeout(900);
-      await expect(onlyPage.locator('.p-toast-message')).toHaveCount(0);
+      await expect(onlyPage.locator('[data-toast]')).toHaveCount(0);
       await onlyPage.setViewportSize({ width: 375, height: 812 });
       await clean(onlyPage, 'workflow only at 375');
       await shot(onlyPage, 'perm-workflow-only', 375);
@@ -749,7 +749,7 @@ test.describe('Step record page', () => {
       await expect(onlyPage.getByText("You don't have access to this step.")).toHaveCount(0);
       await expect(onlyPage.locator('mf-form-designer')).toBeVisible();
       await shot(onlyPage, 'perm-workflow-only-designer', 1440);
-      await expect(onlyPage.locator('.p-toast-message')).toHaveCount(0);
+      await expect(onlyPage.locator('[data-toast]')).toHaveCount(0);
     });
   });
 });

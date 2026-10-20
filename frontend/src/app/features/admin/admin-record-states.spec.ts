@@ -1,3 +1,4 @@
+import { NotificationService } from '../../core/notify/notification.service';
 import { Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
@@ -227,11 +228,9 @@ describe('Administration record pages: not found, no access and failure (#353)',
       it(`${c.name}: ${f.status} shows the shared state${f.what === 'error' ? ' with Retry' : ' without Retry'}`, async () => {
         CURRENT.failing = true;
         let error = apiError(f.status, 'X', 'raw server text 99999');
-        const toasts = { add: vi.fn() };
         TestBed.configureTestingModule({
           providers: [
             provideRouter([]),
-            { provide: MessageService, useValue: toasts },
             provideFakeMe(new FakeMeApi(withPermissions(c.permission, 'Workflow.Manage'))),
             ...(c.setup(() => (CURRENT.failing ? throwError(() => error) : null)) as never[]),
           ],
@@ -267,7 +266,7 @@ describe('Administration record pages: not found, no access and failure (#353)',
         expect(crumbs).toEqual(c.crumbs);
         // The tab title names the state; one message only, no toast.
         expect(TestBed.inject(Title).getTitle()).toBe(`${c.title[f.what]} - MatterFlow`);
-        expect(toasts.add).not.toHaveBeenCalled();
+        expect(TestBed.inject(NotificationService).toasts()).toEqual([]);
         expect(document.activeElement).toBe(el.querySelector('h1'));
 
         if (f.what === 'error') {

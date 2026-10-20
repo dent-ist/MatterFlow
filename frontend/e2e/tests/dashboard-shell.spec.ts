@@ -99,7 +99,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
       await expect(page.locator('[role="alert"]:visible')).toHaveCount(1);
       // The inline error replaces the toast: wait past the 400 ms hold-back and look again.
       await page.waitForTimeout(800);
-      await expect(page.locator('.p-toast-message')).toHaveCount(0);
+      await expect(page.locator('[data-toast]')).toHaveCount(0);
       await shot(page, `01-error-breakdowns-${size.name}`);
       await expectAxeClean(page);
     }
@@ -160,7 +160,7 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     await expect(banner).toBeVisible();
     await expect(banner).toContainText('Could not refresh. Showing data from');
     await expect(page.locator('[data-group="attention"]')).toBeVisible();
-    await expect(page.locator('.p-toast-message')).toHaveCount(0);
+    await expect(page.locator('[data-toast]')).toHaveCount(0);
     // The banner takes precedence: the age text does not repeat it.
     await page.clock.fastForward('06:00');
     await expect(page.locator('[data-stale-age]')).toHaveCount(0);

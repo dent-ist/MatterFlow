@@ -550,7 +550,7 @@ test.describe('T7: permission variants', () => {
     await expect(page.locator('[data-comment-id]', { hasText: numbered(1) }).first()).toHaveClass(
       /tc__item--hit/,
     );
-    await expect(page.locator('.p-toast-message-error')).toHaveCount(0);
+    await expect(page.locator('[data-toast][data-severity="error"]')).toHaveCount(0);
     await page.setViewportSize({ width: 375, height: 812 });
     await checkPage(page, 'Task.View only 375');
   });
@@ -587,7 +587,7 @@ test.describe('T7: permission variants', () => {
     await expect(
       dlg.locator('[data-comment-link]', { hasText: 'Posted by the assignee' }),
     ).toBeVisible();
-    await expect(page.locator('.p-toast-message-error')).toHaveCount(0);
+    await expect(page.locator('[data-toast][data-severity="error"]')).toHaveCount(0);
   });
 
   test('no Task.View: the page is refused and no comment text or excerpt is requested', async ({

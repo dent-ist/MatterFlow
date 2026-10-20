@@ -20,7 +20,6 @@ import { MyAvailability } from '../../core/availability/my-availability';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { USER_TIME_ZONE } from '../../core/time/clock';
-import { sameIdentity } from './same-identity';
 
 interface Item {
   id: 'profile' | 'out' | 'back' | 'shortcuts';
@@ -52,7 +51,6 @@ let nextId = 0;
       [attr.aria-expanded]="open()"
       [attr.aria-controls]="open() ? uid + '-menu' : null"
       [attr.aria-label]="triggerLabel()"
-      [attr.title]="auth.displayName()"
       (click)="toggle($event)"
       (keydown)="onTriggerKey($event)"
     >
@@ -121,7 +119,7 @@ export class UserMenu {
   );
   protected readonly account = computed(() => {
     const account = this.auth.profile()?.windowsAccount;
-    return account && !sameIdentity(account, this.auth.displayName()) ? account : null;
+    return account && account !== this.auth.displayName() ? account : null;
   });
   protected readonly triggerLabel = computed(
     () =>

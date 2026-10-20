@@ -121,7 +121,7 @@ async function links(page: Page, selector: string): Promise<number> {
 
 const noErrors = async (page: Page, what: string) => {
   await expect(
-    page.locator('#mf-main [role=alert], .p-toast-message'),
+    page.locator('#mf-main [role=alert], [data-toast]'),
     `${what}: error shown`,
   ).toHaveCount(0);
 };
@@ -299,7 +299,7 @@ test.describe('#285: permission matrix, no dead links', () => {
           // "You don't have permission to view tasks." on a Tasks tab and the one sentence on a Task page's Assets tab without Asset.View
           // (#347) are the designed explanations, not errors.
           page.locator(
-            '#mf-main [role=alert], .p-toast-message, [data-no-access]:not([data-no-access=tasks]):not(.tl__note), [data-forbidden]',
+            '#mf-main [role=alert], [data-toast], [data-no-access]:not([data-no-access=tasks]):not(.tl__note), [data-forbidden]',
           ),
           `error or no-access notice behind ${target}`,
         ).toHaveCount(0);

@@ -108,7 +108,7 @@ const ROUTES: Route[] = [
 
 const heading = (page: Page) => page.getByRole('heading', { level: 1 });
 const noToast = async (page: Page) => {
-  await expect(page.locator('.p-toast-message')).toHaveCount(0);
+  await expect(page.locator('[data-toast]')).toHaveCount(0);
   await expect(page.getByRole('alert')).toHaveCount(0);
 };
 
@@ -163,7 +163,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       await expect(heading(page)).toHaveText(`Couldn't load this ${r.noun}.`);
       await expect(page).toHaveTitle(`${r.title} could not be loaded - MatterFlow`);
       await expect(page.locator('[data-error-reference]')).toContainText(reference);
-      await expect(page.locator('.p-toast-message')).toHaveCount(0);
+      await expect(page.locator('[data-toast]')).toHaveCount(0);
       await atEverySize(page, `${r.key}-load-failed`);
 
       await page.setViewportSize({ width: 1366, height: 768 });
@@ -236,7 +236,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       await expect(page.locator('[data-error]')).toContainText("Couldn't load");
       await expect(page.locator('[data-error] [data-error-reference]')).toContainText(reference);
       await page.waitForTimeout(800); // a held toast would appear after 400 ms
-      await expect(page.locator('.p-toast-message')).toHaveCount(0);
+      await expect(page.locator('[data-toast]')).toHaveCount(0);
       await page.unroute(api);
     }
   });

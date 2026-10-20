@@ -250,7 +250,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
       .click();
     await expect(card.locator('[data-card-meta]')).toContainText(tech.username);
     await expect(card.locator('[data-avatar]')).toBeVisible();
-    await expect(page.locator('mf-undo-toast')).toContainText('Assigned to you.');
+    await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
     expect((await admin.get(`/api/v1/tasks/${task.taskId}`)).assignedUser.userId).toBe(tech.userId);
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(card.locator('[data-card-meta]')).toContainText('Unassigned');
@@ -280,7 +280,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await page.keyboard.press('Escape');
     // Assign to me from the link: the Undo toast, the same call as on the table.
     await link.click();
-    await expect(page.locator('mf-undo-toast')).toContainText('Assigned to you.');
+    await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(link).toBeVisible();
     // Totals against the table of the same address.

@@ -71,7 +71,7 @@ const STATUS = '[data-facts] li[data-status]';
 
 /** The toast of the last action fades in and out; axe must not read it half transparent. */
 async function waitForToastsToGo(page: Page): Promise<void> {
-  await expect(page.locator('.p-toast-message')).toHaveCount(0, { timeout: 12_000 });
+  await expect(page.locator('[data-toast]')).toHaveCount(0, { timeout: 12_000 });
 }
 
 /** Opens the overflow menu if it is not open (at a new size it may still be open from the last one). */
@@ -541,7 +541,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await new TaskDetailPage(page).open(task.taskId);
     await page.locator('[data-overflow]').click();
     await page.getByRole('menuitem', { name: /Copy link/ }).click();
-    await expect(page.locator('.p-toast-message')).toContainText('Link copied');
+    await expect(page.locator('[data-toast]')).toContainText('Link copied');
     expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(
       new RegExp(`/tasks/${task.taskId}$`),
     );
@@ -608,7 +608,7 @@ test.describe('Task header T2: primary action and overflow (#298)', () => {
     await expect(v.locator('[data-view-only]')).toBeVisible();
     await expect(v.locator('[data-facts] [data-inline-trigger]')).toHaveCount(0);
     await expect(v.locator('main a[href^="/matters/"], main a[href^="/clients/"]')).toHaveCount(0);
-    await expect(v.locator('.p-toast-message')).toHaveCount(0);
+    await expect(v.locator('[data-toast]')).toHaveCount(0);
     await atEverySize(v, 'permissions-view-only', async () => {
       await v.keyboard.press('Escape');
     });

@@ -31,8 +31,8 @@ const TABLE = `<p>Hi Nora, please process these custodians into the Harbor Point
 
 /** The "Task created" toast sits bottom right and covers the Details disclosure on a phone: close it before the next click. */
 async function closeToasts(page: Page): Promise<void> {
-  for (const close of await page.locator('.p-toast-close-button').all()) await close.click();
-  await expect(page.locator('.p-toast-message')).toHaveCount(0);
+  for (const close of await page.locator('[data-toast-close]').all()) await close.click();
+  await expect(page.locator('[data-toast]')).toHaveCount(0);
 }
 
 async function shoot(page: Page, name: string, fullPage = false): Promise<void> {

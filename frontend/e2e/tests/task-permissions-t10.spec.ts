@@ -192,7 +192,7 @@ async function noErrors(page: Page, what: string): Promise<void> {
   await page.waitForTimeout(300);
   await expect(
     page.locator(
-      '#mf-main [role=alert], .p-toast-message, [data-forbidden], [data-no-access]:not([data-section=assets] [data-no-access])',
+      '#mf-main [role=alert], [data-toast], [data-forbidden], [data-no-access]:not([data-section=assets] [data-no-access])',
     ),
     `${what}: error or no-access notice`,
   ).toHaveCount(0);
@@ -577,7 +577,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
         expect(seen.failed, `requests that failed behind ${target}`).toEqual([]);
         await expect(
           page.locator(
-            '#mf-main [role=alert], .p-toast-message, [data-forbidden], [data-no-access]:not([data-section=assets] [data-no-access])',
+            '#mf-main [role=alert], [data-toast], [data-forbidden], [data-no-access]:not([data-section=assets] [data-no-access])',
           ),
           `error or no-access notice behind ${target}`,
         ).toHaveCount(0);

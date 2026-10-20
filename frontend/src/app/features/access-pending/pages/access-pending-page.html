@@ -9,7 +9,7 @@
     @if (auth.profile(); as p) {
       <p>
         You're signed in as <strong>{{ p.displayName }}</strong>
-        @if (p.windowsAccount && !sameIdentity(p.windowsAccount, p.displayName)) {
+        @if (p.windowsAccount && p.windowsAccount !== p.displayName) {
           (<span class="mf-account">{{ p.windowsAccount }}</span
           >)
         }

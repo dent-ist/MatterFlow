@@ -178,11 +178,11 @@ Nothing blocks. For the production rollout (not this phase): the "browser sign-i
 
 - Owner decision (2026-10-20): no new or changed keyboard shortcuts in this phase (Phase 2 backlog #420); existing shortcuts stay exactly as they are; accessibility mechanisms (skip links, aria, focus management, live regions) are in scope.
 - Planning (2026-10-20): epic #585 and 32 sub-issues created and linked; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned; no backend work.
-- WP-SH1 Critical accessibility bugs and defects (first release), lane A (2026-10-20): #586, #587, #592, #590 and #597 built (#522/#524 were closed duplicates of #592, which owns the header name rules); unit tests green for the touched folders (587 tests; the full suite is not run, it is flaky under load); e2e `sh1-skip-link`, `sh1-user-name`, `sh1-offline-nav` and the `shell-axe-guard` green (axe with best-practice at 1366, 1920, 768 and 375, no sideways scroll); initial bundle 651.25 kB of 700 kB; screenshots in `fixes/sh1-critical/`; known limits: the phone filter sheet and the Disabled page are not yet in the axe guard table (Disabled needs #596's persona), the user menu shows no identity row (Profile epic #580). Lane B (#591) and lane C (#596, #594, #598) lines follow from their agents.
+- WP-SH1 Critical accessibility bugs and defects (first release): #591 done by lane B (2026-10-20, 8a26178: identical toasts folded, replace-by-key, availability key; unit tests with fake timers, e2e `sh-toast-dedupe`; screenshots `fixes/sh1-critical/`); the other issues of the package are open (lanes A and C).
 - WP-SH2 Page-header contract: not started.
 - WP-SH3 System pages: not started.
 - WP-SH4 Connection and session: not started.
-- WP-SH5 One toast system: not started.
+- WP-SH5 One toast system: #616 done by lane B (2026-10-20, SH-B #616): one `mf-toast-host` (shared/ui) replaces `<p-toast>` and `mf-undo-toast`, bottom right, tinted, icon, close button, count (x2), at most three visible, Undo inside the toast, success/info polite and warnings/errors assertive, reduced motion; PrimeNG toast and its theme tokens removed (initial bundle 648.7 kB to 593.4 kB); the Undo placement option is ignored (T #158 reversed, decisions addendum and ux-spec updated, section AE to be written by #630); unit tests, e2e `sh5-toast-host` (axe at four sizes, pager and edge not covered, keyboard dismissal and Undo), stale toast e2e selectors adapted in 19 specs; screenshots `fixes/sh5-toast/`. #617 (callers, copy) and #619 open (lane B wave 2).
 - WP-SH6 Navigation rail polish: not started.
 - WP-SH7 Brand mark and landing: not started.
 - WP-SH9 Docs and final verification: not started.

@@ -2,15 +2,10 @@
   position: relative;
   margin-left: auto;
   display: block;
-  /* A long display name shrinks to an ellipsis; the header never grows taller (#592). */
-  min-width: 0;
-  max-width: min(20rem, 45vw);
 }
 
 .um-trigger {
   display: flex;
-  max-width: 100%;
-  box-sizing: border-box;
   align-items: center;
   gap: var(--mf-s2);
   min-height: var(--mf-row-h);
@@ -36,7 +31,6 @@
 }
 
 .um-text {
-  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -45,17 +39,9 @@
 
 .um-name {
   font-weight: 600;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .um-account {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--mf-fs-xs);
   color: var(--mf-text-muted);
 }

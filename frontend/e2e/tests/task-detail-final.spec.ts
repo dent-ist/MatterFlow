@@ -72,7 +72,7 @@ async function check(page: Page, name: string): Promise<void> {
 }
 
 async function waitForToastsToGo(page: Page): Promise<void> {
-  await expect(page.locator('.p-toast-message')).toHaveCount(0, { timeout: 12_000 });
+  await expect(page.locator('[data-toast]')).toHaveCount(0, { timeout: 12_000 });
 }
 
 /** Top of the Workflow heading with the page scrolled to the top (the review's measure: "Workflow starts at y"). */
@@ -447,7 +447,7 @@ test.describe('Task Detail final verification (#331): permission matrix in short
       for (const size of FOUR) {
         await who.setViewportSize(size);
         await openFresh(who, detail, fx.task.taskId);
-        await expect(who.locator('.p-toast-message')).toHaveCount(0);
+        await expect(who.locator('[data-toast]')).toHaveCount(0);
         const overflow = who.locator('[data-task-header] [data-overflow]');
         if (await overflow.isVisible()) {
           await overflow.click();
@@ -563,7 +563,7 @@ test.describe('Task Detail final verification (#331): state matrix', () => {
         await page.goto(`/tasks/${task.taskId}`);
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);
         await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(retry ? 1 : 0);
-        await expect(page.locator('.p-toast-message')).toHaveCount(0);
+        await expect(page.locator('[data-toast]')).toHaveCount(0);
         await check(page, key);
       }
       await page.unroute(`**/api/v1/tasks/${task.taskId}`);

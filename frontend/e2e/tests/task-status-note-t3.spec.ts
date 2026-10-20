@@ -49,7 +49,7 @@ async function atEverySize(page: Page, detail: TaskDetailPage, taskId: number, n
     await page.setViewportSize(size);
     await detail.open(taskId);
     await expect(page.locator('[data-status-note]')).toHaveCount(1);
-    await expect(page.locator('.p-toast-message')).toHaveCount(0, { timeout: 12_000 });
+    await expect(page.locator('[data-toast]')).toHaveCount(0, { timeout: 12_000 });
     if (axeAvailable()) expect(await axeViolations(page), `${name} at ${size.width}`).toEqual([]);
     await noHorizontalScroll(page);
     await shot(page, name);

@@ -81,7 +81,7 @@ test.describe('WP6: Assign to me', () => {
     await expect(row).toContainText(tech.username);
     const toast = page.getByRole('button', { name: 'Undo' });
     await expect(toast).toBeVisible();
-    await expect(page.locator('mf-undo-toast')).toContainText('Assigned to you.');
+    await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
     const stored = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(stored.assignedUser.userId).toBe(tech.userId);
     await shot(page, 'task-queue-assigned-undo-toast-1366x768');
@@ -197,7 +197,7 @@ test.describe('WP6: Assign to me', () => {
 
     await link.click();
     await expect(row).toContainText(lead.username);
-    await expect(page.locator('mf-undo-toast')).toContainText('Assigned to you.');
+    await expect(page.locator('[data-undo-toast]')).toContainText('Assigned to you.');
     const stored = await admin.get(`/api/v1/tasks/${task.taskId}`);
     expect(stored.assignedUser.userId).toBe(lead.userId);
     await shot(page, 'pod-work-assigned-undo-toast-1366x768');

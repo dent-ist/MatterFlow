@@ -24,12 +24,10 @@ import {
     >
       <i [class]="copied() ? 'pi pi-check' : 'pi pi-copy'" aria-hidden="true"></i>
       @if (showText()) {
-        <span>{{ copied() ? doneCaption() : caption() }}</span>
+        <span>{{ copied() ? 'Copied' : 'Copy' }}</span>
       }
     </button>
-    <span class="mf-sr-only" role="status" aria-live="polite">{{
-      copied() ? doneCaption() : ''
-    }}</span>
+    <span class="mf-sr-only" role="status" aria-live="polite">{{ copied() ? 'Copied' : '' }}</span>
   `,
   styles: `
     .mf-copy {
@@ -75,9 +73,6 @@ export class CopyButton implements OnDestroy {
   /** Noun for the accessible name: "Copy <label>". */
   readonly label = input('to clipboard');
   readonly showText = input(false);
-  /** The visible text with `showText` and the words announced once it is copied ("Copy link" / "Link copied"). Keep the caption inside the accessible name. */
-  readonly caption = input('Copy');
-  readonly doneCaption = input('Copied');
   /**
    * The button belongs to a list row (#282): it is not a Tab stop (`tabindex="-1"`, so 25 rows are 25 stops) but stays in the accessibility
    * tree, it is shown while the row is hovered or has focus (always on a phone), and the right arrow on the row's name link (`mfRowLink`)

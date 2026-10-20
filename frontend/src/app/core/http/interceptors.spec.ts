@@ -1,3 +1,4 @@
+import { NotificationService } from '../notify/notification.service';
 import {
   HttpClient,
   HttpContext,
@@ -8,7 +9,6 @@ import {
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MessageService } from 'primeng/api';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../auth/auth-testing';
 import { AuthStore } from '../auth/auth.store';
 import { USER_TIME_ZONE } from '../time/clock';
@@ -24,7 +24,6 @@ import {
 } from './interceptors';
 
 function setup(zone: string | null = 'America/Chicago') {
-  const messages = { add: vi.fn() };
   const me = new FakeMeApi(withPermissions('Task.View'));
   TestBed.configureTestingModule({
     providers: [
@@ -32,14 +31,21 @@ function setup(zone: string | null = 'America/Chicago') {
       provideHttpClient(withInterceptors(MF_HTTP_INTERCEPTORS)),
       provideHttpClientTesting(),
       { provide: USER_TIME_ZONE, useValue: zone },
-      { provide: MessageService, useValue: messages },
       provideFakeMe(me),
     ],
   });
   return {
     http: TestBed.inject(HttpClient),
     ctrl: TestBed.inject(HttpTestingController),
-    messages,
+    toasts: () =>
+      TestBed.inject(NotificationService)
+        .toasts()
+        .map((t) => ({
+          severity: t.severity,
+          summary: t.summary,
+          detail: t.detail,
+          count: t.count,
+        })),
     me,
   };
 }
@@ -78,7 +84,7 @@ describe('HTTP interceptors', () => {
   });
 
   it('converts ProblemDetails failures to ApiError and toasts', async () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     let caught: unknown;
     http.post('/api/v1/tasks/1/status', {}).subscribe({ error: (e) => (caught = e) });
     ctrl.expectOne('/api/v1/tasks/1/status').flush(
@@ -96,7 +102,7 @@ describe('HTTP interceptors', () => {
     expect(err.status).toBe(409);
     expect(err.code).toBe('INVALID_STATUS_TRANSITION');
     expect(err.message).toBe('Cannot move a Completed task to On Hold.');
-    expect(messages.add).toHaveBeenCalledWith(
+    expect(toasts()).toContainEqual(
       expect.objectContaining({
         severity: 'error',
         summary: 'Cannot move a Completed task to On Hold.',
@@ -108,17 +114,17 @@ describe('HTTP interceptors', () => {
   it('holds back the toast for a failed page load so an inline alert can show the reference (UXR-18)', () => {
     vi.useFakeTimers();
     try {
-      const { http, ctrl, messages } = setup();
+      const { http, ctrl, toasts } = setup();
       http.get('/api/v1/clients').subscribe({ error: () => undefined });
       ctrl
         .expectOne('/api/v1/clients')
         .flush({ status: 500, traceId: '00-ref', title: 'Boom' }, { status: 500, statusText: 'x' });
-      expect(messages.add).not.toHaveBeenCalled();
+      expect(toasts()).toEqual([]);
       expect(TestBed.inject(ErrorReferenceStore).reference()).toBe('00-ref');
 
       TestBed.inject(ErrorReferenceStore).claim(); // an inline alert showed it
       vi.advanceTimersByTime(1000);
-      expect(messages.add).not.toHaveBeenCalled();
+      expect(toasts()).toEqual([]);
     } finally {
       vi.useRealTimers();
     }
@@ -127,13 +133,13 @@ describe('HTTP interceptors', () => {
   it('still toasts a failed page load when no inline alert claims it', () => {
     vi.useFakeTimers();
     try {
-      const { http, ctrl, messages } = setup();
+      const { http, ctrl, toasts } = setup();
       http.get('/api/v1/clients').subscribe({ error: () => undefined });
       ctrl
         .expectOne('/api/v1/clients')
         .flush({ status: 500, traceId: '00-ref' }, { status: 500, statusText: 'x' });
       vi.advanceTimersByTime(1000);
-      expect(messages.add).toHaveBeenCalledWith(
+      expect(toasts()).toContainEqual(
         expect.objectContaining({ severity: 'error', detail: 'Reference: 00-ref' }),
       );
     } finally {
@@ -142,7 +148,7 @@ describe('HTTP interceptors', () => {
   });
 
   it('reads problem+json from Blob error bodies (the generated client requests blobs)', async () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     let caught: unknown;
     http
       .get('/api/v1/priorities', { responseType: 'blob' })
@@ -156,13 +162,13 @@ describe('HTTP interceptors', () => {
     const err = caught as ApiError;
     expect(err.code).toBe('IN_USE');
     expect(err.message).toBe('Tasks use this priority.');
-    expect(messages.add).toHaveBeenCalledWith(
+    expect(toasts()).toContainEqual(
       expect.objectContaining({ summary: 'Tasks use this priority.' }),
     );
   });
 
   it('does not toast field-level validation errors', () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     let caught: ApiError | undefined;
     http.post('/x', {}).subscribe({ error: (e) => (caught = e) });
     ctrl.expectOne('/x').flush(
@@ -173,31 +179,32 @@ describe('HTTP interceptors', () => {
       { status: 400, statusText: 'Bad Request' },
     );
     expect(caught?.hasFieldErrors).toBe(true);
-    expect(messages.add).not.toHaveBeenCalled();
+    expect(toasts()).toEqual([]);
   });
 
   it('shows the generic message for 5xx and network failures', () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     http.get('/x').subscribe({ error: () => undefined });
     ctrl.expectOne('/x').flush('boom', { status: 500, statusText: 'Server Error' });
     http.get('/y').subscribe({ error: () => undefined });
     ctrl.expectOne('/y').error(new ProgressEvent('error'));
     // Both failures map to the same message: the second is folded into the first (BUG-4), not stacked.
-    expect(messages.add).toHaveBeenCalledTimes(1);
-    expect(messages.add.mock.calls[0][0].summary).toBe('Something went wrong. Try again.');
+    expect(toasts()).toEqual([
+      expect.objectContaining({ summary: 'Something went wrong. Try again.', count: 2 }),
+    ]);
   });
 
   it('honours SKIP_ERROR_TOAST', () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     http
       .get('/x', { context: new HttpContext().set(SKIP_ERROR_TOAST, true) })
       .subscribe({ error: () => undefined });
     ctrl.expectOne('/x').flush({}, { status: 500, statusText: 'Server Error' });
-    expect(messages.add).not.toHaveBeenCalled();
+    expect(toasts()).toEqual([]);
   });
 
   it('does not toast a failure of a request started inside QuietRequests.run, and still toasts the others', () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     const errors: unknown[] = [];
     TestBed.inject(QuietRequests).run(() =>
       http.get('/quiet').subscribe({ error: (e: unknown) => errors.push(e) }),
@@ -206,25 +213,25 @@ describe('HTTP interceptors', () => {
     ctrl.expectOne('/quiet').flush({}, { status: 500, statusText: 'Server Error' });
     expect(errors.length).toBe(1);
     expect(errors[0]).toBeInstanceOf(ApiError);
-    expect(messages.add).not.toHaveBeenCalled();
+    expect(toasts()).toEqual([]);
     ctrl.expectOne('/loud').flush({}, { status: 500, statusText: 'Server Error' });
-    expect(messages.add).toHaveBeenCalledTimes(1);
+    expect(toasts().length).toBe(1);
   });
 
   it('QuietRequests.runInline never toasts but hands the error reference to the inline alert', () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     TestBed.inject(QuietRequests).runInline(() =>
       http.get('/inline').subscribe({ error: () => undefined }),
     );
     ctrl
       .expectOne('/inline')
       .flush({ traceId: 'abc-123' }, { status: 500, statusText: 'Server Error' });
-    expect(messages.add).not.toHaveBeenCalled();
+    expect(toasts()).toEqual([]);
     expect(TestBed.inject(ErrorReferenceStore).reference()).toBe('abc-123');
   });
 
   it('parses problem details from blob error bodies (generated NSwag client)', async () => {
-    const { http, ctrl, messages } = setup();
+    const { http, ctrl, toasts } = setup();
     let caught: unknown;
     http
       .get('/api/v1/users/1', { responseType: 'blob' })
@@ -237,13 +244,11 @@ describe('HTTP interceptors', () => {
 
     expect(caught).toBeInstanceOf(ApiError);
     expect((caught as ApiError).code).toBe('LAST_ADMIN');
-    expect(messages.add).toHaveBeenCalledWith(
-      expect.objectContaining({ summary: 'Keep one admin.' }),
-    );
+    expect(toasts()).toContainEqual(expect.objectContaining({ summary: 'Keep one admin.' }));
   });
 
   it('refreshes permissions after 403 PERMISSION_DENIED', async () => {
-    const { http, ctrl, me, messages } = setup();
+    const { http, ctrl, me, toasts } = setup();
     await TestBed.inject(AuthStore).ensureLoaded();
     expect(me.calls).toBe(1);
     http.post('/api/v1/tasks', {}).subscribe({ error: () => undefined });
@@ -252,7 +257,7 @@ describe('HTTP interceptors', () => {
       .flush({ code: 'PERMISSION_DENIED', status: 403 }, { status: 403, statusText: 'Forbidden' });
     await new Promise((r) => setTimeout(r));
     expect(me.calls).toBe(2);
-    expect(messages.add).toHaveBeenCalledWith(
+    expect(toasts()).toContainEqual(
       expect.objectContaining({ summary: "You don't have permission to do that." }),
     );
   });

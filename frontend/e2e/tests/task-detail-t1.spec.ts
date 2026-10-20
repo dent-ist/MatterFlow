@@ -51,7 +51,7 @@ async function atEverySize(page: Page, name: string, settle?: () => Promise<void
 /** No toast, now and after the hold-back time the error handler uses. */
 async function expectNoToast(page: Page): Promise<void> {
   await page.waitForTimeout(700);
-  await expect(page.locator('.p-toast-message')).toHaveCount(0);
+  await expect(page.locator('[data-toast]')).toHaveCount(0);
 }
 
 /** The requests to the Asset API itself (`/api/v1/assets`, `/api/v1/assets/9`, `/api/v1/assets/lookup`), not a task's `/tasks/1/assets`. */
@@ -209,7 +209,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
       await expect(page).toHaveTitle('Task not found - MatterFlow');
       await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
       await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
-      await expect(page.locator('.p-toast-message')).toHaveCount(0);
+      await expect(page.locator('[data-toast]')).toHaveCount(0);
     }
     await page.goto('/tasks/99999999');
     await expect(page.getByRole('link', { name: 'Go to Task Queue' })).toHaveAttribute(
@@ -242,7 +242,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     await expect(page).toHaveTitle('No access to this task - MatterFlow');
     await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Go to Task Queue' })).toBeVisible();
-    await expect(page.locator('.p-toast-message')).toHaveCount(0);
+    await expect(page.locator('[data-toast]')).toHaveCount(0);
     await atEverySize(page, 'state-403');
   });
 
@@ -266,7 +266,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText("Couldn't load this task.");
     await expect(page.locator('[data-error-reference]')).toContainText(reference);
     await expect(page).toHaveTitle('Task could not be loaded - MatterFlow');
-    await expect(page.locator('.p-toast-message')).toHaveCount(0);
+    await expect(page.locator('[data-toast]')).toHaveCount(0);
     await atEverySize(page, 'state-500');
 
     await page.setViewportSize({ width: 1366, height: 768 });

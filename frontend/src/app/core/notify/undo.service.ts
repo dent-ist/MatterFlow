@@ -8,13 +8,13 @@ export interface UndoOffer {
   readonly id: number;
   readonly message: string;
   readonly undo: () => Promise<void>;
-  /** `start`: bottom left of the page (a screen whose right edge holds buttons); the default is the corner of the other toasts. */
+  /** Kept so callers compile; the one toast host (`mf-toast-host`) is always bottom right (#616 reverses the bottom-left placement of decision T #158). */
   readonly placement: 'end' | 'start';
 }
 
 /**
  * One Undo toast at a time ("PQ-1042 priority set to Low. Undo"). A new offer replaces the old one. The offer lives outside
- * the component that made it, so it still works after a table row has been redrawn. The toast host (`mf-undo-toast`) shows it
+ * the component that made it, so it still works after a table row has been redrawn. The one toast host (`mf-toast-host`) shows it
  * in a polite live region. Pointer or focus on the toast pauses the countdown, and leaving restarts the full time.
  */
 @Injectable({ providedIn: 'root' })

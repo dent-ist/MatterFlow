@@ -591,10 +591,10 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     await page.locator('#tt-name').fill(`${world.taskType.name} renamed`);
     await page.locator('[data-save]').click();
-    const toast = page.locator('.p-toast-message-success').first();
+    const toast = page.locator('[data-toast][data-severity="success"]').first();
     await expect(toast).toBeVisible();
     const colors = await toast.evaluate((el) => {
-      const summary = el.querySelector('.p-toast-summary') ?? el;
+      const summary = el.querySelector('[data-toast-summary]') ?? el;
       return { fg: getComputedStyle(summary).color, bg: getComputedStyle(el).backgroundColor };
     });
     // The tint is translucent over white; compare with the solid colour it blends to.

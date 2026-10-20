@@ -1,13 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
+import { Router, UrlTree, provideRouter } from '@angular/router';
 import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from './auth-testing';
-import {
-  ForbiddenRequest,
-  accessGuard,
-  landingGuard,
-  pendingOnlyGuard,
-  permissionGuard,
-} from './guards';
+import { accessGuard, landingGuard, pendingOnlyGuard, permissionGuard } from './guards';
 import { ApiError } from '../http/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -64,16 +58,6 @@ describe('permissionGuard', () => {
   it('redirects to /403 when the permission is missing', async () => {
     setup(withPermissions('Task.View'));
     expect(await run(permissionGuard('Task.Create'))).toBe('/403');
-  });
-
-  it('remembers the address it turned away for the 403 page (#598), and nothing when it lets the person in', async () => {
-    setup(withPermissions('Task.View'));
-    const state = { url: '/admin/users?status=all' } as RouterStateSnapshot;
-    await TestBed.runInInjectionContext(() => permissionGuard('User.Manage')(undefined, state));
-    expect(TestBed.inject(ForbiddenRequest).url()).toBe('/admin/users?status=all');
-    TestBed.inject(ForbiddenRequest).url.set(null);
-    await TestBed.runInInjectionContext(() => permissionGuard('Task.View')(undefined, state));
-    expect(TestBed.inject(ForbiddenRequest).url()).toBeNull();
   });
 
   it('sends pending users to /access-pending rather than /403', async () => {
