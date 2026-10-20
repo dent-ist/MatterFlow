@@ -28,7 +28,9 @@ import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../s
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
 import { GridBody } from '../../../shared/ui/grid-body';
+import { StripDef, stripActiveKey, stripItems, stripPick } from '../../../shared/ui/strip-items';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
@@ -173,12 +175,12 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         (c !== 'openTasks' || this.tasksShown()),
     ),
   );
-  protected readonly skeleton = computed(() =>
-    this.columns().map((c) => BONES[c as keyof typeof BONES]),
-  );
-  /** The class of each loaded cell that sizes it, for the skeleton cells (#370). */
-  protected readonly skeletonCells = computed(() =>
-    this.columns().map((c) => SKELETON_CELL[c as keyof typeof SKELETON_CELL]),
+  /** The real columns for the skeleton (#370, #575): the bone and the sizing class of each shown column. */
+  protected readonly columnSpec = computed<readonly AdminColumn[]>(() =>
+    this.columns().map((c) => ({
+      bone: BONES[c as keyof typeof BONES],
+      cls: SKELETON_CELL[c as keyof typeof SKELETON_CELL],
+    })),
   );
   /** The phone's Sort by select: the sortable columns (the headers' keys). */
   protected readonly sortOptions: readonly SortOption[] = [
@@ -230,6 +232,13 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         valueLabel: (v) => this.workflowName(Number(v)),
       },
     ]),
+  });
+  /** The four list states of the table and of the cards, derived once (#575). */
+  protected readonly ls = adminListState({
+    state: this.state,
+    rows: this.rows,
+    filters: this.filters,
+    hidden: this.hiddenCount,
   });
   protected readonly workflowId = computed<number | undefined>(() => {
     const id = Number(this.filters.text('workflow'));
@@ -323,55 +332,50 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
 
   /**
    * The health strip (#367): Active, Not usable, Form in draft, Inactive, counted over the whole list (no filter applies) in the browser,
-   * where it is loaded whole. The chips are toggles that put the matching filters in the address.
+   * where it is loaded whole. The chips are toggles that put the matching filters in the address (the kit's `stripItems`, #581).
    */
-  protected readonly stripItems = computed<WorkStripItem[]>(() => {
-    const rows = this.state() === 'ready' ? this.all() : null;
-    const active = rows?.filter((t) => t.isActive) ?? null;
-    return [
-      { key: 'active', label: 'Active', count: active?.length ?? null },
-      {
-        key: 'notUsable',
-        label: 'Not usable',
-        count: active?.filter((t) => this.isNotUsable(t)).length ?? null,
-        hint: "Active task types users can't create tasks of",
-      },
-      {
-        key: 'formDraft',
-        label: 'Form in draft',
-        count: active?.filter((t) => this.formKey(t) === 'draft').length ?? null,
-        hint: 'Active task types whose request form is a draft',
-      },
-      {
-        key: 'inactive',
-        label: 'Inactive',
-        count: rows ? rows.length - (active?.length ?? 0) : null,
-      },
-    ];
-  });
+  private readonly stripDefs: readonly StripDef<TaskTypeView>[] = [
+    { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
+    {
+      key: 'notUsable',
+      label: 'Not usable',
+      hint: "Active task types users can't create tasks of",
+      matches: (t) => this.isNotUsable(t),
+      params: { status: null, usable: 'no' },
+    },
+    {
+      key: 'formDraft',
+      label: 'Form in draft',
+      hint: 'Active task types whose request form is a draft',
+      matches: (t) => t.isActive && this.formKey(t) === 'draft',
+      params: { status: null, form: 'draft' },
+    },
+    {
+      key: 'inactive',
+      label: 'Inactive',
+      matches: (t) => !t.isActive,
+      params: { status: 'inactive' },
+    },
+  ];
+  protected readonly stripItems = computed<WorkStripItem[]>(() =>
+    stripItems(this.state() === 'ready' ? this.all() : null, this.stripDefs),
+  );
 
   /** The chip that matches the address exactly (the one the list shows), or none when the filters are something else. */
-  protected readonly stripActive = computed<string | null>(() => {
-    const status = parseStatus(this.filters.text('status'));
-    const form = this.filters.text('form');
-    const usable = this.filters.text('usable');
-    if (status === 'inactive' && !form && !usable) return 'inactive';
-    if (status !== 'active') return null;
-    if (usable === 'no' && !form) return 'notUsable';
-    if (form === 'draft' && !usable) return 'formDraft';
-    return !form && !usable ? 'active' : null;
-  });
+  protected readonly stripActive = computed<string | null>(() =>
+    stripActiveKey(this.stripDefs, (p) => {
+      if (p !== 'status') return this.filters.text(p) || null;
+      const status = parseStatus(this.filters.text('status'));
+      return status === 'active' ? null : status;
+    }),
+  );
 
   /** A chip puts its filters in the address and takes the others off; the pressed chip again goes back to Active. */
   protected pickStrip(key: string): void {
-    const to = key === this.stripActive() ? 'active' : key;
-    this.navigate({
-      status: to === 'inactive' ? 'inactive' : null,
-      form: to === 'formDraft' ? 'draft' : null,
-      usable: to === 'notUsable' ? 'no' : null,
-      page: null,
-    });
-    const item = this.stripItems().find((i) => i.key === to);
+    const to = stripPick(this.stripDefs, key, this.stripActive());
+    if (!to) return;
+    this.navigate({ ...to.params, page: null });
+    const item = this.stripItems().find((i) => i.key === to.key);
     if (item) this.announcement.set(`${item.label}: ${item.count ?? 0} task types.`);
   }
 

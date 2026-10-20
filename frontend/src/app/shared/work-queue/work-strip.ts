@@ -36,7 +36,13 @@ export interface WorkStripItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (items().length > 0) {
-      <ul class="strip" [attr.aria-label]="label()" [attr.title]="hint() ?? null" data-strip>
+      <ul
+        class="strip"
+        [class.seg]="segments()"
+        [attr.aria-label]="label()"
+        [attr.title]="hint() ?? null"
+        data-strip
+      >
         @for (item of items(); track item.key) {
           <li>
             @if (!interactive() && item.link) {
@@ -156,7 +162,52 @@ export interface WorkStripItem {
     .alert .n {
       color: var(--mf-danger);
     }
+    /* Segments (#581): one connected group of choices, the pressed one filled; the same tokens as the chips. */
+    .seg {
+      gap: 0;
+    }
+    .seg .item {
+      min-height: 32px;
+      padding-inline: var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: 0;
+    }
+    .seg li:not(:first-child) .item {
+      margin-left: -1px;
+    }
+    .seg li:first-child .item {
+      border-radius: var(--mf-radius, 4px) 0 0 var(--mf-radius, 4px);
+    }
+    .seg li:last-child .item {
+      border-radius: 0 var(--mf-radius, 4px) var(--mf-radius, 4px) 0;
+    }
+    .seg button.item.on {
+      outline: none;
+      border-color: var(--mf-primary);
+      background: color-mix(in srgb, var(--mf-primary) 12%, var(--mf-surface));
+      box-shadow: inset 0 -2px 0 var(--mf-primary);
+      font-weight: 600;
+      position: relative;
+    }
+    .seg button.item:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: -2px;
+      position: relative;
+    }
     @media (width < 480px) {
+      .strip.seg {
+        display: flex;
+        gap: 0;
+      }
+      .seg li {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .seg .item {
+        min-height: 44px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
       .strip li {
         min-width: 0;
       }
@@ -196,6 +247,8 @@ export class WorkStrip {
   readonly label = input<string>('Summary');
   readonly hint = input<string | null>(null);
   readonly interactive = input(false);
+  /** Draws the items as one connected group of choices (single-select: the `active` one is filled) instead of loose chips (#581). Use with `interactive`. */
+  readonly segments = input(false);
   readonly active = input<string | null>(null);
   readonly pick = output<string>();
 }
