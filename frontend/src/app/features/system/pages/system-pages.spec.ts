@@ -68,8 +68,10 @@ describe('the 403 page keeps the address', () => {
   it('says what was asked for, offers Copy link and puts the address back in the address bar', async () => {
     const { el, replace } = await render('/admin/users?status=all');
     expect(el.querySelector('[data-asked-path]')!.textContent).toBe('/admin/users?status=all');
-    expect(el.querySelector('[data-asked] button')!.getAttribute('aria-label')).toBe('Copy link');
-    expect(el.querySelector('[data-asked] button')!.textContent).toContain('Copy link');
+    expect(el.querySelector('[data-state-secondary] button')!.getAttribute('aria-label')).toBe(
+      'Copy link',
+    );
+    expect(el.querySelector('[data-state-secondary] button')!.textContent).toContain('Copy link');
     expect(replace).toHaveBeenCalledWith('/admin/users?status=all', '', null);
     expect(el.querySelector('h1')!.textContent).toContain("You don't have permission");
   });
@@ -78,5 +80,42 @@ describe('the 403 page keeps the address', () => {
     const { el, replace } = await render(null);
     expect(el.querySelector('[data-asked]')).toBeNull();
     expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+/** #607: 403, 404 and the error page are one family: the shared state-page card. */
+describe('the state pages are one family', () => {
+  it('the 403, the 404 and the error page each render one card with one H1, a reason and the brand line', async () => {
+    const { ErrorPage } = await import('./error-page');
+    for (const page of [ForbiddenPage, NotFoundPage, ErrorPage] as Type<unknown>[]) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      const fixture = TestBed.createComponent(page);
+      await settle(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelectorAll('h1')).toHaveLength(1);
+      expect(el.querySelector('[data-state-page] [data-page-title]')).not.toBeNull();
+      expect(el.querySelector('[data-state-reason]')!.textContent!.trim().length).toBeGreaterThan(
+        0,
+      );
+      expect(el.querySelector('[data-state-brand]')!.textContent).toContain('MatterFlow');
+    }
+  });
+
+  it('only the 404 offers search, with a placeholder short enough not to be cut', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const nf = TestBed.createComponent(NotFoundPage);
+    await settle(nf);
+    const input = (nf.nativeElement as HTMLElement).querySelector('input[type=search]')!;
+    expect(input.getAttribute('placeholder')!.length).toBeLessThanOrEqual(20);
+    const fb = TestBed.createComponent(ForbiddenPage);
+    await settle(fb);
+    expect((fb.nativeElement as HTMLElement).querySelector('input')).toBeNull();
   });
 });

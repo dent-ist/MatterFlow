@@ -1,10 +1,9 @@
 import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ForbiddenRequest, landingLink } from '../../../core/auth/guards';
 import { CopyButton } from '../../../shared/ui/copy-button';
-import { TitleIcon } from '../../../shared/ui/page-header';
+import { StatePage } from '../../../shared/ui/state-page';
 
 /**
  * The 403 page. A permission guard sends the person here and records the address they asked for (`ForbiddenRequest`); the page puts that
@@ -14,31 +13,37 @@ import { TitleIcon } from '../../../shared/ui/page-header';
  */
 @Component({
   selector: 'mf-forbidden-page',
-  imports: [RouterLink, TitleIcon, CopyButton],
+  imports: [StatePage, CopyButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h1><mf-title-icon icon="pi pi-ban" />You don't have permission to view this.</h1>
-    <p>Ask an administrator if you think you should have access.</p>
-    @if (asked(); as a) {
-      <p class="fb__asked" data-asked>
-        You asked for <code class="fb__path" data-asked-path>{{ a }}</code
-        >.
+    <mf-state-page
+      icon="pi pi-ban"
+      heading="You don't have permission to view this."
+      reason="Ask an administrator if you think you should have access."
+      [primary]="link()"
+    >
+      @if (asked(); as a) {
+        <p class="fb__asked" data-asked>
+          You asked for <code class="fb__path" data-asked-path>{{ a }}</code
+          >.
+        </p>
+      }
+      @if (asked()) {
         <mf-copy-button
+          mfSecondary
           [text]="href()"
           label="link"
           [showText]="true"
           caption="Copy link"
           doneCaption="Link copied"
         />
-      </p>
-    }
-    @if (link(); as l) {
-      <p>
-        <a [routerLink]="l.path" data-back-link>Go to {{ l.name }}</a>
-      </p>
-    }
+      }
+    </mf-state-page>
   `,
   styles: `
+    .fb__asked {
+      margin: 0;
+    }
     .fb__path {
       font-family: var(--mf-font-mono);
       overflow-wrap: anywhere;

@@ -84,11 +84,13 @@ test.describe('The 403 page keeps the address (#598)', () => {
     const copy = page.getByRole('button', { name: 'Copy link' });
     await expect(copy).toBeVisible();
     await expect(copy).toContainText('Copy link');
-    // Keyboard only: Tab from the page heading reaches Copy link, then the link to a page that may be opened.
+    // Keyboard only: Tab from the page heading reaches the primary "Go to ..." link, then Copy link (#607: primary first, secondary second).
     await page.locator('h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
     });
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-back-link]')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(copy).toBeFocused();
     await page.keyboard.press('Enter');
@@ -96,8 +98,6 @@ test.describe('The 403 page keeps the address (#598)', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       `${baseURL}/admin/audit?from=2026-01-01`,
     );
-    await page.keyboard.press('Tab');
-    await expect(page.locator('[data-back-link]')).toBeFocused();
   });
 
   test('/403 as a direct address still works and offers no address to copy', async ({

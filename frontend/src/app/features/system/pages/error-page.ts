@@ -1,23 +1,29 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { TitleIcon } from '../../../shared/ui/page-header';
+import { StatePage } from '../../../shared/ui/state-page';
 
-/** Shown outside the shell when /me cannot be loaded at all. */
+/** Shown outside the shell when /me cannot be loaded at all: the same state-page card as the 403 and the 404 (S10, #607). */
 @Component({
   selector: 'mf-error-page',
-  imports: [Button, TitleIcon],
+  imports: [StatePage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="mf-error">
-      <h1><mf-title-icon icon="pi pi-exclamation-triangle" />Something went wrong. Try again.</h1>
-      <p-button label="Retry" icon="pi pi-refresh" (onClick)="retry()" />
+      <mf-state-page
+        icon="pi pi-exclamation-triangle"
+        heading="Something went wrong. Try again."
+        reason="MatterFlow could not load your account."
+      >
+        <button mfPrimary type="button" class="mf-btn mf-btn--primary" data-retry (click)="retry()">
+          <i class="pi pi-refresh" aria-hidden="true"></i>Retry
+        </button>
+      </mf-state-page>
     </main>
   `,
   styles: `
     .mf-error {
-      max-width: 640px;
-      margin: var(--mf-s7) auto;
+      max-width: 40rem;
+      margin: var(--mf-s5) auto;
       padding: 0 var(--mf-s4);
     }
   `,
