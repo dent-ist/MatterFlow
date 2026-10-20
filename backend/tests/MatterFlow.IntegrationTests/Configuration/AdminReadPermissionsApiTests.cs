@@ -222,4 +222,78 @@ public sealed class AdminReadPermissionsApiTests(SqlServerFixture sql) : IAsyncL
         await ShouldBeAsync(assetViewer, "/api/v1/asset-types", HttpStatusCode.OK);
         await ShouldBeAsync(assetViewer, "/api/v1/asset-link-roles", HttpStatusCode.Forbidden);
     }
+
+    // AD-D #519: Labels (Priority.Manage, StatusLabel.Manage) and Audit.View.
+    private static readonly string[] LabelReads = ["/api/v1/priorities", "/api/v1/status-labels"];
+
+    [Fact]
+    public async Task Priority_Manage_alone_reads_priorities_and_not_status_labels()
+    {
+        var manager = await UserWithAsync(@"KE\priorityonly", Permissions.Priority.Manage);
+        await ShouldBeAsync(manager, "/api/v1/priorities", HttpStatusCode.OK);
+        await ShouldBeAsync(manager, "/api/v1/status-labels", HttpStatusCode.Forbidden);
+        await ShouldBeAsync(manager, "/api/v1/task-types", HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task StatusLabel_Manage_alone_reads_status_labels_and_not_priorities()
+    {
+        var manager = await UserWithAsync(@"KE\statusonly", Permissions.StatusLabel.Manage);
+        await ShouldBeAsync(manager, "/api/v1/status-labels", HttpStatusCode.OK);
+        await ShouldBeAsync(manager, "/api/v1/priorities", HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Both_Labels_permissions_read_both_lists_and_Task_View_keeps_its_reads()
+    {
+        var both = await UserWithAsync(@"KEothlabels", Permissions.Priority.Manage, Permissions.StatusLabel.Manage);
+        var viewer = await UserWithAsync(@"KE\labelviewer", Permissions.Task.View);
+        foreach (var url in LabelReads)
+        {
+            await ShouldBeAsync(both, url, HttpStatusCode.OK);
+            await ShouldBeAsync(viewer, url, HttpStatusCode.OK);
+        }
+    }
+
+    [Fact]
+    public async Task A_role_with_neither_Labels_permission_is_refused_and_every_Labels_write_is_unchanged()
+    {
+        // Audit.View and Client.View give no Labels read.
+        foreach (var user in new[] { (@"KEuditonly", Permissions.Audit.View), (@"KE\clientonly", Permissions.Client.View) })
+        {
+            var person = await UserWithAsync(user.Item1, user.Item2);
+            foreach (var url in LabelReads)
+                await ShouldBeAsync(person, url, HttpStatusCode.Forbidden);
+        }
+
+        // Reading is not writing: a read-only Task.View person, a StatusLabel.Manage person on priorities and a Priority.Manage person on
+        // status labels still cannot write.
+        var viewer = await UserWithAsync(@"KE\labelwriteviewer", Permissions.Task.View);
+        var priorityManager = await UserWithAsync(@"KE\labelwritep", Permissions.Priority.Manage);
+        var statusManager = await UserWithAsync(@"KE\labelwrites", Permissions.StatusLabel.Manage);
+        foreach (var person in new[] { viewer, statusManager })
+        {
+            (await person.PostAsJsonAsync("/api/v1/priorities", new { name = "Nope", color = "#112233" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await person.DeleteAsync("/api/v1/priorities/1")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await person.PutAsJsonAsync("/api/v1/priorities/order", new { ids = new[] { 1 } })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        }
+
+        foreach (var person in new[] { viewer, priorityManager })
+            (await person.PutAsJsonAsync("/api/v1/status-labels/OPEN", new { name = "Nope" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Audit_View_alone_reads_the_audit_search_and_Task_View_alone_does_not()
+    {
+        var auditor = await UserWithAsync(@"KEuditsolo", Permissions.Audit.View);
+        await ShouldBeAsync(auditor, "/api/v1/audit/search", HttpStatusCode.OK);
+        await ShouldBeAsync(auditor, "/api/v1/audit/facets", HttpStatusCode.OK);
+
+        var auditTask = await UserWithAsync(@"KEudittask", Permissions.Audit.View, Permissions.Task.View);
+        await ShouldBeAsync(auditTask, "/api/v1/audit/search", HttpStatusCode.OK);
+
+        var viewer = await UserWithAsync(@"KEuditviewer", Permissions.Task.View);
+        await ShouldBeAsync(viewer, "/api/v1/audit/search", HttpStatusCode.Forbidden);
+        await ShouldBeAsync(viewer, "/api/v1/audit/facets", HttpStatusCode.Forbidden);
+    }
 }

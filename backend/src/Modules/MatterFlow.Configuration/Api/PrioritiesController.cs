@@ -26,7 +26,13 @@ internal static class ConfigurationPolicies
 
     public const string PriorityManage = Prefix + Permissions.Priority.Manage;
 
+    /// <summary>Read the priorities: <c>Task.View</c> or <c>Priority.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>
+    public const string PriorityRead = Prefix + Permissions.Task.View + "|" + Permissions.Priority.Manage;
+
     public const string StatusLabelManage = Prefix + Permissions.StatusLabel.Manage;
+
+    /// <summary>Read the status labels: <c>Task.View</c> or <c>StatusLabel.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>
+    public const string StatusLabelRead = Prefix + Permissions.Task.View + "|" + Permissions.StatusLabel.Manage;
 
     /// <summary>The catalog groups asset link roles under asset types ("Manage asset types and asset link roles").</summary>
     public const string AssetLinkRoleManage = Prefix + Permissions.AssetType.Manage;
@@ -43,7 +49,7 @@ public class PrioritiesController(PriorityService priorities) : ControllerBase
 {
     /// <summary>Lists all priorities, most urgent first, including inactive ones (historical tasks still display them; pickers hide inactive).</summary>
     [HttpGet(Name = "ListPriorities")]
-    [Authorize(Policy = ConfigurationPolicies.TaskView)]
+    [Authorize(Policy = ConfigurationPolicies.PriorityRead)]
     [ProducesResponseType<IReadOnlyList<PriorityView>>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<PriorityView>>> List(CancellationToken cancellationToken) =>
         Ok(await priorities.ListViewsAsync(cancellationToken));

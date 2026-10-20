@@ -17,7 +17,7 @@ public class StatusLabelsController(StatusLabelService labels) : ControllerBase
 {
     /// <summary>Lists the five statuses in lifecycle order with their current labels.</summary>
     [HttpGet(Name = "ListStatusLabels")]
-    [Authorize(Policy = ConfigurationPolicies.TaskView)]
+    [Authorize(Policy = ConfigurationPolicies.StatusLabelRead)]
     [ProducesResponseType<IReadOnlyList<StatusLabelView>>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<StatusLabelView>>> List(CancellationToken cancellationToken) =>
         Ok(await labels.ListViewsAsync(cancellationToken));
