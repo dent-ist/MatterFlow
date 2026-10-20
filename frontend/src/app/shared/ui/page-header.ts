@@ -98,10 +98,19 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
     .ph__crumbs ol {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 0 var(--mf-s2);
       margin: 0;
       padding: 0;
       list-style: none;
+    }
+    /* Every step (link, plain text, current page) and every separator is a 24px-tall row centred on one line, so a link with its 24px
+       target does not sit lower than the text beside it. */
+    .ph__crumbs li {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      line-height: 1.4;
     }
     .ph__crumbs li + li::before {
       content: '>';
