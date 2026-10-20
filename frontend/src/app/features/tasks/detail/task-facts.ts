@@ -19,6 +19,7 @@ import { DueCell } from '../../../shared/work-queue/due-cell';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { StatusBadge } from '../../../shared/ui/status-badge';
+import { DueEdit } from './task-due-edit';
 import { TaskDetailStore } from './task-detail.store';
 
 /** The fields of a queue row that the inline editors read, taken from the Task. */
@@ -73,7 +74,7 @@ function whenNoDialog(then: () => void): void {
  */
 @Component({
   selector: 'mf-task-facts',
-  imports: [RowEdit, StatusBadge, PriorityBadge, DueCell],
+  imports: [RowEdit, StatusBadge, PriorityBadge, DueCell, DueEdit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.task(); as t) {
@@ -116,14 +117,19 @@ function whenNoDialog(then: () => void): void {
         </li>
         <li class="mf-facts__tile" data-due>
           <span class="mf-facts__label">Due</span>
-          <span class="mf-facts__value">
-            <mf-due-cell
-              layout="inline"
-              [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
-              [status]="t.status"
-              [wasDue]="true"
-            />
+          <span class="mf-facts__value" [class.mf-facts__value--chip]="dueEditable()">
+            @if (dueEditable()) {
+              <mf-due-edit (announce)="say($event)" />
+            } @else {
+              <mf-due-cell
+                layout="inline"
+                [due]="{ dueDate: t.dueDate, dueAtUtc: t.dueAtUtc }"
+                [status]="t.status"
+                [wasDue]="true"
+              />
+            }
           </span>
+          <span class="mf-sr-only" role="status" data-due-live>{{ dueLive() }}</span>
         </li>
         <li class="mf-facts__tile" data-assignee>
           <span class="mf-facts__label">Assignee</span>
@@ -243,6 +249,18 @@ export class TaskFacts {
   protected readonly assigneeEditable = computed(
     () => !this.store.editing() && !!this.store.task()?.allowedActions.canAssign,
   );
+
+  /** Due is editable for a person who may edit the task (not Completed or Cancelled: the server says so in `canEdit`). */
+  protected readonly dueEditable = computed(
+    () => !this.store.editing() && !!this.store.task()?.allowedActions.canEdit,
+  );
+
+  /** The polite announcement of a Due change; cleared first so the same words twice are read twice. */
+  protected readonly dueLive = signal('');
+  protected say(text: string): void {
+    this.dueLive.set('');
+    setTimeout(() => this.dueLive.set(text), 50);
+  }
 
   /** The server's answer to a Priority or Assignee change (or the refreshed Task after a conflict). */
   protected saved(task: TaskResponse): void {
