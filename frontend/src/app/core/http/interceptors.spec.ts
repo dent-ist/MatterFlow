@@ -182,10 +182,9 @@ describe('HTTP interceptors', () => {
     ctrl.expectOne('/x').flush('boom', { status: 500, statusText: 'Server Error' });
     http.get('/y').subscribe({ error: () => undefined });
     ctrl.expectOne('/y').error(new ProgressEvent('error'));
-    expect(messages.add).toHaveBeenCalledTimes(2);
-    for (const call of messages.add.mock.calls) {
-      expect(call[0].summary).toBe('Something went wrong. Try again.');
-    }
+    // Both failures map to the same message: the second is folded into the first (BUG-4), not stacked.
+    expect(messages.add).toHaveBeenCalledTimes(1);
+    expect(messages.add.mock.calls[0][0].summary).toBe('Something went wrong. Try again.');
   });
 
   it('honours SKIP_ERROR_TOAST', () => {

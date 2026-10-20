@@ -618,6 +618,7 @@ export class AvailabilityForm {
       this.notify.success(
         this.self() ? 'Availability saved' : `Availability saved for ${this.name()}`,
         saved.current.state === 'OUT_OF_OFFICE' ? 'Shown as out of office.' : undefined,
+        { key: 'availability' },
       );
       this.saved.emit(saved);
     } catch (err) {

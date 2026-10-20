@@ -177,6 +177,7 @@ export class SetOutOfOfficeDialog {
       this.notify.success(
         'You are out of office',
         'Use "I\'m back" in your name menu when you return.',
+        { key: 'availability' },
       );
       this.visible.set(false);
     } catch (err) {

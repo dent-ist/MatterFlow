@@ -245,7 +245,9 @@ export class UserMenu {
         this.close(true);
         try {
           await this.mine.setAvailable();
-          this.notify.success('Welcome back', 'You show as available again.');
+          this.notify.success('Welcome back', 'You show as available again.', {
+            key: 'availability',
+          });
         } catch (err) {
           this.notify.error(
             'We could not update your status',
