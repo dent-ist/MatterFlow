@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { Route, Router, Routes, UrlSegment, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
+import { AdminListShell } from './admin-list-shell';
 import {
   FIXED_MODE_QUERY,
   FixedPage,
@@ -58,15 +59,18 @@ async function find(candidates: Routes, segments: string[]): Promise<Type<unknow
   return null;
 }
 
-/** True when the component's template uses `mf-fixed-page` (it is one of the dependencies of its compiled definition). */
+const FIXED_HOSTS: unknown[] = [FixedPage, AdminListShell];
+
+/** True when the component's template uses `mf-fixed-page` (it is one of the dependencies of its compiled definition), directly or through the admin list shell (#544), which is a fixed page. */
 function usesFixedPage(component: Type<unknown>): boolean {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const def = (component as any).ɵcmp;
   const deps = typeof def.dependencies === 'function' ? def.dependencies() : def.dependencies;
   const defs = typeof def.directiveDefs === 'function' ? def.directiveDefs() : def.directiveDefs;
   return (
-    (Array.isArray(deps) && deps.includes(FixedPage)) ||
-    (Array.isArray(defs) && defs.some((d: { type?: unknown }) => d.type === FixedPage))
+    (Array.isArray(deps) && FIXED_HOSTS.some((h) => deps.includes(h))) ||
+    (Array.isArray(defs) &&
+      defs.some((d: { type?: unknown }) => FIXED_HOSTS.some((h) => d.type === h)))
   );
 }
 
