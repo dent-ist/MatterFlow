@@ -33,7 +33,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { focusListAfterAction } from '../after-action';
+import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -92,6 +93,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     ConfirmDialog,
     RouterLink,
     RowLink,
+    RowStop,
     Pager,
     SortHeader,
     GridBody,
@@ -164,6 +166,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                 <span class="rc-text">Not used in a workflow</span>
               } @else {
                 <a
+                  mfRowStop
                   data-used-in-link
                   [routerLink]="['/admin/workflows']"
                   [queryParams]="workflowsQuery(s)"
@@ -290,6 +293,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
                     } @else {
                       <a
                         class="pg-link"
+                        mfRowStop
                         data-used-in-link
                         [routerLink]="['/admin/workflows']"
                         [queryParams]="workflowsQuery(s)"
@@ -358,6 +362,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
       cancelLabel="Keep active"
       [danger]="true"
       [busy]="busy()"
+      [error]="dialogError()"
       [(visible)]="deactivateOpen"
       (confirmed)="confirmDeactivate()"
     >
@@ -458,6 +463,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
+  /** Why Deactivate failed, shown inside the dialog that stays open (#414). */
+  protected readonly dialogError = signal('');
   protected readonly deactivateTarget = signal<StepDefinitionSummary | null>(null);
   /** The row menu of every row (#355): Edit inputs, then Deactivate or Activate. The page needs Workflow.Manage, which both need. */
   private readonly menus = computed(
@@ -519,6 +526,8 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
     const report = AdminCounts.report('steps');
     effect(() => report(this.summary()?.active));
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    // "Skip to table" is the first Tab stop; a row has two stops, the name and its menu (#413).
+    registerTableSkip({ rowLinks: true });
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The tags to choose from follow the status filter.
     effect(() => {
@@ -560,6 +569,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
             disabled: busy,
             run: () => {
               this.deactivateTarget.set(s);
+              this.dialogError.set('');
               this.deactivateOpen.set(true);
             },
           }
@@ -580,13 +590,18 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
 
   protected async confirmDeactivate(): Promise<void> {
     const s = this.deactivateTarget();
-    this.deactivateOpen.set(false);
-    if (s) await this.setActive(s, false);
+    const outcome = s ? await this.setActive(s, false) : 'done';
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict reloaded the list, so the question is stale.
+    if (outcome !== 'failed') this.deactivateOpen.set(false);
   }
 
-  private async setActive(s: StepDefinitionSummary, isActive: boolean): Promise<void> {
+  private async setActive(
+    s: StepDefinitionSummary,
+    isActive: boolean,
+  ): Promise<'done' | 'conflict' | 'failed'> {
     this.busy.set(true);
     this.failure.set('');
+    this.dialogError.set('');
     try {
       const body = { rowVersion: s.rowVersion };
       await firstValueFrom(
@@ -597,13 +612,18 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
       this.announcement.set(`${s.title} ${isActive ? 'activated' : 'deactivated'}.`);
       this.notify.success('Saved.');
       await this.load();
+      focusListAfterAction(this.injector, `Actions for ${s.title}`);
+      return 'done';
     } catch (e) {
       if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
         this.failure.set('Someone else changed this step. The list was reloaded; try again.');
         await this.load();
-      } else {
-        this.failure.set(e instanceof ApiError ? e.message : 'Couldn’t save. Try again.');
+        return 'conflict';
       }
+      const message = e instanceof ApiError ? e.message : 'Couldn’t save. Try again.';
+      if (this.deactivateOpen()) this.dialogError.set(message);
+      else this.failure.set(message);
+      return 'failed';
     } finally {
       this.busy.set(false);
     }

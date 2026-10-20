@@ -53,6 +53,7 @@ import {
   workflowTabs,
 } from './workflow-record';
 import { dependentTaskTypes } from './workflow-impact';
+import { expectStatusFocus, focusStatusAfterAction, restoreStatusFocus } from '../after-action';
 import { WorkflowVersionsTab } from './workflow-versions-tab';
 import { WorkflowTaskTypesTab } from './workflow-task-types-tab';
 
@@ -333,6 +334,7 @@ const NAMES_SHOWN = 8;
       [cancelLabel]="copy.cancel"
       [danger]="copy.danger"
       [busy]="busy()"
+      [error]="deactivateOpen() ? messages().join(' ') : ''"
       [(visible)]="deactivateOpen"
       (confirmed)="toggleActive(false)"
     >
@@ -361,6 +363,7 @@ const NAMES_SHOWN = 8;
       [cancelLabel]="retireDialog().cancel"
       [danger]="retireDialog().danger"
       [busy]="busy()"
+      [error]="retireOpen() ? messages().join(' ') : ''"
       [(visible)]="retireOpen"
       (confirmed)="retire()"
     >
@@ -533,6 +536,8 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   readonly saveForLeaveLabel = 'Save and leave';
 
   constructor() {
+    // After Publish or Discard draft on the version page this page puts focus on the Published badge (#414).
+    restoreStatusFocus(() => this.state() === 'ready' && this.isEdit());
     effect(() => {
       if (this.workflowId() !== undefined) untracked(() => void this.load());
       else untracked(() => this.flow.state.set('ready'));
@@ -648,7 +653,6 @@ export class WorkflowEditPage implements HasUnsavedChanges {
   protected async toggleActive(active: boolean): Promise<void> {
     const w = this.detail()?.workflow;
     if (!w) return;
-    this.deactivateOpen.set(false);
     this.resetErrors();
     const result = await this.run(() =>
       firstValueFrom(
@@ -660,10 +664,16 @@ export class WorkflowEditPage implements HasUnsavedChanges {
         }),
       ),
     );
-    if (!result) return;
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict means the question is stale.
+    if (!result) {
+      if (this.conflict()) this.deactivateOpen.set(false);
+      return;
+    }
+    this.deactivateOpen.set(false);
     this.apply(result, true);
     this.notify.success(`Workflow ${result.workflow.name} ${active ? 'activated' : 'deactivated'}`);
     this.announcement.set(`Workflow ${active ? 'activated' : 'deactivated'}`);
+    focusStatusAfterAction(this.injector);
   }
 
   protected async save(): Promise<boolean> {
@@ -719,6 +729,7 @@ export class WorkflowEditPage implements HasUnsavedChanges {
     );
     if (!draft) return;
     this.notify.success(`Draft v${draft.version.versionNo} created`);
+    expectStatusFocus();
     await this.router.navigate(
       ['/admin/workflows', w.workflowDefinitionId, 'versions', draft.version.workflowVersionId],
       this.back.extras,
@@ -751,11 +762,15 @@ export class WorkflowEditPage implements HasUnsavedChanges {
         }),
       ),
     );
+    if (!result) {
+      if (this.conflict()) this.retireOpen.set(false);
+      return;
+    }
     this.retireOpen.set(false);
-    if (!result) return;
     this.notify.success(`v${result.version.versionNo} retired`);
     this.announcement.set(`v${result.version.versionNo} retired`);
     await this.refresh();
+    focusStatusAfterAction(this.injector, 'main [data-state-badge]');
   }
 
   protected fieldError(key: string): string | null {

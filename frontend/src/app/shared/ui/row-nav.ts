@@ -1,6 +1,7 @@
 import {
   DestroyRef,
   Directive,
+  booleanAttribute,
   ElementRef,
   Injector,
   afterNextRender,
@@ -68,10 +69,62 @@ export class RowLink {
     const link = event.currentTarget as HTMLElement;
     const stop = link
       .closest('tr, li')
-      ?.querySelector<HTMLElement>('button[data-row-stop]:not([disabled])');
+      ?.querySelector<HTMLElement>('[data-row-stop]:not([disabled])');
     if (!stop) return;
     event.preventDefault();
     stop.focus();
+  }
+}
+
+/**
+ * A link of a list row that is not the row's name and not a Tab stop (TY-K, #413): the count links of the Administration lists ("2
+ * workflows", "5 open tasks", "Open draft v3"). The row keeps two Tab stops, the name and the row's menu; the right arrow on the name
+ * (`RowLink`) steps to the first of these links, the right and left arrows move between them, Shift+Tab or the left arrow past the
+ * first comes back to the name, and Tab goes on to what follows the row's name. The same pages are one click away on the record, so no
+ * action depends on this stop. Same model as the Copy button of Clients (`mf-copy-button` with `rowStop`).
+ *
+ *   <a mfRowStop routerLink="/admin/workflows">3</a>
+ */
+@Directive({
+  selector: 'a[mfRowStop]',
+  host: {
+    '[attr.tabindex]': 'on() ? -1 : null',
+    '[attr.data-row-stop]': "on() ? '' : null",
+    '(keydown)': 'onKey($event)',
+  },
+})
+export class RowStop {
+  /** False puts the link back into the Tab order (a page that shows the same link outside a row). */
+  readonly on = input(true, { alias: 'mfRowStop', transform: booleanAttribute });
+
+  protected onKey(event: KeyboardEvent): void {
+    if (!this.on() || event.ctrlKey || event.altKey || event.metaKey) return;
+    const forward = event.key === 'Tab' && !event.shiftKey;
+    const back = event.key === 'ArrowLeft' || (event.key === 'Tab' && event.shiftKey);
+    const next = event.key === 'ArrowRight';
+    if (!forward && !back && !next) return;
+    if (event.shiftKey && event.key !== 'Tab') return;
+    const here = event.currentTarget as HTMLElement;
+    const row = here.closest('tr, li');
+    const link = row?.querySelector<HTMLElement>('a[data-row-key]');
+    if (!row || !link) return;
+    const stops = Array.from(row.querySelectorAll<HTMLElement>('[data-row-stop]:not([disabled])'));
+    const at = stops.indexOf(here);
+    if (next) {
+      const target = stops[at + 1];
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+      return;
+    }
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      (stops[at - 1] ?? link).focus();
+      return;
+    }
+    // Tab and Shift+Tab: the name link is the row's place in the Tab order; from there the browser goes on (forward) or has come from (back).
+    if (back) event.preventDefault();
+    link.focus();
   }
 }
 
@@ -161,7 +214,9 @@ export function restoreTabFocus(ready: () => boolean, ownLists: readonly string[
  * copy button). Call it in the list component's constructor (the
  * component's own element holds the list).
  */
-export function registerTableSkip(options: { copyButton?: boolean } = {}): void {
+export function registerTableSkip(
+  options: { copyButton?: boolean; rowLinks?: boolean } = {},
+): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const skip = inject(SkipTarget);
   const shortcuts = inject(ShortcutRegistry);
@@ -185,8 +240,18 @@ export function registerTableSkip(options: { copyButton?: boolean } = {}): void 
       id: 'skip-table',
       group: 'page',
       keys: ['Tab'],
-      does: 'On Clients, Matters, Projects and their tabs, the first stop is "Skip to table"; press Enter to land on the first row',
+      does: 'On Clients, Matters, Projects, Task Types, Workflows, Workflow Steps and their tabs, the first stop is "Skip to table"; press Enter to land on the first row',
     }),
+    ...(options.rowLinks
+      ? [
+          shortcuts.register({
+            id: 'row-links',
+            group: 'page',
+            keys: ['→'],
+            does: 'On a Task Types, Workflows or Workflow Steps list, step from a name to the counts and the draft link of its row (Tab skips them); ← comes back',
+          }),
+        ]
+      : []),
     ...(options.copyButton
       ? [
           shortcuts.register({

@@ -50,6 +50,7 @@ import { WorkflowTaskTypesTab } from './workflow-task-types-tab';
 import { activeTaskTypes } from './workflow-record';
 import { Crumb, PageHeader } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
+import { expectStatusFocus, focusStatusAfterAction, restoreStatusFocus } from '../after-action';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { ORDERED_TEXT, UNORDERED_TEXT } from './workflow-mode-control';
 import { StepLibraryModel, WorkflowStepLibrary } from './workflow-step-library';
@@ -376,6 +377,7 @@ const LIBRARY_PANE_MIN = 1280;
       cancelLabel="Back to draft"
       scrollLabel="Changes in this version"
       [busy]="busy() || diffLoading()"
+      [error]="publishOpen() ? messages().join(' ') : ''"
       [(visible)]="publishOpen"
       (confirmed)="publish()"
     >
@@ -490,6 +492,7 @@ const LIBRARY_PANE_MIN = 1280;
       [cancelLabel]="retireDialog().cancel"
       [danger]="retireDialog().danger"
       [busy]="busy()"
+      [error]="retireOpen() ? messages().join(' ') : ''"
       [(visible)]="retireOpen"
       (confirmed)="retire()"
     >
@@ -504,6 +507,7 @@ const LIBRARY_PANE_MIN = 1280;
       confirmLabel="Discard draft"
       [danger]="true"
       [busy]="busy()"
+      [error]="discardOpen() ? messages().join(' ') : ''"
       [(visible)]="discardOpen"
       (confirmed)="discard()"
     >
@@ -644,6 +648,8 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
   });
 
   constructor() {
+    // After Create new draft the new draft's page puts focus on its status badge (#414).
+    restoreStatusFocus(() => this.state() === 'ready' && this.version()?.version.workflowVersionId);
     // The tab title names the state ("Workflow version not found"); the record title is #359's.
     effect(() => {
       const state = this.state();
@@ -991,9 +997,14 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         ),
       'We could not publish the workflow. Try again.',
     );
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict means the question is stale.
+    if (!result) {
+      if (this.conflict()) this.publishOpen.set(false);
+      return;
+    }
     this.publishOpen.set(false);
-    if (!result) return;
     this.notify.success(`${result.workflowName} v${result.version.versionNo} published`);
+    expectStatusFocus('main [data-state-badge]');
     this.leaving = true;
     await this.router.navigate(['/admin/workflows', v.workflowDefinitionId], this.back.extras);
   }
@@ -1011,10 +1022,14 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         ),
       'We could not retire the version. Try again.',
     );
+    if (!result) {
+      if (this.conflict()) this.retireOpen.set(false);
+      return;
+    }
     this.retireOpen.set(false);
-    if (!result) return;
     this.notify.success(`v${result.version.versionNo} retired`);
     await this.load();
+    focusStatusAfterAction(this.injector);
   }
 
   protected async newDraft(): Promise<void> {
@@ -1032,6 +1047,7 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
     );
     if (!draft) return;
     this.notify.success(`Draft v${draft.version.versionNo} created`);
+    expectStatusFocus();
     await this.router.navigate(
       ['/admin/workflows', v.workflowDefinitionId, 'versions', draft.version.workflowVersionId],
       this.back.extras,
@@ -1049,9 +1065,13 @@ export class WorkflowVersionPage implements HasUnsavedChanges {
         ).then(() => true),
       'We could not discard the draft. Try again.',
     );
+    if (!done) {
+      if (this.conflict()) this.discardOpen.set(false);
+      return;
+    }
     this.discardOpen.set(false);
-    if (!done) return;
     this.notify.success('Draft discarded');
+    expectStatusFocus('main [data-state-badge]');
     this.leaving = true;
     await this.router.navigate(['/admin/workflows', v.workflowDefinitionId], this.back.extras);
   }

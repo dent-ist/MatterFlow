@@ -78,6 +78,7 @@
             kind="open"
             scope="type"
             [word]="true"
+            [rowStop]="true"
             [recordId]="t.id"
             [name]="t.name"
             [count]="t.openTaskCount"
@@ -233,6 +234,7 @@
                   } @else if (canOpenWorkflows()) {
                     <a
                       data-workflows-link
+                      mfRowStop
                       [routerLink]="['/admin/workflows']"
                       [queryParams]="workflowsQuery(t)"
                       [attr.aria-label]="
@@ -253,6 +255,7 @@
                     <mf-task-count
                       kind="open"
                       scope="type"
+                      [rowStop]="true"
                       [recordId]="t.id"
                       [name]="t.name"
                       [count]="t.openTaskCount"
@@ -308,6 +311,7 @@
   [cancelLabel]="deactivateCopy.cancel"
   [danger]="deactivateCopy.danger"
   [busy]="busy()"
+  [error]="dialogError()"
   [(visible)]="deactivateOpen"
   (confirmed)="confirmDeactivate()"
 >

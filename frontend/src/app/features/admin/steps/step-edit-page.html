@@ -176,6 +176,7 @@
     [cancelLabel]="copy.cancel"
     [danger]="copy.danger"
     [busy]="busy()"
+    [error]="deactivateOpen() ? summary().join(' ') : ''"
     [(visible)]="deactivateOpen"
     (confirmed)="deactivate()"
   >

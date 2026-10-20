@@ -81,3 +81,60 @@ describe('ConfirmDialog extra choice (VP8, #398)', () => {
     expect(buttons().map((b) => b.textContent?.trim())).toEqual(['Stay', 'Leave']);
   });
 });
+
+@Component({
+  imports: [ConfirmDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<mf-confirm-dialog
+    title="Deactivate?"
+    confirmLabel="Deactivate"
+    [busy]="busy()"
+    [error]="error()"
+    [visible]="true"
+    (confirmed)="log.push('confirmed')"
+  >
+    <p>Body.</p>
+  </mf-confirm-dialog>`,
+})
+class FailHost {
+  readonly busy = signal(false);
+  readonly error = signal('');
+  readonly log: string[] = [];
+}
+
+describe('ConfirmDialog failure and busy (TY-K, #414)', () => {
+  const confirmButton = (): HTMLButtonElement =>
+    document.body.querySelector<HTMLButtonElement>('[data-confirm-primary] button')!;
+
+  it('shows a failure inside the dialog as an alert', async () => {
+    const fixture = TestBed.createComponent(FailHost);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(document.body.querySelector('[data-confirm-error]')).toBeNull();
+    fixture.componentInstance.error.set('The server could not do that just now.');
+    fixture.detectChanges();
+    const alert = document.body.querySelector('[data-confirm-error]')!;
+    expect(alert.getAttribute('role')).toBe('alert');
+    expect(alert.textContent).toContain('could not do that');
+  });
+
+  it('keeps the confirm button focusable while busy (focus stays), ignores clicks and says it is working', async () => {
+    const fixture = TestBed.createComponent(FailHost);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    confirmButton().focus();
+    fixture.componentInstance.busy.set(true);
+    fixture.detectChanges();
+    expect(confirmButton().disabled).toBe(false);
+    expect(document.activeElement).toBe(confirmButton());
+    confirmButton().click();
+    expect(fixture.componentInstance.log).toEqual([]);
+    expect(document.body.querySelector('.p-dialog [role="status"]')!.textContent).toContain(
+      'Working',
+    );
+    fixture.componentInstance.busy.set(false);
+    fixture.detectChanges();
+    confirmButton().click();
+    expect(fixture.componentInstance.log).toEqual(['confirmed']);
+  });
+});

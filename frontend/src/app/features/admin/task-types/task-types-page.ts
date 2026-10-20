@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -22,7 +23,8 @@ import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { LocalListPage } from '../../../shared/ui/list-query';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { focusListAfterAction } from '../after-action';
+import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -114,6 +116,7 @@ const FORM_OPTIONS = [
     ActionMenu,
     RouterLink,
     RowLink,
+    RowStop,
     Pager,
     SortHeader,
     GridBody,
@@ -137,6 +140,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly drill = inject(DrillReturn);
+  private readonly injector = inject(Injector);
   protected readonly leave = inject(AdminListLeave);
   protected readonly listId = ADMIN_LIST.taskTypes.id;
 
@@ -241,6 +245,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
+  /** Why Deactivate failed, shown inside the dialog that stays open (#414). */
+  protected readonly dialogError = signal('');
   protected readonly deactivateTarget = signal<TaskTypeView | null>(null);
   protected readonly deactivateCopy = DIALOG_COPY.deactivateTaskType;
 
@@ -283,6 +289,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       }
     });
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    // "Skip to table" is the first Tab stop; a row has two stops, the name and its menu (#413).
+    registerTableSkip({ rowLinks: true });
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // Loads the list, and again when the workflow filter changes.
     effect(() => {
@@ -545,18 +553,24 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
 
   protected askDeactivate(t: TaskTypeView): void {
     this.deactivateTarget.set(t);
+    this.dialogError.set('');
     this.deactivateOpen.set(true);
   }
 
   protected async confirmDeactivate(): Promise<void> {
     const t = this.deactivateTarget();
-    this.deactivateOpen.set(false);
-    if (t) await this.setActive(t, false);
+    const outcome = t ? await this.setActive(t, false) : 'done';
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict reloaded the list, so the question is stale.
+    if (outcome !== 'failed') this.deactivateOpen.set(false);
   }
 
-  protected async setActive(t: TaskTypeView, isActive: boolean): Promise<void> {
+  protected async setActive(
+    t: TaskTypeView,
+    isActive: boolean,
+  ): Promise<'done' | 'conflict' | 'failed'> {
     this.busy.set(true);
     this.failure.set('');
+    this.dialogError.set('');
     try {
       const updated = await firstValueFrom(
         this.api.update(t.id, {
@@ -572,13 +586,18 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       this.all.set(this.all().map((r) => (r.id === updated.id ? updated : r)));
       this.announcement.set(`${t.name} ${isActive ? 'activated' : 'deactivated'}.`);
       this.notify.success('Saved.');
+      focusListAfterAction(this.injector, `Actions for ${t.name}`);
+      return 'done';
     } catch (e) {
       if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
         this.failure.set('Someone else changed this task type. The list was reloaded; try again.');
         await this.load();
-      } else {
-        this.failure.set(e instanceof ApiError ? e.message : 'Couldn’t save. Try again.');
+        return 'conflict';
       }
+      const message = e instanceof ApiError ? e.message : 'Couldn’t save. Try again.';
+      if (this.deactivateOpen()) this.dialogError.set(message);
+      else this.failure.set(message);
+      return 'failed';
     } finally {
       this.busy.set(false);
     }

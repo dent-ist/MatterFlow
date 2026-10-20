@@ -197,6 +197,9 @@
               [ngModel]="publishNote()"
               (ngModelChange)="publishNote.set($event)"
             ></textarea>
+            @if (failure() && serverIssues().length === 0) {
+              <p class="ttf__error" role="alert" data-dialog-error>{{ failure() }}</p>
+            }
             <div class="ttf__dialog-actions">
               <p-button
                 [label]="publishText().cancel"
@@ -218,6 +221,9 @@
               New {{ recordNoun() }} can't use a retired version. Existing {{ recordNoun() }} keep
               it.
             </p>
+            @if (failure() && serverIssues().length === 0) {
+              <p class="ttf__error" role="alert" data-dialog-error>{{ failure() }}</p>
+            }
             <div class="ttf__dialog-actions">
               <p-button
                 [label]="retireText().cancel"

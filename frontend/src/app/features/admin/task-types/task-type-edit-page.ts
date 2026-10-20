@@ -31,6 +31,7 @@ import { DIALOG_COPY, impactLine } from '../shared/dialog-copy';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
 import { Crumb } from '../../../shared/ui/page-header';
 import { ADMIN_LIST, ListReturn } from '../list-return';
+import { focusStatusAfterAction } from '../after-action';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton } from '../../../shared/ui/record-skeleton';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
@@ -331,9 +332,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     this.deactivateOpen.set(true);
   }
 
-  protected confirmDeactivate(): void {
-    this.deactivateOpen.set(false);
-    void this.toggleActive(false);
+  protected async confirmDeactivate(): Promise<void> {
+    await this.toggleActive(false);
   }
 
   /** Deactivate or Activate from the header overflow. It changes only the state: edits in the tabs stay as they are. */
@@ -343,6 +343,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     this.busy.set(true);
     this.failure.set('');
     this.conflict.set(false);
+    let done = false;
     try {
       const s = this.saved();
       const updated = await firstValueFrom(
@@ -360,11 +361,15 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       this.rebase(updated, this.overviewDirty(), this.workflowsDirty());
       this.announcement.set(`${updated.name} ${active ? 'activated' : 'deactivated'}.`);
       this.notify.success(active ? 'Task type activated.' : 'Task type deactivated.');
+      done = true;
     } catch (e) {
       this.fail(e);
     } finally {
       this.busy.set(false);
     }
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict means the question is stale.
+    if (done || this.conflict()) this.deactivateOpen.set(false);
+    if (done) focusStatusAfterAction(this.injector);
   }
 
   /** Shows the problems (summary at the top plus the message under each field) and puts focus on the first field to fix. */

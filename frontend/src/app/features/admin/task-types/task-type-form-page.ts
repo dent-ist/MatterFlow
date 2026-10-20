@@ -3,7 +3,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  Injector,
   computed,
+  afterNextRender,
   effect,
   inject,
   input,
@@ -15,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
+import { focusStatusAfterAction } from '../after-action';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { Badge, BadgeTone, workflowStatusTone } from '../../../shared/ui/badge';
@@ -94,6 +97,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
    * owners have no row link that carries one, so their crumb is the plain section as before.
    */
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
   private readonly back = computed(() => {
     const list = [ADMIN_LIST.taskTypes, ADMIN_LIST.steps].find(
       (l) => l.path === this.sectionPath(),
@@ -389,6 +393,8 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
           ? `Draft v${this.current()?.versionNo} created from the published version.`
           : `Draft v${this.current()?.versionNo} created.`,
       );
+      // The button that was used is gone (Save draft and Publish took its place): focus goes to the status badge (#414).
+      focusStatusAfterAction(this.injector);
     }
   }
 
@@ -497,14 +503,21 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       );
       await this.refreshVersions();
     });
-    // A conflict opens its own dialog; every other outcome closes the publish dialog.
-    if (this.dialog() === 'publish') this.dialog.set(null);
-    if (ok) this.notice.set(`Version ${this.current()?.versionNo} published.`);
-    else if (this.serverIssues().length > 0) {
+    if (ok) {
+      this.dialog.set(null);
+      this.invoker = null;
+      this.notice.set(`Version ${this.current()?.versionNo} published.`);
+      // The Publish button is gone (Create new draft took its place): focus goes to the status badge (#414).
+      focusStatusAfterAction(this.injector);
+    } else if (this.serverIssues().length > 0) {
       // The server found problems: they are listed under Validation, which takes the focus (not the Publish button).
+      this.dialog.set(null);
       this.invoker = null;
       this.designer()?.showIssues();
-    } else if (this.dialog() === null) this.restoreFocus();
+    } else if (this.dialog() === 'publish') {
+      // Any other failure keeps the dialog open with its message and focus on its button (#414); a conflict opened its own dialog.
+      afterNextRender(() => this.focusPrimary(), { injector: this.injector });
+    }
   }
 
   /** Conflict dialog: take the other admin's saved draft (dropping mine) or keep my edits on top of it. */
@@ -532,10 +545,16 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       this.setCurrent(await firstValueFrom(this.api.retire(this.ownerId(), v.id)));
       await this.refreshVersions();
     });
+    if (!ok) {
+      // A failure keeps the dialog open with its message and focus on its button (#414).
+      if (this.dialog() === 'retire')
+        afterNextRender(() => this.focusPrimary(), { injector: this.injector });
+      return;
+    }
     this.dialog.set(null);
-    if (ok)
-      this.notice.set(`Version ${v.versionNo} is retired. New ${this.recordNoun()} can't use it.`);
-    this.restoreFocus();
+    this.invoker = null;
+    this.notice.set(`Version ${v.versionNo} is retired. New ${this.recordNoun()} can't use it.`);
+    focusStatusAfterAction(this.injector);
   }
 
   protected async confirmDiscard(): Promise<void> {

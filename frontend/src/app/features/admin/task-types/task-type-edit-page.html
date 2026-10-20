@@ -273,6 +273,7 @@
     [cancelLabel]="copy.cancel"
     [danger]="copy.danger"
     [busy]="busy()"
+    [error]="deactivateOpen() ? failure() : ''"
     [(visible)]="deactivateOpen"
     (confirmed)="confirmDeactivate()"
   >

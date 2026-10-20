@@ -22,6 +22,27 @@ import { ScrollRegion } from './scroll-region';
       overflow-wrap: anywhere;
       white-space: normal;
     }
+    /* While the action runs the buttons look disabled but stay focusable: a disabled button loses focus and the dialog's focus trap then
+       moves it to Cancel (TY-K, #414). The click is ignored while busy. */
+    :host ::ng-deep .mf-confirm__busy button {
+      opacity: 0.6;
+      cursor: progress;
+    }
+    .mf-confirm__sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    /* A failed confirm stays in the dialog (TY-K, #414): the message is read here, where focus is. */
+    .mf-confirm__error {
+      margin: 0.75rem 0 0;
+      color: var(--mf-danger);
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
   `,
   template: `
     <p-dialog
@@ -39,6 +60,10 @@ import { ScrollRegion } from './scroll-region';
       <div class="mf-confirm__body" data-confirm-body [mfScrollRegion]="scrollLabel()">
         <ng-content />
       </div>
+      <span class="mf-confirm__sr" role="status">{{ busy() ? 'Working...' : '' }}</span>
+      @if (error()) {
+        <p class="mf-confirm__error" role="alert" data-confirm-error>{{ error() }}</p>
+      }
       <ng-template #footer>
         <p-button [label]="cancelLabel()" severity="secondary" (onClick)="visible.set(false)" />
         @if (showConfirm()) {
@@ -47,8 +72,9 @@ import { ScrollRegion } from './scroll-region';
             [severity]="danger() ? 'danger' : 'primary'"
             [outlined]="extraLabel() !== '' && danger()"
             [styleClass]="danger() && extraLabel() === '' ? 'mf-btn--solid' : ''"
-            [disabled]="busy()"
-            (onClick)="confirmed.emit()"
+            data-confirm-primary
+            [class.mf-confirm__busy]="busy()"
+            (onClick)="busy() || confirmed.emit()"
           />
         }
         @if (extraLabel() !== '') {
@@ -56,8 +82,8 @@ import { ScrollRegion } from './scroll-region';
             [label]="extraLabel()"
             severity="primary"
             data-extra
-            [disabled]="busy()"
-            (onClick)="extra.emit()"
+            [class.mf-confirm__busy]="busy()"
+            (onClick)="busy() || extra.emit()"
           />
         }
       </ng-template>
@@ -70,6 +96,11 @@ export class ConfirmDialog {
   readonly cancelLabel = input('Cancel');
   readonly danger = input(false);
   readonly busy = input(false);
+  /**
+   * Why the confirmed action failed (TY-K, #414). The page keeps the dialog open on a failure and passes the message here, so focus stays
+   * on the confirm button and the message is announced (`role="alert"`); the person can try again or cancel. Empty: no message.
+   */
+  readonly error = input('');
   readonly showConfirm = input(true);
   /**
    * Names the body as a scrollable region ("Changes in this version"): when the content is taller than the window the body scrolls and

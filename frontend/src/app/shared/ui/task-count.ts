@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { RowStop } from './row-nav';
 
 /** The record a count belongs to; the Task Queue filters by it with `client=`, `matter=`, `project=` or, for a Task Type, `type=`. */
 export type CountScope = 'client' | 'matter' | 'project' | 'type';
@@ -29,13 +30,14 @@ export function taskQueueQuery(
  */
 @Component({
   selector: 'mf-task-count',
-  imports: [RouterLink],
+  imports: [RouterLink, RowStop],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.data-count]': 'kind()', '[class.tc-card]': 'word()' },
   template: `
     @if (count() > 0) {
       <a
         class="tc"
+        [mfRowStop]="rowStop()"
         [class.tc-over]="kind() === 'overdue'"
         routerLink="/tasks"
         [queryParams]="query()"
@@ -111,6 +113,8 @@ export class TaskCount {
   readonly name = input('');
   /** Say what the number counts, "14 open" and "3 overdue" (the record cards have no column headers). */
   readonly word = input(false);
+  /** In a list row: the link is not a Tab stop, the right arrow on the row's name steps to it (`RowStop`, #413). */
+  readonly rowStop = input(false);
 
   protected readonly query = computed(() =>
     taskQueueQuery(this.scope(), this.recordId(), this.kind()),

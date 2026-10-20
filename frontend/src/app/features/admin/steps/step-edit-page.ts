@@ -11,6 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { focusStatusAfterAction } from '../after-action';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -439,18 +440,26 @@ export class StepEditPage implements HasUnsavedChanges {
 
   protected async deactivate(): Promise<void> {
     const o = this.original();
-    this.deactivateOpen.set(false);
-    if (!o) return;
+    if (!o) {
+      this.deactivateOpen.set(false);
+      return;
+    }
+    this.resetErrors();
     const result = await this.run(() =>
       firstValueFrom(
         this.api.deactivateStepDefinition(o.stepDefinitionId, { rowVersion: o.rowVersion }),
       ),
     );
-    if (result) {
-      this.apply(result, true);
-      this.announcement.set(`${result.title} deactivated.`);
-      this.notify.success('Step deactivated');
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict means the question is stale.
+    if (!result) {
+      if (this.conflict()) this.deactivateOpen.set(false);
+      return;
     }
+    this.deactivateOpen.set(false);
+    this.apply(result, true);
+    this.announcement.set(`${result.title} deactivated.`);
+    this.notify.success('Step deactivated');
+    focusStatusAfterAction(this.injector);
   }
 
   protected async activate(): Promise<void> {
@@ -466,6 +475,7 @@ export class StepEditPage implements HasUnsavedChanges {
       this.apply(result, true);
       this.announcement.set(`${result.title} activated.`);
       this.notify.success('Step activated');
+      focusStatusAfterAction(this.injector);
     }
   }
 

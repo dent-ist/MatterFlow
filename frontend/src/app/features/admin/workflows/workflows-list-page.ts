@@ -37,7 +37,8 @@ import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { focusListAfterAction } from '../after-action';
+import { RowLink, RowStop, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -92,6 +93,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     ConfirmDialog,
     RouterLink,
     RowLink,
+    RowStop,
     Pager,
     SortHeader,
     GridBody,
@@ -304,6 +306,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                         <!-- The badge is the way into the draft: one Tab stop, named "Open draft v3" (#377). -->
                         <a
                           class="wl-draft"
+                          mfRowStop
                           data-draft-link
                           [routerLink]="[
                             '/admin/workflows',
@@ -339,6 +342,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
                       } @else if (canOpenTaskTypes()) {
                         <a
                           class="pg-link"
+                          mfRowStop
                           data-task-types-link
                           routerLink="/admin/task-types"
                           [queryParams]="taskTypesQuery(w)"
@@ -403,6 +407,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       cancelLabel="Keep active"
       [danger]="true"
       [busy]="busy()"
+      [error]="dialogError()"
       [(visible)]="deactivateOpen"
       (confirmed)="confirmDeactivate()"
     >
@@ -593,6 +598,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   protected readonly failure = signal('');
   protected readonly announcement = signal('');
   protected readonly deactivateOpen = signal(false);
+  /** Why Deactivate failed, shown inside the dialog that stays open (#414). */
+  protected readonly dialogError = signal('');
   protected readonly deactivateTarget = signal<WorkflowSummary | null>(null);
   /** The row menu of every row (#355): Open draft (a workflow that has one), then Deactivate or Activate. The page needs Workflow.Manage. */
   private readonly menus = computed(
@@ -605,6 +612,8 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
     const report = AdminCounts.report('workflows');
     effect(() => report(this.summary()?.active));
     // Back (or a breadcrumb) from a record puts focus on the name link of the row that was left (#354).
+    // "Skip to table" is the first Tab stop; a row has two stops, the name and its menu (#413).
+    registerTableSkip({ rowLinks: true });
     restoreRowFocus(this.listId, () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
@@ -684,6 +693,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
             disabled: busy,
             run: () => {
               this.deactivateTarget.set(w);
+              this.dialogError.set('');
               this.deactivateOpen.set(true);
             },
           }
@@ -705,13 +715,18 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
 
   protected async confirmDeactivate(): Promise<void> {
     const w = this.deactivateTarget();
-    this.deactivateOpen.set(false);
-    if (w) await this.setActive(w, false);
+    const outcome = w ? await this.setActive(w, false) : 'done';
+    // A failure keeps the dialog open with its message and focus on its button (#414); a conflict reloaded the list, so the question is stale.
+    if (outcome !== 'failed') this.deactivateOpen.set(false);
   }
 
-  private async setActive(w: WorkflowSummary, isActive: boolean): Promise<void> {
+  private async setActive(
+    w: WorkflowSummary,
+    isActive: boolean,
+  ): Promise<'done' | 'conflict' | 'failed'> {
     this.busy.set(true);
     this.failure.set('');
+    this.dialogError.set('');
     try {
       await firstValueFrom(
         this.api.updateWorkflow(w.workflowDefinitionId, {
@@ -724,13 +739,18 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
       this.announcement.set(`${w.name} ${isActive ? 'activated' : 'deactivated'}.`);
       this.notify.success('Saved.');
       await this.load();
+      focusListAfterAction(this.injector, `Actions for ${w.name}`);
+      return 'done';
     } catch (e) {
       if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
         this.failure.set('Someone else changed this workflow. The list was reloaded; try again.');
         await this.load();
-      } else {
-        this.failure.set(e instanceof ApiError ? e.message : 'Couldn’t save. Try again.');
+        return 'conflict';
       }
+      const message = e instanceof ApiError ? e.message : 'Couldn’t save. Try again.';
+      if (this.deactivateOpen()) this.dialogError.set(message);
+      else this.failure.set(message);
+      return 'failed';
     } finally {
       this.busy.set(false);
     }
