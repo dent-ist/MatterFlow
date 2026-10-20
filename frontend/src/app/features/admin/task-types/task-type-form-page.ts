@@ -92,6 +92,10 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
   readonly parentCrumbs = input<readonly Crumb[], readonly Crumb[] | undefined>([], {
     transform: (v) => v ?? [],
   });
+  /** The last crumb: "Form" for a Task Type or a Step, "Fields" for an Asset Type; empty for none (Custom Fields end at the object, #588). */
+  readonly formCrumbLabel = input<string, string | undefined>('Form', {
+    transform: (v) => v ?? 'Form',
+  });
   /**
    * The exact list view the page was opened from, for the Task Types and Workflow Steps owners (#354); the Asset Types and Custom Fields
    * owners have no row link that carries one, so their crumb is the plain section as before.
@@ -118,7 +122,7 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
         link: hasPage ? [this.sectionPath(), this.ownerId()] : undefined,
         state: back?.carry,
       },
-      { label: 'Form' },
+      ...(this.formCrumbLabel() ? [{ label: this.formCrumbLabel() }] : []),
     ];
   });
   /** What the form's records are called in copy: tasks for Task Types, assets for Asset Types, records for custom fields. */
@@ -226,8 +230,12 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       const state = this.state();
       const name = this.owner()?.name;
       if (kind && this.flow.failed()) this.pageTitle.set(recordStateTitle(kind, state));
-      // "Form: Data Processing Extended" for a Task Type or a Step (Asset Types and Custom Fields keep their route title).
+      // "Form: Data Processing Extended" for a Task Type or a Step.
       else if (kind && name) this.pageTitle.set(shortTitleText(`Form: ${name}`));
+      // The Asset Type and Custom Fields designers name the record too (#588): "Relativity Workspace: Fields", "Matter custom fields" (the owner's own name).
+      else if (name && this.ownerLabel() === 'Asset Type')
+        this.pageTitle.set(shortTitleText(`${name}: Fields`));
+      else if (name && this.ownerLabel() === 'Object') this.pageTitle.set(shortTitleText(name));
     });
     effect(() => {
       const id = this.ownerId();

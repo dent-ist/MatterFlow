@@ -95,7 +95,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'Users',
         'Task Types',
         'Labels',
-        'Assets',
+        'Asset Types',
         'Custom Fields',
         'Audit Logs',
       ]);

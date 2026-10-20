@@ -35,6 +35,7 @@ interface Row {
     <mf-fixed-page>
       <mf-page-header
         heading="Custom Fields"
+        [crumbs]="[{ label: 'Administration' }, { label: 'Custom Fields' }]"
         description="Extra fields for Clients, Matters and Projects. Fields are versioned: publishing a new version never changes values already saved, and existing records stay editable."
       ></mf-page-header>
 

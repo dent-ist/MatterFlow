@@ -53,12 +53,12 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     return TestBed.inject(Router);
   }
 
-  it('titles the page so it is not mistaken for the Assets data records, with two tabs', async () => {
+  it('is titled Asset Types (the Assets data list is another item), with two tabs', async () => {
     await open('/admin/asset-types', 'AssetType.Manage');
-    expect(el().querySelector('h1')!.textContent).toBe('Asset Types & Link Roles');
-    // The breadcrumb says it is the Administration item "Assets", not the Assets data list.
+    expect(el().querySelector('h1')!.textContent).toBe('Asset Types');
+    // The breadcrumb says it is the Administration item "Asset Types" (#588), not the Assets data list.
     expect(el().querySelector('nav[aria-label=Breadcrumb]')!.textContent).toMatch(
-      /Administration\s*>?\s*Assets/,
+      /Administration\s*>?\s*Asset Types/,
     );
     expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Asset Types', 'Asset Link Roles']);
     expect(selected()).toBe('Asset Types');

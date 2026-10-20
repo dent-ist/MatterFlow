@@ -31,8 +31,8 @@ type AssetAdminTab = 'types' | 'link-roles';
   template: `
     <mf-fixed-page>
       <mf-page-header
-        heading="Asset Types & Link Roles"
-        [crumbs]="[{ label: 'Administration' }, { label: 'Assets' }]"
+        heading="Asset Types"
+        [crumbs]="[{ label: 'Administration' }, { label: 'Asset Types' }]"
       />
       <mf-tabs
         label="Asset set-up"

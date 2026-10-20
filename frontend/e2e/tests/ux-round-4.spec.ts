@@ -349,16 +349,8 @@ test.describe('Round 4: administration naming', () => {
     ['/admin/audit', 'Audit Logs', 'Audit Logs - MatterFlow'],
     ['/admin/users', 'Users', 'Users - MatterFlow'],
     ['/admin/roles', 'Users', 'Users - Roles - MatterFlow'],
-    [
-      '/admin/asset-types',
-      'Asset Types & Link Roles',
-      'Asset Types & Link Roles - Asset Types - MatterFlow',
-    ],
-    [
-      '/admin/asset-types?tab=link-roles',
-      'Asset Types & Link Roles',
-      'Asset Types & Link Roles - Link Roles - MatterFlow',
-    ],
+    ['/admin/asset-types', 'Asset Types', 'Asset Types - MatterFlow'],
+    ['/admin/asset-types?tab=link-roles', 'Asset Types', 'Asset Types - Link Roles - MatterFlow'],
   ];
 
   for (const [path, heading, title] of titles) {
@@ -371,7 +363,7 @@ test.describe('Round 4: administration naming', () => {
     });
   }
 
-  test('UXR4-12: the document title follows the Users / Roles tab, and the admin Assets page says it is administration', async ({
+  test('UXR4-12: the document title follows the Users / Roles tab, and the admin Asset Types page says it is administration', async ({
     page,
   }) => {
     await page.goto('/admin/users');
@@ -382,10 +374,10 @@ test.describe('Round 4: administration naming', () => {
     await expect(
       page.getByRole('navigation', { name: 'Breadcrumb' }).getByText('Administration'),
     ).toBeVisible();
-    // Two "Assets" items in the menu: the data list and the Administration one, which sits under the Administration heading.
+    // The Administration item is "Asset Types" (#588), so it is no longer mistaken for the "Assets" data list.
     const admin = page
       .getByRole('list', { name: 'Administration' })
-      .getByRole('link', { name: 'Assets' });
+      .getByRole('link', { name: 'Asset Types' });
     await expect(admin).toHaveAttribute('href', '/admin/asset-types');
     await expect(admin).toHaveAttribute('aria-current', 'page');
   });

@@ -21,6 +21,9 @@ const lazyGuarded = (...args: Parameters<typeof lazy>): Route => ({
   canDeactivate: [unsavedChangesGuard],
 });
 
+/** The first crumb of every Administration page (#588). */
+const ADMIN_CRUMBS = [{ label: 'Administration' }];
+
 /** The Administration breadcrumb prefix of the Task Types page (the step pages add `Workflow Steps` and the step after it). */
 const TASK_TYPES_CRUMBS = [
   { label: 'Administration' },
@@ -95,10 +98,13 @@ const assetTypeForm = (path: string): Route => ({
   canActivate: [permissionGuard('AssetType.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: AssetTypeFormDesignerApi }],
+  // Crumbs: Administration > Asset Types > <the asset type> > Fields. The title names the type once it is loaded (the form page sets it).
   data: {
-    heading: 'Asset Types & Link Roles',
+    heading: 'Asset Types',
     ownerLabel: 'Asset Type',
     sectionPath: '/admin/asset-types',
+    parentCrumbs: ADMIN_CRUMBS,
+    formCrumbLabel: 'Fields',
   },
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
@@ -110,7 +116,14 @@ const customFieldForm = (path: string): Route => ({
   canActivate: [permissionGuard('CustomField.Manage')],
   canDeactivate: [unsavedChangesGuard],
   providers: [{ provide: FormDesignerApi, useClass: CustomFieldFormDesignerApi }],
-  data: { heading: 'Custom Fields', ownerLabel: 'Object', sectionPath: '/admin/custom-fields' },
+  // Crumbs: Administration > Custom Fields > <the object>. The title is "<object> custom fields" once it is loaded.
+  data: {
+    heading: 'Custom Fields',
+    ownerLabel: 'Object',
+    sectionPath: '/admin/custom-fields',
+    parentCrumbs: ADMIN_CRUMBS,
+    formCrumbLabel: '',
+  },
   loadComponent: () => import('./task-types/task-type-form-page').then((m) => m.TaskTypeFormPage),
 });
 
@@ -172,14 +185,12 @@ export const ADMIN_ROUTES: Routes = [
   ...STEP_ROUTES,
   ...WORKFLOW_ROUTES,
   {
-    // The Assets set-up page of the Administration menu (not the Assets data list): title = page name plus the open tab.
-    ...lazyGuarded('asset-types', 'Asset Types & Link Roles', 'AssetType.Manage', () =>
+    // The Asset Types page of the Administration menu (not the Assets data list): title = page name plus the open tab (#588).
+    ...lazyGuarded('asset-types', 'Asset Types', 'AssetType.Manage', () =>
       import('./asset-types/asset-admin-page').then((m) => m.AssetAdminPage),
     ),
     title: (route) =>
-      route.queryParams['tab'] === 'link-roles'
-        ? 'Asset Types & Link Roles - Link Roles'
-        : 'Asset Types & Link Roles - Asset Types',
+      route.queryParams['tab'] === 'link-roles' ? 'Asset Types - Link Roles' : 'Asset Types',
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
   },
   {

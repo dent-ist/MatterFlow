@@ -62,8 +62,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['Priority.Manage', 'StatusLabel.Manage'],
   },
   {
-    // The Asset Types and Asset Link Roles tabs. Not the Assets data records above; the page itself is titled "Asset types and link roles".
-    label: 'Assets',
+    // The Asset Types and Asset Link Roles tabs. Not the Assets data records above; the page and the item are both "Asset Types" (#588).
+    label: 'Asset Types',
     icon: 'pi pi-tags',
     path: '/admin/asset-types',
     alsoActive: ['/admin/asset-link-roles'],
