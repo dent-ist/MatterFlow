@@ -1,6 +1,7 @@
 <mf-fixed-page>
   <mf-page-header
     heading="Labels"
+    [crumbs]="[{ label: 'Administration' }, { label: 'Labels' }]"
     description="You can rename how statuses appear. You can't add or remove them."
   >
     <nav class="tabs" aria-label="Priorities and status labels">
@@ -34,59 +35,20 @@
               <tr [attr.data-row]="row.code">
                 <th scope="row" class="code">{{ row.code }}</th>
                 <td>
-                  <mf-status-badge
-                    [code]="row.code"
-                    [label]="
-                      editingCode() === row.code && draft().trim()
-                        ? draft().trim()
-                        : row.displayLabel
-                    "
-                  />
+                  <mf-status-badge [code]="row.code" [label]="row.displayLabel" />
                 </td>
                 <td>
-                  @if (editingCode() === row.code) {
-                    <form class="inline" (submit)="$event.preventDefault(); commit(row)">
-                      <label class="sr-only" [for]="'label-' + row.code"
-                        >Display label for {{ row.code }}</label
-                      >
-                      <input
-                        [id]="'label-' + row.code"
-                        class="text"
-                        name="label"
-                        maxlength="50"
-                        [ngModel]="draft()"
-                        (ngModelChange)="draft.set($event)"
-                        (keydown.escape)="cancelEdit()"
-                        [attr.aria-invalid]="editError() ? 'true' : null"
-                        [attr.aria-describedby]="editError() ? 'label-error-' + row.code : null"
-                        data-label-input
-                      />
-                      <p-button type="submit" label="Save" size="small" [disabled]="busy()" />
-                      <p-button
-                        label="Cancel"
-                        size="small"
-                        severity="secondary"
-                        (onClick)="cancelEdit()"
-                      />
-                    </form>
-                    @if (editError()) {
-                      <p class="error" role="alert" [id]="'label-error-' + row.code">
-                        {{ editError() }}
-                      </p>
-                    }
-                  } @else {
-                    <span>{{ row.displayLabel }}</span>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--text"
-                      *mfHasPermission="'StatusLabel.Manage'"
-                      [attr.aria-label]="'Rename ' + row.displayLabel"
-                      (click)="startEdit(row)"
-                      data-rename
-                    >
-                      Rename
-                    </button>
-                  }
+                  <span>{{ row.displayLabel }}</span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    *mfHasPermission="'StatusLabel.Manage'"
+                    [attr.aria-label]="'Rename ' + row.displayLabel"
+                    (click)="startEdit(row)"
+                    data-rename
+                  >
+                    Rename
+                  </button>
                 </td>
               </tr>
             }
@@ -95,4 +57,30 @@
       </div>
     </div>
   </mf-list-state>
+
+  <mf-lookup-dialog
+    [title]="renameCopy().title"
+    [submitLabel]="renameCopy().confirm"
+    [cancelLabel]="renameCopy().cancel"
+    [visible]="editingCode() !== null"
+    (visibleChange)="!$event && cancelEdit()"
+    [dirty]="isDirty()"
+    [saving]="busy()"
+    [error]="saveError()"
+    [summary]="summary()"
+    (save)="commit()"
+    (cancel)="cancelEdit()"
+  >
+    <p class="rename-help" data-rename-help>{{ renameCopy().body }}</p>
+    <mf-text-field
+      inputId="status-label-name"
+      label="Display label"
+      [required]="true"
+      [maxLength]="limits.statusLabel"
+      [counter]="true"
+      [error]="fieldError()"
+      [(value)]="draft"
+    />
+    <mf-status-badge mfPreview [code]="editingCode() ?? ''" [label]="draft().trim() || 'Label'" />
+  </mf-lookup-dialog>
 </mf-fixed-page>

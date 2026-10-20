@@ -5,6 +5,7 @@ import { PrioritiesClient, StatusLabelsClient } from '../../../api/generated/api
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
+import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import {
   FakePrioritiesClient,
@@ -44,10 +45,13 @@ describe('StatusLabelsPage', () => {
     await settle();
   }
 
+  const dialog = (): HTMLElement | null => document.body.querySelector('mf-lookup-dialog');
+
+  /** Opens the rename dialog of a status and types a name into its field. */
   async function edit(code: string, text: string): Promise<HTMLInputElement> {
     (row(code).querySelector('[data-rename]') as HTMLElement).click();
     await settle();
-    const input = row(code).querySelector<HTMLInputElement>('[data-label-input]')!;
+    const input = document.body.querySelector<HTMLInputElement>('#status-label-name')!;
     input.value = text;
     input.dispatchEvent(new Event('input'));
     await settle();
@@ -79,9 +83,16 @@ describe('StatusLabelsPage', () => {
       ).toBe(false);
     });
 
-    it('edits only the display label inline and keeps the code', async () => {
+    it('renames only the display label in the dialog, with a live preview, and keeps the code', async () => {
       const input = await edit('ON_HOLD', 'Waiting');
-      expect(row('ON_HOLD').querySelector('mf-status-badge')!.textContent).toContain('Waiting'); // live preview
+      // The dialog says what stays, and previews the badge as it will look; the row is unchanged until it is saved.
+      expect(document.body.querySelector('[data-rename-help]')!.textContent).toContain(
+        'The code ON_HOLD and every task',
+      );
+      expect(document.body.querySelector('[data-preview] mf-status-badge')!.textContent).toContain(
+        'Waiting',
+      );
+      expect(row('ON_HOLD').querySelector('mf-status-badge')!.textContent).toContain('On Hold');
 
       await submit(input);
 
@@ -91,15 +102,23 @@ describe('StatusLabelsPage', () => {
       expect(TestBed.inject(LookupStore).statusLabel('ON_HOLD')).toBe('Waiting');
     });
 
-    it('rejects a blank label and cancels with Escape', async () => {
+    it('rejects a blank label with the summary and the message, and Cancel closes the dialog', async () => {
       const input = await edit('NEW', '  ');
       await submit(input);
-      expect(row('NEW').textContent).toContain('Enter a label.');
+      expect(document.body.querySelector('[data-summary]')!.textContent).toContain(
+        'Enter a label.',
+      );
+      expect(dialog()!.textContent).toContain('Enter a label.');
       expect(api.calls.filter((c) => c !== 'list')).toEqual([]);
 
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      // The blank text is an edit: Cancel asks first ("Stay" is the default), and Leave closes the dialog.
+      const leave = TestBed.inject(LeaveConfirmService);
+      (document.body.querySelector('[data-lookup-cancel] button') as HTMLElement).click();
       await settle();
-      expect(row('NEW').querySelector('[data-label-input]')).toBeNull();
+      expect(leave.open()).toBe(true);
+      leave.answer(true);
+      await settle();
+      expect(document.body.querySelector('#status-label-name')).toBeNull();
       expect(row('NEW').textContent).toContain('New');
     });
 
@@ -111,7 +130,8 @@ describe('StatusLabelsPage', () => {
 
       await submit(input);
 
-      expect(row('NEW').textContent).toContain("A status labelled 'Completed' exists.");
+      expect(dialog()!.textContent).toContain("A status labelled 'Completed' exists.");
+      expect(document.body.querySelector('#status-label-name')).not.toBeNull();
     });
   });
 
