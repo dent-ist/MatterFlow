@@ -21,7 +21,13 @@ import { build, Setup, versionIds, VersionIds } from '../support/ty-workflow';
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
-type Perm = 'TaskType.Manage' | 'Workflow.Manage' | 'AssetType.Manage' | 'CustomField.Manage' | 'Task.View' | 'Client.View';
+type Perm =
+  | 'TaskType.Manage'
+  | 'Workflow.Manage'
+  | 'AssetType.Manage'
+  | 'CustomField.Manage'
+  | 'Task.View'
+  | 'Client.View';
 
 interface Role {
   key: string;
@@ -36,11 +42,23 @@ const ROLES: Role[] = [
   { key: 'tt-tv', label: 'TaskType.Manage and Task.View', perms: ['TaskType.Manage', 'Task.View'] },
   { key: 'wf', label: 'Workflow.Manage only', perms: ['Workflow.Manage'] },
   { key: 'wf-tv', label: 'Workflow.Manage and Task.View', perms: ['Workflow.Manage', 'Task.View'] },
-  { key: 'tt-wf', label: 'TaskType.Manage and Workflow.Manage', perms: ['TaskType.Manage', 'Workflow.Manage'] },
+  {
+    key: 'tt-wf',
+    label: 'TaskType.Manage and Workflow.Manage',
+    perms: ['TaskType.Manage', 'Workflow.Manage'],
+  },
   { key: 'at', label: 'AssetType.Manage only', perms: ['AssetType.Manage'] },
-  { key: 'at-tv', label: 'AssetType.Manage and Task.View', perms: ['AssetType.Manage', 'Task.View'] },
+  {
+    key: 'at-tv',
+    label: 'AssetType.Manage and Task.View',
+    perms: ['AssetType.Manage', 'Task.View'],
+  },
   { key: 'cf', label: 'CustomField.Manage only', perms: ['CustomField.Manage'] },
-  { key: 'cf-tv', label: 'CustomField.Manage and Task.View', perms: ['CustomField.Manage', 'Task.View'] },
+  {
+    key: 'cf-tv',
+    label: 'CustomField.Manage and Task.View',
+    perms: ['CustomField.Manage', 'Task.View'],
+  },
   { key: 'tv', label: 'Task.View only', perms: ['Task.View'] },
   { key: 'none', label: 'no admin permission (Client.View)', perms: ['Client.View'] },
 ];
@@ -117,15 +135,27 @@ function targets(): Target[] {
     },
     { name: 'New task type', url: '/admin/task-types/new', need: TT },
     { name: 'Task type', url: `/admin/task-types/${type.id}`, need: TT },
-    { name: 'Task type, Workflows tab', url: `/admin/task-types/${type.id}?tab=workflows`, need: TT },
+    {
+      name: 'Task type, Workflows tab',
+      url: `/admin/task-types/${type.id}?tab=workflows`,
+      need: TT,
+    },
     { name: 'Task type, Request form tab', url: `/admin/task-types/${type.id}?tab=form`, need: TT },
-    { name: 'Task type with workflows', url: `/admin/task-types/${setup.world.taskType.id}`, need: TT },
+    {
+      name: 'Task type with workflows',
+      url: `/admin/task-types/${setup.world.taskType.id}`,
+      need: TT,
+    },
     { name: 'Task type form', url: type.url, need: TT },
     { name: 'New workflow', url: '/admin/workflows/new', need: WF },
     { name: 'Workflow', url: `/admin/workflows/${wfId}`, need: WF },
     { name: 'Workflow, Versions tab', url: `/admin/workflows/${wfId}?tab=versions`, need: WF },
     { name: 'Workflow, Task types tab', url: `/admin/workflows/${wfId}?tab=task-types`, need: WF },
-    { name: 'Published version', url: `/admin/workflows/${wfId}/versions/${versions.v2}`, need: WF },
+    {
+      name: 'Published version',
+      url: `/admin/workflows/${wfId}/versions/${versions.v2}`,
+      need: WF,
+    },
     { name: 'Retired version', url: `/admin/workflows/${wfId}/versions/${versions.v1}`, need: WF },
     { name: 'Draft version', url: `/admin/workflows/${wfId}/versions/${versions.v3}`, need: WF },
     {
@@ -139,7 +169,11 @@ function targets(): Target[] {
     { name: 'Step, Used by tab', url: `/admin/steps/${usedStepId}?tab=used-by`, need: WF },
     { name: 'Step form', url: step.url, need: WF },
     { name: 'Asset Types', url: '/admin/asset-types', need: ['AssetType.Manage'] },
-    { name: 'Asset Link Roles', url: '/admin/asset-types?tab=link-roles', need: ['AssetType.Manage'] },
+    {
+      name: 'Asset Link Roles',
+      url: '/admin/asset-types?tab=link-roles',
+      need: ['AssetType.Manage'],
+    },
     { name: 'Asset type form', url: assetType.url, need: ['AssetType.Manage'] },
     { name: 'Custom Fields', url: '/admin/custom-fields', need: ['CustomField.Manage'] },
     { name: 'Custom Fields form', url: customField.url, need: ['CustomField.Manage'] },
@@ -186,7 +220,8 @@ async function expectQuiet(page: Page, what: string): Promise<void> {
 /** Which permission a link target needs (null: not part of the admin area). */
 function needOf(href: string): Perm[] | null {
   const p = href.split('?')[0].split('#')[0];
-  if (/^\/admin\/(task-types|workflows|steps)\/?$/.test(p)) return ['TaskType.Manage', 'Workflow.Manage'];
+  if (/^\/admin\/(task-types|workflows|steps)\/?$/.test(p))
+    return ['TaskType.Manage', 'Workflow.Manage'];
   if (p.startsWith('/admin/task-types')) return ['TaskType.Manage'];
   if (p.startsWith('/admin/workflows') || p.startsWith('/admin/steps')) return ['Workflow.Manage'];
   if (p.startsWith('/admin/asset-types')) return ['AssetType.Manage'];
@@ -198,7 +233,10 @@ function needOf(href: string): Perm[] | null {
 /** The Tab stops from the top of the page to the first row link or field (recorded, not gated). */
 async function tabStopsToFirst(page: Page, selector: string): Promise<number | null> {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-  await page.locator('body').click({ position: { x: 1, y: 1 } }).catch(() => undefined);
+  await page
+    .locator('body')
+    .click({ position: { x: 1, y: 1 } })
+    .catch(() => undefined);
   for (let n = 1; n <= 60; n++) {
     await page.keyboard.press('Tab');
     const hit = await page.evaluate(
@@ -245,7 +283,8 @@ test.describe('#417: permission matrix of the Task Types area', () => {
         await settle(page);
         if (!allowedTargets(need)) {
           // Designed denial: a create / edit / version / form address shows the 403 page; a tab address of a person with no tab at all too.
-          if (!isForbiddenPage(page)) problems.push(`${name} (${url}): expected the 403 page, got ${page.url()}`);
+          if (!isForbiddenPage(page))
+            problems.push(`${name} (${url}): expected the 403 page, got ${page.url()}`);
           return false;
         }
         if (isForbiddenPage(page)) {
@@ -262,7 +301,9 @@ test.describe('#417: permission matrix of the Task Types area', () => {
             problems.push(`${name} (${url}): a Workflow tab for a person without Workflow.Manage`);
           }
         }
-        await expectQuiet(page, name).catch((e: Error) => problems.push(`${name} (${url}): ${e.message.split('\n')[0]}`));
+        await expectQuiet(page, name).catch((e: Error) =>
+          problems.push(`${name} (${url}): ${e.message.split('\n')[0]}`),
+        );
         if (seen.failed.length > 0) problems.push(`${name} (${url}): ${seen.failed.join(', ')}`);
         return true;
       };
@@ -271,8 +312,12 @@ test.describe('#417: permission matrix of the Task Types area', () => {
         if (!(await open(t.url, t.name, t.need, t.tabs))) continue;
         const links = [...new Set(await contentLinks(page))];
         const first = FIRST[t.url.split('?')[0]];
-        if (first && t.url.indexOf('?') < 0) stops[role.key][t.url] = await tabStopsToFirst(page, first);
-        if (axeAvailable() && ['Task Types list', 'Task type', 'Workflow', 'Step', 'Published version'].includes(t.name)) {
+        if (first && t.url.indexOf('?') < 0)
+          stops[role.key][t.url] = await tabStopsToFirst(page, first);
+        if (
+          axeAvailable() &&
+          ['Task Types list', 'Task type', 'Workflow', 'Step', 'Published version'].includes(t.name)
+        ) {
           const v = await axeViolations(page);
           if (v.length > 0) problems.push(`${t.name}: axe ${JSON.stringify(v).slice(0, 300)}`);
         }
@@ -304,10 +349,15 @@ test.describe('#417: permission matrix of the Task Types area', () => {
         for (const id of labels) {
           if (/deactivate|activate|retire|discard|publish|save/.test(id)) continue;
           await open(t.url, t.name, t.need);
-          const button = page.locator(`#mf-main [data-record-header] [data-action="${id}"]`).first();
+          const button = page
+            .locator(`#mf-main [data-record-header] [data-action="${id}"]`)
+            .first();
           if (!(await button.isVisible())) continue;
           if (await button.isDisabled()) {
-            if (!(await button.getAttribute('title')) && !(await button.getAttribute('aria-describedby')))
+            if (
+              !(await button.getAttribute('title')) &&
+              !(await button.getAttribute('aria-describedby'))
+            )
               problems.push(`${t.name}: ${id} is disabled without a reason`);
             continue;
           }
@@ -316,14 +366,20 @@ test.describe('#417: permission matrix of the Task Types area', () => {
           await page.waitForTimeout(400);
           await settle(page);
           if (isForbiddenPage(page)) problems.push(`${t.name}: action ${id} leads to the 403 page`);
-          if (seen.failed.length > 0) problems.push(`${t.name}: action ${id}: ${seen.failed.join(', ')}`);
-          await expect(page.locator('.p-toast-message'), `${t.name}: toast after ${id}`).toHaveCount(0);
+          if (seen.failed.length > 0)
+            problems.push(`${t.name}: action ${id}: ${seen.failed.join(', ')}`);
+          await expect(
+            page.locator('.p-toast-message'),
+            `${t.name}: toast after ${id}`,
+          ).toHaveCount(0);
         }
       }
 
       if (OUT && ['wf', 'tt', 'tv'].includes(role.key)) {
         fs.mkdirSync(OUT, { recursive: true });
-        await page.goto(role.key === 'tt' ? `/admin/task-types/${world.type.id}` : '/admin/workflows');
+        await page.goto(
+          role.key === 'tt' ? `/admin/task-types/${world.type.id}` : '/admin/workflows',
+        );
         await settle(page);
         await page.screenshot({ path: path.join(OUT, `matrix-${role.key}-1366x768.png`) });
         await page.setViewportSize({ width: 375, height: 812 });
@@ -331,7 +387,10 @@ test.describe('#417: permission matrix of the Task Types area', () => {
       }
       if (OUT) {
         fs.mkdirSync(OUT, { recursive: true });
-        fs.writeFileSync(path.join(OUT, `tab-stops-${role.key}.json`), JSON.stringify(stops[role.key], null, 1));
+        fs.writeFileSync(
+          path.join(OUT, `tab-stops-${role.key}.json`),
+          JSON.stringify(stops[role.key], null, 1),
+        );
       }
       expect(problems, problems.join('\n')).toEqual([]);
     });

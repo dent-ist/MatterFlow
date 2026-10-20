@@ -19,7 +19,10 @@ export const FORM_TAB_REASON = 'Save the task type first';
 
 /** The tab `?tab=` names; anything else, and the Request form tab of an unsaved type, is Overview. */
 export function tabOf(raw: string | null | undefined, isNew: boolean): TaskTypeTab {
-  return firstAllowedTab<TaskTypeTab>(raw, isNew ? ['overview', 'workflows'] : ['overview', 'workflows', 'form']);
+  return firstAllowedTab<TaskTypeTab>(
+    raw,
+    isNew ? ['overview', 'workflows'] : ['overview', 'workflows', 'form'],
+  );
 }
 
 /** The header badge: Inactive and Not usable are neutral (derived states, never red), Active is green. Nothing for an unsaved type. */
