@@ -299,7 +299,7 @@ describe('WorkflowsListPage', () => {
       providers: [
         provideRouter([{ path: '**', children: [] }]),
         MessageService,
-        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage'))),
+        provideFakeMe(new FakeMeApi(withPermissions('Workflow.Manage', 'TaskType.Manage'))),
         { provide: WorkflowsClient, useValue: api },
         { provide: TaskTypesClient, useValue: taskTypes },
       ],

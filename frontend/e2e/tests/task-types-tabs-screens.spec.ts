@@ -84,7 +84,9 @@ test.describe('task types tabs screenshots', () => {
       };
 
       await page.goto(`/admin/task-types?name=${token}`);
-      await expect(page.locator('table[data-task-types] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-task-types] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('tab-1-task-types');
 
       await page.goto(`/admin/workflows?name=${token}`);
@@ -107,7 +109,9 @@ test.describe('task types tabs screenshots', () => {
 
       await page.goto(`/admin/task-types?workflow=${flows[0].workflowDefinitionId}`);
       await expect(page.locator('[data-filtered-by]')).toContainText(flows[0].name);
-      await expect(page.locator('table[data-task-types] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-task-types] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('task-types-filtered-by-workflow');
     }
     expect(problems, problems.join('\n')).toEqual([]);

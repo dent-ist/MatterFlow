@@ -180,6 +180,12 @@ test.describe('Task Type record page', () => {
       await openType(page, w);
       for (const size of SIZES) {
         await page.setViewportSize({ width: size.w, height: size.h });
+        // Let the layout settle after the resize (the header decides which actions fit in a frame or two) before asking what is visible.
+        await page.waitForFunction((w) => window.innerWidth === w, size.w);
+        await page.evaluate(
+          () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+        );
+        await expect(page.locator('[data-page-actions] button[data-overflow]')).toBeVisible();
         // A phone keeps only the primary action in the header: Activity is in the overflow there.
         const button = page.locator('[data-action=activity]');
         const inOverflow = !(await button.isVisible());

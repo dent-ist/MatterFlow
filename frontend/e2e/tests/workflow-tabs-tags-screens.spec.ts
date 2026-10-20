@@ -100,6 +100,12 @@ test.describe('workflow tabs and tags screenshots', () => {
 
       await page.goto(`/admin/workflows/${workflowId}/versions/${draftId}`);
       const library = page.locator('[data-library]');
+      // The library shows the first 50 of every step in the database: search for the tagged steps of this run instead of hoping they
+      // are among them. Below 1280 px the library is a drawer opened from Add step.
+      const search = page.getByPlaceholder('Title, description or tag');
+      if (!(await search.isVisible()))
+        await page.getByRole('button', { name: /^Add step/ }).click();
+      await search.fill('Relativity');
       await expect(library.locator('[data-lib]').first()).toBeVisible();
       await expect(library.locator('[data-tag]').first()).toBeVisible();
       await shoot('designer-step-picker');

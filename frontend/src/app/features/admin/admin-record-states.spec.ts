@@ -9,6 +9,7 @@ import {
   StepDefinitionDetail,
   StepDefinitionsClient,
   WorkflowDetail,
+  WorkflowVersionDetail,
   WorkflowsClient,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -72,6 +73,20 @@ const wfDetail: WorkflowDetail = {
   } as unknown as WorkflowDetail['workflow'],
   versions: [],
 };
+
+/** A version the retry of the version page can show (the page needs `version`; an empty object left it with nothing to read). */
+const wfVersionDetail = {
+  workflowDefinitionId: 10,
+  workflowName: 'Large Production Workflow',
+  version: {
+    workflowVersionId: 99999,
+    versionNo: 3,
+    status: 'DRAFT',
+    isOrdered: true,
+    rowVersion: 'V',
+  },
+  steps: [],
+} as unknown as WorkflowVersionDetail;
 
 const stepDetail = {
   stepDefinitionId: 4,
@@ -178,7 +193,7 @@ const CASES: Case[] = [
     setup: (fail) => {
       const client = {
         getWorkflow: vi.fn(() => ok(wfDetail)),
-        getWorkflowVersion: vi.fn(() => fail() ?? ok({})),
+        getWorkflowVersion: vi.fn(() => fail() ?? ok(wfVersionDetail)),
       };
       CURRENT.reset = () => (CURRENT.failing = false);
       return [
