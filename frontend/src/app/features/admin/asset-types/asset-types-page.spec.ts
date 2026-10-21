@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { AssetTypesClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { Permission } from '../../../core/auth/permissions';
 import { anAssetType, pageOfAssetTypes } from '../../../shared/testing/asset-testing';
 import {
@@ -192,6 +193,54 @@ describe('AssetTypesPage', () => {
     expect(api.listAssetTypes).toHaveBeenCalledTimes(2);
     expect(el().querySelector('[data-editor]')).toBeNull();
     expect(el().querySelector('[data-announce]')?.textContent).toContain('Data Room created');
+  });
+
+  it('puts focus on Name after a failed submit and keeps the form unboxed, with its buttons in the page flow (#530)', async () => {
+    await create(['AssetType.Manage']);
+    buttonByLabel(el(), 'New asset type')!.click();
+    await settle(fixture);
+    await submit();
+
+    const summary = el().querySelector('[data-summary]')!;
+    expect(summary.textContent!.match(/Enter a name\./g)).toHaveLength(1);
+    expect(summary.compareDocumentPosition(el().querySelector('#type-name')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(document.activeElement).toBe(el().querySelector('#type-name'));
+    expect(el().querySelector('.mf-form-actions--sticky')).toBeNull();
+  });
+
+  it('knows a half-typed form from an untouched one, and asks before another form replaces it (#530)', async () => {
+    await create(['AssetType.Manage']);
+    const page = fixture.componentInstance;
+    expect(page.hasUnsavedChanges()).toBe(false);
+
+    buttonByLabel(el(), 'New asset type')!.click();
+    await settle(fixture);
+    expect(page.hasUnsavedChanges()).toBe(false);
+    type('#type-name', 'Half typed');
+    await settle(fixture);
+    expect(page.hasUnsavedChanges()).toBe(true);
+
+    // Stay keeps the text and the form.
+    const ask = vi.spyOn(TestBed.inject(LeaveConfirmService), 'ask').mockResolvedValue(false);
+    el().querySelector<HTMLElement>('button[aria-label="Edit Document Set"]')!.click();
+    await settle(fixture);
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect((el().querySelector('#type-name') as HTMLInputElement).value).toBe('Half typed');
+
+    // Leave opens the other form.
+    ask.mockResolvedValue(true);
+    el().querySelector<HTMLElement>('button[aria-label="Edit Document Set"]')!.click();
+    await settle(fixture);
+    expect((el().querySelector('#type-name') as HTMLInputElement).value).toBe('Document Set');
+    expect(page.hasUnsavedChanges()).toBe(false);
+
+    // Cancelling is not "unsaved".
+    type('#type-name', 'Changed again');
+    buttonByLabel(el(), 'Cancel')!.click();
+    await settle(fixture);
+    expect(page.hasUnsavedChanges()).toBe(false);
   });
 
   it('shows a duplicate name as a field error', async () => {

@@ -7,10 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  HasUnsavedChanges,
-  LeaveConfirmService,
-} from '../../../shared/guards/unsaved-changes.guard';
+import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
@@ -22,7 +19,7 @@ type AssetAdminTab = 'types' | 'link-roles';
 /**
  * Administration: the Assets set-up page, reached from the "Assets" item of the Administration menu (not the Assets data records).
  * Two tabs, Asset Types and Asset Link Roles, kept in the address as `?tab=` (`link-roles` for the second; the old
- * `/admin/asset-link-roles` URL redirects there). Needs `AssetType.Manage`. Leaving the second tab with a half-typed role asks first.
+ * `/admin/asset-link-roles` URL redirects there). Needs `AssetType.Manage`. Leaving either tab with half-typed text (a new role, an asset type form) asks first.
  */
 @Component({
   selector: 'mf-asset-admin-page',
@@ -48,7 +45,7 @@ type AssetAdminTab = 'types' | 'link-roles';
         [attr.aria-labelledby]="'assets-admin-tab-' + current()"
       >
         @if (current() === 'types') {
-          <mf-asset-types-page />
+          <mf-asset-types-page #types />
         } @else {
           <mf-asset-link-roles-page #linkRoles />
         }
@@ -58,8 +55,8 @@ type AssetAdminTab = 'types' | 'link-roles';
 })
 export class AssetAdminPage implements HasUnsavedChanges {
   private readonly router = inject(Router);
-  private readonly leave = inject(LeaveConfirmService);
   private readonly linkRoles = viewChild<AssetLinkRolesPage>('linkRoles');
+  private readonly types = viewChild<AssetTypesPage>('types');
 
   /** The `tab` query parameter. */
   readonly tab = input<string>();
@@ -73,11 +70,14 @@ export class AssetAdminPage implements HasUnsavedChanges {
   );
 
   hasUnsavedChanges(): boolean {
-    return this.linkRoles()?.hasUnsavedChanges() ?? false;
+    return (
+      (this.types()?.hasUnsavedChanges() ?? false) ||
+      (this.linkRoles()?.hasUnsavedChanges() ?? false)
+    );
   }
 
+  /** The tab changes the address; the route's leave guard asks first when either tab holds text that is not saved (one question, Stay is the default). */
   protected async select(key: string): Promise<void> {
-    if (this.hasUnsavedChanges() && !(await this.leave.ask())) return;
     await this.router.navigate([], {
       // The Asset Types filters belong to that tab only.
       queryParams: { tab: key === 'types' ? null : key, name: null, status: null },

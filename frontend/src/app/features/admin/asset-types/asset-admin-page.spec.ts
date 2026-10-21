@@ -5,6 +5,7 @@ import { AssetLinkRolesClient, AssetTypesClient } from '../../../api/generated/a
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
+import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { FakeAssetLinkRolesClient } from '../../../core/lookups/lookups-testing';
 import { anAssetType, pageOfAssetTypes } from '../../../shared/testing/asset-testing';
 import { ok } from '../../../shared/testing/org-testing';
@@ -83,6 +84,46 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     const router = await open('/admin/asset-link-roles', 'AssetType.Manage');
     expect(router.url).toBe('/admin/asset-types?tab=link-roles');
     expect(selected()).toBe('Asset Link Roles');
+  });
+
+  it('asks before the tab switch or navigation drops a half-typed asset type (#530)', async () => {
+    const router = await open('/admin/asset-types', 'AssetType.Manage');
+    const leave = TestBed.inject(LeaveConfirmService);
+    const ask = vi.spyOn(leave, 'ask').mockResolvedValue(false);
+
+    // Untouched form: the tab opens without a question.
+    el().querySelector<HTMLButtonElement>('p-button button, button.p-button')!.click();
+    await settle();
+    expect(el().querySelector('[data-editor]')).not.toBeNull();
+    tabs()[1].click();
+    await settle();
+    expect(ask).not.toHaveBeenCalled();
+    expect(selected()).toBe('Asset Link Roles');
+    tabs()[0].click();
+    await settle();
+
+    // Half-typed: Stay keeps the text on the same tab.
+    el().querySelector<HTMLButtonElement>('p-button button, button.p-button')!.click();
+    await settle();
+    const name = el().querySelector<HTMLInputElement>('#type-name')!;
+    name.value = 'Half typed';
+    name.dispatchEvent(new Event('input'));
+    await settle();
+    tabs()[1].click();
+    await settle();
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(selected()).toBe('Asset Types');
+    expect(el().querySelector<HTMLInputElement>('#type-name')!.value).toBe('Half typed');
+
+    // Navigating away asks too (the route guard), and Leave goes.
+    await router.navigateByUrl('/403');
+    await settle();
+    expect(ask).toHaveBeenCalledTimes(2);
+    expect(router.url).toBe('/admin/asset-types');
+    ask.mockResolvedValue(true);
+    await router.navigateByUrl('/403');
+    await settle();
+    expect(router.url).toBe('/403');
   });
 
   it('needs AssetType.Manage', async () => {

@@ -18,6 +18,11 @@ import { AssetTypeResponse, AssetTypesClient } from '../../../api/generated/api-
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
+import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
+import {
+  HasUnsavedChanges,
+  LeaveConfirmService,
+} from '../../../shared/guards/unsaved-changes.guard';
 import { TextField } from '../../../shared/ui/text-field';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ActiveBadge } from '../../../shared/ui/badge';
@@ -53,7 +58,7 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
     ColumnFilterRow,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill' },
+  host: { class: 'mf-fill', '[class.at-editing]': 'editing()' },
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <div class="pg-bar">
@@ -88,7 +93,13 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
     </mf-confirm-dialog>
 
     @if (editing()) {
-      <form class="pg-form" novalidate data-editor (submit)="$event.preventDefault(); save()">
+      <form
+        class="pg-form"
+        novalidate
+        data-editor
+        #editor
+        (submit)="$event.preventDefault(); save()"
+      >
         <h2 class="pg-subtitle">{{ editingId() ? 'Edit asset type' : 'New asset type' }}</h2>
         @if (summary().length > 0) {
           <div class="pg-summary" role="alert" data-summary>
@@ -136,7 +147,7 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
             Active (inactive types can't be chosen for new assets)
           </label>
         }
-        <div class="pg-actions mf-form-actions--sticky">
+        <div class="pg-actions">
           <p-button
             type="submit"
             [label]="busy() ? 'Saving...' : editingId() ? 'Save changes' : 'Create asset type'"
@@ -243,6 +254,22 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
     </div>
   `,
   styles: `
+    /* While the form is open (#530) the page body scrolls as one, so the whole form card shows at its natural height instead of being
+       cut off by the fixed page; the form is no longer boxed or sticky. */
+    :host(.at-editing) {
+      overflow-y: auto;
+    }
+    :host(.at-editing) .mf-scroll-area {
+      flex: none;
+      overflow-y: visible;
+    }
+    /* The page's fixed-page rule boxes a form above a list (max 45% of the height, its own scroll); the whole card shows instead. */
+    :host(.at-editing) .pg-form {
+      flex: none;
+      max-height: none;
+      margin-bottom: var(--mf-s4);
+      overflow-y: visible;
+    }
     .pg-subtitle {
       margin: 0;
       font-size: var(--mf-fs-h3);
@@ -255,8 +282,10 @@ const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
     }
   `,
 })
-export class AssetTypesPage {
+export class AssetTypesPage implements HasUnsavedChanges {
   private readonly api = inject(AssetTypesClient);
+  private readonly leave = inject(LeaveConfirmService);
+  private readonly editor = viewChild<ElementRef<HTMLElement>>('editor');
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(NotificationService);
   private readonly injector = inject(Injector);
@@ -289,6 +318,12 @@ export class AssetTypesPage {
   protected readonly submitted = signal(false);
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
+
+  /** What the form held when it opened, to tell a half-typed form from an untouched one (#530). */
+  private readonly opened = signal('');
+  private readonly formState = computed(() =>
+    JSON.stringify([this.name(), this.description(), this.sortOrder(), this.isActive()]),
+  );
 
   protected readonly nameError = computed(() =>
     this.submitted() && this.name().trim() === '' ? 'Enter a name.' : this.fieldError('name'),
@@ -340,21 +375,35 @@ export class AssetTypesPage {
     }
   }
 
-  protected startCreate(): void {
+  /** A form with text the person has not saved: leaving the tab or the page asks first (#530). */
+  hasUnsavedChanges(): boolean {
+    return this.editing() && this.formState() !== this.opened();
+  }
+
+  /** Opening another form over a half-typed one asks first; Stay keeps the text. */
+  private async mayReplaceForm(): Promise<boolean> {
+    return !this.hasUnsavedChanges() || (await this.leave.ask());
+  }
+
+  protected async startCreate(): Promise<void> {
+    if (!(await this.mayReplaceForm())) return;
     this.reset();
     const last = this.rows().at(-1);
     this.sortOrder.set((last?.sortOrder ?? 0) + 10);
     this.editingId.set(null);
+    this.opened.set(this.formState());
     this.editing.set(true);
   }
 
-  protected startEdit(t: AssetTypeResponse): void {
+  protected async startEdit(t: AssetTypeResponse): Promise<void> {
+    if (!(await this.mayReplaceForm())) return;
     this.reset();
     this.editingId.set(t.assetTypeId);
     this.name.set(t.name);
     this.description.set(t.description ?? '');
     this.sortOrder.set(t.sortOrder);
     this.isActive.set(t.isActive);
+    this.opened.set(this.formState());
     this.editing.set(true);
   }
 
@@ -379,6 +428,7 @@ export class AssetTypesPage {
     this.summary.set([]);
     if (this.name().trim() === '') {
       this.summary.set(['Enter a name.']);
+      focusFirstInvalid(this.injector, this.editor()?.nativeElement);
       return;
     }
 
@@ -429,6 +479,7 @@ export class AssetTypesPage {
           ? ['Someone else changed this asset type. Cancel and reopen it to see the latest.']
           : errors.summary,
       );
+      focusFirstInvalid(this.injector, this.editor()?.nativeElement);
     } finally {
       this.busy.set(false);
     }
