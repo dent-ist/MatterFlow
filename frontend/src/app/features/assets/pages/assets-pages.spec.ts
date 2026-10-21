@@ -211,11 +211,15 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     const rowOf = (id: number): HTMLElement | null =>
       el().querySelector(`tbody tr[data-asset-id="${id}"]`);
 
+    const width = window.innerWidth;
     beforeEach(() => {
       localStorage.clear();
       // The External reference column is on screen from 1280 px.
       Object.defineProperty(window, 'innerWidth', { value: 1366, configurable: true });
     });
+    afterEach(() =>
+      Object.defineProperty(window, 'innerWidth', { value: width, configurable: true }),
+    );
 
     async function create(permissions: Permission[], inputs: Record<string, string> = {}) {
       await configure(permissions);
@@ -859,7 +863,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         description: undefined,
         formValues: { workspace_id: 'WS-8841' },
       });
-      expect(navigate).toHaveBeenCalledWith(['/assets'], { queryParams: { selected: 12 } });
+      expect(navigate).toHaveBeenCalledWith(['/assets', 12]);
     });
 
     it('requires matter, type and name, and the required type-specific field, before calling the server', async () => {
@@ -963,7 +967,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         formValues: { workspace_id: 'WS-8841', notes: null },
         rowVersion: 'AAAA',
       });
-      expect(navigate).toHaveBeenCalledWith(['/assets'], { queryParams: { selected: 9 } });
+      expect(navigate).toHaveBeenCalledWith(['/assets', 9]);
     });
 
     it('warns that an inactive asset cannot be edited and offers a reload on conflict', async () => {

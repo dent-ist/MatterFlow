@@ -59,6 +59,13 @@ type Tab = 'details' | 'tasks' | 'history';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    /* The matter number on the context line is a 24 px target without growing the line (WCAG 2.2 2.5.8): padding that margin takes back. */
+    [data-matter] ::ng-deep a.mf-ref {
+      margin-block: -5px;
+      padding-block: 5px;
+    }
+  `,
   template: `
     <mf-fixed-page>
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>

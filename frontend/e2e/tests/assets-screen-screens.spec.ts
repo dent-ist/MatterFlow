@@ -8,7 +8,7 @@ import { seedBulk } from '../support/bulk';
  * Screenshot run for docs/ux/assets-screen (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/assets-screen/after frontend/e2e/run-local.sh -g "assets screen screenshots"
  * Seeds 60 assets in 8 matters, then takes the Assets screen at 1366x768 and 375x812: filters hidden, filters shown (some active), with a
- * selected asset, and an empty result.
+ * record page, and an empty result.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
@@ -60,12 +60,9 @@ test.describe('assets screen screenshots', () => {
       await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
       await shot(page, 'assets-filters-active', size);
 
-      await page.goto(`/assets?selected=${first.assetId}`);
-      await expect(page.getByRole('region', { name: 'Asset details' })).toBeVisible();
-      await expect(
-        page.getByRole('region', { name: 'Asset details' }).getByRole('heading').first(),
-      ).toContainText('Bulk asset');
-      await shot(page, 'assets-selected', size);
+      await page.goto(`/assets/${first.assetId}`);
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('Bulk asset');
+      await shot(page, 'assets-record-page', size);
 
       await page.goto('/assets?name=no-such-asset-anywhere');
       await expect(page.getByText('No assets match these filters')).toBeVisible();
