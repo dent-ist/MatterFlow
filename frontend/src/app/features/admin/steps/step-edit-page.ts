@@ -59,12 +59,14 @@ import {
 } from './step-record';
 import { StepUsedByTab } from './step-used-by-tab';
 
-/** True for an empty value or a full http(s) address (mirrors the server rule). */
+const ONENOTE_PREFIX = /^onenote:/i;
+
+/** True for an empty value, a full http(s) address, or a OneNote link (`onenote:` + http(s) address); mirrors the server rule. */
 export function isValidDocumentationUrl(value: string): boolean {
   const text = value.trim();
   if (text === '') return true;
   try {
-    const url = new URL(text);
+    const url = new URL(text.replace(ONENOTE_PREFIX, ''));
     return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
@@ -163,7 +165,7 @@ export class StepEditPage implements HasUnsavedChanges {
 
   protected readonly urlError = computed(() => {
     if (this.submitted() && !isValidDocumentationUrl(this.documentationUrl())) {
-      return 'Enter a full web address starting with http:// or https://.';
+      return 'Enter a full web address starting with http:// or https://, or a OneNote link starting with onenote:https://.';
     }
     return this.fieldError('documentationUrl');
   });
@@ -395,7 +397,7 @@ export class StepEditPage implements HasUnsavedChanges {
     const problems: string[] = [];
     if (this.title().trim() === '') problems.push('Enter a title.');
     if (!isValidDocumentationUrl(this.documentationUrl())) {
-      problems.push('Enter a full web address starting with http:// or https://.');
+      problems.push('Enter a full web address starting with http:// or https://, or a OneNote link starting with onenote:https://.');
     }
     if (problems.length > 0) {
       this.summary.set(problems);

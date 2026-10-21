@@ -719,6 +719,16 @@ describe('isValidDocumentationUrl', () => {
     expect(isValidDocumentationUrl('ftp://x.example')).toBe(false);
     expect(isValidDocumentationUrl('x.example')).toBe(false);
   });
+
+  it('also accepts a OneNote link: onenote: followed by an http(s) address', () => {
+    expect(
+      isValidDocumentationUrl('onenote:https://firm.sharepoint.com/Notebook/Page.one#Section'),
+    ).toBe(true);
+    expect(isValidDocumentationUrl('ONENOTE:https://x.example/y')).toBe(true);
+    expect(isValidDocumentationUrl('onenote:')).toBe(false);
+    expect(isValidDocumentationUrl('onenote:ftp://x.example')).toBe(false);
+    expect(isValidDocumentationUrl('javascript:alert(1)')).toBe(false);
+  });
 });
 
 describe('StepsListPage tags', () => {

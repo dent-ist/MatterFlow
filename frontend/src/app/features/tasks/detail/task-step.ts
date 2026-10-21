@@ -1,3 +1,4 @@
+import { DomSanitizer } from '@angular/platform-browser';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -492,6 +493,7 @@ export class TaskStep {
 
   protected readonly store = inject(TaskDetailStore);
   private readonly forms = inject(FormsClient);
+  private readonly sanitizer = inject(DomSanitizer);
   private readonly pickerContext = inject(AssetPickerContext);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly dynamicForm = viewChild(DynamicForm);
@@ -568,7 +570,12 @@ export class TaskStep {
 
   protected readonly safeDocUrl = computed(() => {
     const url = this.step().documentationUrl;
-    return url && /^https?:\/\//i.test(url) ? url : null;
+    if (!url) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    // A OneNote desktop link: only `onenote:` followed by an http(s) address is passed through (Angular would otherwise prefix `unsafe:`).
+    return /^onenote:https?:\/\/\S+$/i.test(url)
+      ? this.sanitizer.bypassSecurityTrustUrl(url)
+      : null;
   });
 
   constructor() {

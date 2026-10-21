@@ -88,7 +88,7 @@ internal static class WorkflowSupport
         return text is { } t && t.Length > max ? Error.Validation(field, "TOO_LONG", $"Use at most {max} characters.") : Result<string?>.Success(text);
     }
 
-    /// <summary>Optional http(s) URL (as the form engine's URL control).</summary>
+    /// <summary>Optional http(s) URL (as the form engine's URL control), or a OneNote desktop link: <c>onenote:</c> followed by an http(s) address.</summary>
     public static Result<string?> OptionalUrl(string? value, string field, int max)
     {
         var text = OptionalText(value, field, max);
@@ -97,9 +97,10 @@ internal static class WorkflowSupport
             return text;
         }
 
-        return Uri.TryCreate(text.Value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+        var address = text.Value.StartsWith("onenote:", StringComparison.OrdinalIgnoreCase) ? text.Value["onenote:".Length..] : text.Value;
+        return Uri.TryCreate(address, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
             ? text
-            : Error.Validation(field, "INVALID_URL", "Enter a full web address starting with http:// or https://.");
+            : Error.Validation(field, "INVALID_URL", "Enter a full web address starting with http:// or https://, or a OneNote link starting with onenote:https://.");
     }
 
     /// <summary>True when the exception (or one inside it) is a SQL Server deadlock: error 1205, the victim's transaction was rolled back and may be repeated.</summary>
