@@ -185,8 +185,33 @@ describe('landingGuard', () => {
     expect(await run(landingGuard)).toBe('/clients');
   });
 
-  it('keeps My Work and Task Queue ahead of the Dashboard', async () => {
+  it('lands oversight roles with Task.View, a Dashboard tab and no work on the Dashboard, not on a 141-row Task Queue (S4a, #628)', async () => {
     setup(profileOf({ permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary'] }));
+    expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('counts every Dashboard tab permission, Unassigned included (the Intake Coordinator, #628)', async () => {
+    for (const tab of [
+      'Dashboard.ViewSummary',
+      'Dashboard.ViewBreakdowns',
+      'Dashboard.ViewTrends',
+      'Dashboard.ViewSwimlane',
+      'Dashboard.ViewUsers',
+      'Dashboard.ViewUnassigned',
+    ] as const) {
+      TestBed.resetTestingModule();
+      setup(profileOf({ permissions: ['Task.View', 'Dashboard.View', tab] }));
+      expect(await run(landingGuard)).toBe('/dashboard');
+    }
+  });
+
+  it('Coverage alone opens no tab, so it does not change the landing (#628)', async () => {
+    setup(profileOf({ permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewCoverage'] }));
+    expect(await run(landingGuard)).toBe('/tasks');
+  });
+
+  it('keeps Task Queue for a Task.View person with Dashboard.View but no tab turned on (#628)', async () => {
+    setup(profileOf({ permissions: ['Task.View', 'Dashboard.View'] }));
     expect(await run(landingGuard)).toBe('/tasks');
   });
 

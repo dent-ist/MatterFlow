@@ -181,8 +181,9 @@ test.describe('State pages are one family (#607)', () => {
     asUser,
   }) => {
     const cases = [
-      { who: 'technician' as const, href: '/tasks' },
-      { who: 'director' as const, href: null },
+      // No pod and no assigned task, and Dashboard.ViewUnassigned: the landing rule (#628) leads to the Dashboard.
+      { who: 'technician' as const, href: '/dashboard' },
+      { who: 'director' as const, href: '/dashboard' },
       { who: 'clientViewOnly' as const, href: '/clients' },
       { who: 'taskViewOnly' as const, href: '/tasks' },
     ];

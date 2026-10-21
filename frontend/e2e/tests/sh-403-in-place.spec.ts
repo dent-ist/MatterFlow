@@ -30,7 +30,8 @@ test.describe('The 403 page keeps the address (#598)', () => {
       'You asked for /admin/users?status=all.',
     );
     await expect(page).toHaveTitle('No access - MatterFlow');
-    await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/tasks');
+    // A technician with no pod and no assigned task holds Dashboard.ViewUnassigned: the landing rule (#628) leads to the Dashboard.
+    await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/dashboard');
 
     // Back goes to the page the person came from (the 403 did not add an entry of its own).
     await page.goBack();
@@ -120,11 +121,20 @@ test.describe('The 403 page keeps the address (#598)', () => {
     const cases: { who: Persona; path: string; link: string | null }[] = [
       { who: await personas.named('clientViewOnly'), path: '/matters', link: '/clients' },
       { who: await personas.named('taskViewOnly'), path: '/admin/task-types', link: '/tasks' },
-      { who: await personas.named('podViewWithoutTaskView'), path: '/tasks', link: '/pods/work' },
+      // Pod Work needs Task.View as well (#549): Pod.View alone opens nothing, so there is no link to offer.
+      { who: await personas.named('podViewWithoutTaskView'), path: '/tasks', link: null },
       { who: await personas.named('userManageOnly'), path: '/clients/new', link: '/admin' },
-      { who: await personas.named('readOnlyObserver'), path: '/admin/workflows', link: null },
-      { who: await personas.named('complianceAuditor'), path: '/clients/new', link: null },
-      { who: await personas.named('intakeCoordinator'), path: '/admin/workflows', link: null },
+      {
+        who: await personas.named('readOnlyObserver'),
+        path: '/admin/workflows',
+        link: '/dashboard',
+      },
+      { who: await personas.named('complianceAuditor'), path: '/clients/new', link: '/dashboard' },
+      {
+        who: await personas.named('intakeCoordinator'),
+        path: '/admin/workflows',
+        link: '/dashboard',
+      },
       { who: await personas.named('configurationAdmin'), path: '/tasks', link: null },
     ];
     for (const c of cases) {

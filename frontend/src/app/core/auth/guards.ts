@@ -13,10 +13,8 @@ export const APP_PATHS = {
   taskQueue: '/tasks',
 } as const;
 
-/** Screens a user can land on when they have no Task.View, in navigation order (first permitted wins). */
+/** Screens a user can land on when the first three steps of the landing rule do not apply, in navigation order (first permitted wins). */
 const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] = [
-  // The Dashboard only when a tab is turned on (see AuthStore.hasAnyDashboardTab); handled in defaultLandingPath.
-  { path: APP_PATHS.dashboard, permissions: ['Dashboard.View'] },
   { path: '/clients', permissions: ['Client.View'] },
   { path: '/matters', permissions: ['Matter.View'] },
   { path: '/projects', permissions: ['Project.View'] },
@@ -26,19 +24,24 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
 ];
 
 /**
- * Default landing: My Work if the user has pod/assignments, else Task Queue (UX 2.2). The Dashboard is not for everyone (Dashboard.View), so it
- * is only a landing page for people without Task.View who hold it; otherwise the first screen they may open.
+ * Default landing, the one rule behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
+ * "Check again" (S4a, #628; UX 2.2 amended):
+ *   1. My Work, if the person has Task.View and any pod membership or assignment (`hasWork`);
+ *   2. else the Dashboard, if they hold any Dashboard tab permission (Summary, Breakdowns, Trends, Swimlane, Users or Unassigned);
+ *   3. else Task Queue, if they have Task.View;
+ *   4. else the first page they can open (Clients, Matters, Projects, Assets, Administration);
+ *   5. else /403 (a pending person never gets here: the guards send them to Access Pending first).
+ * Nobody lands on a page the navigation hides: My Work and Task Queue need Task.View, the Dashboard needs a tab.
  */
 export function defaultLandingPath(store: AuthStore): string {
-  if (store.has('Task.View')) {
-    return store.profile()?.hasWork ? APP_PATHS.myWork : APP_PATHS.taskQueue;
-  }
-  return (
-    LANDING_FALLBACKS.find((f) =>
-      f.path === APP_PATHS.dashboard ? store.hasAnyDashboardTab() : store.hasAny(f.permissions),
-    )?.path ?? APP_PATHS.forbidden
-  );
+  if (store.has('Task.View') && store.profile()?.hasWork) return APP_PATHS.myWork;
+  if (store.hasAnyDashboardTab()) return APP_PATHS.dashboard;
+  if (store.has('Task.View')) return APP_PATHS.taskQueue;
+  return LANDING_FALLBACKS.find((f) => store.hasAny(f.permissions))?.path ?? APP_PATHS.forbidden;
 }
+
+/** The landing rule by its name in the delivery plan (`landingFor(permissions)`): the address a person's home, logo and "Go to ..." links lead to. */
+export const landingFor = defaultLandingPath;
 
 /** A link to a page the person can open. */
 export interface LandingLink {
