@@ -81,7 +81,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <mf-record-skeleton kind="matter" [activeTab]="current()" />
+          <mf-record-skeleton kind="matter" [activeTab]="current()" (retry)="load()" />
         }
         @case ('ready') {
           @if (matter(); as m) {

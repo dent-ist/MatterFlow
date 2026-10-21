@@ -58,7 +58,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <mf-record-skeleton kind="project" [activeTab]="current()" />
+          <mf-record-skeleton kind="project" [activeTab]="current()" (retry)="load()" />
         }
         @case ('ready') {
           @if (project(); as p) {

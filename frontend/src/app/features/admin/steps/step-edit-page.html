@@ -8,7 +8,7 @@
   />
 } @else if (state() === 'loading') {
   <span class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ flow.live() }}</span>
-  <mf-record-skeleton kind="step" [activeTab]="current()" />
+  <mf-record-skeleton kind="step" [activeTab]="current()" (retry)="load()" />
 } @else {
   <div class="sp" data-step-page>
     <mf-record-header

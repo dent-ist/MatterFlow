@@ -72,7 +72,7 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
     <span class="pg-sr" role="status" data-record-live>{{ store.flow.live() }}</span>
     @switch (store.state()) {
       @case ('loading') {
-        <mf-record-skeleton kind="task" [splitKey]="splitKey()" />
+        <mf-record-skeleton kind="task" [splitKey]="splitKey()" (retry)="store.load()" />
       }
       @case ('ready') {
         @if (store.task(); as t) {

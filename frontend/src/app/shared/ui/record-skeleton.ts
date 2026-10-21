@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
   DRILL_SOURCES,
@@ -12,6 +12,7 @@ import { DetailLayout } from './detail-layout';
 import { Crumb } from './page-header';
 import { RecordHeader } from './record-header';
 import { RecordKind } from './record-state';
+import { StillLoading } from './still-loading';
 import { MfTab, Tabs } from './tabs';
 
 /**
@@ -72,7 +73,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
  */
 @Component({
   selector: 'mf-record-skeleton',
-  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet],
+  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.rk-task]': "kind() === 'task'" },
   template: `
@@ -92,6 +93,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
           <ng-container *ngTemplateOutlet="rowsTpl" />
         }
       </div>
+      <mf-still-loading (retry)="retry.emit()" />
     </div>
     <ng-template #taskTpl>
       <mf-record-header
@@ -232,6 +234,8 @@ const ROWS = [0, 1, 2, 3, 4] as const;
 })
 export class RecordSkeleton {
   readonly kind = input.required<RecordKind>();
+  /** Retry on the "Still loading..." line after 8 seconds (S17, #615): the page issues its request again. */
+  readonly retry = output<void>();
   /** The tab that is open (the address's `tab`); the first tab when it is not one of the page's. */
   readonly activeTab = input('details');
 

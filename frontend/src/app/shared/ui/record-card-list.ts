@@ -24,6 +24,7 @@ import { CopyPart, CopyParts } from './copy-parts';
 import { LoadState } from './data-table';
 import { RowLink } from './row-nav';
 import { ErrorReference } from './error-reference';
+import { StillLoading } from './still-loading';
 import type { ListFilters } from '../filters/list-filters';
 
 /** Below this width (the work lists' 640 px: 639 is cards, 640 is the table) a record list is cards instead of a table (WP12, #275). */
@@ -82,7 +83,7 @@ export class RecordCardDef<T = unknown> {
  */
 @Component({
   selector: 'mf-record-card-list',
-  imports: [NgTemplateOutlet, CopyParts, ErrorReference],
+  imports: [NgTemplateOutlet, CopyParts, ErrorReference, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrl: './record-card-list.scss',
@@ -100,6 +101,7 @@ export class RecordCardDef<T = unknown> {
             </li>
           }
         </ul>
+        <mf-still-loading (retry)="retry.emit()" />
       }
       @case ('forbidden') {
         <div class="rc-state" data-forbidden>

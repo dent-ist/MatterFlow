@@ -7,14 +7,39 @@ import { RecordKind } from './record-state';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RecordSkeleton],
-  template: `<mf-record-skeleton [kind]="kind()" [activeTab]="tab()" />`,
+  template: `<mf-record-skeleton
+    [kind]="kind()"
+    [activeTab]="tab()"
+    (retry)="retried = retried + 1"
+  />`,
 })
 class Host {
   readonly kind = signal<RecordKind>('client');
   readonly tab = signal('details');
+  retried = 0;
 }
 
-describe('mf-record-skeleton (#247)', () => {
+describe('mf-record-skeleton (#247, #615)', () => {
+  it('adds "Still loading... Retry" after 8 seconds and Retry is the page\'s own request again', async () => {
+    vi.useFakeTimers();
+    try {
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const fixture = TestBed.createComponent(Host);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-still-loading]')).toBeNull();
+      vi.advanceTimersByTime(8000);
+      fixture.detectChanges();
+      expect(el.querySelector('[data-still-loading]')!.textContent).toContain('Still loading...');
+      // Outside the inert skeleton, so it can be reached with the keyboard.
+      expect(el.querySelector('[inert] [data-still-loading-retry]')).toBeNull();
+      el.querySelector<HTMLButtonElement>('[data-still-loading-retry]')!.click();
+      expect(fixture.componentInstance.retried).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   async function render(kind: RecordKind, tab = 'details') {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(Host);

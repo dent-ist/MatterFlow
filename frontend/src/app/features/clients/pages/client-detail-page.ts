@@ -57,7 +57,7 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <mf-record-skeleton kind="client" [activeTab]="current()" />
+          <mf-record-skeleton kind="client" [activeTab]="current()" (retry)="load()" />
         }
         @case ('ready') {
           @if (client(); as c) {

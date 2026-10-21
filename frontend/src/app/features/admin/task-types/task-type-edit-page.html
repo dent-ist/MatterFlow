@@ -8,7 +8,7 @@
   />
 } @else if (state() === 'loading') {
   <span class="sr-only" role="status" aria-live="polite" data-announce>{{ flow.live() }}</span>
-  <mf-record-skeleton kind="taskType" [activeTab]="current()" />
+  <mf-record-skeleton kind="taskType" [activeTab]="current()" (retry)="retry()" />
 } @else {
   <div class="tt" data-task-type-page>
     <mf-record-header

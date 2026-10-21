@@ -16,6 +16,7 @@ import { CopyParts, CopyPart } from './copy-parts';
 import type { AdminColumn } from './admin-list-state';
 import { LoadState } from './data-table';
 import { ErrorReference } from './error-reference';
+import { StillLoading } from './still-loading';
 import type { ListFilters } from '../filters/list-filters';
 
 /** Bone widths of a skeleton row when the page gives none; they repeat across the columns. */
@@ -27,7 +28,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
  * The body of a filtered grid: the rows (projected) while the list is ready, and a full-width row for error, forbidden and empty, so
  * the column headers and the filter row stay on screen in every state (`mf-list-state` replaces the whole table). Loading shows five
  * skeleton rows of the grid's own columns (44 px, `skeleton` gives each column's bone width so the loaded table keeps its shape), with
- * one polite "Loading clients" for assistive technology and `aria-busy` on the body. A Retry that succeeds moves focus to the first row
+ * one polite "Loading clients" for assistive technology and `aria-busy` on the body. After 8 seconds a "Still loading... Retry" line joins (`mf-still-loading`, S17, #615; Retry emits `retry`). A Retry that succeeds moves focus to the first row
  * link, or to the scroll region when there is no row. A 403 reads "You don't have access to clients." without Retry.
  *
  *   <tbody mfGridBody noun="clients" [state]="state()" [empty]="rows().length === 0" [filtered]="filters.activeCount() > 0"
@@ -40,7 +41,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
   // An attribute selector on the native <tbody>, so the table keeps its semantics.
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'tbody[mfGridBody]',
-  imports: [Button, ErrorReference, CopyParts],
+  imports: [Button, ErrorReference, CopyParts, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.aria-busy]': "state() === 'loading' ? 'true' : null" },
   template: `
@@ -66,6 +67,9 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
             }
           </tr>
         }
+        <tr class="gb-still">
+          <td [attr.colspan]="colCount()"><mf-still-loading (retry)="retry.emit()" /></td>
+        </tr>
       }
       @case ('forbidden') {
         <tr class="gb-state">
@@ -139,6 +143,11 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
     .gb-alert {
       margin-bottom: var(--mf-s2);
       color: var(--mf-danger);
+    }
+    .gb-still td {
+      height: auto;
+      padding: 0;
+      background: var(--mf-surface);
     }
     .gb-sk td {
       height: var(--mf-grid-row-h, 44px);

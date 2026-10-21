@@ -83,6 +83,28 @@ describe('GridBody', () => {
     expect(el(f).querySelector('[data-row]')).toBeNull();
   });
 
+  it('adds "Still loading... Retry" after 8 seconds, and Retry asks the page to load again (S17, #615)', () => {
+    vi.useFakeTimers();
+    try {
+      const f = create();
+      f.componentInstance.state.set('loading');
+      f.detectChanges();
+      expect(el(f).querySelector('[data-still-loading]')).toBeNull();
+      vi.advanceTimersByTime(8000);
+      f.detectChanges();
+      expect(el(f).querySelector('tbody [data-still-loading]')!.textContent).toContain(
+        'Still loading...',
+      );
+      el(f).querySelector<HTMLButtonElement>('[data-still-loading-retry]')!.click();
+      expect(f.componentInstance.retried).toBe(1);
+      f.componentInstance.state.set('ready');
+      f.detectChanges();
+      expect(el(f).querySelector('[data-still-loading-region]')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('takes the bone width of each column from the page', () => {
     const f = create();
     f.componentInstance.skeleton.set(['4rem', '12rem']);
