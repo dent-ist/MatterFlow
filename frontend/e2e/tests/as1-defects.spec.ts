@@ -153,6 +153,48 @@ test.describe('Assets list defects (WP-AS1)', () => {
     await expect(row.getByRole('button', { name: 'Copy external reference' })).toBeFocused();
   });
 
+  test('BUG-6: a create that loses a race answers 409 and the form shows the server sentence and keeps what was typed', async ({
+    page,
+    seed,
+  }) => {
+    const token = uid();
+    const matter = await seed.matter({ name: `Race Matter ${token}` });
+    const typeId = await seed.assetTypeId();
+    let calls = 0;
+    await page.route('**/api/v1/assets', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      calls++;
+      if (calls > 1) return route.fallback();
+      return route.fulfill({
+        status: 409,
+        contentType: 'application/problem+json',
+        body: JSON.stringify({
+          status: 409,
+          code: 'CONCURRENCY_CONFLICT',
+          title: 'Concurrency conflict',
+          detail: 'Another change was saved at the same time. Try again.',
+        }),
+      });
+    });
+    await page.goto(`/assets/new?matterId=${matter.matterId}`);
+    await page.locator('#asset-type').selectOption(String(typeId));
+    await page.locator('#asset-name').fill(`Raced ${token}`);
+    await page.locator('#asset-reference').fill(`REF-${token}`);
+    await page.getByRole('button', { name: 'Create asset' }).click();
+
+    const conflict = page.locator('[data-conflict]');
+    await expect(conflict).toContainText('Another change was saved at the same time. Try again.');
+    await expect(conflict.getByRole('button', { name: 'Reload latest' })).toHaveCount(0);
+    await expect(page.locator('#asset-name')).toHaveValue(`Raced ${token}`);
+    await expect(page.locator('#asset-reference')).toHaveValue(`REF-${token}`);
+    await shot(page, 'bug6-conflict');
+
+    // The same click again goes through.
+    await page.getByRole('button', { name: 'Create asset' }).click();
+    await expect(page).toHaveURL(/\/assets\/\d+$/);
+    await expect(page.getByRole('heading', { level: 1, name: `Raced ${token}` })).toBeVisible();
+  });
+
   test('the Reference column leaves below 1280 px and the filter row follows; axe finds nothing and nothing scrolls sideways at four sizes', async ({
     page,
     seed,

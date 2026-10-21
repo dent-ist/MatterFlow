@@ -23,6 +23,7 @@ import {
   MatterResponse,
   MattersClient,
 } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { toFormDefinition } from '../../../shared/forms/form-schema';
@@ -38,6 +39,9 @@ type LoadState = 'loading' | 'ready' | 'error';
 function matterOption(m: MatterResponse): PickerOption {
   return { id: m.matterId, label: `${m.matterRef} ${m.name}`, inactive: !m.isActive };
 }
+
+/** The 409 sentence when the server gave none. */
+const CONFLICT_TEXT = 'This asset was changed by someone else.';
 
 /** Text that looks like a URL must be an http(s) URL (UX S08: "URL validated if looks like URL"); anything else is a free reference. */
 export function externalReferenceError(text: string): string | null {
@@ -85,8 +89,10 @@ export function externalReferenceError(text: string): string | null {
       }
       @if (conflict()) {
         <div class="pg-alert" role="alert" data-conflict>
-          This asset was changed by someone else.
-          <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          {{ conflictText() }}
+          @if (assetId()) {
+            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
+          }
         </div>
       }
       @if (summary().length > 0) {
@@ -240,6 +246,8 @@ export class AssetFormPage implements HasUnsavedChanges {
   protected readonly serverErrors = signal<Record<string, string>>({});
   protected readonly summary = signal<string[]>([]);
   protected readonly conflict = signal(false);
+  /** The server's own sentence for a 409 (a stale row version and a write that lost a race read differently); the typed values stay. */
+  protected readonly conflictText = signal(CONFLICT_TEXT);
   protected readonly formTouched = signal(false);
   protected readonly fieldErrors = signal<ServerFieldError[]>([]);
   private values: Record<string, unknown> = {};
@@ -479,6 +487,9 @@ export class AssetFormPage implements HasUnsavedChanges {
       this.serverErrors.set(base);
       this.fieldErrors.set(form);
       this.conflict.set(errors.conflict);
+      this.conflictText.set(
+        err instanceof ApiError && err.problem?.detail ? err.problem.detail : CONFLICT_TEXT,
+      );
       const summary = [...Object.values(base), ...form.map((f) => f.message)];
       if (summary.length === 0 && errors.code && errors.code !== 'CONCURRENCY_CONFLICT') {
         summary.push(this.messageFor(errors.code));

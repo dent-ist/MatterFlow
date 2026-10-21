@@ -59,6 +59,22 @@ internal static class AssetSupport
     public static Error ConcurrencyError() =>
         Error.Conflict(ErrorCodes.ConcurrencyConflict, "The record was changed by someone else. Reload and try again.");
 
+    /// <summary>The unit of work lost a SQL Server deadlock twice: nothing was saved and the same call can simply be repeated.</summary>
+    public static Error LostRace() =>
+        Error.Conflict(ErrorCodes.ConcurrencyConflict, "Another change was saved at the same time. Try again.");
+
+    /// <summary>True when the exception, or one inside it, is SQL Server error 1205: chosen as the deadlock victim, the transaction was rolled back and may be repeated.</summary>
+    public static bool IsDeadlock(Exception exception)
+    {
+        for (var ex = exception; ex is not null; ex = ex.InnerException)
+        {
+            if (ex is SqlException { Number: 1205 })
+                return true;
+        }
+
+        return false;
+    }
+
     public static bool IsUniqueViolation(DbUpdateException exception, string constraint) =>
         exception.InnerException is SqlException { Number: 2601 or 2627 } sql && sql.Message.Contains(constraint, StringComparison.OrdinalIgnoreCase);
 

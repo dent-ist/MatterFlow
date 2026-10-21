@@ -970,13 +970,44 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(navigate).toHaveBeenCalledWith(['/assets', 9]);
     });
 
+    it('shows the 409 sentence of the server for a lost race on create, keeps the typed values and offers no reload (BUG-6)', async () => {
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      assets.createAsset.mockReturnValue(
+        apiError(409, {
+          title: 'Conflict',
+          status: 409,
+          code: 'CONCURRENCY_CONFLICT',
+          detail: 'Another change was saved at the same time. Try again.',
+        }),
+      );
+      await chooseType('5');
+      type('#asset-name', 'Typed name');
+      type('#asset-reference', 'REF-1');
+      await settle(fixture);
+      await submit();
+
+      const conflict = el().querySelector('[data-conflict]') as HTMLElement;
+      expect(conflict.textContent).toContain(
+        'Another change was saved at the same time. Try again.',
+      );
+      expect(buttonByLabel(conflict, 'Reload latest')).toBeUndefined();
+      expect(el().querySelector<HTMLInputElement>('#asset-name')!.value).toBe('Typed name');
+      expect(el().querySelector<HTMLInputElement>('#asset-reference')!.value).toBe('REF-1');
+      expect(navigate).not.toHaveBeenCalledWith(['/assets', expect.anything()]);
+    });
+
     it('warns that an inactive asset cannot be edited and offers a reload on conflict', async () => {
       await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit']);
       assets.updateAsset.mockReturnValue(
         apiError(409, { title: 'x', status: 409, code: 'CONCURRENCY_CONFLICT' }),
       );
       await submit();
-      expect(el().querySelector('[data-conflict]')).not.toBeNull();
+      expect(el().querySelector('[data-conflict]')?.textContent).toContain(
+        'This asset was changed by someone else.',
+      );
+      expect(
+        buttonByLabel(el().querySelector('[data-conflict]') as HTMLElement, 'Reload latest'),
+      ).toBeDefined();
 
       TestBed.resetTestingModule();
       await configure(['Asset.View', 'Asset.Edit']);

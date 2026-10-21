@@ -114,7 +114,14 @@ public sealed class AssetService(
 
     public async Task<Result<AssetResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
 
-    public async Task<Result<AssetResponse>> CreateAsync(CreateAssetRequest request, CancellationToken ct)
+    /// <summary>
+    /// Creates an Asset. A SQL Server deadlock victim (error 1205: the transaction was rolled back as a whole) is repeated once from a clean
+    /// change tracker; a second loss is a retryable 409 CONCURRENCY_CONFLICT, never a 500 (BUG-6).
+    /// </summary>
+    public Task<Result<AssetResponse>> CreateAsync(CreateAssetRequest request, CancellationToken ct) =>
+        WithDeadlockRetryAsync(() => CreateOnceAsync(request, ct));
+
+    private async Task<Result<AssetResponse>> CreateOnceAsync(CreateAssetRequest request, CancellationToken ct)
     {
         var matter = await matters.FindAsync(request.MatterId, ct);
         if (matter is null)
@@ -169,7 +176,11 @@ public sealed class AssetService(
         return await GetAsync(asset.Id, dropped, ct);
     }
 
-    public async Task<Result<AssetResponse>> UpdateAsync(int id, UpdateAssetRequest request, CancellationToken ct)
+    /// <summary>Saves an Asset's editable fields and type values; a lost deadlock is retried once, then 409 (see <see cref="CreateAsync"/>).</summary>
+    public Task<Result<AssetResponse>> UpdateAsync(int id, UpdateAssetRequest request, CancellationToken ct) =>
+        WithDeadlockRetryAsync(() => UpdateOnceAsync(id, request, ct));
+
+    private async Task<Result<AssetResponse>> UpdateOnceAsync(int id, UpdateAssetRequest request, CancellationToken ct)
     {
         var asset = await db.Set<Asset>().SingleOrDefaultAsync(a => a.Id == id, ct);
         if (asset is null)
@@ -245,8 +256,14 @@ public sealed class AssetService(
         return await GetAsync(id, dropped, ct);
     }
 
-    /// <summary>Deactivates or reactivates an Asset. Assets are never deleted; their history stays readable.</summary>
-    public async Task<Result<AssetResponse>> SetActiveAsync(int id, SetAssetActiveRequest request, CancellationToken ct)
+    /// <summary>
+    /// Deactivates or reactivates an Asset. Assets are never deleted; their history stays readable. A lost deadlock is retried once, then 409
+    /// (see <see cref="CreateAsync"/>).
+    /// </summary>
+    public Task<Result<AssetResponse>> SetActiveAsync(int id, SetAssetActiveRequest request, CancellationToken ct) =>
+        WithDeadlockRetryAsync(() => SetActiveOnceAsync(id, request, ct));
+
+    private async Task<Result<AssetResponse>> SetActiveOnceAsync(int id, SetAssetActiveRequest request, CancellationToken ct)
     {
         var asset = await db.Set<Asset>().SingleOrDefaultAsync(a => a.Id == id, ct);
         if (asset is null)
@@ -272,6 +289,35 @@ public sealed class AssetService(
         }
 
         return await GetAsync(id, ct);
+    }
+
+    /// <summary>
+    /// Runs one unit of work (validate, write, read back). When SQL Server picks it as the deadlock victim (1205) the whole transaction is already
+    /// rolled back, so it is safe to run again from a clean change tracker and without the audit entries the failed save put back; a second loss
+    /// returns the retryable 409 the client already handles. Not repeated inside a caller's transaction (the caller owns the retry).
+    /// </summary>
+    private async Task<Result<AssetResponse>> WithDeadlockRetryAsync(Func<Task<Result<AssetResponse>>> unit)
+    {
+        try
+        {
+            return await unit();
+        }
+        catch (Exception ex) when (AssetSupport.IsDeadlock(ex) && db.Database.CurrentTransaction is null)
+        {
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+        }
+
+        try
+        {
+            return await unit();
+        }
+        catch (Exception ex) when (AssetSupport.IsDeadlock(ex) && db.Database.CurrentTransaction is null)
+        {
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+            return AssetSupport.LostRace();
+        }
     }
 
     private async Task<Result<AssetResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
