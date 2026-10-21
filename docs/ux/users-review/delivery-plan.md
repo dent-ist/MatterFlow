@@ -157,7 +157,7 @@ Contract e2e over the seeded review data (62 and 1,072 users) at four sizes (axe
 
 - Planning (2026-10-20): epic #422 and 34 sub-issues created and linked; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned; decision X.3 superseded (to be recorded in section Z by #457).
 
-- WP-US1 Bugs and first release: not started.
+- WP-US1 Bugs and first release (2026-10-21, 6bff960 and 4a4a90e): #423, #424, #425, #426 (built by lane A because #427 needs it), #427 done; #428 open (lane C). Unit 75 in the users folder; e2e `users-us1-bugs.spec.ts` 24 pass; Identity API integration tests 30 pass and architecture tests 35 pass; axe 0 at four sizes with list, panel and deactivation question open; screenshots in `fixes/us1-bugs/`. Known limits: the "Scroll sideways" hint stays at 375 because the region really overflows (phone cards #445 remove it); the panel is not in the address, so Back from "View their tasks" lands on the list (drawer #438/#441); the interim code is replaced by the drawer, its tests stay.
 - WP-US2 Status segments and header chrome: not started.
 - WP-US3 Users grid on the list contract: not started.
 - WP-US4 User drawer: not started.
