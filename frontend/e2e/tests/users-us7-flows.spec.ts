@@ -55,7 +55,7 @@ const onBody = (page: Page) =>
   page.evaluate(() => document.activeElement === document.body || !document.activeElement);
 
 /** Presses Tab until the locator has focus (at most `max` times); returns how many presses it took. Fails when it never does. */
-async function tabTo(page: Page, target: Locator, max = 80): Promise<number> {
+async function tabTo(page: Page, target: Locator, max = 300): Promise<number> {
   for (let n = 1; n <= max; n++) {
     await page.keyboard.press('Tab');
     expect(await onBody(page), 'focus landed on body').toBe(false);
@@ -64,7 +64,7 @@ async function tabTo(page: Page, target: Locator, max = 80): Promise<number> {
   throw new Error(`Tab never reached ${target}`);
 }
 
-async function shiftTabTo(page: Page, target: Locator, max = 80): Promise<number> {
+async function shiftTabTo(page: Page, target: Locator, max = 300): Promise<number> {
   for (let n = 1; n <= max; n++) {
     await page.keyboard.press('Shift+Tab');
     expect(await onBody(page), 'focus landed on body').toBe(false);

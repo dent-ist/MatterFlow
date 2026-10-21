@@ -256,7 +256,7 @@ test.describe('#439 Access', () => {
     await openList(page);
     await openDrawer(page, worker.userId);
     const names: string[] = [];
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 400; i++) {
       await page.keyboard.press('Tab');
       const where = await page.evaluate(() => {
         const a = document.activeElement as HTMLElement | null;

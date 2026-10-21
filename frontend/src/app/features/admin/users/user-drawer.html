@@ -26,16 +26,16 @@
         <h2 class="ud-title" tabindex="-1" data-panel-heading [id]="labelId" [attr.title]="name()">
           {{ name() }}
         </h2>
-        <button
-          type="button"
-          class="mf-btn mf-btn--icon ud-close"
+        <p-button
+          class="ud-close"
+          icon="pi pi-times"
+          severity="secondary"
+          [rounded]="true"
+          [text]="true"
           data-drawer-close
-          aria-label="Close user details"
-          title="Close"
-          (click)="requestClose()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
+          ariaLabel="Close user details"
+          (onClick)="requestClose()"
+        />
       </div>
       @if (detail(); as u) {
         <p class="ud-account">
