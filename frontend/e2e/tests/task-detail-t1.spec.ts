@@ -124,7 +124,7 @@ test.describe('Task detail T1: Asset references without Asset.View (BUG-1, #289)
     const form = page.locator('[data-request-form]');
     await expect(form.getByRole('link', { name: first.displayName })).toHaveAttribute(
       'href',
-      `/assets?selected=${first.assetId}`,
+      `/assets/${first.assetId}`,
     );
     await expect(form.getByRole('link', { name: second.displayName })).toBeVisible();
     await expectNoToast(page);

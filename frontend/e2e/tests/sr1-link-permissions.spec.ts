@@ -52,7 +52,7 @@ async function hitHrefs(page: Page): Promise<string[]> {
 }
 
 function kindOf(href: string): Kind {
-  // `/assets/9` opens the Assets list with the asset selected (`/assets?selected=9`): the first segment names the type either way.
+  // `/assets/9` opens the asset record page: the first segment names the type.
   const segment = href.split(/[/?]/).filter(Boolean)[0];
   return (Object.keys(PREFIX) as Kind[]).find((k) => PREFIX[k] === `/${segment}/`)!;
 }

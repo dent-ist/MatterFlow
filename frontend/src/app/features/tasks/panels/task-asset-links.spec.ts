@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import {
   AssetLinkRolesClient,
   AssetsClient,
@@ -50,6 +51,7 @@ describe('TaskAssetLinks', () => {
     };
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: TaskAssetsClient, useValue: api },
         { provide: AssetsClient, useValue: assets },
@@ -73,7 +75,8 @@ describe('TaskAssetLinks', () => {
     const row = q('[data-asset-id="9"]');
     expect(row.textContent).toContain('Contract bundle');
     expect(row.textContent).toContain('Document Set');
-    const link = row.querySelector<HTMLAnchorElement>('a')!;
+    expect(row.querySelector('a[data-asset-link]')?.getAttribute('href')).toBe('/assets/9'); // the record page (#495)
+    const link = row.querySelector<HTMLAnchorElement>('a:not([data-asset-link])')!;
     expect(link.getAttribute('href')).toBe('https://dms.example/folders/42');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');

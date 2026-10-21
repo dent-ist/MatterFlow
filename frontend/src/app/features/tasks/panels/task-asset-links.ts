@@ -12,6 +12,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetLinkRoleView,
@@ -44,7 +45,7 @@ export const ASSETS_CLOSED_NOTE =
  */
 @Component({
   selector: 'mf-task-asset-links',
-  imports: [Badge, AssetPicker, ConfirmDialog, PanelScroll],
+  imports: [Badge, AssetPicker, ConfirmDialog, PanelScroll, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="tl" aria-label="Assets">
@@ -138,7 +139,10 @@ export const ASSETS_CLOSED_NOTE =
                     @for (a of items(); track a.assetId) {
                       <li class="tl__item" [attr.data-asset-id]="a.assetId">
                         <div class="tl__name">
-                          <strong>{{ a.displayName }}</strong>
+                          <!-- The panel is shown only with Asset.View, so the link always opens (decision V). -->
+                          <a class="tl__open" [routerLink]="['/assets', a.assetId]" data-asset-link
+                            ><strong>{{ a.displayName }}</strong></a
+                          >
                           @if (!a.isActive) {
                             <mf-badge>Inactive</mf-badge>
                           }
@@ -317,6 +321,10 @@ export const ASSETS_CLOSED_NOTE =
     .tl__alert {
       margin: 0;
       color: var(--mf-danger-text, var(--mf-danger));
+    }
+    .tl__open {
+      color: var(--mf-link);
+      text-underline-offset: 2px;
     }
     .tl__link {
       border: 0;

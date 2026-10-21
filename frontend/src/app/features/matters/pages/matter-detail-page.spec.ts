@@ -413,7 +413,7 @@ describe('MatterDetailPage', () => {
       undefined,
     );
     const grid = el().querySelector('mf-matter-assets')!;
-    expect(grid.querySelector('tbody a')?.getAttribute('href')).toBe('/assets?selected=9');
+    expect(grid.querySelector('tbody a')?.getAttribute('href')).toBe('/assets/9');
     // New asset lives in the header overflow now (#274); the tab has no button of its own while it lists assets.
     expect(buttonByLabel(el(), 'New asset')).toBeUndefined();
     expect(grid.querySelector('[data-new-asset], [data-empty-new-asset]')).toBeNull();

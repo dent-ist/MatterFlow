@@ -106,7 +106,7 @@ describe('AssetPicker', () => {
     await create({ matterId: 7, value: 9, readOnly: true });
     const link = el().querySelector<HTMLAnchorElement>('[data-readonly] a')!;
     expect(link.textContent).toContain('Contract bundle');
-    expect(link.getAttribute('href')).toBe('/assets?selected=9');
+    expect(link.getAttribute('href')).toBe('/assets/9');
     expect(el().querySelector('[data-readonly]')!.textContent).toContain('REL-77');
   });
 

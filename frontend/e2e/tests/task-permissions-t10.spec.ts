@@ -412,7 +412,7 @@ test.describe('#329: Task page permission matrix, no dead links', () => {
           page
             .locator('[data-request-form]')
             .getByRole('link', { name: data.formAsset.displayName }),
-        ).toHaveAttribute('href', `/assets?selected=${data.formAsset.assetId}`);
+        ).toHaveAttribute('href', `/assets/${data.formAsset.assetId}`);
       }
       // Linking needs Asset.Link, Asset.View (the picker) and the right to edit the task.
       const canLinkAssets =

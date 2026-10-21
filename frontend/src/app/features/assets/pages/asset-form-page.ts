@@ -467,7 +467,7 @@ export class AssetFormPage implements HasUnsavedChanges {
       if (result.droppedFields.length > 0) {
         this.notify.info(`Hidden values were not saved: ${result.droppedFields.join(', ')}.`);
       }
-      await this.router.navigate(['/assets'], { queryParams: { selected: result.assetId } });
+      await this.router.navigate(['/assets', result.assetId]);
     } catch (err) {
       const errors = serverFormErrors(err);
       const base: Record<string, string> = {};
@@ -518,7 +518,7 @@ export class AssetFormPage implements HasUnsavedChanges {
     const id = this.assetId();
     const matter = this.matterId();
     void this.router.navigateByUrl(
-      id ? `/assets?selected=${id}` : matter ? `/matters/${matter}?tab=assets` : '/assets',
+      id ? `/assets/${id}` : matter ? `/matters/${matter}?tab=assets` : '/assets',
     );
   }
 }

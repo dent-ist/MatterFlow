@@ -126,8 +126,7 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
                 <td>
                   <a
                     class="pg-link pg-name"
-                    routerLink="/assets"
-                    [queryParams]="{ selected: a.assetId }"
+                    [routerLink]="['/assets', a.assetId]"
                     [title]="a.displayName"
                     >{{ a.displayName }}</a
                   >
