@@ -60,6 +60,35 @@
           <strong>{{ draftCount() }} of {{ totalPermissions() }}</strong> permissions selected
         </p>
 
+        @if (changes().length > 0) {
+          <div class="mf-changes" role="group" aria-labelledby="role-changes-h" data-changes>
+            <p class="mf-changes__h" id="role-changes-h">Changed ({{ changes().length }})</p>
+            <ul class="mf-changes__list">
+              @for (c of changes(); track c.code) {
+                <li>
+                  <button
+                    type="button"
+                    class="mf-change"
+                    [class.mf-change--removed]="c.kind === 'removed'"
+                    data-change
+                    [attr.data-change-kind]="c.kind"
+                    [attr.aria-label]="
+                      'Undo: ' + (c.kind === 'added' ? 'added ' : 'removed ') + c.code
+                    "
+                    (click)="undoChange(c)"
+                  >
+                    <span class="mf-change__sign" aria-hidden="true">{{
+                      c.kind === 'added' ? '+' : '-'
+                    }}</span>
+                    {{ c.code }}
+                    <i class="pi pi-undo" aria-hidden="true"></i>
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
         <div class="mf-fld">
           <label for="role-name" class="mf-label"
             >Name <span class="mf-req">(required)</span></label
@@ -84,15 +113,21 @@
         </div>
         <div class="mf-fld">
           <label for="role-description" class="mf-label">Description</label>
-          <input
+          <textarea
             id="role-description"
-            type="text"
-            class="mf-control"
-            maxlength="500"
+            class="mf-control mf-description"
+            rows="2"
+            [attr.maxlength]="descriptionMax"
             data-description
+            aria-describedby="role-description-count"
             [disabled]="locked()"
             [value]="draftDescription()"
             (input)="draftDescription.set($any($event.target).value)"
+          ></textarea>
+          <mf-char-counter
+            countId="role-description-count"
+            [value]="draftDescription()"
+            [max]="descriptionMax"
           />
         </div>
 
@@ -139,6 +174,28 @@
                 }}<span class="mf-sr-only"> selected</span></span
               >
             </legend>
+            @if (!locked()) {
+              <div class="mf-group-tools">
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  data-select-all
+                  [attr.aria-label]="'Select all ' + g.group + ' permissions'"
+                  (click)="selectGroup(g.group, true)"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  data-select-none
+                  [attr.aria-label]="'Clear all ' + g.group + ' permissions'"
+                  (click)="selectGroup(g.group, false)"
+                >
+                  Select none
+                </button>
+              </div>
+            }
             @for (p of g.permissions; track p.code) {
               <label class="mf-perm">
                 <input
@@ -160,6 +217,7 @@
           <p class="mf-muted">Changes apply on each user's next request.</p>
           <div class="mf-actions mf-form-actions--sticky">
             <p-button
+              data-save
               [label]="selected() ? 'Save changes' : 'Create role'"
               [disabled]="saving()"
               (onClick)="save()"

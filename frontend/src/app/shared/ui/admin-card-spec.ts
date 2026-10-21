@@ -106,6 +106,12 @@ export function activeCardBadge(active: boolean | null | undefined): AdminCardBa
 export const COLUMN_DROP_WIDTHS = [1280, 1100, 900, 768, 640] as const;
 
 /**
+ * A threshold above the others, for a page whose grid has one more column than fits a 1366 px window (the Users grid's Last seen, #437): set it
+ * by hand (`{ ...columnDropOrder([...]), lastSeen: WIDE_COLUMN_DROP }`); the other columns keep their order.
+ */
+export const WIDE_COLUMN_DROP = 1440;
+
+/**
  * The fixed order in which the optional columns of a page leave as the window narrows (#579): the FIRST id leaves first (at the widest
  * threshold), the last one leaves last. The name, the status and the actions are never in the list: they stay down to the phone cards at 640 px.
  *

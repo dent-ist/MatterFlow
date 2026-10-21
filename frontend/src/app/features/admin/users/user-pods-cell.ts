@@ -102,6 +102,7 @@ let nextId = 0;
         [attr.aria-expanded]="open()"
         [attr.aria-controls]="open() ? uid + '-pop' : null"
         [attr.aria-label]="triggerLabel()"
+        [attr.title]="tooltip()"
         [attr.aria-busy]="busy() ? 'true' : null"
         [attr.aria-disabled]="busy() ? 'true' : null"
         (click)="toggle($event)"
@@ -162,7 +163,7 @@ let nextId = 0;
                       [checked]="isSelected(r.podId)"
                       (change)="onToggle(r.podId, r.isActive, $any($event.target).checked)"
                     />
-                    <span class="upc-label">{{ r.name }}</span>
+                    <span class="upc-label" [attr.title]="r.name">{{ r.name }}</span>
                     @if (!r.isActive) {
                       &ngsp;<span class="upc-tag">inactive</span>
                     }
@@ -214,7 +215,7 @@ let nextId = 0;
         </div>
       }
     } @else {
-      <span class="upc-static" data-pods-readonly>
+      <span class="upc-static" data-pods-readonly [attr.title]="tooltip()">
         <ng-container *ngTemplateOutlet="chipList" />
       </span>
     }
@@ -391,10 +392,14 @@ let nextId = 0;
       min-width: 0;
       flex: 1;
     }
+    /* The popover shows the whole name: it wraps to two lines (a longer one is cut there, the full name is the tooltip). */
     .upc-label {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
     .upc-primary {
       color: var(--mf-text-muted);
@@ -475,6 +480,11 @@ export class UserPodsCell implements OnDestroy {
     this.chipPods()
       .rest.map((p) => p.name)
       .join(', '),
+  );
+
+  /** Every pod, for the tooltip of the one-line cell (the cell itself shows the primary pod and "+n"). */
+  protected readonly tooltip = computed(() =>
+    this.oneLine() && this.pods().length > 1 ? podsText(this.pods()) : null,
   );
 
   /** "Pods: Processing (primary), Review, change pods of Jamal Okafor": the visible text first, then what the button does. */
@@ -581,8 +591,10 @@ export class UserPodsCell implements OnDestroy {
   }
 
   protected onTriggerKey(event: KeyboardEvent): void {
+    // Only the key this button handles stays here: Esc must still reach the drawer the button may sit in.
+    if (event.key !== 'ArrowDown') return;
     event.stopPropagation();
-    if (event.key === 'ArrowDown' && !this.open() && !this.busy()) {
+    if (!this.open() && !this.busy()) {
       event.preventDefault();
       this.show();
     }

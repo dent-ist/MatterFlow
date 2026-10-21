@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
-import { RolesPage, prerequisiteOf } from './roles-page';
+import { RolesPage, prerequisiteOf, roleChanges } from './roles-page';
 
 describe('prerequisiteOf', () => {
   const catalog = new Set(['Task.View', 'Task.Assign', 'Audit.View', 'Role.Manage']);
@@ -15,6 +15,25 @@ describe('prerequisiteOf', () => {
   it('has no prerequisite for View itself or for groups without a View', () => {
     expect(prerequisiteOf('Task.View', catalog)).toBeUndefined();
     expect(prerequisiteOf('Role.Manage', catalog)).toBeUndefined();
+  });
+});
+
+describe('roleChanges (#448)', () => {
+  const order = ['Task.View', 'Task.Edit', 'Asset.View', 'Asset.Edit'];
+
+  it('lists the added permissions, then the removed ones, each in catalog order', () => {
+    const saved = new Set(['Task.View', 'Task.Edit']);
+    const draft = new Set(['Task.View', 'Asset.Edit', 'Asset.View']);
+    expect(roleChanges(saved, draft, order)).toEqual([
+      { code: 'Asset.View', kind: 'added' },
+      { code: 'Asset.Edit', kind: 'added' },
+      { code: 'Task.Edit', kind: 'removed' },
+    ]);
+  });
+
+  it('has nothing for an unchanged role and for a new role (no saved set)', () => {
+    expect(roleChanges(new Set(['Task.View']), new Set(['Task.View']), order)).toEqual([]);
+    expect(roleChanges(null, new Set(['Task.View']), order)).toEqual([]);
   });
 });
 
@@ -194,6 +213,119 @@ describe('RolesPage', () => {
       const wrap = q(sel).closest('.mf-fld')!;
       expect(wrap.querySelector('label.mf-label')).not.toBeNull();
     }
+  });
+
+  describe('group select all / none (#448)', () => {
+    const groupBox = (group: string, which: 'all' | 'none'): HTMLButtonElement =>
+      q<HTMLButtonElement>(`[data-group="${group}"] [data-select-${which}]`);
+    const ticked = (group: string): number =>
+      el().querySelectorAll(`[data-group="${group}"] input[type="checkbox"]:checked`).length;
+    const total = (group: string): number =>
+      el().querySelectorAll(`[data-group="${group}"] input[type="checkbox"]`).length;
+
+    it('Select all ticks every permission of one group and Select none clears them, as buttons with the group in their name', async () => {
+      await press('New role');
+      expect(groupBox('Task', 'all').getAttribute('aria-label')).toBe(
+        'Select all Task permissions',
+      );
+      expect(groupBox('Task', 'none').getAttribute('aria-label')).toBe(
+        'Clear all Task permissions',
+      );
+      groupBox('Task', 'all').click();
+      await settle();
+      expect(ticked('Task')).toBe(total('Task'));
+      expect(ticked('Asset')).toBe(0);
+      expect(q('[data-note]').textContent).toContain('All');
+      expect(q('[data-editor-count]').textContent).toContain(`${total('Task')} of`);
+      groupBox('Task', 'none').click();
+      await settle();
+      expect(ticked('Task')).toBe(0);
+    });
+
+    it('selects the whole group even while the search shows only some of it', async () => {
+      await press('New role');
+      await search('Task.Create');
+      groupBox('Task', 'all').click();
+      await settle();
+      await search('');
+      expect(ticked('Task')).toBe(total('Task'));
+    });
+
+    it('has no group buttons on the locked System Admin role', async () => {
+      q<HTMLButtonElement>('[data-role="1"]').click();
+      await settle();
+      expect(el().querySelector('[data-select-all]')).toBeNull();
+    });
+  });
+
+  describe('the Changed (n) row (#448)', () => {
+    const chips = (): string[] =>
+      Array.from(el().querySelectorAll('[data-change]')).map((c) => c.getAttribute('aria-label')!);
+
+    it('lists what the draft changed with one undo per chip, and clears after Save', async () => {
+      q<HTMLButtonElement>('[data-role="6"]').click(); // Data Scientist
+      await settle();
+      expect(el().querySelector('[data-changes]')).toBeNull();
+      await check('Task.Create', true);
+      await check('Asset.View', true);
+      expect(q('#role-changes-h').textContent!.trim()).toBe('Changed (2)');
+      // Catalog order: the Task group comes before the Asset group.
+      expect(chips()).toEqual(['Undo: added Task.Create', 'Undo: added Asset.View']);
+
+      // Undo one chip: the box is unticked again and the row shrinks.
+      (
+        el().querySelector('[data-change][aria-label="Undo: added Task.Create"]') as HTMLElement
+      ).click();
+      await settle();
+      expect(q<HTMLInputElement>('[data-perm="Task.Create"]').checked).toBe(false);
+      expect(q('#role-changes-h').textContent!.trim()).toBe('Changed (1)');
+
+      await press('Save changes');
+      expect(el().querySelector('[data-changes]')).toBeNull();
+    });
+
+    it('shows a removed permission as a chip and puts it back with its undo', async () => {
+      q<HTMLButtonElement>('[data-role="6"]').click();
+      await settle();
+      await check('Task.View', false);
+      const removed = Array.from(el().querySelectorAll('[data-change-kind="removed"]'));
+      expect(removed.length).toBeGreaterThan(0);
+      expect(removed[0].getAttribute('aria-label')).toContain('Undo: removed Task.View');
+      (
+        el().querySelector('[data-change][aria-label="Undo: removed Task.View"]') as HTMLElement
+      ).click();
+      await settle();
+      expect(q<HTMLInputElement>('[data-perm="Task.View"]').checked).toBe(true);
+    });
+
+    it('is not shown for a new role or for System Admin', async () => {
+      await press('New role');
+      await check('Task.View', true);
+      expect(el().querySelector('[data-changes]')).toBeNull();
+    });
+  });
+
+  describe('the description (#449)', () => {
+    it('is a two-row text area with the character counter and the API limit', async () => {
+      await press('New role');
+      const box = q<HTMLTextAreaElement>('[data-description]');
+      expect(box.tagName).toBe('TEXTAREA');
+      expect(box.rows).toBe(2);
+      expect(box.maxLength).toBe(500);
+      expect(box.getAttribute('aria-describedby')).toBe('role-description-count');
+      await type('[data-description]', 'x'.repeat(500));
+      expect(box.value.length).toBe(500);
+      expect(q('#role-description-count').textContent).toContain('500 / 500');
+      expect(q('[data-char-count-live]').textContent).toContain('500 of 500 characters');
+    });
+
+    it('keeps the unsaved-changes guard: editing the description makes the role dirty', async () => {
+      q<HTMLButtonElement>('[data-role="6"]').click();
+      await settle();
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      await type('[data-description]', 'A new description');
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+    });
   });
 
   it('filters permissions and copies from another role', async () => {

@@ -25,7 +25,7 @@
  *   mf-cell-date    a date "Oct 12"; never wraps; the instant is the tooltip.
  *   mf-cell-muted   secondary text, one clipped line (14rem), muted colour.
  *   mf-cell-actions see "Row menu" below.
- * Column drop (`data-drop="N"`, N one of 640 768 900 1100 1280): the column (th, td, filter and skeleton cells) leaves when the WINDOW is
+ * Column drop (`data-drop="N"`, N one of 640 768 900 1100 1280, and 1440 for a page with an extra wide column such as the Users grid's Last seen): the column (th, td, filter and skeleton cells) leaves when the WINDOW is
  * narrower than N px, never the actions cell. Order the optional columns so the least useful has the largest N. Below 640 px a list is
  * cards (#579), not a table. Empty, no-match and error rows (`mf-grid-body`) share one height (9rem).
  * Nothing here adds a colour or a token.
@@ -143,7 +143,7 @@ table.mf-grid {
 }
 
 /* The column-drop rule: the window width, not the box width, so the same columns leave on every page of a size. */
-@each $w in (640, 768, 900, 1100, 1280) {
+@each $w in (640, 768, 900, 1100, 1280, 1440) {
   @media (max-width: #{$w - 1}px) {
     .mf-grid [data-drop='#{$w}']:not(.mf-cell-actions) {
       display: none;

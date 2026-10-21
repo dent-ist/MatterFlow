@@ -175,6 +175,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.code === 'CONCURRENCY_CONFLICT') return null; // conflict dialog
   if (err.code === 'ACCESS_PENDING' || err.code === 'ACCOUNT_DISABLED') return null; // redirect
   if (err.code === 'ROLE_IN_USE') return null; // the Roles page explains it inline
+  if (err.code === 'LAST_ADMIN') return null; // the user drawer says it inline (#441, #444): one message, not two
   if (err.code === 'IN_USE') return null; // Priorities and Link roles name the row inline (#537)
   const reference = err.traceId ? `Reference: ${err.traceId}` : undefined;
   if (err.isNetworkError || err.status >= 500) {

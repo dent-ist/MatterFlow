@@ -1,0 +1,287 @@
+/* The header: the name (two lines at most), the account, then the facts and the status control. It lives in the dialog header. */
+.ud-head {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--mf-s1);
+  min-width: 0;
+}
+
+.ud-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+}
+
+.ud-close {
+  flex: none;
+  margin-left: auto;
+}
+
+.ud-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: 2px;
+  }
+}
+
+.ud-account {
+  margin: 0;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ud-mono {
+  font-family: var(--mf-font-mono);
+}
+
+.ud-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s1) var(--mf-s3);
+}
+
+.ud-fact {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.ud-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s3);
+  margin: 0;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.mf-link {
+  color: var(--mf-link);
+}
+
+.ud-danger {
+  color: var(--mf-danger);
+}
+
+/* The body scrolls inside the drawer; the footer (Save changes, Cancel) stays in view. */
+.ud-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 var(--mf-s4) var(--mf-s4);
+  overflow: auto;
+}
+
+.ud-sec {
+  padding: var(--mf-s3) 0;
+  border-top: 1px solid var(--mf-border);
+
+  h3 {
+    margin: 0 0 var(--mf-s2);
+    font-size: var(--mf-fs-lg);
+  }
+
+  h4 {
+    margin: var(--mf-s3) 0 var(--mf-s1);
+    font-size: var(--mf-fs-md);
+  }
+}
+
+.ud-note {
+  margin: var(--mf-s1) 0 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.ud-readonly {
+  margin: 0 0 var(--mf-s2);
+}
+
+.ud-sentence {
+  margin: 0 0 var(--mf-s2);
+  overflow-wrap: anywhere;
+}
+
+.ud-alert {
+  margin: 0 0 var(--mf-s2);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Roles: a checkbox (24 px target), the name clamped to two lines, the description and the permission count under it. */
+.ud-roles {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.ud-role {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+  min-height: 2.75rem;
+  padding: var(--mf-s1) 0;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+  }
+}
+
+.ud-role-text {
+  display: grid;
+  min-width: 0;
+}
+
+.ud-role-name {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ud-role-meta {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ud-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mf-s2);
+  margin: var(--mf-s2) 0 0;
+  padding: var(--mf-s2) var(--mf-s3);
+  border-radius: var(--mf-radius);
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+.ud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1);
+  margin: var(--mf-s1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ud-chip {
+  padding: 1px var(--mf-s2);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font-size: var(--mf-fs-sm);
+  white-space: nowrap;
+}
+
+.mf-fld {
+  display: grid;
+  gap: var(--mf-s1);
+  margin-bottom: var(--mf-s3);
+
+  label {
+    font-weight: 600;
+  }
+}
+
+.ud-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--mf-s1) var(--mf-s3);
+  margin: 0;
+
+  dt {
+    color: var(--mf-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.mf-error {
+  padding: var(--mf-s3);
+  border-radius: var(--mf-radius);
+  background: var(--mf-danger-bg);
+  color: var(--mf-danger);
+}
+
+.ud-loading {
+  display: grid;
+  gap: var(--mf-s3);
+  padding-top: var(--mf-s3);
+}
+
+.ud-bone {
+  display: block;
+  height: 3rem;
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+}
+
+.ud-error {
+  display: grid;
+  gap: var(--mf-s2);
+  justify-items: start;
+  padding: var(--mf-s3) 0;
+  color: var(--mf-danger);
+}
+
+/* A phone folds the sections: the heading is a button (44 px target) with a chevron. */
+.ud-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: 2px;
+  }
+}

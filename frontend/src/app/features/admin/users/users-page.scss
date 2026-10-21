@@ -2,33 +2,6 @@
   display: block;
 }
 
-.mf-link {
-  color: var(--mf-link);
-}
-
-.mf-status {
-  min-width: 200px;
-}
-
-/* Labelled field: bold label above a 40 px control (shared look, styles/_forms.scss). */
-.mf-fld {
-  display: grid;
-  gap: var(--mf-s1);
-  margin-bottom: var(--mf-s3);
-
-  label {
-    font-weight: 600;
-  }
-}
-
-.mf-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
 .mf-layout {
   display: flex;
   gap: var(--mf-s4);
@@ -49,21 +22,6 @@
   }
 }
 
-.mf-open-tasks {
-  margin: 0 0 var(--mf-s2);
-  font-weight: 600;
-}
-
-.mf-confirm {
-  /* Scrolled into view it stops above the sticky Save bar, not under it (BUG-3). */
-  scroll-margin-bottom: 5rem;
-}
-
-.mf-confirm:focus-visible {
-  outline: 2px solid var(--mf-focus);
-  outline-offset: 2px;
-}
-
 .mf-mono {
   font-family: var(--mf-font-mono);
 }
@@ -73,7 +31,7 @@
   background: var(--mf-selected-bg);
 }
 
-/* The name is the row's one control: a button that looks like the link of the other lists (the panel is not an address yet). */
+/* The name is the row's one control: a button that looks like the link of the other lists (the drawer opens in place and is in the address). */
 .us-open {
   /* The kit clamps .mf-name (two lines, one under an account line): it is the button itself, so the clamp works on its text. */
   width: fit-content;
@@ -104,104 +62,19 @@
   max-width: 14rem;
 }
 
-.mf-muted {
+.us-muted {
   color: var(--mf-text-muted);
-  padding: var(--mf-s3);
-}
-
-.mf-error {
-  color: var(--mf-danger);
-  background: var(--mf-danger-bg);
-  padding: var(--mf-s3);
-  border-radius: var(--mf-radius);
-}
-
-.mf-panel {
-  width: 380px;
-  padding: var(--mf-s4);
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius);
-  box-shadow: var(--mf-shadow-1);
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: var(--mf-fs-h3);
-  }
-
-  h3 {
-    font-size: var(--mf-fs-lg);
-  }
-
-  fieldset {
-    margin: var(--mf-s3) 0;
-    border: 1px solid var(--mf-border);
-    border-radius: var(--mf-radius);
-  }
-
-  label:not(.mf-inline) {
-    font-weight: 600;
-  }
-
-  .mf-inline {
-    display: flex;
-    align-items: center;
-    gap: var(--mf-s2);
-  }
-
-  /* WCAG 2.2 target size: the radio and the check boxes are 24 px (they were 16 px; axe target-size). */
-  .mf-inline input[type='radio'],
-  .mf-inline input[type='checkbox'] {
-    flex: none;
-    width: 24px;
-    height: 24px;
-    margin: 0;
-  }
-}
-
-.mf-effective-list {
-  max-height: 160px;
-  overflow: auto;
-}
-
-.mf-effective ul {
-  margin: 0;
-  padding-left: var(--mf-s4);
-  font-family: var(--mf-font-mono);
   font-size: var(--mf-fs-sm);
 }
 
-.mf-confirm {
-  padding: var(--mf-s3);
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
-  border-radius: var(--mf-radius);
-}
-
-.mf-actions {
-  display: flex;
-  gap: var(--mf-s2);
-  margin-top: var(--mf-s3);
-}
-
+/* Fixed-header page: the list scrolls inside its own box (the user drawer is a dialog and takes no room). */
 @media (max-width: 960px) {
   .mf-layout {
     flex-direction: column;
     align-items: stretch; /* the list must not grow to its widest row; the table scrolls inside its own wrapper (UXR4-01) */
   }
-
-  .mf-panel {
-    width: 100%;
-  }
 }
 
-/* Fixed-header page: the list and the details panel each scroll inside their own box; the panel's Save bar stays at its bottom. */
 @media (min-width: 768px) and (min-height: 561px) {
   .mf-layout {
     flex: 1 1 0;
@@ -214,17 +87,5 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-  }
-
-  .mf-panel {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    --mf-card-pad: var(--mf-s4);
-    padding-bottom: 0;
-  }
-
-  .mf-panel .mf-actions {
-    margin-top: var(--mf-s3);
   }
 }

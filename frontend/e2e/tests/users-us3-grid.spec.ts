@@ -130,14 +130,12 @@ test.describe('#432 the grid', () => {
       });
       expect(wrap).toBe(true);
       expect(await noSideScroll(page)).toBe(true);
-      expect(await headers(page)).toEqual([
-        'Name',
-        'Roles',
-        'Pods',
-        'Availability',
-        'Status',
-        'Actions',
-      ]);
+      // Last seen (#437) is the seventh column and has room from 1440 px only.
+      expect(await headers(page)).toEqual(
+        width >= 1440
+          ? ['Name', 'Roles', 'Pods', 'Availability', 'Last seen', 'Status', 'Actions']
+          : ['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions'],
+      );
       await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
     });
   }
@@ -167,7 +165,17 @@ test.describe('#432 the grid', () => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await openList(page, width, height);
       const shown = await headers(page);
-      if (width >= 1280)
+      if (width >= 1440)
+        expect(shown).toEqual([
+          'Name',
+          'Roles',
+          'Pods',
+          'Availability',
+          'Last seen',
+          'Status',
+          'Actions',
+        ]);
+      else if (width >= 1280)
         expect(shown).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions']);
       else if (width >= 1100)
         expect(shown).toEqual(['Name', 'Roles', 'Availability', 'Status', 'Actions']);
@@ -265,6 +273,32 @@ test.describe('#432 the grid', () => {
     ).toContainText('Out of office');
   });
 
+  test('#434 availability informs only where it matters: chip for Out of office, nothing for Pending or Inactive', async ({
+    page,
+  }) => {
+    await openList(page, 1366, 768);
+    const cell = (id: number) => page.locator(`tr[data-user="${id}"] [data-availability-cell]`);
+    // Out of office keeps its chip with the end date; an ordinary active person says a plain, muted "Available" (no badge).
+    await expect(cell(away.userId).locator('[data-availability-chip]')).toContainText(
+      /Out of office until/,
+    );
+    // An ordinary person says "Available" in plain muted text; outside their work hours the server reports Off hours, which is a chip.
+    await expect(cell(busy.userId)).toHaveText(/^\s*(Available|Off hours)\s*$/);
+    if ((await cell(busy.userId).textContent())?.includes('Available')) {
+      await expect(cell(busy.userId).locator('[data-availability-chip]')).toHaveCount(0);
+    }
+    // Pending and Inactive people have no availability at all.
+    await expect(cell(pendingLong.userId)).toHaveText('');
+    await expect(cell(gone.userId)).toHaveText('');
+    // One muted line: the rows stay at 44 px.
+    for (const id of [away.userId, busy.userId, pendingLong.userId, gone.userId]) {
+      const h = await page
+        .locator(`tr[data-user="${id}"]`)
+        .evaluate((r) => r.getBoundingClientRect().height);
+      expect(h, `row ${id}`).toBeLessThanOrEqual(45);
+    }
+  });
+
   test('a Task.View-only person gets no list', async ({ personas, asUser }) => {
     const other = await personas.named('taskViewOnly');
     const page = await asUser(other.username);
@@ -324,9 +358,15 @@ test.describe('#433 one action per row', () => {
     await expect(trigger).toBeFocused();
   });
 
-  test('Edit availability opens the dialog; Deactivate opens the person with the question on screen; Activate is one Save away', async ({
+  test('Edit availability opens the dialog; Deactivate opens the person with the question on screen; Activate needs no question', async ({
     page,
+    personas,
   }) => {
+    const revived = await personas.create({
+      label: `${TAG}rev`,
+      roles: ['Data Technician'],
+      disabled: true,
+    });
     await openList(page, 1366, 768);
     await menuButton(page, busy.userId).click();
     await page.getByRole('menuitem', { name: 'Edit availability' }).click();
@@ -336,29 +376,114 @@ test.describe('#433 one action per row', () => {
 
     await menuButton(page, busy.userId).click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    await expect(page.locator('[data-confirm]')).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Deactivate user' })).toBeVisible();
-    // Esc with a change asks first; Leave closes the panel.
+    // The drawer opens with the question on screen (focus on Cancel); Cancel keeps the person active.
+    const question = page.getByRole('dialog', { name: /^Deactivate / });
+    await expect(question.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await question.getByRole('button', { name: 'Cancel' }).click();
+    await expect(question).toBeHidden();
+    await expect(page.locator('[data-panel-heading]')).toBeVisible();
+    // Esc with a change asks first; Leave closes the drawer.
+    await page.locator('[data-name]').fill('Changed Name');
     await page.keyboard.press('Escape');
     await page
       .getByRole('dialog', { name: 'Leave without saving?' })
       .getByRole('button', { name: 'Leave' })
       .click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
-    // Focus goes back to the menu button that opened the panel (after the question's dialog has left).
+    // Focus goes back to the menu button that opened the drawer (after the question's dialog has left).
     await expect(menuButton(page, busy.userId)).toBeFocused();
 
-    // A floating menu closes when the page or a box scrolls; the panel that has just left can move the grid, so open it until it stays.
+    // Activate needs no question: the menu item activates the person at once (a person of its own: the others of this file stay as they are).
+    await page.reload();
+    await expect(nameButton(page, twinB.userId)).toBeVisible();
     await expect(async () => {
-      await menuButton(page, gone.userId).click();
+      await menuButton(page, revived.userId).click();
       await expect(page.getByRole('menuitem')).toHaveText(
         ['Open', 'Edit availability', 'Activate'],
         { timeout: 1500 },
       );
     }).toPass();
     await page.getByRole('menuitem', { name: 'Activate' }).click();
-    await expect(page.locator('[data-status-active]')).toBeChecked();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: /^Deactivate / })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-panel]')).toHaveCount(0);
+  });
+
+  test('#437 Name and Last seen sort from their headers: aria-sort, the address, focus, reload and Back', async ({
+    page,
+  }) => {
+    await openList(page, 1920, 1080);
+    const name = page.getByRole('columnheader', { name: 'Name' });
+    const lastSeen = page.getByRole('columnheader', { name: 'Last seen' });
+    await expect(name).toHaveAttribute('aria-sort', 'none');
+    await name.getByRole('button').click();
+    await expect(page).toHaveURL(/sort=name(&|$)/);
+    await expect(name).toHaveAttribute('aria-sort', 'ascending');
+    await expect(name.getByRole('button')).toBeFocused();
+    const names = async () =>
+      (await page.locator('tr[data-user] button[data-open]').allTextContents()).map((t) =>
+        t.trim(),
+      );
+    // The server's collation orders the names; the twins with the same name keep their id order in both directions, so leave them out.
+    const distinct = (list: string[]) => list.filter((n) => !n.startsWith('Sam Same'));
+    // The list reloads after the press: wait until the first name is the one the server puts first.
+    await expect.poll(async () => (await names())[0]).not.toMatch(/pend/);
+    const asc = distinct(await names());
+    await name.getByRole('button').click();
+    await expect(page).toHaveURL(/sort=-name/);
+    await expect(name).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(async () => distinct(await names())).toEqual([...asc].reverse());
+    await lastSeen.getByRole('button').click();
+    await expect(page).toHaveURL(/sort=lastSeen/);
+    await expect(lastSeen).toHaveAttribute('aria-sort', 'ascending');
+    await expect(name).toHaveAttribute('aria-sort', 'none');
+    // Reload keeps the sort; Back returns to the previous one.
+    await page.reload();
+    await expect(page.getByRole('columnheader', { name: 'Last seen' })).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/sort=-name/);
+    await expect(page.getByRole('columnheader', { name: 'Name' })).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+  });
+
+  test('#437 the rows per page are 25, 50 or 100 and live in the address', async ({ page }) => {
+    await openList(page, 1366, 768);
+    const size = page.getByLabel('Rows per page');
+    await expect(size).toHaveValue('25');
+    await size.selectOption('50');
+    await expect(page).toHaveURL(/size=50/);
+    await page.reload();
+    await expect(page.getByLabel('Rows per page')).toHaveValue('50');
+    await page.getByLabel('Rows per page').selectOption('25');
+    await expect(page).not.toHaveURL(/size=/);
+  });
+
+  test('#437 on a phone the same sorts are a Sort by select in the Filters sheet, segments stay in the header', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(listUrl());
+    await expect(page.locator('li.rc').first()).toBeVisible();
+    await expect(page.locator('[data-strip-item="pending"]')).toBeVisible();
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    const sheet = page.getByRole('dialog').last();
+    const select = sheet.getByLabel('Sort by');
+    await expect(select).toBeVisible();
+    expect(await select.locator('option').allTextContents()).toEqual([
+      'Default order (Waiting people first)',
+      'Name',
+      'Last seen',
+      'First seen',
+    ]);
+    // The segments are not in the sheet.
+    await expect(sheet.locator('[data-strip-item]')).toHaveCount(0);
+    await select.selectOption('lastSeen');
+    await expect(page).toHaveURL(/sort=lastSeen/);
   });
 
   test('a User.View-only administrator sees the name and a menu with Open only, and no Grant access', async ({

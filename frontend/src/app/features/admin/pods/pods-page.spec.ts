@@ -133,6 +133,110 @@ describe('PodsPage', () => {
     } as typeof api;
   });
 
+  describe('the editor as a record page (#451)', () => {
+    it('shows the record header with the crumb Administration > Users > Pods > name, the name and the Active badge', async () => {
+      await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers', 'User.View');
+      await openEditor(1);
+      const header = q('[data-record-header]');
+      expect(header.getAttribute('data-kind')).toBe('pod');
+      expect(text('[data-page-title]')).toContain('Pod A');
+      const crumbs = Array.from(header.querySelectorAll('.rh__trail li')).map((li) =>
+        li.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(crumbs.slice(0, 3)).toEqual(['Administration', 'Users', 'Pods']);
+      expect(header.querySelector('.rh__trail a[href="/admin/users"]')).not.toBeNull();
+      expect(text('[data-crumb-current]')).toContain('Pod A');
+      expect(header.textContent).toContain('Active');
+      // The old section title is gone: the record header's h1 is the page's heading.
+      expect(el().querySelector('#pods-editor-title')).toBeNull();
+      expect(el().querySelectorAll('h1').length).toBe(1);
+    });
+
+    it('the Users step of the crumb is text for a person who may not open the Users page', async () => {
+      await create('Pod.View', 'Pod.ManageMembers');
+      await openEditor(1);
+      expect(
+        q('[data-record-header]').querySelector('.rh__trail a[href="/admin/users"]'),
+      ).toBeNull();
+    });
+
+    it('offers Deactivate pod in the header overflow only with Pod.Manage, and it asks first', async () => {
+      await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+      await openEditor(1);
+      q('[data-record-header] [data-overflow]').click();
+      await settle();
+      const item = document.querySelector<HTMLElement>('[data-action="deactivate"]');
+      expect(item?.textContent).toContain('Deactivate pod');
+      item!.click();
+      await settle();
+      expect(api.updatePod).not.toHaveBeenCalled();
+      expect(document.body.textContent).toContain('Deactivate pod?');
+    });
+
+    it('has no Deactivate for Pod.ManageMembers alone, and the name and status stay read only', async () => {
+      await create('Pod.View', 'Pod.ManageMembers');
+      await openEditor(1);
+      expect(q('[data-record-header]').querySelector('[data-overflow]')).toBeNull();
+      expect(q<HTMLInputElement>('input[data-name]').disabled).toBe(true);
+      expect(q<HTMLInputElement>('[data-active]').disabled).toBe(true);
+    });
+
+    it('shows the not-found state for an unknown pod, with no editor and a link out', async () => {
+      api.getPod.mockReturnValue(
+        throwError(
+          () =>
+            new ApiError(
+              404,
+              'NOT_FOUND',
+              'No such pod',
+              undefined,
+              new HttpErrorResponse({ status: 404 }),
+            ),
+        ),
+      );
+      await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+      await openEditor(999);
+      expect(q('[data-record-state]').getAttribute('data-record-state')).toBe('notFound');
+      expect(el().textContent).toContain("We couldn't find that pod.");
+      expect(el().querySelector('[data-editor]')).toBeNull();
+    });
+
+    it('shows the failure state with Retry for a pod that cannot be read, and Retry loads it', async () => {
+      api.getPod.mockReturnValueOnce(
+        throwError(
+          () =>
+            new ApiError(500, undefined, 'boom', undefined, new HttpErrorResponse({ status: 500 })),
+        ),
+      );
+      await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+      await openEditor(1);
+      expect(q('[data-record-state]').getAttribute('data-record-state')).toBe('error');
+      await click('[data-retry]');
+      await settle();
+      expect(el().querySelector('[data-editor]')).not.toBeNull();
+    });
+
+    it('?pod=new is the 403 state without Pod.Manage and the editor with it', async () => {
+      await create('Pod.View', 'Pod.ManageMembers');
+      fixture.componentRef.setInput('pod', 'new');
+      await settle();
+      expect(q('[data-record-state]').getAttribute('data-record-state')).toBe('forbidden');
+      expect(el().querySelector('[data-editor]')).toBeNull();
+    });
+
+    it('Back to the list goes to the address the list had and leaves the editor', async () => {
+      await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+      const router = TestBed.inject(Router);
+      const navigate = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      await openEditor(1);
+      await click('[data-editor] .mf-form-actions p-button:last-of-type');
+      expect(navigate).toHaveBeenCalled();
+      const back = navigate.mock.calls.find((c) => (c[1] as { state?: unknown })?.state);
+      expect(String(back![0])).toContain('/admin/pods');
+      expect(back![1]).toEqual({ state: { restoreFocus: true } });
+    });
+  });
+
   it('lists pods with member counts and status, and offers New pod to managers only', async () => {
     await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
 
@@ -195,7 +299,7 @@ describe('PodsPage', () => {
     expect(el().querySelector('[data-pods]')).not.toBeNull();
 
     await openEditor(1);
-    await type('[data-name]', 'Pod A renamed');
+    await type('input[data-name]', 'Pod A renamed');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     fixture.componentRef.setInput('pod', undefined);
     await settle();
@@ -242,7 +346,7 @@ describe('PodsPage', () => {
 
     expect(el().textContent).not.toContain('New pod');
     await openEditor();
-    expect(q<HTMLInputElement>('[data-name]').disabled).toBe(true);
+    expect(q<HTMLInputElement>('input[data-name]').disabled).toBe(true);
     expect(el().textContent).not.toContain('Save');
     expect(el().querySelector('[data-remove]')).toBeNull();
     expect(el().querySelector('[data-candidate-search]')).toBeNull();
@@ -346,12 +450,12 @@ describe('PodsPage', () => {
     expect(text('[data-name-error]')).toBe('Enter a pod name.');
     expect(api.createPod).not.toHaveBeenCalled();
 
-    await type('[data-name]', '  Pod C ');
+    await type('input[data-name]', '  Pod C ');
     await type('[data-description]', 'New work');
     await click('.pods__actions p-button');
 
     expect(api.createPod).toHaveBeenCalledWith({ name: 'Pod C', description: 'New work' });
-    expect(text('#pods-editor-title')).toBe('Edit pod');
+    expect(text('[data-page-title]')).toContain('Pod C');
     expect(text('[data-live]')).toBe(''); // the toast confirms the save; no second message
     expect(text('[data-no-members]')).toBe('No members yet.');
   });
@@ -371,12 +475,12 @@ describe('PodsPage', () => {
     );
     await create('Pod.View', 'Pod.Manage');
     await click('p-button');
-    await type('[data-name]', 'Pod A');
+    await type('input[data-name]', 'Pod A');
 
     await click('.pods__actions p-button');
 
     expect(text('[data-name-error]')).toBe("A pod named 'Pod A' already exists.");
-    expect(q('[data-name]').getAttribute('aria-invalid')).toBe('true');
+    expect(q('input[data-name]').getAttribute('aria-invalid')).toBe('true');
   });
 
   it('shows members with their roles as read-only chips and no lead control', async () => {
@@ -473,7 +577,7 @@ describe('PodsPage', () => {
     );
     await create('Pod.View', 'Pod.Manage');
     await openEditor();
-    await type('[data-name]', 'Pod Alpha');
+    await type('input[data-name]', 'Pod Alpha');
 
     await click('.pods__actions p-button');
     expect(text('[data-failure]')).toContain('Someone else changed this pod');
@@ -488,7 +592,7 @@ describe('PodsPage', () => {
     await openEditor();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
 
-    await type('[data-name]', 'Changed');
+    await type('input[data-name]', 'Changed');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
 

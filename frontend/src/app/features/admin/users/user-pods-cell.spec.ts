@@ -91,6 +91,32 @@ describe('UserPodsCell', () => {
       expect(el().classList).toContain('upc--one');
       expect(q('[data-pods-trigger]').getAttribute('aria-label')).toContain('Processing');
       expect(q('[data-pods-trigger]').getAttribute('aria-label')).toContain('Intake');
+      // #435: the tooltip of the whole cell lists every pod, the primary one marked.
+      expect(q('[data-pods-trigger]').getAttribute('title')).toBe(
+        'Processing, Review (primary), Intake',
+      );
+    });
+
+    it('one line without edit rights: plain text with the same tooltip, no button (#435)', async () => {
+      await create([pod(1, 'Processing', true), pod(2, 'Review')], { canEdit: false });
+      fixture.componentRef.setInput('oneLine', true);
+      await settle();
+      expect(el().querySelector('[data-pods-trigger]')).toBeNull();
+      expect(q('[data-pods-readonly]').getAttribute('title')).toBe('Processing (primary), Review');
+    });
+
+    it('a person with one pod needs no tooltip (the cell already shows it)', async () => {
+      await create([pod(1, 'Processing', true)]);
+      fixture.componentRef.setInput('oneLine', true);
+      await settle();
+      expect(q('[data-pods-trigger]').getAttribute('title')).toBeNull();
+    });
+
+    it('the popover keeps the full name of a pod in the tooltip of its row', async () => {
+      const long = 'Quality review of long documents and their exhibits '.repeat(2).trim();
+      await create([pod(9, long, true)], { catalog: [{ podId: 9, name: long }] });
+      await openPopover();
+      expect(q('.upc-label').getAttribute('title')).toBe(long);
     });
 
     it('says No pod when the person has none', async () => {

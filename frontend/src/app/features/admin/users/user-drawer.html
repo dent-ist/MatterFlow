@@ -1,0 +1,397 @@
+<p-dialog
+  position="right"
+  styleClass="mf-drawer mf-user-drawer"
+  [modal]="true"
+  [closable]="false"
+  [closeOnEscape]="false"
+  [dismissableMask]="false"
+  maskStyleClass="mf-user-drawer-mask"
+  [mfDialogFocus]="open()"
+  [focusOnShow]="false"
+  (onShow)="focusHeading()"
+  [draggable]="false"
+  [resizable]="false"
+  [visible]="open()"
+  [style]="{
+    width: '480px',
+    maxWidth: '100vw',
+    margin: '0',
+    borderRadius: '0',
+  }"
+  [contentStyle]="{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0' }"
+>
+  <ng-template #header let-labelId="ariaLabelledBy">
+    <div class="ud-head" data-drawer-head>
+      <div class="ud-top">
+        <h2 class="ud-title" tabindex="-1" data-panel-heading [id]="labelId" [attr.title]="name()">
+          {{ name() }}
+        </h2>
+        <button
+          type="button"
+          class="mf-btn mf-btn--icon ud-close"
+          data-drawer-close
+          aria-label="Close user details"
+          title="Close"
+          (click)="requestClose()"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (detail(); as u) {
+        <p class="ud-account">
+          <span class="ud-mono" data-account>{{ u.windowsAccount }}</span>
+          @if (u.isSeededAdmin) {
+            <span> &middot; Seeded</span>
+          }
+        </p>
+        <div class="ud-facts">
+          @if (u.isPending) {
+            <mf-badge data-drawer-status tone="warning" icon="pi-user-plus"
+              >Pending access</mf-badge
+            >
+          } @else if (u.isActive) {
+            <mf-badge data-drawer-status tone="success" icon="pi-check-circle">Active</mf-badge>
+          } @else {
+            <mf-badge data-drawer-status tone="neutral">Inactive</mf-badge>
+          }
+          @if (availabilityKind() === 'chip') {
+            <mf-availability-chip [availability]="summary()?.availability" />
+          }
+          @if (u.lastLoginAtUtc) {
+            <span class="ud-fact" data-last-seen
+              >Last seen {{ u.lastLoginAtUtc | mfDate: 'date' }}</span
+            >
+          }
+          @if (openTasks(); as n) {
+            <span class="ud-fact" data-open-tasks>Open tasks: {{ n }}</span>
+          } @else if (openTasks() === 0) {
+            <span class="ud-fact" data-open-tasks>No open tasks</span>
+          }
+        </div>
+        <p class="ud-head-actions">
+          @if (openTasks()) {
+            <a class="mf-link" data-view-tasks routerLink="/tasks" [queryParams]="tasksQuery()"
+              >View their tasks</a
+            >
+          }
+          @if (canManage()) {
+            @if (u.isActive) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text ud-danger"
+                data-deactivate
+                [attr.aria-label]="'Deactivate ' + u.displayName"
+                (click)="askDeactivate()"
+              >
+                Deactivate
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text"
+                data-activate
+                [attr.aria-label]="'Activate ' + u.displayName"
+                [attr.aria-disabled]="deactivateBusy() ? 'true' : null"
+                (click)="activate()"
+              >
+                Activate
+              </button>
+            }
+          }
+        </p>
+      }
+    </div>
+  </ng-template>
+
+  @if (open()) {
+    <div class="ud-body" mfScrollRegion="User details" data-panel [attr.data-user]="userId()">
+      @switch (loadState()) {
+        @case ('loading') {
+          <div class="ud-loading" role="status" aria-busy="true" data-panel-loading>
+            <span class="mf-sr-only">Loading user...</span>
+            @for (n of [1, 2, 3, 4]; track n) {
+              <span class="ud-bone" aria-hidden="true"></span>
+            }
+          </div>
+        }
+        @case ('error') {
+          <div class="ud-error" role="alert" data-panel-error>
+            <p>We could not load this user. Try again.</p>
+            <button type="button" class="mf-btn" data-panel-retry (click)="load()">Retry</button>
+          </div>
+        }
+        @default {
+          @if (detail(); as u) {
+            @if (panelError()) {
+              <p class="mf-error ud-alert" role="alert" data-panel-error>{{ panelError() }}</p>
+            }
+            @if (readOnlyReason(); as why) {
+              <p class="ud-note ud-readonly" data-readonly-reason>{{ why }}</p>
+            }
+
+            <section class="ud-sec" aria-labelledby="ud-access" data-section="access">
+              <h3 id="ud-access">
+                @if (phone()) {
+                  <button
+                    type="button"
+                    class="ud-toggle"
+                    data-section-toggle="access"
+                    [attr.aria-expanded]="expanded('access')"
+                    aria-controls="ud-access-body"
+                    (click)="toggleSection('access')"
+                  >
+                    Access
+                    <i
+                      class="pi"
+                      [class]="expanded('access') ? 'pi-chevron-up' : 'pi-chevron-down'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                } @else {
+                  Access
+                }
+              </h3>
+              <div id="ud-access-body" [hidden]="!expanded('access')">
+                <fieldset class="ud-roles" [disabled]="!canManage()">
+                  <legend class="mf-sr-only">Roles</legend>
+                  @for (r of roles(); track r.roleId) {
+                    <label class="ud-role">
+                      <input
+                        type="checkbox"
+                        [attr.data-role]="r.roleId"
+                        [checked]="draftRoleIds().includes(r.roleId)"
+                        (change)="toggleRole(r.roleId, $any($event.target).checked)"
+                      />
+                      <span class="ud-role-text">
+                        <span class="ud-role-name" [attr.title]="r.name">{{ r.name }}</span>
+                        <span class="ud-role-meta" [attr.title]="r.description || null">
+                          @if (r.description) {
+                            {{ r.description }} &middot;
+                          }
+                          {{ r.permissionCount }}
+                          {{ r.permissionCount === 1 ? 'permission' : 'permissions' }}
+                        </span>
+                      </span>
+                    </label>
+                  }
+                </fieldset>
+                @if (sysAdminTicked()) {
+                  <p class="ud-warn" role="status" data-sysadmin-warning>
+                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                    System Admin holds every permission, including managing users and roles.
+                  </p>
+                }
+                <div class="ud-perms" role="group" aria-labelledby="ud-perms-h" data-permissions>
+                  <h4 id="ud-perms-h">
+                    @if (rolesChanged()) {
+                      After you save: {{ permissionTotal() }} permissions
+                    } @else {
+                      Effective permissions ({{ permissionTotal() }})
+                    }
+                  </h4>
+                  @if (rolesChanged()) {
+                    <p class="ud-note" data-permissions-preview>
+                      This is what the ticked roles give. It applies after you save.
+                    </p>
+                  }
+                  @if (permissionGroups().length === 0) {
+                    <p class="ud-note">
+                      @if (rolesChanged() && previewLoading()) {
+                        Working out the permissions...
+                      } @else {
+                        No permissions. This user stays in Access Pending.
+                      }
+                    </p>
+                  } @else {
+                    <ul class="ud-chips">
+                      @for (g of permissionGroups(); track g.group) {
+                        <li class="ud-chip" data-permission-group [attr.title]="g.codes.join(', ')">
+                          {{ g.group }} ({{ g.count }})
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <section class="ud-sec" aria-labelledby="ud-pods" data-section="pods">
+              <h3 id="ud-pods">
+                @if (phone()) {
+                  <button
+                    type="button"
+                    class="ud-toggle"
+                    data-section-toggle="pods"
+                    [attr.aria-expanded]="expanded('pods')"
+                    aria-controls="ud-pods-body"
+                    (click)="toggleSection('pods')"
+                  >
+                    Pods
+                    <i
+                      class="pi"
+                      [class]="expanded('pods') ? 'pi-chevron-up' : 'pi-chevron-down'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                } @else {
+                  Pods
+                }
+              </h3>
+              <div id="ud-pods-body" [hidden]="!expanded('pods')">
+                @if (summary(); as s) {
+                  <mf-user-pods-cell
+                    [displayName]="u.displayName"
+                    [pods]="s.pods"
+                    [catalog]="podChoices()"
+                    [catalogFailed]="podChoicesFailed()"
+                    [canEdit]="canEditPods()"
+                    [busy]="podsBusy()"
+                    (opened)="podsOpened.emit()"
+                    (applied)="podsChange.emit($event)"
+                  />
+                } @else {
+                  <p class="ud-note">Pods are not available for this person here.</p>
+                }
+                <p class="ud-note" data-pods-note>Pods are saved as soon as you apply them.</p>
+              </div>
+            </section>
+
+            <section class="ud-sec" aria-labelledby="ud-avail" data-section="availability">
+              <h3 id="ud-avail">
+                @if (phone()) {
+                  <button
+                    type="button"
+                    class="ud-toggle"
+                    data-section-toggle="availability"
+                    [attr.aria-expanded]="expanded('availability')"
+                    aria-controls="ud-avail-body"
+                    (click)="toggleSection('availability')"
+                  >
+                    Availability
+                    <i
+                      class="pi"
+                      [class]="expanded('availability') ? 'pi-chevron-up' : 'pi-chevron-down'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                } @else {
+                  Availability
+                }
+              </h3>
+              <div id="ud-avail-body" [hidden]="!expanded('availability')">
+                <p class="ud-sentence" data-availability-sentence>{{ availabilitySentence() }}</p>
+                @if (canManage()) {
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    data-edit-availability
+                    [attr.aria-label]="'Edit availability of ' + u.displayName"
+                    (click)="editAvailability.emit()"
+                  >
+                    Edit availability
+                  </button>
+                }
+                <p class="ud-note" data-availability-note>
+                  Availability is saved in its own dialog.
+                </p>
+              </div>
+            </section>
+
+            <section class="ud-sec" aria-labelledby="ud-profile" data-section="profile">
+              <h3 id="ud-profile">
+                @if (phone()) {
+                  <button
+                    type="button"
+                    class="ud-toggle"
+                    data-section-toggle="profile"
+                    [attr.aria-expanded]="expanded('profile')"
+                    aria-controls="ud-profile-body"
+                    (click)="toggleSection('profile')"
+                  >
+                    Profile
+                    <i
+                      class="pi"
+                      [class]="expanded('profile') ? 'pi-chevron-up' : 'pi-chevron-down'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                } @else {
+                  Profile
+                }
+              </h3>
+              <div id="ud-profile-body" [hidden]="!expanded('profile')">
+                <fieldset class="ud-fields" [disabled]="!canManage()">
+                  <legend class="mf-sr-only">Profile</legend>
+                  <div class="mf-fld">
+                    <label for="user-name">Display name</label>
+                    <input
+                      id="user-name"
+                      type="text"
+                      class="mf-control"
+                      maxlength="200"
+                      data-name
+                      [value]="draftName()"
+                      (input)="draftName.set($any($event.target).value)"
+                    />
+                  </div>
+                  <div class="mf-fld">
+                    <label for="user-email">Email</label>
+                    <input
+                      id="user-email"
+                      type="email"
+                      class="mf-control"
+                      maxlength="320"
+                      data-email
+                      [value]="draftEmail()"
+                      (input)="draftEmail.set($any($event.target).value)"
+                    />
+                  </div>
+                </fieldset>
+                <dl class="ud-dl">
+                  <dt>Windows account</dt>
+                  <dd class="ud-mono">{{ u.windowsAccount }}</dd>
+                  <dt>First seen</dt>
+                  <dd data-first-seen>{{ u.registeredAtUtc | mfDate: 'date' }}</dd>
+                </dl>
+                @if (canManage()) {
+                  <p class="ud-note" data-save-note>
+                    Save changes saves the roles, name and email. Pods and availability are saved on
+                    their own.
+                  </p>
+                }
+              </div>
+            </section>
+          }
+        }
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    @if (canManage()) {
+      <p-button
+        label="Save changes"
+        data-save
+        [disabled]="!dirty() || saving()"
+        (onClick)="save()"
+      />
+      <p-button label="Cancel" severity="secondary" data-cancel (onClick)="requestClose()" />
+    } @else {
+      <p-button label="Close" severity="secondary" data-cancel (onClick)="requestClose()" />
+    }
+  </ng-template>
+</p-dialog>
+
+<mf-confirm-dialog
+  [title]="'Deactivate ' + name() + '?'"
+  confirmLabel="Deactivate"
+  cancelLabel="Cancel"
+  [danger]="true"
+  [busy]="deactivateBusy()"
+  [extraLabel]="openTasks() ? 'View their tasks' : ''"
+  [(visible)]="deactivateOpen"
+  (confirmed)="deactivate()"
+  (extra)="viewTasks()"
+>
+  <p data-deactivate-text>They can no longer sign in. {{ deactivateText() }}</p>
+</mf-confirm-dialog>

@@ -33,7 +33,8 @@ export type RecordKind =
   | 'step'
   | 'asset'
   | 'assetType'
-  | 'customField';
+  | 'customField'
+  | 'pod';
 
 /** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
 export type RecordFailure = 'notFound' | 'forbidden' | 'error';
@@ -52,7 +53,12 @@ const KINDS: Record<
      * Administration pages (#353): the breadcrumb starts `Administration > Task Types` and the last step is `crumb`, never the address id.
      * `own` is for a record whose list is the page itself (Asset Types, Custom Fields, #541): `Administration > <list> > crumb`.
      */
-    admin?: { crumb: string; own?: boolean };
+    admin?: {
+      crumb: string;
+      own?: boolean;
+      /** A page between Administration and the list (the Users page holds the Pods list): `Administration > Users > Pods > Pod`. */
+      section?: { label: string; path: string; view: readonly Permission[] };
+    };
   }
 > = {
   client: {
@@ -137,6 +143,22 @@ const KINDS: Record<
     path: '/admin/custom-fields',
     view: 'CustomField.Manage',
     admin: { crumb: 'Object', own: true },
+  },
+  pod: {
+    noun: 'pod',
+    list: 'Pods',
+    label: 'Pods',
+    path: '/admin/pods',
+    view: 'Pod.ManageMembers',
+    admin: {
+      crumb: 'Pod',
+      own: true,
+      section: {
+        label: 'Users',
+        path: '/admin/users',
+        view: ['User.View', 'User.Manage'],
+      },
+    },
   },
 };
 
@@ -360,7 +382,15 @@ export class RecordState {
         : { label: info.label };
       const parent = this.parent();
       if (info.admin.own) {
-        return [{ label: 'Administration' }, list, { label: info.admin.crumb }];
+        const section = info.admin.section;
+        const sectionCrumb: Crumb[] = section
+          ? [
+              this.auth.hasAny(section.view)
+                ? { label: section.label, link: section.path }
+                : { label: section.label },
+            ]
+          : [];
+        return [{ label: 'Administration' }, ...sectionCrumb, list, { label: info.admin.crumb }];
       }
       return [
         { label: 'Administration' },

@@ -16,9 +16,11 @@ import {
   RoleSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { CharCounter } from '../../../shared/ui/char-counter';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { phoneCards } from '../../../shared/ui/record-card-list';
+import { AdminTabCounts } from '../admin-tabs';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
@@ -28,10 +30,39 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
   return action !== 'View' && all.has(view) ? view : undefined;
 }
 
+/** The most characters a role description may have (the API's limit). */
+export const ROLE_DESCRIPTION_MAX = 500;
+
+/** One permission that differs from the saved role: ticked since (`added`) or unticked since (`removed`). */
+export interface RoleChange {
+  code: string;
+  kind: 'added' | 'removed';
+}
+
+/**
+ * What the draft changed in the permissions of a saved role, in catalog order: the added ones first, then the removed ones. A new role (no
+ * saved set) and the locked System Admin role have no changes to show.
+ */
+export function roleChanges(
+  saved: ReadonlySet<string> | null,
+  draft: ReadonlySet<string>,
+  catalogOrder: readonly string[],
+): RoleChange[] {
+  if (!saved) return [];
+  return [
+    ...catalogOrder
+      .filter((c) => draft.has(c) && !saved.has(c))
+      .map((code) => ({ code, kind: 'added' as const })),
+    ...catalogOrder
+      .filter((c) => saved.has(c) && !draft.has(c))
+      .map((code) => ({ code, kind: 'removed' as const })),
+  ];
+}
+
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, ConfirmDialog, ScrollArea],
+  imports: [Button, CharCounter, ConfirmDialog, ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './roles-page.html',
@@ -40,6 +71,7 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
 export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
+  private readonly reportCount = AdminTabCounts.report('roles');
 
   /** Below 640 px the list has no header row: the word "permissions" is then on the row itself. */
   protected readonly phone = phoneCards();
@@ -61,6 +93,13 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   protected readonly confirmingDelete = signal(false);
 
   protected readonly locked = computed(() => this.selected()?.isSystemAdmin ?? false);
+  protected readonly descriptionMax = ROLE_DESCRIPTION_MAX;
+  /** Permissions that differ from the saved role (empty while creating a new role or looking at the locked one). */
+  protected readonly changes = computed<RoleChange[]>(() => {
+    const saved = this.selected();
+    if (!saved || this.locked()) return [];
+    return roleChanges(new Set(saved.permissionCodes), this.draftCodes(), [...this.allCodes()]);
+  });
   protected readonly allCodes = computed(
     () => new Set(this.catalog().flatMap((g) => g.permissions.map((p) => p.code))),
   );
@@ -100,6 +139,12 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     return !!r && !r.isSystemAdmin;
   });
 
+  /** Keeps the list and the `Roles (n)` tab of the shell in step. */
+  private setRoles(roles: RoleSummaryDto[]): void {
+    this.roles.set(roles);
+    this.reportCount(roles.length);
+  }
+
   hasUnsavedChanges(): boolean {
     return this.dirty();
   }
@@ -110,7 +155,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
         firstValueFrom(this.api.listRoles()),
         firstValueFrom(this.api.listPermissions()),
       ]);
-      this.roles.set(roles);
+      this.setRoles(roles);
       this.catalog.set(catalog);
     } catch {
       this.loadError.set(true);
@@ -197,6 +242,35 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     this.note.set(notes.join(' '));
   }
 
+  /** "Select all" / "Clear" of one group: every permission of the group (the whole catalog group, not only what the search shows). */
+  protected selectGroup(group: string, on: boolean): void {
+    if (this.locked()) return;
+    const permissions = this.catalog().find((g) => g.group === group)?.permissions ?? [];
+    const codes = new Set(this.draftCodes());
+    for (const p of permissions) {
+      if (on) codes.add(p.code);
+      else codes.delete(p.code);
+    }
+    this.draftCodes.set(codes);
+    this.note.set(
+      on
+        ? `All ${permissions.length} ${group} permissions selected.`
+        : `${group} permissions cleared.`,
+    );
+  }
+
+  /** The undo of one chip of the Changed row: an added permission is unticked, a removed one ticked again (with the rules of ticking). */
+  protected undoChange(change: RoleChange): void {
+    this.toggle(change.code, change.kind === 'removed');
+    // The chip goes away with its change: focus goes to the permission it was about (else the count line), never to nowhere.
+    setTimeout(() => {
+      const box = document.querySelector<HTMLElement>(`[data-perm="${change.code}"]`);
+      const next = box ?? document.querySelector<HTMLElement>('[data-editor-count]');
+      if (next && !next.matches('input, button')) next.setAttribute('tabindex', '-1');
+      next?.focus();
+    });
+  }
+
   /** "Copy from role": replaces the draft permissions with another role's. */
   protected async copyFrom(roleId: string): Promise<void> {
     if (!roleId || this.locked()) return;
@@ -232,12 +306,19 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       this.selected.set(saved);
       this.draftCodes.set(new Set(saved.permissionCodes));
       this.baseline.set(this.draftKey());
-      this.roles.set(await firstValueFrom(this.api.listRoles()));
+      this.setRoles(await firstValueFrom(this.api.listRoles()));
       this.notify.success('Role saved', "Changes apply on each user's next request.");
     } catch (err) {
       this.handleError(err);
     } finally {
       this.saving.set(false);
+      // The Save button is disabled while it runs, which takes focus away from it: give it back once it can take it.
+      setTimeout(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body) {
+          document.querySelector<HTMLElement>('[data-save] button')?.focus();
+        }
+      });
     }
   }
 
@@ -248,7 +329,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     this.error.set('');
     try {
       await firstValueFrom(this.api.deleteRole(role.roleId));
-      this.roles.set(await firstValueFrom(this.api.listRoles()));
+      this.setRoles(await firstValueFrom(this.api.listRoles()));
       this.selected.set(null);
       this.editing.set(false);
       this.notify.success('Role deleted', role.name);

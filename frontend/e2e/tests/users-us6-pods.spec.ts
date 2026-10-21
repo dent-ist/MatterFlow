@@ -170,7 +170,7 @@ test.describe('#450 Pods list on the kit', () => {
     await expect(link).toHaveAttribute('href', new RegExp(`pod=${activePodId}`));
     await link.click();
     await expect(page).toHaveURL(new RegExp(`pod=${activePodId}`));
-    await expect(page.getByRole('heading', { name: 'Edit pod' })).toBeVisible();
+    await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
     // No Filters button while the editor replaces the list.
     await expect(page.locator('mf-page-header [data-filters-toggle]')).toHaveCount(0);
     // The members: Inactive, not Disabled (#450).
@@ -189,7 +189,7 @@ test.describe('#450 Pods list on the kit', () => {
     await expect(card).toBeVisible();
     await expect(card.locator('a[data-card-name]')).toHaveAttribute('href', /pod=\d+/);
     await card.locator('a[data-card-name]').click();
-    await expect(page.getByRole('heading', { name: 'Edit pod' })).toBeVisible();
+    await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
     await shot(page, 'pod-editor-phone', 375, 812);
   });
 

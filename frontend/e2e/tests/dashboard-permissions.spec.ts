@@ -225,8 +225,10 @@ test.describe('Dashboard permissions', () => {
       expect(Math.abs(name.width - description.width)).toBeLessThan(1);
       expect(Math.abs(name.x - search.x)).toBeLessThan(1);
       expect(name.width).toBeLessThanOrEqual(640);
-      for (const b of [name, description, search, copy])
+      for (const b of [name, search, copy])
         expect(Math.abs(b.height - name.height)).toBeLessThan(1);
+      // The description is a two-row text area (#449): at least a control tall.
+      expect(description.height).toBeGreaterThanOrEqual(name.height);
       // Search and Copy from role share a row when there is room, and the row fits inside the name field's column.
       if (width > 640) {
         expect(Math.abs(search.y - copy.y)).toBeLessThan(1);

@@ -68,7 +68,11 @@ test.describe('Pods tab on the Users page', () => {
     const [pod] = (await threePods(seed)).ids;
     await page.goto('/admin/pods');
     await expect(page.getByRole('heading', { name: 'Users', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveText(['Users', 'Roles', 'Pods']);
+    await expect(page.getByRole('tab')).toHaveText([
+      /^\s*Users \(\d+\)$/,
+      /^\s*Roles \(\d+\)$/,
+      /^\s*Pods \(\d+\)$/,
+    ]);
     await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
     await expect(page).toHaveTitle(/^Users - Pods/);
 
@@ -99,8 +103,8 @@ test.describe('Pods tab on the Users page', () => {
 
     // The deep link of the pod editor keeps working inside the tab.
     await page.goto(`/admin/pods?pod=${pod}`);
-    await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('heading', { name: 'Edit pod' })).toBeVisible();
+    // The editor is a record page (#451): the record header replaces the Users header and tabs.
+    await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
     await expect(page.locator('#pod-name')).toHaveValue(/^Processing /);
   });
 
@@ -111,7 +115,7 @@ test.describe('Pods tab on the Users page', () => {
     const person = await seed.user(['Data Technician'], 'member');
     const pod = await seed.pod(`Members ${uid()}`, []);
     await page.goto(`/admin/pods?pod=${pod.podId}`);
-    await expect(page.getByRole('heading', { name: 'Edit pod' })).toBeVisible();
+    await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
     await page.getByRole('searchbox', { name: 'Add members' }).fill(person.username.slice(-12));
     await page.locator(`[data-candidate="${person.userId}"]`).check();
     await page.getByRole('button', { name: 'Add selected' }).click();

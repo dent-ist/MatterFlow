@@ -76,7 +76,7 @@ test.describe('users-pods screenshots', () => {
       await expect(page.locator('table[data-pods]')).toBeVisible();
       await shot(page, 'pods-tab', size);
       await page.goto(`/admin/pods?pod=${ids[0]}`);
-      await expect(page.getByRole('heading', { name: 'Edit pod' })).toBeVisible();
+      await expect(page.locator('[data-editor] [data-record-header]')).toBeVisible();
       await shot(page, 'pods-tab-editor', size);
 
       const ro = await asUser(auditor.username);

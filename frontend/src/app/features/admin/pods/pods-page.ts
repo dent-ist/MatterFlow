@@ -36,7 +36,14 @@ import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/u
 import { adminListState } from '../../../shared/ui/admin-list-state';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
+import { AdminTabCounts } from '../admin-tabs';
+import { Crumb } from '../../../shared/ui/page-header';
+import { RecordHeader, RecordAction } from '../../../shared/ui/record-header';
+import { RecordLoadFlow, RecordState } from '../../../shared/ui/record-state';
+import { DrillReturn } from '../../../shared/work-queue/drill';
+import { RETURN_STATE, RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { AdminShellFilters } from '../task-types/shell-filters';
+import { ADMIN_LIST, AdminListLeave, ListReturn } from '../list-return';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -79,6 +86,9 @@ const COLUMNS = ['name', 'members', 'status'] as const;
     FiltersBar,
     ColumnFilterRow,
     AdminCardList,
+    RecordHeader,
+    RecordState,
+    RowLink,
   ],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
@@ -87,6 +97,8 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(PodsClient);
   private readonly notify = inject(NotificationService);
+  /** The page's tab counts, when the Pods list sits in the Users page: a saved pod (new, renamed, deactivated) changes `Pods (n)`. */
+  private readonly tabCounts = inject(AdminTabCounts, { optional: true });
 
   /** Query parameter `pod`: a pod id or `new`, so a reload or a shared link returns to the same editor. */
   readonly pod = input<string | undefined>(undefined);
@@ -112,6 +124,19 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
   });
 
   protected readonly phone = phoneCards();
+
+  // ---- record page (#451): the editor is a record page with the record header, the crumb and Back
+  protected readonly leave = inject(AdminListLeave);
+  protected readonly listId = ADMIN_LIST.pods.id;
+  /** Where Back and the crumb go: the exact list view the person left (page, size, filters, sort), else the plain list. */
+  private readonly drill = inject(DrillReturn);
+  private editedBefore = false;
+  private readonly backSig = signal(new ListReturn(ADMIN_LIST.pods, this.router));
+  private get back(): ListReturn {
+    return this.backSig();
+  }
+  /** The load of the pod in the address: 404, 403 and failures show `mf-record-state` (quiet requests, no toast). */
+  protected readonly flow = new RecordLoadFlow('pod');
   /** Loading, error, empty and no-match as the kit derives them, with "n inactive hidden - Show all" for the default Active status. */
   protected readonly ls = adminListState({
     state: this.state,
@@ -131,6 +156,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     link: ['/admin/pods'],
     queryParams: { pod: pod.podId },
     rowKey: pod.podId,
+    state: this.leave.state(),
     subtitle: pod.description,
     badges: [activeCardBadge(pod.isActive)],
     meta: [`${pod.memberCount} ${pod.memberCount === 1 ? 'member' : 'members'}`],
@@ -138,6 +164,46 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
 
   // ---- editor
   protected readonly editorOpen = signal(false);
+  /** `Administration > Users > Pods > name`: the Users step is a link only for a person who may open the Users page. */
+  protected readonly parents = computed<Crumb[]>(() => [
+    { label: 'Administration' },
+    this.auth.hasAny(['User.View', 'User.Manage'])
+      ? { label: 'Users', link: '/admin/users' }
+      : { label: 'Users' },
+    this.back.crumb('Pods'),
+  ]);
+  protected readonly headerBack = computed(() => ({
+    label: 'Pods',
+    link: this.backSig().tree,
+    state: { ...RETURN_STATE },
+  }));
+  protected readonly headerName = computed(() =>
+    this.detail() ? this.detail()!.pod.name : 'New pod',
+  );
+  /** Deactivate / Activate in the overflow of the header (needs Pod.Manage, like the Active box of the form). */
+  protected readonly headerActions = computed<RecordAction[]>(() => {
+    const pod = this.detail()?.pod;
+    if (!pod || !this.auth.has('Pod.Manage')) return [];
+    return pod.isActive
+      ? [
+          {
+            id: 'deactivate',
+            label: 'Deactivate pod',
+            icon: 'pi-ban',
+            role: 'state',
+            run: () => this.changeStatus(false),
+          },
+        ]
+      : [
+          {
+            id: 'activate',
+            label: 'Activate pod',
+            icon: 'pi-check-circle',
+            role: 'state',
+            run: () => this.changeStatus(true),
+          },
+        ];
+  });
   protected readonly detail = signal<PodDetail | null>(null);
   protected readonly name = signal('');
   protected readonly description = signal('');
@@ -206,12 +272,22 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
       },
     });
     inject(DestroyRef).onDestroy(offSkip);
+    // Back from a pod puts focus on the name link of the row that was left.
+    restoreRowFocus(this.listId, () => this.state() === 'ready');
     // A name link (or a card) of the list puts the pod in the address: the editor follows the address.
     effect(() => {
       const pod = this.pod();
       untracked(() => {
+        // The list the person left is in the state of the history entry the editor was opened with: read it when the editor is asked for.
+        if (pod && !this.editorOpen())
+          this.backSig.set(new ListReturn(ADMIN_LIST.pods, this.router));
         if (pod && !this.editorOpen()) void this.openFromUrl();
         else if (!pod && this.editorOpen()) this.followAddressClose();
+        else if (!pod && this.flow.state() !== 'ready') this.flow.state.set('ready');
+        if (!pod && this.editedBefore && !this.editorOpen()) {
+          this.editedBefore = false;
+          this.focusLeftRow();
+        }
       });
     });
     // The controls move into the sheet while the grid scrolls sideways (the grid is not on screen while the editor is open).
@@ -227,21 +303,45 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     return this.filters;
   }
 
+  /** Back from the editor to the list of this same page: focus goes to the name link of the pod that was left, once the list is drawn. */
+  private focusLeftRow(): void {
+    const key = this.drill.takeRow(this.listId);
+    if (key === null) return;
+    let tries = 0;
+    const find = (): void => {
+      const link = document.querySelector<HTMLElement>(
+        `a[data-row-list="${this.listId}"][data-row-key="${key}"]`,
+      );
+      if (link) link.focus({ preventScroll: true });
+      else if (++tries < 40) setTimeout(find, 25);
+    };
+    find();
+  }
+
   private async openFromUrl(): Promise<void> {
     const pod = this.pod();
     if (!pod || this.editorOpen()) return;
     if (pod === 'new') {
-      this.openEditor(null, '', '', true);
+      // The create address needs Pod.Manage (the denial rule of the admin pages, #416, #453): the shared 403 state, not an editor that cannot save.
+      if (!this.auth.has('Pod.Manage')) this.flow.state.set('forbidden');
+      else this.openEditor(null, '', '', true);
       return;
     }
     const id = Number(pod);
-    if (!Number.isInteger(id)) return;
-    try {
-      const detail = await firstValueFrom(this.api.getPod(id));
-      this.openEditor(detail, detail.pod.name, detail.pod.description ?? '', detail.pod.isActive);
-    } catch {
-      this.syncUrl(null); // an unknown pod: stay on the list
+    if (!Number.isInteger(id) || id < 1) {
+      this.flow.state.set('notFound');
+      return;
     }
+    await this.flow.run(
+      () => firstValueFrom(this.api.getPod(id)),
+      (detail) =>
+        this.openEditor(detail, detail.pod.name, detail.pod.description ?? '', detail.pod.isActive),
+    );
+  }
+
+  /** Retry of the "couldn't load this pod" state. */
+  protected retryOpen(): void {
+    void this.openFromUrl();
   }
 
   /** Back (or a link to the bare list) took `?pod=` out of the address while the editor is open: the list returns, unless edits are unsaved. */
@@ -309,11 +409,19 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     }
   }
 
+  /** Back, the crumb's Pods step and Cancel: the list as the person left it (filters, page, sort), with focus on the row. */
   protected async close(): Promise<void> {
     if (!(await this.leaveEditor())) return;
     this.editorOpen.set(false);
     this.detail.set(null);
-    this.syncUrl(null);
+    void this.router.navigateByUrl(this.back.tree, { state: { ...RETURN_STATE } });
+  }
+
+  /** The header's Deactivate / Activate: the form's own Save, with the question first for a deactivation. */
+  private changeStatus(active: boolean): void {
+    this.isActive.set(active);
+    this.confirmDeactivate.set(false);
+    void this.save();
   }
 
   protected onName(event: Event): void {
@@ -365,6 +473,7 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
       this.openEditor(saved, saved.pod.name, saved.pod.description ?? '', saved.pod.isActive);
       this.notify.success(current ? 'Pod saved' : 'Pod created');
       void this.load();
+      void this.tabCounts?.refresh('pods');
     } catch (error) {
       this.showSaveError(error, name);
     } finally {
@@ -482,7 +591,21 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
     this.candidateQuery.set('');
     this.selected.set([]);
     this.announce.set('');
+    const fromList = !this.editorOpen();
     this.editorOpen.set(true);
+    this.editedBefore = true;
+    // The list (and the link that was pressed) is gone: focus goes to the heading of the record page, like the other record pages.
+    if (fromList) {
+      let tries = 0;
+      const focusHeading = (): void => {
+        const h = document.querySelector<HTMLElement>('[data-editor] [data-page-title]');
+        if (h) {
+          h.setAttribute('tabindex', '-1');
+          h.focus({ preventScroll: true });
+        } else if (++tries < 40) setTimeout(focusHeading, 25);
+      };
+      focusHeading();
+    }
     this.syncUrl(detail ? String(detail.pod.podId) : 'new');
   }
 

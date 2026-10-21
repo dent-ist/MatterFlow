@@ -68,7 +68,8 @@ test.describe('#445 phone cards', () => {
     const busyCard = page.locator('li.rc', { hasText: busy.username });
     await expect(busyCard.locator('[data-card-summary]')).toContainText('Data Technician');
     await expect(busyCard.locator('[data-card-summary]')).toContainText('2 pods');
-    await expect(busyCard.locator('[data-card-summary]')).toContainText(/Available|Off hours/);
+    // #434: Available says nothing on a card; only Out of office and Off hours are worth a word.
+    await expect(busyCard.locator('[data-card-summary]')).not.toContainText('Available');
     await expect(busyCard.locator('mf-badge')).toHaveCount(0); // Active: no badge
     await expect(busyCard.locator('button[data-overflow]')).toHaveAttribute(
       'aria-label',

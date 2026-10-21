@@ -1,16 +1,31 @@
 <p class="pods__live" role="status" aria-live="polite" data-live>{{ announce() }}</p>
 
-@if (editorOpen()) {
+@if (pod() && flow.failed()) {
+  <mf-record-state
+    kind="pod"
+    [recordId]="pod() ?? ''"
+    [state]="flow.state()"
+    [busy]="flow.retrying()"
+    [focusHeading]="true"
+    (retried)="retryOpen()"
+  />
+} @else if (editorOpen()) {
   <section
     class="pods__editor"
-    aria-labelledby="pods-editor-title"
+    [attr.aria-label]="isNew() ? 'New pod' : 'Edit pod'"
     mfScrollArea="Pod editor"
     data-editor
   >
-    <h2 id="pods-editor-title" class="pods__editor-title">
-      {{ isNew() ? 'New pod' : 'Edit pod' }}
-    </h2>
-
+    <mf-record-header
+      kind="pod"
+      [parents]="parents()"
+      [current]="headerName()"
+      [name]="headerName()"
+      [backTo]="headerBack()"
+      [showStatus]="!isNew()"
+      [active]="detail()?.pod?.isActive ?? true"
+      [actions]="headerActions()"
+    />
     @if (failure()) {
       <div class="pods__banner" role="alert" data-failure>
         {{ failure() }}
@@ -213,6 +228,11 @@
       </div>
     }
   </section>
+} @else if (pod()) {
+  <mf-record-header kind="pod" [parents]="parents()" [skeleton]="true" />
+  <span class="mf-sr-only" role="status" aria-live="polite" data-announce>{{
+    flow.live() || 'Loading pod'
+  }}</span>
 } @else {
   <div class="pods__bar">
     <p class="pods__intro" data-intro>
@@ -241,6 +261,7 @@
       [items]="rows()"
       [spec]="cardOf"
       [filters]="filters"
+      [listId]="listId"
       [state]="ls.state()"
       [empty]="ls.empty()"
       [filtered]="ls.filtered()"
@@ -317,6 +338,9 @@
                     class="mf-name pods__name"
                     [routerLink]="['/admin/pods']"
                     [queryParams]="{ pod: pod.podId }"
+                    [mfRowLink]="listId"
+                    [rowKey]="pod.podId"
+                    [state]="leave.state()"
                     [attr.title]="pod.name"
                     >{{ pod.name }}</a
                   >

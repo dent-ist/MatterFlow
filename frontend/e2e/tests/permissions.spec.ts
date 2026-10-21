@@ -31,10 +31,11 @@ test.describe('Access Pending and role grant', () => {
     const row = page.locator(`tr[data-user="${newcomer.userId}"]`);
     await expect(row).toBeVisible();
     await row.getByRole('button', { name: 'Grant access' }).click();
-    const panel = page.getByRole('complementary', { name: 'User details' });
-    await panel.getByRole('checkbox', { name: 'Data Technician' }).check();
+    const panel = page.locator('.mf-user-drawer');
+    await panel.getByRole('checkbox', { name: /^Data Technician/ }).check();
     await panel.getByRole('button', { name: 'Save changes', exact: true }).click();
-    await expect(panel.locator('[data-permissions-stale]')).toHaveCount(0);
+    // A first grant closes the drawer (the person leaves the Pending queue).
+    await expect(panel).toHaveCount(0);
     await expect(row).toHaveCount(0);
 
     await pendingPage.getByRole('button', { name: 'Check again' }).click();

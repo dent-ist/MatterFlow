@@ -277,14 +277,14 @@ describe('HTTP interceptors', () => {
     http
       .get('/api/v1/users/1', { responseType: 'blob' })
       .subscribe({ error: (e: unknown) => (caught = e) });
-    const body = new Blob([JSON.stringify({ code: 'LAST_ADMIN', detail: 'Keep one admin.' })], {
+    const body = new Blob([JSON.stringify({ code: 'DUPLICATE_NAME', detail: 'Keep one admin.' })], {
       type: 'application/problem+json',
     });
     ctrl.expectOne('/api/v1/users/1').flush(body, { status: 409, statusText: 'Conflict' });
     await new Promise((r) => setTimeout(r, 20));
 
     expect(caught).toBeInstanceOf(ApiError);
-    expect((caught as ApiError).code).toBe('LAST_ADMIN');
+    expect((caught as ApiError).code).toBe('DUPLICATE_NAME');
     expect(toasts()).toContainEqual(expect.objectContaining({ summary: 'Keep one admin.' }));
   });
 
@@ -341,6 +341,14 @@ describe('toastFor', () => {
 
   it('suppresses the expected refusal of deleting a used priority or link role (#537)', () => {
     expect(toastFor(make(409, { code: 'IN_USE', detail: 'Tasks use this priority.' }))).toBeNull();
+  });
+
+  it('suppresses the last System Admin refusal: the user drawer shows it inline (#444)', () => {
+    expect(
+      toastFor(
+        make(409, { code: 'LAST_ADMIN', detail: 'At least one active System Admin is required.' }),
+      ),
+    ).toBeNull();
   });
 
   it('maps 403 and 404 to copy-deck messages, and leaves a 401 to the sign-in banner', () => {

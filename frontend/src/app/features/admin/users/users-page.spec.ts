@@ -23,7 +23,9 @@ describe('UsersPage', () => {
   let startUrl = '/admin/users';
   let width = 1920;
   const el = (): HTMLElement => fixture.nativeElement;
-  const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
+  /** The page, then the document: the user drawer is a dialog and PrimeNG puts it at the end of the body. */
+  const q = <T extends HTMLElement = HTMLElement>(sel: string): T =>
+    (el().querySelector<T>(sel) ?? document.querySelector<T>(sel))!;
 
   async function settle(): Promise<void> {
     for (let i = 0; i < 3; i++) {
@@ -34,7 +36,7 @@ describe('UsersPage', () => {
   }
 
   const button = (label: string): HTMLButtonElement | undefined =>
-    Array.from(el().querySelectorAll<HTMLButtonElement>('p-button button')).find(
+    Array.from(document.querySelectorAll<HTMLButtonElement>('p-button button')).find(
       (b) => b.textContent!.trim() === label,
     );
 
@@ -139,7 +141,86 @@ describe('UsersPage', () => {
     const headers = Array.from(el().querySelectorAll('thead th')).map((th) =>
       th.textContent!.trim(),
     );
+    // Nobody waiting has signed in more than once: no Last seen column until someone listed has a time (#437).
     expect(headers).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions']);
+    await chooseStatus('all');
+    expect(
+      Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
+    ).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Last seen', 'Status', 'Actions']);
+  });
+
+  describe('sorting and page size (#437)', () => {
+    const header = (label: string): HTMLElement =>
+      Array.from(el().querySelectorAll<HTMLElement>('thead th')).find(
+        (th) => th.textContent!.trim() === label,
+      )!;
+    const url = (): string => TestBed.inject(Router).url;
+
+    it('sorts by Name from the header: aria-sort, the address and the server order; a second press reverses', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('all');
+      expect(header('Name').getAttribute('aria-sort')).toBe('none');
+      header('Name').querySelector('button')!.click();
+      await settle();
+      expect(url()).toContain('sort=name');
+      expect(header('Name').getAttribute('aria-sort')).toBe('ascending');
+      const ascending = rows();
+      expect(ascending).toEqual([...ascending].sort((a, b) => a.localeCompare(b)));
+      header('Name').querySelector('button')!.click();
+      await settle();
+      expect(url()).toContain('sort=-name');
+      expect(header('Name').getAttribute('aria-sort')).toBe('descending');
+      expect(rows()).toEqual([...ascending].reverse());
+    });
+
+    it('keeps the sort in the address on a reload and ignores a field the server does not know', async () => {
+      startUrl = '/admin/users?status=all&sort=-lastSeen';
+      await create('User.View', 'User.Manage');
+      expect(header('Last seen').getAttribute('aria-sort')).toBe('descending');
+      expect(header('Name').getAttribute('aria-sort')).toBe('none');
+      fixture.destroy();
+      TestBed.resetTestingModule();
+      startUrl = '/admin/users?status=all&sort=bogus';
+      await create('User.View', 'User.Manage');
+      expect(header('Name').getAttribute('aria-sort')).toBe('none');
+      expect(header('Last seen').getAttribute('aria-sort')).toBe('none');
+    });
+
+    it('hides the Last seen column when no listed person has a last-seen time', async () => {
+      await createWith(
+        (a) => a.users.forEach((u) => (u.lastLoginAtUtc = undefined)),
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('all');
+      expect(
+        Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
+      ).not.toContain('Last seen');
+    });
+
+    it('shows the day in the Last seen cell, the instant as its tooltip, and "Never" for a person who never signed in', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('all');
+      const cell = q('[data-user="2"] [data-last-seen]');
+      expect(cell.textContent!.trim()).toBe('Oct 14, 2026');
+      expect(cell.getAttribute('title')).toContain('Oct 14, 2026');
+      expect(q('[data-user="4"] [data-last-seen]').textContent!.trim()).toBe('Never');
+    });
+
+    it('offers 25, 50 and 100 rows per page and writes the choice into the address', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('all');
+      const select = q<HTMLSelectElement>('.mf-pager__size select');
+      expect(Array.from(select.options).map((o) => o.value)).toEqual(['25', '50', '100']);
+      select.value = '50';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(url()).toContain('size=50');
+      select.value = '25';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(url()).not.toContain('size=');
+    });
   });
 
   it('marks the seeded administrator beside the account, not as a badge', async () => {
@@ -332,11 +413,34 @@ describe('UsersPage', () => {
     expect(rows().length).toBeGreaterThan(0);
   });
 
-  it('grants a role to a pending user: the drawer saves, the queue shrinks', async () => {
+  /** The deactivation question: PrimeNG puts it at the end of the body. */
+  const question = (): HTMLElement => q('[data-deactivate-text]').closest('.p-dialog')!;
+  const questionButton = (label: string): HTMLButtonElement | undefined =>
+    Array.from(question().querySelectorAll<HTMLButtonElement>('p-button button')).find(
+      (b) => b.textContent!.trim() === label,
+    );
+  const urlOf = (): string => TestBed.inject(Router).url;
+  const openRow = async (id: number): Promise<void> => {
+    nameButton(id).click();
+    await settle();
+  };
+  /** Esc, heard on the document by the drawer (it yields to any dialog above it). */
+  const pressEsc = async (): Promise<void> => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+  };
+  /** The page steps back over the entry it pushed, or rewrites the address after a short wait: let both happen. */
+  const afterClose = async (): Promise<void> => {
+    await new Promise((r) => setTimeout(r, 450));
+    await settle();
+  };
+
+  it('grants a role to a pending user: the drawer saves, closes, offers Undo, and the queue shrinks', async () => {
     await create('User.View', 'User.Manage');
 
     await press('Grant access'); // first row: Priya Patel (the one action of a pending row)
-    expect(q('[data-panel] h2').textContent).toContain('Priya Patel');
+    expect(q('[data-panel-heading]').textContent).toContain('Priya Patel');
+    expect(urlOf()).toContain('user=4');
     expect(button('Save changes')!.disabled).toBe(true);
 
     const role = q<HTMLInputElement>('[data-role="5"]'); // Data Technician
@@ -344,61 +448,131 @@ describe('UsersPage', () => {
     role.dispatchEvent(new Event('change'));
     await settle();
     expect(button('Save changes')!.disabled).toBe(false);
+    // The summary shows what the ticked roles give, grouped like the Roles tab, and says it applies after the save (#439).
+    expect(q('[data-permissions-preview]').textContent).toContain('after you save');
+    expect(q('[data-permissions]').textContent).toContain('Task (');
 
     await press('Save changes');
+    await settle();
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
     expect(segmentText('pending')).toBe('Pending access 1');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
-    expect(q('[data-panel]').textContent).toContain('Task.View'); // effective permissions refreshed
+    await afterClose();
+    // A first grant closes the drawer (the person leaves the queue) and offers one Undo (#442).
+    expect(document.querySelector('[data-panel]')).toBeNull();
+    expect(urlOf()).not.toContain('user=');
+    expect(TestBed.inject(UndoService).current()!.message).toBe(
+      'Priya Patel now has access (Data Technician).',
+    );
+
+    await TestBed.inject(UndoService).run();
+    await settle();
+    expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([]);
+    expect(segmentText('pending')).toBe('Pending access 2');
   });
 
-  it('asks for confirmation before deactivating and then saves', async () => {
+  it('does not overwrite a change made by someone else when Undo of a grant runs (#442)', async () => {
+    await create('User.View', 'User.Manage');
+    await press('Grant access');
+    const role = q<HTMLInputElement>('[data-role="5"]');
+    role.checked = true;
+    role.dispatchEvent(new Event('change'));
+    await settle();
+    await press('Save changes');
+    await settle();
+    // Somebody else gives Priya another role in the meantime: the row version moves on.
+    const stored = api.users.find((u) => u.userId === 4)!;
+    await firstValueFrom(
+      api.setUserRoles(4, [5, 6], (await firstValueFrom(api.getUser(4))).rowVersion),
+    );
+    expect(stored.roleIds).toEqual([5, 6]);
+    await TestBed.inject(UndoService).run();
+    await settle();
+    expect(stored.roleIds).toEqual([5, 6]); // not undone
+  });
+
+  it('shows no success toast and keeps the drawer when the save of a grant fails (#442)', async () => {
+    await create('User.View', 'User.Manage');
+    await press('Grant access');
+    const role = q<HTMLInputElement>('[data-role="5"]');
+    role.checked = true;
+    role.dispatchEvent(new Event('change'));
+    await settle();
+    api.setUserRoles = () =>
+      throwError(
+        () =>
+          new ApiError(
+            500,
+            undefined,
+            'Server error',
+            undefined,
+            new HttpErrorResponse({ status: 500 }),
+          ),
+      );
+    await press('Save changes');
+    await settle();
+    expect(TestBed.inject(UndoService).current()).toBeNull();
+    expect(q('[data-panel-error]')).not.toBeNull();
+    expect(q('[data-panel]')).not.toBeNull();
+  });
+
+  it('asks in a dialog before deactivating, and then deactivates at once', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('active');
-    const row = el().querySelector('[data-user="2"]')!;
-    row.querySelector<HTMLButtonElement>('button')!.click();
-    await settle();
+    await openRow(2);
 
-    expect(button('Save changes')).toBeDefined();
-    q<HTMLInputElement>('[data-status-inactive]').click();
+    // No radio, no relabelled Save: the header has a Deactivate control and Save changes is untouched (#441).
+    expect(el().querySelector('[data-status-inactive]')).toBeNull();
+    expect(button('Save changes')!.disabled).toBe(true);
+    q('[data-deactivate]').click();
     await settle();
-    // BUG-3: the question is on screen as soon as Inactive is chosen, focus is on it, the button says what it does and it is announced.
-    expect(q('[data-confirm]').textContent).toContain('assigned until you reassign them');
-    expect(document.activeElement).toBe(q('[data-confirm]'));
-    expect(button('Save changes')).toBeUndefined();
-    expect(button('Deactivate user')!.disabled).toBe(false);
-    expect(q('[data-confirm-live]').textContent).toContain('Confirm deactivation of');
+    expect(q('[data-deactivate-text]').textContent).toContain('They can no longer sign in.');
+    expect(question().textContent).toContain('Deactivate Dana Director?');
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
 
-    await press('Deactivate user');
+    questionButton('Deactivate')!.click();
+    await settle();
     expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(false);
-    expect(el().querySelector('[data-confirm]')).toBeNull();
-    expect(button('Deactivate user')).toBeUndefined();
+    // The drawer stays, now showing an Inactive person with Activate; the segment counts followed.
+    expect(q('[data-panel]')).not.toBeNull();
+    expect(q('[data-activate]')).not.toBeNull();
+    expect(q('[data-deactivate]')).toBeNull();
+    expect(segmentText('inactive')).toContain('2');
   });
 
-  it('takes the deactivation question and the button label back when Active is chosen again', async () => {
+  it('Cancel in the question changes nothing', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('active');
-    el().querySelector<HTMLButtonElement>('[data-user="2"] button')!.click();
+    await openRow(2);
+    q('[data-deactivate]').click();
     await settle();
-    q<HTMLInputElement>('[data-status-inactive]').click();
+    questionButton('Cancel')!.click();
     await settle();
-    expect(el().querySelector('[data-confirm]')).not.toBeNull();
-    await press('Cancel');
-    expect(el().querySelector('[data-confirm]')).toBeNull();
-    expect(q('[data-confirm-live]').textContent!.trim()).toBe('');
-    expect(button('Deactivate user')).toBeUndefined();
-    expect(q<HTMLInputElement>('[data-status-active]').checked).toBe(true);
+    expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
+    expect(q('[data-deactivate]')).not.toBeNull();
+  });
+
+  it('Activate needs no question: one press activates the person', async () => {
+    await create('User.View', 'User.Manage');
+    await chooseStatus('inactive');
+    await openRow(5);
+    q('[data-activate]').click();
+    await settle();
+    expect(api.users.find((u) => u.userId === 5)!.isActive).toBe(true);
+    expect(q('[data-deactivate]')).not.toBeNull();
   });
 
   describe('open tasks (BUG-4)', () => {
     const open = async (id: number): Promise<void> => {
       await chooseStatus('active');
-      el().querySelector<HTMLButtonElement>(`[data-user="${id}"] button`)!.click();
+      await openRow(id);
+    };
+    const ask = async (): Promise<void> => {
+      q('[data-deactivate]').click();
       await settle();
     };
 
-    it('shows the count, the extended sentence and a View their tasks link to the Task Queue for that person', async () => {
+    it('shows the count in the header, the extended sentence in the question and a View their tasks link for that person', async () => {
       await createWith(
         (a) => (a.users.find((u) => u.userId === 2)!.openTaskCount = 7),
         'User.View',
@@ -406,16 +580,17 @@ describe('UsersPage', () => {
       );
       await open(2);
       expect(q('[data-open-tasks]').textContent!.trim()).toBe('Open tasks: 7');
-      q<HTMLInputElement>('[data-status-inactive]').click();
-      await settle();
-      expect(q('[data-confirm]').textContent).toContain(
-        'This user has 7 open tasks. They stay assigned until you reassign them one by one.',
-      );
       const link = q<HTMLAnchorElement>('[data-view-tasks]');
       expect(link.textContent!.trim()).toBe('View their tasks');
       expect(link.getAttribute('href')).toBe(
         '/tasks?assignee=2&status=NEW&status=IN_PROGRESS&status=ON_HOLD',
       );
+      await ask();
+      expect(q('[data-deactivate-text]').textContent).toContain(
+        'This user has 7 open tasks. They stay assigned until you reassign them one by one.',
+      );
+      // The question offers the same trip as its main button.
+      expect(questionButton('View their tasks')).toBeDefined();
     });
 
     it('says "No open tasks" for zero and offers no link', async () => {
@@ -426,23 +601,24 @@ describe('UsersPage', () => {
       );
       await open(2);
       expect(q('[data-open-tasks]').textContent!.trim()).toBe('No open tasks');
-      q<HTMLInputElement>('[data-status-inactive]').click();
-      await settle();
-      expect(q('[data-confirm]').textContent).toContain('No open tasks are assigned to them.');
       expect(el().querySelector('[data-view-tasks]')).toBeNull();
+      await ask();
+      expect(q('[data-deactivate-text]').textContent).toContain(
+        'No open tasks are assigned to them.',
+      );
+      expect(questionButton('View their tasks')).toBeUndefined();
     });
 
     it('shows no number and no link when the API returned none (no Task.View), keeping the plain sentence', async () => {
       await create('User.View', 'User.Manage');
       await open(2);
-      expect(el().querySelector('[data-open-tasks]')).toBeNull();
-      q<HTMLInputElement>('[data-status-inactive]').click();
-      await settle();
-      expect(q('[data-confirm]').textContent).toContain(
+      expect(document.querySelector('[data-open-tasks]')).toBeNull();
+      await ask();
+      expect(q('[data-deactivate-text]').textContent).toContain(
         'Their assigned tasks stay assigned until you reassign them one by one.',
       );
-      expect(q('[data-confirm]').textContent).not.toMatch(/\d+ open task|No open tasks/);
-      expect(el().querySelector('[data-view-tasks]')).toBeNull();
+      expect(q('[data-deactivate-text]').textContent).not.toMatch(/\d+ open task|No open tasks/);
+      expect(document.querySelector('[data-view-tasks]')).toBeNull();
     });
 
     it('says "1 open task" in the singular', async () => {
@@ -452,69 +628,301 @@ describe('UsersPage', () => {
         'User.Manage',
       );
       await open(2);
-      q<HTMLInputElement>('[data-status-inactive]').click();
-      await settle();
-      expect(q('[data-confirm]').textContent).toContain('This user has 1 open task.');
+      await ask();
+      expect(q('[data-deactivate-text]').textContent).toContain('This user has 1 open task.');
     });
   });
 
-  describe('focus and Esc (BUG-2)', () => {
-    const rowButton = (id: number): HTMLButtonElement => nameButton(id);
-
-    it('moves focus to the panel heading on open, closes on Esc and puts focus back on the row button', async () => {
+  describe('the drawer: address, focus and Esc (#438, BUG-2)', () => {
+    it('opens from the name, puts the person in the address and names the dialog by the heading', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');
-      rowButton(2).focus();
-      rowButton(2).click();
-      await settle();
-      expect(document.activeElement).toBe(q('[data-panel-heading]'));
-
-      q('[data-panel-heading]').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await settle();
-      expect(el().querySelector('[data-panel]')).toBeNull();
-      expect(document.activeElement).toBe(rowButton(2));
+      nameButton(2).focus();
+      await openRow(2);
+      expect(urlOf()).toContain('user=2');
+      const dialog = q('.mf-user-drawer');
+      expect(dialog.getAttribute('aria-labelledby')).toBe(q('[data-panel-heading]').id);
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
     });
 
-    it('closes with Close and returns focus to the row; the name of the panel is unchanged', async () => {
+    it('opens on load from ?user=<id> (a link, a reload, Back) and closes when the address loses it', async () => {
+      startUrl = '/admin/users?status=active&user=2';
+      await create('User.View', 'User.Manage');
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+      await TestBed.inject(Router).navigateByUrl('/admin/users?status=active');
+      await settle();
+      expect(document.querySelector('[data-panel]')).toBeNull();
+    });
+
+    it('shows a loading state and then a retryable error for a person that cannot be read', async () => {
+      startUrl = '/admin/users?status=active&user=999';
+      await create('User.View', 'User.Manage');
+      expect(q('[data-panel-error]').textContent).toContain('We could not load this user');
+      expect(q('[data-panel-retry]')).not.toBeNull();
+    });
+
+    it('closes with Esc, takes ?user out of the address and puts focus back on the row button', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      nameButton(2).focus();
+      await openRow(2);
+      await pressEsc();
+      await afterClose();
+      expect(document.querySelector('[data-panel]')).toBeNull();
+      expect(urlOf()).not.toContain('user=');
+      expect(document.activeElement).toBe(nameButton(2));
+    });
+
+    it('closes with Cancel (Close without User.Manage)', async () => {
       await create('User.View');
       await chooseStatus('active');
-      rowButton(2).click();
-      await settle();
-      expect(q('[data-panel]').getAttribute('aria-label')).toBe('User details');
+      await openRow(2);
+      expect(button('Close')).toBeDefined();
+      expect(button('Save changes')).toBeUndefined();
       await press('Close');
-      expect(el().querySelector('[data-panel]')).toBeNull();
-      expect(document.activeElement).toBe(rowButton(2));
+      await afterClose();
+      expect(document.querySelector('[data-panel]')).toBeNull();
     });
 
-    it('asks before closing with unsaved edits and keeps the panel when the answer is no', async () => {
+    it('asks before closing with unsaved edits and keeps the drawer when the answer is no', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');
-      rowButton(2).click();
-      await settle();
+      await openRow(2);
       const name = q<HTMLInputElement>('[data-name]');
       name.value = 'Someone Else';
       name.dispatchEvent(new Event('input'));
       await settle();
 
       const leave = TestBed.inject(LeaveConfirmService);
-      q('[data-panel-heading]').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await settle();
+      await pressEsc();
       expect(leave.open()).toBe(true);
       leave.answer(false);
       await settle();
-      expect(el().querySelector('[data-panel]')).not.toBeNull();
+      expect(document.querySelector('[data-panel]')).not.toBeNull();
 
-      q('[data-panel-heading]').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await settle();
+      await pressEsc();
       leave.answer(true);
+      await afterClose();
+      expect(document.querySelector('[data-panel]')).toBeNull();
+    });
+  });
+
+  describe('the drawer sections (#439, #440, #443)', () => {
+    const sections = (): string[] =>
+      Array.from(document.querySelectorAll('[data-section]')).map(
+        (x) => (x as HTMLElement).dataset['section']!,
+      );
+
+    it('has Access first, then Pods, Availability and Profile', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(sections()).toEqual(['access', 'pods', 'availability', 'profile']);
+    });
+
+    it('lists each role with its description and permission count, the name clamped with a tooltip', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      const director = q('[data-role="2"]').closest('label')!;
+      expect(director.querySelector('.ud-role-name')!.textContent!.trim()).toBe('Director');
+      expect(director.querySelector('.ud-role-name')!.getAttribute('title')).toBe('Director');
+      expect(director.querySelector('.ud-role-meta')!.textContent).toContain('Department head');
+      expect(director.querySelector('.ud-role-meta')!.textContent).toMatch(/\d+ permissions/);
+    });
+
+    it('groups the effective permissions like the Roles tab: the counts add up to the saved set', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      const saved = (await firstValueFrom(api.getUser(2))).effectivePermissions;
+      const chips = Array.from(document.querySelectorAll('[data-permission-group]')).map((c) =>
+        c.textContent!.trim(),
+      );
+      expect(chips.length).toBeGreaterThan(1);
+      expect(chips.some((c) => /^Task \(\d+\)$/.test(c))).toBe(true);
+      const total = chips.reduce((n, c) => n + Number(/\((\d+)\)/.exec(c)![1]), 0);
+      expect(total).toBe(saved.length);
+      expect(q('[data-permissions] h4').textContent).toContain(
+        `Effective permissions (${saved.length})`,
+      );
+    });
+
+    it('updates the summary as roles are ticked and labels it as applying after the save', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      const before = q('[data-permissions] h4').textContent;
+      const box = q<HTMLInputElement>('[data-role="1"]'); // System Admin: every permission
+      box.checked = true;
+      box.dispatchEvent(new Event('change'));
       await settle();
-      expect(el().querySelector('[data-panel]')).toBeNull();
+      expect(q('[data-permissions] h4').textContent).toContain('After you save');
+      expect(q('[data-permissions] h4').textContent).not.toBe(before);
+      const total = Array.from(document.querySelectorAll('[data-permission-group]')).reduce(
+        (n, c) => n + Number(/\((\d+)\)/.exec(c.textContent!)![1]),
+        0,
+      );
+      expect(total).toBe((await firstValueFrom(api.getRole(1))).permissionCodes.length);
+      // One line, only while the System Admin role is ticked.
+      expect(q('[data-sysadmin-warning]').textContent).toContain('holds every permission');
+      box.checked = false;
+      box.dispatchEvent(new Event('change'));
+      await settle();
+      expect(document.querySelector('[data-sysadmin-warning]')).toBeNull();
+      expect(q('[data-permissions] h4').textContent).toContain('Effective permissions');
+    });
+
+    it('shows the availability sentence, and Edit availability opens the existing dialog', async () => {
+      await createWith(
+        (a) => {
+          a.users[1].availability = {
+            state: 'OUT_OF_OFFICE',
+            outUntil: '2027-03-21T04:00:00Z',
+            note: 'Conference',
+          };
+        },
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('active');
+      await openRow(2);
+      expect(q('[data-availability-sentence]').textContent).toContain(
+        'Out of office until Mar 20, 2027',
+      );
+      expect(q('[data-availability-sentence]').textContent).toContain('Conference');
+      q('[data-edit-availability]').click();
+      await settle();
+      expect(
+        document.querySelector(
+          'mf-availability-dialog .p-dialog, .p-dialog [data-availability-form]',
+        ),
+      ).not.toBeNull();
+    });
+
+    it('says in muted lines which parts save at once and which with Save changes', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(q('[data-pods-note]').textContent).toContain('saved as soon as you apply');
+      expect(q('[data-availability-note]').textContent).toContain('own dialog');
+      expect(q('[data-save-note]').textContent).toContain('Save changes saves the roles');
+    });
+
+    it('shows the profile: editable name and email, the account and first seen as plain facts', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(q<HTMLInputElement>('[data-name]').value).toBe('Dana Director');
+      expect(q<HTMLInputElement>('[data-email]').value).toBe('dana@firm.test');
+      expect(q('.ud-dl').textContent).toContain('KE\\ddirector');
+      expect(q('[data-first-seen]').textContent).toContain('Oct 14, 2026');
+    });
+
+    describe('on a phone (#446)', () => {
+      const original = window.matchMedia;
+      beforeEach(() => {
+        window.matchMedia = ((query: string) => ({
+          matches: /max-width/.test(query),
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        })) as never;
+      });
+      afterEach(() => {
+        window.matchMedia = original;
+        Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+      });
+
+      it('opens with Access unfolded and the other sections a tap away, as buttons that say so', async () => {
+        await create('User.View', 'User.Manage');
+        await chooseStatus('active');
+        await q('[data-user="2"] button, li.rc button[data-card-name]').click();
+        await settle();
+        const body = (id: string): HTMLElement => q(`#${id}-body`);
+        expect(body('ud-access').hidden).toBe(false);
+        expect(body('ud-pods').hidden).toBe(true);
+        expect(body('ud-profile').hidden).toBe(true);
+        const toggle = q('[data-section-toggle="pods"]');
+        expect(toggle.getAttribute('aria-expanded')).toBe('false');
+        expect(toggle.getAttribute('aria-controls')).toBe('ud-pods-body');
+        toggle.click();
+        await settle();
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(body('ud-pods').hidden).toBe(false);
+        // Edits in a folded section are kept.
+        q('[data-section-toggle="profile"]').click();
+        await settle();
+        const name = q<HTMLInputElement>('[data-name]');
+        name.value = 'Typed While Open';
+        name.dispatchEvent(new Event('input'));
+        q('[data-section-toggle="profile"]').click();
+        await settle();
+        q('[data-section-toggle="profile"]').click();
+        await settle();
+        expect(q<HTMLInputElement>('[data-name]').value).toBe('Typed While Open');
+      });
+
+      it('follows the visual viewport, so the on-screen keyboard does not hide Save changes', async () => {
+        const vv = Object.assign(new EventTarget(), { height: 800, offsetTop: 0 });
+        Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
+        await create('User.View', 'User.Manage');
+        await chooseStatus('active');
+        await q('[data-user="2"] button, li.rc button[data-card-name]').click();
+        await settle();
+        const root = document.documentElement.style;
+        expect(root.getPropertyValue('--ud-vh')).toBe('800px');
+        vv.height = 420;
+        vv.offsetTop = 12;
+        vv.dispatchEvent(new Event('resize'));
+        expect(root.getPropertyValue('--ud-vh')).toBe('420px');
+        expect(root.getPropertyValue('--ud-top')).toBe('12px');
+        fixture.destroy();
+        expect(root.getPropertyValue('--ud-vh')).toBe('');
+      });
+    });
+
+    describe('read-only variants (#443)', () => {
+      it('User.View only: everything is read only with one reason, and the grid has no Grant access', async () => {
+        await create('User.View');
+        expect(document.querySelector('[data-grant]')).toBeNull();
+        await chooseStatus('active');
+        await openRow(2);
+        expect(q('[data-readonly-reason]').textContent).toContain(
+          'you can see this person but not change them',
+        );
+        expect(document.querySelector('[data-deactivate], [data-activate]')).toBeNull();
+        expect(document.querySelector('[data-edit-availability]')).toBeNull();
+        expect(button('Save changes')).toBeUndefined();
+        expect(button('Close')).toBeDefined();
+        expect(q<HTMLInputElement>('[data-role="2"]').closest('fieldset')!.disabled).toBe(true);
+        expect(q<HTMLInputElement>('[data-name]').closest('fieldset')!.disabled).toBe(true);
+        // The pods are plain text: no button.
+        expect(document.querySelector('[data-pods-trigger]')).toBeNull();
+      });
+
+      it('Pod.ManageMembers without User.Manage: pods are editable, everything else is read only, with the reason', async () => {
+        await create('User.View', 'Pod.ManageMembers');
+        await chooseStatus('active');
+        await openRow(2);
+        expect(q('[data-readonly-reason]').textContent).toContain('except pods');
+        expect(document.querySelector('[data-pods-trigger]')).not.toBeNull();
+        expect(q<HTMLInputElement>('[data-role="2"]').closest('fieldset')!.disabled).toBe(true);
+        expect(document.querySelector('[data-deactivate]')).toBeNull();
+        expect(document.querySelector('[data-edit-availability]')).toBeNull();
+        expect(button('Save changes')).toBeUndefined();
+      });
+
+      it('User.Manage: no reason line, all controls present', async () => {
+        await create('User.View', 'User.Manage');
+        await chooseStatus('active');
+        await openRow(2);
+        expect(document.querySelector('[data-readonly-reason]')).toBeNull();
+        expect(document.querySelector('[data-deactivate]')).not.toBeNull();
+        expect(document.querySelector('[data-edit-availability]')).not.toBeNull();
+      });
     });
   });
 
@@ -547,10 +955,10 @@ describe('UsersPage', () => {
   describe('availability', () => {
     const chips = (): string[] =>
       Array.from(el().querySelectorAll('tbody tr')).map((r) =>
-        r.querySelector('[data-availability-chip]')!.textContent!.trim(),
+        r.querySelector('[data-availability-cell]')!.textContent!.trim(),
       );
 
-    it('shows an availability chip per user: Available, Off hours, Out of office until a date', async () => {
+    it('shows the chip for Out of office (with the date) and Off hours, nothing for Pending or Inactive people (#434)', async () => {
       await createWith(
         (a) => {
           a.users[1].availability = {
@@ -565,6 +973,21 @@ describe('UsersPage', () => {
       );
       await chooseStatus('active');
       expect(chips()).toEqual(['Out of office until Mar 20, 2027', 'Off hours']);
+      // Pending and Inactive people take no work: their cell is empty, even when the server reports Off hours.
+      await chooseStatus('pending');
+      expect(chips().every((c) => c === '')).toBe(true);
+      expect(el().querySelector('tbody [data-availability-chip]')).toBeNull();
+      await chooseStatus('inactive');
+      expect(
+        el().querySelector('tbody [data-availability-chip], tbody [data-availability-plain]'),
+      ).toBeNull();
+    });
+
+    it('says a plain muted "Available" for an active person with nothing to report', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      expect(chips()[0]).toBe('Available');
+      expect(el().querySelector('tbody [data-availability-chip]')).toBeNull();
     });
 
     it('filters by availability and remembers the choice in the address', async () => {
@@ -679,28 +1102,28 @@ describe('UsersPage', () => {
       expect(el().querySelector('[data-edit-availability]')).toBeNull();
     });
 
-    it('Deactivate from the menu opens the person with the question on screen and Deactivate user as the button', async () => {
+    it('Deactivate from the menu opens the person with the question on screen', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');
       await openMenu(2);
       q('[data-action="deactivate"]').click();
       await settle();
       expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
-      expect(q('[data-confirm]').textContent).toContain('Deactivate Dana Director?');
-      expect(button('Deactivate user')).toBeDefined();
+      expect(q('[data-deactivate-text]')).not.toBeNull();
+      expect(question().textContent).toContain('Deactivate Dana Director?');
     });
 
-    it('Activate from the menu opens the person with Active chosen and a Save changes that is ready', async () => {
+    it('Activate from the menu activates the person at once (no question is needed)', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('inactive');
       await openMenu(5);
       q('[data-action="activate"]').click();
       await settle();
-      expect(q<HTMLInputElement>('[data-status-active]').checked).toBe(true);
-      expect(button('Save changes')!.disabled).toBe(false);
+      expect(api.users.find((u) => u.userId === 5)!.isActive).toBe(true);
+      expect(q('[data-deactivate]')).not.toBeNull();
     });
 
-    it('Open from the menu opens the panel, Esc closes it and focus goes back to the menu button', async () => {
+    it('Open from the menu opens the drawer, Esc closes it and focus goes back to the menu button', async () => {
       await create('User.View');
       await chooseStatus('active');
       q<HTMLButtonElement>('[data-user="2"] [data-overflow]').focus();
@@ -708,10 +1131,8 @@ describe('UsersPage', () => {
       q('[data-action="open"]').click();
       await settle();
       expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
-      q('[data-panel-heading]').dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await settle();
+      await pressEsc();
+      await afterClose();
       expect(document.activeElement).toBe(q('[data-user="2"] [data-overflow]'));
     });
   });
@@ -793,6 +1214,7 @@ describe('UsersPage', () => {
       expect(dropped).toEqual([
         ['Roles', '1100'],
         ['Pods', '1280'],
+        ['Last seen', '1440'],
       ]);
     });
   });

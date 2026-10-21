@@ -13,7 +13,8 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -23,13 +24,12 @@ import {
   PodChoice,
   RoleSummaryDto,
   UserCountsDto,
-  UserDetailDto,
   UserPodDto,
+  UserSortKey,
   UserStatusFilter,
   UserSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
-import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { SkipTarget } from '../../../shared/layout/skip-target';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
@@ -41,14 +41,17 @@ import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { availabilityDisplay } from '../../../core/availability/availability';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { columnDropOrder } from '../../../shared/ui/admin-card-spec';
+import { WIDE_COLUMN_DROP, columnDropOrder } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { Badge } from '../../../shared/ui/badge';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { parsePage } from '../../../shared/ui/list-helpers';
+import { PAGE_SIZES, parsePageSize } from '../../../shared/ui/list-query';
+import { SortHeader } from '../../../shared/ui/data-table';
+import { parseSortExpression } from '../../../shared/ui/record-sort';
+import { PhoneSort, SortChoice, SortOption } from '../../../shared/work-queue/phone-sort';
 import { Pager } from '../../../shared/ui/pager';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef } from '../../../shared/filters/filter-def';
@@ -56,9 +59,12 @@ import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { StripDef, stripActiveKey, stripPick } from '../../../shared/ui/strip-items';
+import { AdminTabCounts } from '../admin-tabs';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { impactLine } from '../shared/dialog-copy';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
+import { UserDrawer, UserDrawerIntent } from './user-drawer';
+import { availabilityShown } from './user-availability';
 import { podsText } from './user-pods-draft';
 
 type Tab = Exclude<UserStatusFilter, 'all'>;
@@ -66,10 +72,11 @@ type StatusOption = UserStatusFilter;
 
 const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive', 'all'];
 
-const PAGE_SIZE = 25;
+/** The columns the server can sort by (#436); anything else in the address is ignored. */
+const SORT_FIELDS: readonly UserSortKey[] = ['name', 'firstSeen', 'lastSeen'];
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'roles', 'pods', 'availability', 'status', 'actions'] as const;
+const COLUMNS = ['name', 'roles', 'pods', 'availability', 'lastSeen', 'status', 'actions'] as const;
 
 /**
  * The status choices above the grid (#429): one of them is always pressed, and it is the `status` parameter of the address. Pending
@@ -109,9 +116,8 @@ const AVAILABILITY_OPTIONS = [
   selector: 'mf-users-page',
   imports: [
     Button,
-    RouterLink,
-    ScrollRegion,
     MfDatePipe,
+    UserDrawer,
     ScrollArea,
     Pager,
     Badge,
@@ -124,11 +130,12 @@ const AVAILABILITY_OPTIONS = [
     WorkStrip,
     ActionMenu,
     AdminCardList,
+    SortHeader,
+    PhoneSort,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'mf-fill',
-    '(keydown.escape)': 'onPanelEscape($event)',
     '(window:resize)': 'onResize()',
   },
   templateUrl: './users-page.html',
@@ -140,18 +147,15 @@ export class UsersPage implements OnInit {
   private readonly pending = inject(PendingUsersStore);
   private readonly notify = inject(NotificationService);
   private readonly undo = inject(UndoService);
-  private readonly leave = inject(LeaveConfirmService);
+  private readonly location = inject(Location);
+  /** Hands the number of people who can sign in to the `Users (n)` tab of the shell (#430). */
+  private readonly reportCount = AdminTabCounts.report('users');
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
-  private readonly panelHeading = viewChild<ElementRef<HTMLElement>>('panelHeading');
-  private readonly confirmBox = viewChild<ElementRef<HTMLElement>>('confirmBox');
-  /** Set when focus should move to the panel heading / the deactivation question as soon as that element is on the page. */
-  private readonly wantHeadingFocus = signal(false);
-  private readonly wantConfirmFocus = signal(false);
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
   private readonly defaultTab = signal<Tab>('active');
   private readonly ready = signal(false);
@@ -165,22 +169,44 @@ export class UsersPage implements OnInit {
   /** Below 640 px the list is cards (#445), not a table. */
   protected readonly phone = phoneCards();
   private readonly zone = inject(USER_TIME_ZONE);
-  protected readonly drop = columnDropOrder(['pods', 'roles']);
+  /**
+   * Last seen is the first to go, below 1440 px: with a long out-of-office chip, a pending person's Grant access and the other columns at their
+   * widest the 1366 px grid has no room for a seventh column. The sort stays in the address, and on a phone in the Filters sheet.
+   */
+  protected readonly drop = { ...columnDropOrder(['pods', 'roles']), lastSeen: WIDE_COLUMN_DROP };
   protected readonly columnSpec: AdminColumn[] = [
     { cls: 'mf-cell-name', bone: '14rem' },
     { cls: 'mf-cell-muted', bone: '7rem', drop: this.drop.roles },
     { cls: 'us-pods', bone: '8rem', drop: this.drop.pods },
     { cls: 'mf-cell-badge', bone: '6rem' },
+    { cls: 'mf-cell-date', bone: '4rem', drop: this.drop.lastSeen },
     { cls: 'mf-cell-badge', bone: '5rem' },
     { cls: 'mf-cell-actions', bone: '1.5rem' },
   ];
   /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
   private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
+  /** The sort of the address as `name`, `-lastSeen` (empty: the queue order, waiting people first); a field the server does not know is ignored. */
+  protected readonly sortExpr = computed(() => {
+    const parsed = parseSortExpression(this.filters.params().get('sort'));
+    return parsed && SORT_FIELDS.includes(parsed.field as UserSortKey)
+      ? (parsed.dir === 'desc' ? '-' : '') + parsed.field
+      : '';
+  });
+  protected readonly sortField = computed(
+    () => parseSortExpression(this.sortExpr())?.field ?? null,
+  );
+  protected readonly sortDir = computed(() => parseSortExpression(this.sortExpr())?.dir ?? null);
+  /** The Last seen column shows while the list has a person who signed in (or it is the sort): the API returns null when nothing is stored (#437). */
+  protected readonly lastSeenShown = computed(
+    () => this.users().some((u) => !!u.lastLoginAtUtc) || this.sortField() === 'lastSeen',
+  );
   protected readonly visibleColumns = computed<readonly string[]>(() => {
     const width = this.viewport();
     return COLUMNS.filter(
       (c) =>
-        !(c === 'pods' && width < this.drop.pods) && !(c === 'roles' && width < this.drop.roles),
+        !(c === 'pods' && width < this.drop.pods) &&
+        !(c === 'roles' && width < this.drop.roles) &&
+        !(c === 'lastSeen' && (width < this.drop.lastSeen || !this.lastSeenShown())),
     );
   });
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
@@ -276,34 +302,26 @@ export class UsersPage implements OnInit {
   protected readonly loadError = signal(false);
   protected readonly roles = signal<RoleSummaryDto[]>([]);
 
-  // Detail panel
-  protected readonly selected = signal<UserDetailDto | null>(null);
-  /** Availability of the person in the detail panel, from the list row. */
-  protected readonly selectedAvailability = computed(
-    () => this.users().find((u) => u.userId === this.selected()?.userId)?.availability ?? null,
-  );
-  protected readonly draftRoleIds = signal<number[]>([]);
-  protected readonly draftActive = signal(true);
-  protected readonly draftName = signal('');
-  protected readonly draftEmail = signal('');
-  protected readonly confirmDeactivate = signal(false);
-  /** Open tasks of the person in the panel; null when the API did not return a number (no Task.View), so nothing is shown or linked. */
-  protected readonly openTasks = computed<number | null>(
-    () => this.selected()?.openTaskCount ?? null,
-  );
-  /** The consequence sentence of the deactivation question: "This user has 7 open tasks. ..." (shared wording with the other admin dialogs). */
-  protected readonly deactivateText = computed(
-    () => impactLine('deactivateUser', { openTasks: this.openTasks() }).text,
-  );
-  /** True while the saved user is active and the draft says Inactive: the primary button then reads "Deactivate user" (BUG-3). */
-  protected readonly deactivating = computed(() => {
-    const u = this.selected();
-    return !!u && u.isActive && !this.draftActive();
+  // The user drawer: the person in the address (`?user=<id>`), so Back closes it and Back from "View their tasks" reopens it.
+  protected readonly userId = computed(() => {
+    const id = Number(this.filters.params().get('user'));
+    return Number.isInteger(id) && id > 0 ? id : null;
   });
-  protected readonly saving = signal(false);
-  protected readonly panelError = signal('');
+  /** The row of the person in the drawer (availability and pods are read from it). */
+  protected readonly selectedRow = computed(
+    () => this.users().find((u) => u.userId === this.userId()) ?? null,
+  );
+  /** What the row menu asked for ("Deactivate" opens the drawer with the question on screen); cleared when the drawer closes. */
+  protected readonly intent = signal<UserDrawerIntent>(null);
+  private readonly drawer = viewChild(UserDrawer);
 
-  protected readonly pageSize = PAGE_SIZE;
+  protected readonly pageSize = computed(() => parsePageSize(this.filters.params().get('size')));
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly sortOptions: readonly SortOption[] = [
+    { value: 'name', label: 'Name' },
+    { value: 'lastSeen', label: 'Last seen' },
+    { value: 'firstSeen', label: 'First seen' },
+  ];
   protected readonly listState = computed<'loading' | 'ready' | 'error'>(() =>
     this.loadError() ? 'error' : this.loading() && this.users().length === 0 ? 'loading' : 'ready',
   );
@@ -313,18 +331,9 @@ export class UsersPage implements OnInit {
     rows: this.users,
     filters: this.filters,
   });
-  protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
-  protected readonly dirty = computed(() => {
-    const u = this.selected();
-    if (!u) return false;
-    return (
-      !sameIds(this.draftRoleIds(), u.roleIds) ||
-      this.draftActive() !== u.isActive ||
-      this.draftName().trim() !== u.displayName ||
-      (this.draftEmail().trim() || undefined) !== (u.email ?? undefined)
-    );
-  });
-
+  protected readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.pageSize())),
+  );
   constructor() {
     // The Filters button and the one Clear filters sit in the page header (the shell of Users, Roles and Pods).
     AdminShellFilters.register({ filters: this.filters, controls: 'user-filter-row' });
@@ -335,26 +344,13 @@ export class UsersPage implements OnInit {
       focus: () => this.focusFirstRow(),
     });
     inject(DestroyRef).onDestroy(offSkip);
-    effect(() => {
-      const heading = this.panelHeading();
-      if (heading && this.wantHeadingFocus()) {
-        untracked(() => this.wantHeadingFocus.set(false));
-        heading.nativeElement.focus();
-      }
-    });
-    effect(() => {
-      const box = this.confirmBox();
-      if (box && this.wantConfirmFocus()) {
-        untracked(() => this.wantConfirmFocus.set(false));
-        box.nativeElement.scrollIntoView?.({ block: 'nearest' });
-        box.nativeElement.focus();
-      }
-    });
     // Any change of a filter or of the page in the address reloads the list.
     effect(() => {
       if (!this.ready()) return;
       this.filterKey();
       this.page();
+      this.pageSize();
+      this.sortExpr();
       untracked(() => void this.reload());
     });
     // The controls move into the sheet while the grid scrolls sideways.
@@ -387,12 +383,6 @@ export class UsersPage implements OnInit {
     this.ready.set(true);
   }
 
-  /** True while the role ticks in the panel differ from the saved ones, so the effective permissions shown are out of date. */
-  protected readonly rolesChanged = computed(() => {
-    const u = this.selected();
-    return !!u && !sameIds(this.draftRoleIds(), u.roleIds);
-  });
-
   private navigate(params: Record<string, string | number | null>, replace = false): void {
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -412,9 +402,32 @@ export class UsersPage implements OnInit {
     this.filters.clear(['q']);
   }
 
+  /** "Edit availability" in the drawer: the same dialog as the row menu, for the person in the drawer. */
+  protected editAvailabilityOf(): void {
+    const row = this.selectedRow();
+    if (row) this.editAvailability(row);
+  }
+
   protected editAvailability(user: UserSummaryDto): void {
     this.availabilityEdit.set(user);
     this.availabilityDialogOpen.set(true);
+  }
+
+  /** A header was pressed: the new `sort` goes into the address (a history entry) and the list restarts at page 1. */
+  protected setSort(sort: string): void {
+    this.navigate({ sort: sort || null, page: null });
+  }
+
+  /** The phone's Sort by select: the same `sort` values as the headers. */
+  protected pickSort(choice: SortChoice | null): void {
+    this.navigate({
+      sort: choice ? (choice.dir === 'desc' ? '-' : '') + choice.field : null,
+      page: null,
+    });
+  }
+
+  protected setPageSize(size: number): void {
+    this.navigate({ size: size === PAGE_SIZES[0] ? null : size, page: null });
   }
 
   protected goTo(page: number): void {
@@ -422,24 +435,23 @@ export class UsersPage implements OnInit {
     this.navigate({ page: next === 1 ? null : next });
   }
 
-  protected async open(user: UserSummaryDto): Promise<void> {
-    this.panelError.set('');
-    this.confirmDeactivate.set(false);
-    this.openerUserId = user.userId;
+  /**
+   * Opens the drawer for a person: `?user=<id>` goes into the address (a history entry, so Back closes it). Focus is put on the control that
+   * opened it first (the name, Grant access or the row menu's button), so the drawer's focus handling returns to it.
+   */
+  protected open(user: UserSummaryDto, intent: UserDrawerIntent = null): void {
     this.rememberOpener(user.userId);
-    try {
-      this.showDetail(await firstValueFrom(this.api.getUser(user.userId)));
-      // BUG-2: the panel sits after the grid in the page, so focus goes to its heading (a keyboard user would otherwise Tab past every row).
-      this.wantHeadingFocus.set(true);
-    } catch {
-      this.panelError.set('We could not load this user. Try again.');
-    }
+    this.openerEl?.focus({ preventScroll: true });
+    this.intent.set(intent);
+    this.pushedUser = true;
+    this.navigate({ user: user.userId });
   }
 
-  /** The person whose row button opened the panel; focus goes back to that row when the panel closes (BUG-2). */
-  private openerUserId: number | null = null;
-  /** The control that opened the panel (the name, Grant access, or the row menu's button); focus goes back to it when it is still there. */
+  /** The control that opened the drawer (the name, Grant access or the row menu's button). */
   private openerEl: HTMLElement | null = null;
+
+  /** True when this page added the history entry of the open drawer: closing then steps back, so Back and Forward stay honest. */
+  private pushedUser = false;
 
   /** Remembers where focus was (a control of the row or card, or the row menu's button after a menu item); else the row's own menu button or name. */
   private rememberOpener(userId: number): void {
@@ -463,6 +475,11 @@ export class UsersPage implements OnInit {
     return user.windowsAccount ? `${user.displayName} (${user.windowsAccount})` : user.displayName;
   }
 
+  /** What the Availability cell shows for this person (#434): the chip only for Out of office and Off hours, nothing for Pending or Inactive. */
+  protected availabilityOf(user: UserSummaryDto) {
+    return availabilityShown(user);
+  }
+
   protected accountLine(user: UserSummaryDto): string {
     const account = user.windowsAccount ?? '';
     return user.isSeededAdmin ? `${account} · Seeded` : account;
@@ -473,7 +490,7 @@ export class UsersPage implements OnInit {
     return rowActions(
       this.nameWithAccount(user),
       [
-        { id: 'open', label: 'Open', icon: 'pi-user', run: () => void this.open(user) },
+        { id: 'open', label: 'Open', icon: 'pi-user', run: () => this.open(user) },
         {
           id: 'availability',
           label: 'Edit availability',
@@ -487,14 +504,14 @@ export class UsersPage implements OnInit {
               label: 'Deactivate',
               kind: 'state' as const,
               permission: 'User.Manage',
-              run: () => void this.startStatusChange(user, false),
+              run: () => this.open(user, 'deactivate'),
             }
           : {
               id: 'activate',
               label: 'Activate',
               kind: 'state' as const,
               permission: 'User.Manage',
-              run: () => void this.startStatusChange(user, true),
+              run: () => this.open(user, 'activate'),
             },
       ],
       { can: (p) => this.auth.has(p) },
@@ -510,7 +527,7 @@ export class UsersPage implements OnInit {
     const pods = user.pods.length;
     return {
       title: user.displayName,
-      activate: () => void this.open(user),
+      activate: () => this.open(user),
       rowKey: user.userId,
       subtitle: this.accountLine(user),
       badges: user.isPending
@@ -523,8 +540,13 @@ export class UsersPage implements OnInit {
           text: [
             this.rolesLabel(user),
             pods === 0 ? 'No pod' : `${pods} ${pods === 1 ? 'pod' : 'pods'}`,
-            availabilityDisplay(user.availability, this.zone).label,
-          ].join(' · '),
+            // Only what informs: Out of office (with its date) and Off hours; nothing for a person who takes no work (#434).
+            availabilityShown(user) === 'chip'
+              ? availabilityDisplay(user.availability, this.zone).label
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' · '),
           attrs: { 'data-card-summary': '' },
         },
       ],
@@ -532,18 +554,12 @@ export class UsersPage implements OnInit {
         ? {
             label: 'Grant access',
             ariaLabel: `Grant access to ${this.nameWithAccount(user)}`,
-            run: () => void this.open(user),
+            run: () => this.open(user),
           }
         : undefined,
       actions: waiting ? null : this.menuFor(user),
     };
   };
-
-  /** Deactivate and Activate open the person's panel with that status chosen: Deactivate shows its question (the open-task count), Activate is one Save away. */
-  private async startStatusChange(user: UserSummaryDto, active: boolean): Promise<void> {
-    await this.open(user);
-    if (this.selected()?.userId === user.userId) this.setActive(active);
-  }
 
   /** The first stop of the list: the name of the first row, else the empty, error or no-access message, else the list itself. */
   private focusFirstRow(): void {
@@ -565,51 +581,58 @@ export class UsersPage implements OnInit {
     this.viewport.set(window.innerWidth);
   }
 
-  /** The Task Queue address behind "View their tasks": that person's open tasks (the same statuses the count uses). */
-  protected openTasksQuery(userId: number): Record<string, string | string[]> {
-    return { assignee: String(userId), status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] };
+  /** The drawer asked to close (X, Esc, Cancel, the mask), after its unsaved-changes question: the person leaves the address. */
+  protected closeDrawer(): void {
+    this.intent.set(null);
+    // Dialogs hand focus back to whatever had it when they opened (the Leave question: a box inside the drawer, now gone): once they are all
+    // gone, focus goes to the control that opened the drawer, or its row.
+    const opener = this.openerEl;
+    const id = this.userId();
+    this.afterDialogGone(() => {
+      if (opener?.isConnected) opener.focus();
+      else if (id !== null) this.focusRowOf(id);
+    });
+    if (this.pushedUser) {
+      // This page pushed the entry for the drawer: step back over it, so there is no second entry for the same list.
+      this.pushedUser = false;
+      this.location.back();
+      // Nothing to step back to (the history was cut, a test double): the address is rewritten instead.
+      setTimeout(() => {
+        if (this.userId() !== null && !this.intent()) this.navigate({ user: null }, true);
+      }, 200);
+    } else {
+      this.navigate({ user: null }, true);
+    }
   }
 
-  /** Close and Esc: asks first when there are unsaved edits (the same question as leaving the Roles tab), then returns focus to the row. */
-  protected async requestClose(): Promise<void> {
-    const opener = this.openerUserId;
-    const openerEl = this.openerEl;
-    const asked = this.dirty();
-    if (asked && !(await this.leave.ask())) return;
-    this.closePanel();
-    // The question's dialog hands focus to the control that had it (the name box, now gone) once it has left the page: the opener again after that.
-    if (asked && opener !== null) this.focusRowAfterDialog(opener, openerEl);
+  /** The drawer saved something about a person: the list and the segment counts follow; a first grant of access also closes the drawer. */
+  protected async onChanged(change: { userId: number; granted: boolean }): Promise<void> {
+    if (!change.granted) {
+      await this.reload();
+      return;
+    }
+    // The person leaves the Pending segment: focus goes to the next row of the list, not to the one that is going away.
+    const rows = this.users();
+    const at = rows.findIndex((u) => u.userId === change.userId);
+    const nextId = (rows[at + 1] ?? rows[at - 1])?.userId ?? null;
+    this.closeDrawer();
+    await this.reload();
+    if (this.users().some((u) => u.userId === change.userId)) return; // still listed (All, Active): the opener keeps focus
+    this.afterDialogGone(() => this.focusRowOf(nextId));
   }
 
-  protected closePanel(): void {
-    const opener = this.openerUserId;
-    // Focus goes back first: the row is already on the page, the panel (and the focus inside it) goes away after.
-    if (opener !== null) this.focusRow(opener);
-    this.selected.set(null);
-    this.panelError.set('');
-    this.confirmDeactivate.set(false);
-    this.wantHeadingFocus.set(false);
-    this.wantConfirmFocus.set(false);
-    this.openerUserId = null;
-    this.openerEl = null;
+  /** The drawer's pods block: loads the pods to offer, like the grid cell. */
+  protected onDrawerPods(change: PodsChange): void {
+    const row = this.selectedRow();
+    if (row) void this.applyPods(row, change);
   }
 
-  /** Esc inside the panel closes it (standard dialog behaviour, not an application shortcut). The availability dialog and popovers own their own Esc. */
-  protected onPanelEscape(event: Event): void {
-    if (event.defaultPrevented || this.saving() || !this.selected()) return;
-    // Only an Esc pressed inside the panel closes it; the grid's popovers and the availability dialog keep their own.
-    const target = event.target;
-    if (!(target instanceof Element) || !target.closest('[data-panel]')) return;
-    event.preventDefault();
-    event.stopPropagation();
-    void this.requestClose();
-  }
-
-  private focusRowAfterDialog(userId: number, openerEl: HTMLElement | null): void {
+  /** Runs `fn` once no dialog mask is on the page (the drawer's leave animation and the focus restore are over). */
+  private afterDialogGone(fn: () => void): void {
     const done = (): void => {
       watcher.disconnect();
       clearTimeout(giveUp);
-      setTimeout(() => this.focusRow(userId, openerEl), 50);
+      setTimeout(fn, 50);
     };
     const watcher = new MutationObserver(() => {
       if (!document.querySelector('.p-dialog-mask')) done();
@@ -619,77 +642,14 @@ export class UsersPage implements OnInit {
     if (!document.querySelector('.p-dialog-mask')) done();
   }
 
-  /** Puts focus on the control that opened the panel; when it is gone, on the person's name; when the row is gone (the segment dropped it) on the list itself. */
-  private focusRow(userId: number, el: HTMLElement | null = this.openerEl): void {
+  /** Focus on the name of a person's row (else of the first row, else the list itself). */
+  private focusRowOf(userId: number | null): void {
     const host = this.scroll()?.nativeElement;
     const target =
-      el && el.isConnected
-        ? el
-        : host?.querySelector<HTMLElement>(`tr[data-user="${userId}"] button[data-open]`);
+      (userId !== null
+        ? host?.querySelector<HTMLElement>(`tr[data-user="${userId}"] button[data-open]`)
+        : null) ?? host?.querySelector<HTMLElement>('tr[data-user] button[data-open]');
     (target ?? host)?.focus();
-  }
-
-  protected toggleRole(roleId: number, checked: boolean): void {
-    const ids = new Set(this.draftRoleIds());
-    if (checked) ids.add(roleId);
-    else ids.delete(roleId);
-    this.draftRoleIds.set([...ids].sort((a, b) => a - b));
-  }
-
-  /**
-   * Chooses Active or Inactive. Choosing Inactive for an active person shows the consequence at once, scrolls it into view and moves focus
-   * to it (BUG-3): the button then reads "Deactivate user"; choosing Active again takes both back.
-   */
-  protected setActive(active: boolean): void {
-    this.draftActive.set(active);
-    const asking = !active && !!this.selected()?.isActive;
-    this.confirmDeactivate.set(asking);
-    this.wantConfirmFocus.set(asking);
-  }
-
-  /** Save; deactivating is confirmed in the panel first (UX 8.4: work stays assigned until reassigned), so the button then deactivates. */
-  protected async save(): Promise<void> {
-    const user = this.selected();
-    if (!user || !this.dirty()) return;
-    if (user.isActive && !this.draftActive() && !this.confirmDeactivate()) {
-      this.setActive(false);
-      return;
-    }
-
-    this.saving.set(true);
-    this.panelError.set('');
-    try {
-      let current = user;
-      const name = this.draftName().trim();
-      const email = this.draftEmail().trim() || undefined;
-      if (name !== current.displayName || email !== (current.email ?? undefined)) {
-        current = await firstValueFrom(
-          this.api.updateUserProfile(current.userId, name, email, current.rowVersion),
-        );
-      }
-
-      if (!sameIds(this.draftRoleIds(), current.roleIds)) {
-        current = await firstValueFrom(
-          this.api.setUserRoles(current.userId, this.draftRoleIds(), current.rowVersion),
-        );
-      }
-
-      if (this.draftActive() !== current.isActive) {
-        current = await firstValueFrom(
-          this.api.setUserActive(current.userId, this.draftActive(), current.rowVersion),
-        );
-      }
-
-      this.showDetail(current);
-      this.notify.success('User saved', current.displayName);
-      await this.reload();
-    } catch (err) {
-      await this.handleSaveError(err, user.userId);
-    } finally {
-      this.saving.set(false);
-      // After a refused deactivation (last System Admin, a conflict) the question stays where it is; after a save the user is inactive and it goes.
-      this.confirmDeactivate.set(this.deactivating());
-    }
   }
 
   // ---- Pods column (inline assignment)
@@ -815,34 +775,6 @@ export class UsersPage implements OnInit {
     return user.roles.length ? user.roles.join(', ') : 'None';
   }
 
-  private async handleSaveError(err: unknown, userId: number): Promise<void> {
-    if (!(err instanceof ApiError)) {
-      this.panelError.set('Something went wrong. Try again.');
-      return;
-    }
-
-    if (err.code === 'LAST_ADMIN') {
-      this.panelError.set('At least one active System Admin is required.');
-    } else if (err.code === 'CONCURRENCY_CONFLICT') {
-      this.panelError.set('This user was changed by someone else. The latest values are shown.');
-      try {
-        this.showDetail(await firstValueFrom(this.api.getUser(userId)));
-      } catch {
-        /* keep the stale panel; the message tells the admin to retry */
-      }
-    } else {
-      this.panelError.set(err.message);
-    }
-  }
-
-  private showDetail(user: UserDetailDto): void {
-    this.selected.set(user);
-    this.draftRoleIds.set([...user.roleIds]);
-    this.draftActive.set(user.isActive);
-    this.draftName.set(user.displayName);
-    this.draftEmail.set(user.email ?? '');
-  }
-
   private async loadRoles(): Promise<void> {
     try {
       this.roles.set(await firstValueFrom(this.api.listRoles()));
@@ -864,7 +796,9 @@ export class UsersPage implements OnInit {
         registeredFrom: this.registered().from || undefined,
         registeredTo: this.registered().to || undefined,
         page: this.page(),
-        pageSize: PAGE_SIZE,
+        pageSize: this.pageSize(),
+        sort: (parseSortExpression(this.sortExpr())?.field as UserSortKey | undefined) ?? undefined,
+        dir: parseSortExpression(this.sortExpr())?.dir,
       }),
     );
   }
@@ -896,6 +830,7 @@ export class UsersPage implements OnInit {
         this.counts.set(counts);
       }
       this.countsKnown.set(true);
+      this.reportCount(counts.pending + counts.active);
       this.pending.set(counts.pending);
       this.filters.reportResults(this.total());
     } catch {
@@ -906,8 +841,4 @@ export class UsersPage implements OnInit {
   }
 
   private requestId = 0;
-}
-
-function sameIds(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && [...a].sort().join() === [...b].sort().join();
 }

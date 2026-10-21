@@ -77,6 +77,18 @@ a:not([class]) {
   box-shadow: var(--mf-shadow-2, -8px 0 24px rgb(0 0 0 / 18%));
 }
 
+/* The user drawer follows the visual viewport on a phone, so the on-screen keyboard does not hide its footer (#446). Set by mf-user-drawer. */
+.mf-user-drawer-mask {
+  top: var(--ud-top, 0);
+  bottom: auto;
+  height: var(--ud-vh, 100%);
+}
+
+.mf-user-drawer.p-dialog {
+  height: 100%;
+  max-height: 100%;
+}
+
 .mf-drawer .p-dialog-content {
   flex: 1 1 auto;
   overflow-y: auto;

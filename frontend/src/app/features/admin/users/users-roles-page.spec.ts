@@ -21,10 +21,12 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
   let harness: RouterTestingHarness;
   const el = (): HTMLElement => harness.routeNativeElement as HTMLElement;
   const tabs = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('[role="tab"]'));
+  /** The tab names without their number: `Users (4)` is `Users`. */
+  const names = (): string[] => tabs().map((t) => t.textContent!.trim().replace(/\s*\(.*\)$/, ''));
   const selected = (): string[] =>
     tabs()
       .filter((t) => t.getAttribute('aria-selected') === 'true')
-      .map((t) => t.textContent!.trim());
+      .map((t) => t.textContent!.trim().replace(/\s*\(.*\)$/, ''));
 
   async function settle(): Promise<void> {
     for (let i = 0; i < 4; i++) {
@@ -75,7 +77,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
   it('opens the Users tab on /admin/users and the Roles tab on /admin/roles', async () => {
     const router = await open('/admin/users', 'User.View', 'Role.Manage');
     expect(el().querySelector('h1')!.textContent).toBe('Users');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Users', 'Roles']);
+    expect(names()).toEqual(['Users', 'Roles']);
     expect(selected()).toEqual(['Users']);
     expect(el().querySelector('mf-filters-bar')).not.toBeNull();
 
@@ -84,6 +86,20 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     expect(selected()).toEqual(['Roles']);
     expect(el().querySelector('[data-editor], .mf-roles-bar')).not.toBeNull();
     expect(router.url).toBe('/admin/roles');
+  });
+
+  it('shows the number of active records in each tab name and keeps it quiet', async () => {
+    await open('/admin/users', 'User.View', 'Role.Manage', 'Pod.Manage');
+    // Users: people waiting or active (the Inactive segment is not counted); Roles: the roles; Pods: the active pods.
+    const counts = await TestBed.inject(IdentityAdminApi).userCounts().toPromise();
+    const roles = await TestBed.inject(IdentityAdminApi).listRoles().toPromise();
+    expect(tabs().map((t) => t.textContent!.trim())).toEqual([
+      `Users (${counts!.pending + counts!.active})`,
+      `Roles (${roles!.length})`,
+      'Pods (0)',
+    ]);
+    // The spoken name carries the number once.
+    expect(tabs()[1].getAttribute('aria-label')).toBe(`Roles, ${roles!.length} active`);
   });
 
   it('keeps the address in step with the selected tab, with roving tabindex and arrow keys', async () => {
@@ -125,10 +141,10 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
 
   it('offers the Pods tab with Pod.Manage or Pod.ManageMembers, after Users and Roles', async () => {
     await open('/admin/users', 'User.View', 'Role.Manage', 'Pod.ManageMembers');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Users', 'Roles', 'Pods']);
+    expect(names()).toEqual(['Users', 'Roles', 'Pods']);
     TestBed.resetTestingModule();
     await open('/admin/users', 'User.View', 'Pod.Manage');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Users', 'Pods']);
+    expect(names()).toEqual(['Users', 'Pods']);
   });
 
   it('opens the Pods tab on /admin/pods, keeps the address in step and shows the pods list', async () => {

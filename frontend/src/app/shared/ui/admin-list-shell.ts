@@ -53,24 +53,26 @@ export type ShellCounts = Readonly<Record<string, number | null | undefined>>;
   host: { style: 'display: contents' },
   template: `
     <mf-fixed-page>
-      <mf-page-header
-        [heading]="heading()"
-        [icon]="icon()"
-        [crumbs]="trail()"
-        [description]="description().trim()"
-      >
-        @if (filters(); as f) {
-          <mf-list-filters-button
-            mfActions
-            [filters]="f"
-            [controls]="controls()"
-            [clearAlso]="clearAlso()"
-          />
-        }
-        <span mfActions class="als__primary" data-shell-primary
-          ><ng-content select="[mfPrimary]"
-        /></span>
-      </mf-page-header>
+      @if (!bare()) {
+        <mf-page-header
+          [heading]="heading()"
+          [icon]="icon()"
+          [crumbs]="trail()"
+          [description]="description().trim()"
+        >
+          @if (filters(); as f) {
+            <mf-list-filters-button
+              mfActions
+              [filters]="f"
+              [controls]="controls()"
+              [clearAlso]="clearAlso()"
+            />
+          }
+          <span mfActions class="als__primary" data-shell-primary
+            ><ng-content select="[mfPrimary]"
+          /></span>
+        </mf-page-header>
+      }
       @if (showTabs()) {
         <mf-tabs
           [label]="tabsLabel() || heading() + ' sections'"
@@ -134,6 +136,11 @@ export class AdminListShell {
   readonly controls = input('');
   /** Legacy parameters that Clear filters drops too (`['q']`). */
   readonly clearAlso = input<readonly string[]>([]);
+  /**
+   * Without the page header and the tabs: the body is a record page of its own (the Users shell shows a pod's editor this way, whose record
+   * header has the crumb and the name). The body, and what is projected into it, stays alive when this switches.
+   */
+  readonly bare = input(false);
   /** The id of the table (or list) that "Skip to table" moves focus to. Omit for no skip link. */
   readonly tableId = input('');
   /** The text of the skip link. */
@@ -144,7 +151,7 @@ export class AdminListShell {
   protected readonly trail = computed<readonly Crumb[]>(
     () => this.crumbs() ?? [{ label: 'Administration' }, { label: this.heading() }],
   );
-  protected readonly showTabs = computed(() => this.tabs().length > 1);
+  protected readonly showTabs = computed(() => !this.bare() && this.tabs().length > 1);
   protected readonly tabItems = computed(() => applyCounts(this.tabs(), this.counts()));
 
   constructor() {

@@ -14,7 +14,17 @@
       [filters]="filters"
       controls="user-filter-row"
       [clearAlso]="['q']"
-    />
+    >
+      <!-- The phone has no column headers: the same sorts are a select in the Filters sheet. -->
+      <mf-phone-sort
+        mfSheetSort
+        defaultLabel="Waiting people first"
+        [options]="sortOptions"
+        [sort]="sortField()"
+        [dir]="sortDir()"
+        (sortPick)="pickSort($event)"
+      />
+    </mf-filters-bar>
     @if (phone()) {
       <mf-admin-card-list
         noun="users"
@@ -38,10 +48,30 @@
             </caption>
             <thead>
               <tr>
-                <th class="mf-cell-name" scope="col">Name</th>
+                <th
+                  class="mf-cell-name"
+                  mfSort="name"
+                  [sort]="sortExpr()"
+                  defaultSort=""
+                  (sorted)="setSort($event)"
+                >
+                  Name
+                </th>
                 <th class="mf-cell-muted" scope="col" [attr.data-drop]="drop.roles">Roles</th>
                 <th class="us-pods" scope="col" [attr.data-drop]="drop.pods">Pods</th>
                 <th class="mf-cell-badge" scope="col">Availability</th>
+                @if (lastSeenShown()) {
+                  <th
+                    class="mf-cell-date"
+                    mfSort="lastSeen"
+                    [attr.data-drop]="drop.lastSeen"
+                    [sort]="sortExpr()"
+                    defaultSort=""
+                    (sorted)="setSort($event)"
+                  >
+                    Last seen
+                  </th>
+                }
                 <th class="mf-cell-badge" scope="col">Status</th>
                 <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
               </tr>
@@ -69,10 +99,7 @@
               (clear)="clearFilters()"
             >
               @for (u of users(); track u.userId) {
-                <tr
-                  [attr.data-user]="u.userId"
-                  [class.mf-selected]="selected()?.userId === u.userId"
-                >
+                <tr [attr.data-user]="u.userId" [class.mf-selected]="userId() === u.userId">
                   <td class="mf-cell-name">
                     <button
                       type="button"
@@ -111,9 +138,32 @@
                       (applied)="applyPods(u, $event)"
                     />
                   </td>
-                  <td class="mf-cell-badge">
-                    <mf-availability-chip [availability]="u.availability" />
+                  <td class="mf-cell-badge" data-availability-cell>
+                    @switch (availabilityOf(u)) {
+                      @case ('chip') {
+                        <mf-availability-chip [availability]="u.availability" />
+                      }
+                      @case ('plain') {
+                        <span class="us-muted" data-availability-plain>Available</span>
+                      }
+                    }
                   </td>
+                  @if (lastSeenShown()) {
+                    <td
+                      class="mf-cell-date"
+                      data-last-seen
+                      [attr.data-drop]="drop.lastSeen"
+                      [attr.title]="
+                        u.lastLoginAtUtc ? (u.lastLoginAtUtc | mfDate) : 'Never signed in'
+                      "
+                    >
+                      @if (u.lastLoginAtUtc) {
+                        {{ u.lastLoginAtUtc | mfDate: 'date' }}
+                      } @else {
+                        <span class="us-muted">Never</span>
+                      }
+                    </td>
+                  }
                   <td class="mf-cell-badge" data-status>
                     @if (u.isPending) {
                       <mf-badge tone="warning" icon="pi-user-plus">Pending access</mf-badge>
@@ -148,183 +198,14 @@
     @if (listState() === 'ready' && total() > 0) {
       <mf-pager
         [page]="page()"
-        [pageSize]="pageSize"
+        [pageSize]="pageSize()"
+        [pageSizes]="pageSizes"
         [total]="total()"
         (pageChange)="goTo($event)"
+        (pageSizeChange)="setPageSize($event)"
       />
     }
   </section>
-
-  @if (selected(); as u) {
-    <aside class="mf-panel" aria-label="User details" data-panel>
-      <header>
-        <h2 #panelHeading tabindex="-1" data-panel-heading>{{ u.displayName }}</h2>
-        <p-button
-          label="Close"
-          icon="pi pi-times"
-          [text]="true"
-          size="small"
-          (onClick)="requestClose()"
-        />
-      </header>
-      @if (selectedAvailability(); as a) {
-        <p class="mf-panel-availability"><mf-availability-chip [availability]="a" /></p>
-      }
-      <p class="mf-muted">
-        <span class="mf-mono">{{ u.windowsAccount }}</span>
-        @if (u.email) {
-          &middot; {{ u.email }}
-        }
-        <br />First seen {{ u.registeredAtUtc | mfDate }}
-        @if (u.lastLoginAtUtc) {
-          &middot; Last seen {{ u.lastLoginAtUtc | mfDate }}
-        }
-      </p>
-
-      @if (openTasks(); as open) {
-        <p class="mf-open-tasks" data-open-tasks>Open tasks: {{ open }}</p>
-      } @else if (openTasks() === 0) {
-        <p class="mf-open-tasks" data-open-tasks>No open tasks</p>
-      }
-
-      @if (panelError()) {
-        <p class="mf-error" role="alert" data-panel-error>{{ panelError() }}</p>
-      }
-
-      <fieldset [disabled]="!canManage()">
-        <legend>Profile</legend>
-        <div class="mf-fld">
-          <label for="user-name">Display name</label>
-          <input
-            id="user-name"
-            type="text"
-            class="mf-control"
-            maxlength="200"
-            data-name
-            [value]="draftName()"
-            (input)="draftName.set($any($event.target).value)"
-          />
-        </div>
-        <div class="mf-fld">
-          <label for="user-email">Email</label>
-          <input
-            id="user-email"
-            type="email"
-            class="mf-control"
-            maxlength="320"
-            data-email
-            [value]="draftEmail()"
-            (input)="draftEmail.set($any($event.target).value)"
-          />
-        </div>
-      </fieldset>
-
-      <fieldset [disabled]="!canManage()">
-        <legend>Status</legend>
-        <label class="mf-inline">
-          <input
-            type="radio"
-            name="status"
-            data-status-active
-            [checked]="draftActive()"
-            (change)="setActive(true)"
-          />
-          Active
-        </label>
-        <label class="mf-inline">
-          <input
-            type="radio"
-            name="status"
-            data-status-inactive
-            [checked]="!draftActive()"
-            (change)="setActive(false)"
-          />
-          Inactive
-        </label>
-      </fieldset>
-
-      <fieldset [disabled]="!canManage()">
-        <legend>Roles</legend>
-        @for (r of roles(); track r.roleId) {
-          <label class="mf-inline">
-            <input
-              type="checkbox"
-              [attr.data-role]="r.roleId"
-              [checked]="draftRoleIds().includes(r.roleId)"
-              (change)="toggleRole(r.roleId, $any($event.target).checked)"
-            />
-            {{ r.name }}
-          </label>
-        }
-      </fieldset>
-
-      <section class="mf-effective" aria-label="Effective permissions">
-        <h3>
-          Effective permissions
-          @if (!rolesChanged()) {
-            ({{ u.effectivePermissions.length }})
-          }
-        </h3>
-        @if (rolesChanged()) {
-          <p class="mf-muted" data-permissions-stale>Permissions update after you save.</p>
-        } @else if (u.effectivePermissions.length === 0) {
-          <p class="mf-muted">No permissions. This user stays in Access Pending.</p>
-        } @else {
-          <div class="mf-effective-list" mfScrollRegion="Effective permissions list">
-            <ul>
-              @for (code of u.effectivePermissions; track code) {
-                <li>{{ code }}</li>
-              }
-            </ul>
-          </div>
-        }
-      </section>
-
-      <p class="mf-sr" role="status" aria-live="polite" data-confirm-live>
-        @if (confirmDeactivate()) {
-          Confirm deactivation of {{ u.displayName }}. Choose Deactivate user to continue or Cancel.
-        }
-      </p>
-      @if (confirmDeactivate()) {
-        <div
-          class="mf-confirm"
-          role="group"
-          aria-label="Confirm deactivation"
-          #confirmBox
-          tabindex="-1"
-          data-confirm
-        >
-          <p>Deactivate {{ u.displayName }}? They can no longer sign in. {{ deactivateText() }}</p>
-          @if (openTasks()) {
-            <p>
-              <a
-                class="mf-link"
-                data-view-tasks
-                routerLink="/tasks"
-                [queryParams]="openTasksQuery(u.userId)"
-                >View their tasks</a
-              >
-            </p>
-          }
-        </div>
-      }
-
-      @if (canManage()) {
-        <div class="mf-actions mf-form-actions--sticky">
-          <p-button
-            [label]="deactivating() ? 'Deactivate user' : 'Save changes'"
-            [severity]="deactivating() ? 'danger' : 'primary'"
-            [styleClass]="deactivating() ? 'mf-btn--solid' : ''"
-            [disabled]="!dirty() || saving()"
-            (onClick)="save()"
-          />
-          @if (confirmDeactivate()) {
-            <p-button label="Cancel" severity="secondary" (onClick)="setActive(true)" />
-          }
-        </div>
-      }
-    </aside>
-  }
 </div>
 
 <mf-availability-dialog
@@ -332,4 +213,21 @@
   [userId]="availabilityEdit()?.userId ?? null"
   [displayName]="availabilityEdit()?.displayName ?? ''"
   (saved)="reload()"
+/>
+
+<mf-user-drawer
+  [userId]="userId()"
+  [summary]="selectedRow()"
+  [roles]="roles()"
+  [canManage]="canManage()"
+  [canEditPods]="canEditPods()"
+  [podChoices]="podChoices()"
+  [podChoicesFailed]="podChoicesFailed()"
+  [podsBusy]="userId() !== null && podsBusy().has(userId()!)"
+  [intent]="intent()"
+  (closed)="closeDrawer()"
+  (changed)="onChanged($event)"
+  (editAvailability)="editAvailabilityOf()"
+  (podsChange)="onDrawerPods($event)"
+  (podsOpened)="loadPodChoices()"
 />

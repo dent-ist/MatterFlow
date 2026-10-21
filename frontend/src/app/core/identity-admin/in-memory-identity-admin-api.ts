@@ -62,6 +62,7 @@ const fail = (status: number, code: string, message: string): Observable<never> 
 
 const noUser = () => fail(404, 'NOT_FOUND', 'The user does not exist.');
 const noRole = () => fail(404, 'NOT_FOUND', 'The role does not exist.');
+const conflict = () => fail(409, 'CONCURRENCY_CONFLICT', 'This user was changed by someone else.');
 const lastAdmin = () => fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
 const dupName = () => fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
 const group = (code: string): string => code.split('.')[0];
@@ -221,9 +222,10 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     return u ? of(this.detail(u)) : noUser();
   }
 
-  setUserRoles(userId: number, roleIds: number[]): Observable<UserDetailDto> {
+  setUserRoles(userId: number, roleIds: number[], rowVersion?: string): Observable<UserDetailDto> {
     const u = this.find(userId);
     if (!u) return noUser();
+    if (rowVersion !== undefined && rowVersion !== String(u.version)) return conflict();
     const dropsAdmin = this.hasAdminRole(u) && !roleIds.some((id) => this.role(id)?.isSystemAdmin);
     if (dropsAdmin && u.isActive && this.activeAdmins().every((a) => a.userId === u.userId)) {
       return lastAdmin();
@@ -234,9 +236,10 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     return of(this.detail(u));
   }
 
-  setUserActive(userId: number, isActive: boolean): Observable<UserDetailDto> {
+  setUserActive(userId: number, isActive: boolean, rowVersion?: string): Observable<UserDetailDto> {
     const u = this.find(userId);
     if (!u) return noUser();
+    if (rowVersion !== undefined && rowVersion !== String(u.version)) return conflict();
     if (!isActive && userId === this.currentUserId) {
       return fail(400, 'VALIDATION_FAILED', 'You cannot deactivate your own account.');
     }
@@ -257,9 +260,11 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     userId: number,
     displayName: string,
     email: string | undefined,
+    rowVersion?: string,
   ): Observable<UserDetailDto> {
     const u = this.find(userId);
     if (!u) return noUser();
+    if (rowVersion !== undefined && rowVersion !== String(u.version)) return conflict();
     u.displayName = displayName.trim();
     u.email = email?.trim() || undefined;
     u.version++;

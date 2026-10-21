@@ -369,3 +369,80 @@
     margin-bottom: var(--mf-s2);
   }
 }
+
+/* The description is a two-row box that grows with the text (up to the 500 characters the API allows). */
+.mf-description {
+  min-height: 4rem;
+  resize: vertical;
+  field-sizing: content;
+  font: inherit;
+  line-height: 1.4;
+}
+
+.mf-group-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+}
+
+/* Changed (n): what the draft differs by, one chip per permission with its own undo. */
+.mf-changes {
+  margin: 0 0 var(--mf-s3);
+}
+
+.mf-changes__h {
+  margin: 0 0 var(--mf-s1);
+  font-weight: 600;
+}
+
+.mf-changes__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mf-change {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  min-height: 2rem;
+  padding: 0 var(--mf-s2);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font-family: var(--mf-font-mono);
+  font-size: var(--mf-fs-sm);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: 2px;
+  }
+}
+
+.mf-change--removed {
+  border-style: dashed;
+  color: var(--mf-text-muted);
+}
+
+.mf-change__sign {
+  font-weight: 700;
+}
+
+/* A tablet (768 to 960 px): list above, editor below, in a page of fixed height. The list keeps a short scroll area and the editor the rest,
+   instead of shrinking to a line (the editor's scroll box was 16 px high at 768x1024). */
+@media (min-width: 768px) and (max-width: 960px) and (min-height: 561px) {
+  .mf-list {
+    flex: 0 1 12rem;
+    overflow: auto;
+  }
+
+  .mf-editor {
+    flex: 1 1 0;
+    min-height: 16rem;
+  }
+}

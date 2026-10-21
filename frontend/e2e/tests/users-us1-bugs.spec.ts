@@ -9,10 +9,11 @@ import { userName, userRow } from '../support/users-grid';
 import { TaskApi } from '../support/tasks';
 
 /**
- * Users epic #422, WP-US1 first release (#423 BUG-1/BUG-5, #424 BUG-2, #425 BUG-3): the interim fixes on the current grid and panel.
+ * Users epic #422, WP-US1 first release (#423 BUG-1/BUG-5, #424 BUG-2, #425 BUG-3): the fixes started as interim code on the inline panel; the
+ * user drawer (#438, #441) replaced that code and these tests stayed, now against the drawer.
  *  - no status badge is cut at 375, 768, 1366 and 1920 (the "Scroll sideways" hint is gone with the nine-column grid, #432);
- *  - opening a user moves focus to the panel heading, Esc and Close close it and focus returns to the row button, Esc with unsaved edits asks;
- *  - choosing Inactive shows the question in view with focus on it, the button reads "Deactivate user" and goes back with Active.
+ *  - opening a user moves focus to the drawer heading, Esc and Cancel close it and focus returns to the row button, Esc with unsaved edits asks;
+ *  - Deactivate asks in a dialog that is on screen with focus on Cancel (BUG-3), and the dialog states the open tasks (BUG-4).
  * Screenshots for docs/ux/users-review/fixes/us1-bugs/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
@@ -56,8 +57,6 @@ const rowOf = (page: Page, userId: number) => userRow(page, userId, ACCOUNT.get(
 const rowButton = (page: Page, userId: number) => userName(rowOf(page, userId));
 const grantButton = (page: Page, userId: number) =>
   rowOf(page, userId).locator('[data-grant] button, [data-card-primary] button');
-const menuButton = (page: Page, userId: number) =>
-  rowOf(page, userId).locator('button[data-overflow]');
 
 /**
  * axe violations, without the one artifact of a scrolled page: a 24 px check box that sits half under the fixed header or the sticky Save bar
@@ -130,7 +129,7 @@ test.describe('BUG-2: focus and Esc', () => {
     await page.keyboard.press('Enter');
     const heading = page.locator('[data-panel-heading]');
     await expect(heading).toBeFocused();
-    await expect(page.locator('[data-panel]')).toHaveAttribute('aria-label', 'User details');
+    await expect(page.locator('.mf-user-drawer')).toHaveAttribute('aria-labelledby', /.+/);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-panel]')).toHaveCount(0);
@@ -144,7 +143,7 @@ test.describe('BUG-2: focus and Esc', () => {
     await grant.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    await page.getByRole('button', { name: 'Close' }).click();
+    await page.getByRole('button', { name: 'Close user details' }).click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(grant).toBeFocused();
   });
@@ -174,13 +173,14 @@ test.describe('BUG-2: focus and Esc', () => {
     await openList(page);
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-panel]')).toBeVisible();
-    await menuButton(page, active.userId).click();
-    await page.getByRole('menuitem', { name: 'Edit availability' }).click();
-    const dialog = page.locator('.p-dialog');
+    const edit = page.locator('[data-edit-availability]');
+    await edit.click();
+    const dialog = page.getByRole('dialog', { name: /^Availability of / });
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
+    await expect(dialog).toBeHidden();
     await expect(page.locator('[data-panel]')).toBeVisible();
+    await expect(edit).toBeFocused();
   });
 
   test('a person with User.View only can open, close with Esc and has no edit controls', async ({
@@ -212,70 +212,64 @@ test.describe('BUG-2: focus and Esc', () => {
 });
 
 test.describe('BUG-3: the deactivation question', () => {
-  test('choosing Inactive shows the question in view with focus on it; Active takes it back', async ({
+  test('Deactivate puts the question on screen in a dialog with focus on Cancel; Cancel changes nothing', async ({
     page,
   }) => {
     await openList(page, 1366, 768);
     await rowButton(page, active.userId).click();
     await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
 
-    await page.locator('[data-status-inactive]').check();
-    const box = page.locator('[data-confirm]');
-    await expect(box).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Deactivate user' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Save changes' })).toHaveCount(0);
-    await expect(page.locator('[data-confirm-live]')).toContainText('Confirm deactivation');
-
-    // Fully inside the panel's scrolling box and inside the window.
-    const inside = await page.evaluate(() => {
-      const el = document.querySelector<HTMLElement>('[data-confirm]')!;
-      const panel = document.querySelector<HTMLElement>('[data-panel]')!;
-      const e = el.getBoundingClientRect();
-      const p = panel.getBoundingClientRect();
-      const bar = document
-        .querySelector<HTMLElement>('[data-panel] .mf-actions')!
-        .getBoundingClientRect();
-      return {
-        inPanel: e.top >= p.top - 1 && e.bottom <= p.bottom + 1,
-        inWindow: e.top >= 0 && e.bottom <= window.innerHeight,
-        clearOfButtons: e.bottom <= bar.top + 1,
-      };
+    const deactivate = page.getByRole('button', { name: /^Deactivate / });
+    await deactivate.click();
+    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeVisible();
+    // Fully inside the window.
+    const inside = await dialog.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return (
+        r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth
+      );
     });
-    expect(inside).toEqual({ inPanel: true, inWindow: true, clearOfButtons: true });
-
-    await page.locator('[data-status-active]').check();
-    await expect(page.locator('[data-confirm]')).toHaveCount(0);
+    expect(inside).toBe(true);
+    await page.keyboard.press('Enter');
+    await expect(dialog).toBeHidden();
+    await expect(deactivate).toBeFocused();
     await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Deactivate user' })).toHaveCount(0);
   });
 
-  test('Deactivate user saves; the person is Inactive in the list', async ({ page, personas }) => {
+  test('Deactivate saves; the person is Inactive in the list', async ({ page, personas }) => {
     const victim = await personas.create({ label: `us1x-victim`, roles: ['Data Technician'] });
     await page.goto(`/admin/users?status=all&account=e2e-us1x-victim`);
     await rowButton(page, victim.userId).click();
-    await page.locator('[data-status-inactive]').check();
-    await page.getByRole('button', { name: 'Deactivate user' }).click();
+    await page.getByRole('button', { name: /^Deactivate / }).click();
+    await page
+      .getByRole('dialog', { name: /^Deactivate / })
+      .getByRole('button', { name: 'Deactivate', exact: true })
+      .click();
     await expect(page.locator(`tr[data-user="${victim.userId}"] [data-status]`)).toContainText(
       'Inactive',
     );
-    await expect(page.locator('[data-confirm]')).toHaveCount(0);
+    await expect(page.locator('[data-activate]')).toBeVisible();
   });
 
-  test('keyboard: the radio, then Tab reaches Cancel / Deactivate user, Cancel brings Active back', async ({
+  test('keyboard: Tab reaches Deactivate, Enter asks, Tab moves to Deactivate in the dialog, Enter does it', async ({
     page,
+    personas,
   }) => {
-    await openList(page, 1366, 768);
-    await rowButton(page, active.userId).click();
-    await page.locator('[data-status-inactive]').focus();
-    await page.keyboard.press('Space');
-    await expect(page.locator('[data-confirm]')).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Deactivate user' })).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    const victim = await personas.create({ label: `us1x-kbd`, roles: ['Data Technician'] });
+    await page.goto(`/admin/users?status=all&account=e2e-us1x-kbd`);
+    await rowButton(page, victim.userId).click();
+    await page.getByRole('button', { name: /^Deactivate / }).focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-confirm]')).toHaveCount(0);
-    await expect(page.locator('[data-status-active]')).toBeChecked();
+    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Deactivate', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('[data-activate]')).toBeVisible();
   });
 });
 
@@ -304,15 +298,18 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     await page.goto(`/admin/users?status=all&account=e2e-us1x-tasks`);
     await rowButton(page, worker.userId).click();
     await expect(page.locator('[data-open-tasks]')).toHaveText('Open tasks: 2');
-    await page.locator('[data-status-inactive]').check();
-    await expect(page.locator('[data-confirm]')).toContainText(
+    await page.getByRole('button', { name: /^Deactivate / }).click();
+    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+    await expect(dialog).toContainText(
       'This user has 2 open tasks. They stay assigned until you reassign them one by one.',
     );
-    const link = page.getByRole('link', { name: 'View their tasks' });
-    await expect(link).toBeVisible();
-    // Reachable by keyboard from the question.
+    // The question offers the trip as its main button, reachable by keyboard.
+    const trip = dialog.getByRole('button', { name: 'View their tasks' });
+    await expect(trip).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(link).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(trip).toBeFocused();
     await page.keyboard.press('Enter');
 
     await expect(page).toHaveURL(/\/tasks\?.*assignee=/);
@@ -326,11 +323,12 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     await openList(page);
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-open-tasks]')).toHaveText('No open tasks');
-    await page.locator('[data-status-inactive]').check();
-    await expect(page.locator('[data-confirm]')).toContainText(
+    await page.getByRole('button', { name: /^Deactivate / }).click();
+    await expect(page.getByRole('dialog', { name: /^Deactivate / })).toContainText(
       'No open tasks are assigned to them.',
     );
     await expect(page.getByRole('link', { name: 'View their tasks' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'View their tasks' })).toHaveCount(0);
   });
 
   test('User.Manage without Task.View: no number, no link, the plain sentence stays', async ({
@@ -346,18 +344,19 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-panel-heading]')).toBeFocused();
     await expect(page.locator('[data-open-tasks]')).toHaveCount(0);
-    await page.locator('[data-status-inactive]').check();
-    await expect(page.locator('[data-confirm]')).toContainText(
+    await page.getByRole('button', { name: /^Deactivate / }).click();
+    await expect(page.getByRole('dialog', { name: /^Deactivate / })).toContainText(
       'Their assigned tasks stay assigned until you reassign them one by one.',
     );
     await expect(page.getByRole('link', { name: 'View their tasks' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'View their tasks' })).toHaveCount(0);
   });
 });
 
 test.describe('axe and layout at four sizes', () => {
-  test.skip(!axeAvailable(), 'axe-core is not available');
   for (const { width, height } of SIZES) {
-    test(`list, panel and the deactivation question at ${width}x${height}`, async ({ page }) => {
+    test(`list, drawer and the deactivation question at ${width}x${height}`, async ({ page }) => {
+      expect(axeAvailable(), 'axe-core is required (set E2E_AXE_PATH)').toBe(true);
       await openList(page, width, height);
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
@@ -367,8 +366,10 @@ test.describe('axe and layout at four sizes', () => {
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
 
-      await page.locator('[data-status-inactive]').check();
-      await expect(page.locator('[data-confirm]')).toBeFocused();
+      await page.getByRole('button', { name: /^Deactivate / }).click();
+      await expect(
+        page.getByRole('dialog', { name: /^Deactivate / }).getByRole('button', { name: 'Cancel' }),
+      ).toBeFocused();
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
     });
@@ -389,8 +390,10 @@ test.describe('us1-bugs screenshots', () => {
       await rowButton(page, active.userId).click();
       await expect(page.locator('[data-panel-heading]')).toBeFocused();
       await shot('user-panel-focus');
-      await page.locator('[data-status-inactive]').check();
-      await expect(page.locator('[data-confirm]')).toBeFocused();
+      await page.getByRole('button', { name: /^Deactivate / }).click();
+      await expect(
+        page.getByRole('dialog', { name: /^Deactivate / }).getByRole('button', { name: 'Cancel' }),
+      ).toBeFocused();
       await shot('user-deactivate-confirm');
     });
   }
