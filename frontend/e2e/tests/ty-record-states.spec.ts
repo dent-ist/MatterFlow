@@ -182,13 +182,23 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       }).toPass({ timeout: 20000 });
     });
 
-    test(`${r.key}: a lost connection shows Couldn't load with Retry`, async ({ page }) => {
+    test(`${r.key}: a lost connection shows Couldn't load with the page's Retry, next to the connection banner's own`, async ({
+      page,
+    }) => {
       await page.route(r.api, (route) =>
         route.request().method() === 'GET' ? route.abort('connectionreset') : route.continue(),
       );
       await page.goto(r.url);
       await expect(heading(page)).toHaveText(`Couldn't load this ${r.noun}.`);
-      await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+      // The connection banner (SH-D, #611) may say the app is offline, with a Retry of its own that checks the connection (it appears once its
+      // probe has failed, so it can come after the record state). The record state keeps its Retry, which asks for this record again. The
+      // contract: exactly one Retry is the page's, inside the main region; the banner's, when shown, is outside it and is not the page's.
+      const pageRetry = page.getByRole('main').getByRole('button', { name: 'Retry' });
+      await expect(pageRetry).toHaveCount(1);
+      await expect(pageRetry).toBeVisible();
+      await expect(page.getByRole('main').locator('[data-offline-retry]')).toHaveCount(0);
+      expect(await page.locator('[data-offline-retry]').count()).toBeLessThanOrEqual(1);
+      expect(await page.getByRole('button', { name: 'Retry' }).count()).toBeLessThanOrEqual(2);
     });
   }
 

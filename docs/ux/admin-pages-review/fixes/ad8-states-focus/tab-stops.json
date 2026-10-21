@@ -1,0 +1,74 @@
+{
+  "width": 1366,
+  "height": 768,
+  "measuredAt": "e2e",
+  "pages": {
+    "priorities": {
+      "url": "/admin/priorities",
+      "stopsToFirstRow": 24,
+      "stopsPerRow": 2,
+      "controls": [
+        "a",
+        "button[Actions for Critical]"
+      ],
+      "targetPerRow": 2,
+      "meetsTarget": true
+    },
+    "status-labels": {
+      "url": "/admin/status-labels",
+      "stopsToFirstRow": 23,
+      "stopsPerRow": 2,
+      "controls": [
+        "a",
+        "button[Actions for New]"
+      ],
+      "targetPerRow": 2,
+      "meetsTarget": true
+    },
+    "asset-types": {
+      "url": "/admin/asset-types",
+      "stopsToFirstRow": 28,
+      "stopsPerRow": 2,
+      "controls": [
+        "a",
+        "button[Actions for Relativity Workspace]"
+      ],
+      "targetPerRow": 2,
+      "meetsTarget": true
+    },
+    "link-roles": {
+      "url": "/admin/asset-types?tab=link-roles",
+      "stopsToFirstRow": 24,
+      "stopsPerRow": 2,
+      "controls": [
+        "a",
+        "button[Actions for Source]"
+      ],
+      "targetPerRow": 2,
+      "meetsTarget": true
+    },
+    "custom-fields": {
+      "url": "/admin/custom-fields",
+      "stopsToFirstRow": 22,
+      "stopsPerRow": 2,
+      "controls": [
+        "a",
+        "button[Actions for Client custom fields]"
+      ],
+      "targetPerRow": 2,
+      "meetsTarget": true
+    },
+    "audit": {
+      "url": "/admin/audit",
+      "stopsToFirstRow": 33,
+      "stopsPerRow": 3,
+      "controls": [
+        "button[Show the 2 events of this operation]",
+        "a",
+        "button[Actions for Asset type: Kbd Audit wweegd55 v2: changed Name, Description]"
+      ],
+      "targetPerRow": null,
+      "meetsTarget": null
+    }
+  }
+}
