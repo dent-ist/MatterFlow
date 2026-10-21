@@ -1,9 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject, model, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  inject,
+  model,
+  signal,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DateInput } from 'form-engine';
 import { NOTE_MAX } from '../../core/availability/availability';
-import { outOfOfficeSummary, validateRange } from '../../core/availability/availability-edit';
+import {
+  UNTIL_PRESETS,
+  UntilPresetId,
+  outOfOfficeSummary,
+  presetUntil,
+  validateRange,
+} from '../../core/availability/availability-edit';
 import { MyAvailability } from '../../core/availability/my-availability';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
@@ -17,7 +32,7 @@ import { DialogFocus } from '../ui/dialog-focus';
  */
 @Component({
   selector: 'mf-set-out-of-office-dialog',
-  imports: [Dialog, Button, DateInput, DialogFocus],
+  imports: [Dialog, Button, DateInput, DialogFocus, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -29,6 +44,8 @@ import { DialogFocus } from '../ui/dialog-focus';
       [draggable]="false"
       [resizable]="false"
       [visible]="visible()"
+      [focusOnShow]="false"
+      (onShow)="focusHeading()"
       (visibleChange)="onVisible($event)"
       [style]="{ width: '30rem', maxWidth: '95vw' }"
     >
@@ -40,13 +57,29 @@ import { DialogFocus } from '../ui/dialog-focus';
           You will show as out of office from now. Work can still be assigned to you.
         </p>
         <div class="ooo__field">
-          <label class="ooo__label" for="ooo-until">Until (optional)</label>
+          <label class="ooo__label" for="ooo-until" id="ooo-until-label">Until (optional)</label>
+          <div class="ooo__chips" role="group" aria-labelledby="ooo-until-label" data-ooo-presets>
+            @for (p of presets; track p.id) {
+              <button
+                type="button"
+                class="ooo__chip"
+                [attr.aria-pressed]="isPressed(p.id)"
+                [attr.data-preset]="p.id"
+                (click)="choosePreset(p.id)"
+              >
+                {{ p.label }}
+              </button>
+            }
+            <button type="button" class="ooo__chip" data-preset="pick" (click)="pickDate()">
+              Pick a date
+            </button>
+          </div>
           <mf-date-input
             inputId="ooo-until"
             label="Until date"
             [isoValue]="until()"
             [invalid]="!!untilError()"
-            (isoChange)="until.set($event)"
+            (isoChange)="onUntilTyped($event)"
             (textInvalid)="untilBad.set($event)"
           />
           @if (untilError(); as e) {
@@ -68,6 +101,11 @@ import { DialogFocus } from '../ui/dialog-focus';
           <p class="ooo__count" id="ooo-note-count">{{ note().length }} / {{ noteMax }}</p>
         </div>
         <p class="ooo__sentence" role="status" data-ooo-summary>{{ sentence() }}</p>
+        <p class="ooo__more">
+          <a routerLink="/profile" data-ooo-more (click)="visible.set(false)"
+            >More options on My profile</a
+          >
+        </p>
       </form>
       <ng-template #footer>
         <p-button label="Cancel" severity="secondary" (onClick)="visible.set(false)" />
@@ -92,6 +130,35 @@ import { DialogFocus } from '../ui/dialog-focus';
     .ooo__label {
       font-weight: 600;
     }
+    .ooo__chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s2);
+    }
+    .ooo__chip {
+      min-height: 32px;
+      padding: 0 var(--mf-s3);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: 999px;
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      cursor: pointer;
+    }
+    .ooo__chip:hover {
+      background: var(--mf-surface-alt);
+    }
+    .ooo__chip[aria-pressed='true'] {
+      border-color: var(--mf-primary);
+      background: var(--mf-info-bg);
+      font-weight: 600;
+    }
+    .ooo__more {
+      margin: 0;
+      font-size: var(--mf-fs-sm);
+    }
+
     .ooo__help,
     .ooo__count {
       margin: 0;
@@ -124,8 +191,18 @@ export class SetOutOfOfficeDialog {
   private readonly store = inject(MyAvailability);
   private readonly notify = inject(NotificationService);
   private readonly clock = inject(Clock);
-  private readonly zone = inject(USER_TIME_ZONE);
+  private readonly viewerZone = inject(USER_TIME_ZONE);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  /** Out-of-office days are evaluated in the profile's time zone (the viewer's zone until it is loaded). */
+  private readonly zone = computed(
+    () => this.store.profile()?.effectiveTimeZoneId ?? this.viewerZone,
+  );
+  private readonly today = computed(() => calendarDayInZone(this.clock.now(), this.zone()));
+
+  protected readonly presets = UNTIL_PRESETS;
+  /** The quick choice that filled Until; cleared as soon as the date is typed or changed. */
+  private readonly preset = signal<UntilPresetId | null>(null);
   protected readonly noteMax = NOTE_MAX;
   protected readonly until = signal<string | null>(null);
   protected readonly untilBad = signal(false);
@@ -137,7 +214,7 @@ export class SetOutOfOfficeDialog {
     if (this.untilBad()) return 'Enter a valid Until date, for example Oct 20, 2026.';
     const until = this.until();
     if (!until) return null;
-    const today = calendarDayInZone(this.clock.now(), this.zone);
+    const today = this.today();
     const todayIso = `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`;
     return validateRange(todayIso, until, this.note()).until?.replace('From', 'today') ?? null;
   });
@@ -145,9 +222,40 @@ export class SetOutOfOfficeDialog {
   protected readonly sentence = computed(() =>
     outOfOfficeSummary(null, this.until(), {
       self: true,
-      today: calendarDayInZone(this.clock.now(), this.zone),
+      today: this.today(),
     }),
   );
+
+  protected isPressed(id: UntilPresetId): boolean {
+    return this.preset() === id && this.until() === presetUntil(id, this.today());
+  }
+
+  protected choosePreset(id: UntilPresetId): void {
+    this.preset.set(id);
+    this.untilBad.set(false);
+    this.until.set(presetUntil(id, this.today()));
+  }
+
+  protected onUntilTyped(iso: string | null): void {
+    this.until.set(iso);
+    const id = this.preset();
+    if (id && iso !== presetUntil(id, this.today())) this.preset.set(null);
+  }
+
+  /** "Pick a date": the chips are for common answers, this one hands over to the date field. */
+  protected pickDate(): void {
+    this.host.nativeElement.ownerDocument.getElementById('ooo-until')?.focus();
+  }
+
+  /** The dialog opens on its heading, not on the date field: no on-screen keyboard on a phone, and a stray Enter applies nothing. */
+  protected focusHeading(): void {
+    const title = this.host.nativeElement.ownerDocument.querySelector<HTMLElement>(
+      '.p-dialog-mask .p-dialog-title',
+    );
+    if (!title) return;
+    title.setAttribute('tabindex', '-1');
+    title.focus({ preventScroll: true });
+  }
 
   /**
    * Opens the dialog with empty fields. The header calls this instead of `setInput('visible', true)`: the dialog closes itself (Esc, Cancel,
@@ -162,7 +270,9 @@ export class SetOutOfOfficeDialog {
     this.visible.set(value);
     if (value) {
       this.until.set(null);
+      this.preset.set(null);
       this.untilBad.set(false);
+      void this.store.ensureLoaded();
       this.note.set('');
       this.error.set('');
     }

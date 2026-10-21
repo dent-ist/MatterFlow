@@ -3,6 +3,7 @@ import {
   defaultWeek,
   isDefaultWeek,
   outOfOfficeSummary,
+  presetUntil,
   previewDisplay,
   timeZoneList,
   validateRange,
@@ -169,5 +170,42 @@ describe('availability', () => {
     expect(zones).toContain('Mars/Olympus');
     expect(zones.length).toBeGreaterThan(50);
     expect(zones).toContain('America/New_York');
+  });
+
+  describe('presetUntil (Set out of office quick choices)', () => {
+    const day = (iso: string) => {
+      const [year, month, d] = iso.split('-').map(Number);
+      return { year, month, day: d };
+    };
+    const all = (iso: string) =>
+      (['today', 'tomorrow', 'monday', 'week'] as const).map((id) => presetUntil(id, day(iso)));
+
+    it('counts from a Friday: Until Monday is three days on', () => {
+      // 2026-10-16 is a Friday.
+      expect(all('2026-10-16')).toEqual(['2026-10-16', '2026-10-17', '2026-10-19', '2026-10-23']);
+    });
+
+    it('Saturday and Sunday both reach the very next Monday', () => {
+      expect(presetUntil('monday', day('2026-10-17'))).toBe('2026-10-19');
+      expect(presetUntil('monday', day('2026-10-18'))).toBe('2026-10-19');
+    });
+
+    it('on a Monday, Until Monday means the following Monday (the next one after today)', () => {
+      expect(presetUntil('monday', day('2026-10-19'))).toBe('2026-10-26');
+    });
+
+    it('crosses the end of a month and the end of a year', () => {
+      expect(all('2026-10-31')).toEqual(['2026-10-31', '2026-11-01', '2026-11-02', '2026-11-07']);
+      expect(all('2026-12-31')).toEqual(['2026-12-31', '2027-01-01', '2027-01-04', '2027-01-07']);
+    });
+
+    it('is plain calendar arithmetic on the change-of-clocks days (fall back Nov 1, spring forward Mar 8 2026)', () => {
+      expect(all('2026-11-01')).toEqual(['2026-11-01', '2026-11-02', '2026-11-02', '2026-11-08']);
+      expect(all('2026-03-08')).toEqual(['2026-03-08', '2026-03-09', '2026-03-09', '2026-03-15']);
+    });
+
+    it('handles a leap day', () => {
+      expect(presetUntil('week', day('2028-02-25'))).toBe('2028-03-03');
+    });
   });
 });

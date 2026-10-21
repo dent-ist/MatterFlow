@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
 import { MyAvailability } from '../../core/availability/my-availability';
+import { NotificationService } from '../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { ok, settle } from '../testing/org-testing';
 import { SetOutOfOfficeDialog } from './set-out-of-office-dialog';
@@ -52,6 +54,7 @@ describe('SetOutOfOfficeDialog', () => {
     };
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([{ path: 'profile', children: [] }]),
         { provide: MyAvailabilityClient, useValue: client },
         { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
         { provide: Clock, useValue: { now: () => NOW } },
@@ -107,6 +110,7 @@ describe('SetOutOfOfficeDialog', () => {
 
   it('saves out of office from now, keeping the work hours and time zone', async () => {
     const { fixture, client } = await open();
+    const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
     await type(fixture, '#ooo-until', 'Oct 20, 2026');
     await type(fixture, '#ooo-note', 'Covering: Dana');
     q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
@@ -126,6 +130,10 @@ describe('SetOutOfOfficeDialog', () => {
     });
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
     expect(TestBed.inject(MyAvailability).isOut()).toBe(true);
+    // #525: the toast carries the shared availability key, so "I'm back" replaces it.
+    expect(success).toHaveBeenCalledWith('You are out of office', expect.any(String), {
+      key: 'availability',
+    });
   });
 
   it('opens again, with empty fields, after it closed itself (Esc, Cancel, the X): the header menu item must not go dead (UXR5-15)', async () => {
@@ -143,5 +151,95 @@ describe('SetOutOfOfficeDialog', () => {
     expect(fixture.componentInstance.visible()).toBe(true);
     expect(q<HTMLInputElement>('#ooo-until').value).toBe('');
     expect(q<HTMLTextAreaElement>('#ooo-note').value).toBe('');
+  });
+
+  describe('quick choices and focus (#538, #539)', () => {
+    const chip = (id: string) => q<HTMLButtonElement>(`[data-preset="${id}"]`);
+
+    it('each chip fills Until, is pressed while it matches, and the sentence names the return day', async () => {
+      const { fixture } = await open();
+      // Oct 15, 2026 is a Thursday.
+      const cases: [string, string, string][] = [
+        ['today', '2026-10-15', 'until Oct 15 and as available again on Oct 16'],
+        ['tomorrow', '2026-10-16', 'until Oct 16 and as available again on Oct 17'],
+        ['monday', '2026-10-19', 'until Oct 19 and as available again on Oct 20'],
+        ['week', '2026-10-22', 'until Oct 22 and as available again on Oct 23'],
+      ];
+      for (const [id, iso, sentence] of cases) {
+        chip(id).click();
+        await settle(fixture);
+        expect(fixture.componentInstance['until']()).toBe(iso);
+        expect(chip(id).getAttribute('aria-pressed')).toBe('true');
+        expect(q('[data-ooo-summary]').textContent).toContain(sentence);
+        for (const other of cases.filter((c) => c[0] !== id)) {
+          expect(chip(other[0]).getAttribute('aria-pressed')).toBe('false');
+        }
+      }
+    });
+
+    it('typing a date clears the pressed chip; Pick a date focuses the date field and presses nothing', async () => {
+      const { fixture } = await open();
+      chip('tomorrow').click();
+      await settle(fixture);
+      await type(fixture, '#ooo-until', 'Oct 20, 2026');
+      expect(chip('tomorrow').getAttribute('aria-pressed')).toBe('false');
+      expect(q('[data-ooo-summary]').textContent).toContain('until Oct 20');
+
+      chip('pick').click();
+      await settle(fixture);
+      expect(document.activeElement).toBe(q('#ooo-until'));
+      expect(chip('pick').getAttribute('aria-pressed')).toBeNull();
+    });
+
+    it('saves the chosen date, and the chips are a labelled group of real buttons', async () => {
+      const { fixture, client } = await open();
+      const group = q('[data-ooo-presets]');
+      expect(group.getAttribute('role')).toBe('group');
+      expect(group.getAttribute('aria-labelledby')).toBe('ooo-until-label');
+      expect([...group.querySelectorAll('button')].map((b) => b.textContent!.trim())).toEqual([
+        'Rest of today',
+        'Until tomorrow',
+        'Until Monday',
+        '1 week',
+        'Pick a date',
+      ]);
+      chip('monday').click();
+      await settle(fixture);
+      q<HTMLButtonElement>('[data-ooo-confirm] button, button[data-ooo-confirm]').click();
+      await vi.waitFor(() => expect(client.saveMyAvailability).toHaveBeenCalled());
+      expect(client.saveMyAvailability).toHaveBeenCalledWith(
+        expect.objectContaining({ until: '2026-10-19' }),
+      );
+    });
+
+    it('computes the days in the profile time zone, not the browser zone', async () => {
+      const { fixture } = await open();
+      // 2026-10-15T14:00Z is already Oct 16 in Auckland.
+      TestBed.inject(MyAvailability).set(
+        dto({ timeZoneId: 'Pacific/Auckland', effectiveTimeZoneId: 'Pacific/Auckland' }),
+      );
+      await settle(fixture);
+      chip('today').click();
+      await settle(fixture);
+      expect(fixture.componentInstance['until']()).toBe('2026-10-16');
+    });
+
+    it('opens on the heading, not on the date field, and has the link to My profile', async () => {
+      await open();
+      await new Promise((r) => setTimeout(r, 50));
+      const title = q('.p-dialog-title');
+      expect(document.activeElement).toBe(title);
+      expect(title.getAttribute('tabindex')).toBe('-1');
+      expect(document.activeElement).not.toBe(q('#ooo-until'));
+      expect(q('[data-ooo-more]').getAttribute('href')).toBe('/profile');
+      expect(q('[data-ooo-more]').textContent).toContain('More options on My profile');
+    });
+
+    it('the link closes the dialog', async () => {
+      const { fixture } = await open();
+      q<HTMLAnchorElement>('[data-ooo-more]').click();
+      await settle(fixture);
+      expect(fixture.componentInstance.visible()).toBe(false);
+    });
   });
 });

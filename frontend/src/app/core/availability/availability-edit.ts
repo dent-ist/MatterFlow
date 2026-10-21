@@ -146,6 +146,34 @@ export function outOfOfficeSummary(
   return `${who} will show as out of office ${when} until ${shortDay(u, today)} and as available again on ${back}.`;
 }
 
+// ---- Until presets (Set out of office dialog) --------------------------------------------------------------------------------
+
+export type UntilPresetId = 'today' | 'tomorrow' | 'monday' | 'week';
+
+export const UNTIL_PRESETS: readonly { id: UntilPresetId; label: string }[] = [
+  { id: 'today', label: 'Rest of today' },
+  { id: 'tomorrow', label: 'Until tomorrow' },
+  { id: 'monday', label: 'Until Monday' },
+  { id: 'week', label: '1 week' },
+];
+
+/**
+ * The Until date (`yyyy-MM-dd`, the last day out) a quick choice stands for, counted from `today` (a calendar day in the profile time
+ * zone, so a change of clocks cannot move it): today; tomorrow; the next Monday after today (a Monday asks for the following one);
+ * today plus 7 days.
+ */
+export function presetUntil(id: UntilPresetId, today: CalendarDay): string {
+  const weekday = new Date(Date.UTC(today.year, today.month - 1, today.day)).getUTCDay(); // 0 = Sunday
+  const days = {
+    today: 0,
+    tomorrow: 1,
+    monday: (1 - weekday + 7) % 7 || 7,
+    week: 7,
+  }[id];
+  const d = addDays(today, days);
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+}
+
 // ---- Time zones -----------------------------------------------------------------------------------------------------------
 
 /** The IANA zones the browser knows, plus `extra` (the person's own zone) when missing, sorted. */
