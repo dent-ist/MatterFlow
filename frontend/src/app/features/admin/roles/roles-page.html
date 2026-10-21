@@ -36,7 +36,7 @@
               >
               <span class="mf-count mf-permcount" data-perm-count
                 >{{ r.permissionCount }} of {{ totalPermissions()
-                }}<span class="mf-permword"> permissions</span></span
+                }}<span [class.mf-sr-only]="!editing() && !phone()"> permissions</span></span
               >
               <i class="pi pi-chevron-right mf-go" aria-hidden="true"></i>
             </button>

@@ -123,15 +123,14 @@
   white-space: nowrap;
 }
 
+/* The name of a pod is the one link of its row (the kit's .mf-name clamps it to two lines, one under a description). */
 .pods__name {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-weight: 600;
   color: var(--mf-link);
-  cursor: pointer;
-  text-decoration: underline;
+  font-weight: 600;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .pods__link {

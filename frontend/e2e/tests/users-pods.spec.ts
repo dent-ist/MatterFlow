@@ -3,6 +3,7 @@ import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { userRow } from '../support/users-grid';
 
 /**
  * Pods is the third tab of the Users page, and the Users grid has a Pods column with an inline editor (docs/ux/users-pods/README.md).
@@ -25,7 +26,8 @@ async function threePods(seed: Seeder): Promise<{ tag: string; names: string[]; 
 
 async function gridRow(page: Page, person: Person): Promise<Locator> {
   await page.goto(`/admin/users?status=all&account=${encodeURIComponent(person.username)}`);
-  const row = page.locator(`tr[data-user="${person.userId}"]`);
+  // A table row from 640 px, a card below (#445).
+  const row = userRow(page, person.userId, person.username);
   await expect(row).toBeVisible();
   return row;
 }
@@ -92,7 +94,7 @@ test.describe('Pods tab on the Users page', () => {
     await expect(page).toHaveURL(/\/admin\/pods$/);
     await expect(page.getByRole('tab', { name: 'Pods' })).toBeFocused();
     await page.getByRole('tab', { name: 'Users' }).click();
-    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page).toHaveURL(/\/admin\/users(\?status=\w+)?$/);
     await expect(page).toHaveTitle(/^Users( |$)/);
 
     // The deep link of the pod editor keeps working inside the tab.
@@ -152,10 +154,12 @@ test.describe('Pods column of the Users grid', () => {
     await pop.getByRole('button', { name: 'Apply' }).click();
 
     await expect(popover(page)).toHaveCount(0);
-    await expect(chips(row)).toHaveCount(2);
-    await expect(chips(row).nth(0)).toHaveText(names[0]);
-    await expect(chips(row).nth(1)).toContainText(`${names[1]} Primary`);
-    await expect(chips(row).nth(1).locator('.pi-star-fill')).toBeVisible();
+    // The cell is one line (#432): the primary pod and "+n"; the other pod is in the tooltip and in the button's name.
+    await expect(chips(row)).toHaveCount(1);
+    await expect(chips(row).first()).toContainText(`${names[1]} Primary`);
+    await expect(chips(row).first().locator('.pi-star-fill')).toBeVisible();
+    await expect(row.locator('[data-pod-more]')).toHaveText('+1');
+    await expect(row.locator('[data-pod-more]')).toHaveAttribute('title', names[0]);
     await expect(trigger(row)).toHaveAccessibleName(
       `Pods: ${names[0]}, ${names[1]} (primary), change pods of ${person.username}`,
     );
@@ -228,7 +232,7 @@ test.describe('Pods column of the Users grid', () => {
     const pop = await openEditor(page, row, tag);
     await pop.getByRole('checkbox', { name: names[1] }).check();
     await pop.getByRole('button', { name: 'Apply' }).click();
-    await expect(chips(row)).toHaveCount(2);
+    await expect(row.locator('[data-pod-more]')).toHaveText('+1'); // the primary pod and "+1" (one line)
 
     await page.locator('[data-undo]').click();
     await expect(chips(row)).toHaveCount(1);
@@ -301,11 +305,12 @@ test.describe('Pods column of the Users grid', () => {
     const auditor = await seed.user(['Compliance Auditor'], 'auditor');
     const page = await asUser(auditor.username);
     const row = await gridRow(page, person);
-    await expect(chips(row)).toHaveCount(2);
+    await expect(chips(row)).toHaveCount(1);
+    await expect(row.locator('[data-pod-more]')).toHaveText('+1');
     await expect(row.locator('[data-pods-readonly]')).toContainText(names[0]);
     await expect(row.locator('[data-pods-trigger]')).toHaveCount(0);
     // No Pods tab either (no Pod.Manage / Pod.ManageMembers).
-    await expect(page.getByRole('tab')).toHaveText(['Users']);
+    await expect(page.getByRole('tab')).toHaveCount(0); // one tab: the shell shows no tab strip
   });
 
   test('a user who may only manage pods lands on the Pods tab from the Users menu item', async ({
@@ -322,7 +327,8 @@ test.describe('Pods column of the Users grid', () => {
       .getByRole('link', { name: 'Users' })
       .click();
     await expect(page).toHaveURL(/\/admin\/pods$/);
-    await expect(page.getByRole('tab')).toHaveText(['Pods']);
+    await expect(page.getByRole('tab')).toHaveCount(0); // one tab: no tab strip
+    await expect(page.getByRole('heading', { name: 'Users', level: 1 })).toBeVisible();
   });
 });
 
@@ -347,6 +353,16 @@ test.describe('Pods column accessibility and layout', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       const row = await gridRow(page, person);
       expect(await axeViolations(page)).toEqual([]);
+      // Below 1280 px the Pods column has left the grid (the kit's order, #432); the pods are edited in the drawer (#440) from then on.
+      if (size.width < 1280) {
+        await expect(trigger(row)).toHaveCount(0);
+        await page.goto('/admin/pods');
+        await expect(
+          page.locator(size.width < 640 ? 'li.rc' : 'table[data-pods]').first(),
+        ).toBeVisible();
+        expect(await axeViolations(page)).toEqual([]);
+        return;
+      }
 
       await openEditor(page, row, tag);
       await expect(popover(page).locator('[data-pod-option]')).toHaveCount(3);

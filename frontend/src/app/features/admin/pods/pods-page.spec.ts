@@ -15,6 +15,8 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import { ApiError } from '../../../core/http/api-error';
 import { fakeQuery } from '../../../shared/testing/org-testing';
+import { SkipTarget } from '../../../shared/layout/skip-target';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { PodsPage } from './pods-page';
 
 const summary = (podId: number, name: string, extra: Partial<PodSummary> = {}): PodSummary => ({
@@ -93,8 +95,10 @@ describe('PodsPage', () => {
     await settle();
   }
 
+  /** The name link of the list puts `?pod=` in the address; the page follows its `pod` input. */
   async function openEditor(podId = 1): Promise<void> {
-    await click(`[data-edit="${podId}"]`);
+    fixture.componentRef.setInput('pod', String(podId));
+    await settle();
   }
 
   beforeEach(() => {
@@ -140,6 +144,99 @@ describe('PodsPage', () => {
     expect(el().textContent).toContain('Pod leads are a role');
   });
 
+  it('the name is the one link of the row, there is no Edit link and no actions column, and Inactive is the word for the inactive state (#450)', async () => {
+    await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
+    const row = q('[data-pod="1"]');
+    const links = Array.from(row.querySelectorAll('a, button'));
+    expect(links.length).toBe(1);
+    expect(links[0].textContent!.trim()).toBe('Pod A');
+    expect(links[0].getAttribute('href')).toContain('pod=1');
+    expect(row.querySelector('[data-edit]')).toBeNull();
+    expect(
+      Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
+        th.textContent!.trim(),
+      ),
+    ).toEqual(['Name', 'Members', 'Status']);
+    expect(text('[data-pod="2"]')).toContain('Inactive');
+    expect(el().textContent).not.toContain('Disabled');
+    expect(q('[data-pod="1"] .mf-desc').textContent).toContain('Processing');
+  });
+
+  it('says how many inactive pods the default Active hides and Show all reaches them (#450)', async () => {
+    api['listPods'].mockImplementation((_q, _n, active, _p, size) =>
+      of({
+        items: active === false ? [podB] : [podA],
+        total: active === false ? 3 : 1,
+        page: 1,
+        pageSize: size ?? 25,
+      }),
+    );
+    await create('Pod.View', 'Pod.Manage');
+    expect(el().textContent).toContain('3 inactive hidden');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const showAll = Array.from(el().querySelectorAll('button')).find((b) =>
+      b.textContent!.includes('Show all'),
+    )!;
+    showAll.click();
+    await settle();
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: expect.objectContaining({ status: 'all' }) }),
+    );
+  });
+
+  it('follows the address: Back (the bare list) closes the editor, unless there are unsaved edits (#450)', async () => {
+    await create('Pod.View', 'Pod.Manage');
+    await openEditor(1);
+    expect(el().querySelector('[data-editor]')).not.toBeNull();
+    fixture.componentRef.setInput('pod', undefined);
+    await settle();
+    expect(el().querySelector('[data-editor]')).toBeNull();
+    expect(el().querySelector('[data-pods]')).not.toBeNull();
+
+    await openEditor(1);
+    await type('[data-name]', 'Pod A renamed');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.componentRef.setInput('pod', undefined);
+    await settle();
+    // Unsaved edits: the editor stays and the address says so again.
+    expect(el().querySelector('[data-editor]')).not.toBeNull();
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: { pod: '1' } }),
+    );
+  });
+
+  it('offers "Skip to table" and lands on the name of the first pod (#450)', async () => {
+    await create('Pod.View', 'Pod.Manage');
+    const target = TestBed.inject(SkipTarget).target()!;
+    expect(target.label).toBe('Skip to table');
+    target.focus();
+    expect(document.activeElement).toBe(q('[data-pod="1"] a'));
+  });
+
+  it('puts its filters in the page header registry while the list is open and takes them away with the editor (#450)', async () => {
+    const registry = new AdminShellFilters();
+    localStorage.clear();
+    query = fakeQuery();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        query.provider,
+        { provide: AdminShellFilters, useValue: registry },
+        provideFakeMe(new FakeMeApi(withPermissions('Pod.View', 'Pod.Manage'))),
+        { provide: PodsClient, useValue: api },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    fixture = TestBed.createComponent(PodsPage);
+    await settle();
+    expect(registry.current()?.controls).toBe('pods-filter-row');
+    await openEditor();
+    expect(registry.current()).toBeNull();
+    fixture.destroy();
+  });
+
   it('hides New pod, Save and member controls without the manage permissions', async () => {
     await create('Pod.View');
 
@@ -154,7 +251,9 @@ describe('PodsPage', () => {
 
   it('lists active pods first and sends the URL state (name, status, page size, sort) to the API', async () => {
     await create('Pod.View', 'Pod.Manage');
-    expect(api.listPods).toHaveBeenLastCalledWith(undefined, undefined, true, 1, 25, undefined);
+    expect(api.listPods).toHaveBeenCalledWith(undefined, undefined, true, 1, 25, undefined);
+    // And one row of the other side of the default Active status, for the "n inactive hidden" hint.
+    expect(api.listPods).toHaveBeenCalledWith(undefined, undefined, false, 1, 1);
 
     query.set({ name: ' alp ', status: 'inactive' });
     fixture.componentRef.setInput('size', '50');
@@ -174,12 +273,13 @@ describe('PodsPage', () => {
     );
   });
 
-  it('has the Name and Status column filters instead of a search box and a status select, closed by default', async () => {
+  it('has the Name and Status column filters instead of a search box and a status select, open by default (#450)', async () => {
     await create('Pod.View', 'Pod.Manage');
 
     expect(el().querySelector('#pods-search, #pods-status, mf-search-box')).toBeNull();
-    expect(el().querySelector('[data-filter-row]')).toBeNull();
-    await click('[data-filters-toggle]');
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
+    // The Filters button and Clear filters are in the page header (the Users shell), not in the list.
+    expect(el().querySelector('[data-filters-toggle]')).toBeNull();
     expect(q('[aria-label="Filter by Name"]')).not.toBeNull();
     // Active is the default: shown in its cell, not counted.
     expect(q<HTMLSelectElement>('[aria-label="Filter by Status"]').value).toBe('active');
@@ -189,7 +289,6 @@ describe('PodsPage', () => {
   it('writes name, status and sort changes to the URL', async () => {
     await create('Pod.View', 'Pod.Manage');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    await click('[data-filters-toggle]');
 
     await type('[aria-label="Filter by Name"]', 'alp', 350);
     expect(navigate).toHaveBeenLastCalledWith([], {

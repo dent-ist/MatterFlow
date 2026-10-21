@@ -18,6 +18,7 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { phoneCards } from '../../../shared/ui/record-card-list';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
@@ -40,6 +41,8 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
 
+  /** Below 640 px the list has no header row: the word "permissions" is then on the row itself. */
+  protected readonly phone = phoneCards();
   protected readonly roles = signal<RoleSummaryDto[]>([]);
   protected readonly catalog = signal<PermissionGroupDto[]>([]);
   protected readonly loadError = signal(false);

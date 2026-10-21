@@ -153,17 +153,6 @@
     white-space: nowrap;
   }
 
-  /* The column header says Permissions; the word stays for screen readers. */
-  .mf-permword {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   .mf-go {
     display: block;
     grid-column: 5;
@@ -195,15 +184,6 @@
       grid-column: 1 / -1;
       grid-row: 2;
       text-align: left;
-    }
-
-    .mf-permword {
-      position: static;
-      width: auto;
-      height: auto;
-      margin: 0;
-      overflow: visible;
-      clip-path: none;
     }
 
     .mf-go {

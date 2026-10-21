@@ -1,9 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   OnDestroy,
-  OnInit,
   computed,
   effect,
   inject,
@@ -31,7 +31,12 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
+import { SkipTarget } from '../../../shared/layout/skip-target';
+import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
+import { adminListState } from '../../../shared/ui/admin-list-state';
+import { phoneCards } from '../../../shared/ui/record-card-list';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -48,7 +53,7 @@ import { ListFilters } from '../../../shared/filters/list-filters';
 const SEARCH_DEBOUNCE_MS = 200;
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'members', 'status', 'actions'] as const;
+const COLUMNS = ['name', 'members', 'status'] as const;
 
 /**
  * Admin: Pods (UX S13), the third tab of the Users page (`/admin/pods`). Lists Pods, creates/edits/deactivates them and manages members.
@@ -73,14 +78,12 @@ const COLUMNS = ['name', 'members', 'status', 'actions'] as const;
     GridBody,
     FiltersBar,
     ColumnFilterRow,
+    AdminCardList,
   ],
   templateUrl: './pods-page.html',
   styleUrl: './pods-page.scss',
 })
-export class PodsPage
-  extends ServerListPage<PodSummary>
-  implements OnInit, OnDestroy, HasUnsavedChanges
-{
+export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, HasUnsavedChanges {
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(PodsClient);
   private readonly notify = inject(NotificationService);
@@ -100,10 +103,37 @@ export class PodsPage
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'pods',
     noun: 'pods',
+    openByDefault: true,
+    sheetBelow: 640,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       statusDef(),
     ]),
+  });
+
+  protected readonly phone = phoneCards();
+  /** Loading, error, empty and no-match as the kit derives them, with "n inactive hidden - Show all" for the default Active status. */
+  protected readonly ls = adminListState({
+    state: this.state,
+    rows: this.rows,
+    filters: this.filters,
+    hidden: this.hiddenCount,
+  });
+  protected readonly columnSpec = [
+    { cls: 'mf-cell-name', bone: '14rem' },
+    { cls: 'mf-cell-num', bone: '2rem' },
+    { cls: 'mf-cell-badge', bone: '4.5rem' },
+  ];
+
+  /** A pod as a phone card: the name opens its editor (`?pod=`), like the name link of the table. */
+  protected readonly cardOf = (pod: PodSummary): AdminCardSpec => ({
+    title: pod.name,
+    link: ['/admin/pods'],
+    queryParams: { pod: pod.podId },
+    rowKey: pod.podId,
+    subtitle: pod.description,
+    badges: [activeCardBadge(pod.isActive)],
+    meta: [`${pod.memberCount} ${pod.memberCount === 1 ? 'member' : 'members'}`],
   });
 
   // ---- editor
@@ -147,6 +177,43 @@ export class PodsPage
 
   constructor() {
     super();
+    // The Filters button and the one Clear filters are in the page header while the list is on screen (not while the editor is open).
+    const shell = inject(AdminShellFilters, { optional: true });
+    const entry = { filters: this.filters, controls: 'pods-filter-row' };
+    effect(() => {
+      const listOpen = !this.editorOpen();
+      untracked(() => shell?.current.set(listOpen ? entry : null));
+    });
+    inject(DestroyRef).onDestroy(() => {
+      if (shell?.current() === entry) shell.current.set(null);
+    });
+    // "Skip to table" (#450): the first Tab stop of the list; it lands on the name of the first pod.
+    const host = inject<ElementRef<HTMLElement>>(ElementRef);
+    const offSkip = inject(SkipTarget).register({
+      label: 'Skip to table',
+      element: host.nativeElement,
+      focus: () => {
+        const root = host.nativeElement;
+        const target =
+          root.querySelector<HTMLElement>('tbody tr[data-pod] a, li.rc a[href]') ??
+          root.querySelector<HTMLElement>(
+            ':is(td, div, p)[data-empty], :is(td, div, p)[data-error], :is(td, div, p)[data-forbidden]',
+          ) ??
+          root.querySelector<HTMLElement>('.mf-table-wrap');
+        if (!target) return;
+        if (!target.matches('a, button, [tabindex]')) target.setAttribute('tabindex', '-1');
+        target.focus();
+      },
+    });
+    inject(DestroyRef).onDestroy(offSkip);
+    // A name link (or a card) of the list puts the pod in the address: the editor follows the address.
+    effect(() => {
+      const pod = this.pod();
+      untracked(() => {
+        if (pod && !this.editorOpen()) void this.openFromUrl();
+        else if (!pod && this.editorOpen()) this.followAddressClose();
+      });
+    });
     // The controls move into the sheet while the grid scrolls sideways (the grid is not on screen while the editor is open).
     effect(() => {
       const area = this.scroll()?.nativeElement;
@@ -158,10 +225,6 @@ export class PodsPage
 
   protected override listFilters() {
     return this.filters;
-  }
-
-  ngOnInit(): void {
-    void this.openFromUrl();
   }
 
   private async openFromUrl(): Promise<void> {
@@ -179,6 +242,17 @@ export class PodsPage
     } catch {
       this.syncUrl(null); // an unknown pod: stay on the list
     }
+  }
+
+  /** Back (or a link to the bare list) took `?pod=` out of the address while the editor is open: the list returns, unless edits are unsaved. */
+  private followAddressClose(): void {
+    if (this.dirty()) {
+      const current = this.detail();
+      this.syncUrl(current ? String(current.pod.podId) : 'new');
+      return;
+    }
+    this.editorOpen.set(false);
+    this.detail.set(null);
   }
 
   private syncUrl(pod: string | null): void {
@@ -207,6 +281,14 @@ export class PodsPage
         this.pageSize(),
         this.sort() || undefined,
       ),
+    );
+  }
+
+  /** The inactive pods the default Active status hides, under the same Name filter (one row, no API change). */
+  protected override fetchHidden() {
+    if (parseStatus(this.filters.text('status')) !== 'active') return null;
+    return firstValueFrom(
+      this.api.listPods(undefined, this.filters.text('name') || undefined, false, 1, 1),
     );
   }
 

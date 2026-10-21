@@ -25,13 +25,12 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page.getByRole('button', { name: 'New role' })).toBeVisible();
 
     await page.getByRole('tab', { name: 'Roles' }).press('ArrowLeft');
-    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page).toHaveURL(/\/admin\/users(\?status=\w+)?$/); // the Users tab writes its status segment into the address (#429)
     await expect(page.getByRole('tab', { name: 'Users' })).toBeFocused();
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.getByRole('searchbox')).toHaveCount(0);
-    // The Status column filter (closed row: open it) is remembered in the address.
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    await page.getByRole('combobox', { name: 'Filter by Status' }).selectOption('all');
+    // The status is the segment above the grid (#429): it is remembered in the address.
+    await page.locator('[data-strip-item="all"]').click();
     await expect(page).toHaveURL(/status=all/);
   });
 
@@ -54,7 +53,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
   }) => {
     await page.goto('/admin/pods');
     await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
-    await page.getByRole('button', { name: /^Filters/ }).click();
+    // The filter row is open by default (#450).
     const name = await page.getByRole('textbox', { name: 'Filter by Name' }).boundingBox();
     const status = await page.getByRole('combobox', { name: 'Filter by Status' }).boundingBox();
     expect(Math.abs(name!.y - status!.y)).toBeLessThan(1);

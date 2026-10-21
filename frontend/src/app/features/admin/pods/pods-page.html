@@ -112,7 +112,7 @@
                     <td>
                       {{ member.displayName }}
                       @if (!member.isActive) {
-                        <mf-badge tone="neutral">Disabled</mf-badge>
+                        <mf-badge tone="neutral">Inactive</mf-badge>
                       }
                     </td>
                     <td>
@@ -227,91 +227,123 @@
     />
   </div>
 
-  <mf-filters-bar [filters]="filters" controls="pods-filter-row" [clearAlso]="['q']" />
+  <mf-filters-bar
+    [bare]="true"
+    [filters]="filters"
+    controls="pods-filter-row"
+    [clearAlso]="['q']"
+  />
 
-  <div class="mf-table-wrap" mfScrollArea="Pods list" #scroll>
-    <div class="mf-scroll">
-      <table class="pods__table" data-pods>
-        <caption class="pods__sr">
-          Pods
-        </caption>
-        <thead>
-          <tr>
-            <th
-              mfSort="name"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Name
-            </th>
-            <th
-              mfSort="memberCount"
-              [sort]="sort()"
-              [defaultSort]="defaultSort"
-              (sorted)="setSort($event)"
-            >
-              Members
-            </th>
-            <th scope="col">Status</th>
-            <th scope="col" class="mf-col-actions"><span class="pods__sr">Actions</span></th>
-          </tr>
-          @if (filters.rowVisible()) {
-            <tr mfColumnFilterRow id="pods-filter-row" [filters]="filters" [columns]="columns"></tr>
-          }
-        </thead>
-        <tbody
-          mfGridBody
-          noun="pods"
-          [state]="state()"
-          [empty]="rows().length === 0"
-          [filtered]="filters.activeCount() > 0"
-          [columns]="4"
-          (retry)="load()"
-          (clear)="clear()"
-        >
-          <p-button
-            mfEmptyAction
-            *mfHasPermission="'Pod.Manage'"
-            label="New pod"
-            icon="pi pi-plus"
-            (onClick)="newPod()"
-          />
-          @for (pod of rows(); track pod.podId) {
-            <tr [attr.data-pod]="pod.podId">
-              <td>
-                <button type="button" class="pods__name" (click)="edit(pod)">
-                  {{ pod.name }}
-                </button>
-                @if (pod.description) {
-                  <div class="pods__muted">{{ pod.description }}</div>
-                }
-              </td>
-              <td>{{ pod.memberCount }}</td>
-              <td><mf-active-badge [active]="pod.isActive" /></td>
-              <td class="mf-col-actions">
-                <span class="mf-row-actions">
-                  <p-button
-                    label="Edit"
-                    [text]="true"
-                    [attr.data-edit]="pod.podId"
-                    [ariaLabel]="'Edit ' + pod.name"
-                    (onClick)="edit(pod)"
-                  />
-                </span>
-              </td>
+  @if (phone()) {
+    <mf-admin-card-list
+      noun="pods"
+      label="Pods"
+      [items]="rows()"
+      [spec]="cardOf"
+      [filters]="filters"
+      [state]="ls.state()"
+      [empty]="ls.empty()"
+      [filtered]="ls.filtered()"
+      [hidden]="ls.hidden()"
+      hiddenLabel="inactive"
+      emptyText="No pods yet."
+      (retry)="load()"
+      (clear)="clear()"
+      (showAll)="showAll()"
+    />
+  } @else {
+    <div class="mf-table-wrap" mfScrollArea="Pods list" #scroll>
+      <div class="mf-scroll">
+        <table class="mf-grid" id="pods-table" data-pods>
+          <caption class="mf-sr-only">
+            Pods
+          </caption>
+          <thead>
+            <tr>
+              <th
+                class="mf-cell-name"
+                mfSort="name"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Name
+              </th>
+              <th
+                class="mf-cell-num"
+                mfSort="memberCount"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Members
+              </th>
+              <th class="mf-cell-badge" scope="col">Status</th>
             </tr>
-          }
-        </tbody>
-      </table>
+            @if (filters.rowVisible()) {
+              <tr
+                mfColumnFilterRow
+                id="pods-filter-row"
+                [filters]="filters"
+                [columns]="columns"
+              ></tr>
+            }
+          </thead>
+          <tbody
+            mfGridBody
+            noun="pods"
+            [columnSpec]="columnSpec"
+            [filters]="filters"
+            [state]="ls.state()"
+            [empty]="ls.empty()"
+            [filtered]="ls.filtered()"
+            [hidden]="ls.hidden()"
+            hiddenLabel="inactive"
+            (retry)="load()"
+            (clear)="clear()"
+            (showAll)="showAll()"
+          >
+            <p-button
+              mfEmptyAction
+              *mfHasPermission="'Pod.Manage'"
+              label="New pod"
+              icon="pi pi-plus"
+              (onClick)="newPod()"
+            />
+            @for (pod of rows(); track pod.podId) {
+              <tr [attr.data-pod]="pod.podId">
+                <td class="mf-cell-name">
+                  <a
+                    class="mf-name pods__name"
+                    [routerLink]="['/admin/pods']"
+                    [queryParams]="{ pod: pod.podId }"
+                    [attr.title]="pod.name"
+                    >{{ pod.name }}</a
+                  >
+                  @if (pod.description) {
+                    <span class="mf-desc" [attr.title]="pod.description">{{
+                      pod.description
+                    }}</span>
+                  }
+                </td>
+                <td class="mf-cell-num">{{ pod.memberCount }}</td>
+                <td class="mf-cell-badge"><mf-active-badge [active]="pod.isActive" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
+  }
   @if (state() === 'ready' && total() > 0) {
     <mf-pager
       [page]="pageNumber()"
       [pageSize]="pageSize()"
       [pageSizes]="pageSizes"
       [total]="total()"
+      [hidden]="hiddenCount()"
+      hiddenLabel="inactive"
+      (showAll)="showAll()"
       (pageChange)="goToPage($event)"
       (pageSizeChange)="setPageSize($event)"
     />

@@ -40,7 +40,7 @@ const TABS: readonly UsersTab[] = ['users', 'roles', 'pods'];
       [tab]="current()"
       tabsLabel="Users, roles and pods"
       idPrefix="users"
-      [filters]="current() === 'users' ? (shell.current()?.filters ?? null) : null"
+      [filters]="shell.current()?.filters ?? null"
       [controls]="shell.current()?.controls ?? ''"
       [clearAlso]="['q']"
       (tabChange)="select($event)"

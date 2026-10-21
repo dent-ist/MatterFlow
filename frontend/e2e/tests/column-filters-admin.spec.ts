@@ -26,7 +26,7 @@ async function openRow(page: Page): Promise<void> {
 
 test.describe('Column filters on the administration lists', () => {
   test.describe('Users', () => {
-    test('the row is closed by default; Name, Windows account, Roles, Availability and Status filter on the server', async ({
+    test('the row is open by default; Name, Windows account, Roles and Availability filter on the server, and the Status is the segments', async ({
       page,
       seed,
     }) => {
@@ -42,27 +42,29 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto('/admin/users');
       const rows = grid(page, 'Users list').locator('tbody tr');
       await expect(rows.first()).toBeVisible();
-      // No search box and no status or availability select: the filters are column filters, closed by default.
+      // No search box and no status or availability select: the filters are column filters, open by default (#431); the status is the segments (#429).
       await expect(page.getByRole('searchbox')).toHaveCount(0);
       await expect(page.locator('#users-search, #users-status, #users-availability')).toHaveCount(
         0,
       );
-      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false');
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
       await page.goto('/admin/users?status=all');
       await expect(rows.first()).toBeVisible();
 
       await page.goto(`/admin/users?status=all&account=${token}`);
-      await expect(text(page, 'Windows account')).toHaveValue(token); // the address opened the row
+      // The Windows account is not a column of the grid (#432): the address applies it and it shows as a chip.
+      await expect(chips(page)).toContainText('Windows account');
       await expect(rows).toHaveCount(3);
 
-      // Status is a column now: the waiting person is Pending access.
+      // The waiting person is Pending access.
       await expect(rows.filter({ hasText: waiting.username })).toContainText('Pending access');
-      // Pending access is the default while someone waits (this stack has waiting people): shown, never written to the address.
-      await select(page, 'Status').selectOption('pending');
-      await expect(page).not.toHaveURL(/status=/);
+      // Pending access is the default while someone waits (this stack has waiting people): written into the address on first load (#429).
+      await page.goto(`/admin/users?account=${token}`);
+      await expect(page).toHaveURL(/status=pending/);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(waiting.username);
-      await select(page, 'Status').selectOption('all');
+      await page.locator('[data-strip-item="all"]').click();
+      await expect(rows).toHaveCount(3);
 
       // Roles: a multi-select on the server (roleId=...).
       await multi(page, 'Roles').click();
@@ -86,8 +88,15 @@ test.describe('Column filters on the administration lists', () => {
 
       // Name and Email narrow it further, with no match the headers and the row stay.
       await select(page, 'Availability').selectOption('');
-      await text(page, 'Email').fill(`nobody-${token}`);
+      // Email is in "Other filters" (not a column of the grid).
+      await page.locator('[data-more-filters]').click();
+      await page.locator('[data-more-filter="email"]').click();
+      await page
+        .getByRole('dialog', { name: 'Other filters' })
+        .getByRole('textbox')
+        .fill(`nobody-${token}`);
       await expect(page).toHaveURL(/email=/);
+      await page.keyboard.press('Escape');
       await expect(grid(page, 'Users list').locator('td[data-empty="filtered"]')).toContainText(
         'No users match these filters',
       );
@@ -107,7 +116,8 @@ test.describe('Column filters on the administration lists', () => {
       const rows = grid(page, 'Users list').locator('tbody tr');
       await expect(rows).toHaveCount(1);
 
-      await page.getByRole('button', { name: /^Filter by First seen/ }).click();
+      await page.locator('[data-more-filters]').click();
+      await page.locator('[data-more-filter="registered"]').click();
       await page.getByRole('button', { name: 'Today' }).click();
       await expect(page).toHaveURL(/registeredFrom=\d{4}-\d{2}-\d{2}/);
       await expect(page).toHaveURL(/registeredTo=/);
@@ -118,7 +128,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(grid(page, 'Users list').locator('td[data-empty="filtered"]')).toBeVisible();
     });
 
-    test('the pending cue is a preset and the default Status is shown, not counted', async ({
+    test('the Pending access segment replaces the cue, and the status is shown as a segment, not counted as a filter', async ({
       page,
       seed,
     }) => {
@@ -128,19 +138,23 @@ test.describe('Column filters on the administration lists', () => {
       await seed.user([], `cue-${uid()}`); // someone is waiting
       await page.goto('/admin/users');
       await expect(grid(page, 'Users list').locator('tbody tr').first()).toBeVisible();
-      await toggle(page).click();
-      await expect(select(page, 'Status')).toHaveValue('pending');
+      await expect(page).toHaveURL(/status=pending/);
+      await expect(page.locator('[data-strip-item="pending"]')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
-      await select(page, 'Status').selectOption('active');
-      await expect(page.getByRole('button', { name: /waiting for access/ })).toBeVisible();
-      await page.getByRole('button', { name: /waiting for access/ }).click();
-      await expect(select(page, 'Status')).toHaveValue('pending');
-      await expect(page).not.toHaveURL(/status=/);
+      await page.locator('[data-strip-item="active"]').click();
+      await expect(page).toHaveURL(/status=active/);
+      // No "n waiting for access" button any more: the Pending access segment keeps the count in view.
+      await expect(page.getByRole('button', { name: /waiting for access/ })).toHaveCount(0);
+      await expect(page.locator('[data-strip-item="pending"]')).toHaveClass(/tinted/);
+      await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
     });
   });
 
   test.describe('Pods', () => {
-    test('Name and Status are column filters on the third tab of Users', async ({
+    test('Name and Status are column filters on the third tab of Users, open by default', async ({
       page,
       seed,
       admin,
@@ -159,8 +173,8 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto('/admin/pods');
       await expect(grid(page, 'Pods list').locator('tbody tr').first()).toBeVisible();
       await expect(page.locator('#pods-search, #pods-status')).toHaveCount(0);
-      await expect(text(page, 'Name')).toHaveCount(0);
-      await toggle(page).click();
+      // The filter row is open by default (#450).
+      await expect(text(page, 'Name')).toBeVisible();
       await expect(select(page, 'Status')).toHaveValue('active');
 
       await text(page, 'Name').fill(token);
