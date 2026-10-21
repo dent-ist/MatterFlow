@@ -7,6 +7,8 @@ export interface NavItem {
   path: string;
   /** Visible when the user holds ANY of these; empty = every active user. (UX Appendix C) */
   permissions: Permission[];
+  /** In addition, the user must hold ALL of these (Pod Work: Pod.View and Task.View, #549). Same rule as the route's `permissionAllGuard`. */
+  permissionsAll?: Permission[];
   /** Also needs at least one Dashboard tab permission (`AuthStore.hasAnyDashboardTab`): a Dashboard with no tab is a dead end. */
   needsDashboardTab?: boolean;
   /** Shows the pending-users count next to the label. */
@@ -26,7 +28,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: 'My Work', icon: 'pi pi-user', path: '/my-work', permissions: ['Task.View'] },
   { label: 'Task Queue', icon: 'pi pi-list-check', path: '/tasks', permissions: ['Task.View'] },
-  { label: 'Pod Work', icon: 'pi pi-users', path: '/pods/work', permissions: ['Pod.View'] },
+  {
+    label: 'Pod Work',
+    icon: 'pi pi-users',
+    path: '/pods/work',
+    // The page lists tasks, so it needs Task.View as well as Pod.View (UX spec S04): without it the item is hidden, never a dead link.
+    permissions: ['Pod.View'],
+    permissionsAll: ['Pod.View', 'Task.View'],
+  },
   { label: 'Clients', icon: 'pi pi-building', path: '/clients', permissions: ['Client.View'] },
   { label: 'Matters', icon: 'pi pi-briefcase', path: '/matters', permissions: ['Matter.View'] },
   { label: 'Projects', icon: 'pi pi-folder', path: '/projects', permissions: ['Project.View'] },

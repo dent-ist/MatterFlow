@@ -246,7 +246,9 @@ export class AppShell {
   private visible(items: NavItem[]): NavItem[] {
     return items.filter(
       (i) =>
-        this.auth.hasAny(i.permissions) && (!i.needsDashboardTab || this.auth.hasAnyDashboardTab()),
+        this.auth.hasAny(i.permissions) &&
+        (i.permissionsAll ?? []).every((c) => this.auth.has(c)) &&
+        (!i.needsDashboardTab || this.auth.hasAnyDashboardTab()),
     );
   }
 

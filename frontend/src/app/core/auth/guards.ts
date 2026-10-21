@@ -17,7 +17,6 @@ export const APP_PATHS = {
 const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] = [
   // The Dashboard only when a tab is turned on (see AuthStore.hasAnyDashboardTab); handled in defaultLandingPath.
   { path: APP_PATHS.dashboard, permissions: ['Dashboard.View'] },
-  { path: '/pods/work', permissions: ['Pod.View'] },
   { path: '/clients', permissions: ['Client.View'] },
   { path: '/matters', permissions: ['Matter.View'] },
   { path: '/projects', permissions: ['Project.View'] },
@@ -104,12 +103,8 @@ export class ForbiddenRequest {
   readonly url = signal<string | null>(null);
 }
 
-/**
- * Permission guard for `canMatch`/`canActivate`: allowed when the user holds ANY of the codes.
- * Pending users are redirected to Access Pending, others without permission to /403 (which shows the address they asked for, see
- * `ForbiddenRequest`).
- */
-export const permissionGuard = (...codes: Permission[]) => {
+/** Builds a guard from a permission test: pending users go to Access Pending, the others to /403 (with the address they asked for). */
+const guardWhen = (allowed: (store: AuthStore) => boolean) => {
   return async (
     _route?: ActivatedRouteSnapshot,
     state?: RouterStateSnapshot,
@@ -121,11 +116,23 @@ export const permissionGuard = (...codes: Permission[]) => {
     await store.ensureLoaded();
     if (!store.isAuthenticated()) return errorPage(router, failed, state);
     if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
-    if (store.hasAny(codes)) return true;
+    if (allowed(store)) return true;
     forbidden.url.set(state?.url ?? router.getCurrentNavigation()?.extractedUrl.toString() ?? null);
     return router.createUrlTree([APP_PATHS.forbidden]);
   };
 };
+
+/**
+ * Permission guard for `canMatch`/`canActivate`: allowed when the user holds ANY of the codes.
+ * Pending users are redirected to Access Pending, others without permission to /403 (which shows the address they asked for, see
+ * `ForbiddenRequest`).
+ */
+export const permissionGuard = (...codes: Permission[]) =>
+  guardWhen((store) => store.hasAny(codes));
+
+/** Like `permissionGuard`, but the user must hold ALL of the codes (Pod Work needs Pod.View and Task.View, #549). */
+export const permissionAllGuard = (...codes: Permission[]) =>
+  guardWhen((store) => codes.every((c) => store.has(c)));
 
 /** Guards the Access Pending route: only restricted users stay; everyone else goes to landing. */
 export const pendingOnlyGuard = async (

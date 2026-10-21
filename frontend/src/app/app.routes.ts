@@ -1,5 +1,11 @@
 import { Routes } from '@angular/router';
-import { accessGuard, landingGuard, pendingOnlyGuard, permissionGuard } from './core/auth/guards';
+import {
+  accessGuard,
+  landingGuard,
+  pendingOnlyGuard,
+  permissionAllGuard,
+  permissionGuard,
+} from './core/auth/guards';
 import { AppShell } from './shared/layout/app-shell';
 
 /**
@@ -47,7 +53,9 @@ export const routes: Routes = [
       },
       {
         path: 'pods/work',
-        canActivate: [permissionGuard('Pod.View')],
+        // Pod Work lists tasks: Pod.View and Task.View (the rail item has the same rule in nav-items.ts). Without Task.View the 403 page
+        // shows and the page never starts, so it sends no request and raises no toast (#549).
+        canActivate: [permissionAllGuard('Pod.View', 'Task.View')],
         loadChildren: () =>
           import('./features/pod-work/pod-work.routes').then((m) => m.POD_WORK_ROUTES),
       },

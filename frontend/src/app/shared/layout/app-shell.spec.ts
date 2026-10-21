@@ -87,6 +87,18 @@ describe('AppShell header search', () => {
     expect(box.getAttribute('placeholder')).toContain('Ctrl+K');
   });
 
+  it('shows Pod Work with Pod.View and Task.View (#549)', async () => {
+    expect(navLabels(await create(['Task.View', 'Pod.View']))).toContain('Pod Work');
+  });
+
+  it('hides Pod Work without Task.View, even with Pod.View: no dead link (#549)', async () => {
+    expect(navLabels(await create(['Pod.View', 'Dashboard.View']))).not.toContain('Pod Work');
+  });
+
+  it('hides Pod Work without Pod.View (#549)', async () => {
+    expect(navLabels(await create(['Task.View']))).not.toContain('Pod Work');
+  });
+
   it('hides the search when the user may view none of the searchable types', async () => {
     const fixture = await create(['Pod.View']);
     expect(fixture.nativeElement.querySelector('mf-global-search')).toBeNull();

@@ -390,5 +390,11 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
         var taskOnly = await d.H.UserWithAsync(@"KE\taskonly", "Task.View");
         await ProblemAsync(await taskOnly.GetAsync("/api/v1/pod-work"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         (await taskOnly.GetAsync("/api/v1/my-work")).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        // ... and Task.View on top of Pod.View (Pod Work epic #549: the page hides the item and shows the 403 page, so it never asks; the server
+        // answers 403 PERMISSION_DENIED all the same, for the page and for the pod list).
+        var podOnly = await d.H.UserWithAsync(@"KE\podonly", "Pod.View", "Dashboard.View");
+        await ProblemAsync(await podOnly.GetAsync("/api/v1/pod-work"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
+        await ProblemAsync(await podOnly.GetAsync($"/api/v1/pod-work?podId={d.PodA}&view=members"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
     }
 }

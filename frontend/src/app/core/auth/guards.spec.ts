@@ -7,6 +7,7 @@ import {
   accessGuard,
   landingGuard,
   pendingOnlyGuard,
+  permissionAllGuard,
   permissionGuard,
 } from './guards';
 import { ApiError } from '../http/api-error';
@@ -141,6 +142,23 @@ describe('Dashboard route guard', () => {
   });
 });
 
+describe('permissionAllGuard (#549)', () => {
+  it('allows when the user holds every code', async () => {
+    setup(withPermissions('Pod.View', 'Task.View'));
+    expect(await run(permissionAllGuard('Pod.View', 'Task.View'))).toBe(true);
+  });
+
+  it('turns away a user who holds only some of them (Pod.View without Task.View): the 403 page, with the address', async () => {
+    setup(withPermissions('Pod.View', 'Dashboard.View'));
+    const state = { url: '/pods/work?podId=3' } as RouterStateSnapshot;
+    const result = await TestBed.runInInjectionContext(() =>
+      permissionAllGuard('Pod.View', 'Task.View')(undefined, state),
+    );
+    expect(result instanceof UrlTree && TestBed.inject(Router).serializeUrl(result)).toBe('/403');
+    expect(TestBed.inject(ForbiddenRequest).url()).toBe('/pods/work?podId=3');
+  });
+});
+
 describe('landingGuard', () => {
   it('goes to My Work for users with work', async () => {
     setup(profileOf({ permissions: ['Task.View'], hasWork: true }));
@@ -189,6 +207,11 @@ describe('landingGuard', () => {
 
   it('sends a work-holding user without Task.View to their first permitted screen (#142)', async () => {
     setup(profileOf({ permissions: ['Client.View'], hasWork: true }));
+    expect(await run(landingGuard)).toBe('/clients');
+  });
+
+  it('never lands on Pod Work without Task.View: Pod Work needs both permissions (#549)', async () => {
+    setup(profileOf({ permissions: ['Pod.View', 'Client.View'] }));
     expect(await run(landingGuard)).toBe('/clients');
   });
 
