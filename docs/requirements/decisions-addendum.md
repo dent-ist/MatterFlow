@@ -282,3 +282,14 @@ Decisions taken by the project manager (the owner delegated) while closing the e
 4. **Matter Name has no column filter.** The Matter Number filter finds a matter by reference or by name (#348); a second box would double the search. The Matter's Projects tab (B7 of the review) stays without filters: it is a short in-memory list.
 5. **Tab-owned filters are never an empty box.** Pod Work's Unassigned tab shows "Unassigned" in the disabled Assignee cell, as the My Work tabs show "Me".
 6. **Keyboard shortcuts are frozen for this phase (owner).** The re-review changed none; shortcut findings are listed as the Phase 2 backlog in the re-review document.
+
+## Z. Users administration (decided 2026-10-20, epic #422; plan `docs/ux/users-review/delivery-plan.md`)
+
+- **Decision X.3 is superseded.** The nine-column Users grid is replaced by the record-list grid: Name over Windows account, Roles, Pods, Availability, (Last seen from 1440 px), Status, one action column; Email and First seen move to the drawer (their filters stay); phone cards below 640 px.
+- **No new or changed keyboard shortcuts** (Phase 2, #420): skip link, focus management, roving tabindex, buttons for every action.
+- **The user panel is a modal side drawer** in the address (`?user=`); deactivation is a confirm dialog with the open-task count; a first grant of access closes the drawer with a toast and Undo; pods and availability keep their own immediate-save semantics, stated in the drawer.
+- **Pending access is a counted segment**; the default rule (Pending when anyone waits, else Active) is written to the address.
+- **Additive API only**: `openTaskCount` (#426), `lastSeenUtc` and `sort`/`dir` (#436); reading roles and the catalog also needs only `Role.Manage` (#453). No SQL script.
+- **Last seen** is a column only from 1440 px (a seventh column has no room at 1366 with long chips); below that and on phones the same sort is in the address and the Sort by select.
+- **A pod opens as a record page** (`Administration > Users > Pods > name`); `?pod=new` needs `Pod.Manage`.
+

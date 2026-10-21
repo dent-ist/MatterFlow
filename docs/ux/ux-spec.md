@@ -1038,6 +1038,16 @@ Open assigned tasks: 7  [View in Task Queue ->]     <- offboarding aid
 - Inactive users remain visible in historical records and in the Task Queue assignee filter (marked "(inactive)"); they're not offered as new assignees.
 - Hiding/disabling: the built-in System Admin role cannot be edited or removed from the last System Admin ("At least one active System Admin is required.").
 - No password fields; identity is the Windows account (read-only). The seeded initial admin is marked "Seeded".
+**Users page as built (epic #422; where this differs from the sketches above the code is right).**
+- **Header and tabs.** `Administration > Users`, one description line, tabs `Users (n)`, `Roles (n)`, `Pods (n)` (quiet counts of the active records: people waiting or active, roles, active pods) and the Filters button with its count. A tab the person may not use is not offered; a tab address falls back to the first allowed tab; a person with no tab gets the 403 page.
+- **Segments** `Pending access (n) | Active | Inactive | All` above the grid, `status` in the address. **Grid** (decision X.3 is superseded): Name over the Windows account (the one link), Roles, Pods (primary pod and `+n`, tooltip lists all), Availability (chip only for Out of office and Off hours; plain `Available`; nothing for Pending or Inactive people), Last seen (from 1440 px, sortable), Status, one action column. Name and Last seen sort from their headers (`sort=name`, `-lastSeen`, `aria-sort`); rows per page 25, 50 or 100 (`size`). Below 640 px: cards, and a Sort by select in the Filters sheet.
+- **User drawer** (`?user=<id>`: a link opens it, Back closes it, Back from "View their tasks" reopens it). 480 px modal from 640 px, the whole window on a phone (sections fold, Access open; the footer follows the visual viewport). Header: name (two lines), account, status badge, availability chip, last seen, open tasks, `View their tasks`, Deactivate / Activate. Body: **Access** (roles with description and permission count; permissions grouped like the Roles tab, `After you save: n permissions` while the ticks differ; a System Admin warning), **Pods** (the pods popover; saves at once with Undo), **Availability** (sentence and Edit availability; its own dialog), **Profile** (name, email; account and first seen are facts). Footer: Save changes and Cancel (Close without `User.Manage`). Esc and Cancel ask first when there are unsaved edits.
+- **Deactivate** is a confirm dialog: `Deactivate Alex Abbott? They can no longer sign in. This user has 7 open tasks. They stay assigned until you reassign them one by one.` with Cancel (focus), Deactivate and `View their tasks`; no number without `Task.View`. The last active System Admin message shows once, in the drawer. Activate needs no question.
+- **First grant of access**: Save closes the drawer, a toast `Alex now has access (Data Technician).` offers Undo (refused if someone changed the person since), focus goes to the next row.
+- **Read only**: `User.View` only sees everything read only with one reason line; `Pod.ManageMembers` can change pods and nothing else.
+- **Roles tab**: member and permission counts, `Select all` / `Select none` per group, `Changed (n)` chips with one undo each, a two-row description with a counter (500). **Pods tab**: name is the link; a pod opens as a record page `Administration > Users > Pods > name` (Active badge, Deactivate pod in the overflow, Back and the crumb return to the list as it was with focus on the row; unknown pod is the not-found state; `?pod=new` needs `Pod.Manage`).
+- **Reads**: `Role.Manage` alone reads roles and the permission catalog (there is no `Role.View`).
+
 **Roles list/editor.**
 ```text
 Roles:  System Admin (built-in, locked) | Director | Project Manager | Pod Lead | Data Technician | Data Scientist | [+ New role]
@@ -1759,6 +1769,12 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S12-6 Cannot remove the last active System Admin.
 - [ ] UAT-S12-7 Roles in use cannot be deleted.
 - [ ] UAT-S12-8 Requires `Role.Manage`; others get 403 (SCN-019).
+- [ ] UAT-S12-9 Users: Pending access (n), Active, Inactive and All segments; the tabs show Users (n), Roles (n), Pods (n).
+- [ ] UAT-S12-10 A person opens in a side drawer; Back closes it; Esc with unsaved edits asks; focus returns to the row.
+- [ ] UAT-S12-11 Deactivate asks in a dialog that states the open tasks; View their tasks opens the Task Queue and Back returns to the drawer.
+- [ ] UAT-S12-12 A first grant of access shows a toast with Undo; Undo puts the person back in Pending access.
+- [ ] UAT-S12-13 User.View only sees a read-only drawer; Pod.ManageMembers changes pods only.
+- [ ] UAT-S12-14 Roles: Select all / none per group and Changed (n) with undo; a pod opens as a record page with the crumb.
 
 ### S13 Pods
 - [ ] UAT-S13-1 Create/edit Pod; add/remove members; user can be in multiple Pods.

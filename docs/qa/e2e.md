@@ -314,3 +314,17 @@ Also changed by the epic: older specs that selected the old banners, the Workflo
 5. Run `npm run e2e -- -g "your test" --repeat-each=5` against a kept stack to check for flakiness, then `npm run format:check` (prettier covers `e2e/`) and `npm run e2e:typecheck`.
 
 ESLint is not run on `e2e/` (its angular-eslint rules target the app); Prettier is.
+
+## Users administration (epic #422)
+
+| Spec | Covers |
+|---|---|
+| `users-us1-bugs` | badges not cut, focus and Esc of the drawer, the deactivation dialog, open tasks and View their tasks, axe at four sizes |
+| `users-us2-status` | the status segments and header chrome |
+| `users-us3-grid` | the grid contract (44 px rows, columns, availability rule, sort, rows per page, row menu) |
+| `users-us4-drawer` | the drawer: address, focus, Access, Pods, Availability, Profile, deactivation, grant and Undo, read-only variants, conflicts, axe |
+| `users-us5-phone` | phone cards |
+| `users-us6-pods`, `users-us6-editors` | the Pods list; role editor (select all, Changed, description) and the pod record page |
+| `users-us7-keyboard`, `users-us7-flows` | skip link and Tab stops; the six keyboard-only flows and axe with overlays |
+| `users-us7-matrix` | the permission matrix of the Users area (`fixes/us7-keyboard/permission-matrix.md`) |
+
