@@ -549,31 +549,37 @@ Showing 1-50 of 442   Sorted by Priority (default order) (i)   Rows per page [50
 
 ### S04 Pod Work
 
-**Purpose.** Pod-wide view: who has what, what is unclaimed.
+**Purpose.** Pod-wide view: what is unclaimed, who has what, what needs attention. Pod Work stays its own page (owner decision; a later merge into the Task Queue is issue #351). The page-specific parts are described here (Pod Work UX epic #546, review `docs/ux/pod-work-review/`); the grid, its columns, the cards and the assignee picker are the shared ones of 5.2 and unchanged. No keyboard shortcut is added or changed (Phase 2, #420).
 
 ```text
-Pod Work       Pod: [Pod A v]  (your Pods first; Primary Pod default)       [+ Create Task]
-Summary: Unassigned to a person 6 | Assigned 31 | Overdue 3 | On Hold 4
-[ Unassigned (6) ] [ By member ] [ Overdue and on hold (7) ] [ All pod tasks (37) ]
+Pod Work                                                  Pod [Demo Processing Pod (primary) v]
+Demo Processing Pod . 23 members . you are a member (primary)          <- one muted context line
+[Overdue 4] [Due today 2] [ASAP 3] [On hold 6]                         <- toggles, each filters All open
+[ Unassigned (3) ] [ By member (7) ] [ All open (24) ]
 
-Unassigned tab: the shared work grid (same columns, widths, rows and cards as the Task Queue), scoped to Pod = selected, Assignee empty.
-  No Actions column: an unassigned row shows "Unassigned" and an [Assign to me] link-button in the Assignee cell (one line, Assignee column 216 px);
-  the Assignee menu (first item "Assign to me", then "Assign to...") is the other way.
-
-By member tab:
-  Tariq M.   9 open | 1 overdue    [expand v]  -> task rows
-  Sam K.     5 open | 0 overdue
-  Unassigned 6
+Unassigned tab: the shared work grid scoped to Pod = selected, Assignee empty ("Assign to me" in the Assignee cell).
+All open tab:   the shared work grid, every open task of the pod; the strip's filters show as chips.
+By member tab:  Open work per person. These are workload facts, not a ranking. Select a column heading to sort.
+  Member                        Open        Overdue  On hold
+  Not assigned to a person      3              -        -     [View tasks]
+  Test User 21                  5 ==          0        1     [View tasks]
+  Test User 41  [Out of office until Oct 26]  7 ====  1  2     [View tasks]
+  [Show 16 members with no open work]  1 out of office
 ```
-**Pod selector.** Lists the user's Pod memberships first (Primary Pod preselected if set), then, only for users with `Pod.View` scope, all other Pods under "Other Pods". Last selection remembered. A Pod with no members shows "No members yet".
+**Header and scope (BUG-1, W2, W4).** The title never wraps. The Pod select (native, "Your pods" then "Other pods", the primary one marked) is in the actions slot and capped at 22 rem with an ellipsis; its full text is the tooltip. One muted context line under the title: `<pod> . <n> members . you are a member (primary)` or `you are not a member`; a part the page cannot know is left out; the line is one row with its whole text as the tooltip. The document title is `Pod Work: <pod>: <tab>`; a pod change is announced politely in a live region and does not move focus.
+**No pod chosen (W3).** A person with a primary or only pod, or a remembered one, goes straight to it. Otherwise (a Director, a Project Manager, an Observer, anyone with `Pod.View` and no membership) the body is the list of pods: buttons grouped "Your pods" and "Other pods", alphabetical, each row the name and `<n> members . <n> unassigned` (and `. <n> overdue` only above zero). No default pod and no "All pods" aggregate (that would need a cross-pod API; the landing page for oversight roles and #351 own that question). Choosing a pod sets `podId` (remembered as before), moves focus to the page title and announces the pod. When the system has no pods at all: "There are no pods yet." with "Create a pod" (`Pod.Manage`, opens Administration > Users > Pods with the new-pod form) or, without that permission, "Ask an administrator to create one."
+**Strip (W5, W11).** Four toggles in My Work's vocabulary: Overdue, Due today, ASAP, On hold, with the pod's own counts (`summary`), never narrowed by the grid's filters. Each opens the All open tab with its filter (Overdue: `overdue=true`; Due today: today's due range and not overdue; ASAP: `asap=true`; On hold: `status=ON_HOLD`), keeps `podId`, shows as pressed (`aria-pressed`) and as a filter chip in the grid, and a second click switches it off; one at a time. The address carries the filter, so Back and bookmarks work. Read-only people can use it (it only filters). Nothing in the strip repeats a tab. Below 640 px it is one horizontally scrolling line of chips with 44 px targets; the scroll is inside the strip, never the page.
+**Tabs (W6, BUG-7).** `Unassigned (n)` (tasks), `By member (n)` (people with open work, not their tasks) and `All open (n)` (tasks). The old Overdue and on hold tab is retired because the strip's items open that view; the old address `view=attention` is replaced by `view=all&overdue=true` (Overdue only: the grid cannot express "overdue or on hold"). Keyboard model unchanged (one Tab stop, arrow keys, automatic activation).
+**By member (W1, W12).** A workload table that grows with the page (no scroll box of its own; in the fixed layout the tab panel scrolls as a whole): first "Not assigned to a person" (the number of tasks nobody holds, a way to the Unassigned tab; the Overdue and On hold cells are an en dash because the API counts only the total), then the people with open work (alphabetical), then one folded row "Show 16 members with no open work" (a disclosure button with `aria-expanded`; "Hide ..." when open; it says how many of them are out of office). Idle members stay one click away because they are who you assign to. Each row: the name (the link that shows their tasks), the availability chip (the same text as the assignee picker's flag, "Out of office until Oct 26", shown only while the person is out of office) and "(inactive)" where it applies, Open (the number and a neutral bar scaled to the largest load: one token, no colour, no rank), Overdue, On hold and an always visible **View tasks** (`aria-pressed`: the Assignee filter and `assignee=<id>` in the address; two Tab stops per row). The headings sort (Member, Open, Overdue, On hold: ascending, descending, back to alphabetical; `aria-sort`; the viewer's choice, not kept, never load-first by default); the Unassigned and fold rows keep their places. Maximum width about 60 rem. Below 640 px every row is a card (`mf-record-card-list`): the name and chip, `5 open . 0 overdue . 1 on hold`, a 44 px View tasks; the fold is a card too. Workload facts, not a ranking (UX principle 12); no sorting by "most completed".
 **Behavior.**
-- "Assign to me" is the lightweight self-assign (ordinary assignment, no separate claim concept), in the Assignee cell and as the first item of the Assignee menu on Task Queue, My Work and Pod Work. Requires `Task.Assign`. The toast says "Assigned to you." with Undo (a NEW task moves to In Progress and the toast adds "Task moved to In Progress. Undo puts the assignee back; the status stays."); on the Unassigned tab the row leaves after 4 seconds and the tab counts and summary refresh.
-- "Assign to..." (the Assignee menu) opens the assignee picker (any active user; cross-Pod allowed; shows each person's Pods and open count; picker warns "Not a member of Pod A" informationally only, since membership is not a rule [baseline OPEN-12]).
+- "Assign to me" is the lightweight self-assign (ordinary assignment, no separate claim concept), in the Assignee cell and as the first item of the Assignee menu on Task Queue, My Work and Pod Work. Requires `Task.Assign`. The Undo toast is the shared one (S16): "Assigned to you." and, for a New task, one more short line "Task moved to In Progress."; the explanation "Undo puts the assignee back; the status stays." is the Undo button's tooltip; on the Unassigned tab the row leaves after 4 seconds and the tab counts and the By member numbers refresh.
+- "Assign to..." (the Assignee menu) opens the assignee picker. The server allows assigning a pod's task to anyone active (the answer carries the warning `USER_NOT_IN_POD`; membership is informational only [baseline OPEN-12]); Pod Work's picker lists the pod's members first and only them in this phase, and people outside the pod are reached through the Task Queue (decision AD.9, #572).
 - Pod-only assignment (setting Pod without a user) does **not** change status; the UI helper text says so on the Pod field.
-- "By member" counts are workload facts, not performance scores; no ranking, no sorting by "most completed".
-**Default sort** same as Task Queue. The grid is the shared one (5.2): fixed layout, 44 / 36 px rows, resizable columns with widths kept per tab (`podWork.<tab>`), cards below 640 px with "Assign to me" next to Unassigned.
-**States.** User in no Pods and without wider scope: "You aren't in a Pod yet. Ask an administrator." Empty queue: "Nothing waiting in Pod A." Loading/error as tables.
-**Permissions.** `Task.View` + `Pod.View`.
+**Default sort** same as Task Queue. The grid is the shared one (5.2): fixed layout, 44 / 36 px rows, resizable columns with widths kept per tab (`podWork.<tab>`), cards below 640 px with "Assign to me" next to Unassigned. From 640 to 899 px the Unassigned tab's default columns leave out Matter Number and the Assignee cell shows the link only, so "Assign to me" is in the first view (a column choice of the person wins).
+**Phone.** Title, capped select, context line, chip row and the three tabs leave the first card within 200 px of the bottom of the page title at 375 px (it was 330 px; about 194 px now) and all three tabs fit in the row (the shared tabs component still scrolls when they do not); the shell's phone header is S20/S21.
+**States.** No pods: see above. Empty queue: "Nothing waiting in Pod A." An empty pod's By member tab shows one message "No members yet." with "Add members" (`Pod.ManageMembers`, opens that pod in Administration > Users > Pods) and no grid. Loading and error as the other work lists (skeleton, "Couldn't load tasks" with Retry, offline).
+**Permissions.** The page and its navigation item need `Pod.View` and `Task.View`. Without `Task.View` the item is hidden and the address shows the 403 page with no request and no toast. "Assign to me" needs `Task.Assign`; "Add members" needs `Pod.ManageMembers`; "Create a pod" needs `Pod.Manage`: a control the person may not use is hidden, never disabled. The matrix is `docs/ux/pod-work-review/fixes/pw7-access/permissions.md`.
+**Keyboard.** Tab reaches the Pod select (arrow keys change the pod), the four strip toggles, the tab list (one stop), on By member the fold button, the sort headings and the two controls of each row, then the grid (skip link "Skip to member table" or "Skip to task list" first). Enter or Space press every button. Back from a task returns focus to its row.
 
 ---
 
@@ -1306,7 +1312,8 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-action-menu` | The "..." ARIA menu button of a record header; disabled entries keep focus and show their reason | `items[]`, `label` | record header |
 | `mf-record-skeleton` / `mf-record-state` | Loading page (real crumb and tab labels with `--`, five 44 px rows) / 404, 403 and failure page with the error reference and Retry | `kind`, `activeTab` / `kind`, `state` | S05-S07 |
 | `mf-tabs` | Tab list with roving tabindex, counts (`Matters, 63` as the accessible name), edge fade and chevron, selected tab scrolled into view | `tabs[]`, `selected`, `(tabChange)` | record pages, admin |
-| `mf-work-strip` (link and toggle modes) / `mf-summary-strip` | Needs-attention strip; in link mode each item is a link (record Overview), in toggle mode a pressed `view` (Matter and Project Tasks); `mf-summary-strip` loads a matter or project summary and maps it with `recordStripItems()` | `items[]`, `kind`, `id`, `active`, `(pick)` | My Work, Pod Work, S05-S07 |
+| `mf-work-strip` (link and toggle modes) / `mf-summary-strip` | Needs-attention strip; in link mode each item is a link (record Overview), in toggle mode a pressed `view` (Matter and Project Tasks; Pod Work's four toggles, with the opt-in `chipRow` for a scrolling chip row below 640 px); `mf-summary-strip` loads a matter or project summary and maps it with `recordStripItems()` | `items[]`, `kind`, `id`, `active`, `(pick)` | My Work, Pod Work, S05-S07 |
+| `mf-pod-picker-list` / `mf-pod-work-strip` / `mf-pod-member-table` | Pod Work parts (`features/pod-work/ui`, epic #546): the list of pods with counts when no pod is chosen; the four-toggle strip (Overdue, Due today, ASAP, On hold) on `mf-work-strip` with its `chipRow` input; the By member workload table (Unassigned row, folded idle members, availability chip, neutral bar, sortable headings, cards below 640 px) | `pods[]`, `(chosen)` / `summary`, `active`, `(pick)` / `loads[]`, `unassigned`, `selected[]`, `(memberToggle)`, `(showUnassigned)` | S04 |
 | `mf-client-overview` / `mf-matter-projects` | The Client Overview tab / the Matter Projects tab (Active first, collapsed Archived group, natural sort) | `client` / `matterId`, `projects[]` | S05, S06 |
 | `mf-task-count` | One Open tasks or Overdue cell or card count; links to the Task Queue above 0; the overdue style | `kind`, `scope`, `recordId`, `count`, `word` | S05-S07 lists |
 | `mf-record-card-list` / `mf-record-card` | Phone cards (below 640 px) with the table's states; the name is the one link | `noun`, `state`, `empty`, `filtered` | S05-S07 lists |
@@ -1633,15 +1640,15 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S03-23 (#348) Matter Number is the reference only (one line); Matter Name is its own column (link with `Matter.View`, one line with an ellipsis, tooltip, "(inactive)"), in the defaults of the Task Queue, every My Work tab and Pod Work, sortable server-side with stable paging; a user who never customised the columns gets Matter Name, a customised set is left alone; the Columns panel, header menu, resize, fit, Compact and print treat it like any column.
 
 ### S04 Pod Work
-- [ ] UAT-S04-1 Pod selector lists my Pods first; Primary Pod default; remembers last.
-- [ ] UAT-S04-2 Pod queue shows tasks with the Pod and no assignee; By member view lists load.
+- [ ] UAT-S04-1 Pod selector lists my Pods first; Primary Pod default; remembers last. With no pod chosen (Director, Observer, no membership) the page lists the pods with counts.
+- [ ] UAT-S04-2 Pod queue shows tasks with the Pod and no assignee; By member lists the workload table (people with work first, idle members folded).
 - [ ] UAT-S04-3 Assign to me works for permitted users and moves New to In Progress with toast (SCN-006).
-- [ ] UAT-S04-4 Cross-Pod assignment allowed; non-membership only informational.
+- [ ] UAT-S04-4 Cross-Pod assignment allowed by the server (a person in another Pod can be assigned through the API and the task page); the Pod Work picker lists the Pod's members, non-membership only informational (#572).
 - [ ] UAT-S04-5 Pod-only assignment doesn't change status.
-- [ ] UAT-S04-6 Overdue & On Hold tab correct; counts match.
-- [ ] UAT-S04-7 No ranking/performance display.
-- [ ] UAT-S04-8 User with no Pods sees guidance.
-- [ ] UAT-S04-9 (#199) There is no Actions column: an unassigned row shows "Unassigned" and an "Assign to me" link-button in the Assignee cell on one line; it assigns with the toast "Assigned to you." and Undo, the row leaves the Unassigned tab after 4 seconds and the counts refresh; a read-only viewer sees no link.
+- [ ] UAT-S04-6 The strip (Overdue, Due today, ASAP, On hold) and the tabs agree: each strip number equals the rows its filter shows on All open; By member counts people with open work.
+- [ ] UAT-S04-7 No ranking/performance display; the member table is alphabetical until the viewer sorts.
+- [ ] UAT-S04-8 With no pods in the system the page says "There are no pods yet." (Create a pod only with Pod.Manage); a person with no pod gets the list of pods.
+- [ ] UAT-S04-9 (#199) There is no Actions column: an unassigned row shows "Unassigned" and an "Assign to me" link-button in the Assignee cell on one line (visible from 640 px); it assigns with the toast "Assigned to you." and Undo, the row leaves the Unassigned tab after 4 seconds and the counts refresh; a read-only viewer sees no link.
 
 ### S05 Clients
 - [ ] UAT-S05-1 Entering `343` previews and saves `00343`; `00343` is treated as the same client (SCN-001).

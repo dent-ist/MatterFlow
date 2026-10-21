@@ -285,6 +285,20 @@ Also changed by the epic: older specs that selected the old banners, the Workflo
 | `dashboard-period` (13), `dashboard-permissions` (11), `dashboard-shell` (16) | The period list and the scope note, permissions per tab, tabs fail independently |
 | `swimlane-phone` (19) | The lane switcher below 900 px (#125) |
 
+**Pod Work (epic #546)**
+
+| Spec | What it covers |
+|---|---|
+| `pw1-fixtures` (2), `pw1-bugs` (21) | The fixtures of every review case (`support/pod-work-fixtures.ts`: busy, empty and 76-character pods, lead, read-only, Pod.View without Task.View, Director, Observer, multi-pod, no pod); BUG-1 to BUG-4 and W9 (one-line title, capped select, 403 page with no request, Assign to me in view from 640 px, no sideways scroll, the tab counts follow assignments) |
+| `pw2-scope` (20) | Context line and document title (W2), the list of pods with counts and focus to the title (W3), "There are no pods yet." with and without Pod.Manage (W3); axe at four sizes |
+| `pw3-strip` (15) | The strip (Overdue, Due today, ASAP, On hold: counts equal the API, toggles, Back, never follow grid filters), the three tabs and the `view=attention` redirect, the phone chip row (W5, W6, W11, BUG-7) |
+| `pw4-members` (10), `pw4-workload` (15) | BUG-5 skip link, BUG-6 empty pod; the workload table (Unassigned row, people with work, folded idle members, availability, neutral bar, View tasks, 60 rem), sortable headings, phone cards (W1, W12) |
+| `pw5-narrow` (6) | First card within 200 px of the title at 375, all three tabs in view (W10) |
+| `pw6-assign` (6), `pw6-toast` (6) | The cross-pod rule and the members-only picker (W13); the Undo toast after Assign to me at four sizes (W8) |
+| `pw7-keyboard` (7), `pw7-permissions` (4) | Keyboard-only walk with Tab-stop evidence (`fixes/pw7-access/tab-stops.json`) and axe on every state with menus open; the permission matrix (no 403, no toast, nothing disabled; hidden controls follow the permissions) |
+
+Run them with `E2E_SCREENSHOTS_PW=<docs/ux/pod-work-review/fixes/pwN-...>` to refresh the screenshots of one package; axe is required (`E2E_AXE_PATH`): the specs fail, never skip, without it. `support/pod-work-checks.ts` has the four sizes, `axeClean`, `pageSideScroll` and `shot` that the specs after #547 share.
+
 **Detail pages, administration and profile**
 
 | Spec | What it covers |
