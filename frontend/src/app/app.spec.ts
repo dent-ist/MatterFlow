@@ -69,7 +69,10 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
   it('shows an account-disabled message with no Check again button', async () => {
     const { harness } = await open('disabled');
     const page = harness.routeNativeElement as HTMLElement;
-    expect(page.textContent).toContain('Your account is disabled. Contact the administrator.');
+    const text = (page.textContent ?? '').replace(/\s+/g, ' ');
+    // S12a (#610): the heading says it, the sentence only says what to do, once.
+    expect(text.match(/account is disabled/gi)).toHaveLength(1);
+    expect(text).toContain('Contact the administrator to have it enabled again.');
     expect(page.textContent).not.toContain('Check again');
   });
 

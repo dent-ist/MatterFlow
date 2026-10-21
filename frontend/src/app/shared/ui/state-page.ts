@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  afterNextRender,
+  inject,
+  input,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LandingLink } from '../../core/auth/guards';
 import { TitleIcon } from './page-header';
@@ -9,7 +16,8 @@ import { TitleIcon } from './page-header';
  * was asked for in monospace (project it as the default content), the primary action ("Go to ..." from the landing rule, or a button in the
  * `mfPrimary` slot) and one secondary action in the `mfSecondary` slot (Search on a 404, Copy link on a 403, Try again on the error page).
  * The brand line sits under the card, outside it. The card has no illustration and never touches the page edges. The title is the page's
- * one H1 (focus moves to it in #610).
+ * one H1 and takes focus once on arrival (S12, #610: a link, a guard denial and a reload all land on it, so a screen reader reads it; nothing else
+ * moves, and Back restores the rules of the page it returns to).
  *
  *   <mf-state-page icon="pi pi-ban" heading="..." reason="..." [primary]="link"> <p>You asked for ...</p> <button mfSecondary>...</button> </mf-state-page>
  */
@@ -19,7 +27,9 @@ import { TitleIcon } from './page-header';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="sp" data-state-page>
-      <h1 class="sp__title" data-page-title><mf-title-icon [icon]="icon()" />{{ heading() }}</h1>
+      <h1 class="sp__title" data-page-title tabindex="-1">
+        <mf-title-icon [icon]="icon()" />{{ heading() }}
+      </h1>
       <p class="sp__reason" data-state-reason>{{ reason() }}</p>
       <div class="sp__detail"><ng-content /></div>
       <div class="sp__actions" data-state-actions>
@@ -105,6 +115,14 @@ import { TitleIcon } from './page-header';
   `,
 })
 export class StatePage {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterNextRender(() =>
+      this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]')?.focus(),
+    );
+  }
+
   readonly icon = input.required<string>();
   readonly heading = input.required<string>();
   readonly reason = input('');

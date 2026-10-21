@@ -3,7 +3,15 @@
 
   @if (auth.isDisabled()) {
     <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your account is disabled</h1>
-    <p>Your account is disabled. Contact the administrator.</p>
+    @if (auth.profile(); as p) {
+      @if (p.displayName) {
+        <p data-disabled-identity>
+          You're signed in as <strong>{{ p.displayName }}</strong
+          >{{ accountNote(p.displayName, p.windowsAccount) }}.
+        </p>
+      }
+    }
+    <p data-disabled-next>Contact the administrator to have it enabled again.</p>
   } @else {
     <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your access is pending</h1>
     @if (auth.profile(); as p) {

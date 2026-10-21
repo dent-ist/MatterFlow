@@ -53,4 +53,22 @@ describe('AccessPendingPage copy (#428)', () => {
     expect(text).toContain('Ask your Pod Lead or manager if you need access sooner.');
     expect(text).not.toContain('Contact:');
   });
+
+  it('the disabled page says "disabled" once and what to do, with the name and account written once (#610)', async () => {
+    const el = await render(
+      profileOf({ displayName: 'Dee Sabled', windowsAccount: 'KE\\dsabled', status: 'DISABLED' }),
+    );
+    const text = flat(el);
+    expect(text.match(/account is disabled/gi)).toHaveLength(1);
+    expect(text).toContain('Contact the administrator to have it enabled again.');
+    expect(text).toContain("You're signed in as Dee Sabled (KE\\dsabled).");
+    expect(el.querySelector('h1')!.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('the disabled page does not repeat an account that only repeats the name (#610)', async () => {
+    const el = await render(
+      profileOf({ displayName: 'KE\\dsabled', windowsAccount: 'ke\\DSABLED', status: 'DISABLED' }),
+    );
+    expect(flat(el)).toContain("You're signed in as KE\\dsabled.");
+  });
 });

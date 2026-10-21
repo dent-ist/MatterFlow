@@ -107,6 +107,23 @@ describe('the state pages are one family', () => {
     }
   });
 
+  it('moves focus to the one H1 of each state page on arrival (S12, #610)', async () => {
+    const { ErrorPage } = await import('./error-page');
+    for (const page of [ForbiddenPage, NotFoundPage, ErrorPage] as Type<unknown>[]) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      const fixture = TestBed.createComponent(page);
+      await settle(fixture);
+      const h1 = (fixture.nativeElement as HTMLElement).querySelector('h1')!;
+      expect(h1.getAttribute('tabindex')).toBe('-1');
+      expect(document.activeElement).toBe(h1);
+      fixture.destroy();
+    }
+  });
+
   it('only the 404 offers search, with a placeholder short enough not to be cut', async () => {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), provideFakeMe(new FakeMeApi(withPermissions('Task.View')))],
