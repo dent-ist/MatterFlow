@@ -15,7 +15,6 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetResponse, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { Badge } from '../../../shared/ui/badge';
@@ -182,7 +181,6 @@ export class AssetRecordPage {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
-  private readonly quiet = inject(QuietRequests);
   private readonly drill = inject(DrillReturn);
   private readonly injector = inject(Injector);
 
@@ -191,16 +189,14 @@ export class AssetRecordPage {
   protected readonly asset = signal<AssetResponse | null>(null);
   protected readonly toggleOpen = signal(false);
   protected readonly busy = signal(false);
-  /** The number of linked tasks (all); null while unknown or when it could not be read. */
-  private readonly linkedCount = signal<number | null>(null);
-  private readonly countFailed = signal(false);
 
   protected readonly canTasks = computed(() => this.auth.has('Task.View'));
   protected readonly canHistory = computed(() => this.auth.has('Audit.View'));
   protected readonly matterLink = computed(() => matterLinkOf(this.auth, this.asset()?.matterId));
 
   protected readonly tabs = computed<MfTab[]>(() => {
-    const count = !this.canTasks() || this.countFailed() ? null : (this.linkedCount() ?? '--');
+    // The number of linked tasks (all) comes with the asset (#496): absent without Task.View, where the API sends null.
+    const count = this.canTasks() ? (this.asset()?.linkedTaskCount ?? null) : null;
     const all = recordTabs('asset', { tasks: count });
     return this.canHistory() ? all : all.filter((t) => t.key !== 'history');
   });
@@ -295,20 +291,6 @@ export class AssetRecordPage {
         this.asset.set(asset);
       },
     );
-    if (this.state() === 'ready') void this.loadCount(id);
-  }
-
-  /** The Linked tasks tab shows the number of linked tasks (all of them). */
-  private async loadCount(id: number): Promise<void> {
-    this.linkedCount.set(null);
-    this.countFailed.set(false);
-    if (!this.canTasks()) return;
-    try {
-      const result = await this.quiet.run(() => firstValueFrom(this.api.listAssetLinkedTasks(id)));
-      if (Number(this.assetId()) === id) this.linkedCount.set(result.items.length);
-    } catch {
-      this.countFailed.set(true);
-    }
   }
 
   protected async toggleActive(): Promise<void> {

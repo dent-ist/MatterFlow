@@ -47,7 +47,9 @@ describe('AssetRecordPage', () => {
   async function create(permissions: Permission[], startTab?: string): Promise<void> {
     localStorage.clear();
     assets = {
-      getAsset: vi.fn().mockReturnValue(ok(anAsset())),
+      getAsset: vi
+        .fn()
+        .mockReturnValue(ok(anAsset({ linkedTaskCount: 2, openLinkedTaskCount: 1 }))),
       setAssetActive: vi.fn().mockReturnValue(ok(anAsset({ isActive: false, rowVersion: 'BBBB' }))),
       listAssetLinkedTasks: vi.fn().mockReturnValue(ok({ items: [LINK, { ...LINK, taskId: 7 }] })),
     };
@@ -180,6 +182,9 @@ describe('AssetRecordPage', () => {
 
   it('has no count without Task.View and no History tab without Audit.View', async () => {
     await create(['Asset.View']);
+    assets.getAsset.mockReturnValue(ok(anAsset({ linkedTaskCount: undefined })));
+    await fixture.componentInstance.load();
+    await settle(fixture);
     expect(tabs()).toEqual(['Details', 'Linked tasks']);
     expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled();
     await openTab('history');
