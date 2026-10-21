@@ -2,7 +2,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
-import { throwError } from 'rxjs';
+import { firstValueFrom, throwError } from 'rxjs';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -79,17 +79,19 @@ describe('UsersPage', () => {
   const control = <T extends HTMLElement = HTMLElement>(column: string): T =>
     q<T>(`[aria-label="Filter by ${column}"]`);
 
-  /** Picks a status in the Status column filter. */
+  /** Presses a status segment above the grid (the segments are the status choice, #429). */
   async function chooseStatus(value: string): Promise<void> {
-    await openRow();
-    const select = control<HTMLSelectElement>('Status');
-    select.value = value;
-    select.dispatchEvent(new Event('change'));
+    q(`[data-strip-item="${value}"]`).click();
     await settle();
   }
 
-  const statusOptions = (): string[] =>
-    Array.from(control<HTMLSelectElement>('Status').options).map((o) => o.textContent!.trim());
+  const segment = (key: string): HTMLElement => q(`[data-strip-item="${key}"]`);
+  const segmentText = (key: string): string =>
+    segment(key).textContent!.replace(/\s+/g, ' ').trim();
+  const pressed = (): string | undefined =>
+    Array.from(el().querySelectorAll<HTMLElement>('[data-strip-item]')).find(
+      (b) => b.getAttribute('aria-pressed') === 'true',
+    )?.dataset['stripItem'];
 
   const rows = (): string[] =>
     Array.from(el().querySelectorAll('tbody tr')).map((r) =>
@@ -98,11 +100,12 @@ describe('UsersPage', () => {
 
   it('opens on the pending queue with counts, and publishes the pending count for the nav badge', async () => {
     await create('User.View', 'User.Manage');
-    await openRow();
 
-    expect(statusOptions()).toEqual(['Pending access (2)', 'Active', 'Inactive', 'All']);
-    expect(control<HTMLSelectElement>('Status').value).toBe('pending');
-    // The default is shown, not counted.
+    expect(segmentText('pending')).toBe('Pending access 2');
+    expect(pressed()).toBe('pending');
+    // The default rule is written into the address, so a reload keeps it.
+    expect(TestBed.inject(Router).url).toContain('status=pending');
+    // The status is not a column filter: it is not counted.
     expect(el().querySelector('[data-filter-count]')).toBeNull();
     expect(rows()).toEqual(['Priya Patel', 'Tariq Mahmood']);
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
@@ -115,30 +118,83 @@ describe('UsersPage', () => {
     expect(cell.getAttribute('title')).toMatch(/\d{1,2}:\d{2}\s?[AP]M/);
   });
 
-  it('opens on Active when no one is waiting, and shows no pending cue', async () => {
+  it('opens on Active when no one is waiting, and the Pending segment is not tinted', async () => {
     await createWith(
       (a) => a.users.forEach((u) => u.roleIds.length === 0 && u.roleIds.push(6)),
       'User.View',
     );
 
-    await openRow();
-    expect(control<HTMLSelectElement>('Status').value).toBe('active');
-    expect(statusOptions()[0]).toBe('Pending access (0)');
+    expect(pressed()).toBe('active');
+    expect(TestBed.inject(Router).url).toContain('status=active');
+    expect(segmentText('pending')).toBe('Pending access 0');
+    expect(segment('pending').classList).not.toContain('tinted');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
   });
 
-  it('keeps a visible pending cue while another status is shown, and All lists everyone', async () => {
+  it('keeps the waiting count visible while another segment is pressed, tints it, and All lists everyone', async () => {
     await create('User.View');
+    expect(segment('pending').classList).toContain('on');
     await chooseStatus('active');
-    expect(q('[data-pending-cue]').textContent).toContain('2 waiting for access');
+    expect(pressed()).toBe('active');
+    expect(segmentText('pending')).toBe('Pending access 2');
+    expect(segment('pending').classList).toContain('tinted');
+    expect(el().querySelector('[data-pending-cue]')).toBeNull();
 
     await chooseStatus('all');
     expect(rows()).toEqual(expect.arrayContaining(['Priya Patel', 'Dana Director']));
     expect(TestBed.inject(Router).url).toContain('status=all');
 
-    q('[data-pending-cue]').click();
+    await chooseStatus('pending');
+    expect(pressed()).toBe('pending');
+    expect(rows()).toEqual(['Priya Patel', 'Tariq Mahmood']);
+  });
+
+  it('counts each segment as the rows it lists, and All is their sum', async () => {
+    await create('User.View');
+    const counts = (await firstValueFrom(api.userCounts()))!;
+    for (const key of ['pending', 'active', 'inactive'] as const) {
+      expect(segmentText(key)).toContain(String(counts[key]));
+      await chooseStatus(key);
+      expect(rows().length).toBe(Math.min(25, counts[key]));
+    }
+    expect(segmentText('all')).toContain(String(counts.pending + counts.active + counts.inactive));
+  });
+
+  it('is one labelled toolbar with one Tab stop, arrows move between the segments', async () => {
+    await create('User.View');
+    const bar = q('[data-strip]');
+    expect(bar.getAttribute('role')).toBe('toolbar');
+    expect(bar.getAttribute('aria-label')).toBe('Users by status');
+    const stops = () =>
+      Array.from(el().querySelectorAll<HTMLElement>('[data-strip-item]')).filter(
+        (b) => b.tabIndex === 0,
+      );
+    expect(stops().map((b) => b.dataset['stripItem'])).toEqual(['pending']);
+
+    segment('pending').focus();
+    segment('pending').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    );
     await settle();
-    expect(control<HTMLSelectElement>('Status').value).toBe('pending');
+    expect(document.activeElement).toBe(segment('active'));
+    expect(stops().map((b) => b.dataset['stripItem'])).toEqual(['active']);
+    segment('active').dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    expect(document.activeElement).toBe(segment('all'));
+    segment('all').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    );
+    expect(document.activeElement).toBe(segment('pending'));
+  });
+
+  it('keeps the segment when the filters are cleared', async () => {
+    startUrl = '/admin/users?status=inactive&name=zz';
+    await create('User.View');
+    expect(pressed()).toBe('inactive');
+    q('td[data-empty] button').click();
+    await settle();
+    expect(TestBed.inject(Router).url).toContain('status=inactive');
+    expect(TestBed.inject(Router).url).not.toContain('name=');
+    expect(pressed()).toBe('inactive');
   });
 
   it('shows the empty state when no one is waiting', async () => {
@@ -150,14 +206,13 @@ describe('UsersPage', () => {
     expect(q('td[data-empty]').textContent).toContain('No one is waiting for access.');
   });
 
-  it('has column filters instead of a search box and two selects, closed by default', async () => {
+  it('has column filters instead of a search box and two selects, open by default; the status is the segments, not a column filter', async () => {
     await create('User.View');
 
     expect(
       el().querySelector('#users-search, #users-status, #users-availability, mf-search-box'),
     ).toBeNull();
-    expect(el().querySelector('[data-filter-row]')).toBeNull();
-    await openRow();
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     for (const column of [
       'Name',
       'Windows account',
@@ -165,14 +220,14 @@ describe('UsersPage', () => {
       'Email',
       'Roles',
       'Availability',
-      'Status',
     ]) {
       expect(
         el().querySelector(`[aria-label^="Filter by ${column}"]`),
         `Filter by ${column}`,
       ).not.toBeNull();
     }
-    // Status is a column now.
+    expect(el().querySelector('[aria-label^="Filter by Status"]')).toBeNull();
+    // Status is a column of the grid.
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
     ).toContain('Status');
@@ -191,7 +246,6 @@ describe('UsersPage', () => {
     await settle();
     expect(rows()).toEqual(['Dana Director']);
     expect(TestBed.inject(Router).url).toContain('name=dana');
-    expect(q('[data-filter-count]').textContent).toBe('(2)'); // Name, and Status changed from the default
   });
 
   it('sends the column filters of the address to the server: name, account, email, roles, availability, first seen', async () => {
@@ -218,10 +272,10 @@ describe('UsersPage', () => {
       page: 1,
       pageSize: 25,
     });
-    // The link opens the row with the values in it: all seven filters count, the status is a change from the default.
+    // The link opens the row with the values in it; the status is the pressed segment.
+    expect(pressed()).toBe('all');
     expect(control<HTMLInputElement>('Name').value).toBe('ana');
     expect(control<HTMLInputElement>('Windows account').value).toBe('dd');
-    expect(q('[data-filter-count]').textContent).toBe('(7)');
   });
 
   it('shows the filtered empty state inside the table with Clear filters, keeping the headers and the row', async () => {
@@ -253,8 +307,7 @@ describe('UsersPage', () => {
 
     await press('Save changes');
     expect(api.users.find((u) => u.userId === 4)!.roleIds).toEqual([5]);
-    await openRow();
-    expect(statusOptions()[0]).toBe('Pending access (1)');
+    expect(segmentText('pending')).toBe('Pending access 1');
     expect(TestBed.inject(PendingUsersStore).count()).toBe(1);
     expect(q('[data-panel]').textContent).toContain('Task.View'); // effective permissions refreshed
   });

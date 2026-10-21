@@ -21,7 +21,7 @@ public class UsersController(UserAdministration users) : ControllerBase
     /// that column only), <c>roleId</c> (repeat it: people holding any of the roles), <c>availability</c> and the first-seen days
     /// <c>registeredFrom</c> / <c>registeredTo</c> (viewer's zone, inclusive) combine with AND.
     /// </summary>
-    /// <param name="status"><c>all</c> (default), <c>pending</c>, <c>active</c> or <c>inactive</c>.</param>
+    /// <param name="status"><c>all</c> (default), <c>pending</c>, <c>active</c> (with access; people waiting for access are listed under <c>pending</c>) or <c>inactive</c>.</param>
     /// <param name="search">Matches display name, e-mail or Windows account.</param>
     /// <param name="name">Fragment of the display name.</param>
     /// <param name="account">Fragment of the Windows account.</param>
@@ -81,7 +81,7 @@ public class UsersController(UserAdministration users) : ControllerBase
         return false;
     }
 
-    /// <summary>Tab counts (pending, active, inactive); the pending count drives the Administration badge.</summary>
+    /// <summary>Counts of the three groups that never overlap: pending access, active (with access) and inactive. The pending count drives the Administration badge.</summary>
     [HttpGet("counts", Name = "GetUserCounts")]
     [RequirePermission(Permissions.User.View)]
     [ProducesResponseType<UserCountsDto>(StatusCodes.Status200OK, "application/json")]

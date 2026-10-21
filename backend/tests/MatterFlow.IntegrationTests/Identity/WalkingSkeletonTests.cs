@@ -73,6 +73,21 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         return roles.EnumerateArray().Single(r => r.GetProperty("isSystemAdmin").GetBoolean()).GetProperty("roleId").GetInt32();
     }
 
+    private static async Task AssertSegmentsPartitionAllAsync(HttpClient admin)
+    {
+        var counts = await JsonAsync(await admin.GetAsync("/api/v1/users/counts"));
+        var all = (await JsonAsync(await admin.GetAsync("/api/v1/users?status=all"))).GetProperty("total").GetInt32();
+        var byStatus = new Dictionary<string, int>();
+        foreach (var status in new[] { "pending", "active", "inactive" })
+        {
+            var total = (await JsonAsync(await admin.GetAsync($"/api/v1/users?status={status}"))).GetProperty("total").GetInt32();
+            total.ShouldBe(counts.GetProperty(status).GetInt32(), $"the {status} count equals the rows of its segment");
+            byStatus[status] = total;
+        }
+
+        byStatus.Values.Sum().ShouldBe(all, "Pending access, Active and Inactive add up to All");
+    }
+
     [Fact]
     public async Task Unknown_user_is_pending_admin_grants_a_role_user_sees_data_and_deactivation_denies()
     {
@@ -96,6 +111,11 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         var userId = row.GetProperty("userId").GetInt32();
         (await JsonAsync(await admin.GetAsync("/api/v1/users/counts"))).GetProperty("pending").GetInt32().ShouldBe(1);
 
+        // Pending access, Active and Inactive never overlap: the waiting person is in Pending only, and the three counts add up to All (#429).
+        var activeWhileWaiting = await JsonAsync(await admin.GetAsync("/api/v1/users?status=active&pageSize=100"));
+        activeWhileWaiting.GetProperty("items").EnumerateArray().Select(u => u.GetProperty("windowsAccount").GetString()).ShouldNotContain(@"KE\newhire");
+        await AssertSegmentsPartitionAllAsync(admin);
+
         var roleId = await CreateRoleAsync(admin, "Task Viewer", "Task.View");
         var granted = await SetRolesAsync(admin, userId, roleId);
         granted.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -107,6 +127,9 @@ public sealed class WalkingSkeletonTests(SqlServerFixture sql) : IAsyncLifetime
         (await newhire.GetAsync("/api/v1/test/tasks")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await newhire.GetAsync("/api/v1/test/clients")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await JsonAsync(await admin.GetAsync("/api/v1/users/counts"))).GetProperty("pending").GetInt32().ShouldBe(0);
+        var activeAfterGrant = await JsonAsync(await admin.GetAsync("/api/v1/users?status=active&pageSize=100"));
+        activeAfterGrant.GetProperty("items").EnumerateArray().Select(u => u.GetProperty("windowsAccount").GetString()).ShouldContain(@"KE\newhire");
+        await AssertSegmentsPartitionAllAsync(admin);
 
         // Repeated sign-in resolves to the same user: no duplicates.
         for (var i = 0; i < 3; i++)

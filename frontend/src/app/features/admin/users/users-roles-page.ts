@@ -10,9 +10,9 @@ import {
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
-import { FixedPage } from '../../../shared/ui/fixed-page';
-import { PageHeader } from '../../../shared/ui/page-header';
-import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { AdminListShell } from '../../../shared/ui/admin-list-shell';
+import { MfTab } from '../../../shared/ui/tabs';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { PodsPage } from '../pods/pods-page';
 import { RolesPage } from '../roles/roles-page';
 import { UsersPage } from './users-page';
@@ -29,44 +29,42 @@ const TABS: readonly UsersTab[] = ['users', 'roles', 'pods'];
  */
 @Component({
   selector: 'mf-users-roles-page',
-  imports: [FixedPage, PageHeader, Tabs, UsersPage, RolesPage, PodsPage],
+  imports: [AdminListShell, UsersPage, RolesPage, PodsPage],
+  providers: [AdminShellFilters],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-fixed-page>
-      <mf-page-header heading="Users" />
-      <mf-tabs
-        label="Users, roles and pods"
-        idPrefix="users"
-        [tabs]="tabs()"
-        [selected]="current()"
-        (tabChange)="select($event)"
-      />
-      <div
-        class="mf-fill"
-        role="tabpanel"
-        id="users-panel"
-        [attr.aria-labelledby]="'users-tab-' + current()"
-      >
-        @if (current() === 'users') {
-          <mf-users-page />
-        } @else if (current() === 'roles') {
-          <mf-roles-page #roles />
-        } @else {
-          <mf-pods-page
-            #pods
-            [pod]="pod()"
-            [status]="status()"
-            [page]="page()"
-            [size]="size()"
-            [sort]="sort()"
-          />
-        }
-      </div>
-    </mf-fixed-page>
+    <mf-admin-list-shell
+      heading="Users"
+      [description]="description()"
+      [tabs]="tabs()"
+      [tab]="current()"
+      tabsLabel="Users, roles and pods"
+      idPrefix="users"
+      [filters]="current() === 'users' ? (shell.current()?.filters ?? null) : null"
+      [controls]="shell.current()?.controls ?? ''"
+      [clearAlso]="['q']"
+      (tabChange)="select($event)"
+    >
+      @if (current() === 'users') {
+        <mf-users-page />
+      } @else if (current() === 'roles') {
+        <mf-roles-page #roles />
+      } @else {
+        <mf-pods-page
+          #pods
+          [pod]="pod()"
+          [status]="status()"
+          [page]="page()"
+          [size]="size()"
+          [sort]="sort()"
+        />
+      }
+    </mf-admin-list-shell>
   `,
 })
 export class UsersRolesPage implements HasUnsavedChanges {
   private readonly auth = inject(AuthStore);
+  protected readonly shell = inject(AdminShellFilters);
   private readonly router = inject(Router);
   private readonly roles = viewChild<RolesPage>('roles');
   private readonly pods = viewChild<PodsPage>('pods');
@@ -89,6 +87,13 @@ export class UsersRolesPage implements HasUnsavedChanges {
     }
     return tabs;
   });
+
+  /** One line, 90 characters at most, for the Users tab; Roles and Pods say theirs in the tab itself. */
+  protected readonly description = computed(() =>
+    this.current() === 'users'
+      ? 'Who can sign in, what they can do and who is waiting for access.'
+      : '',
+  );
 
   protected readonly current = computed<UsersTab>(() => {
     const wanted = TABS.find((t) => t === this.tab()) ?? 'users';

@@ -1,19 +1,20 @@
 <div class="mf-layout">
   <section class="mf-list">
-    <mf-filters-bar [filters]="filters" controls="user-filter-row" [clearAlso]="['q']">
-      @if (counts().pending > 0 && tab() !== 'pending') {
-        <button
-          mfBarStart
-          type="button"
-          class="mf-pending-cue"
-          data-pending-cue
-          (click)="setStatus('pending')"
-        >
-          <i class="pi pi-user-plus" aria-hidden="true"></i>
-          {{ counts().pending }} waiting for access
-        </button>
-      }
-    </mf-filters-bar>
+    <mf-work-strip
+      label="Users by status"
+      [items]="segments()"
+      [interactive]="true"
+      [segments]="true"
+      [roving]="true"
+      [active]="segmentActive()"
+      (pick)="pickSegment($event)"
+    />
+    <mf-filters-bar
+      [bare]="true"
+      [filters]="filters"
+      controls="user-filter-row"
+      [clearAlso]="['q']"
+    />
     <p class="mf-scroll-hint" data-scroll-hint [hidden]="!overflowing()">
       Scroll sideways to see every column.
     </p>

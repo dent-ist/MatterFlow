@@ -1,5 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { Params, RouterLink } from '@angular/router';
 
 /** Where a link-mode item goes: a router path and its query parameters (repeated keys are arrays). */
@@ -23,6 +31,8 @@ export interface WorkStripItem {
   link?: WorkStripLink;
   /** In an `interactive` strip: a plain count that is not a toggle (a number that has no filter behind it). */
   inert?: boolean;
+  /** Tinted (the warning colours) while the count is above zero: "somebody is waiting" (Users: Pending access). The label and the number stay, so it is never colour alone. */
+  tinted?: boolean;
 }
 
 /**
@@ -36,15 +46,20 @@ export interface WorkStripItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (items().length > 0) {
+      <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
       <ul
         class="strip"
         [class.seg]="segments()"
+        [attr.role]="roving() ? 'toolbar' : null"
+        [attr.aria-orientation]="roving() ? 'horizontal' : null"
         [attr.aria-label]="label()"
         [attr.title]="hint() ?? null"
         data-strip
+        (keydown)="onKeydown($event)"
+        (focusin)="onFocusIn($event)"
       >
         @for (item of items(); track item.key) {
-          <li>
+          <li [attr.role]="roving() ? 'none' : null">
             @if (!interactive() && item.link) {
               <a
                 class="item"
@@ -64,7 +79,9 @@ export interface WorkStripItem {
                 [class.zero]="item.count === 0"
                 [class.alert]="item.alert && !!item.count"
                 [class.on]="item.key === active()"
+                [class.tinted]="item.tinted && !!item.count"
                 [attr.aria-pressed]="item.key === active()"
+                [attr.tabindex]="roving() ? (item.key === stop() ? 0 : -1) : null"
                 [attr.title]="item.hint ?? null"
                 [attr.data-strip-item]="item.key"
                 (click)="pick.emit(item.key)"
@@ -162,6 +179,15 @@ export interface WorkStripItem {
     .alert .n {
       color: var(--mf-danger);
     }
+    /* Somebody is waiting (Pending access): the warning colours while the count is above zero; the pressed segment keeps its fill. */
+    button.item.tinted:not(.on) {
+      border-color: var(--mf-warning);
+      background: var(--mf-warning-bg);
+      color: var(--mf-warning);
+    }
+    button.item.tinted:not(.on) .n {
+      color: inherit;
+    }
     /* Segments (#581): one connected group of choices, the pressed one filled; the same tokens as the chips. */
     .seg {
       gap: 0;
@@ -250,5 +276,59 @@ export class WorkStrip {
   /** Draws the items as one connected group of choices (single-select: the `active` one is filled) instead of loose chips (#581). Use with `interactive`. */
   readonly segments = input(false);
   readonly active = input<string | null>(null);
+  /**
+   * One Tab stop for the whole group, arrow keys move between the choices (a roving tabindex, as a toolbar): Left/Right, Home and End.
+   * The pressed choice is the stop (the first one when none is pressed). Enter and Space press, as for any button. Use with `interactive`.
+   */
+  readonly roving = input(false);
   readonly pick = output<string>();
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** The key of the choice that is the Tab stop while the focus is elsewhere or has moved with the arrow keys. */
+  private readonly moved = signal<string | null>(null);
+
+  protected stop(): string | null {
+    const keys = this.items()
+      .filter((i) => !i.inert)
+      .map((i) => i.key);
+    const wanted = this.moved();
+    if (wanted && keys.includes(wanted)) return wanted;
+    const pressed = this.active();
+    return pressed && keys.includes(pressed) ? pressed : (keys[0] ?? null);
+  }
+
+  protected onFocusIn(event: FocusEvent): void {
+    if (!this.roving()) return;
+    const key = (event.target as HTMLElement | null)?.getAttribute?.('data-strip-item');
+    if (key) this.moved.set(key);
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    if (!this.roving() || event.altKey || event.ctrlKey || event.metaKey) return;
+    const buttons = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLElement>('button[data-strip-item]'),
+    );
+    const at = buttons.indexOf(event.target as HTMLElement);
+    if (at < 0 || buttons.length === 0) return;
+    let next: number;
+    switch (event.key) {
+      case 'ArrowRight':
+        next = (at + 1) % buttons.length;
+        break;
+      case 'ArrowLeft':
+        next = (at - 1 + buttons.length) % buttons.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = buttons.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    buttons[next].focus();
+  }
 }

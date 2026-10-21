@@ -14,6 +14,9 @@ import { ADMIN_ROUTES } from '../admin.routes';
 // The first test loads the lazy admin pages (a large chunk to compile); on a loaded machine that can pass the 5 s default.
 vi.setConfig({ testTimeout: 20000 });
 
+/** /admin/users, with the status segment the page writes into the address once the counts are known (#429). */
+const USERS_URL = /^\/admin\/users(\?|$)/;
+
 describe('Users page tabs (Users, Roles, Pods)', () => {
   let harness: RouterTestingHarness;
   const el = (): HTMLElement => harness.routeNativeElement as HTMLElement;
@@ -95,20 +98,23 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     tabs()[1].click();
     tabs()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
     await settle();
-    expect(router.url).toBe('/admin/users');
+    expect(router.url).toMatch(USERS_URL);
   });
 
   it('offers only the Users tab without Role.Manage, and only Roles without user permissions', async () => {
     await open('/admin/users', 'User.View');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Users']);
+    // One tab: the shell shows no tab strip (the kit rule), the Users list is the page.
+    expect(tabs()).toEqual([]);
+    expect(el().querySelector('mf-users-page')).not.toBeNull();
     await harness.navigateByUrl('/admin/roles');
     await settle();
-    expect(TestBed.inject(Router).url).toBe('/admin/users');
+    expect(TestBed.inject(Router).url).toMatch(USERS_URL);
   });
 
   it('sends a Role.Manage-only user from /admin/users to the Roles tab', async () => {
     const router = await open('/admin/users', 'Role.Manage');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Roles']);
+    expect(tabs()).toEqual([]);
+    expect(el().querySelector('mf-roles-page')).not.toBeNull();
     expect(router.url).toBe('/admin/roles');
   });
 
@@ -134,7 +140,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
 
     tabs()[0].click();
     await settle();
-    expect(router.url).toBe('/admin/users');
+    expect(router.url).toMatch(USERS_URL);
     expect(selected()).toEqual(['Users']);
     expect(el().querySelector('mf-pods-page')).toBeNull();
 
@@ -145,7 +151,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
 
   it('keeps the pod editor deep link working: /admin/pods?pod=1 opens the editor in the Pods tab', async () => {
     const router = await open('/admin/pods?pod=1', 'Pod.Manage', 'Pod.ManageMembers', 'Pod.View');
-    expect(selected()).toEqual(['Pods']);
+    expect(el().querySelector('mf-pods-page')).not.toBeNull();
     expect((el().querySelector('#pod-name') as HTMLInputElement).value).toBe('Processing');
     expect(router.url).toContain('/admin/pods');
     expect(router.url).toContain('pod=1');
@@ -153,14 +159,15 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
 
   it('sends a user with only a Pods permission from /admin/users to the Pods tab', async () => {
     const router = await open('/admin/users', 'Pod.ManageMembers');
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Pods']);
+    expect(tabs()).toEqual([]);
+    expect(el().querySelector('mf-pods-page')).not.toBeNull();
     expect(router.url).toBe('/admin/pods');
   });
 
   it('sends a Pods-less user from /admin/pods to the first tab they may use', async () => {
     const router = await open('/admin/pods', 'User.View');
-    expect(router.url).toBe('/admin/users');
-    expect(selected()).toEqual(['Users']);
+    expect(router.url).toMatch(USERS_URL);
+    expect(el().querySelector('mf-users-page')).not.toBeNull();
   });
 
   it('uses "Users - Pods" as the document title of the Pods tab', async () => {
@@ -174,5 +181,32 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     expect(await titleOf('/admin/users')).toBe('Users');
     expect(await titleOf('/admin/roles')).toBe('Users - Roles');
     expect(await titleOf('/admin/pods')).toBe('Users - Pods');
+  });
+
+  it('puts Filters with its count and Clear filters in the page header, and Clear keeps the segment (#431)', async () => {
+    const router = await open(
+      '/admin/users?status=all&name=a&email=firm',
+      'User.View',
+      'Role.Manage',
+    );
+    const header = el().querySelector('header') ?? el();
+    expect(header.querySelector('[data-filters-toggle]')).not.toBeNull();
+    expect(el().querySelector('mf-users-page [data-filters-toggle]')).toBeNull();
+    expect(header.querySelector('[data-filter-count]')!.textContent).toBe('(2)'); // Name and Email; the segment is not a filter
+
+    // One Clear filters: in the header while the row is open, in the bar below while it is closed or a sheet.
+    expect(el().querySelectorAll('[data-clear-filters]').length).toBe(1);
+    const clear = el().querySelector<HTMLElement>('[data-clear-filters]')!;
+    expect(clear).not.toBeNull();
+    clear.click();
+    await settle();
+    expect(router.url).toContain('status=all');
+    expect(router.url).not.toContain('name=');
+    expect(router.url).not.toContain('email=');
+
+    // The Roles and Pods tabs have no column filters: no Filters button there.
+    await harness.navigateByUrl('/admin/roles');
+    await settle();
+    expect(el().querySelector('[data-filters-toggle]')).toBeNull();
   });
 });

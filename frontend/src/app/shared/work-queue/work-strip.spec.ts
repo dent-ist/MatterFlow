@@ -11,6 +11,7 @@ import { WorkStrip, WorkStripItem } from './work-strip';
     [items]="items()"
     [interactive]="interactive()"
     [active]="active()"
+    [roving]="roving()"
     (pick)="picked.push($event)"
   />`,
 })
@@ -22,6 +23,7 @@ class Host {
   ]);
   readonly interactive = signal(true);
   readonly active = signal<string | null>(null);
+  readonly roving = signal(false);
   readonly picked: string[] = [];
 }
 
@@ -168,6 +170,63 @@ describe('WorkStrip', () => {
       f.detectChanges();
       expect((f.nativeElement as HTMLElement).querySelector('a')).toBeNull();
       expect((f.nativeElement as HTMLElement).querySelector('button')).not.toBeNull();
+    });
+  });
+
+  describe('roving tabindex (#429)', () => {
+    const stops = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('button[data-strip-item]'))
+        .filter((b) => b.tabIndex === 0)
+        .map((b) => b.dataset['stripItem']);
+
+    it('is off by default: every button is a Tab stop and the list has no toolbar role', () => {
+      const { el } = create();
+      expect(stops(el)).toEqual(['a', 'b', 'c']);
+      expect(el.querySelector('ul')!.getAttribute('role')).toBeNull();
+    });
+
+    it('makes one toolbar with one Tab stop (the pressed item, else the first) and arrow keys that move it', () => {
+      const { f, el } = create();
+      f.componentInstance.roving.set(true);
+      f.componentInstance.active.set('b');
+      f.detectChanges();
+      const bar = el.querySelector('ul')!;
+      expect(bar.getAttribute('role')).toBe('toolbar');
+      expect(bar.getAttribute('aria-label')).toBe('Summary');
+      expect(
+        Array.from(bar.querySelectorAll('li')).every((li) => li.getAttribute('role') === 'none'),
+      ).toBe(true);
+      expect(stops(el)).toEqual(['b']);
+
+      const b = el.querySelector<HTMLElement>('[data-strip-item="b"]')!;
+      b.focus();
+      b.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      f.detectChanges();
+      expect(document.activeElement).toBe(el.querySelector('[data-strip-item="c"]'));
+      expect(stops(el)).toEqual(['c']);
+      (document.activeElement as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      );
+      expect(document.activeElement).toBe(el.querySelector('[data-strip-item="a"]'));
+      (document.activeElement as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }),
+      );
+      expect(document.activeElement).toBe(el.querySelector('[data-strip-item="c"]'));
+      (document.activeElement as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+      );
+      expect(document.activeElement).toBe(el.querySelector('[data-strip-item="a"]'));
+    });
+
+    it('tints an item only while its count is above zero', () => {
+      const { f, el } = create();
+      f.componentInstance.items.set([
+        { key: 'w', label: 'Pending access', count: 3, tinted: true },
+        { key: 'x', label: 'Waiting too', count: 0, tinted: true },
+      ]);
+      f.detectChanges();
+      expect(el.querySelector('[data-strip-item="w"]')!.classList).toContain('tinted');
+      expect(el.querySelector('[data-strip-item="x"]')!.classList).not.toContain('tinted');
     });
   });
 });

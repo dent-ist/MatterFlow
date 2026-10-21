@@ -26,7 +26,7 @@ public static class UserListStatuses
 }
 
 /// <summary>Filters of the users list. The column filters combine with AND; <see cref="Search"/> is the older any-column search.</summary>
-/// <param name="Status"><c>all</c>, <c>pending</c>, <c>active</c> or <c>inactive</c> (null = all).</param>
+/// <param name="Status"><c>all</c>, <c>pending</c> (active, no access yet), <c>active</c> (active with access; pending people are not in it) or <c>inactive</c> (null = all).</param>
 /// <param name="Search">Display name, e-mail or Windows account fragment.</param>
 /// <param name="Name">Fragment of the display name only.</param>
 /// <param name="Account">Fragment of a Windows account only.</param>
@@ -65,6 +65,10 @@ public sealed class UserAdministration(
     private static readonly Expression<Func<AppUser, bool>> PendingExpr = u =>
         u.IsActive && !u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive)));
 
+    /// <summary>Active with access: active and not waiting. Pending access, Active and Inactive never overlap (the Users page shows them as segments).</summary>
+    private static readonly Expression<Func<AppUser, bool>> ActiveExpr = u =>
+        u.IsActive && u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive)));
+
     /// <summary>The open-task numbers are task data: only a caller who may see tasks gets them (the UI then drops the sentence).</summary>
     private bool CanSeeTaskCounts => currentUser.IsSystemAdmin || callerPermissions.Has(Permissions.Task.View);
 
@@ -77,7 +81,7 @@ public sealed class UserAdministration(
         query = status switch
         {
             UserListStatuses.Pending => query.Where(PendingExpr),
-            UserListStatuses.Active => query.Where(u => u.IsActive),
+            UserListStatuses.Active => query.Where(ActiveExpr),
             UserListStatuses.Inactive => query.Where(u => !u.IsActive),
             _ => query,
         };
@@ -188,7 +192,7 @@ public sealed class UserAdministration(
 
     public async Task<UserCountsDto> CountsAsync(CancellationToken ct)
     {
-        var active = await Users.CountAsync(u => u.IsActive, ct);
+        var active = await Users.CountAsync(ActiveExpr, ct);
         var inactive = await Users.CountAsync(u => !u.IsActive, ct);
         var pending = await Users.CountAsync(PendingExpr, ct);
         return new UserCountsDto(pending, active, inactive);

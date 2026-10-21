@@ -45,6 +45,9 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { StripDef, stripActiveKey, stripPick } from '../../../shared/ui/strip-items';
+import { AdminShellFilters } from '../task-types/shell-filters';
 import { impactLine } from '../shared/dialog-copy';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
 import { podsText } from './user-pods-draft';
@@ -68,6 +71,27 @@ const COLUMNS = [
   'status',
   'actions',
 ] as const;
+
+/**
+ * The status choices above the grid (#429): one of them is always pressed, and it is the `status` parameter of the address. Pending
+ * access is tinted while somebody is waiting. The counts come from the counts endpoint (whole list, no filter applies).
+ */
+const SEGMENT_DEFS: readonly StripDef<never>[] = [
+  {
+    key: 'pending',
+    label: 'Pending access',
+    hint: 'People who signed in and have no role yet',
+    params: { status: 'pending' },
+  },
+  { key: 'active', label: 'Active', hint: 'People with access', params: { status: 'active' } },
+  {
+    key: 'inactive',
+    label: 'Inactive',
+    hint: 'People who can no longer sign in',
+    params: { status: 'inactive' },
+  },
+  { key: 'all', label: 'All', hint: 'Everyone', params: { status: 'all' } },
+];
 
 /** The availability filter. Off hours is a soft state; "Available" means available right now. The server works the state out. */
 const AVAILABILITY_OPTIONS = [
@@ -98,6 +122,7 @@ const AVAILABILITY_OPTIONS = [
     GridBody,
     FiltersBar,
     ColumnFilterRow,
+    WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill', '(keydown.escape)': 'onPanelEscape($event)' },
@@ -127,14 +152,8 @@ export class UsersPage implements OnInit {
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
   private readonly defaultTab = signal<Tab>('active');
   private readonly ready = signal(false);
-
-  /** Status filter options; the pending count is part of its label so the cue stays visible while another status is shown. */
-  protected readonly statusOptions = computed<{ value: StatusOption; label: string }[]>(() => [
-    { value: 'pending', label: `Pending access (${this.counts().pending})` },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'all', label: 'All' },
-  ]);
+  /** True once the counts endpoint has answered at least once (the segments show `--` until then). */
+  private readonly countsKnown = signal(false);
 
   protected readonly columns = COLUMNS;
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
@@ -142,16 +161,17 @@ export class UsersPage implements OnInit {
     this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
   );
 
-  /**
-   * What the list depends on, as text: the definitions carry the status labels with the pending count, which every reload refreshes, so
-   * the values themselves must not trigger the next reload.
-   */
-  private readonly filterKey = computed(() => JSON.stringify(this.filters.queryParams()));
+  /** What the list depends on, as text: the column filters and the status segment of the address. */
+  private readonly filterKey = computed(() =>
+    JSON.stringify([this.filters.queryParams(), this.tab()]),
+  );
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'users',
     noun: 'users',
+    openByDefault: true,
+    sheetBelow: 640,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       { key: 'account', label: 'Windows account', column: 'account', type: 'text' },
@@ -181,15 +201,6 @@ export class UsersPage implements OnInit {
         options: AVAILABILITY_OPTIONS,
         normalize: (v) => (AVAILABILITY_OPTIONS.some((o) => o.value === v) ? v : null),
       },
-      {
-        key: 'status',
-        label: 'Status',
-        column: 'status',
-        type: 'select',
-        default: this.defaultTab(),
-        options: this.statusOptions(),
-        normalize: (v) => (STATUS_VALUES.includes(v as StatusOption) ? v : null),
-      },
     ]),
   });
 
@@ -207,10 +218,26 @@ export class UsersPage implements OnInit {
   protected readonly podChoicesFailed = signal(false);
   protected readonly podsBusy = signal<ReadonlySet<number>>(new Set());
 
+  /** The pressed status segment: the `status` of the address, else the default rule (Pending access when somebody waits, else Active). */
   protected readonly tab = computed<StatusOption>(() => {
-    const value = this.filters.text('status') as StatusOption;
-    return STATUS_VALUES.includes(value) ? value : this.defaultTab();
+    const value = this.filters.params().get('status') as StatusOption | null;
+    return value && STATUS_VALUES.includes(value) ? value : this.defaultTab();
   });
+
+  /** The segments with their counts (`--` until the counts are known); the counts are the rows of each segment. */
+  protected readonly segments = computed<WorkStripItem[]>(() => {
+    const c = this.countsKnown() ? this.counts() : null;
+    const count = (key: string): number | null =>
+      !c ? null : key === 'all' ? c.pending + c.active + c.inactive : c[key as 'pending'];
+    return SEGMENT_DEFS.map((d) => ({
+      key: d.key,
+      label: d.label,
+      count: count(d.key),
+      hint: d.hint,
+      ...(d.key === 'pending' ? { tinted: true } : {}),
+    }));
+  });
+  protected readonly segmentActive = computed(() => stripActiveKey(SEGMENT_DEFS, () => this.tab()));
   protected readonly page = computed(() =>
     parsePage(this.filters.params().get('page') ?? undefined),
   );
@@ -265,6 +292,8 @@ export class UsersPage implements OnInit {
   });
 
   constructor() {
+    // The Filters button and the one Clear filters sit in the page header (the shell of Users, Roles and Pods).
+    AdminShellFilters.register({ filters: this.filters, controls: 'user-filter-row' });
     effect(() => {
       const heading = this.panelHeading();
       if (heading && this.wantHeadingFocus()) {
@@ -318,8 +347,15 @@ export class UsersPage implements OnInit {
     try {
       const counts = await firstValueFrom(this.api.userCounts());
       this.counts.set(counts);
+      this.countsKnown.set(true);
       this.pending.set(counts.pending);
       this.defaultTab.set(counts.pending > 0 ? 'pending' : 'active');
+      // The default rule is visible and stable: it is written into the address (no new history entry) so a reload or a link keeps it.
+      // Only on the Users tab itself: a link to a tab the person may not use is being redirected, and must not be written over.
+      const onTab = this.route.snapshot.paramMap.get('tab');
+      if (!this.filters.params().get('status') && (!onTab || onTab === 'users')) {
+        this.navigate({ status: this.defaultTab() }, true);
+      }
     } catch {
       /* the list load below reports the failure */
     }
@@ -332,16 +368,19 @@ export class UsersPage implements OnInit {
     return !!u && !sameIds(this.draftRoleIds(), u.roleIds);
   });
 
-  private navigate(params: Record<string, string | number | null>): void {
+  private navigate(params: Record<string, string | number | null>, replace = false): void {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
       queryParamsHandling: 'merge',
+      ...(replace ? { replaceUrl: true } : {}),
     });
   }
 
-  protected setStatus(value: string): void {
-    this.filters.set('status', value);
+  /** A segment was chosen: the status goes into the address (a history entry, so Back returns to the earlier segment) and the page restarts at 1. */
+  protected pickSegment(key: string): void {
+    const to = stripPick(SEGMENT_DEFS, key, this.segmentActive(), { mode: 'segments' });
+    if (to) this.navigate({ ...to.params, page: null });
   }
 
   protected clearFilters(): void {
@@ -690,10 +729,8 @@ export class UsersPage implements OnInit {
         firstValueFrom(this.api.userCounts()),
       ]);
       if (id !== this.requestId) return;
-      // Pending users are also counted as active by the API; they are listed under Pending access only.
-      const items = this.tab() === 'active' ? list.items.filter((u) => !u.isPending) : list.items;
-      this.users.set(items);
-      this.total.set(list.total - (list.items.length - items.length));
+      this.users.set(list.items);
+      this.total.set(list.total);
       // Only a real change: the Status labels carry the pending count and a new object would rebuild the filter controls.
       const known = this.counts();
       if (
@@ -703,6 +740,7 @@ export class UsersPage implements OnInit {
       ) {
         this.counts.set(counts);
       }
+      this.countsKnown.set(true);
       this.pending.set(counts.pending);
       this.filters.reportResults(this.total());
     } catch {

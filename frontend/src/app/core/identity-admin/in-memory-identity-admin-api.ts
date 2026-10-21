@@ -159,7 +159,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     const rows = this.users
       .filter((u) => {
         if (status === 'pending' && !this.isPending(u)) return false;
-        if (status === 'active' && !u.isActive) return false;
+        if (status === 'active' && (!u.isActive || this.isPending(u))) return false;
         if (status === 'inactive' && u.isActive) return false;
         const has = (v: string | undefined, t?: string) =>
           !t || (v ?? '').toLowerCase().includes(t.trim().toLowerCase());
@@ -192,7 +192,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
   userCounts(): Observable<UserCountsDto> {
     return of({
       pending: this.users.filter((u) => this.isPending(u)).length,
-      active: this.users.filter((u) => u.isActive).length,
+      active: this.users.filter((u) => u.isActive && !this.isPending(u)).length,
       inactive: this.users.filter((u) => !u.isActive).length,
     });
   }
