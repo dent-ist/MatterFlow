@@ -12,6 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -23,13 +24,17 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { ActiveBadge } from '../../../shared/ui/badge';
+import { Badge } from '../../../shared/ui/badge';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminColumn } from '../../../shared/ui/admin-list-state';
+import { columnDropOrder } from '../../../shared/ui/admin-card-spec';
+import { CopyButton } from '../../../shared/ui/copy-button';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { RowLink } from '../../../shared/ui/row-nav';
 import { SortHeader } from '../../../shared/ui/data-table';
-import { ErrorReference } from '../../../shared/ui/error-reference';
 import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
@@ -41,6 +46,7 @@ import { AssetDetails } from './asset-details';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'type', 'matter', 'externalReference', 'status'] as const;
+type Column = (typeof COLUMNS)[number];
 
 const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: 'active', label: 'Active' },
@@ -66,13 +72,16 @@ export function parseSelected(value: string | null | undefined): number | null {
     FixedPage,
     ScrollArea,
     PageHeader,
-    ActiveBadge,
+    Badge,
     Button,
+    CopyButton,
+    GridBody,
+    RouterLink,
+    RowLink,
     HasPermissionDirective,
     Pager,
     MatterRef,
     SortHeader,
-    ErrorReference,
     FiltersBar,
     ColumnFilterRow,
     AssetDetails,
@@ -80,26 +89,7 @@ export function parseSelected(value: string | null | undefined): number | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    .as-table {
-      table-layout: fixed;
-      min-width: 820px;
-    }
-    .as-name {
-      display: inline;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: var(--mf-link);
-      font: inherit;
-      text-align: left;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-      cursor: pointer;
-      overflow-wrap: anywhere;
-    }
-    .as-name:hover {
-      text-decoration-thickness: 2px;
-    }
+    /* The 44 px row of the grid contract (decision U): one clipped line in every cell but the Name, which is the spring and the only link. */
     tr[data-selected] td {
       background: var(--mf-selected-bg);
     }
@@ -107,33 +97,42 @@ export function parseSelected(value: string | null | undefined): number | null {
     tr[data-selected] td:first-child {
       box-shadow: inset 4px 0 0 var(--mf-primary);
     }
-    tr[data-selected] .as-name {
+    tr[data-selected] .mf-name {
       font-weight: 700;
     }
-    .as-sub {
-      display: block;
+    .as-matter {
+      width: 1%;
+      white-space: nowrap;
+    }
+    .as-type {
+      max-width: 12rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* The reference is ONE line: the text is cut with an ellipsis (the full value is the tooltip), the copy button keeps its place. */
+    .as-ref {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
+    }
+    .as-ref__text {
+      min-width: 0;
+      overflow: hidden;
+      font-family: var(--mf-font-mono);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .as-ref__none {
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      overflow-wrap: anywhere;
     }
-    .as-cell {
-      overflow-wrap: anywhere;
-    }
-    .as-state td {
-      height: auto;
-      padding: var(--mf-s5);
-      text-align: center;
-      background: var(--mf-surface);
-    }
-    .as-state p {
-      margin: 0 0 var(--mf-s2);
+    td.as-refcell {
+      width: 20rem;
+      max-width: 20rem;
     }
     .as-hint {
       color: var(--mf-text-muted);
-    }
-    .as-alert {
-      margin-bottom: var(--mf-s2);
-      color: var(--mf-danger);
     }
     .as-panel {
       margin-top: var(--mf-s3);
@@ -157,7 +156,7 @@ export function parseSelected(value: string | null | undefined): number | null {
       }
     }
   `,
-  host: { '(keydown.escape)': 'onEscape($event)' },
+  host: { '(keydown.escape)': 'onEscape($event)', '(window:resize)': 'onResize()' },
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Assets">
@@ -181,20 +180,14 @@ export function parseSelected(value: string | null | undefined): number | null {
           #scroll
         >
           <div class="mf-scroll">
-            <table class="pg-table as-table">
-              <caption class="pg-sr">
+            <table class="mf-grid" id="assets-table" data-assets>
+              <caption class="mf-sr-only">
                 Assets
               </caption>
-              <colgroup>
-                <col style="width: 26%" />
-                <col style="width: 16%" />
-                <col style="width: 22%" />
-                <col style="width: 22%" />
-                <col style="width: 14%" />
-              </colgroup>
               <thead>
                 <tr>
                   <th
+                    class="mf-cell-name"
                     mfSort="displayName"
                     [sort]="sort()"
                     [defaultSort]="defaultSort"
@@ -210,104 +203,87 @@ export function parseSelected(value: string | null | undefined): number | null {
                   >
                     Type
                   </th>
-                  <th scope="col">Matter</th>
-                  <th scope="col">External reference</th>
-                  <th scope="col">Status</th>
+                  <th class="as-matter" scope="col">Matter number</th>
+                  <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
+                    External reference
+                  </th>
+                  <th class="mf-cell-badge" scope="col">Status</th>
                 </tr>
                 @if (filters.rowVisible()) {
                   <tr
                     mfColumnFilterRow
                     id="asset-filter-row"
                     [filters]="filters"
-                    [columns]="columns"
+                    [columns]="visibleColumns()"
                   ></tr>
                 }
               </thead>
-              <tbody>
-                @switch (state()) {
-                  @case ('loading') {
-                    <tr class="as-state">
-                      <td colspan="5" role="status" aria-busy="true" data-loading>
-                        Loading assets...
-                      </td>
-                    </tr>
-                  }
-                  @case ('error') {
-                    <tr class="as-state">
-                      <td colspan="5" data-error>
-                        <div class="as-alert" role="alert">
-                          Couldn't load assets.
-                          <mf-error-reference />
-                        </div>
-                        <p-button label="Retry" severity="secondary" (onClick)="load()" />
-                      </td>
-                    </tr>
-                  }
-                  @default {
-                    @for (a of rows(); track a.assetId) {
-                      <tr
-                        [attr.data-asset-id]="a.assetId"
-                        [attr.data-selected]="a.assetId === selectedId() ? '' : null"
-                        [attr.aria-current]="a.assetId === selectedId() ? 'true' : null"
+              <tbody
+                mfGridBody
+                noun="assets"
+                [columnSpec]="columnSpec"
+                [filters]="filters"
+                emptyText="No assets yet."
+                [state]="state()"
+                [empty]="rows().length === 0"
+                [filtered]="filters.activeCount() > 0"
+                [hidden]="hiddenCount()"
+                hiddenLabel="inactive"
+                (retry)="load()"
+                (clear)="clear()"
+                (showAll)="showAll()"
+              >
+                @for (a of rows(); track a.assetId) {
+                  <tr
+                    [attr.data-asset-id]="a.assetId"
+                    [attr.data-selected]="a.assetId === selectedId() ? '' : null"
+                    [attr.aria-current]="a.assetId === selectedId() ? 'true' : null"
+                  >
+                    <td class="mf-cell-name">
+                      <a
+                        class="mf-name"
+                        [routerLink]="['/assets', a.assetId]"
+                        mfRowLink="assets"
+                        [rowKey]="a.assetId"
+                        [attr.title]="a.displayName"
+                        [attr.data-asset-name]="a.assetId"
+                        >{{ a.displayName }}</a
                       >
-                        <td class="as-cell">
-                          <button
-                            type="button"
-                            class="as-name"
-                            [attr.data-asset-name]="a.assetId"
-                            [attr.aria-controls]="a.assetId === selectedId() ? 'asset-panel' : null"
-                            (click)="select(a, $event)"
-                          >
-                            {{ a.displayName }}
-                          </button>
-                        </td>
-                        <td class="as-cell">{{ a.assetTypeName }}</td>
-                        <td class="as-cell">
-                          <mf-matter-ref
-                            [value]="a.matterRef"
-                            [link]="matterLink(a.matterId)"
-                            [copy]="false"
+                    </td>
+                    <td class="as-type" [attr.title]="a.assetTypeName">{{ a.assetTypeName }}</td>
+                    <td class="as-matter" [attr.title]="a.matterName" data-matter>
+                      <mf-matter-ref
+                        [value]="a.matterRef"
+                        [link]="matterLink(a.matterId)"
+                        [copy]="false"
+                      />
+                    </td>
+                    <td class="as-refcell" [attr.data-drop]="drop.externalReference" data-reference>
+                      @if (a.externalReference) {
+                        <div class="as-ref">
+                          <span class="as-ref__text" [attr.title]="a.externalReference">{{
+                            a.externalReference
+                          }}</span>
+                          <mf-copy-button
+                            [text]="a.externalReference"
+                            label="external reference"
+                            [rowStop]="true"
                           />
-                          <span class="as-sub">{{ a.matterName }}</span>
-                        </td>
-                        <td class="pg-mono as-cell">{{ a.externalReference }}</td>
-                        <td>
-                          <mf-active-badge [active]="a.isActive" />
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr class="as-state">
-                        <td
-                          colspan="5"
-                          [attr.data-empty]="filters.activeCount() > 0 ? 'filtered' : 'none'"
-                        >
-                          @if (filters.activeCount() > 0) {
-                            <p>No assets match these filters</p>
-                            @if (hiddenCount() > 0) {
-                              <p class="as-hint" data-hidden-hint>
-                                {{ hiddenCount() }} inactive hidden
-                                <button
-                                  type="button"
-                                  class="mf-btn mf-btn--text"
-                                  data-show-all
-                                  (click)="showAll()"
-                                >
-                                  Show all
-                                </button>
-                              </p>
-                            }
-                            <p-button
-                              label="Clear filters"
-                              severity="secondary"
-                              (onClick)="clear()"
-                            />
-                          } @else {
-                            <p>No assets yet.</p>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  }
+                        </div>
+                      } @else {
+                        <span class="as-ref__none" aria-hidden="true">&ndash;</span>
+                        <span class="mf-sr-only">No external reference</span>
+                      }
+                    </td>
+                    <td class="mf-cell-badge" data-status>
+                      @if (a.isActive) {
+                        <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
+                        <span class="mf-sr-only">Active</span>
+                      } @else {
+                        <mf-badge tone="neutral">Inactive</mf-badge>
+                      }
+                    </td>
+                  </tr>
                 }
               </tbody>
             </table>
@@ -355,12 +331,26 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   private readonly auth = inject(AuthStore);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
-  private readonly details = viewChild(AssetDetails);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly defaultSort = 'displayName';
-  protected readonly columns = COLUMNS;
+  /** The External reference column leaves below 1280 px (the kit's column-drop rule); the filter row follows. */
+  protected readonly drop = columnDropOrder(['externalReference']);
+  protected readonly columnSpec: AdminColumn[] = [
+    { cls: 'mf-cell-name', bone: '14rem' },
+    { cls: 'as-type', bone: '7rem' },
+    { cls: 'as-matter', bone: '6rem' },
+    { cls: 'as-refcell', bone: '12rem', drop: this.drop.externalReference },
+    { cls: 'mf-cell-badge', bone: '4rem' },
+  ];
+  /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
+  private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
+  protected readonly visibleColumns = computed<readonly Column[]>(() =>
+    COLUMNS.filter(
+      (c) => !(c === 'externalReference' && this.viewport() < this.drop.externalReference),
+    ),
+  );
   protected readonly types = signal<AssetTypeResponse[]>([]);
   protected readonly selectedId = computed(() => parseSelected(this.selected()));
   /** The asset the panel has loaded (its Matter and state are only known once it is there). */
@@ -424,13 +414,13 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     screen: 'assets',
     noun: 'assets',
     defs: this.defs,
+    visibleColumns: this.visibleColumns,
   });
 
   /** The user chose the selection in this list (so a row that later leaves the page is not "revealed" by changing the filters). */
   private ownSelection: number | null = null;
   private revealTried: number | null = null;
   private lastRevealed = '';
-  private focusDetails = false;
 
   constructor() {
     super();
@@ -439,16 +429,6 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
       injector: this.injector,
-    });
-
-    // Keyboard users who select a row land on the panel heading once the panel is there.
-    effect(() => {
-      const details = this.details();
-      this.selectedId();
-      if (details && this.focusDetails) {
-        this.focusDetails = false;
-        untracked(() => details.requestFocus());
-      }
     });
 
     // The selected row is brought into view (a link from a task, a search result, the matter's Assets tab). Where the page scrolls as a
@@ -566,23 +546,15 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   // ---- selection and details panel
 
-  protected select(asset: AssetListItem, event: MouseEvent): void {
-    // `detail` is 0 for a click made with the keyboard (Enter or Space on the button).
-    const viaKeyboard = event.detail === 0;
-    this.ownSelection = asset.assetId;
-    if (this.selectedId() === asset.assetId) {
-      if (viaKeyboard) this.details()?.requestFocus();
-      return;
-    }
-    this.focusDetails = viaKeyboard;
-    this.navigate({ selected: asset.assetId });
-  }
-
   protected close(): void {
     const id = this.selectedId();
     this.ownSelection = null;
     this.navigate({ selected: null });
     if (id !== null) this.focusRow(id);
+  }
+
+  protected onResize(): void {
+    this.viewport.set(window.innerWidth);
   }
 
   protected onEscape(event: Event): void {

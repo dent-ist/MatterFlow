@@ -197,7 +197,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     const rowOf = (id: number): HTMLElement | null =>
       el().querySelector(`tbody tr[data-asset-id="${id}"]`);
 
-    beforeEach(() => localStorage.clear());
+    beforeEach(() => {
+      localStorage.clear();
+      // The External reference column is on screen from 1280 px.
+      Object.defineProperty(window, 'innerWidth', { value: 1366, configurable: true });
+    });
 
     async function create(permissions: Permission[], inputs: Record<string, string> = {}) {
       await configure(permissions);
@@ -223,13 +227,14 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     }
 
-    it('lists assets with type, matter reference, external reference and status; the name is a button, not a link', async () => {
+    it('lists assets with type, matter reference, external reference and status; the name is a link', async () => {
       await create(['Asset.View', 'Asset.Create', 'Matter.View']);
       const rows = el().querySelectorAll('tbody tr');
 
       expect(rows).toHaveLength(2);
-      expect(rows[0].querySelector('button.as-name')?.textContent?.trim()).toBe('Contract bundle');
-      expect(rows[0].querySelector('td:first-child a')).toBeNull();
+      expect(rows[0].querySelector('td:first-child a')?.textContent?.trim()).toBe(
+        'Contract bundle',
+      );
       expect(rows[0].textContent).toContain('Document Set');
       expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
       expect(rows[0].querySelector('.mf-ref')?.closest('a')?.getAttribute('href')).toBe(
@@ -241,7 +246,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
           t.textContent!.trim(),
         ),
-      ).toEqual(['Name', 'Type', 'Matter', 'External reference', 'Status']);
+      ).toEqual(['Name', 'Type', 'Matter number', 'External reference', 'Status']);
       expect(assets.listAssets).toHaveBeenCalledWith(
         undefined,
         undefined,
@@ -256,6 +261,47 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       // The three standalone filter boxes are gone.
       expect(el().querySelector('#asset-search, #asset-type-filter, mf-status-filter')).toBeNull();
+    });
+
+    it('shows the external reference on one line with the full value as tooltip and a copy button that is not a Tab stop (BUG-5)', async () => {
+      const long = 'https://dms.example/' + 'very-long-folder/'.repeat(60);
+      await create(['Asset.View']);
+      assets.listAssets.mockReturnValue(
+        ok(
+          pageOfAssets(
+            anAssetListItem({ assetId: 9, externalReference: long }),
+            anAssetListItem({ assetId: 10, externalReference: undefined }),
+          ),
+        ),
+      );
+      await setInputs({ sort: 'assetType' });
+
+      const cell = rowOf(9)!.querySelector('td[data-reference]')!;
+      const text = cell.querySelector('.as-ref__text')!;
+      expect(text.textContent?.trim()).toBe(long);
+      expect(text.getAttribute('title')).toBe(long);
+      const copy = cell.querySelector<HTMLButtonElement>('button.mf-copy')!;
+      expect(copy.getAttribute('aria-label')).toBe('Copy external reference');
+      expect(copy.getAttribute('tabindex')).toBe('-1');
+      expect(copy.hasAttribute('data-row-stop')).toBe(true);
+
+      const empty = rowOf(10)!.querySelector('td[data-reference]')!;
+      expect(empty.textContent).toContain('\u2013');
+      expect(empty.querySelector('button')).toBeNull();
+      expect(empty.textContent).toContain('No external reference');
+    });
+
+    it('draws 44 px rows: one link and no copy button in a row but the reference, matter name only as a tooltip, only Inactive has a badge (A2)', async () => {
+      await create(['Asset.View', 'Matter.View']);
+      const row = rowOf(9)!;
+      expect(row.querySelectorAll('a')).toHaveLength(2); // the name and the matter number
+      expect(row.querySelectorAll('mf-matter-ref mf-copy-button')).toHaveLength(0);
+      expect(row.querySelector('.as-sub')).toBeNull();
+      expect(row.querySelector('td[data-matter]')?.getAttribute('title')).toBe('Merger Review');
+      expect(row.querySelector('[data-status] mf-badge')).toBeNull();
+      expect(row.querySelector('[data-status]')?.textContent).toContain('Active');
+      expect(rowOf(10)!.querySelector('[data-status] mf-badge')?.textContent).toContain('Inactive');
+      expect(el().querySelector('table.mf-grid')).not.toBeNull();
     });
 
     it('shows the matter number as plain text, not a link, without Matter.View (BUG-1)', async () => {
@@ -564,16 +610,15 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(parseSelected(undefined)).toBeNull();
       });
 
-      it('shows no panel without a selection, and does not leave the list when a name is clicked', async () => {
+      it('shows no panel without a selection; the name is a real link to the record page (BUG-3)', async () => {
         await create(['Asset.View']);
         expect(el().querySelector('[data-asset-panel]')).toBeNull();
 
-        rowOf(9)!.querySelector<HTMLButtonElement>('button.as-name')!.click();
-        expect(navigate).toHaveBeenLastCalledWith([], {
-          queryParams: { selected: 9 },
-          queryParamsHandling: 'merge',
-        });
-        expect(navigateByUrl).not.toHaveBeenCalled();
+        const name = rowOf(9)!.querySelector<HTMLAnchorElement>('a.mf-name[data-asset-name="9"]')!;
+        expect(name.tagName).toBe('A');
+        expect(name.getAttribute('href')).toBe('/assets/9');
+        expect(name.textContent?.trim()).toBe('Contract bundle');
+        expect(rowOf(9)!.querySelector('button:not(.mf-copy)')).toBeNull(); // the name was a button before
         expect(assets.getAsset).not.toHaveBeenCalled(); // details load only once something is selected
       });
 
@@ -583,8 +628,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(rowOf(9)!.getAttribute('aria-current')).toBe('true');
         expect(rowOf(9)!.hasAttribute('data-selected')).toBe(true);
         expect(rowOf(10)!.getAttribute('aria-current')).toBeNull();
-        const name = rowOf(9)!.querySelector('button.as-name')!;
-        expect(name.getAttribute('aria-controls')).toBe('asset-panel');
+        expect(rowOf(9)!.querySelector('a.mf-name')).not.toBeNull();
 
         const panel = el().querySelector('#asset-panel')!;
         expect(panel.getAttribute('aria-label')).toBe('Asset details');
@@ -624,7 +668,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
           queryParams: { selected: null },
           queryParamsHandling: 'merge',
         });
-        expect(document.activeElement).toBe(rowOf(9)!.querySelector('button.as-name'));
+        expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
 
         navigate.mockClear();
         (document.activeElement as HTMLElement).blur();
@@ -636,7 +680,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
           queryParams: { selected: null },
           queryParamsHandling: 'merge',
         });
-        expect(document.activeElement).toBe(rowOf(9)!.querySelector('button.as-name'));
+        expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
       });
 
       it('leaves Escape alone without a selection, when already handled, and inside a dialog', async () => {
@@ -660,21 +704,6 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         el().querySelector('#asset-panel')!.appendChild(dialog);
         escape(dialog);
         expect(navigate).not.toHaveBeenCalled();
-      });
-
-      it('moves focus to the panel heading when a row is chosen with the keyboard, but not with the mouse', async () => {
-        await create(['Asset.View']);
-        const name = rowOf(9)!.querySelector<HTMLButtonElement>('button.as-name')!;
-        name.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })); // mouse
-        await setInputs({ selected: '9' });
-        expect(document.activeElement).not.toBe(el().querySelector('#asset-panel h2'));
-
-        await setInputs({ selected: '10' });
-        const other = rowOf(9)!.querySelector<HTMLButtonElement>('button.as-name')!;
-        other.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 })); // Enter or Space
-        await setInputs({ selected: '9' });
-        await settle(fixture);
-        expect(document.activeElement).toBe(el().querySelector('#asset-panel h2'));
       });
 
       it('narrows the list to the matter of a linked asset that is not on this page, once, all states', async () => {
@@ -706,16 +735,9 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(navigate).toHaveBeenCalledTimes(1);
       });
 
-      it('does not touch the filters when the linked asset is on the page, or when the user picked it', async () => {
+      it('does not touch the filters when the linked asset is on the page', async () => {
         await create(['Asset.View'], { selected: '9' });
         expect(navigate).not.toHaveBeenCalled();
-
-        // The user picks a row, then filters it away: the panel stays, the filters stay as typed.
-        rowOf(10)!.querySelector<HTMLButtonElement>('button.as-name')!.click();
-        assets.getAsset.mockReturnValue(ok(anAsset({ assetId: 10, matterRef: '00343-00012' })));
-        assets.listAssets.mockReturnValue(ok(pageOfAssets(anAssetListItem({ assetId: 11 }))));
-        await setInputs({ selected: '10', name: 'other' });
-        expect(navigate).toHaveBeenCalledTimes(1); // only the click
       });
 
       it('updates the row when the panel sets the asset inactive', async () => {
