@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using MatterFlow.IntegrationTests.Fixtures;
 using Shouldly;
 using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
@@ -396,5 +397,97 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
         var podOnly = await d.H.UserWithAsync(@"KE\podonly", "Pod.View", "Dashboard.View");
         await ProblemAsync(await podOnly.GetAsync("/api/v1/pod-work"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         await ProblemAsync(await podOnly.GetAsync($"/api/v1/pod-work?podId={d.PodA}&view=members"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
+    }
+
+    // ---- Pod Work epic #546: additive fields (#556 pod choices, #560 strip, #565 member loads)
+
+    [Theory]
+    [InlineData("UTC")]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    public async Task Pod_work_summary_carries_due_today_and_asap_that_equal_the_grid_totals_in_the_viewers_zone(string zone)
+    {
+        var d = await DataAsync();
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(zone)));
+        foreach (var pod in new[] { d.PodA, d.PodB, d.PodC })
+        {
+            async Task<int> TotalAsync(string filter) =>
+                (await d.GetAsync($"/api/v1/pod-work?podId={pod}&view=all&pageSize=1&{filter}", d.TechAClient, zone)).GetProperty("total").GetInt32();
+
+            var summary = (await d.GetAsync($"/api/v1/pod-work?podId={pod}&pageSize=1", d.TechAClient, zone)).GetProperty("summary");
+            summary.GetProperty("dueToday").GetInt32().ShouldBe(await TotalAsync($"dueFrom={today:yyyy-MM-dd}&dueTo={today:yyyy-MM-dd}&overdue=false"), $"due today in pod {pod}, {zone}");
+            summary.GetProperty("asap").GetInt32().ShouldBe(await TotalAsync("asap=true"), $"ASAP in pod {pod}");
+            // The existing fields keep their meaning.
+            summary.GetProperty("overdue").GetInt32().ShouldBe(await TotalAsync("overdue=true"));
+            summary.GetProperty("unassignedToPerson").GetInt32().ShouldBe(
+                (await d.GetAsync($"/api/v1/pod-work?podId={pod}&view=queue&pageSize=1", d.TechAClient, zone)).GetProperty("total").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Pod_choices_carry_member_open_unassigned_and_overdue_counts_that_equal_each_pods_summary()
+    {
+        var d = await DataAsync();
+        var page = await PodWorkAsync(d, d.TechAClient, $"podId={d.PodA}");
+        var choices = page.GetProperty("pods").EnumerateArray().ToList();
+        choices.Count.ShouldBeGreaterThanOrEqualTo(3);
+        foreach (var choice in choices)
+        {
+            var podId = choice.GetProperty("podId").GetInt32();
+            var summary = (await d.GetAsync($"/api/v1/pod-work?podId={podId}&pageSize=1", d.TechAClient)).GetProperty("summary");
+            choice.GetProperty("openCount").GetInt32().ShouldBe(summary.GetProperty("unassignedToPerson").GetInt32() + summary.GetProperty("assigned").GetInt32(), $"pod {podId}");
+            choice.GetProperty("unassignedCount").GetInt32().ShouldBe(summary.GetProperty("unassignedToPerson").GetInt32(), $"pod {podId}");
+            choice.GetProperty("overdueCount").GetInt32().ShouldBe(summary.GetProperty("overdue").GetInt32(), $"pod {podId}");
+        }
+
+        int Count(int podId, string field) => choices.Single(c => c.GetProperty("podId").GetInt32() == podId).GetProperty(field).GetInt32();
+        Count(d.PodA, "memberCount").ShouldBe(2);
+        Count(d.PodB, "memberCount").ShouldBe(1);
+        Count(d.PodC, "memberCount").ShouldBe(0);
+
+        // A pod with no members and no tasks reads zero everywhere. It is made inactive again afterwards: the other tests count the pods.
+        var empty = await d.H.CreatePodAsync("Pod Empty " + Guid.NewGuid().ToString("N")[..8]);
+        try
+        {
+            var fresh = (await PodWorkAsync(d, d.TechAClient, $"podId={d.PodA}")).GetProperty("pods").EnumerateArray()
+                .Single(c => c.GetProperty("podId").GetInt32() == empty);
+            foreach (var field in new[] { "memberCount", "openCount", "unassignedCount", "overdueCount" })
+                fresh.GetProperty(field).GetInt32().ShouldBe(0, field);
+        }
+        finally
+        {
+            await d.H.ExecuteAsync($"UPDATE dbo.Pod SET IsActive = 0 WHERE PodId = {empty}");
+        }
+    }
+
+    [Fact]
+    public async Task Member_loads_carry_availability_the_unassigned_count_and_the_number_of_people_with_work()
+    {
+        var d = await DataAsync();
+        var own = await OkAsync(await d.TechBClient.GetAsync("/api/v1/me/availability"));
+        await OkAsync(await d.TechBClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "OUT_OF_OFFICE", until = "2099-12-31", note = "Conference", rowVersion = own.GetProperty("rowVersion").GetString() }));
+        try
+        {
+            var page = await PodWorkAsync(d, d.TechAClient, $"podId={d.PodA}&view=members");
+            var loads = page.GetProperty("memberLoads").EnumerateArray().ToList();
+            var techB = loads.Single(l => l.GetProperty("userId").GetInt32() == d.TechB);
+            var out_ = techB.GetProperty("availability");
+            out_.GetProperty("state").GetString().ShouldBe("OUT_OF_OFFICE");
+            out_.GetProperty("note").GetString().ShouldBe("Conference");
+            // Tech A is a member too and available (or off hours, a soft state that is never reported as unavailable): never "out of office".
+            var techA = loads.Single(l => l.GetProperty("userId").GetInt32() == d.TechA);
+            if (techA.TryGetProperty("availability", out var a) && a.ValueKind != System.Text.Json.JsonValueKind.Null)
+                a.GetProperty("state").GetString().ShouldNotBe("OUT_OF_OFFICE");
+
+            var queue = await PodWorkAsync(d, d.TechAClient, $"podId={d.PodA}&view=queue");
+            page.GetProperty("unassigned").GetInt32().ShouldBe(queue.GetProperty("total").GetInt32());
+            page.GetProperty("counts").GetProperty("membersWithWork").GetInt32().ShouldBe(loads.Count(l => l.GetProperty("open").GetInt32() > 0));
+            page.GetProperty("counts").GetProperty("members").GetInt32().ShouldBe(page.GetProperty("total").GetInt32());
+        }
+        finally
+        {
+            var current = await OkAsync(await d.TechBClient.GetAsync("/api/v1/me/availability"));
+            await OkAsync(await d.TechBClient.PutAsJsonAsync("/api/v1/me/availability", new { status = "AVAILABLE", rowVersion = current.GetProperty("rowVersion").GetString() }));
+        }
     }
 }

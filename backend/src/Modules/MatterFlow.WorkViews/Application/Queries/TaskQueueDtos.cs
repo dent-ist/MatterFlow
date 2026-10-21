@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MatterFlow.Identity.Contracts;
 
 namespace MatterFlow.WorkViews.Application.Queries;
 
@@ -153,28 +154,45 @@ public sealed record MyWorkPage(
     [property: Required] MyWorkAttention Attention,
     MyWorkBucketCounts? BucketCounts = null);
 
-/// <summary>A Pod in the Pod Work selector: the user's own Pods first (primary flagged), then the others.</summary>
+/// <summary>
+/// A Pod in the Pod Work selector: the user's own Pods first (primary flagged), then the others. The numbers come from one grouped query for
+/// all Pods and use the same open-Task definition as <see cref="PodWorkSummary"/>: <c>MemberCount</c> counts active members, <c>OpenCount</c>
+/// the open Tasks of the Pod, <c>UnassignedCount</c> those no person holds and <c>OverdueCount</c> the overdue ones.
+/// </summary>
 public sealed record PodChoice(
     [property: Required] int PodId,
     [property: Required] string Name,
     [property: Required] bool IsMember,
-    [property: Required] bool IsPrimary);
+    [property: Required] bool IsPrimary,
+    [property: Required] int MemberCount = 0,
+    [property: Required] int OpenCount = 0,
+    [property: Required] int UnassignedCount = 0,
+    [property: Required] int OverdueCount = 0);
 
-/// <summary>Pod Work header numbers (open Tasks of the Pod).</summary>
+/// <summary>
+/// Pod Work header numbers (open Tasks of the Pod, never the grid filters). <c>DueToday</c> (due on the viewer's local date, not yet overdue)
+/// and <c>Asap</c> (open, no due date) are My Work's definitions.
+/// </summary>
 public sealed record PodWorkSummary(
     [property: Required] int UnassignedToPerson,
     [property: Required] int Assigned,
     [property: Required] int Overdue,
-    [property: Required] int OnHold);
+    [property: Required] int OnHold,
+    [property: Required] int DueToday = 0,
+    [property: Required] int Asap = 0);
 
-/// <summary>Tab counts of Pod Work.</summary>
+/// <summary>
+/// Tab counts of Pod Work. <c>Members</c> is the number of assigned open Tasks (the By member tab's grid total); <c>MembersWithWork</c> is the
+/// number of people who hold at least one open Task of the Pod (what the By member tab shows as its count).
+/// </summary>
 public sealed record PodWorkCounts(
     [property: Required] int Queue,
     [property: Required] int Members,
     [property: Required] int Attention,
-    [property: Required] int All);
+    [property: Required] int All,
+    [property: Required] int MembersWithWork = 0);
 
-/// <summary>Open work of one person in a Pod: a workload fact, not a score.</summary>
+/// <summary>Open work of one person in a Pod: a workload fact, not a score. <c>Availability</c> is null while the person is available.</summary>
 public sealed record PodMemberLoad(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -182,12 +200,13 @@ public sealed record PodMemberLoad(
     [property: Required] bool IsMember,
     [property: Required] int Open,
     [property: Required] int Overdue,
-    [property: Required] int OnHold);
+    [property: Required] int OnHold,
+    UserAvailabilitySummary? Availability = null);
 
 /// <summary>
 /// A page of Pod Work. <c>pod</c> is null when the user has no Pod and none was requested. Views: <c>queue</c> (Pod Tasks not assigned to a person),
 /// <c>members</c> (Pod Tasks assigned to a person; <c>memberLoads</c> lists the workload per person), <c>attention</c> (overdue or on hold),
-/// <c>all</c> (all open Pod Tasks).
+/// <c>all</c> (all open Pod Tasks). <c>Unassigned</c> is the number of open Pod Tasks no person holds (the Unassigned tab's total without filters).
 /// </summary>
 public sealed record PodWorkPage(
     [property: Required] IReadOnlyList<TaskQueueRow> Items,
@@ -200,4 +219,5 @@ public sealed record PodWorkPage(
     [property: Required] IReadOnlyList<PodChoice> Pods,
     [property: Required] PodWorkSummary Summary,
     [property: Required] PodWorkCounts Counts,
-    [property: Required] IReadOnlyList<PodMemberLoad> MemberLoads);
+    [property: Required] IReadOnlyList<PodMemberLoad> MemberLoads,
+    [property: Required] int Unassigned = 0);

@@ -19,7 +19,13 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// to its Priority for the sort), the display columns of those ids in one joined query, the workflow step progress of their instances in one
 /// query, and the total. Everyone with Task.View sees all Tasks (addendum E); Pod Work is a filtered view, not a security boundary.
 /// </summary>
-public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPodDirectory podDirectory)
+public sealed class TaskQueueService(
+    DbContext db,
+    IClock clock,
+    IUserTimeZone timeZone,
+    ICurrentUser currentUser,
+    IPodDirectory podDirectory,
+    IUserAvailabilityReader availability)
 {
     public const string ViewActive = "active";
     public const string ViewDueSoon = "dueSoon";
@@ -245,10 +251,10 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                 return Error.NotFound("Pod not found.");
         }
 
-        var choices = await PodChoicesAsync(mine, pod, ct);
+        var choices = await PodChoicesAsync(mine, pod, queueClock, ct);
         if (pod is null)
         {
-            return new PodWorkPage([], 0, page.Page, page.PageSize, queueClock.ZoneId, view, null, choices, new PodWorkSummary(0, 0, 0, 0), new PodWorkCounts(0, 0, 0, 0), []);
+            return new PodWorkPage([], 0, page.Page, page.PageSize, queueClock.ZoneId, view, null, choices, new PodWorkSummary(0, 0, 0, 0, 0, 0), new PodWorkCounts(0, 0, 0, 0, 0), [], 0);
         }
 
         var tasks = db.Set<WorkTask>().AsNoTracking();
@@ -257,7 +263,9 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             await podOpen.CountAsync(t => t.AssignedUserId == null, ct),
             await podOpen.CountAsync(t => t.AssignedUserId != null, ct),
             await podOpen.Where(TaskQueueRules.Overdue(queueClock)).CountAsync(ct),
-            await podOpen.CountAsync(t => t.Status == TaskStatusCode.OnHold, ct));
+            await podOpen.CountAsync(t => t.Status == TaskStatusCode.OnHold, ct),
+            await podOpen.Where(TaskQueueRules.DueToday(queueClock)).CountAsync(ct),
+            await podOpen.Where(TaskQueueRules.Asap).CountAsync(ct));
 
         var filtered = ApplyFilter(tasks, filter, queueClock).Where(t => t.AssignedPodId == pod.PodId).Where(TaskQueueRules.Open);
         var queue = filtered.Where(t => t.AssignedUserId == null);
@@ -276,23 +284,54 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
             view == PodViewQueue ? total : await queue.CountAsync(ct),
             view == PodViewMembers ? total : await members.CountAsync(ct),
             view == PodViewAttention ? total : await attention.CountAsync(ct),
-            view == PodViewAll ? total : await filtered.CountAsync(ct));
+            view == PodViewAll ? total : await filtered.CountAsync(ct),
+            0);
 
         var loads = await MemberLoadsAsync(pod.PodId, podOpen, queueClock, ct);
-        return new PodWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, new QueuePod(pod.PodId, pod.Name, pod.IsActive), choices, summary, counts, loads);
+        counts = counts with { MembersWithWork = loads.Count(l => l.Open > 0) };
+        return new PodWorkPage(items, total, page.Page, page.PageSize, queueClock.ZoneId, view, new QueuePod(pod.PodId, pod.Name, pod.IsActive), choices, summary, counts, loads, summary.UnassignedToPerson);
     }
 
-    private async Task<IReadOnlyList<PodChoice>> PodChoicesAsync(IReadOnlyList<UserPodInfo> mine, PodInfo? selected, CancellationToken ct)
+    private async Task<IReadOnlyList<PodChoice>> PodChoicesAsync(IReadOnlyList<UserPodInfo> mine, PodInfo? selected, QueueClock queueClock, CancellationToken ct)
     {
-        var choices = mine.Select(p => new PodChoice(p.Pod.PodId, p.Pod.Name, true, p.IsPrimary)).ToList();
+        var choices = mine.Select(p => (p.Pod.PodId, p.Pod.Name, IsMember: true, p.IsPrimary)).ToList();
         var known = choices.Select(c => c.PodId).ToHashSet();
         var others = await db.Set<Pod>().AsNoTracking()
             .Where(p => p.IsActive || (selected != null && p.Id == selected.PodId))
             .OrderBy(p => p.Name)
             .Select(p => new { p.Id, p.Name })
             .ToListAsync(ct);
-        choices.AddRange(others.Where(p => !known.Contains(p.Id)).Select(p => new PodChoice(p.Id, p.Name, false, false)));
-        return choices;
+        choices.AddRange(others.Where(p => !known.Contains(p.Id)).Select(p => (p.Id, p.Name, IsMember: false, IsPrimary: false)));
+
+        // The numbers of every listed Pod: three grouped queries however many Pods there are (members, open Tasks, overdue Tasks).
+        var ids = choices.Select(c => c.PodId).ToList();
+        var members = await db.Set<PodMember>().AsNoTracking()
+            .Where(m => ids.Contains(m.PodId) && m.User.IsActive)
+            .GroupBy(m => m.PodId)
+            .Select(g => new { PodId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.PodId, g => g.Count, ct);
+        var open = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedPodId != null && ids.Contains(t.AssignedPodId.Value)).Where(TaskQueueRules.Open);
+        var openCounts = await open
+            .GroupBy(t => t.AssignedPodId!.Value)
+            .Select(g => new { PodId = g.Key, Open = g.Count(), Unassigned = g.Count(t => t.AssignedUserId == null) })
+            .ToDictionaryAsync(g => g.PodId, ct);
+        var overdue = await open.Where(TaskQueueRules.Overdue(queueClock))
+            .GroupBy(t => t.AssignedPodId!.Value)
+            .Select(g => new { PodId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.PodId, g => g.Count, ct);
+
+        return
+        [
+            .. choices.Select(c => new PodChoice(
+                c.PodId,
+                c.Name,
+                c.IsMember,
+                c.IsPrimary,
+                members.GetValueOrDefault(c.PodId),
+                openCounts.TryGetValue(c.PodId, out var o) ? o.Open : 0,
+                openCounts.TryGetValue(c.PodId, out var u) ? u.Unassigned : 0,
+                overdue.GetValueOrDefault(c.PodId))),
+        ];
     }
 
     private async Task<IReadOnlyList<PodMemberLoad>> MemberLoadsAsync(int podId, IQueryable<WorkTask> podOpen, QueueClock queueClock, CancellationToken ct)
@@ -310,6 +349,7 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
         var userIds = open.Select(o => o.UserId).Concat(memberIds).Distinct().ToList();
         var users = await db.Set<AppUser>().AsNoTracking().Where(u => userIds.Contains(u.Id)).Select(u => new { u.Id, u.DisplayName, u.IsActive }).ToListAsync(ct);
         var counts = open.ToDictionary(o => o.UserId);
+        var states = await availability.EvaluateAsync(users.Select(u => u.Id).ToList(), queueClock.NowUtc, ct);
         return
         [
             .. users
@@ -322,7 +362,8 @@ public sealed class TaskQueueService(DbContext db, IClock clock, IUserTimeZone t
                     memberIds.Contains(u.Id),
                     counts.TryGetValue(u.Id, out var c) ? c.Open : 0,
                     overdue.GetValueOrDefault(u.Id),
-                    counts.TryGetValue(u.Id, out var h) ? h.OnHold : 0)),
+                    counts.TryGetValue(u.Id, out var h) ? h.OnHold : 0,
+                    states.TryGetValue(u.Id, out var state) && state.State != "AVAILABLE" ? UserAvailabilitySummary.From(state) : null)),
         ];
     }
 

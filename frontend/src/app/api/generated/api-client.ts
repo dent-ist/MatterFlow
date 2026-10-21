@@ -12599,6 +12599,10 @@ export interface PodChoice {
     name: string;
     isMember: boolean;
     isPrimary: boolean;
+    memberCount: number;
+    openCount: number;
+    unassignedCount: number;
+    overdueCount: number;
 
     [key: string]: any;
 }
@@ -12637,6 +12641,7 @@ export interface PodMemberLoad {
     open: number;
     overdue: number;
     onHold: number;
+    availability?: UserAvailabilitySummary | undefined;
 
     [key: string]: any;
 }
@@ -12657,6 +12662,7 @@ export interface PodWorkCounts {
     members: number;
     attention: number;
     all: number;
+    membersWithWork: number;
 
     [key: string]: any;
 }
@@ -12673,6 +12679,7 @@ export interface PodWorkPage {
     summary: PodWorkSummary;
     counts: PodWorkCounts;
     memberLoads: PodMemberLoad[];
+    unassigned: number;
 
     [key: string]: any;
 }
@@ -12682,6 +12689,8 @@ export interface PodWorkSummary {
     assigned: number;
     overdue: number;
     onHold: number;
+    dueToday: number;
+    asap: number;
 
     [key: string]: any;
 }

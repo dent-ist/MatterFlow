@@ -12275,7 +12275,11 @@
           "podId",
           "name",
           "isMember",
-          "isPrimary"
+          "isPrimary",
+          "memberCount",
+          "openCount",
+          "unassignedCount",
+          "overdueCount"
         ],
         "type": "object",
         "properties": {
@@ -12291,6 +12295,26 @@
           },
           "isPrimary": {
             "type": "boolean"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "openCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "unassignedCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "overdueCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -12409,6 +12433,16 @@
           "onHold": {
             "type": "integer",
             "format": "int32"
+          },
+          "availability": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserAvailabilitySummary"
+              }
+            ]
           }
         }
       },
@@ -12453,7 +12487,8 @@
           "queue",
           "members",
           "attention",
-          "all"
+          "all",
+          "membersWithWork"
         ],
         "type": "object",
         "properties": {
@@ -12472,6 +12507,11 @@
           "all": {
             "type": "integer",
             "format": "int32"
+          },
+          "membersWithWork": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -12487,7 +12527,8 @@
           "pods",
           "summary",
           "counts",
-          "memberLoads"
+          "memberLoads",
+          "unassigned"
         ],
         "type": "object",
         "properties": {
@@ -12542,6 +12583,11 @@
             "items": {
               "$ref": "#/components/schemas/PodMemberLoad"
             }
+          },
+          "unassigned": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -12550,7 +12596,9 @@
           "unassignedToPerson",
           "assigned",
           "overdue",
-          "onHold"
+          "onHold",
+          "dueToday",
+          "asap"
         ],
         "type": "object",
         "properties": {
@@ -12569,6 +12617,16 @@
           "onHold": {
             "type": "integer",
             "format": "int32"
+          },
+          "dueToday": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
+          },
+          "asap": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
