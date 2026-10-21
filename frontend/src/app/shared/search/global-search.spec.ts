@@ -19,6 +19,7 @@ describe('mf-global-search (header typeahead)', () => {
   // The component loads the API client module lazily; warm it so the first typed query is not racing a chunk load.
   beforeAll(async () => {
     await import('../../api/generated/api-client');
+    await import('../../core/lookups/lookup-store');
   });
 
   const el = (): HTMLElement => fixture.nativeElement;

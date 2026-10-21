@@ -27,7 +27,7 @@ import {
   suggestionLines,
 } from './search-meta';
 import { Badge, SensitiveBadge } from '../ui/badge';
-import { LookupStore } from '../../core/lookups/lookup-store';
+import type { LookupStore } from '../../core/lookups/lookup-store';
 import { ScrollRegion } from '../ui/scroll-region';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -378,7 +378,8 @@ export class GlobalSearch {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly lookups = inject(LookupStore);
+  /** Set on the first search (loaded lazily with the API client, which the initial bundle must not carry). */
+  private readonly lookups = signal<LookupStore | null>(null);
   private readonly box = viewChild.required<ElementRef<HTMLInputElement>>('box');
 
   protected readonly query = signal('');
@@ -484,7 +485,7 @@ export class GlobalSearch {
 
   /** What an option shows besides its name (reference, tooltip, muted line, lock): see `suggestionLines`. */
   protected linesOf(hit: SearchHit) {
-    return suggestionLines(hit, (code) => this.lookups.statusLabel(code));
+    return suggestionLines(hit, (code) => this.lookups()?.statusLabel(code) ?? code);
   }
 
   protected onInput(value: string): void {
@@ -597,6 +598,8 @@ export class GlobalSearch {
       const types = SEARCH_TYPES.filter((t) => this.auth.has(t.permission)).map((t) => t.type);
       // The generated API client module is large; load it on first search so it stays out of the initial bundle.
       const { SearchClient } = await import('../../api/generated/api-client');
+      const { LookupStore } = await import('../../core/lookups/lookup-store');
+      this.lookups.set(this.injector.get(LookupStore));
       const api = this.injector.get(SearchClient);
       const result = await firstValueFrom(api.search(text, types, this.perType()));
       if (id !== this.requestId) return;
