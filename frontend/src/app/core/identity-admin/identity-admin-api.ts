@@ -34,6 +34,9 @@ export interface PodChoice {
 
 export type UserStatusFilter = 'all' | 'pending' | 'active' | 'inactive';
 
+/** The sort keys of the users list (#436). */
+export type UserSortKey = 'name' | 'firstSeen' | 'lastSeen';
+
 export interface UserListQuery {
   status?: UserStatusFilter;
   search?: string;
@@ -50,6 +53,10 @@ export interface UserListQuery {
   registeredTo?: string;
   page?: number;
   pageSize?: number;
+  /** `name`, `firstSeen` or `lastSeen` (people who never signed in are last); omitted keeps the queue order (waiting people first). */
+  sort?: UserSortKey;
+  /** Direction of `sort`; ascending by default. */
+  dir?: 'asc' | 'desc';
 }
 
 /**

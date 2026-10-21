@@ -32,6 +32,8 @@ public class UsersController(UserAdministration users) : ControllerBase
     /// <param name="registeredTo">Last day (viewer's zone, inclusive), <c>yyyy-MM-dd</c>.</param>
     /// <param name="page">1-based page.</param>
     /// <param name="pageSize">Items per page (default 25, max 100).</param>
+    /// <param name="sort"><c>name</c>, <c>firstSeen</c> (first sign-in) or <c>lastSeen</c> (last sign-in, <c>lastLoginAtUtc</c> of the row; people who never signed in are last). Omitted: waiting people first, then active, then inactive, then name.</param>
+    /// <param name="dir"><c>asc</c> (default) or <c>desc</c>, with <paramref name="sort"/>; ties are broken by id so paging is stable.</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet(Name = "ListUsers")]
     [RequirePermission(Permissions.User.View)]
@@ -48,8 +50,15 @@ public class UsersController(UserAdministration users) : ControllerBase
         [FromQuery, StringLength(10)] string? registeredTo,
         [FromQuery, Range(1, int.MaxValue)] int page = PageRequest.FirstPage,
         [FromQuery, Range(1, PageRequest.MaxPageSize)] int pageSize = PageRequest.DefaultPageSize,
+        [FromQuery, StringLength(20)] string? sort = null,
+        [FromQuery, StringLength(4)] string? dir = null,
         CancellationToken cancellationToken = default)
     {
+        var sortKey = UserSortKeys.Canonical(sort);
+        if (sort is not null && sortKey is null)
+            return this.Problem(Error.Validation("sort", "INVALID", "sort must be name, firstSeen or lastSeen."));
+        if (dir is not null && !string.Equals(dir, "asc", StringComparison.OrdinalIgnoreCase) && !string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase))
+            return this.Problem(Error.Validation("dir", "INVALID", "dir must be asc or desc."));
         if (!UserListStatuses.IsValid(status))
             return this.Problem(Error.Validation("status", "INVALID", "status must be all, pending, active or inactive."));
         if (availability is not null and not (AvailabilityStates.Available or AvailabilityStates.OutOfOffice or AvailabilityStates.OffHours))
@@ -61,7 +70,7 @@ public class UsersController(UserAdministration users) : ControllerBase
         if (from is not null && to is not null && from > to)
             return this.Problem(Error.Validation("registeredFrom", "INVALID", "The start date must not be after the end date."));
 
-        var filter = new UserListFilter(status, search, name, account, email, roleId, availability, from, to);
+        var filter = new UserListFilter(status, search, name, account, email, roleId, availability, from, to, sortKey, string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase));
         return Ok(await users.ListAsync(filter, new PageRequest(page, pageSize), cancellationToken));
     }
 

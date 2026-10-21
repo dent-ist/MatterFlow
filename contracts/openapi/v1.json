@@ -3000,6 +3000,24 @@
               "format": "int32",
               "default": 25
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "maxLength": 4,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {

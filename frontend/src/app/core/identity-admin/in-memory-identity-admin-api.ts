@@ -174,11 +174,7 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
             ))
         );
       })
-      .sort(
-        (a, b) =>
-          Number(this.isPending(b)) - Number(this.isPending(a)) ||
-          a.displayName.localeCompare(b.displayName),
-      );
+      .sort((a, b) => this.compare(a, b, q));
     const page = q.page ?? 1;
     const pageSize = q.pageSize ?? 25;
     return of({
@@ -187,6 +183,29 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       page,
       pageSize,
     });
+  }
+
+  /** The server's order: a sort key (ties by id; never signed in last) or, without one, waiting people first, then by name. */
+  private compare(a: MemUser, b: MemUser, q: UserListQuery): number {
+    const sign = q.dir === 'desc' ? -1 : 1;
+    switch (q.sort) {
+      case 'name':
+        return sign * a.displayName.localeCompare(b.displayName) || a.userId - b.userId;
+      case 'firstSeen':
+        return sign * a.registeredAtUtc.localeCompare(b.registeredAtUtc) || a.userId - b.userId;
+      case 'lastSeen': {
+        if (!a.lastLoginAtUtc !== !b.lastLoginAtUtc) return a.lastLoginAtUtc ? -1 : 1;
+        return (
+          sign * (a.lastLoginAtUtc ?? '').localeCompare(b.lastLoginAtUtc ?? '') ||
+          a.userId - b.userId
+        );
+      }
+      default:
+        return (
+          Number(this.isPending(b)) - Number(this.isPending(a)) ||
+          a.displayName.localeCompare(b.displayName)
+        );
+    }
   }
 
   userCounts(): Observable<UserCountsDto> {

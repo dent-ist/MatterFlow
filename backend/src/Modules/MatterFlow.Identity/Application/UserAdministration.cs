@@ -25,6 +25,18 @@ public static class UserListStatuses
     public static bool IsValid(string? value) => value is null or All or Pending or Active or Inactive;
 }
 
+/// <summary>The sort keys of the users list (whitelisted; the address names them as written here).</summary>
+public static class UserSortKeys
+{
+    public const string Name = "name";
+    public const string FirstSeen = "firstSeen";
+    public const string LastSeen = "lastSeen";
+
+    /// <summary>The key as written above (the address is case-insensitive), or null when it is not one of them.</summary>
+    public static string? Canonical(string? value) =>
+        new[] { Name, FirstSeen, LastSeen }.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
 /// <summary>Filters of the users list. The column filters combine with AND; <see cref="Search"/> is the older any-column search.</summary>
 /// <param name="Status"><c>all</c>, <c>pending</c> (active, no access yet), <c>active</c> (active with access; pending people are not in it) or <c>inactive</c> (null = all).</param>
 /// <param name="Search">Display name, e-mail or Windows account fragment.</param>
@@ -35,6 +47,8 @@ public static class UserListStatuses
 /// <param name="Availability"><c>AVAILABLE</c>, <c>OUT_OF_OFFICE</c> or <c>OFF_HOURS</c>, evaluated now.</param>
 /// <param name="RegisteredFrom">First day (viewer's zone) of the first-seen date.</param>
 /// <param name="RegisteredTo">Last day (viewer's zone, inclusive) of the first-seen date.</param>
+/// <param name="Sort"><c>name</c>, <c>firstSeen</c> or <c>lastSeen</c>; null keeps the queue order (waiting people first, then active, then inactive, then name).</param>
+/// <param name="Descending">Sort direction for <paramref name="Sort"/>; people with no last-seen time stay last in either direction.</param>
 public sealed record UserListFilter(
     string? Status = null,
     string? Search = null,
@@ -44,7 +58,9 @@ public sealed record UserListFilter(
     IReadOnlyCollection<int>? RoleIds = null,
     string? Availability = null,
     DateOnly? RegisteredFrom = null,
-    DateOnly? RegisteredTo = null);
+    DateOnly? RegisteredTo = null,
+    string? Sort = null,
+    bool Descending = false);
 
 /// <summary>
 /// Users queue and role assignment (architecture 6; baseline 6.4). Every change is audited, invalidates the effective-permission
@@ -121,14 +137,27 @@ public sealed class UserAdministration(
             query = query.Where(u => u.CreatedAtUtc < beforeUtc);
         }
 
-        // Pending first (oldest waiting first), then active, then inactive; stable by name.
-        IOrderedQueryable<AppUser> Ordered(IQueryable<AppUser> source) => status == UserListStatuses.Pending
-            ? source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id)
-            : source
-                .OrderByDescending(u => u.IsActive && !u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))))
-                .ThenByDescending(u => u.IsActive)
-                .ThenBy(u => u.DisplayName)
-                .ThenBy(u => u.Id);
+        // Without a sort key: pending first (oldest waiting first), then active, then inactive; stable by name. With one: that key, ties by id
+        // (stable paging); the people with no last-seen time stay last in either direction.
+        IOrderedQueryable<AppUser> Ordered(IQueryable<AppUser> source) => filter.Sort switch
+        {
+            UserSortKeys.Name => filter.Descending
+                ? source.OrderByDescending(u => u.DisplayName).ThenBy(u => u.Id)
+                : source.OrderBy(u => u.DisplayName).ThenBy(u => u.Id),
+            UserSortKeys.FirstSeen => filter.Descending
+                ? source.OrderByDescending(u => u.CreatedAtUtc).ThenBy(u => u.Id)
+                : source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id),
+            UserSortKeys.LastSeen => filter.Descending
+                ? source.OrderBy(u => u.Identities.Max(i => i.LastLoginAt) == null).ThenByDescending(u => u.Identities.Max(i => i.LastLoginAt)).ThenBy(u => u.Id)
+                : source.OrderBy(u => u.Identities.Max(i => i.LastLoginAt) == null).ThenBy(u => u.Identities.Max(i => i.LastLoginAt)).ThenBy(u => u.Id),
+            _ => status == UserListStatuses.Pending
+                ? source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id)
+                : source
+                    .OrderByDescending(u => u.IsActive && !u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))))
+                    .ThenByDescending(u => u.IsActive)
+                    .ThenBy(u => u.DisplayName)
+                    .ThenBy(u => u.Id),
+        };
 
         int total;
         IQueryable<AppUser> pageQuery;

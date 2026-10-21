@@ -56,6 +56,8 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
         q.registeredTo,
         q.page,
         q.pageSize,
+        q.sort,
+        q.dir,
       ),
     );
   }
