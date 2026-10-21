@@ -9,7 +9,7 @@
 }
 
 .mf-list {
-  width: 280px;
+  width: 320px;
   padding: var(--mf-s3);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
@@ -36,6 +36,7 @@
   border-radius: var(--mf-radius);
   font: inherit;
   cursor: pointer;
+  position: relative;
 
   &.mf-active {
     background: var(--mf-selected-bg);
@@ -43,6 +44,7 @@
 }
 
 .mf-namecell {
+  flex: 1 1 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -50,8 +52,34 @@
   min-width: 0;
 }
 
+/* A long role name wraps to two lines at most; the full name is the tooltip (title). */
 .mf-name {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
   font-weight: 600;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.mf-editor-count {
+  margin: 0 0 var(--mf-s3);
+  color: var(--mf-text-muted);
+}
+
+.mf-group-count {
+  margin-left: var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* In the narrow list pane the members and permission counts share the second line of a role. */
+.mf-permcount {
+  margin-left: 0;
 }
 
 .mf-desc,
@@ -73,7 +101,7 @@
 
   .mf-role-head {
     display: grid;
-    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 1.5rem;
+    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 7rem 1.5rem;
     gap: var(--mf-s3);
     margin: 0;
     padding: var(--mf-s2) var(--mf-s3);
@@ -90,7 +118,7 @@
 
   .mf-role {
     display: grid;
-    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 1.5rem;
+    grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr) 7rem 7rem 1.5rem;
     align-items: center;
     gap: var(--mf-s3);
     padding: var(--mf-s2) var(--mf-s3);
@@ -118,9 +146,27 @@
     white-space: nowrap;
   }
 
+  .mf-permcount {
+    grid-column: 4;
+    margin-left: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* The column header says Permissions; the word stays for screen readers. */
+  .mf-permword {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .mf-go {
     display: block;
-    grid-column: 4;
+    grid-column: 5;
     color: var(--mf-text-muted);
     font-size: var(--mf-fs-xs);
   }
@@ -142,16 +188,33 @@
 
     .mf-count {
       grid-column: 2;
+      grid-row: 1;
+    }
+
+    .mf-permcount {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      text-align: left;
+    }
+
+    .mf-permword {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
     }
 
     .mf-go {
       grid-column: 3;
+      grid-row: 1;
     }
   }
 }
 
 .mf-count {
-  margin-left: auto;
+  margin-left: 0;
   color: var(--mf-text-muted);
   font-size: var(--mf-fs-sm);
 }

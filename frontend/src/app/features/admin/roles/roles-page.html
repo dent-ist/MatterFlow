@@ -11,7 +11,7 @@
       @if (!editing()) {
         <p class="mf-role-head" aria-hidden="true">
           <span>Name</span><span>Description</span><span class="mf-role-head__n">Members</span
-          ><span></span>
+          ><span class="mf-role-head__n">Permissions</span><span></span>
         </p>
       }
       <ul>
@@ -25,7 +25,7 @@
               (click)="edit(r)"
             >
               <span class="mf-namecell">
-                <span class="mf-name">{{ r.name }}</span>
+                <span class="mf-name" [attr.title]="r.name">{{ r.name }}</span>
                 @if (r.isSystemAdmin) {
                   <span class="mf-chip">Built-in, locked</span>
                 }
@@ -33,6 +33,10 @@
               <span class="mf-desc">{{ r.description }}</span>
               <span class="mf-count"
                 >{{ r.memberCount }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
+              >
+              <span class="mf-count mf-permcount" data-perm-count
+                >{{ r.permissionCount }} of {{ totalPermissions()
+                }}<span class="mf-permword"> permissions</span></span
               >
               <i class="pi pi-chevron-right mf-go" aria-hidden="true"></i>
             </button>
@@ -51,6 +55,10 @@
         @if (error()) {
           <p class="mf-error" role="alert" data-error>{{ error() }}</p>
         }
+
+        <p class="mf-editor-count" data-editor-count>
+          <strong>{{ draftCount() }} of {{ totalPermissions() }}</strong> permissions selected
+        </p>
 
         <div class="mf-fld">
           <label for="role-name" class="mf-label"
@@ -124,7 +132,13 @@
 
         @for (g of visibleGroups(); track g.group) {
           <fieldset [attr.data-group]="g.group" [disabled]="locked()">
-            <legend>{{ g.group }}</legend>
+            <legend>
+              {{ g.group }}
+              <span class="mf-group-count" data-group-count
+                >{{ groupCount(g.group) }}/{{ groupTotal(g.group)
+                }}<span class="mf-sr-only"> selected</span></span
+              >
+            </legend>
             @for (p of g.permissions; track p.code) {
               <label class="mf-perm">
                 <input

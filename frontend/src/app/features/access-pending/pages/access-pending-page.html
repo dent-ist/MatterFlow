@@ -8,21 +8,21 @@
     <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your access is pending</h1>
     @if (auth.profile(); as p) {
       <p>
-        You're signed in as <strong>{{ p.displayName }}</strong>
-        @if (p.windowsAccount && !sameIdentity(p.windowsAccount, p.displayName)) {
-          (<span class="mf-account">{{ p.windowsAccount }}</span
-          >)
-        }
-        . An administrator needs to give you a role before you can use MatterFlow.
+        You're signed in as <strong>{{ p.displayName }}</strong
+        >{{ accountNote(p.displayName, p.windowsAccount) }}. An administrator needs to give you a
+        role before you can use MatterFlow.
         @if (p.registeredAtUtc) {
           Registered {{ p.registeredAtUtc | mfDate }}.
         }
+      </p>
+      <p data-pending-notified>
+        An administrator is notified through the Users page: you do not need to resend this.
       </p>
     }
 
     <h2>What to do next</h2>
     <ul>
-      <li>Ask your pod lead or manager to request access for you.</li>
+      <li>Ask your Pod Lead or manager if you need access sooner.</li>
       @if (auth.profile()?.windowsAccount; as account) {
         <li>
           Give the administrator your Windows account name:

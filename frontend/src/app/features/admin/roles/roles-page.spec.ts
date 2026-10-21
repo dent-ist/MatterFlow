@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { RolesPage, prerequisiteOf } from './roles-page';
@@ -82,6 +83,42 @@ describe('RolesPage', () => {
     expect(names).toContain('Data Scientist');
     expect(q('[data-role="1"]').textContent).toContain('Built-in, locked');
     expect(q('[data-role="5"]').textContent).toContain('1 member');
+  });
+
+  it('shows members and "12 of 50" permissions on every role, equal to the editor (#447)', async () => {
+    const total = (await firstValueFrom(api.listPermissions())).flatMap(
+      (g) => g.permissions,
+    ).length;
+    for (const r of api.roles) {
+      const row = q(`[data-role="${r.roleId}"]`);
+      const shown = row.querySelector('[data-perm-count]')!.textContent!.replace(/\s+/g, ' ');
+      const count = r.isSystemAdmin ? total : r.permissionCodes.length;
+      expect(shown).toContain(`${count} of ${total}`);
+    }
+    q('[data-role="5"]').click();
+    await settle();
+    const n = api.roles.find((r) => r.roleId === 5)!.permissionCodes.length;
+    expect(q('[data-editor-count]').textContent!.replace(/\s+/g, ' ')).toContain(
+      `${n} of ${total} permissions selected`,
+    );
+    expect(el().querySelectorAll('[data-perm]:checked').length).toBe(n);
+  });
+
+  it('counts each group as selected/total and follows the checkboxes (#447)', async () => {
+    await press('New role');
+    const group = (name: string) =>
+      q(`[data-group="${name}"] [data-group-count]`).textContent!.replace(/\s+/g, ' ').trim();
+    const taskTotal = (await firstValueFrom(api.listPermissions())).find((g) => g.group === 'Task')!
+      .permissions.length;
+    expect(group('Task')).toBe(`0/${taskTotal} selected`);
+    await check('Task.Assign', true); // also selects Task.View
+    expect(group('Task')).toBe(`2/${taskTotal} selected`);
+    expect(q('[data-editor-count]').textContent).toContain('2 of');
+  });
+
+  it('keeps the full role name as a tooltip for the two-line clamp (#447)', async () => {
+    const name = q('[data-role="5"] .mf-name');
+    expect(name.getAttribute('title')).toBe(name.textContent!.trim());
   });
 
   it('opens System Admin read-only with no save or delete', async () => {

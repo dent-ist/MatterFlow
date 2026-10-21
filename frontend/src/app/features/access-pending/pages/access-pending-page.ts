@@ -31,7 +31,10 @@ export class AccessPendingPage implements AfterViewInit {
   protected readonly helpContact = inject(APP_ENV).helpContact;
   private readonly heading = viewChild<ElementRef<HTMLElement>>('heading');
 
-  protected readonly sameIdentity = sameIdentity;
+  /** " (KE\\pend01)" after the name, or nothing when the account only repeats the name; the full stop follows it with no space. */
+  protected accountNote(displayName: string, account: string | undefined): string {
+    return account && !sameIdentity(account, displayName) ? ` (${account})` : '';
+  }
   protected readonly checking = signal(false);
   /** Polite live-region text after "Check again". */
   protected readonly message = signal('');

@@ -61,6 +61,11 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   protected readonly allCodes = computed(
     () => new Set(this.catalog().flatMap((g) => g.permissions.map((p) => p.code))),
   );
+  protected readonly totalPermissions = computed(() => this.allCodes().size);
+  /** Permissions ticked in the editor (the whole catalog for the locked System Admin role). */
+  protected readonly draftCount = computed(() =>
+    this.locked() ? this.totalPermissions() : this.draftCodes().size,
+  );
   protected readonly visibleGroups = computed(() => {
     const needle = this.filter().trim().toLowerCase();
     return this.catalog()
@@ -139,6 +144,18 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     } catch {
       this.error.set('We could not load this role. Try again.');
     }
+  }
+
+  /** "Task 6/9": ticked and total permissions of one group, over the whole catalog (the search filter does not change them). */
+  protected groupTotal(group: string): number {
+    return this.catalog().find((g) => g.group === group)?.permissions.length ?? 0;
+  }
+
+  protected groupCount(group: string): number {
+    if (this.locked()) return this.groupTotal(group);
+    const codes = this.catalog().find((g) => g.group === group)?.permissions ?? [];
+    const draft = this.draftCodes();
+    return codes.filter((p) => draft.has(p.code)).length;
   }
 
   protected isChecked(code: string): boolean {

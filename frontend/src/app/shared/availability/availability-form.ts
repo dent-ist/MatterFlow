@@ -148,6 +148,8 @@ interface Problem {
                   <label class="av-label" for="av-from">From (optional)</label>
                   <mf-date-input
                     inputId="av-from"
+                    [showHint]="false"
+                    describedBy="av-dates-help"
                     label="From date"
                     [isoValue]="from()"
                     [invalid]="!!fromError()"
@@ -159,6 +161,8 @@ interface Problem {
                   <label class="av-label" for="av-until">Until (optional)</label>
                   <mf-date-input
                     inputId="av-until"
+                    [showHint]="false"
+                    describedBy="av-dates-help"
                     label="Until date"
                     [isoValue]="until()"
                     [invalid]="!!untilError()"
@@ -172,8 +176,9 @@ interface Problem {
                   }
                 </div>
               </div>
-              <p class="av-help">
-                Leave From empty to start now. Leave Until empty to stay out of office until
+              <p class="av-help" id="av-dates-help" data-dates-help>
+                Type a date such as Oct 12, 2026 or 10/12/2026, or use the calendar. Leave From
+                empty to start now. Leave Until empty to stay out of office until
                 {{ self() ? 'you set yourself' : 'they are set' }} available again.
               </p>
 

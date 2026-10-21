@@ -90,7 +90,9 @@ const sameInstant = (a: Date | null, b: Date | null): boolean =>
         (change)="onNative($any($event.target).value)"
       />
     </div>
-    <p class="di__hint" [id]="hintId()">{{ hint() }}</p>
+    @if (showHint()) {
+      <p class="di__hint" [id]="hintId()">{{ hint() }}</p>
+    }
     @if (showError() && badText()) {
       <p class="di__error" role="alert" [id]="errorId()">
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ errorText() }}
@@ -170,6 +172,11 @@ export class DateInput {
   readonly describedBy = input('');
   /** Field label, for the calendar button's accessible name. */
   readonly label = input('date');
+  /**
+   * Show the format hint under the field (default). A host that puts two date fields side by side (From / Until) turns it off and writes
+   * one hint for the pair, then points `describedBy` at it.
+   */
+  readonly showHint = input(true);
   /** Show the built-in message for text that is not a date. The form engine shows its own and turns this off. */
   readonly showError = input(true);
   /**
@@ -211,7 +218,11 @@ export class DateInput {
   );
   protected readonly describedByIds = computed(
     () =>
-      [this.hintId(), this.showError() && this.badText() ? this.errorId() : '', this.describedBy()]
+      [
+        this.showHint() ? this.hintId() : '',
+        this.showError() && this.badText() ? this.errorId() : '',
+        this.describedBy(),
+      ]
         .filter(Boolean)
         .join(' ') || null,
   );

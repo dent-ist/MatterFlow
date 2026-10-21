@@ -125,6 +125,16 @@ describe('AvailabilityForm', () => {
     );
   });
 
+  it('writes one date-format hint under the From and Until pair, not one under each field (#428)', async () => {
+    await create();
+    await choose('[data-status-ooo]');
+    expect(el().querySelectorAll('.di__hint').length).toBe(0);
+    const help = q('[data-dates-help]');
+    expect(help.textContent).toContain('Type a date such as Oct 12, 2026');
+    expect(q('#av-from').getAttribute('aria-describedby')).toBe(help.id);
+    expect(q('#av-until').getAttribute('aria-describedby')).toBe(help.id);
+  });
+
   it('counts the note against 200 characters', async () => {
     await create();
     await choose('[data-status-ooo]');

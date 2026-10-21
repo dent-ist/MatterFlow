@@ -100,3 +100,26 @@ describe('mf-date-input (the shared date control)', () => {
     expect(input().value).toBe('');
   });
 });
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [DateInput],
+  template: `
+    <mf-date-input inputId="from" label="From date" [showHint]="false" describedBy="pair-hint" />
+    <p id="pair-hint">One hint for the pair.</p>
+  `,
+})
+class QuietHost {}
+
+describe('mf-date-input without its own hint (#428)', () => {
+  it('shows no hint under the field and points the field at the host hint instead', async () => {
+    const fixture = TestBed.createComponent(QuietHost);
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('.di__hint')).toBeNull();
+    expect(el.querySelector('#from-hint')).toBeNull();
+    expect(el.querySelector('input[type=text]')!.getAttribute('aria-describedby')).toBe(
+      'pair-hint',
+    );
+  });
+});
