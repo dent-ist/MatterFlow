@@ -124,13 +124,38 @@ type TabKey = 'queue' | 'members' | 'all';
         min-height: 18rem;
       }
     }
+    /*
+     * The first screen of a phone (#570): the page's own rows are tight, so the title, the capped select, the context line, the chip row and
+     * the three tabs leave the first card within 200 px of the title (it was 330 px). The tab row keeps the shared tabs component's own
+     * overflow behaviour; with three tabs and a little less padding they fit at 375 px.
+     */
+    @media (max-width: 639.98px) {
+      .pw-head {
+        margin-bottom: var(--mf-s1);
+      }
+      .pw-head ::ng-deep .ph__row {
+        row-gap: var(--mf-s1);
+      }
+      .wp-tabrow {
+        margin-bottom: var(--mf-s1);
+      }
+      .wp-tabrow ::ng-deep .tabs {
+        gap: 0;
+      }
+      .wp-tabrow ::ng-deep .tab {
+        padding-inline: var(--mf-s1);
+      }
+      .wp-tabrow ::ng-deep .count {
+        min-width: 2.2em;
+      }
+    }
     .pw-linkonly ::ng-deep td[data-col='assignee'] .re-with-link .im-value {
       display: none;
     }
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Pod Work" [description]="contextLine()">
+      <mf-page-header class="pw-head" heading="Pod Work" [description]="contextLine()">
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
           <div mfActions class="wp-field wp-field--inline pw-pod" data-ph-selector>

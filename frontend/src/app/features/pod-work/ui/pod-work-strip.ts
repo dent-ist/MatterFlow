@@ -66,6 +66,14 @@ export function activePodStripKey(f: QueueFilters, today: string): PodStripKey |
   selector: 'mf-pod-work-strip',
   imports: [WorkStrip],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    /* A phone's first screen is short (#570): the chip row sits closer to the tabs under it. */
+    @media (max-width: 639.98px) {
+      mf-work-strip {
+        margin-bottom: var(--mf-s1);
+      }
+    }
+  `,
   template: `
     <mf-work-strip
       label="Pod summary"
