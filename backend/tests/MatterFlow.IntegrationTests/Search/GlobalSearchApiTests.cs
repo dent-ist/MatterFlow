@@ -252,4 +252,79 @@ public sealed class GlobalSearchApiTests(SqlServerFixture sql)
         Labels(await d.SearchAsync("rate 100"), "client").ShouldBe(["Rate 100 Final Set X", "Rate 100% [Final]_Set"]);
         Labels(await d.SearchAsync("rate 100%"), "client").ShouldBe(["Rate 100% [Final]_Set"]);
     }
+
+    [Theory]
+    [InlineData("orbit")]
+    [InlineData("beta")]
+    [InlineData("343")]
+    [InlineData("343-12")]
+    [InlineData("00343-00012")]
+    [InlineData("collect")]
+    [InlineData("laptop")]
+    [InlineData("zzzzqqq")]
+    public async Task S1_totals_equal_the_advanced_search_total_of_each_type_for_the_same_query(string query)
+    {
+        var d = await DataAsync();
+        var r = await d.SearchAsync(query, extra: "&limit=1");
+
+        foreach (var group in r.GetProperty("groups").EnumerateArray())
+        {
+            var type = group.GetProperty("type").GetString()!;
+            var advanced = await d.AdvancedAsync($"type={type}&q={Uri.EscapeDataString(query)}&pageSize=1");
+            group.GetProperty("total").GetInt32().ShouldBe(advanced.GetProperty("total").GetInt32(), $"{type} total for '{query}'");
+            group.GetProperty("totalCapped").GetBoolean().ShouldBeFalse();
+        }
+
+        r.GetProperty("searchedTypes").EnumerateArray().Select(t => t.GetString()).ShouldBe(["client", "matter", "project", "task", "asset"]);
+    }
+
+    [Fact]
+    public async Task S1_the_total_counts_every_match_while_limit_caps_the_items_only()
+    {
+        var d = await DataAsync();
+        var r = await d.SearchAsync("orbit", extra: "&types=client&limit=2");
+        var group = Group(r, "client")!.Value;
+
+        group.GetProperty("items").GetArrayLength().ShouldBe(2);
+        group.GetProperty("total").GetInt32().ShouldBe(4); // Orbit, Orbit Holdings, Big Orbit Group, Reorbital Ltd
+        group.GetProperty("totalCapped").GetBoolean().ShouldBeFalse();
+        r.GetProperty("searchedTypes").EnumerateArray().Select(t => t.GetString()).ShouldBe(["client"]);
+
+        var none = Group(await d.SearchAsync("zzzzqqq"), "task")!.Value;
+        none.GetProperty("total").GetInt32().ShouldBe(0);
+        none.GetProperty("items").GetArrayLength().ShouldBe(0);
+    }
+
+    [Theory]
+    [InlineData("343-12")]
+    [InlineData("00343-00012")]
+    public async Task S1_number_inputs_count_in_both_shapes(string query)
+    {
+        var d = await DataAsync();
+        var r = await d.SearchAsync(query);
+
+        Group(r, "matter")!.Value.GetProperty("total").GetInt32().ShouldBe(1);
+        var reference = await d.SearchAsync("00343-00012");
+        foreach (var type in SearchTypes)
+            Group(r, type)!.Value.GetProperty("total").GetInt32().ShouldBe(Group(reference, type)!.Value.GetProperty("total").GetInt32(), type);
+    }
+
+    [Fact]
+    public async Task S1_searched_types_list_only_the_types_the_caller_may_view_and_asked_for()
+    {
+        var d = await DataAsync();
+        static List<string> Searched(System.Text.Json.JsonElement r) => [.. r.GetProperty("searchedTypes").EnumerateArray().Select(t => t.GetString()!)];
+
+        Searched(await d.SearchAsync("beta", d.TaskOnly)).ShouldBe(["task"]);
+        Searched(await d.SearchAsync("beta", d.AssetOnly)).ShouldBe(["asset"]);
+        Searched(await d.SearchAsync("beta", d.ClientOnly)).ShouldBe(["client"]);
+        Searched(await d.SearchAsync("beta", d.MatterOnly, "&types=matter&types=task,asset")).ShouldBe(["matter"]);
+        Searched(await d.SearchAsync("beta", d.ClientOnly, "&types=task")).ShouldBeEmpty();
+
+        var taskOnly = await d.SearchAsync("beta", d.TaskOnly);
+        Group(taskOnly, "task")!.Value.GetProperty("total").GetInt32().ShouldBe(1);
+        Group(taskOnly, "matter").ShouldBeNull();
+    }
+
+    private static readonly string[] SearchTypes = ["client", "matter", "project", "task", "asset"];
 }

@@ -23,17 +23,26 @@ export function aHit(overrides: Partial<SearchHit> = {}): SearchHit {
   };
 }
 
-export const aGroup = (type: string, items: SearchHit[], hasMore = false): SearchGroup => ({
+/** A group; the total defaults to the items shown (the answer when nothing was cut off). */
+export const aGroup = (
+  type: string,
+  items: SearchHit[],
+  hasMore = false,
+  total = items.length,
+  totalCapped = false,
+): SearchGroup => ({
   type,
   items,
   hasMore,
+  total,
+  totalCapped,
 });
 
 export const aResponse = (
   groups: SearchGroup[],
   query = 'merger',
   normalized?: string,
-): SearchResponse => ({ query, normalized, groups });
+): SearchResponse => ({ query, normalized, groups, searchedTypes: groups.map((g) => g.type) });
 
 /** The typical answer to "343": a client, a matter and a task (FND-17), server order (clients first). */
 export function numericResponse(): SearchResponse {

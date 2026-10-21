@@ -33,19 +33,28 @@ public sealed record SearchHit(
     [property: Required] bool IsActive,
     string? Status);
 
-/// <summary>The hits of one type, best first and capped; <c>HasMore</c> says the cap cut off further matches.</summary>
+/// <summary>
+/// The hits of one type, best first and capped; <c>HasMore</c> says the cap cut off further matches. <c>Total</c> is how many records of the type match
+/// (the same predicate the advanced search counts), exact up to <see cref="SearchService.TotalCap"/>; when the count stopped at the cap <c>TotalCapped</c>
+/// is true and the UI reads it as "1,000+".
+/// </summary>
 public sealed record SearchGroup(
     [property: Required] string Type,
     [property: Required] IReadOnlyList<SearchHit> Items,
-    [property: Required] bool HasMore);
+    [property: Required] bool HasMore,
+    [property: Required] int Total,
+    [property: Required] bool TotalCapped);
 
 /// <summary>Global search result: one group per searchable type the caller may view (and asked for), in a fixed order.</summary>
 /// <param name="Query">The trimmed input.</param>
 /// <param name="Normalized">What a number input was understood as (<c>00343-00012</c>); null for text.</param>
+/// <param name="SearchedTypes">The types that were searched: those asked for (all when none) that the caller may view, in group order. A type that is
+/// not listed was not searched; it is never an empty result.</param>
 public sealed record SearchResponse(
     [property: Required] string Query,
     string? Normalized,
-    [property: Required] IReadOnlyList<SearchGroup> Groups);
+    [property: Required] IReadOnlyList<SearchGroup> Groups,
+    [property: Required] IReadOnlyList<string> SearchedTypes);
 
 /// <summary>One page of an advanced search over a single object type.</summary>
 public sealed record AdvancedSearchPage(

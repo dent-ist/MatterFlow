@@ -32,6 +32,9 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
     /// <summary>Every View permission a search needs one of; the endpoints are open to a caller holding at least one.</summary>
     public static readonly IReadOnlyList<string> AnyViewPermission = [.. ViewPermission.Values];
 
+    /// <summary>Totals are exact up to this many matches per type; beyond it the group reports the cap and <c>TotalCapped</c> (profile: docs/ux/search-review/fixes/sr2-panel/profile.md).</summary>
+    public const int TotalCap = 1000;
+
     // ---- global search
 
     public async Task<Result<SearchResponse>> SearchAsync(GlobalSearchQuery query, CancellationToken ct)
@@ -48,15 +51,21 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         if (requested.IsFailure)
             return requested.Error!;
 
+        var searched = SearchTypes.All.Where(t => requested.Value.Contains(t) && permissions.Has(ViewPermission[t])).ToList();
         var groups = new List<SearchGroup>();
-        foreach (var type in SearchTypes.All.Where(t => requested.Value.Contains(t) && permissions.Has(ViewPermission[t])))
+        foreach (var type in searched)
         {
-            // One extra row tells whether the cap cut something off, without a count over a substring scan.
+            // One extra row tells whether the cap cut something off. When it did not, the rows fetched ARE the matches and the total is free; only a
+            // type with more matches than the limit pays for a second count of the same predicate, cut at the cap when it is shown (the profile:
+            // sr2-panel/profile.md; a TOP-bounded count measured slower than the plain one, so the cap is applied to the number, not the query).
             var hits = await HitsAsync(type, term.Value, filter: null, skip: 0, take: limit + 1, ct);
-            groups.Add(new SearchGroup(type, hits.Take(limit).ToList(), hits.Count > limit));
+            var more = hits.Count > limit;
+            var counted = more ? await CountAsync(type, term.Value, filter: null, ct) : hits.Count;
+            var capped = counted > TotalCap;
+            groups.Add(new SearchGroup(type, hits.Take(limit).ToList(), more, capped ? TotalCap : counted, capped));
         }
 
-        return new SearchResponse(term.Value.Text, term.Value.Normalized, groups);
+        return new SearchResponse(term.Value.Text, term.Value.Normalized, groups, searched);
     }
 
     private static Result<HashSet<string>> ParseTypes(string[]? types)
@@ -116,7 +125,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         _ => AssetHitsAsync(term, filter, skip, take, ct),
     };
 
-    private Task<int> CountAsync(string type, SearchTerm? term, AdvancedFilter filter, CancellationToken ct) => type switch
+    private Task<int> CountAsync(string type, SearchTerm? term, AdvancedFilter? filter, CancellationToken ct) => type switch
     {
         SearchTypes.Client => ClientRows(term, filter).CountAsync(ct),
         SearchTypes.Matter => MatterRanked(term, filter).CountAsync(ct),

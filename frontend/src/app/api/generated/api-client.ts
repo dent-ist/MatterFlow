@@ -12853,6 +12853,8 @@ export interface SearchGroup {
     type: string;
     items: SearchHit[];
     hasMore: boolean;
+    total: number;
+    totalCapped: boolean;
 
     [key: string]: any;
 }
@@ -12877,6 +12879,7 @@ export interface SearchResponse {
     query: string;
     normalized: string | undefined;
     groups: SearchGroup[];
+    searchedTypes: string[];
 
     [key: string]: any;
 }

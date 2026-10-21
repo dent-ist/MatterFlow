@@ -13142,7 +13142,9 @@
         "required": [
           "type",
           "items",
-          "hasMore"
+          "hasMore",
+          "total",
+          "totalCapped"
         ],
         "type": "object",
         "properties": {
@@ -13156,6 +13158,13 @@
             }
           },
           "hasMore": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCapped": {
             "type": "boolean"
           }
         }
@@ -13231,7 +13240,8 @@
         "required": [
           "query",
           "normalized",
-          "groups"
+          "groups",
+          "searchedTypes"
         ],
         "type": "object",
         "properties": {
@@ -13248,6 +13258,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SearchGroup"
+            }
+          },
+          "searchedTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
