@@ -45,7 +45,7 @@ import { AssetTypesPage } from './asset-types-page';
       [filters]="current() === 'types' ? (shell.current()?.filters ?? null) : null"
       [controls]="shell.current()?.controls ?? ''"
       [clearAlso]="['q']"
-      [tableId]="current() === 'types' ? 'asset-types-table' : ''"
+      [tableId]="current() === 'types' ? 'asset-types-table' : 'link-roles-table'"
       (tabChange)="select($event)"
     >
       @if (current() === 'types') {
@@ -57,10 +57,19 @@ import { AssetTypesPage } from './asset-types-page';
           (onClick)="newType()"
         />
       }
+      @if (current() === 'link-roles') {
+        <p-button
+          mfPrimary
+          label="New link role"
+          icon="pi pi-plus"
+          data-new-role
+          (onClick)="newRole()"
+        />
+      }
       @if (current() === 'types') {
         <mf-asset-types-page [status]="status()" [page]="page()" [size]="size()" [sort]="sort()" />
       } @else {
-        <mf-asset-link-roles-page #linkRoles />
+        <mf-asset-link-roles-page #linkRoles [edit]="edit()" />
       }
     </mf-admin-list-shell>
   `,
@@ -81,6 +90,8 @@ export class AssetAdminPage implements HasUnsavedChanges {
   readonly page = input<string>();
   readonly size = input<string>();
   readonly sort = input<string>();
+  /** `?edit=<id>` / `?edit=new`: the dialog the Link Roles tab shows. */
+  readonly edit = input<string>();
 
   private readonly can = (permission: string) => this.auth.has(permission);
 
@@ -118,6 +129,13 @@ export class AssetAdminPage implements HasUnsavedChanges {
     void this.router.navigate(['/admin/asset-types/new'], { state: this.listLeave.state() });
   }
 
+  protected newRole(): void {
+    void this.router.navigate([], {
+      queryParams: { tab: 'link-roles', edit: 'new' },
+      queryParamsHandling: 'merge',
+    });
+  }
+
   /** The tab changes the address; the route's leave guard asks first when a tab holds text that is not saved (one question, Stay is the default). */
   protected async select(key: string): Promise<void> {
     await this.router.navigate([], {
@@ -130,6 +148,7 @@ export class AssetAdminPage implements HasUnsavedChanges {
         page: null,
         size: null,
         sort: null,
+        edit: null,
       },
       queryParamsHandling: 'merge',
     });

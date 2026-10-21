@@ -1,32 +1,51 @@
-<p class="muted hint" data-intro>
-  How an Asset relates to a Task: for example Source, Destination, Subject or Result.
-</p>
-
-<div class="sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+<div class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 
 @if (failure()) {
-  <p class="error" role="alert" data-failure>{{ failure() }}</p>
+  <p class="lr-failure" role="alert" data-failure>
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
+  </p>
 }
 
-<mf-list-state noun="asset link roles" [state]="state()" [columns]="4" (retry)="load()">
-  <p class="muted hint">
-    Drag a row or use the arrows to reorder. Inactive roles aren't offered for new links.
-  </p>
+@if (phone()) {
+  <mf-admin-card-list
+    noun="asset link roles"
+    label="Asset link roles"
+    [items]="rows()"
+    [spec]="cardOf"
+    emptyText="No link roles yet. Use New link role above to add the first one."
+    [state]="ls.state()"
+    [empty]="ls.empty()"
+    [filtered]="false"
+    (retry)="load()"
+  />
+} @else {
   <div class="mf-table-wrap" mfScrollArea="Asset link roles list">
     <div class="mf-scroll">
-      <table class="grid" data-roles>
-        <caption class="sr-only">
+      <table class="mf-grid" id="link-roles-table" data-roles>
+        <caption class="mf-sr-only">
           Asset link roles in display order
         </caption>
         <thead>
           <tr>
-            <th scope="col">Order</th>
-            <th scope="col">Name</th>
-            <th scope="col">Active</th>
-            <th scope="col" class="mf-col-actions"><span class="sr-only">Actions</span></th>
+            <th class="mf-cell-num" scope="col" [attr.data-drop]="dropOrder">Order</th>
+            <th class="mf-cell-name" scope="col">Name</th>
+            @if (linksShown()) {
+              <th class="mf-cell-num" scope="col">Links</th>
+            }
+            <th class="mf-cell-badge" scope="col">Status</th>
+            <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody
+          mfGridBody
+          noun="asset link roles"
+          [columnSpec]="columnSpec()"
+          emptyText="No link roles yet. Use New link role above to add the first one."
+          [state]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="false"
+          (retry)="load()"
+        >
           @for (r of rows(); track r.id; let i = $index) {
             <tr
               [attr.data-row]="r.name"
@@ -36,103 +55,35 @@
               (dragover)="onDragOver($event)"
               (drop)="onDrop(i, $event)"
             >
-              <td class="order">
-                <span class="grip pi pi-bars" aria-hidden="true"></span>
-                <span class="movers" *mfHasPermission="'AssetType.Manage'">
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    [attr.aria-label]="'Move ' + r.name + ' up'"
-                    [disabled]="busy() || !canMove(i, -1)"
-                    (click)="move(i, -1)"
-                    data-move-up
+              <td class="mf-cell-num" [attr.data-drop]="dropOrder" data-order>{{ i + 1 }}</td>
+              <td class="mf-cell-name">
+                @if (canManage()) {
+                  <a
+                    class="mf-name"
+                    mfRowLink="link-roles"
+                    [rowKey]="r.id"
+                    [routerLink]="['/admin/asset-types']"
+                    [queryParams]="{ tab: 'link-roles', edit: r.id }"
+                    [attr.title]="r.name"
+                    data-edit
+                    >{{ r.name }}</a
                   >
-                    <span class="pi pi-arrow-up" aria-hidden="true"></span>
-                  </button>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    [attr.aria-label]="'Move ' + r.name + ' down'"
-                    [disabled]="busy() || !canMove(i, 1)"
-                    (click)="move(i, 1)"
-                    data-move-down
-                  >
-                    <span class="pi pi-arrow-down" aria-hidden="true"></span>
-                  </button>
-                </span>
-              </td>
-              <td>
-                @if (editingId() === r.id) {
-                  <form class="inline" (submit)="$event.preventDefault(); commitRename(r)">
-                    <label class="sr-only" [for]="'rename-' + r.id">Name for {{ r.name }}</label>
-                    <input
-                      [id]="'rename-' + r.id"
-                      class="text"
-                      name="name"
-                      maxlength="50"
-                      [ngModel]="draftName()"
-                      (ngModelChange)="draftName.set($event)"
-                      (keydown.escape)="cancelRename()"
-                      [attr.aria-invalid]="editError() ? 'true' : null"
-                      [attr.aria-describedby]="editError() ? 'rename-error-' + r.id : null"
-                      data-rename-input
-                    />
-                    <p-button type="submit" label="Save" size="small" [disabled]="busy()" />
-                    <p-button
-                      label="Cancel"
-                      size="small"
-                      severity="secondary"
-                      (onClick)="cancelRename()"
-                    />
-                  </form>
-                  @if (editError()) {
-                    <p class="error" role="alert" [id]="'rename-error-' + r.id">
-                      {{ editError() }}
-                    </p>
-                  }
                 } @else {
-                  <span>{{ r.name }}</span>
-                  @if (!r.isActive) {
-                    <span class="muted tag">Inactive</span>
-                  }
+                  <span class="mf-name" [attr.title]="r.name">{{ r.name }}</span>
                 }
               </td>
-              <td>
-                <input
-                  type="checkbox"
-                  class="check"
-                  [checked]="r.isActive"
-                  [disabled]="busy() || !canManage()"
-                  [attr.aria-label]="'Active: ' + r.name"
-                  (change)="toggleActive(r, $any($event.target).checked)"
-                  data-active
-                />
-              </td>
-              <td class="actions mf-col-actions">
-                <span class="mf-row-actions">
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    *mfHasPermission="'AssetType.Manage'"
-                    [disabled]="busy()"
-                    [attr.aria-label]="'Rename ' + r.name"
-                    (click)="startRename(r)"
-                    data-rename
-                  >
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text mf-btn--danger"
-                    *mfHasPermission="'AssetType.Manage'"
-                    [disabled]="busy()"
-                    [attr.aria-label]="'Delete ' + r.name"
-                    (click)="askDelete(r)"
-                    data-delete
-                  >
-                    Delete
-                  </button>
-                </span>
+              @if (linksShown()) {
+                <td class="mf-cell-num" data-links>
+                  @if (hasCount(r)) {
+                    <span [attr.title]="linkSentence(r)">{{ r.linkCount }}</span>
+                  }
+                </td>
+              }
+              <td class="mf-cell-badge"><mf-active-badge [active]="r.isActive" /></td>
+              <td class="mf-cell-actions" [attr.data-actions-of]="r.id">
+                @if (menus().get(r.id); as menu) {
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                }
               </td>
             </tr>
           }
@@ -140,46 +91,54 @@
       </table>
     </div>
   </div>
+}
 
-  <section class="add" *mfHasPermission="'AssetType.Manage'" aria-labelledby="add-heading">
-    <h2 id="add-heading">Add asset link role</h2>
-    <form class="add-form" novalidate (submit)="$event.preventDefault(); add()">
-      <div class="fld">
-        <label for="new-name">Name <span class="mf-req">(required)</span></label>
-        <input
-          id="new-name"
-          class="mf-control"
-          name="newName"
-          maxlength="50"
-          [ngModel]="newName()"
-          (ngModelChange)="newName.set($event)"
-          [attr.aria-invalid]="addError() ? 'true' : null"
-          [attr.aria-describedby]="addError() ? 'add-error' : null"
-          data-new-name
-        />
-      </div>
-      <p-button type="submit" label="Add asset link role" icon="pi pi-plus" [disabled]="busy()" />
-    </form>
-    @if (addError()) {
-      <p id="add-error" class="add-error" role="alert" data-add-error>
-        <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ addError() }}
-      </p>
-    }
-  </section>
-</mf-list-state>
+<mf-lookup-dialog
+  [title]="editing() ? 'Rename link role' : 'New link role'"
+  [submitLabel]="editing() ? 'Save name' : 'Add link role'"
+  cancelLabel="Cancel"
+  [visible]="dialogOpen()"
+  (visibleChange)="onDialogOpen($event)"
+  [dirty]="isDirty()"
+  [saving]="busy()"
+  [error]="saveError()"
+  [summary]="summary()"
+  (save)="commit()"
+  (cancel)="closeDialog()"
+>
+  <mf-text-field
+    inputId="link-role-name"
+    label="Name"
+    [required]="true"
+    [maxLength]="limits.linkRoleName"
+    [counter]="true"
+    [error]="fieldError()"
+    [(value)]="draft"
+  />
+</mf-lookup-dialog>
 
 <mf-confirm-dialog
-  title="Delete asset link role?"
-  confirmLabel="Delete role"
-  cancelLabel="Keep role"
+  [title]="deactivateCopy().title"
+  [confirmLabel]="deactivateCopy().confirm"
+  [cancelLabel]="deactivateCopy().cancel"
+  [danger]="deactivateCopy().danger"
+  [busy]="busy()"
+  [visible]="deactivating() !== null"
+  (visibleChange)="!$event && cancelDeactivate()"
+  (confirmed)="confirmDeactivate()"
+>
+  <p data-deactivate-body>{{ deactivateCopy().body }}</p>
+</mf-confirm-dialog>
+
+<mf-confirm-dialog
+  [title]="deleteCopy().title"
+  [confirmLabel]="deleteCopy().confirm"
+  [cancelLabel]="deleteCopy().cancel"
   [danger]="true"
   [busy]="busy()"
   [visible]="deleting() !== null"
   (visibleChange)="!$event && cancelDelete()"
   (confirmed)="confirmDelete()"
 >
-  <p data-delete-body>
-    {{ deleting()?.name }} will be removed from the list. A role that links use can't be deleted;
-    deactivate it instead. This can't be undone.
-  </p>
+  <p data-delete-body>{{ deleteCopy().body }}</p>
 </mf-confirm-dialog>

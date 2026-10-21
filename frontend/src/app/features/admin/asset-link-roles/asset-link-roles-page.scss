@@ -1,0 +1,17 @@
+/* Link Roles on the admin grid contract (#640): only what the kit stylesheet does not cover. */
+:host {
+  display: block;
+}
+
+.lr-failure {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  margin: var(--mf-s2) 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+tr[draggable='true'] {
+  cursor: grab;
+}

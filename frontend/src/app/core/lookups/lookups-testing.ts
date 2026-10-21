@@ -193,6 +193,7 @@ export class FakeAssetLinkRolesClient {
         sortOrder: this.rows.length + 1,
         isActive: body.isActive ?? true,
         rowVersion: nextVersion(),
+        linkCount: 0,
       };
       this.rows = [...this.rows, created];
       return created;

@@ -68,23 +68,29 @@ test.describe('a refused delete is reported once (#537)', () => {
     }
   });
 
-  test('Link roles: the same single message', async ({ page, seed }) => {
-    const name = `Used ${uid().slice(0, 6)}`;
-    const role = await seed.admin.post('/api/v1/asset-link-roles', { name, isActive: true });
-    const world = await seed.world();
-    const task = await seed.task(world);
-    const asset = await seed.asset(world.matter);
-    await seed.admin.post(`/api/v1/tasks/${task.taskId}/assets`, {
-      assetId: asset.assetId,
-      assetLinkRoleId: role.id,
-    });
-
+  test('Link roles: the same single message (a link made after the page loaded; the page offers Delete only for an unused role, #641)', async ({
+    page,
+    seed,
+  }) => {
     for (const size of SIZES) {
+      const name = `Used ${uid().slice(0, 6)}`;
+      const role = await seed.admin.post('/api/v1/asset-link-roles', { name, isActive: true });
+      const world = await seed.world();
+      const task = await seed.task(world);
+      const asset = await seed.asset(world.matter);
+
       await page.setViewportSize(size);
       await page.goto('/admin/asset-link-roles');
-      const row = page.locator(`[data-row="${name}"]`);
-      await row.getByRole('button', { name: `Delete ${name}` }).click();
-      await page.getByRole('dialog').getByRole('button', { name: 'Delete role' }).click();
+      const menu = page.getByRole('button', { name: `Actions for ${name}` });
+      await expect(menu).toBeVisible();
+      // The role is unused when the page loads, so Delete is offered; a link is made before the person confirms.
+      await seed.admin.post(`/api/v1/tasks/${task.taskId}/assets`, {
+        assetId: asset.assetId,
+        assetLinkRoleId: role.id,
+      });
+      await menu.click();
+      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Delete link role' }).click();
 
       await expect(page.locator('[data-failure]')).toHaveText(
         `Links use ${name}, so it can't be deleted. Deactivate it instead.`,

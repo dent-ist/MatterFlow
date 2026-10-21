@@ -90,7 +90,11 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     expect(selected()).toMatch(/^Link Roles/);
     expect(el().querySelector('[data-roles]')).not.toBeNull();
     expect(el().querySelector('mf-page-header [data-filters-toggle]')).toBeNull();
+    // The primary action of the tab is New link role, not New asset type.
     expect(el().querySelector('mf-page-header [data-new]')).toBeNull();
+    expect(el().querySelector('mf-page-header [data-new-role]')!.textContent).toContain(
+      'New link role',
+    );
 
     tabs()[0].click();
     await settle();
@@ -121,8 +125,10 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     tabs()[1].click();
     await settle();
 
-    // Half-typed: Stay keeps the text on the same tab, one question.
-    const name = el().querySelector<HTMLInputElement>('#new-name')!;
+    // Half-typed in the New link role dialog: Stay keeps the text on the same tab, one question.
+    await router.navigateByUrl('/admin/asset-types?tab=link-roles&edit=new');
+    await settle();
+    const name = document.body.querySelector<HTMLInputElement>('#link-role-name')!;
     name.value = 'Half typed';
     name.dispatchEvent(new Event('input'));
     await settle();
@@ -130,7 +136,9 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     await settle();
     expect(ask).toHaveBeenCalledTimes(1);
     expect(selected()).toMatch(/^Link Roles/);
-    expect(el().querySelector<HTMLInputElement>('#new-name')!.value).toBe('Half typed');
+    expect(document.body.querySelector<HTMLInputElement>('#link-role-name')!.value).toBe(
+      'Half typed',
+    );
 
     // Leaving the page asks too, and Leave goes.
     await router.navigateByUrl('/403');
