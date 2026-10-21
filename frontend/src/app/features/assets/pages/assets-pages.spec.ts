@@ -814,7 +814,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it("Cancel from a matter goes back to that matter's Assets tab", async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       el()
         .querySelectorAll<HTMLButtonElement>('button')
         .forEach((b) => b.textContent?.trim() === 'Cancel' && b.click());
@@ -822,7 +822,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('creates in the launching matter with the matter locked and the type fields from the published form', async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
 
       expect(matters.getMatter).toHaveBeenCalledWith(7);
       expect(el().querySelector('[data-chosen]')?.textContent).toContain(
@@ -867,7 +867,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('requires matter, type and name, and the required type-specific field, before calling the server', async () => {
-      await create({}, ['Asset.View', 'Asset.Create']);
+      await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
       await submit();
       const summary = el().querySelector('[data-summary]')!.textContent!;
       expect(summary).toContain('Select a matter.');
@@ -885,7 +885,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('shows a type without published fields as having none and sends no form values', async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       await chooseType('5');
       expect(el().querySelector('[data-no-fields]')).not.toBeNull();
 
@@ -898,7 +898,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('shows the server field errors of the type-specific fields inline', async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       await chooseType('4');
       type('#asset-name', 'Bundle');
       const workspace = el().querySelector<HTMLInputElement>(
@@ -926,7 +926,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('maps an inactive matter to a clear message', async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       await chooseType('5');
       type('#asset-name', 'Bundle');
       assets.createAsset.mockReturnValue(
@@ -941,7 +941,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('edits with the matter and type locked, sends a patch and nulls for cleared values', async () => {
-      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit']);
+      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
 
       expect(assets.getAsset).toHaveBeenCalledWith(9);
       expect(forms.getFormVersionSchema).toHaveBeenCalledWith(21);
@@ -970,8 +970,103 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(navigate).toHaveBeenCalledWith(['/assets', 9]);
     });
 
-    it('shows the 409 sentence of the server for a lost race on create, keeps the typed values and offers no reload (BUG-6)', async () => {
+    it('New asset: the record header, the Asset and type-fields sections, the real matter format and the way back (A10)', async () => {
+      await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
+
+      expect(el().querySelector('h1')?.textContent).toContain('New asset');
+      expect(el().querySelector('[data-record-header] [data-back-link]')?.textContent).toContain(
+        'Assets',
+      );
+      expect(el().querySelector('[data-record-header] mf-active-badge')).toBeNull(); // nothing exists yet
+      expect(el().querySelector('input#asset-matter')?.getAttribute('placeholder')).toBe(
+        'e.g. 90001-80011 or matter name',
+      );
+      expect(el().querySelector('[data-section="asset"] h2')?.textContent).toBe('Asset');
+      // The second section is there from the start (no layout jump), with a sentence until a type is chosen.
+      expect(el().querySelector('[data-section="fields"] h2')?.textContent).toContain(
+        'Type fields',
+      );
+      expect(el().querySelector('[data-fields-pending]')?.textContent).toContain(
+        'Choose an asset type',
+      );
+
+      await chooseType('4');
+      const fields = aFormVersion().fields.length;
+      expect(
+        el().querySelector('[data-fields-title]')?.textContent?.replace(/\s+/g, ' ').trim(),
+      ).toBe(`Document Set fields (${fields})`);
+      expect(el().querySelector('[data-fields-pending]')).toBeNull();
+    });
+
+    it('moves focus to the first field with an error when blocking validation stops the save', async () => {
+      await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
+      await submit();
+      await settle(fixture);
+
+      expect(el().querySelector('[data-summary]')?.textContent).toContain('Select a matter.');
+      const first = el().querySelector<HTMLElement>('form [aria-invalid="true"]')!;
+      expect(first).not.toBeNull();
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('requests no schema that is certain to fail without Task.View: one muted sentence, on New and on Edit', async () => {
       await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await chooseType('4');
+      expect(forms.getFormVersionSchema).not.toHaveBeenCalled();
+      expect(el().querySelector('[data-fields-unavailable]')?.textContent).toContain(
+        'Type fields are not available with your access.',
+      );
+
+      TestBed.resetTestingModule();
+      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit']);
+      expect(forms.getFormVersionSchema).not.toHaveBeenCalled();
+      expect(el().querySelector('[data-fields-unavailable]')).not.toBeNull();
+      type('#asset-name', 'Renamed bundle');
+      await settle(fixture);
+      await submit();
+      // The save sends no type values it never showed.
+      expect(assets.updateAsset).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({ displayName: 'Renamed bundle', formValues: undefined }),
+      );
+    });
+
+    it('Edit asset: the header shows name, status, type and matter, locks matter and type with the reason, and saves only when something changed', async () => {
+      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View', 'Matter.View']);
+
+      expect(el().querySelector('h1')?.textContent).toContain('Contract bundle');
+      expect(el().querySelector('[data-record-header] mf-active-badge')?.textContent).toContain(
+        'Active',
+      );
+      expect(el().querySelector('[data-type-badge]')?.textContent).toContain('Document Set');
+      expect(el().querySelector('[data-form-context] a.mf-ref')?.getAttribute('href')).toBe(
+        '/matters/7',
+      );
+      const crumbs = el().querySelectorAll('[data-record-header] ol a');
+      expect(Array.from(crumbs).map((a) => a.getAttribute('href'))).toEqual(
+        expect.arrayContaining(['/assets', '/assets/9']),
+      );
+      expect(el().querySelector('[data-type-reason]')?.textContent).toContain(
+        "can't be changed after the asset is created",
+      );
+      expect(el().textContent).toContain("The matter can't be changed after the asset is created.");
+      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(true);
+
+      type('#asset-name', 'Contract bundle v2');
+      await settle(fixture);
+      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(false);
+      buttonByLabel(el(), 'Cancel')!.click();
+      expect(navigateByUrl).toHaveBeenCalledWith('/assets/9');
+    });
+
+    it('Edit asset without Matter.View shows the matter as plain text', async () => {
+      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
+      expect(el().querySelector('[data-form-context] .mf-ref')?.textContent).toBe('00343-00012');
+      expect(el().querySelector('[data-form-context] a')).toBeNull();
+    });
+
+    it('shows the 409 sentence of the server for a lost race on create, keeps the typed values and offers no reload (BUG-6)', async () => {
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       assets.createAsset.mockReturnValue(
         apiError(409, {
           title: 'Conflict',
@@ -997,10 +1092,12 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     });
 
     it('warns that an inactive asset cannot be edited and offers a reload on conflict', async () => {
-      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit']);
+      await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
       assets.updateAsset.mockReturnValue(
         apiError(409, { title: 'x', status: 409, code: 'CONCURRENCY_CONFLICT' }),
       );
+      type('#asset-name', 'Renamed bundle');
+      await settle(fixture);
       await submit();
       expect(el().querySelector('[data-conflict]')?.textContent).toContain(
         'This asset was changed by someone else.',
@@ -1010,24 +1107,28 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       ).toBeDefined();
 
       TestBed.resetTestingModule();
-      await configure(['Asset.View', 'Asset.Edit']);
+      await configure(['Asset.View', 'Asset.Edit', 'Task.View']);
       assets.getAsset.mockReturnValue(ok(anAsset({ isActive: false })));
       fixture = TestBed.createComponent(AssetFormPage);
       fixture.componentRef.setInput('assetId', '9');
       await settle(fixture);
-      expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
-      expect(buttonByLabel(el(), 'Save changes')!.disabled).toBe(true);
+      expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain(
+        "can't be edited",
+      );
+      expect(el().querySelector('[data-record-link]')?.getAttribute('href')).toBe('/assets/9');
+      expect(el().querySelector('form')).toBeNull(); // read-only: no fields to change
+      expect(buttonByLabel(el(), 'Save changes')).toBeUndefined();
     });
 
     it('reports unsaved changes and none after a save', async () => {
-      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create']);
+      await create({ matterId: '7' }, ['Asset.View', 'Asset.Create', 'Task.View']);
       expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
       type('#asset-name', 'Bundle');
       expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     });
 
     it('has a schema-less edit when the type has no published form', async () => {
-      await configure(['Asset.View', 'Asset.Edit']);
+      await configure(['Asset.View', 'Asset.Edit', 'Task.View']);
       assets.getAsset.mockReturnValue(
         ok(
           anAsset({ publishedFormVersionId: undefined, formVersionId: undefined, formValues: {} }),
@@ -1065,7 +1166,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     }
 
     it('shows the type badge, the matter link, the external reference link and the stored values with their form version', async () => {
-      await create(['Asset.View', 'Asset.Edit']);
+      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
 
       expect(el().querySelector('h2')?.textContent).toContain('Contract bundle');
       expect(el().querySelector('[data-type-badge]')?.textContent).toBe('Document Set');
@@ -1142,19 +1243,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
 
       TestBed.resetTestingModule();
-      await create(['Asset.View', 'Asset.Edit']);
+      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
       buttonByLabel(el(), 'Edit')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/assets/9/edit');
 
       TestBed.resetTestingModule();
-      await create(['Asset.View', 'Asset.Edit'], anAsset({ isActive: false }));
+      await create(['Asset.View', 'Asset.Edit', 'Task.View'], anAsset({ isActive: false }));
       expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
       expect(buttonByLabel(el(), 'Set active')).toBeDefined();
       expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
     });
 
     it('deactivates after confirmation with the row version (assets are never deleted)', async () => {
-      await create(['Asset.View', 'Asset.Edit']);
+      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
       expect(buttonByLabel(el(), 'Delete')).toBeUndefined();
       const changed = vi.fn();
       fixture.componentInstance.changed.subscribe(changed);

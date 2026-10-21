@@ -1,5 +1,8 @@
 import {
   ChangeDetectionStrategy,
+  ElementRef,
+  Injector,
+  afterNextRender,
   Component,
   HostListener,
   computed,
@@ -10,7 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { DynamicForm, FormDefinition, ServerFieldError, errorSummary } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
@@ -23,16 +26,21 @@ import {
   MatterResponse,
   MattersClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
-import { toFormDefinition } from '../../../shared/forms/form-schema';
+import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
+import type { Crumb } from '../../../shared/ui/page-header';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { Badge } from '../../../shared/ui/badge';
+import { MatterRef } from '../../../shared/ui/matter-ref';
+import { matterLinkOf } from '../../../shared/ui/matter-link';
+import { RecordHeader } from '../../../shared/ui/record-header';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -60,18 +68,44 @@ export function externalReferenceError(text: string): string | null {
  */
 @Component({
   selector: 'mf-asset-form-page',
-  imports: [PageHeader, ErrorReference, Button, TextField, EntityPicker, DynamicForm],
+  imports: [
+    RecordHeader,
+    Badge,
+    MatterRef,
+    ErrorReference,
+    Button,
+    TextField,
+    EntityPicker,
+    DynamicForm,
+    RouterLink,
+  ],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
-    <mf-page-header
-      [crumbs]="[
-        { label: 'Assets', link: '/assets' },
-        { label: isEdit() ? original()?.displayName || 'Edit' : 'New' },
-      ]"
-      [heading]="isEdit() ? 'Edit asset' : 'New asset'"
-    />
+    <mf-record-header
+      kind="asset"
+      [parents]="parents()"
+      [current]="isEdit() ? 'Edit' : 'New asset'"
+      [name]="isEdit() ? original()?.displayName || 'Edit asset' : 'New asset'"
+      [showStatus]="isEdit() && !!original()"
+      [active]="original()?.isActive ?? true"
+    >
+      <span mfBadges>
+        @if (isEdit() && original(); as o) {
+          <mf-badge tone="info" data-type-badge>{{ o.assetTypeName }}</mf-badge>
+        }
+      </span>
+      <span mfContext data-form-context>
+        @if (isEdit() && original(); as o) {
+          Editing. Matter
+          <mf-matter-ref [value]="o.matterRef" [link]="matterLink()" [copy]="false" />
+          {{ o.matterName }}
+        } @else if (!isEdit()) {
+          Matter and type can't be changed after the asset is created.
+        }
+      </span>
+    </mf-record-header>
 
     @if (state() === 'loading') {
       <div class="pg-state" role="status" aria-busy="true">Loading...</div>
@@ -81,136 +115,170 @@ export function externalReferenceError(text: string): string | null {
         <mf-error-reference />
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
+    } @else if (original() && !original()!.isActive) {
+      <div class="pg-banner af__main" role="note" data-inactive-banner>
+        This asset is inactive, so it can't be edited. Reactivate it on its asset page first.
+        <a class="pg-link" [routerLink]="recordUrl()" data-record-link>Open the asset</a>
+      </div>
     } @else {
-      @if (original() && !original()!.isActive) {
-        <div class="pg-banner" role="note" data-inactive-banner>
-          This asset is inactive. Reactivate it on its detail page before editing.
-        </div>
-      }
-      @if (conflict()) {
-        <div class="pg-alert" role="alert" data-conflict>
-          {{ conflictText() }}
-          @if (assetId()) {
-            <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
-          }
-        </div>
-      }
-      @if (summary().length > 0) {
-        <div class="pg-summary" role="alert" data-summary>
-          Fix the following to save:
-          <ul>
-            @for (message of summary(); track message) {
-              <li>{{ message }}</li>
+      <div class="af__main">
+        @if (conflict()) {
+          <div class="pg-alert" role="alert" data-conflict>
+            {{ conflictText() }}
+            @if (assetId()) {
+              <p-button label="Reload latest" severity="secondary" (onClick)="load()" />
             }
-          </ul>
-        </div>
-      }
-
-      <form class="pg-form" novalidate (submit)="$event.preventDefault(); save()">
-        <mf-entity-picker
-          inputId="asset-matter"
-          label="Matter"
-          placeholder="343-12 or matter name"
-          help="An asset belongs to one matter and can't be moved later."
-          [required]="true"
-          [locked]="matterLocked()"
-          [search]="searchMatters"
-          [error]="matterError()"
-          [(selected)]="matter"
-        />
-
-        <div class="pg-filter">
-          <label for="asset-type">
-            Asset type
-            @if (!isEdit()) {
-              <span class="mf-field__req">(required)</span>
-            }
-          </label>
-          @if (isEdit()) {
-            <span id="asset-type" data-type-locked>{{ original()?.assetTypeName }}</span>
-          } @else {
-            <select
-              id="asset-type"
-              class="mf-control pg-input"
-              [attr.aria-invalid]="typeError() ? 'true' : null"
-              [value]="typeId() ?? ''"
-              (change)="chooseType($any($event.target).value)"
-            >
-              <option value="">Select a type...</option>
-              @for (t of types(); track t.assetTypeId) {
-                <option [value]="t.assetTypeId">{{ t.name }}</option>
+          </div>
+        }
+        @if (summary().length > 0) {
+          <div #summaryBox class="pg-summary" role="alert" tabindex="-1" data-summary>
+            Fix the following to save:
+            <ul>
+              @for (message of summary(); track message) {
+                <li>{{ message }}</li>
               }
-            </select>
-            @if (typeError(); as e) {
-              <p class="mf-field__error" role="alert">{{ e }}</p>
-            }
-          }
-        </div>
-
-        <mf-text-field
-          inputId="asset-name"
-          label="Display name"
-          [required]="true"
-          [maxLength]="300"
-          [error]="nameError()"
-          [(value)]="displayName"
-        />
-
-        <mf-text-field
-          inputId="asset-reference"
-          label="External reference / URL"
-          help="A URL, workspace id or media label that identifies the asset elsewhere."
-          [maxLength]="1000"
-          [error]="referenceError()"
-          [(value)]="externalReference"
-        />
-
-        <mf-text-field
-          inputId="asset-description"
-          label="Description"
-          [multiline]="true"
-          [maxLength]="2000"
-          [error]="fieldError('description')"
-          [(value)]="description"
-        />
-
-        @if (schema(); as definition) {
-          <fieldset class="pg-fields" data-type-fields>
-            <legend>{{ typeName() }} fields</legend>
-            <mf-dynamic-form
-              [definition]="definition"
-              [values]="initialValues()"
-              [serverErrors]="fieldErrors()"
-              (valuesChange)="onValues($event)"
-            />
-          </fieldset>
-        } @else if (typeId() && !isEdit()) {
-          <p class="pg-muted" data-no-fields>This asset type has no extra fields.</p>
+            </ul>
+          </div>
         }
 
-        <div class="pg-actions mf-form-actions--sticky">
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create asset'"
-            [disabled]="busy() || (isEdit() && original() && !original()!.isActive)"
-          />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-        </div>
-      </form>
+        <form class="pg-form af__form" novalidate (submit)="$event.preventDefault(); save()">
+          <section class="af__section" aria-labelledby="af-h-asset" data-section="asset">
+            <h2 id="af-h-asset" class="af__h">Asset</h2>
+            <mf-entity-picker
+              inputId="asset-matter"
+              label="Matter"
+              placeholder="e.g. 90001-80011 or matter name"
+              [help]="matterHelp()"
+              [required]="true"
+              [locked]="matterLocked()"
+              [search]="searchMatters"
+              [error]="matterError()"
+              [(selected)]="matter"
+            />
+
+            <div class="pg-filter">
+              <label for="asset-type">
+                Asset type
+                @if (!isEdit()) {
+                  <span class="mf-field__req">(required)</span>
+                }
+              </label>
+              @if (isEdit()) {
+                <span id="asset-type" data-type-locked>{{ original()?.assetTypeName }}</span>
+                <p class="mf-field__help" data-type-reason>
+                  The type can't be changed after the asset is created.
+                </p>
+              } @else {
+                <select
+                  id="asset-type"
+                  class="mf-control pg-input"
+                  [attr.aria-invalid]="typeError() ? 'true' : null"
+                  [value]="typeId() ?? ''"
+                  (change)="chooseType($any($event.target).value)"
+                >
+                  <option value="">Select a type...</option>
+                  @for (t of types(); track t.assetTypeId) {
+                    <option [value]="t.assetTypeId">{{ t.name }}</option>
+                  }
+                </select>
+                @if (typeError(); as e) {
+                  <p class="mf-field__error" role="alert">{{ e }}</p>
+                }
+              }
+            </div>
+
+            <mf-text-field
+              inputId="asset-name"
+              label="Display name"
+              [required]="true"
+              [maxLength]="300"
+              [error]="nameError()"
+              [(value)]="displayName"
+            />
+
+            <mf-text-field
+              inputId="asset-reference"
+              label="External reference / URL"
+              help="A URL, workspace id or media label that identifies the asset elsewhere."
+              [maxLength]="1000"
+              [error]="referenceError()"
+              [(value)]="externalReference"
+            />
+
+            <mf-text-field
+              inputId="asset-description"
+              label="Description"
+              [multiline]="true"
+              [maxLength]="2000"
+              [error]="fieldError('description')"
+              [(value)]="description"
+            />
+          </section>
+
+          <section class="af__section" aria-labelledby="af-h-fields" data-section="fields">
+            @if (schema(); as definition) {
+              <h2 id="af-h-fields" class="af__h" data-fields-title>
+                {{ typeName() }} fields ({{ definition.fields.length }})
+              </h2>
+              <div data-type-fields>
+                <mf-dynamic-form
+                  [definition]="definition"
+                  [values]="initialValues()"
+                  [serverErrors]="fieldErrors()"
+                  (valuesChange)="onValues($event)"
+                />
+              </div>
+            } @else {
+              <h2 id="af-h-fields" class="af__h">{{ typeName() }} fields</h2>
+              @if (!typeId()) {
+                <p class="pg-muted" data-fields-pending>Choose an asset type to see its fields.</p>
+              } @else if (hasPublishedForm() && !canReadSchema()) {
+                <p class="pg-muted" data-fields-unavailable>
+                  Type fields are not available with your access.
+                </p>
+              } @else {
+                <p class="pg-muted" data-no-fields>This asset type has no extra fields.</p>
+              }
+            }
+          </section>
+
+          <div class="pg-actions mf-form-actions--sticky">
+            <p-button
+              type="submit"
+              [label]="busy() ? 'Saving...' : isEdit() ? 'Save changes' : 'Create asset'"
+              [disabled]="busy() || (isEdit() && !dirty())"
+            />
+            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
+          </div>
+        </form>
+      </div>
     }
   `,
   styles: `
-    .pg-fields {
+    /* One form column of 720 px and one input width (the Create task pattern, CT1 #322): every field fills the column. */
+    .af__main {
       display: grid;
       gap: var(--mf-s3);
-      margin: 0;
-      padding: var(--mf-s3) 0 0;
-      border: 0;
-      border-top: 1px solid var(--mf-border);
+      max-width: 720px;
+      min-width: 0;
     }
-    .pg-fields legend {
-      padding: 0 var(--mf-s2) 0 0;
-      font-weight: 600;
+    .af__form {
+      max-width: none;
+      --mf-field-max: none;
+    }
+    .af__section {
+      display: grid;
+      gap: var(--mf-s3);
+      min-width: 0;
+      padding-bottom: var(--mf-s4);
+      border-bottom: 1px solid var(--mf-border);
+    }
+    .af__section:last-of-type {
+      border-bottom: 0;
+    }
+    .af__h {
+      margin: 0;
+      font-size: var(--mf-fs-h3);
     }
   `,
 })
@@ -227,9 +295,52 @@ export class AssetFormPage implements HasUnsavedChanges {
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pickerContext = inject(AssetPickerContext);
+  private readonly auth = inject(AuthStore);
+  private readonly injector = inject(Injector);
   private readonly dynamicForm = viewChild(DynamicForm);
+  private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
 
   protected readonly isEdit = computed(() => this.assetId() !== undefined);
+  /** The crumb: Assets, and on Edit the asset itself (a link back to its page). */
+  protected readonly parents = computed<Crumb[]>(() => [
+    { label: 'Assets', link: '/assets' },
+    ...(this.isEdit() && this.original()
+      ? [{ label: this.original()!.displayName, link: this.recordUrl() }]
+      : []),
+  ]);
+  protected readonly matterHelp = computed(() =>
+    this.isEdit()
+      ? "The matter can't be changed after the asset is created."
+      : "An asset belongs to one matter and can't be moved later.",
+  );
+  protected readonly recordUrl = computed(() => '/assets/' + this.assetId());
+  /** The matter is a link only for a person who may open matters (decision V). */
+  protected readonly matterLink = computed(() =>
+    matterLinkOf(this.auth, this.original()?.matterId),
+  );
+  /** The form schema is requested only when the endpoint would answer it (Task.View or a form management permission). */
+  protected readonly canReadSchema = computed(() => this.auth.hasAny(FORM_SCHEMA_READ_PERMISSIONS));
+  /** The type has a published form (so a missing schema is a matter of access, not of the type having no fields). */
+  protected readonly hasPublishedForm = computed(() => {
+    const id = this.typeId();
+    if (this.isEdit()) {
+      const v = this.original()?.publishedFormVersionId;
+      return v !== undefined && v !== null;
+    }
+    const v = this.types().find((t) => t.assetTypeId === id)?.publishedFormVersionId;
+    return v !== undefined && v !== null;
+  });
+  /** Edit: something differs from what was loaded (Save changes stays disabled until then). */
+  protected readonly dirty = computed(() => {
+    const o = this.original();
+    return (
+      !!o &&
+      (this.displayName() !== o.displayName ||
+        this.externalReference() !== (o.externalReference ?? '') ||
+        this.description() !== (o.description ?? '') ||
+        this.formTouched())
+    );
+  });
   protected readonly matterLocked = computed(() => this.isEdit() || !!this.matterId());
   protected readonly state = signal<LoadState>('ready');
   protected readonly original = signal<AssetResponse | null>(null);
@@ -316,16 +427,7 @@ export class AssetFormPage implements HasUnsavedChanges {
 
   hasUnsavedChanges(): boolean {
     if (this.saved) return false;
-    const o = this.original();
-    if (this.isEdit()) {
-      return (
-        !!o &&
-        (this.displayName() !== o.displayName ||
-          this.externalReference() !== (o.externalReference ?? '') ||
-          this.description() !== (o.description ?? '') ||
-          this.formTouched())
-      );
-    }
+    if (this.isEdit()) return this.dirty();
     return (
       this.displayName().trim() !== '' ||
       this.externalReference().trim() !== '' ||
@@ -380,7 +482,8 @@ export class AssetFormPage implements HasUnsavedChanges {
   }
 
   private async loadSchema(versionId: number | undefined): Promise<void> {
-    if (versionId === undefined || versionId === null) {
+    // No request that is certain to answer 403: the fields are simply not available with this access (a sentence says so).
+    if (versionId === undefined || versionId === null || !this.canReadSchema()) {
       this.schema.set(null);
       return;
     }
@@ -419,6 +522,7 @@ export class AssetFormPage implements HasUnsavedChanges {
   }
 
   protected async save(): Promise<void> {
+    if (this.busy() || (this.isEdit() && !this.dirty())) return; // nothing to save
     this.submitted.set(true);
     this.serverErrors.set({});
     this.fieldErrors.set([]);
@@ -442,6 +546,7 @@ export class AssetFormPage implements HasUnsavedChanges {
     }
     if (problems.length > 0) {
       this.summary.set(problems);
+      this.focusFirstProblem();
       return;
     }
 
@@ -530,6 +635,19 @@ export class AssetFormPage implements HasUnsavedChanges {
     const matter = this.matterId();
     void this.router.navigateByUrl(
       id ? `/assets/${id}` : matter ? `/matters/${matter}?tab=assets` : '/assets',
+    );
+  }
+
+  /** Blocking validation: focus goes to the first field with an error (the summary box when none is a control of this page). */
+  private focusFirstProblem(): void {
+    afterNextRender(
+      () => {
+        const first = document.querySelector<HTMLElement>(
+          'form [aria-invalid="true"], form .mf-field--invalid input, form .mf-field--invalid select, form .mf-field--invalid textarea',
+        );
+        (first ?? this.summaryBox()?.nativeElement)?.focus();
+      },
+      { injector: this.injector },
     );
   }
 }
