@@ -173,11 +173,13 @@ test.describe('My Work needs-attention strip', () => {
     await podWork.open();
     await podWork.choosePod(pod.name);
     const strip = page.locator('[data-strip]');
-    await expect(strip).toContainText('Unassigned 1');
-    await expect(strip).toContainText('Assigned 1');
+    // Pod Work (#561): the strip has My Work's four items, each a toggle; the queue task has no due date, so it counts as ASAP.
     await expect(strip).toContainText('Overdue 1');
-    await expect(strip).toContainText('On Hold 0');
-    await expect(strip.locator('button')).toHaveCount(0);
+    await expect(strip).toContainText('Due today 0');
+    await expect(strip).toContainText('ASAP 1');
+    await expect(strip).toContainText('On hold 0');
+    await expect(strip).not.toContainText('Assigned');
+    await expect(strip.locator('button')).toHaveCount(4);
     await shot(page, 'pod-work-strip-1366x768');
     await page.setViewportSize({ width: 375, height: 812 });
     await shot(page, 'pod-work-strip-375x812');
