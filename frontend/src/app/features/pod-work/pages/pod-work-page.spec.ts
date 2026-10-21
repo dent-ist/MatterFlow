@@ -2,7 +2,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, defer, of, throwError } from 'rxjs';
 import { PodWorkClient, TaskQueueRow, TasksClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
@@ -23,11 +23,15 @@ import { PodWorkPage } from './pod-work-page';
 /** Positions of the arguments of `getPodWork` (Pod and view first, then the shared filters). */
 const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 29, page: 31 };
 
+const COUNTS = { memberCount: 3, openCount: 12, unassignedCount: 4, overdueCount: 0 };
 const PODS = [
-  { podId: 5, name: 'Pod A', isMember: true, isPrimary: true },
-  { podId: 6, name: 'Pod B', isMember: true, isPrimary: false },
-  { podId: 7, name: 'Pod C', isMember: false, isPrimary: false },
+  { podId: 5, name: 'Pod A', isMember: true, isPrimary: true, ...COUNTS, memberCount: 23 },
+  { podId: 6, name: 'Pod B', isMember: true, isPrimary: false, ...COUNTS, overdueCount: 2 },
+  { podId: 7, name: 'Pod C', isMember: false, isPrimary: false, ...COUNTS, memberCount: 1 },
 ];
+
+/** The pods of a person with no primary pod and two memberships: nothing opens by itself, so the list of pods shows. */
+const NO_PRIMARY = PODS.map((p) => ({ ...p, isPrimary: false }));
 
 function podPage(rows: TaskQueueRow[], extra: Record<string, unknown> = {}) {
   return pageOf(rows, {
@@ -112,7 +116,7 @@ describe('PodWorkPage', () => {
       harness.detectChanges();
       expect(harness.routeNativeElement?.querySelector('mf-fixed-page')).not.toBeNull();
       expect(
-        harness.routeNativeElement?.querySelector('[role="tab"], [data-empty]'),
+        harness.routeNativeElement?.querySelector('[role="tab"], [data-empty], [data-pod-list]'),
       ).not.toBeNull();
     });
     return harness.routeNativeElement as HTMLElement;
@@ -139,7 +143,7 @@ describe('PodWorkPage', () => {
 
   it('names the tab in the browser title, the table caption and the live region (M8)', async () => {
     const el = await open('/pods/work?view=attention');
-    expect(document.title).toBe('Pod Work: Overdue and on hold - MatterFlow');
+    expect(document.title).toBe('Pod Work: Pod A: Overdue and on hold - MatterFlow');
     expect(el.querySelector('caption')!.textContent!.trim()).toMatch(
       /^Pod Work: Overdue and on hold/,
     );
@@ -208,8 +212,8 @@ describe('PodWorkPage', () => {
 
   it('opens on the only Pod of a user who is a member of exactly one', async () => {
     const only = [
-      { podId: 6, name: 'Pod B', isMember: true, isPrimary: false },
-      { podId: 7, name: 'Pod C', isMember: false, isPrimary: false },
+      { podId: 6, name: 'Pod B', isMember: true, isPrimary: false, ...COUNTS },
+      { podId: 7, name: 'Pod C', isMember: false, isPrimary: false, ...COUNTS },
     ];
     await open('/pods/work', {
       response: of(podPage([], { pod: undefined, pods: only })),
@@ -508,21 +512,125 @@ describe('PodWorkPage', () => {
     });
   });
 
-  it('guides a user who is in no Pod', async () => {
-    const el = await open('/pods/work?x=1', {
-      response: of(podPage([], { pod: undefined, pods: [] })),
+  describe('context line and document title (W2, #557)', () => {
+    const line = (el: HTMLElement) =>
+      el.querySelector('[data-page-description]')!.textContent!.replace(/\s+/g, ' ').trim();
+
+    it("says the pod, its member count and the viewer's membership in one muted line", async () => {
+      const el = await open('/pods/work?podId=5');
+      expect(line(el)).toBe('Pod A \u00b7 23 members \u00b7 you are a member (primary)');
+      expect(el.querySelector('[data-page-description]')!.getAttribute('title')).toBe(line(el));
+      expect(document.title).toBe('Pod Work: Pod A: Unassigned - MatterFlow');
     });
-    expect(el.querySelector('[data-empty="no-pod"]')!.textContent).toContain(
-      "You aren't in a pod yet. Ask an administrator.",
-    );
+
+    it('says "you are not a member" for a pod the viewer is not in, without "(primary)", and "1 member" for one', async () => {
+      const el = await open('/pods/work?podId=7', {
+        response: of(podPage([], { pod: { podId: 7, name: 'Pod C', isActive: true } })),
+      });
+      expect(line(el)).toBe('Pod C \u00b7 1 member \u00b7 you are not a member');
+    });
+
+    it('leaves out the parts it cannot know instead of making them up', async () => {
+      const el = await open('/pods/work?podId=9', {
+        response: of(podPage([], { pod: { podId: 9, name: 'Pod Z', isActive: true } })),
+      });
+      expect(line(el)).toBe('Pod Z');
+    });
+
+    it('announces the pod politely in a live region without moving focus', async () => {
+      const el = await open('/pods/work?podId=5');
+      const live = el.querySelector('[data-pod-announce]')!;
+      expect(live.getAttribute('aria-live')).toBe('polite');
+      expect(live.textContent).toContain('Pod A');
+    });
+
+    it('has no context line while no pod is shown, and the title is just "Pod Work"', async () => {
+      const el = await open('/pods/work?x=1', {
+        response: of(podPage([], { pod: undefined, pods: NO_PRIMARY })),
+      });
+      expect(el.querySelector('[data-page-description]')!.textContent!.trim()).toBe('');
+      expect(document.title).toBe('Pod Work - MatterFlow');
+    });
   });
 
-  it('asks to choose a Pod when there are Pods but none is selected', async () => {
-    const el = await open('/pods/work?x=1', {
-      response: of(podPage([], { pod: undefined })),
+  describe('no pod chosen: the pods as a list (W3, #558)', () => {
+    it('lists Your pods then Other pods, alphabetical, with member, unassigned and (above zero) overdue counts', async () => {
+      const el = await open('/pods/work?x=1', {
+        response: of(podPage([], { pod: undefined, pods: NO_PRIMARY })),
+      });
+      expect(el.textContent).not.toContain('Choose a Pod to see');
+      const groups = Array.from(el.querySelectorAll('[data-pod-list] [role="group"]')).map((g) => ({
+        label: g.querySelector('h2')!.textContent!.trim(),
+        rows: Array.from(g.querySelectorAll('button')).map((b) =>
+          b.textContent!.replace(/\s+/g, ' ').trim(),
+        ),
+      }));
+      expect(groups).toEqual([
+        {
+          label: 'Your pods',
+          rows: [
+            'Pod A 23 members \u00b7 4 unassigned',
+            'Pod B 3 members \u00b7 4 unassigned \u00b7 2 overdue',
+          ],
+        },
+        { label: 'Other pods', rows: ['Pod C 1 member \u00b7 4 unassigned'] },
+      ]);
+      expect(el.querySelector('#pw-pod')).not.toBeNull();
     });
-    expect(el.querySelector('[data-empty="choose"]')!.textContent).toContain('Choose a Pod');
-    expect(el.querySelector('#pw-pod')).not.toBeNull();
+
+    it('choosing a pod sets podId in the address, loads it and moves focus to the title', async () => {
+      const el = await open('/pods/work?x=1', {
+        response: of(podPage([], { pod: undefined, pods: NO_PRIMARY })),
+      });
+      getPodWork.mockReturnValue(of(podPage([aRow({ assignedUser: undefined })])));
+      el.querySelector<HTMLButtonElement>('[data-pod="6"]')!.click();
+      await settle();
+      expect(query()['podId']).toBe('6');
+      expect(lastArgs()[ARG.podId]).toBe(6);
+      await vi.waitFor(() => {
+        harness.detectChanges();
+        expect(document.activeElement).toBe(el.querySelector('[data-page-title]'));
+      });
+    });
+
+    it('does not flash the list for a user whose primary pod opens by itself', async () => {
+      // The first answer names no pod (the page then opens the primary one), the second has it.
+      let calls = 0;
+      const el = await open('/pods/work', {
+        response: defer(() => of(calls++ === 0 ? podPage([], { pod: undefined }) : podPage([]))),
+      });
+      expect(calls).toBe(2);
+      expect(el.querySelector('[data-pod-list]')).toBeNull();
+      expect(el.querySelector('[role="tab"]')).not.toBeNull();
+    });
+  });
+
+  describe('no pods at all (W3, #559)', () => {
+    const none = (permissions: Permission[]) =>
+      open('/pods/work?x=1', {
+        permissions,
+        response: of(podPage([], { pod: undefined, pods: [] })),
+      });
+
+    it('says "There are no pods yet." with Create a pod for Pod.Manage', async () => {
+      const el = await none(['Task.View', 'Pod.View', 'Pod.Manage']);
+      const box = el.querySelector('[data-empty="no-pods"]')!;
+      expect(box.textContent).toContain('There are no pods yet.');
+      expect(box.textContent).not.toContain("You aren't in a pod yet");
+      const link = box.querySelector<HTMLAnchorElement>('[data-create-pod]')!;
+      expect(link.textContent!.trim()).toBe('Create a pod');
+      expect(link.getAttribute('href')).toBe('/admin/pods?pod=new');
+      expect(box.textContent).not.toContain('Ask an administrator');
+    });
+
+    it('says "Ask an administrator to create one." and hides the link without Pod.Manage', async () => {
+      const el = await none(['Task.View', 'Pod.View']);
+      const box = el.querySelector('[data-empty="no-pods"]')!;
+      expect(box.textContent).toContain('There are no pods yet.');
+      expect(box.textContent).toContain('Ask an administrator to create one.');
+      expect(box.querySelector('[data-create-pod]')).toBeNull();
+      expect(el.querySelector('#pw-pod')).toBeNull();
+    });
   });
 
   it('says what is waiting in the Pod when its queue is empty, and shows an error with Retry', async () => {

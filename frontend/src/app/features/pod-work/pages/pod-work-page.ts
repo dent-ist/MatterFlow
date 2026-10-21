@@ -5,6 +5,8 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -35,6 +37,7 @@ import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip'
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PodPickerList, memberCountText } from '../ui/pod-picker-list';
 
 type TabKey = 'queue' | 'members' | 'attention' | 'all';
 
@@ -49,6 +52,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
     ColumnsNotice,
     FixedPage,
     PageHeader,
+    PodPickerList,
     ScrollArea,
     FiltersBar,
     PhoneSort,
@@ -101,7 +105,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Pod Work">
+      <mf-page-header heading="Pod Work" [description]="contextLine()">
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
           <div mfActions class="wp-field wp-field--inline pw-pod" data-ph-selector>
@@ -138,6 +142,9 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           </div>
         }
       </mf-page-header>
+      <span class="wp-sr" role="status" aria-live="polite" data-pod-announce>{{
+        podAnnouncement()
+      }}</span>
 
       @if (columnsNotice()) {
         <mf-columns-notice
@@ -148,13 +155,24 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
       }
 
       @if (loadState() === 'ready' && pods().length === 0) {
-        <div class="wl-empty-note" data-empty="no-pod" role="status">
-          You aren't in a pod yet. Ask an administrator.
+        <div class="pw-empty" data-empty="no-pods" role="status">
+          <p class="pw-empty__text">There are no pods yet.</p>
+          @if (canManagePods()) {
+            <a
+              class="wp-link"
+              data-create-pod
+              routerLink="/admin/pods"
+              [queryParams]="{ pod: 'new' }"
+              >Create a pod</a
+            >
+          } @else {
+            <p class="pw-empty__text">Ask an administrator to create one.</p>
+          }
         </div>
       } @else if (loadState() === 'ready' && !data()?.pod) {
-        <div class="wl-empty-note" data-empty="choose" role="status">
-          Choose a Pod to see its work.
-        </div>
+        @if (!autoPick()) {
+          <mf-pod-picker-list [pods]="pods()" (chosen)="chooseFromList($event)" />
+        }
       } @else {
         <mf-work-strip label="Pod summary" [items]="summaryItems()" />
 
@@ -344,6 +362,12 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly yourPods = computed(() => this.pods().filter((p) => p.isMember));
   protected readonly otherPods = computed(() => this.pods().filter((p) => !p.isMember));
   protected readonly podOptions = signal<PodOption[]>([]);
+  /** The pod the page opens by itself (primary, else the only one): while it is about to be chosen the list of pods is not shown. */
+  protected readonly autoPick = computed(() => {
+    if (this.state().podId !== null) return false;
+    const mine = this.yourPods();
+    return mine.some((p) => p.isPrimary) || mine.length === 1;
+  });
   /** Only finished tasks are listed: the Columns panel may suggest Closed instead of Due (#231). */
   protected readonly finishedOnly = computed(() => isFinishedOnly(this.state().filters.status));
 
@@ -368,6 +392,34 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       (this.data()?.memberLoads.length ?? 1) === 0,
   );
   protected readonly canAddMembers = computed(() => this.auth.has('Pod.ManageMembers'));
+  /** "Create a pod" in the no-pods message is offered to people who may create one, and to nobody else (hidden, never disabled; #559). */
+  protected readonly canManagePods = computed(() => this.auth.has('Pod.Manage'));
+
+  /**
+   * The one muted line under the title (W2, #557): "Demo Processing Pod . 23 members . you are a member (primary)". A part the page cannot
+   * know is left out, never made up. Its whole text is the tooltip and the line stops at one row (the header clamps it).
+   */
+  protected readonly contextLine = computed(() => {
+    const pod = this.data()?.pod;
+    if (!pod) return '';
+    const choice = this.pods().find((p) => p.podId === pod.podId);
+    const parts = [pod.name];
+    if (choice) {
+      parts.push(memberCountText(choice.memberCount));
+      parts.push(
+        choice.isMember
+          ? `you are a member${choice.isPrimary ? ' (primary)' : ''}`
+          : 'you are not a member',
+      );
+    }
+    return parts.join(' \u00b7 ');
+  });
+
+  /** The polite announcement of a pod change (no focus move): the live region's text changes only when the pod does. */
+  protected readonly podAnnouncement = computed(() => {
+    const name = this.data()?.pod?.name;
+    return name ? `Showing the work of ${name}` : '';
+  });
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -434,6 +486,12 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     () => this.tabs().find((t) => t.key === this.tab())?.label ?? '',
   );
 
+  /** `Pod Work: Demo Processing Pod: By member` (the app name is added by the title service); `Pod Work` while no pod is shown (W2, #557). */
+  protected readonly documentName = computed(() => {
+    const pod = this.data()?.pod?.name;
+    return pod ? `Pod Work: ${pod}: ${this.tabLabel()}` : 'Pod Work';
+  });
+
   /** "Pod Work: Unassigned (Pod A)": the page, the tab and, after it, the Pod (M8). */
   protected readonly caption = computed(() => {
     const pod = this.data()?.pod?.name;
@@ -458,10 +516,13 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   private pendingRemembered = false;
 
   private readonly pageTitle = inject(PageTitle);
+  private readonly injector = inject(Injector);
+  /** A pod chosen from the list (#558): once its page is shown, focus goes to the title and the live region names the pod. */
+  private focusTitleOnLoad = false;
 
   constructor() {
     super('pod-work');
-    effect(() => this.pageTitle.pin(`Pod Work: ${this.tabLabel()}`));
+    effect(() => this.pageTitle.pin(this.documentName()));
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = loadLastPod(this.userId());
@@ -489,6 +550,17 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
 
   protected override loaded(data: PodWorkData): void {
     this.podOptions.set(data.pods.map((p) => ({ id: p.podId, name: p.name })));
+    if (data.pod && this.focusTitleOnLoad) {
+      this.focusTitleOnLoad = false;
+      afterNextRender(
+        () => {
+          const heading = this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]');
+          heading?.setAttribute('tabindex', '-1');
+          heading?.focus();
+        },
+        { injector: this.injector },
+      );
+    }
     if (data.pod) saveLastPod(this.userId(), data.pod.podId);
     else if (this.state().podId === null) {
       // No Pod chosen or remembered: open the user's primary pod, or their only pod (UXR-30).
@@ -515,6 +587,12 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       page: 1,
       filters: { ...this.state().filters, assignee: [] },
     });
+  }
+
+  /** A pod chosen from the list of pods (#558): the same as the select, and focus goes to the title once its work is shown. */
+  protected chooseFromList(podId: number): void {
+    this.focusTitleOnLoad = true;
+    this.selectPod(String(podId));
   }
 
   protected selectTab(key: string): void {

@@ -340,7 +340,7 @@ test.describe('Pod Work first release', () => {
         const none = await asUser(fx.noPod.username);
         await none.setViewportSize({ width: size.width, height: size.height });
         await none.goto('/pods/work');
-        await expect(none.locator('[data-empty]').first()).toBeVisible();
+        await expect(none.locator('[data-empty], [data-pod-list]').first()).toBeVisible();
         seen.push(['person in no pod', await pageSideScroll(none)]);
 
         const unfail = await failApi(page, '**/api/v1/pod-work*', 500);
