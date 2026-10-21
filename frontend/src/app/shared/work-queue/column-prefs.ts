@@ -401,7 +401,12 @@ export function dismissColumnsNotice(page: WorkPage, userId: number | null): voi
 }
 
 /** The user's column choice for a scope, or that scope's default. Never throws; a corrupt value falls back silently. */
-export function loadColumns(scope: ColumnScope, userId: number | null): string[] {
+export function loadColumns(
+  scope: ColumnScope,
+  userId: number | null,
+  /** What a person who never chose gets; a page that adapts its defaults to the window passes its own (Pod Work, #550). */
+  fallback: readonly string[] = defaultColumns(scope),
+): string[] {
   const page = PAGE_OF[scope.split('.')[0]];
   if (page) {
     migrateLegacy(page, userId);
@@ -410,7 +415,7 @@ export function loadColumns(scope: ColumnScope, userId: number | null): string[]
     migrateMatter(page, userId);
   }
   const stored = strings(readJson(columnsKey(scope, userId)));
-  return stored ? normalizeColumns(stored) : defaultColumns(scope);
+  return stored ? normalizeColumns(stored) : normalizeColumns(fallback);
 }
 
 /** Remembers the column choice of one scope; silently does nothing when storage is unavailable. */

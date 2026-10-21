@@ -16,6 +16,8 @@ import {
   provideLookups,
   provideQueueChoices,
 } from '../../../shared/work-queue/work-queue-testing';
+import { columnScope, saveColumns } from '../../../shared/work-queue/column-prefs';
+import { SkipTarget } from '../../../shared/layout/skip-target';
 import { PodWorkPage } from './pod-work-page';
 
 /** Positions of the arguments of `getPodWork` (Pod and view first, then the shared filters). */
@@ -245,11 +247,50 @@ describe('PodWorkPage', () => {
     expect(el.querySelector('[data-members] button')!.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('says "No members yet." for a Pod with nobody in it', async () => {
+  it('says "No members yet." once for a Pod with nobody in it, with Add members for Pod.ManageMembers and no grid (BUG-6, #555)', async () => {
+    const el = await open('/pods/work?podId=5&view=members', {
+      response: of(podPage([], { memberLoads: [] })),
+      permissions: ['Task.View', 'Pod.View', 'Task.Assign', 'Pod.ManageMembers'],
+    });
+    expect(el.querySelector('[data-members-empty]')!.textContent).toContain('No members yet.');
+    expect(el.textContent).not.toContain('Nobody in Pod A has open work');
+    expect(el.querySelector('mf-work-list')).toBeNull();
+    expect(el.querySelector('mf-filters-bar')).toBeNull();
+    const add = el.querySelector<HTMLAnchorElement>('[data-add-members]')!;
+    expect(add.textContent!.trim()).toBe('Add members');
+    expect(add.getAttribute('href')).toBe('/admin/pods?pod=5');
+  });
+
+  it('has no Add members link without Pod.ManageMembers (hidden, not disabled)', async () => {
     const el = await open('/pods/work?podId=5&view=members', {
       response: of(podPage([], { memberLoads: [] })),
     });
-    expect(el.querySelector('[data-members-empty]')!.textContent).toContain('No members yet.');
+    expect(el.querySelector('[data-members-empty]')).not.toBeNull();
+    expect(el.querySelector('[data-add-members]')).toBeNull();
+  });
+
+  it('the other tabs of an empty pod keep their own messages and the grid', async () => {
+    const el = await open('/pods/work?podId=5', {
+      response: of(podPage([], { memberLoads: [] })),
+    });
+    expect(el.querySelector('[data-members-empty]')).toBeNull();
+    expect(el.querySelector('tbody [data-empty]')!.textContent).toContain(
+      'Nothing waiting in Pod A.',
+    );
+  });
+
+  it('"Skip to member table" focuses the first member row on By member; the other tabs keep "Skip to task list" (BUG-5, #553)', async () => {
+    const skip = () => TestBed.inject(SkipTarget);
+    let el = await open('/pods/work?podId=5&view=members');
+    expect(skip().target()?.label).toBe('Skip to member table');
+    skip().target()!.focus();
+    expect(document.activeElement).toBe(el.querySelector('[data-members] tbody tr button'));
+
+    TestBed.resetTestingModule();
+    el = await open('/pods/work?podId=5');
+    expect(skip().target()?.label).toBe('Skip to task list');
+    skip().target()!.focus();
+    expect(document.activeElement!.closest('[data-task]')).not.toBeNull();
   });
 
   const control = (el: HTMLElement, key: string) =>
@@ -337,7 +378,7 @@ describe('PodWorkPage', () => {
     // The row stays on screen (muted) with its new assignee, then leaves; the tab count already follows.
     expect(el.querySelector('tr[data-task="TSK-1042"]')!.textContent).toContain('Test User');
     expect(tab(el, 'Unassigned').textContent).toContain('(5)');
-    expect(getPodWork).toHaveBeenCalledTimes(2);
+    expect(getPodWork).toHaveBeenCalledTimes(3);
   });
 
   it('does not say "moved to In Progress" for a task that is already in progress', async () => {
@@ -373,6 +414,98 @@ describe('PodWorkPage', () => {
     TestBed.resetTestingModule();
     el = await open('/pods/work?podId=5&view=members');
     expect(link(el)).toBeNull();
+  });
+
+  it('the summary strip follows an assignment, with the same numbers as the tabs (BUG-3, #552)', async () => {
+    const el = await open('/pods/work?podId=5');
+    const strip = () => el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
+    expect(strip()).toContain('Unassigned 6');
+    expect(strip()).toContain('Assigned 31');
+
+    // The server's answer after the assignment: one fewer unassigned, one more assigned.
+    getPodWork.mockReturnValue(
+      of(
+        podPage([aRow({ assignedUser: undefined, status: 'NEW' })], {
+          summary: { unassignedToPerson: 5, assigned: 32, overdue: 3, onHold: 4 },
+          counts: { queue: 5, members: 32, attention: 7, all: 37 },
+        }),
+      ),
+    );
+    link(el)!.click();
+    await settle();
+
+    expect(strip()).toContain('Unassigned 5');
+    expect(strip()).toContain('Assigned 32');
+    expect(tab(el, 'Unassigned').textContent).toContain('(5)');
+    expect(tab(el, 'By member').textContent).toContain('(32)');
+  });
+
+  describe('header (BUG-1, #548)', () => {
+    it('keeps the title on one line and gives the Pod select its full name as a tooltip', async () => {
+      const el = await open('/pods/work?podId=5');
+      const h1 = el.querySelector('h1')!;
+      expect(h1.textContent!.trim()).toBe('Pod Work');
+      expect(h1.querySelector('.pw-title')).not.toBeNull();
+      const select = el.querySelector<HTMLSelectElement>('#pw-pod')!;
+      expect(select.getAttribute('title')).toBe('Pod A');
+      expect(select.classList).toContain('pw-pod-select');
+      // The label stays "Pod": the select's accessible name, and its value is the full Pod name.
+      expect(el.querySelector('label[for="pw-pod"]')!.textContent!.trim()).toBe('Pod');
+    });
+  });
+
+  describe('Unassigned tab in the tablet band (#550)', () => {
+    /** A window `px` wide: every min-width query answers for it. */
+    function windowOf(px: number) {
+      vi.stubGlobal('matchMedia', (q: string) => {
+        const min = Number(/min-width:\s*([\d.]+)px/.exec(q)?.[1] ?? 0);
+        const max = Number(/max-width:\s*([\d.]+)px/.exec(q)?.[1] ?? Infinity);
+        return {
+          matches: px >= min && px <= max,
+          media: q,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        };
+      });
+    }
+    afterEach(() => vi.unstubAllGlobals());
+    const headers = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('thead th')).map((t) => t.textContent!.trim());
+
+    it('leaves Matter Number out of the default columns from 640 to 899 px and puts the link in view', async () => {
+      windowOf(768);
+      const el = await open('/pods/work?podId=5');
+      expect(headers(el).join('|')).not.toContain('Matter Number');
+      expect(headers(el).join('|')).toContain('Assignee');
+      expect(el.querySelector('.pw-linkonly')).not.toBeNull();
+      expect(link(el)).not.toBeNull();
+    });
+
+    it("keeps today's columns from 900 px, on the other tabs, and below 640 px", async () => {
+      windowOf(1366);
+      let el = await open('/pods/work?podId=5');
+      expect(headers(el).join('|')).toContain('Matter Number');
+      expect(el.querySelector('.pw-linkonly')).toBeNull();
+
+      TestBed.resetTestingModule();
+      windowOf(768);
+      el = await open('/pods/work?podId=5&view=all');
+      expect(headers(el).join('|')).toContain('Matter Number');
+      expect(el.querySelector('.pw-linkonly')).toBeNull();
+    });
+
+    it('a column choice the person made wins over the default', async () => {
+      windowOf(768);
+      saveColumns(columnScope('pod-work', 'queue'), 1, [
+        'ref',
+        'title',
+        'matter',
+        'assignee',
+        'status',
+      ]);
+      const el = await open('/pods/work?podId=5');
+      expect(headers(el).join('|')).toContain('Matter Number');
+    });
   });
 
   it('guides a user who is in no Pod', async () => {

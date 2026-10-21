@@ -150,6 +150,28 @@ describe('WorkList', () => {
     expect(skip.target()).toBeNull();
   });
 
+  it('a page can name the skip link and send it to its own content first, falling back to the first row (#553)', async () => {
+    await create([aRow({ taskId: 5 })]);
+    const skip = TestBed.inject(SkipTarget);
+    const own = document.createElement('button');
+    document.body.appendChild(own);
+    fixture.componentRef.setInput('skipLabel', 'Skip to member table');
+    fixture.componentRef.setInput('skipFocus', () => {
+      own.focus();
+      return true;
+    });
+    fixture.detectChanges();
+    expect(skip.target()?.label).toBe('Skip to member table');
+    skip.target()!.focus();
+    expect(document.activeElement).toBe(own);
+
+    fixture.componentRef.setInput('skipFocus', () => false);
+    fixture.detectChanges();
+    skip.target()!.focus();
+    expect((document.activeElement as HTMLElement).getAttribute('data-task-id')).toBe('5');
+    own.remove();
+  });
+
   it('skips to the list itself when there are no rows, and lists the row keys in the help', async () => {
     await create([], { emptyText: 'No tasks yet.' });
     TestBed.inject(SkipTarget).target()!.focus();

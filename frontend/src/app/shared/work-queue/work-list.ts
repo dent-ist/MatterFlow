@@ -139,6 +139,10 @@ export class WorkList {
   readonly nearEmpty = input(false);
   /** Pod Work: an "Assign to me" link-button next to "Unassigned" in the Assignee cell. */
   readonly assignLink = input(false);
+  /** The text of the skip link while this list is on screen (a page whose first content is not the list names it: "Skip to member table"). */
+  readonly skipLabel = input('Skip to task list');
+  /** Where the skip link goes instead of the first row: returns true when it moved focus itself, false to fall back to the first row. */
+  readonly skipFocus = input<(() => boolean) | null>(null);
   /** The list the rows belong to: task links carry `?from=`, and Back from a task focuses the row that was left (M7). */
   readonly from = input<DrillSource | null>(null);
   /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
@@ -189,15 +193,23 @@ export class WorkList {
     // The work pages' first Tab stop (#181): "Skip to task list" moves to the first row (or the list itself while there are no rows),
     // and the row keys are listed in the shortcut help while a list is on screen.
     const destroyRef = inject(DestroyRef);
-    const offs = [
-      inject(SkipTarget).register({
-        label: 'Skip to task list',
-        element: this.host.nativeElement,
-        focus: () => this.focusList(),
-      }),
-      ...ROW_SHORTCUTS.map((def) => inject(ShortcutRegistry).register(def)),
-    ];
+    const skip = inject(SkipTarget);
+    const offs = ROW_SHORTCUTS.map((def) => inject(ShortcutRegistry).register(def));
     destroyRef.onDestroy(() => offs.forEach((off) => off()));
+    // The link's text and, for a page that puts its own content above the list (Pod Work's By member table, #553), where it goes follow
+    // the inputs; registered again when they change, released with the list.
+    effect((onCleanup) => {
+      const label = this.skipLabel();
+      onCleanup(
+        skip.register({
+          label,
+          element: this.host.nativeElement,
+          focus: () => {
+            if (!this.skipFocus()?.()) this.focusList();
+          },
+        }),
+      );
+    });
     // Coming back from a task (browser Back or "Back to ..."): focus the title link of the row that was left, else the page heading.
     effect(() => {
       const from = this.from();

@@ -159,7 +159,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     }
   }
   /** The current tab's default set, for "Reset columns". */
-  protected readonly columnDefaults = computed(() => defaultColumns(this.columnScope()));
+  protected readonly columnDefaults = computed(() => this.defaultsFor(this.columnScope()));
   /** The current tab's columns and the page's density. */
   protected readonly prefs = computed<TablePrefs>(() => {
     const scope = this.columnScope();
@@ -167,8 +167,8 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     const own = chosen
       ? [...chosen]
       : chosen === null
-        ? defaultColumns(scope)
-        : loadColumns(scope, this.userId());
+        ? this.defaultsFor(scope)
+        : loadColumns(scope, this.userId(), this.defaultsFor(scope));
     return {
       columns: this.overlayColumns(own),
       density: this.density(),
@@ -283,6 +283,14 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
   /** The columns shown for the user's own set: a view's overlay applies here, never to the stored set (Task Queue quick views, #219). */
   protected overlayColumns(own: string[]): string[] {
     return own;
+  }
+
+  /**
+   * The columns a person who never chose get for `scope`. The table's default for the scope; a page may override it to adapt to the window
+   * (Pod Work leaves Matter Number out of the Unassigned tab from 640 to 899 px, #550). A stored choice always wins.
+   */
+  protected defaultsFor(scope: ColumnScope): string[] {
+    return defaultColumns(scope);
   }
 
   /** The tab whose column set applies (My Work and Pod Work: the tab key; Task Queue: none). */
@@ -473,12 +481,18 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     return null;
   }
 
-  /** The tab counts read again without a loading state, so they are right while the row is still on screen. */
-  private async refreshCounts(): Promise<void> {
+  private countsRequest = 0;
+
+  /**
+   * The tab counts read again without a loading state, so they are right while the row is still on screen. Only the latest request is
+   * applied: two reads started close together (an optimistic edit and the server's answer) may finish in either order.
+   */
+  protected async refreshCounts(): Promise<void> {
     const id = this.requestId;
+    const mine = ++this.countsRequest;
     try {
       const fresh = await firstValueFrom(this.fetch(this.apiState(this.state())));
-      if (id !== this.requestId) return;
+      if (id !== this.requestId || mine !== this.countsRequest) return;
       this.data.update((d) => (d ? (this.mergeCounts(d, fresh) ?? d) : d));
     } catch {
       /* the counts catch up with the next load */
@@ -610,7 +624,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     this.userActed();
     const scope = this.columnScope();
     const next = normalizeColumns(columns);
-    const def = defaultColumns(scope);
+    const def = this.defaultsFor(scope);
     if (next.length === def.length && next.every((k, i) => k === def[i])) {
       // Back on the default (a "Reset columns" or the same boxes ticked): forget the choice, so later changes of the default apply.
       this.columnChoices.update((c) => ({ ...c, [scope]: null }));

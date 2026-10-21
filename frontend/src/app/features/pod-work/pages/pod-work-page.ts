@@ -4,12 +4,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   computed,
   effect,
   inject,
   signal,
 } from '@angular/core';
-import { ParamMap } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import {
   PodWorkClient,
@@ -17,7 +18,9 @@ import {
   TaskQueueRow,
 } from '../../../api/generated/api-client';
 import { PageTitle } from '../../../core/title/page-title';
-import { loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
+import { ColumnScope, loadLastPod, saveLastPod } from '../../../shared/work-queue/column-prefs';
+import { ColumnWidthMap, pxToRem } from '../../../shared/work-queue/column-widths';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
@@ -49,6 +52,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
     ScrollArea,
     FiltersBar,
     PhoneSort,
+    RouterLink,
     WorkList,
     WorkStrip,
     WorkTabs,
@@ -56,15 +60,56 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
+  styles: `
+    /* The title never wraps (BUG-1, #548): it keeps its words together and the Pod select gives way, not the title. */
+    .pw-title {
+      white-space: nowrap;
+    }
+    /*
+     * The Pod select is capped at 22rem with a definite width, so the header's column sizes itself from the cap and not from the longest
+     * pod name in the system (a 76-character name made the actions 560 px wide and pushed the select out of the window at 768 px). The
+     * extra class names beat the page header's own selector rule for a selector in the actions (same cap, but as a percentage, which a
+     * grid cannot use to size a column).
+     */
+    .pw-pod.pw-pod.pw-pod {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .pw-pod-select.pw-pod-select.pw-pod-select {
+      flex: 0 1 auto;
+      width: auto;
+      min-width: 0;
+      max-width: 22rem;
+      text-overflow: ellipsis;
+    }
+    /* 640 to 899 px, Unassigned tab: the Assignee cell is the "Assign to me" link and the menu's chevron (#550). The accessible name of the
+       menu button still says "Unassigned, change assignee of TSK-n". */
+    /* An empty pod: one message with its action (BUG-6, #555). */
+    .pw-empty {
+      display: grid;
+      gap: var(--mf-s2);
+      justify-items: start;
+      padding: var(--mf-s4) 0;
+    }
+    .pw-empty__text {
+      margin: 0;
+      color: var(--mf-text-muted);
+    }
+    .pw-linkonly ::ng-deep td[data-col='assignee'] .re-with-link .im-value {
+      display: none;
+    }
+  `,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Pod Work">
+        <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
-          <div mfActions class="wp-field wp-field--inline">
+          <div mfActions class="wp-field wp-field--inline pw-pod" data-ph-selector>
             <label for="pw-pod">Pod</label>
             <select
               id="pw-pod"
-              class="mf-control wp-select"
+              class="mf-control mf-control--compact wp-select pw-pod-select"
+              [attr.title]="data()?.pod?.name ?? null"
               [value]="data()?.pod?.podId ?? ''"
               (change)="selectPod($any($event.target).value)"
             >
@@ -125,6 +170,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
 
         <div
           class="mf-fill"
+          [class.pw-linkonly]="linkOnly()"
           role="tabpanel"
           id="pw-panel"
           [attr.aria-labelledby]="'pw-tab-' + tab()"
@@ -132,7 +178,18 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           @if (tab() === 'members') {
             @if (data(); as d) {
               @if (d.memberLoads.length === 0) {
-                <p class="wp-note" data-members-empty>No members yet.</p>
+                <div class="pw-empty" data-members-empty role="status" tabindex="-1">
+                  <p class="pw-empty__text">No members yet.</p>
+                  @if (canAddMembers() && d.pod) {
+                    <a
+                      class="wp-link"
+                      data-add-members
+                      routerLink="/admin/pods"
+                      [queryParams]="{ pod: d.pod.podId }"
+                      >Add members</a
+                    >
+                  }
+                </div>
               } @else {
                 <div class="mf-scroll wp-members-wrap" mfScrollArea="Pod members">
                   <table class="wp-members" data-members>
@@ -180,61 +237,65 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
             }
           }
 
-          <mf-filters-bar
-            [filters]="filters"
-            controls="work-filter-row"
-            [stacked]="true"
-            (showColumn)="showColumn($event)"
-          >
-            <mf-work-view-controls
-              [sort]="state().sort"
-              [dir]="state().dir"
+          @if (!emptyMembers()) {
+            <mf-filters-bar
+              [filters]="filters"
+              controls="work-filter-row"
+              [stacked]="true"
+              (showColumn)="showColumn($event)"
+            >
+              <mf-work-view-controls
+                [sort]="state().sort"
+                [dir]="state().dir"
+                [columns]="prefs().columns"
+                [finishedOnly]="finishedOnly()"
+                [density]="prefs().density"
+                (resetSort)="resetSort()"
+                (columnsChange)="setColumns($event)"
+                [defaultColumns]="columnDefaults()"
+                [widthScope]="columnScope()"
+                [widthUser]="userId()"
+                [widthAssignLink]="canAssign()"
+                (densityChange)="setDensity($event)"
+              />
+              <mf-phone-sort
+                mfSheetSort
+                [sort]="state().sort"
+                [dir]="state().dir"
+                (sortPick)="pickSort($event)"
+              />
+            </mf-filters-bar>
+            <mf-work-list
+              from="pod-work"
+              [rows]="rows()"
+              [total]="total()"
+              [page]="state().page"
+              [pageSize]="state().pageSize"
+              [state]="loadState()"
               [columns]="prefs().columns"
-              [finishedOnly]="finishedOnly()"
               [density]="prefs().density"
-              (resetSort)="resetSort()"
-              (columnsChange)="setColumns($event)"
-              [defaultColumns]="columnDefaults()"
-              [widthScope]="columnScope()"
-              [widthUser]="userId()"
-              [widthAssignLink]="canAssign()"
-              (densityChange)="setDensity($event)"
+              [colWidths]="gridWidths()"
+              [skipLabel]="tab() === 'members' ? 'Skip to member table' : 'Skip to task list'"
+              [skipFocus]="tab() === 'members' ? focusMembers : null"
+              [sort]="tableSort()"
+              [dir]="tableDir()"
+              [filtered]="filtered()"
+              [filters]="filters"
+              [caption]="caption()"
+              [scope]="tabLabel()"
+              [emptyText]="emptyText()"
+              [assignLink]="canAssign()"
+              (sortChange)="sortBy($event)"
+              (pageChange)="goToPage($event)"
+              (pageSizeChange)="setPageSize($event)"
+              (retry)="load()"
+              (clearFilters)="clearFilters()"
+              (rowChange)="replaceRow($event)"
+              (columnsShown)="shownColumns.set($event)"
+              (columnResized)="onColumnResized($event)"
+              (columnAction)="onColumnAction($event)"
             />
-            <mf-phone-sort
-              mfSheetSort
-              [sort]="state().sort"
-              [dir]="state().dir"
-              (sortPick)="pickSort($event)"
-            />
-          </mf-filters-bar>
-          <mf-work-list
-            from="pod-work"
-            [rows]="rows()"
-            [total]="total()"
-            [page]="state().page"
-            [pageSize]="state().pageSize"
-            [state]="loadState()"
-            [columns]="prefs().columns"
-            [density]="prefs().density"
-            [colWidths]="colWidths()"
-            [sort]="tableSort()"
-            [dir]="tableDir()"
-            [filtered]="filtered()"
-            [filters]="filters"
-            [caption]="caption()"
-            [scope]="tabLabel()"
-            [emptyText]="emptyText()"
-            [assignLink]="canAssign()"
-            (sortChange)="sortBy($event)"
-            (pageChange)="goToPage($event)"
-            (pageSizeChange)="setPageSize($event)"
-            (retry)="load()"
-            (clearFilters)="clearFilters()"
-            (rowChange)="replaceRow($event)"
-            (columnsShown)="shownColumns.set($event)"
-            (columnResized)="onColumnResized($event)"
-            (columnAction)="onColumnAction($event)"
-          />
+          }
         </div>
       }
     </mf-fixed-page>
@@ -289,6 +350,60 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   protected readonly canAssign = computed(
     () => this.auth.has('Task.Assign') && this.tab() !== 'members',
   );
+
+  private readonly atLeast640 = viewportAtLeast(640);
+  private readonly atLeast900 = viewportAtLeast(900);
+  /** 640 to 899 px: the tablet band (below 640 px the list is cards, from 900 px the grid has room for everything). */
+  private readonly tabletBand = computed(() => this.atLeast640() && !this.atLeast900());
+  /** The Unassigned tab in the tablet band: the Assignee cell is the link only, so "Assign to me" is in the first view (#550). */
+  protected readonly linkOnly = computed(
+    () => this.tab() === 'queue' && this.canAssign() && this.tabletBand(),
+  );
+
+  /** An empty pod's By member tab is one message with its action: no workload table and no grid under it (BUG-6, #555). */
+  protected readonly emptyMembers = computed(
+    () =>
+      this.tab() === 'members' &&
+      this.loadState() === 'ready' &&
+      (this.data()?.memberLoads.length ?? 1) === 0,
+  );
+  protected readonly canAddMembers = computed(() => this.auth.has('Pod.ManageMembers'));
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * "Skip to member table" on the By member tab (BUG-5, #553): focus goes to the first member row (its first control), or to the
+   * "No members yet." message of an empty pod, not to the grid under the table. False lets the list take focus.
+   */
+  protected readonly focusMembers = (): boolean => {
+    const root = this.host.nativeElement;
+    const target =
+      root.querySelector<HTMLElement>(
+        '[data-members] tbody tr button, [data-members] tbody tr a',
+      ) ?? root.querySelector<HTMLElement>('[data-members-empty]');
+    target?.focus();
+    return !!target;
+  };
+
+  /** The width of the Assignee column with the link only (the chevron, the link, the cell's padding); a width the person chose wins. */
+  private static readonly LINK_ONLY_PX = 164;
+  protected readonly gridWidths = computed<ColumnWidthMap>(() =>
+    this.linkOnly()
+      ? { assignee: pxToRem(PodWorkPage.LINK_ONLY_PX), ...this.colWidths() }
+      : this.colWidths(),
+  );
+
+  /**
+   * The Unassigned tab in the tablet band leaves Matter Number (and Matter Name) out of the default columns: they stay in the Columns
+   * panel and in the card, and the Assignee cell, the one thing the tab is for, fits in the first view (#550). A column choice the person
+   * made always wins over this default.
+   */
+  protected override defaultsFor(scope: ColumnScope): string[] {
+    const base = super.defaultsFor(scope);
+    return this.tab() === 'queue' && this.tabletBand()
+      ? base.filter((k) => k !== 'matter' && k !== 'matterName')
+      : base;
+  }
 
   /** The Pod's header numbers (counts equal the tab totals, UAT-S04-6): facts about the work, never a ranking. */
   protected readonly summaryItems = computed<WorkStripItem[]>(() => {
@@ -430,8 +545,28 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     return `assigned to ${row.assignedUser?.displayName ?? 'someone'}. Removed from ${this.tabLabel()}.`;
   }
 
-  /** The tab counts and the header numbers follow the assignment while the row is still on screen. */
+  /** The tab counts, the header numbers and the member loads follow an assignment while the row is still on screen (BUG-3, #552). */
   protected override mergeCounts(current: PodWorkData, fresh: PodWorkData): PodWorkData {
-    return { ...current, counts: fresh.counts, summary: fresh.summary };
+    return {
+      ...current,
+      counts: fresh.counts,
+      summary: fresh.summary,
+      memberLoads: fresh.memberLoads,
+    };
+  }
+
+  /**
+   * The server's row (a new row version) is the moment the numbers are true: the counts read at the optimistic change race the write
+   * and can show the old numbers (BUG-3, #552), so they are read again once the server has answered.
+   */
+  protected override replaceRow(row: TaskQueueRow): void {
+    const before = this.data()?.items.find((r) => r.taskId === row.taskId)?.rowVersion;
+    super.replaceRow(row);
+    if (before !== undefined && row.rowVersion !== before) void this.refreshCounts();
+  }
+
+  /** A reassignment from the By member or the All tab changes the numbers too, not only the Unassigned tab's (BUG-3, #552). */
+  protected override countsFollowEdits(): boolean {
+    return true;
   }
 }

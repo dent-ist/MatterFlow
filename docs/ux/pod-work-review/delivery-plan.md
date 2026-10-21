@@ -141,11 +141,11 @@ Contract e2e over the fixtures at four sizes (axe 0 including `target-size`, no 
 
 - Owner decision (2026-10-20): no new or changed keyboard shortcuts in this phase (Phase 2 backlog #420); Pod Work stays its own page (#351 tracks the later merge decision).
 - Planning (2026-10-20): epic #546 and issues #547 to #577 created and linked as sub-issues; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned; App shell epic: the App shell epic #585.
-- WP-PW1 Bugs and fixtures: not started.
-- WP-PW2 Pod scope: not started.
-- WP-PW3 Strip and tabs: not started.
-- WP-PW4 By member: not started.
+- WP-PW1 Bugs and fixtures (2026-10-21): #547, #548, #549, #550, #551, #552 done on `dev` (commit ids on the issues); unit, integration (pod-work 403 pin) and e2e `pw1-fixtures`, `pw1-bugs` green, axe 0 at 1366x768, 1920x1080, 768x1024 and 375x812; screenshots `fixes/pw1-bugs/`; known limits: Assignee comes after Priority, not directly after Title (the table's column order is fixed by the shared grid), #550 hides the word "Unassigned" from 640 to 899 px through the page's own style.
+- WP-PW2 Pod scope (2026-10-21): #556 backend done (`PodChoice` member/open/unassigned/overdue counts, three grouped queries, no SQL script); #557, #558, #559 open.
+- WP-PW3 Strip and tabs (2026-10-21): #560 backend done (`PodWorkSummary.dueToday`, `asap`); #561, #562, #563 open.
+- WP-PW4 By member (2026-10-21): #553 and #555 done (skip link to the member table, one message with Add members for an empty pod), #565 backend done (member availability, `unassigned`, `membersWithWork`); #566, #568, #569 open; tests green, axe 0 at four sizes; screenshots `fixes/pw4-members/`.
 - WP-PW5 Tablet and phone: not started.
-- WP-PW6 Assign flow: not started.
+- WP-PW6 Assign flow (2026-10-21): #572 done (server rule pinned by an integration test, picker behaviour documented by `pw6-assign`, screenshots `fixes/pw6-assign/`); #571 open (waits for the shell toast system).
 - WP-PW7 Access and keyboard: not started.
 - WP-PW8 Docs and final verification: not started.
