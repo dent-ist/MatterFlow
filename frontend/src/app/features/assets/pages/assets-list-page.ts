@@ -21,6 +21,7 @@ import {
   AssetTypesClient,
   AssetsClient,
 } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
@@ -33,6 +34,7 @@ import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixe
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { matterLinkOf } from '../../../shared/ui/matter-link';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Pager } from '../../../shared/ui/pager';
 import { AssetDetails } from './asset-details';
@@ -261,7 +263,11 @@ export function parseSelected(value: string | null | undefined): number | null {
                         </td>
                         <td class="as-cell">{{ a.assetTypeName }}</td>
                         <td class="as-cell">
-                          <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
+                          <mf-matter-ref
+                            [value]="a.matterRef"
+                            [link]="matterLink(a.matterId)"
+                            [copy]="false"
+                          />
                           <span class="as-sub">{{ a.matterName }}</span>
                         </td>
                         <td class="pg-mono as-cell">{{ a.externalReference }}</td>
@@ -346,6 +352,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   readonly selected = input<string>();
 
   private readonly api = inject(AssetsClient);
+  private readonly auth = inject(AuthStore);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
   private readonly details = viewChild(AssetDetails);
@@ -370,6 +377,11 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       ? `${first.matterRef} ${first.matterName}`
       : `Matter ${id}`;
   });
+
+  /** The matter reference is a link only for a person who may open matters (decision V); otherwise plain text. */
+  protected matterLink(matterId: number): unknown[] | null {
+    return matterLinkOf(this.auth, matterId);
+  }
 
   /** Creating from a matter's list keeps the matter. */
   protected newAssetUrl(): string {

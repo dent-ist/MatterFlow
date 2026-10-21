@@ -224,7 +224,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     }
 
     it('lists assets with type, matter reference, external reference and status; the name is a button, not a link', async () => {
-      await create(['Asset.View', 'Asset.Create']);
+      await create(['Asset.View', 'Asset.Create', 'Matter.View']);
       const rows = el().querySelectorAll('tbody tr');
 
       expect(rows).toHaveLength(2);
@@ -256,6 +256,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       // The three standalone filter boxes are gone.
       expect(el().querySelector('#asset-search, #asset-type-filter, mf-status-filter')).toBeNull();
+    });
+
+    it('shows the matter number as plain text, not a link, without Matter.View (BUG-1)', async () => {
+      await create(['Asset.View']);
+      const rows = el().querySelectorAll('tbody tr');
+      expect(rows).toHaveLength(2);
+      expect(el().querySelectorAll('a[href^="/matters"]')).toHaveLength(0);
+      for (const row of Array.from(rows)) {
+        const ref = row.querySelector('.mf-ref')!;
+        expect(ref.textContent).toBe('00343-00012');
+        expect(ref.tagName).toBe('SPAN');
+        expect(ref.closest('a')).toBeNull();
+      }
     });
 
     it('has a Filters button above the grid that shows and hides the filter row under the headers', async () => {
