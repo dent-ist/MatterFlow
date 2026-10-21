@@ -1468,6 +1468,10 @@ export interface IFormsClient {
      */
     ensureFormDefinition(body: EnsureFormDefinitionRequest): Observable<FormDefinitionModel>;
     /**
+     * @return OK
+     */
+    listCustomFieldForms(): Observable<CustomFieldFormSummary[]>;
+    /**
      * @param ownerKind (optional) 
      * @param ownerId (optional) 
      * @return OK
@@ -1582,6 +1586,56 @@ export class FormsClient implements IFormsClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as FormDefinitionModel;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listCustomFieldForms(): Observable<CustomFieldFormSummary[]> {
+        let url_ = this.baseUrl + "/api/v1/forms/custom-fields";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListCustomFieldForms(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListCustomFieldForms(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<CustomFieldFormSummary[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<CustomFieldFormSummary[]>;
+        }));
+    }
+
+    protected processListCustomFieldForms(response: HttpResponseBase): Observable<CustomFieldFormSummary[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CustomFieldFormSummary[];
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -11556,12 +11610,15 @@ export interface AssetTypeResponse {
     description: string | undefined;
     sortOrder: number;
     isActive: boolean;
-    assetCount: number;
+    assetCount: number | undefined;
     publishedFormVersionId: number | undefined;
     publishedFormVersionNo: number | undefined;
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+    fieldCount?: number | undefined;
+    publishedAtUtc?: string | undefined;
+    draftVersionNo?: number | undefined;
 
     [key: string]: any;
 }
@@ -11991,6 +12048,27 @@ export interface CurrentAvailabilityDto {
 
 export interface CustomFieldFormResponse {
     publishedFormVersionId: number | undefined;
+
+    [key: string]: any;
+}
+
+export enum CustomFieldFormState {
+    None = "None",
+    Draft = "Draft",
+    Published = "Published",
+}
+
+export interface CustomFieldFormSummary {
+    ownerKind: FormOwnerKind;
+    state: CustomFieldFormState;
+    formId: number | undefined;
+    fieldCount: number;
+    requiredCount: number;
+    publishedVersion: number | undefined;
+    publishedAtUtc: string | undefined;
+    publishedByName: string | undefined;
+    draftVersion: number | undefined;
+    draftFieldCount: number;
 
     [key: string]: any;
 }

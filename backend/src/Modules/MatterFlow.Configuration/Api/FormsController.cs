@@ -32,6 +32,17 @@ public class FormsController(FormAdminService forms, IFormSubmissionValidator va
     public async Task<IActionResult> Ensure([FromBody] EnsureFormDefinitionRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await forms.EnsureDefinitionAsync(request, cancellationToken));
 
+    /// <summary>
+    /// The three objects that carry custom fields (Client, Matter, Project) with the summary of each form: state, field and required counts,
+    /// published version, date and publisher, open draft. Needs <c>CustomField.Manage</c>. Creates nothing and writes no audit event.
+    /// </summary>
+    /// <param name="cancellationToken">Request cancellation.</param>
+    [HttpGet("custom-fields", Name = "ListCustomFieldForms")]
+    [Authorize(Policy = "Perm:" + Permissions.CustomField.Manage)]
+    [ProducesResponseType<CustomFieldFormSummary[]>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> ListCustomFieldForms(CancellationToken cancellationToken) =>
+        this.ToActionResult(await forms.ListCustomFieldFormsAsync(cancellationToken));
+
     /// <summary>The form definition of an owner with its versions.</summary>
     /// <param name="ownerKind">TaskType, Step, AssetType, Client, Matter or Project.</param>
     /// <param name="ownerId">Owner id; omit for Client, Matter and Project.</param>

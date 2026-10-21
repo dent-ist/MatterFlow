@@ -1033,6 +1033,29 @@
         }
       }
     },
+    "/api/v1/forms/custom-fields": {
+      "get": {
+        "tags": [
+          "Forms"
+        ],
+        "operationId": "ListCustomFieldForms",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomFieldFormSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forms/by-owner": {
       "get": {
         "tags": [
@@ -8810,7 +8833,10 @@
             "type": "boolean"
           },
           "assetCount": {
-            "type": "integer",
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "publishedFormVersionId": {
@@ -8840,6 +8866,27 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "fieldCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "draftVersionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -10360,6 +10407,82 @@
               "null",
               "integer"
             ],
+            "format": "int32"
+          }
+        }
+      },
+      "CustomFieldFormState": {
+        "enum": [
+          "None",
+          "Draft",
+          "Published"
+        ]
+      },
+      "CustomFieldFormSummary": {
+        "required": [
+          "ownerKind",
+          "state",
+          "formId",
+          "fieldCount",
+          "requiredCount",
+          "publishedVersion",
+          "publishedAtUtc",
+          "publishedByName",
+          "draftVersion",
+          "draftFieldCount"
+        ],
+        "type": "object",
+        "properties": {
+          "ownerKind": {
+            "$ref": "#/components/schemas/FormOwnerKind"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CustomFieldFormState"
+          },
+          "formId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "fieldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "publishedVersion": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "publishedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "publishedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "draftVersion": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "draftFieldCount": {
+            "type": "integer",
             "format": "int32"
           }
         }

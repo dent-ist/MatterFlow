@@ -176,6 +176,69 @@ public sealed class FormDefinitionResolver(DbContext db, IAuditWriter audit) : I
         return result;
     }
 
+    public async Task<IReadOnlyList<FormOwnerSummary>> GetOwnerSummariesAsync(FormOwnerKind ownerKind, IReadOnlyCollection<int>? ownerIds, CancellationToken cancellationToken = default)
+    {
+        if (IsSingleton(ownerKind))
+        {
+            if (ownerIds is not null)
+                throw new ArgumentException($"A {ownerKind} form has no owner id.", nameof(ownerIds));
+        }
+        else if (ownerIds is { Count: 0 })
+        {
+            return [];
+        }
+
+        var definitions = db.Set<FormDefinition>().AsNoTracking().Where(d => d.Scope == ownerKind);
+        if (ownerIds is not null)
+        {
+            var wanted = ownerIds.Distinct().ToList();
+            definitions = ownerKind switch
+            {
+                FormOwnerKind.TaskType => definitions.Where(d => d.TaskTypeId != null && wanted.Contains(d.TaskTypeId.Value)),
+                FormOwnerKind.Step => definitions.Where(d => d.StepDefinitionId != null && wanted.Contains(d.StepDefinitionId.Value)),
+                _ => definitions.Where(d => d.AssetTypeId != null && wanted.Contains(d.AssetTypeId.Value)),
+            };
+        }
+
+        // One statement for any number of owners: the published and the draft version of each definition, with their field counts.
+        var rows = await definitions.Select(d => new
+        {
+            d.TaskTypeId,
+            d.StepDefinitionId,
+            d.AssetTypeId,
+            DefinitionId = d.Id,
+            Published = d.Versions.Where(v => v.Status == FormVersionStatus.Published).Select(v => new
+            {
+                v.Id,
+                v.VersionNo,
+                v.PublishedAt,
+                v.PublishedByUserId,
+                FieldCount = v.Fields.Count,
+                RequiredCount = v.Fields.Count(f => f.IsRequired),
+            }).FirstOrDefault(),
+            Draft = d.Versions.Where(v => v.Status == FormVersionStatus.Draft).Select(v => new { v.VersionNo, FieldCount = v.Fields.Count }).FirstOrDefault(),
+        }).ToListAsync(cancellationToken);
+
+        return [.. rows.Select(r => new FormOwnerSummary(
+            ownerKind,
+            ownerKind switch
+            {
+                FormOwnerKind.TaskType => r.TaskTypeId,
+                FormOwnerKind.Step => r.StepDefinitionId,
+                FormOwnerKind.AssetType => r.AssetTypeId,
+                _ => null,
+            },
+            r.DefinitionId,
+            r.Published?.Id,
+            r.Published?.VersionNo,
+            r.Published?.FieldCount ?? 0,
+            r.Published?.RequiredCount ?? 0,
+            r.Published?.PublishedAt,
+            r.Published?.PublishedByUserId,
+            r.Draft?.VersionNo,
+            r.Draft?.FieldCount ?? 0))];
+    }
+
     public Task<int?> FindDefinitionIdAsync(FormOwnerKind ownerKind, int? ownerId, CancellationToken cancellationToken = default) =>
         FindIdAsync(ownerKind, ownerId, cancellationToken);
 

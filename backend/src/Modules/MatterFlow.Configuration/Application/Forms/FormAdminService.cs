@@ -3,6 +3,7 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Configuration.Domain.Forms;
 using MatterFlow.Configuration.Domain.Forms.Rules;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
@@ -23,7 +24,8 @@ public sealed class FormAdminService(
     IPermissionChecker permissions,
     ICurrentUser currentUser,
     IClock clock,
-    IAuditWriter audit)
+    IAuditWriter audit,
+    IUserDirectory users)
 {
     // ---- definitions
 
@@ -38,6 +40,54 @@ public sealed class FormAdminService(
 
         var id = await resolver.EnsureDefinitionAsync(request.OwnerKind, request.OwnerId, cancellationToken);
         return id.IsFailure ? Result<FormDefinitionModel>.Failure(id.Error!) : await GetDefinitionAsync(id.Value, cancellationToken);
+    }
+
+    /// <summary>
+    /// The three custom-field objects (Client, Matter, Project) with the summary of each form, for the Custom Fields list (#643). Needs
+    /// <c>CustomField.Manage</c>. A read: it creates no definition and writes no audit event; the definition is provisioned by the first Edit fields.
+    /// A fixed number of statements (three summaries and one name lookup).
+    /// </summary>
+    public async Task<Result<IReadOnlyList<CustomFieldFormSummary>>> ListCustomFieldFormsAsync(CancellationToken cancellationToken)
+    {
+        var denied = permissions.Require(Permissions.CustomField.Manage);
+        if (denied.IsFailure)
+        {
+            return Result<IReadOnlyList<CustomFieldFormSummary>>.Failure(denied.Error!);
+        }
+
+        FormOwnerKind[] kinds = [FormOwnerKind.Client, FormOwnerKind.Matter, FormOwnerKind.Project];
+        var found = new List<FormOwnerSummary?>(kinds.Length);
+        foreach (var kind in kinds)
+        {
+            found.Add((await resolver.GetOwnerSummariesAsync(kind, null, cancellationToken)).FirstOrDefault());
+        }
+
+        var publishers = await users.FindManyAsync([.. found.Where(f => f?.PublishedByUserId is not null).Select(f => f!.PublishedByUserId!.Value).Distinct()], cancellationToken);
+        var list = kinds.Select((kind, i) =>
+        {
+            var f = found[i];
+            if (f is null)
+            {
+                return new CustomFieldFormSummary(kind, CustomFieldFormState.None, null, 0, 0, null, null, null, null, 0);
+            }
+
+            var state = f.PublishedVersionNo is not null ? CustomFieldFormState.Published
+                : f.DraftVersionNo is not null ? CustomFieldFormState.Draft
+                : CustomFieldFormState.None;
+            var publisher = f.PublishedByUserId is { } id && publishers.TryGetValue(id, out var info) ? info.DisplayName : null;
+            return new CustomFieldFormSummary(
+                kind,
+                state,
+                f.FormDefinitionId,
+                f.PublishedFieldCount,
+                f.PublishedRequiredCount,
+                f.PublishedVersionNo,
+                f.PublishedAtUtc is { } at ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : null,
+                publisher,
+                f.DraftVersionNo,
+                f.DraftFieldCount);
+        }).ToList();
+        return Result<IReadOnlyList<CustomFieldFormSummary>>.Success(list);
     }
 
     /// <summary>The definition of an owner with its versions.</summary>

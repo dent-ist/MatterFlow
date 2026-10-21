@@ -1,5 +1,7 @@
 using MatterFlow.Assets.Domain;
 using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.Identity.Contracts;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Assets.Application;
 
 /// <summary>Asset Type administration. Creating a type also creates its (empty, unpublished) field form definition.</summary>
-public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms)
+public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms, IPermissionChecker permissions)
 {
     public static readonly string[] SortFields = ["sortOrder", "name", "createdAt"];
 
@@ -39,16 +41,14 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         var ordered = AssetSupport.ApplySort(types, sort.Count == 0 ? [new SortField("sortOrder", false), new SortField("name", false)] : sort, Orderings, t => t.Id);
         var items = await ordered.Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
 
+        // Asset counts (only for a viewer who may see Assets) and the form summaries: one grouped statement each, however many types are on the page.
         var ids = items.Select(t => t.Id).ToList();
-        var counts = await db.Set<Asset>().AsNoTracking()
-            .Where(a => ids.Contains(a.AssetTypeId))
-            .GroupBy(a => a.AssetTypeId)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+        var counts = await AssetCountsAsync(ids, ct);
+        var summaries = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, ids, ct)).ToDictionary(x => x.OwnerId!.Value);
 
-        var responses = new List<AssetTypeResponse>(items.Count);
-        foreach (var type in items)
-            responses.Add(await ToResponseAsync(type, counts.GetValueOrDefault(type.Id), ct));
+        var responses = items
+            .Select(type => ToResponse(type, counts?.GetValueOrDefault(type.Id), summaries.GetValueOrDefault(type.Id)))
+            .ToList();
 
         return AssetSupport.Page(responses, total, page);
     }
@@ -59,8 +59,9 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         if (type is null)
             return AssetSupport.NotFound("Asset type");
 
-        var count = await db.Set<Asset>().CountAsync(a => a.AssetTypeId == id, ct);
-        return await ToResponseAsync(type, count, ct);
+        var counts = await AssetCountsAsync([id], ct);
+        var summary = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, [id], ct)).FirstOrDefault();
+        return ToResponse(type, counts?.GetValueOrDefault(id), summary);
     }
 
     public async Task<Result<AssetTypeResponse>> CreateAsync(CreateAssetTypeRequest request, CancellationToken ct)
@@ -141,22 +142,35 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         return await GetAsync(id, ct);
     }
 
-    private async Task<AssetTypeResponse> ToResponseAsync(AssetType type, int assetCount, CancellationToken ct)
+    /// <summary>The Asset count of each type (one grouped statement), or null when the viewer may not see Assets, so the responses carry null instead of a made-up 0.</summary>
+    private async Task<Dictionary<int, int>?> AssetCountsAsync(IReadOnlyCollection<int> typeIds, CancellationToken ct)
     {
-        var published = await forms.GetPublishedVersionAsync(FormOwnerKind.AssetType, type.Id, ct);
-        return new AssetTypeResponse(
+        if (!permissions.Has(Permissions.Asset.View))
+            return null;
+
+        return await db.Set<Asset>().AsNoTracking()
+            .Where(a => typeIds.Contains(a.AssetTypeId))
+            .GroupBy(a => a.AssetTypeId)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+    }
+
+    private static AssetTypeResponse ToResponse(AssetType type, int? assetCount, FormOwnerSummary? form) =>
+        new(
             type.Id,
             type.Name,
             type.Description,
             type.SortOrder,
             type.IsActive,
             assetCount,
-            published.IsSuccess ? published.Value.FormVersionId : null,
-            published.IsSuccess ? published.Value.VersionNo : null,
+            form?.PublishedVersionNo is null ? null : form.PublishedVersionId,
+            form?.PublishedVersionNo,
             AssetSupport.Encode(type.RowVersion),
             AssetSupport.Utc(type.CreatedAtUtc),
-            AssetSupport.Utc(type.ModifiedAtUtc));
-    }
+            AssetSupport.Utc(type.ModifiedAtUtc),
+            form?.PublishedVersionNo is null ? null : form.PublishedFieldCount,
+            AssetSupport.Utc(form?.PublishedAtUtc),
+            form?.DraftVersionNo);
 
     private async Task<int?> FindIdByNameAsync(string name, int? exceptId, CancellationToken ct) =>
         await db.Set<AssetType>().AsNoTracking()

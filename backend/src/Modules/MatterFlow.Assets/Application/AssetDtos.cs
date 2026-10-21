@@ -9,24 +9,30 @@ namespace MatterFlow.Assets.Application;
 /// <param name="Description">Optional description.</param>
 /// <param name="SortOrder">Position in pickers and lists.</param>
 /// <param name="IsActive">An inactive type cannot be chosen for new Assets; existing Assets keep it.</param>
-/// <param name="AssetCount">Number of Assets of this type.</param>
+/// <param name="AssetCount">Number of Assets of this type (retired ones included). Null, not 0, when the viewer lacks <c>Asset.View</c> (a type manager may read the type without seeing Assets).</param>
 /// <param name="PublishedFormVersionId">The published version of the type's field form, if any.</param>
 /// <param name="PublishedFormVersionNo">Its version number, if any.</param>
 /// <param name="RowVersion">Concurrency token (base64); send it back on update.</param>
 /// <param name="CreatedAtUtc">When the type was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the type was last changed (UTC), if ever.</param>
+/// <param name="FieldCount">Fields of the published version of the type's form (#627); null when no version is published.</param>
+/// <param name="PublishedAtUtc">When that version was published (UTC); null when none is published.</param>
+/// <param name="DraftVersionNo">Number of the open draft of the form; null when there is none.</param>
 public sealed record AssetTypeResponse(
     [property: Required] int AssetTypeId,
     [property: Required] string Name,
     string? Description,
     [property: Required] int SortOrder,
     [property: Required] bool IsActive,
-    [property: Required] int AssetCount,
+    int? AssetCount,
     int? PublishedFormVersionId,
     int? PublishedFormVersionNo,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    int? FieldCount = null,
+    DateTime? PublishedAtUtc = null,
+    int? DraftVersionNo = null);
 
 /// <summary>Creates an Asset Type (and its empty field form).</summary>
 public sealed class CreateAssetTypeRequest

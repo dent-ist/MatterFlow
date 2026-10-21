@@ -62,6 +62,42 @@ public sealed record FormFieldModel
     public IReadOnlyList<FormOptionModel>? Options { get; init; }
 }
 
+/// <summary>Where a custom-field form stands: no versions yet, only a draft, or a published version (with or without a draft next to it).</summary>
+public enum CustomFieldFormState
+{
+    /// <summary>No definition or no version yet: the object has no custom fields.</summary>
+    None,
+
+    /// <summary>A draft is open and nothing is published.</summary>
+    Draft,
+
+    /// <summary>A version is published.</summary>
+    Published,
+}
+
+/// <summary>One object (Client, Matter or Project) with the summary of its custom-field form (#643). Read-only: looking creates nothing.</summary>
+/// <param name="OwnerKind">Client, Matter or Project.</param>
+/// <param name="State">None, Draft or Published.</param>
+/// <param name="FormId">The form definition id, or null while the object has none (it is provisioned on the first Edit fields).</param>
+/// <param name="FieldCount">Fields of the published version (0 when none is published).</param>
+/// <param name="RequiredCount">Fields of the published version that are always required (0 when none is published).</param>
+/// <param name="PublishedVersion">Number of the published version.</param>
+/// <param name="PublishedAtUtc">When it was published.</param>
+/// <param name="PublishedByName">Display name of who published it (null when unknown).</param>
+/// <param name="DraftVersion">Number of the open draft, if any.</param>
+/// <param name="DraftFieldCount">Fields of the open draft (0 when there is none).</param>
+public sealed record CustomFieldFormSummary(
+    [property: Required] FormOwnerKind OwnerKind,
+    [property: Required] CustomFieldFormState State,
+    int? FormId,
+    [property: Required] int FieldCount,
+    [property: Required] int RequiredCount,
+    int? PublishedVersion,
+    DateTime? PublishedAtUtc,
+    string? PublishedByName,
+    int? DraftVersion,
+    [property: Required] int DraftFieldCount);
+
 /// <summary>Facts about one form version.</summary>
 /// <param name="FormVersionId">Version id.</param>
 /// <param name="FormDefinitionId">Definition id.</param>

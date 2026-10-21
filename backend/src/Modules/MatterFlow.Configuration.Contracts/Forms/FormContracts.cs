@@ -173,6 +173,34 @@ public sealed record FormVersionRef(int FormDefinitionId, int FormVersionId, int
 /// <param name="DraftFieldCount">Number of fields in the open draft (0 when there is none); a draft without fields is "empty".</param>
 public sealed record FormOwnerState(int? FormDefinitionId, FormVersionRef? Published, int? DraftVersionId, int DraftFieldCount);
 
+/// <summary>
+/// What an admin list shows about one owner's form (#627, #643): the published version in numbers, and the open draft. Fields are counted as the
+/// designer lists them (help text blocks included). An owner without a form definition, or without a published version, has no published numbers.
+/// </summary>
+/// <param name="OwnerKind">The owner kind asked for.</param>
+/// <param name="OwnerId">The owner id; null for the Client, Matter and Project singletons.</param>
+/// <param name="FormDefinitionId">The owner's form definition.</param>
+/// <param name="PublishedVersionId">Id of the PUBLISHED version, or null when none is published.</param>
+/// <param name="PublishedVersionNo">Number of the PUBLISHED version, or null when none is published.</param>
+/// <param name="PublishedFieldCount">Fields of the published version (0 when none is published).</param>
+/// <param name="PublishedRequiredCount">Fields of the published version that are always required (0 when none is published).</param>
+/// <param name="PublishedAtUtc">When the published version was published.</param>
+/// <param name="PublishedByUserId">Who published it.</param>
+/// <param name="DraftVersionNo">Number of the open DRAFT version, or null when there is none.</param>
+/// <param name="DraftFieldCount">Fields of the open draft (0 when there is none).</param>
+public sealed record FormOwnerSummary(
+    FormOwnerKind OwnerKind,
+    int? OwnerId,
+    int FormDefinitionId,
+    int? PublishedVersionId,
+    int? PublishedVersionNo,
+    int PublishedFieldCount,
+    int PublishedRequiredCount,
+    DateTime? PublishedAtUtc,
+    int? PublishedByUserId,
+    int? DraftVersionNo,
+    int DraftFieldCount);
+
 /// <summary>Finds and provisions form definitions for owners. Owner modules call it when they create a Task Type, Step Definition or Asset Type.</summary>
 public interface IFormDefinitionResolver
 {
@@ -206,6 +234,13 @@ public interface IFormDefinitionResolver
     /// absent from the result (that is an empty form, as <see cref="GetOwnerStateAsync"/> reports it). Never creates anything.
     /// </summary>
     Task<IReadOnlyDictionary<int, FormOwnerState>> GetOwnerStatesAsync(FormOwnerKind ownerKind, IReadOnlyCollection<int>? ownerIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The published and draft numbers of many owners of one kind in one grouped read (#627, #643): the Asset Types list, the Custom Fields list. For
+    /// a singleton kind (Client, Matter, Project) <paramref name="ownerIds"/> must be null and the result has at most one row. Owners without a form
+    /// definition are absent. Never creates anything (a GET must not write).
+    /// </summary>
+    Task<IReadOnlyList<FormOwnerSummary>> GetOwnerSummariesAsync(FormOwnerKind ownerKind, IReadOnlyCollection<int>? ownerIds, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Stored values of one owner, with the version they were captured under.</summary>
