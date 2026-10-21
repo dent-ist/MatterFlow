@@ -347,6 +347,27 @@ public sealed class TaskEditApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Assigning_a_pod_task_to_someone_outside_the_pod_succeeds_with_a_warning_and_is_audited()
+    {
+        // Pod Work epic #572 (UAT-S04-4): cross-pod assignment is allowed on the server; not being a member is information (a warning), never a refusal.
+        // Pod Work's own picker lists the Pod's members only (the shared picker is not changed in that epic); this pins the server rule it relies on.
+        var podId = await _h.CreatePodAsync("Pod X");
+        var outsider = await _h.UserWithAsync(@"KE\outsider", TaskHarness.AllTaskPermissions);
+        var outsiderId = await _h.UserIdAsync(@"KE\outsider");
+        var task = await _h.CreateTaskAsync(_w, extra: new() { ["assignedPodId"] = podId });
+
+        var assigned = await _h.PostAsync(TaskId(task), "assignment", new { podId, userId = outsiderId, rowVersion = RowVersion(task) }, outsider);
+
+        Status(assigned).ShouldBe("IN_PROGRESS");
+        assigned.GetProperty("assignedUser").GetProperty("userId").GetInt32().ShouldBe(outsiderId);
+        assigned.GetProperty("assignedPod").GetProperty("podId").GetInt32().ShouldBe(podId);
+        assigned.GetProperty("warnings").EnumerateArray().Select(e => e.GetString()).ShouldContain("USER_NOT_IN_POD");
+        var events = await _h.AuditAsync(TaskId(task));
+        var entry = events.Single(e => e.EventType == "TASK_ASSIGNED" && e.NewValue != null && e.NewValue.Contains($"\"userId\":{outsiderId}"));
+        entry.NewValue.ShouldBe($$"""{"podId":{{podId}},"userId":{{outsiderId}}}""");
+    }
+
+    [Fact]
     public async Task Pod_only_assignment_does_not_start_and_unassigning_never_reverts_the_status()
     {
         var podId = await _h.CreatePodAsync("Pod B");
