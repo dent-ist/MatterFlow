@@ -24,7 +24,7 @@ import { ScrollRegion } from './scroll-region';
       min-width: 0;
       overflow: hidden;
       overflow-wrap: anywhere;
-      font-size: 1.25rem;
+      font-size: var(--mf-fs-lg); /* 16px, the dialog title size (S18, #619) */
       font-weight: 600;
       line-clamp: 2;
       -webkit-line-clamp: 2;

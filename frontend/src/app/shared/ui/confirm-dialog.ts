@@ -7,6 +7,12 @@ import { ScrollRegion } from './scroll-region';
 /**
  * Generic confirmation (UX `mf-confirm-dialog`, 5.4): title states the action, body the consequence, buttons use verbs.
  * Set `showConfirm` to false for an information-only dialog with just the close button.
+ *
+ * The dialog and drawer rule (S18, #619; the same for the Activity drawer, the phone filter sheet and every drawer a page adds):
+ *  - the title is 16 px / 600 (the PrimeNG dialog theme in `core/theme/mf-preset.ts`);
+ *  - one close button style: the round icon-only X at the right of the title, named "Close ...";
+ *  - the footer puts the secondary action on the left and the primary on the right; a destructive primary is red;
+ *  - the secondary is "Cancel", unless that would read as the action itself (a named alternative such as "Keep task" then).
  */
 @Component({
   selector: 'mf-confirm-dialog',

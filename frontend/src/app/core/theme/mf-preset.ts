@@ -7,6 +7,11 @@ import { AuraLite } from './aura-lite';
  */
 export const MfPreset = definePreset(AuraLite, {
   components: {
+    // The dialog and drawer rule (S18, #619): a title is 16 px / 600 in every dialog and in the Activity drawer (Aura's 18 px is too loud
+    // next to the 14 px body); one close button style; the footer has the secondary action on the left and the primary on the right.
+    dialog: {
+      title: { fontSize: 'var(--mf-fs-lg)', fontWeight: '600' },
+    },
     // Toasts (UXR4-21): Aura's success/info/warn/error text is a mid-tone green/blue/yellow/red on a pale tint (below 4.5:1). Dark text
     // of the same hue on the same kind of tint is 7:1 or better, the detail line is the normal text colour.
     toast: {

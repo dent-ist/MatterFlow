@@ -121,13 +121,27 @@ const FOCUSABLE =
       padding: var(--mf-s2) var(--mf-s3);
       border-bottom: 1px solid var(--mf-border);
     }
+    /* The dialog rule (S18, #619): 16 px / 600 title; the close button is the dialog's own style (a round icon button with no visible border, in the
+       primary colour) with a 44 px target on a phone. */
     .fs-title {
       margin: 0;
-      font-size: var(--mf-fs-lg, 1.125rem);
+      font-size: var(--mf-fs-lg);
+      font-weight: 600;
     }
     .fs-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       min-width: 44px;
       min-height: 44px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--mf-primary);
+    }
+    .fs-close:hover {
+      background: var(--mf-selected-bg);
     }
     .fs-body {
       display: grid;
