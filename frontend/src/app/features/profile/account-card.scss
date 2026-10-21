@@ -1,0 +1,100 @@
+:host {
+  display: block;
+}
+
+.ac {
+  padding: var(--mf-s4) var(--mf-s5);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+}
+
+.ac__title {
+  margin: 0 0 var(--mf-s3);
+  font-size: var(--mf-fs-h3);
+}
+
+.ac__list {
+  display: grid;
+  gap: var(--mf-s3);
+  margin: 0;
+}
+
+.ac__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
+  gap: var(--mf-s1) var(--mf-s3);
+  align-items: baseline;
+
+  dt {
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-sm);
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+/* Long names, accounts and Pod names wrap inside the card; nothing makes the page scroll sideways. */
+.ac__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ac__value--copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s1) var(--mf-s2);
+}
+
+.ac__none {
+  color: var(--mf-text-muted);
+}
+
+.ac__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ac__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  max-width: 100%;
+  padding: 1px var(--mf-s2);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  font-size: var(--mf-fs-sm);
+  line-height: 1.4;
+}
+
+.ac__pill-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ac__tag {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-weight: 600;
+}
+
+.ac__note {
+  margin: var(--mf-s4) 0 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+@media (max-width: 480px) {
+  .ac__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -12440,6 +12440,7 @@ export interface MeResponse {
     permissions: string[];
     isSystemAdmin: boolean;
     hasWork: boolean;
+    pods: UserPodDto[];
 
     [key: string]: any;
 }

@@ -161,6 +161,38 @@ public sealed class PodsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Me_lists_the_callers_own_active_pods_primary_first()
+    {
+        var account = @"KE\mepods";
+        var user = await ProvisionAsync(account);
+        // An Access Pending person (no role) gets no Pods in /me; give this one a role.
+        var role = await As(Admin).PostAsJsonAsync("/api/v1/roles", new { name = "Me Pods Viewer", description = "test role", permissionCodes = new[] { "Task.View" } });
+        role.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var roleId = (await JsonAsync(role)).GetProperty("roleId").GetInt32();
+        var userRowVersion = (await JsonAsync(await As(Admin).GetAsync($"/api/v1/users/{user}"))).GetProperty("rowVersion").GetString();
+        (await As(Admin).PutAsJsonAsync($"/api/v1/users/{user}/roles", new { roleIds = new[] { roleId }, rowVersion = userRowVersion })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var zeta = await CreatePodAsync("Zeta Pod");
+        var alpha = await CreatePodAsync("Alpha Pod");
+        var closed = await CreatePodAsync("Closed Pod");
+        await AddMembersAsync(zeta.Id, user);
+        await AddMembersAsync(alpha.Id, user);
+        await AddMembersAsync(closed.Id, user);
+        (await As(Admin).PutAsJsonAsync($"/api/v1/pods/{zeta.Id}/members/{user}", new { isPrimary = true })).StatusCode.ShouldBe(HttpStatusCode.OK);
+        var edit = await As(Admin).GetAsync($"/api/v1/pods/{closed.Id}");
+        var rowVersion = (await JsonAsync(edit)).GetProperty("pod").GetProperty("rowVersion").GetString();
+        (await As(Admin).PutAsJsonAsync($"/api/v1/pods/{closed.Id}", new { name = "Closed Pod", description = (string?)null, isActive = false, rowVersion })).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var me = await JsonAsync(await As(account).GetAsync("/api/v1/me"));
+        var pods = me.GetProperty("pods").EnumerateArray().ToArray();
+        pods.Select(p => p.GetProperty("name").GetString()).ShouldBe(["Zeta Pod", "Alpha Pod"]);
+        pods.Select(p => p.GetProperty("isPrimary").GetBoolean()).ShouldBe([true, false]);
+
+        // An Access Pending person (no role, no Pods shown) gets an empty list rather than a missing property.
+        var loner = await JsonAsync(await As(@"KE\nopods").GetAsync("/api/v1/me"));
+        loner.GetProperty("pods").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
     public async Task Primary_pod_is_unique_per_user_and_requires_membership()
     {
         var user = await ProvisionAsync(@"KE\tariq");

@@ -25,6 +25,7 @@ export class HttpMeApi extends MeApi {
         email: dto.email,
         registeredAtUtc: dto.registeredAtUtc,
         roles: dto.roles ?? [],
+        pods: dto.pods ?? [],
         permissions: dto.permissions ?? [],
         isSystemAdmin: dto.isSystemAdmin ?? false,
         hasWork: dto.hasWork ?? false,

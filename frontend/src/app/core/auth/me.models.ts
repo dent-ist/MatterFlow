@@ -8,6 +8,14 @@ export type MeStatus = 'ACTIVE' | 'ACCESS_PENDING' | 'DISABLED';
  * is, align this with the generated client (only `HttpMeApi` should need to change).
  * A pending user receives only `userId`, `displayName` and `status`.
  */
+/** One Pod of the signed-in person (from `GET /me`, active Pods only, the primary one first). */
+export interface MePod {
+  podId: number;
+  name: string;
+  isActive: boolean;
+  isPrimary: boolean;
+}
+
 export interface MeProfile {
   userId: number;
   displayName: string;
@@ -18,6 +26,8 @@ export interface MeProfile {
   /** ISO-8601 UTC instant the account was provisioned. */
   registeredAtUtc?: string;
   roles: string[];
+  /** Pods the person is an active member of, primary first (the My profile Account card). */
+  pods?: MePod[];
   /** Effective permission codes (union of all roles). */
   permissions: Permission[];
   isSystemAdmin: boolean;

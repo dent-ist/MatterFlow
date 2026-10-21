@@ -11709,7 +11709,8 @@
           "roles",
           "permissions",
           "isSystemAdmin",
-          "hasWork"
+          "hasWork",
+          "pods"
         ],
         "type": "object",
         "properties": {
@@ -11759,6 +11760,12 @@
           },
           "hasWork": {
             "type": "boolean"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserPodDto"
+            }
           }
         }
       },

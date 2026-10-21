@@ -3,6 +3,7 @@ using MatterFlow.Identity.Access;
 using MatterFlow.Identity.Authorization;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
+using MatterFlow.Identity.Pods;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,7 @@ public class MeController(CurrentUser currentUser, DbContext db, IEnumerable<IUs
         var me = currentUser.Snapshot!;
         var permissions = me.IsPending ? [] : me.Permissions.Order(StringComparer.Ordinal).ToArray();
         var hasWork = !me.IsPending && await HasWorkAsync(me.UserId, cancellationToken);
+        var pods = me.IsPending ? [] : await MyPodsAsync(me.UserId, cancellationToken);
         return new MeResponse(
             me.UserId,
             me.DisplayName,
@@ -36,8 +38,17 @@ public class MeController(CurrentUser currentUser, DbContext db, IEnumerable<IUs
             me.IsPending ? [] : me.Roles.ToArray(),
             permissions,
             me.IsSystemAdmin,
-            hasWork);
+            hasWork,
+            pods);
     }
+
+    /// <summary>The caller's own active Pods, the primary one first, then by name (the My profile Account card). One indexed query.</summary>
+    private async Task<UserPodDto[]> MyPodsAsync(int userId, CancellationToken cancellationToken) =>
+        await db.Set<PodMember>().AsNoTracking()
+            .Where(m => m.UserId == userId && m.Pod.IsActive)
+            .OrderByDescending(m => m.IsPrimary).ThenBy(m => m.Pod.Name)
+            .Select(m => new UserPodDto(m.PodId, m.Pod.Name, m.Pod.IsActive, m.IsPrimary))
+            .ToArrayAsync(cancellationToken);
 
     /// <summary>
     /// Active Pod member, or at least one open Task assigned. Tasks created by the user alone do not count (PM decision, #142).
@@ -76,6 +87,7 @@ public static class MeStatuses
 /// <param name="Permissions">Effective permission codes (union of the roles; the full catalog for System Admin).</param>
 /// <param name="IsSystemAdmin">True when the user holds the built-in System Admin role.</param>
 /// <param name="HasWork">True when the user is an active member of at least one Pod or has an open Task assigned (drives the default landing page, My Work). Tasks created by the user alone do not count. Always false for Access Pending users.</param>
+/// <param name="Pods">The Pods the caller is an active member of (inactive Pods are left out), the primary Pod first, then by name; empty for Access Pending users.</param>
 public sealed record MeResponse(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -87,4 +99,5 @@ public sealed record MeResponse(
     [property: Required] string[] Roles,
     [property: Required] string[] Permissions,
     [property: Required] bool IsSystemAdmin,
-    [property: Required] bool HasWork);
+    [property: Required] bool HasWork,
+    [property: Required] UserPodDto[] Pods);
