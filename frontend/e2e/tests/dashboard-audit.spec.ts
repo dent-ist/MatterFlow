@@ -543,7 +543,7 @@ test.describe('Audit Logs browser (smoke)', () => {
 
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
-    await page.getByRole('button', { name: /^Filters/ }).click(); // the filter form is folded away until asked for
+    // The filter row is open from the start (AD7, #646).
     await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
     await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
     // The id applies live after a pause and reloads the list, which closes an opened row: wait for that load before opening one.
@@ -555,7 +555,9 @@ test.describe('Audit Logs browser (smoke)', () => {
       .filter({ hasText: `${task.taskNumber} created` });
     await expect(created).toHaveCount(1);
     await expect(created).toContainText('ke\\kekim');
-    await created.getByRole('button', { name: /^Show details of event/ }).click();
+    await created.getByRole('button', { name: /^Show details: / }).click();
+    // The event code is a technical detail, behind its own disclosure (#652).
+    await page.locator('tr.au-detail').getByRole('button', { name: 'Technical details' }).click();
     await expect(page.locator('tr.au-detail')).toContainText('TASK_CREATED');
     await created.getByRole('link', { name: new RegExp(task.taskNumber) }).click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}$`));
@@ -568,7 +570,6 @@ test.describe('Audit Logs browser (smoke)', () => {
     const client = await seed.client();
 
     await page.goto('/admin/audit');
-    await page.getByRole('button', { name: /^Filters/ }).click();
     await page
       .getByRole('combobox', { name: 'Filter by Event type' })
       .selectOption('CLIENT_CREATED');
@@ -587,7 +588,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: /export|download|delete|edit/i })).toHaveCount(0);
-    await expect(page.getByText("can't be exported")).toBeVisible();
+    await expect(page.getByText('Every recorded change, newest first. Read only.')).toBeVisible();
   });
 
   test('a compliance auditor can read the log and a technician cannot', async ({

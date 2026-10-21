@@ -118,8 +118,7 @@ test.describe('Column filters re-review', () => {
     await expect(page.getByRole('combobox', { name: 'Filter by Versions' })).toBeVisible();
     await expect(page.locator('tr[data-filter-row] select')).toHaveCount(2); // Versions and Status
     // Audit: the Object id box says what it is before an object type is chosen.
-    await page.goto('/admin/audit');
-    await page.getByRole('button', { name: /^Filters/ }).click();
+    await page.goto('/admin/audit'); // the row is open from the start (AD7, #646)
     const objectId = page.getByRole('textbox', { name: 'Filter by Object id' });
     await expect(objectId).toBeDisabled();
     await expect(objectId).toHaveAttribute('placeholder', 'Object id');

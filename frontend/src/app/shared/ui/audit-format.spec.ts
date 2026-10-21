@@ -5,6 +5,7 @@ import {
   auditValue,
   dateValue,
   describeAuditEvent,
+  eventTypeLabel,
   fieldLabel,
   friendlyText,
   isNoise,
@@ -60,6 +61,18 @@ describe('audit formatting', () => {
     expect(objectTypeLabel('StepInstance')).toBe('Workflow step');
     expect(isTechnicalFieldKey('OwnerKind')).toBe(true);
     expect(isTechnicalFieldKey('Name')).toBe(false);
+  });
+
+  it('words the event and object types of the Audit filters; the code stays the value (#650)', () => {
+    expect(eventTypeLabel('COMMENT_ADDED')).toBe('Comment added');
+    expect(eventTypeLabel('TASK_TYPE_WORKFLOWS_CHANGED')).toBe('Task type workflows changed');
+    expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');
+    expect(eventTypeLabel('SOMETHING_NEW_HAPPENED')).toBe('Something new happened');
+    expect(objectTypeLabel('AssetLinkRole')).toBe('Asset link role');
+    expect(objectTypeLabel('StepInstance')).toBe('Workflow step');
+    expect(objectTypeLabel('FormValueSet')).toBe('Form answers');
+    expect(objectTypeLabel('FormDefinition')).toBe('Form');
+    expect(objectTypeLabel('Priority')).toBe('Priority');
   });
 
   it('shows a calendar date as Oct 15, 2026 and leaves other values alone', () => {

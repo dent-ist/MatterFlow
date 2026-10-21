@@ -43,10 +43,28 @@ const OBJECT_TYPES: Readonly<Record<string, string>> = {
   TaskType: 'Task type',
   AssetType: 'Asset type',
   AssetLinkRole: 'Asset link role',
+  Priority: 'Priority',
+  PodMember: 'Pod member',
   StatusLabel: 'Status label',
   AppUser: 'User',
   CustomField: 'Custom field',
 };
+
+/** Event codes whose plain sentence case reads wrong. */
+const EVENT_TYPES: Readonly<Record<string, string>> = {
+  FIELD_CHANGED: 'Field changed',
+  TASK_TYPE_WORKFLOWS_CHANGED: 'Task type workflows changed',
+  FORM_PUBLISHED: 'Form published',
+  FORM_RETIRED: 'Form retired',
+};
+
+/** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */
+export function eventTypeLabel(code: string): string {
+  const known = EVENT_TYPES[code];
+  if (known) return known;
+  const words = code.replace(/_/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 
 /** `FormValueSet` -> `Form answers`, `TaskType` -> `Task type`; unknown names are split into words. */
 export function objectTypeLabel(type: string): string {

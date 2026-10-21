@@ -1,121 +1,16 @@
 :host {
-  display: block;
+  display: contents;
 }
 
 .au-muted {
   color: var(--mf-text-muted);
 }
 
-/* A fixed grid: every label and control share a row line, whatever hints sit below a field (UXR2-06). */
-.au-filters {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-  gap: var(--mf-s3) var(--mf-s4);
-  margin-bottom: var(--mf-s3);
-}
-
-.au-field {
-  position: relative;
-  display: grid;
-  min-width: 0;
-  gap: var(--mf-s1);
-
-  label {
-    font-weight: 600;
-    font-size: var(--mf-fs-sm);
-  }
-
-  input,
-  select {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-.au-wide {
-  grid-column: span 2;
-}
-
-/* One column below 900 px: the From / To date inputs do not fit three across at tablet width (UXR4-01). */
-@media (max-width: 899px) {
-  .au-filters {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .au-wide {
-    grid-column: auto;
-  }
-}
-
-.au-hint {
-  font-size: var(--mf-fs-sm);
-  color: var(--mf-text-muted);
-}
-
-.au-suggest {
-  position: absolute;
-  z-index: 5;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background: var(--mf-surface);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  box-shadow: var(--mf-shadow-1);
-
-  button {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding: var(--mf-s2) var(--mf-s3);
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-
-    &:hover,
-    &:focus-visible {
-      background: var(--mf-selected-bg);
-    }
-  }
-}
-
-.au-buttons {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: var(--mf-s2);
-}
-
 .au-linkout {
   color: var(--mf-link);
 }
 
-.au-error {
-  margin: 0 0 var(--mf-s3);
-  color: var(--mf-danger);
-}
-
-.au-banner,
-.au-alert {
-  margin: 0 0 var(--mf-s3);
-  padding: var(--mf-s2) var(--mf-s3);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface-alt);
-}
-
-.au-alert {
-  border-color: var(--mf-danger);
-  color: var(--mf-danger);
-}
-
+/* One toolbar above the grid: the quick views at the left, the grouping toggle at the right. */
 .au-bar {
   display: flex;
   flex-wrap: wrap;
@@ -125,25 +20,29 @@
   margin-bottom: var(--mf-s2);
 }
 
-/* The form has [hidden]: keep it hidden even though the grid sets its display. */
-.au-filters[hidden] {
-  display: none;
+.au-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* Fixed-header page: an open filter form scrolls inside itself instead of pushing the grid out of view. */
-@media (min-width: 768px) and (min-height: 561px) {
-  .au-foot {
-    margin-top: auto;
-    padding: var(--mf-s2) var(--mf-s3);
-    background: var(--mf-surface);
-    border-top: 1px solid var(--mf-border);
-    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
-  }
+.au-chip {
+  min-height: 32px;
+  padding: 0 var(--mf-s3);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: 999px;
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  cursor: pointer;
 
-  .au-filters {
-    max-height: min(45dvh, 22rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  &.on {
+    border-color: var(--mf-primary);
+    background: var(--mf-selected-bg);
+    font-weight: 600;
   }
 }
 
@@ -151,6 +50,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--mf-s2);
+  margin-left: auto;
+}
+
+@media (max-width: 639px) {
+  .au-chip {
+    min-height: 44px;
+  }
 }
 
 .au-state {
@@ -162,50 +68,168 @@
   border-radius: var(--mf-radius);
 }
 
-.au-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-1);
-
-  th,
-  td {
-    padding: var(--mf-s2) var(--mf-s3);
-    border-bottom: 1px solid var(--mf-border);
-    text-align: left;
-    vertical-align: top;
-  }
-
-  th {
-    background: var(--mf-surface-alt);
-    font-weight: 600;
-  }
+/* ---- the grid (the kit's contract; these are the audit columns) */
+.au-cell-toggle {
+  width: 44px;
+  padding-inline: var(--mf-s1);
+  text-align: center;
 }
 
-.au-group td {
-  background: var(--mf-surface-alt);
+.au-cell-when {
+  min-width: 5.5rem;
 }
 
-.au-nested td:nth-child(4) {
-  padding-left: var(--mf-s5);
+.au-time {
+  display: block;
+  white-space: nowrap;
+}
+
+/* Below 1100 px Who joins the When cell as a second muted line. */
+.au-sub {
+  display: block;
+  overflow: hidden;
+  max-width: 10rem;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-cell-who {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.au-cell-object {
+  width: 18%;
+  min-width: 11rem;
+  max-width: 18rem;
+}
+
+/* The object: two lines, the whole text is the tooltip. */
+.au-clamp {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .au-toggle {
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 44px;
+  min-height: 40px;
   border: 0;
   background: none;
   color: var(--mf-text);
   cursor: pointer;
 }
 
-.au-detail td {
+/* A day divider is a row header spanning the grid. */
+.au-day th,
+.au-day-card {
   background: var(--mf-surface-alt);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.au-day-card {
+  margin: 0;
+  padding: var(--mf-s1) var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+}
+
+.au-group td {
+  background: var(--mf-surface-alt);
+}
+
+.au-nested td.mf-cell-name {
+  padding-left: var(--mf-s5);
+}
+
+/* Details are taller than a row: the grid's 44 px applies to rows, not to the open details. */
+.mf-grid .au-detail td {
+  height: auto;
+  padding-block: var(--mf-s2);
+  background: var(--mf-surface-alt);
+  line-height: 1.4;
+}
+
+.au-detail-body,
+.auc__detail {
+  display: grid;
+  gap: var(--mf-s2);
+  min-width: 0;
+}
+
+.au-sentence {
+  margin: 0;
+  font-weight: 600;
+}
+
+.au-pair {
+  display: grid;
+  gap: var(--mf-s1);
+}
+
+.au-field {
+  font-weight: 600;
+}
+
+.au-vals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--mf-s2) var(--mf-s3);
+}
+
+.au-val {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.au-val-label {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.au-arrow {
+  margin-top: var(--mf-s5);
+}
+
+.au-value {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.au-clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.au-note {
+  font-size: var(--mf-fs-sm);
+}
+
+.au-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1) var(--mf-s3);
 }
 
 .au-dl {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: var(--mf-s1) var(--mf-s4);
   margin: 0;
 
@@ -216,6 +240,7 @@
   dd {
     margin: 0;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -223,17 +248,28 @@
   font-family: var(--mf-font-mono);
 }
 
-.au-value {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 16rem;
-  overflow: auto;
-}
-
 .au-foot {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
+  gap: var(--mf-s2) var(--mf-s4);
   padding: var(--mf-s3) 0;
+}
+
+.au-count {
+  margin: 0;
+  color: var(--mf-text-muted);
+}
+
+@media (min-width: 768px) and (min-height: 561px) {
+  .au-foot {
+    margin-top: auto;
+    padding: var(--mf-s2) var(--mf-s3);
+    background: var(--mf-surface);
+    border-top: 1px solid var(--mf-border);
+    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+  }
 }
 
 .au-sr {
@@ -244,14 +280,78 @@
   clip-path: inset(50%);
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--mf-focus, var(--mf-primary));
-  outline-offset: 2px;
+/* ---- phone cards (below 640 px); the card list draws the <li> */
+.auc {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'what menu'
+    'meta menu'
+    'object menu'
+    'detail detail';
+  padding: 3px var(--mf-s3);
 }
 
-.au-table time {
+.auc.au-nested {
+  padding-left: var(--mf-s5);
+  border-top: 1px solid var(--mf-border);
+}
+
+.auc__what {
+  grid-area: what;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mf-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.auc__text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.auc__meta,
+.auc__object {
+  margin: 0;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.auc__meta {
+  grid-area: meta;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.auc__object {
+  grid-area: object;
+}
+
+.auc__menu {
+  grid-area: menu;
+  align-self: start;
+}
+
+.auc__detail {
+  grid-area: detail;
+  padding: var(--mf-s2) 0;
+}
+
+.auc__children {
+  grid-column: 1 / -1;
 }

@@ -110,8 +110,7 @@ test.describe('column filters admin screenshots', () => {
     // Audit Logs
     await page.goto('/admin/audit');
     await expect(first('Audit events list')).toBeVisible();
-    await shot(page, 'admin-audit-filters-closed');
-    await toggle.click();
+    // The Audit filter row is open from the start (AD7, #646).
     await shot(page, 'admin-audit-filters-open');
     await page.getByRole('button', { name: /^Filter by When/ }).click();
     await page.getByRole('button', { name: 'Last 7 days' }).click();

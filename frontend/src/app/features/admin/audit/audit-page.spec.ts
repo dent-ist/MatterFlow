@@ -19,7 +19,12 @@ import {
   withPermissions,
 } from '../../../shared/testing/org-testing';
 import { AuditPage } from './audit-page';
-import { auditObjectRoute, auditObjectText, groupByCorrelation } from './audit-links';
+import {
+  auditObjectLink,
+  auditObjectRoute,
+  auditObjectText,
+  groupByCorrelation,
+} from './audit-links';
 
 type Mock = ReturnType<typeof vi.fn>;
 
@@ -110,10 +115,6 @@ describe('AuditPage', () => {
 
   const control = <T extends HTMLElement>(name: string): T =>
     el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
-  async function openRow(): Promise<void> {
-    el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
-    await settle(fixture);
-  }
 
   const click = (selector: string) => el().querySelector<HTMLElement>(selector)!.click();
   const lastCall = () => api.searchAuditEvents.mock.calls.at(-1)!;
@@ -142,29 +143,40 @@ describe('AuditPage', () => {
     const row = el().querySelector('tr[data-event="100"]')!;
     expect(row.textContent).toContain('Dana Director');
     expect(row.textContent).toContain('Status changed from In Progress to On Hold');
-    expect(row.querySelector('time')?.textContent).toBe('Oct 14, 2026, 10:05 AM CDT');
+    // The time alone in the row (the day is the divider above it); the whole stamp with the zone is the tooltip.
+    expect(row.querySelector('time')?.textContent).toBe('10:05 AM');
+    expect(row.querySelector('time')?.getAttribute('title')).toBe('Oct 14, 2026, 10:05 AM CDT');
+    expect(el().querySelector('tr.au-day')?.textContent).toContain('Oct 14');
     expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/1042');
     expect(row.querySelector('a')?.textContent).toContain('TSK-1042 Process Smith custodians');
-    expect(el().textContent).toContain('America/Chicago');
-    expect(el().textContent).toContain("can't be exported");
+    expect(el().querySelector('th[title*="America/Chicago"]')?.textContent).toContain('When');
+    expect(el().textContent).toContain('Every recorded change, newest first. Read only.');
   });
 
-  it('has no filter form any more: the filters are column filters, closed by default', async () => {
+  it('has no filter form: the filters are column filters, and the row is open from the start (#646)', async () => {
     await create(['Audit.View']);
 
     expect(el().querySelector('form[role="search"], [data-apply], [data-reset]')).toBeNull();
-    expect(el().querySelector('[data-filter-row]')).toBeNull();
-    await openRow();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
+    expect(el().querySelector('[data-filters-toggle]')).not.toBeNull(); // the Filters button is in the page header
     // The event and object types come from the facets; the object id waits for a type.
     const events = Array.from(control<HTMLSelectElement>('Event type').options).map((o) =>
       o.textContent?.trim(),
     );
-    expect(events).toEqual(['Any event', 'FIELD_CHANGED', 'TASK_CREATED']);
+    expect(events).toEqual(['Any event', 'Field changed', 'Task created']); // the code stays the value (#650)
+    expect(
+      Array.from(control<HTMLSelectElement>('Event type').options).map((o) => o.value),
+    ).toEqual(['', 'FIELD_CHANGED', 'TASK_CREATED']);
     const objects = Array.from(control<HTMLSelectElement>('Object type').options).map((o) =>
       o.textContent?.trim(),
     );
-    expect(objects).toEqual(['Any object', 'Matter', 'Task']);
+    expect(objects).toEqual([
+      'Any object',
+      'Configuration changes',
+      'Access changes',
+      'Matter',
+      'Task',
+    ]);
     expect(control<HTMLInputElement>('Object id').disabled).toBe(true);
     expect(control<HTMLInputElement>('Summary or field')).not.toBeNull();
   });
@@ -199,7 +211,6 @@ describe('AuditPage', () => {
 
   it('writes a changed filter to the address (and reloads when the address changes)', async () => {
     await create(['Audit.View']);
-    await openRow();
 
     const type = control<HTMLSelectElement>('Event type');
     type.value = 'TASK_CREATED';
@@ -239,12 +250,24 @@ describe('AuditPage', () => {
     ).toContain('Dana Director');
   });
 
-  it('falls back to a user id field without User.View', async () => {
-    await create(['Audit.View'], ok(pageOfEvents([anItem()])), { actor: '12' });
+  it('offers the people present in the loaded events in Who without User.View, and sends the id (#656)', async () => {
+    await create(
+      ['Audit.View'],
+      ok(
+        pageOfEvents([
+          anItem({ auditEventId: 3, actor: { userId: 4, displayName: 'Dana Director' } }),
+          anItem({ auditEventId: 2, actor: { userId: 12, displayName: 'Casey Clerk' } }),
+          anItem({ auditEventId: 1, actor: { userId: undefined, displayName: 'System' } }),
+        ]),
+      ),
+      { actor: '12' },
+    );
 
-    expect(users.listUsers).not.toHaveBeenCalled();
-    expect(control<HTMLInputElement>('Who (user id)').value).toBe('12');
+    expect(users.listUsers).not.toHaveBeenCalled(); // no user lookup without User.View
     expect(lastCall()[2]).toEqual([12]);
+    expect(el().querySelector('input[aria-label="Filter by Who (user id)"]')).toBeNull();
+    const who = el().querySelector('button[data-filter="actor"]')!;
+    expect(who.getAttribute('aria-label') ?? who.textContent).toContain('Casey Clerk');
   });
 
   it('expands old and new values and the operation id, and marks hidden secrets', async () => {
@@ -272,11 +295,19 @@ describe('AuditPage', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     const detail = el().querySelector('#au-detail-100')!;
     expect(detail.querySelector('[data-old]')?.textContent).toBe('[REDACTED]');
-    expect(detail.querySelector('[data-new]')?.textContent).toContain('(shortened)');
+    expect(detail.querySelector('[data-new]')?.textContent).toBe('[REDACTED]');
+    expect(detail.textContent).toContain('The log keeps only the start of this value');
     expect(detail.textContent).toContain('Secret values are hidden');
-    expect(detail.textContent).toContain('api_token');
-    expect(detail.textContent).toContain('3 events');
+    expect(detail.querySelector('[data-field]')?.textContent).toBe('Api token');
+    expect(detail.querySelector('[data-show-operation]')?.textContent).toContain('3 events');
     expect(toggle.getAttribute('aria-controls')).toBe('au-detail-100');
+    // The code, field key and operation id wait behind "Technical details" (#652).
+    expect(detail.querySelector('[data-tech]')).toBeNull();
+    expect(detail.textContent).not.toContain('TASK_STATUS_CHANGED');
+    detail.querySelector<HTMLButtonElement>('[data-tech-toggle]')!.click();
+    await settle(fixture);
+    expect(detail.querySelector('[data-tech]')?.textContent).toContain('TASK_STATUS_CHANGED');
+    expect(detail.querySelector('[data-tech]')?.textContent).toContain('api_token');
   });
 
   it('groups the events of one operation by default, with one line per operation and field changes on request', async () => {
@@ -328,7 +359,11 @@ describe('AuditPage', () => {
     expect(el().textContent).toContain('Owner kind set to workflow step');
     expect(el().textContent).not.toContain('StepInstance');
 
-    el().querySelector<HTMLElement>(`[data-group="${BULK}"] button.mf-btn--text`)!.click();
+    // "Show only this operation" is in the details of an event (and the row menu), not repeated on every group row (#651).
+    expect(el().querySelector(`[data-group="${BULK}"] button.mf-btn--text`)).toBeNull();
+    el().querySelector<HTMLElement>('tr[data-event="12"] .au-toggle')!.click();
+    await settle(fixture);
+    el().querySelector<HTMLElement>('[data-show-operation]')!.click();
     // "Show only this operation" replaces the filters with the operation (one removable chip) and the address reloads the list.
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: expect.objectContaining({ correlationId: BULK, page: null }),
@@ -337,7 +372,7 @@ describe('AuditPage', () => {
     query.set({ correlationId: BULK });
     await settle(fixture);
     expect(lastCall()[7]).toBe(BULK);
-    expect(el().querySelector('[data-operation-banner]')).not.toBeNull();
+    expect(el().querySelector('[data-operation-banner]')).toBeNull(); // the chip and the header's Clear are enough
   });
 
   it('lists every event when grouping is switched off', async () => {
@@ -385,6 +420,115 @@ describe('AuditPage', () => {
     expect(el().querySelector('[data-end]')).not.toBeNull();
   });
 
+  it('puts a day divider above the first event of each day and shows only the time in the row (#655)', async () => {
+    await create(
+      ['Audit.View'],
+      ok(
+        pageOfEvents([
+          anItem({ auditEventId: 5, occurredAtUtc: '2026-10-14T20:00:00Z', correlationId: 'e' }),
+          anItem({ auditEventId: 4, occurredAtUtc: '2026-10-14T15:00:00Z', correlationId: 'd' }),
+          // 02:30 UTC on Oct 14 is 9:30 PM on Oct 13 in Chicago: the day boundary is the viewer's.
+          anItem({ auditEventId: 3, occurredAtUtc: '2026-10-14T02:30:00Z', correlationId: 'c' }),
+          anItem({ auditEventId: 2, occurredAtUtc: '2025-12-31T18:00:00Z', correlationId: 'b' }),
+        ]),
+      ),
+    );
+
+    const days = Array.from(el().querySelectorAll('tr.au-day th')).map((th) =>
+      th.textContent?.trim(),
+    );
+    expect(days).toEqual(['Oct 14', 'Oct 13', 'Dec 31, 2025']);
+    expect(el().querySelector('tr.au-day th')?.getAttribute('scope')).toBe('row');
+    expect(el().querySelector('tr[data-event="3"] time')?.textContent).toBe('9:30 PM');
+  });
+
+  it('sets the quick views as address filters, marks the pressed one and clears it again (#654)', async () => {
+    await create(['Audit.View']);
+    const view = (key: string) => el().querySelector<HTMLButtonElement>(`[data-view="${key}"]`)!;
+    expect(view('today').getAttribute('aria-pressed')).toBe('false');
+
+    view('config').click();
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: expect.objectContaining({
+        objectType:
+          'AssetType,AssetLinkRole,Priority,StatusLabel,TaskType,WorkflowDefinition,StepDefinition,FormDefinition,FormVersion',
+      }),
+      queryParamsHandling: 'merge',
+    });
+
+    query.set({ objectType: 'User,Role,Pod,PodMember' });
+    await settle(fixture);
+    expect(view('access').getAttribute('aria-pressed')).toBe('true');
+    expect(view('config').getAttribute('aria-pressed')).toBe('false');
+    expect(lastCall()[0]).toBe('User,Role,Pod,PodMember');
+
+    view('access').click(); // pressing the pressed view clears it
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: expect.objectContaining({ objectType: null }),
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('counts the loaded events politely and suggests narrowing the dates after 1,000 (#653)', async () => {
+    await create(
+      ['Audit.View'],
+      ok(pageOfEvents([anItem({ auditEventId: 1 }), anItem({ auditEventId: 2 })], 1)),
+    );
+    const count = el().querySelector('[data-loaded]')!;
+    expect(count.textContent).toContain('2 events loaded');
+    expect(count.getAttribute('aria-live')).toBe('polite');
+    expect(count.querySelector('[data-many]')).toBeNull();
+    TestBed.resetTestingModule();
+
+    const many = Array.from({ length: 1000 }, (_, i) =>
+      anItem({ auditEventId: 2000 - i, correlationId: `c${i}` }),
+    );
+    await create(['Audit.View'], ok(pageOfEvents(many)));
+    const hint = el().querySelector('[data-loaded]')!;
+    expect(hint.textContent).toContain('1,000 events loaded');
+    expect(hint.querySelector('[data-many]')?.textContent).toContain(
+      'Narrow the date range to find older events',
+    );
+  });
+
+  it('names the toggle by what happened and who did it, and shows the Old -> New pair of a field change (#652)', async () => {
+    await create(
+      ['Audit.View'],
+      ok(
+        pageOfEvents([
+          anItem({
+            eventType: 'FIELD_CHANGED',
+            fieldKey: 'Description',
+            summary: 'Description changed',
+            oldValue: undefined,
+            newValue: 'x'.repeat(300),
+          }),
+        ]),
+      ),
+    );
+    const toggle = el().querySelector<HTMLButtonElement>('tr[data-event="100"] .au-toggle')!;
+    expect(toggle.getAttribute('aria-label')).toBe(
+      'Show details: Description changed by Dana Director',
+    );
+    toggle.click();
+    await settle(fixture);
+
+    const detail = el().querySelector('#au-detail-100')!;
+    expect(detail.querySelector('[data-sentence]')?.textContent).toContain(
+      'Description changed by Dana Director, Oct 14, 2026, 10:05 AM CDT.',
+    );
+    expect(detail.querySelector('[data-field]')?.textContent).toBe('Description');
+    expect(detail.querySelector('[data-old]')?.textContent).toBe('(empty)');
+    // A long value starts clamped and "Show full" opens it.
+    expect(detail.querySelector('[data-new]')?.classList.contains('au-clamped')).toBe(true);
+    detail.querySelector<HTMLButtonElement>('[data-show-full="new"]')!.click();
+    await settle(fixture);
+    expect(detail.querySelector('[data-new]')?.classList.contains('au-clamped')).toBe(false);
+    expect(detail.querySelector('[data-show-full="new"]')?.getAttribute('aria-expanded')).toBe(
+      'true',
+    );
+  });
+
   it('shows the empty states inside the table, with and without filters, keeping the headers and the row', async () => {
     await create(['Audit.View'], ok(pageOfEvents([])));
     expect(el().querySelector('td[data-empty="none"]')?.textContent).toContain(
@@ -397,7 +541,7 @@ describe('AuditPage', () => {
     expect(el().querySelector('td[data-empty="filtered"]')?.textContent).toContain(
       'match these filters',
     );
-    expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // opened by the address
+    expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     expect(el().querySelector('thead th')).not.toBeNull();
     expect(el().querySelector('[data-load-more], [data-end]')).toBeNull();
   });
@@ -431,7 +575,8 @@ describe('audit links', () => {
     expect(route('Project', '3')).toEqual(['/projects', '3']);
     expect(route('User', '4')).toEqual(['/admin/users']);
     expect(route('StepInstance', '55', 12)).toEqual(['/tasks', '12']);
-    expect(route('Role', '2')).toBeNull();
+    expect(route('Role', '2')).toEqual(['/admin/roles']);
+    expect(route('Role', '2', undefined, (p) => p === 'Audit.View')).toBeNull();
     expect(route('Task', 'abc')).toBeNull();
   });
 
@@ -454,11 +599,48 @@ describe('audit links', () => {
     expect(route('StepInstance', '55', 12, (p) => p !== 'Task.View')).toBeNull();
   });
 
+  it('links the configuration objects only with the matching Manage permission (every object x permission)', () => {
+    const cases: [string, string, string, string[], Record<string, string> | undefined][] = [
+      ['AssetType', '6', 'AssetType.Manage', ['/admin/asset-types', '6'], undefined],
+      ['AssetLinkRole', '3', 'AssetType.Manage', ['/admin/asset-types'], { tab: 'link-roles' }],
+      ['Priority', '8', 'Priority.Manage', ['/admin/priorities'], undefined],
+      ['StatusLabel', 'ON_HOLD', 'StatusLabel.Manage', ['/admin/status-labels'], undefined],
+      ['Role', '2', 'Role.Manage', ['/admin/roles'], undefined],
+      ['TaskType', '5', 'TaskType.Manage', ['/admin/task-types', '5'], undefined],
+      ['WorkflowDefinition', '4', 'Workflow.Manage', ['/admin/workflows', '4'], undefined],
+      ['StepDefinition', '9', 'Workflow.Manage', ['/admin/steps', '9'], undefined],
+    ];
+    for (const [type, id, needed, commands, queryParams] of cases) {
+      const item = anItem({ object: { type, id, label: undefined }, taskId: undefined });
+      const link = auditObjectLink(item, (p) => p === needed);
+      expect(link?.commands, type).toEqual(commands);
+      expect(link?.queryParams, type).toEqual(queryParams);
+      expect(
+        auditObjectLink(item, (p) => p !== needed),
+        `${type} without ${needed}`,
+      ).toBeNull();
+      expect(
+        auditObjectLink(item, () => false),
+        type,
+      ).toBeNull();
+      // Audit.View alone, and Task.View alone, never make a dead link.
+      expect(
+        auditObjectLink(item, (p) => p === 'Audit.View'),
+        type,
+      ).toBeNull();
+    }
+  });
+
   it('labels an object by its resolved name or by type and id', () => {
     expect(auditObjectText(anItem())).toBe('Task: TSK-1042 Process Smith custodians');
     expect(auditObjectText(anItem({ object: { type: 'Role', id: '2', label: undefined } }))).toBe(
       'Role #2',
     );
+    expect(
+      auditObjectText(
+        anItem({ object: { type: 'AssetType', id: '6', label: 'Relativity Workspace' } }),
+      ),
+    ).toBe('Asset type: Relativity Workspace');
   });
 
   it('groups only consecutive events of the same operation', () => {

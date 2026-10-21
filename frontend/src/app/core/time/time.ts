@@ -263,7 +263,8 @@ function formatTimeOnly(instant: Date, zone: string): string {
   return clean(formatter(zone, { hour: 'numeric', minute: '2-digit' }).format(instant));
 }
 
-function formatMonthDay(d: CalendarDay): string {
+/** "Oct 28" for a calendar day (no year). */
+export function formatMonthDay(d: CalendarDay): string {
   return clean(
     formatter('UTC', { month: 'short', day: 'numeric' }).format(
       new Date(Date.UTC(d.year, d.month - 1, d.day)),

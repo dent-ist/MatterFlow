@@ -388,12 +388,11 @@ test.describe('Column filters on the administration lists', () => {
         'tbody tr[data-event], tbody tr[data-group]',
       );
       await expect(rows.first()).toBeVisible();
-      // No form, no Apply or Reset button: closed by default, and live.
+      // No form, no Apply or Reset button: open from 640 px by default (AD7, #646), and live.
       await expect(page.getByRole('button', { name: 'Apply filters' })).toHaveCount(0);
       await expect(page.getByRole('search', { name: 'Filter audit events' })).toHaveCount(0);
-      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false');
+      await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
 
-      await toggle(page).click();
       await select(page, 'Event type').selectOption('CLIENT_CREATED');
       await expect(page).toHaveURL(/eventType=CLIENT_CREATED/);
       await text(page, 'Summary or field').fill(client.clientNumber);
@@ -411,7 +410,11 @@ test.describe('Column filters on the administration lists', () => {
 
       // When: a preset in the viewer's zone writes absolute dates.
       await page.getByRole('button', { name: /^Filter by When/ }).click();
-      await page.getByRole('button', { name: 'Today' }).click();
+      // The quick view chip of the page is also called Today: the preset is the other one.
+      await page
+        .getByRole('button', { name: 'Today', exact: true })
+        .and(page.locator(':not([data-view])'))
+        .click();
       await expect(page).toHaveURL(/from=\d{4}-\d{2}-\d{2}/);
       await expect(page).toHaveURL(/to=\d{4}-\d{2}-\d{2}/);
       await page.keyboard.press('Escape');
@@ -427,7 +430,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(page).not.toHaveURL(/q=/);
     });
 
-    test('an operation in the address is one removable chip with the banner', async ({
+    test('an operation in the address is one removable chip, with no banner of its own (#651)', async ({
       page,
       seed,
       admin,
@@ -439,7 +442,7 @@ test.describe('Column filters on the administration lists', () => {
       );
       const operation = found.items[0].correlationId;
       await page.goto(`/admin/audit?correlationId=${operation}`);
-      await expect(page.locator('[data-operation-banner]')).toBeVisible();
+      await expect(page.locator('[data-operation-banner]')).toHaveCount(0);
       await expect(chips(page)).toContainText('Operation: One operation');
       await expect(grid(page, 'Audit events list').locator('tbody tr').first()).toBeVisible();
       await page.getByRole('button', { name: 'Remove filter Operation: One operation' }).click();
