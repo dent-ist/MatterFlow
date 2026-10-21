@@ -311,4 +311,101 @@ describe('AvailabilityForm', () => {
     await type('#av-until', 'Oct 20, 2026');
     expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
   });
+
+  describe('follows the header menu (BUG-1)', () => {
+    const outFromMenu = (): UserAvailabilityDto =>
+      profile({
+        status: 'OUT_OF_OFFICE',
+        until: '2026-10-20',
+        note: 'Covering: Dana',
+        rowVersion: 'V2',
+        current: {
+          state: 'OUT_OF_OFFICE',
+          outUntilUtc: '2026-10-21T04:00:00Z',
+          note: 'Covering: Dana',
+          nextWorkStartUtc: undefined,
+        },
+      });
+
+    it('a clean form takes the values the menu saved, announces it politely and has nothing to save', async () => {
+      await create();
+      TestBed.inject(MyAvailability).set(outFromMenu());
+      await settle(fixture);
+      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
+      expect(q<HTMLTextAreaElement>('#av-note').value).toBe('Covering: Dana');
+      expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
+      expect(q('[data-updated-note]').textContent).toContain('Your availability was updated.');
+      expect(q('[data-updated-note]').getAttribute('aria-live')).toBe('polite');
+      expect(saveButton().disabled).toBe(true);
+      expect(el().querySelector('[data-stale]')).toBeNull();
+    });
+
+    it("I'm back from the menu puts a form that shows Out of office back to Available", async () => {
+      await create({ initial: outFromMenu() });
+      TestBed.inject(MyAvailability).set(profile({ rowVersion: 'V3' }));
+      await settle(fixture);
+      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+      expect(saveButton().disabled).toBe(true);
+    });
+
+    it('a form with edits keeps them and offers Load latest; Load latest discards them', async () => {
+      await create();
+      await type('#av-day-1-start', '08:30');
+      TestBed.inject(MyAvailability).set(outFromMenu());
+      await settle(fixture);
+      expect(q('[data-stale]').textContent).toContain('changed somewhere else');
+      expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('08:30');
+      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+      expect(mine.saveMyAvailability).not.toHaveBeenCalled();
+
+      q<HTMLButtonElement>('[data-load-latest] button').click();
+      await settle(fixture);
+      expect(el().querySelector('[data-stale]')).toBeNull();
+      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
+      expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('09:00');
+      expect(q('[data-updated-note]').textContent).toContain('latest availability');
+    });
+
+    it('saving on the stale page still takes the existing conflict path', async () => {
+      await create();
+      mine.saveMyAvailability.mockReturnValue(
+        apiError(409, { code: 'CONCURRENCY_CONFLICT', status: 409, detail: 'changed' }),
+      );
+      await type('#av-day-1-start', '08:30');
+      TestBed.inject(MyAvailability).set(outFromMenu());
+      await settle(fixture);
+      await save();
+      expect(mine.saveMyAvailability).toHaveBeenCalledWith(
+        expect.objectContaining({ rowVersion: 'NEW' }),
+      );
+      expect(q('[data-conflict]').textContent).toContain('your edits were not saved');
+      expect(el().querySelector('[data-stale]')).toBeNull();
+    });
+
+    it('reverting the edits while a newer copy waits shows the newer copy', async () => {
+      await create();
+      await type('#av-day-1-start', '08:30');
+      TestBed.inject(MyAvailability).set(outFromMenu());
+      await settle(fixture);
+      await type('#av-day-1-start', '09:00');
+      expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
+      expect(el().querySelector('[data-stale]')).toBeNull();
+    });
+
+    it('its own save does not look like a change from elsewhere', async () => {
+      await create();
+      mine.saveMyAvailability.mockReturnValue(ok(profile({ rowVersion: 'V9' })));
+      await type('#av-day-1-start', '08:30');
+      await save();
+      expect(el().querySelector('[data-stale]')).toBeNull();
+      expect(q('[data-updated-note]').textContent!.trim()).toBe('');
+    });
+
+    it("an admin editing someone else ignores the signed-in person's store", async () => {
+      await create({ userId: 9 });
+      TestBed.inject(MyAvailability).set(outFromMenu());
+      await settle(fixture);
+      expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
+    });
+  });
 });

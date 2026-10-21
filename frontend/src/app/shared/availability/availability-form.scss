@@ -39,6 +39,14 @@
   }
 }
 
+.av-alert--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2) var(--mf-s4);
+}
+
 .av-preview {
   display: flex;
   flex-wrap: wrap;

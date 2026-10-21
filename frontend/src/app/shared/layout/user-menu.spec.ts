@@ -1,3 +1,4 @@
+import { NotificationService } from '../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { MyAvailabilityClient, UserAvailabilityDto } from '../../api/generated/api-client';
@@ -176,6 +177,7 @@ describe('UserMenu (header user area)', () => {
     });
     const fixture = await create(['Task.View'], out);
     client.saveMyAvailability.mockReturnValue(ok(dto({ rowVersion: 'V2' })));
+    const success = vi.spyOn(TestBed.inject(NotificationService), 'success');
     trigger(fixture).click();
     await settle(fixture);
     fixture.nativeElement.querySelector('[data-menu-item=back]').click();
@@ -191,6 +193,10 @@ describe('UserMenu (header user area)', () => {
       rowVersion: 'V1',
     });
     expect(fixture.nativeElement.querySelector('[data-ooo-label]')).toBeNull();
+    // #525: the toast carries the shared availability key, so a later one replaces it.
+    expect(success).toHaveBeenCalledWith('Welcome back', expect.any(String), {
+      key: 'availability',
+    });
   });
 
   it('Keyboard shortcuts asks the shell to open the list', async () => {

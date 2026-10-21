@@ -74,6 +74,24 @@ interface Problem {
         <p-button label="Retry" severity="secondary" (onClick)="load()" />
       </div>
     } @else {
+      <p class="mf-sr-only" role="status" aria-live="polite" data-updated-note>
+        {{ announcement() }}
+      </p>
+      @if (stale()) {
+        <div class="av-alert av-alert--row" role="alert" data-stale>
+          <span
+            >Your availability was changed somewhere else, for example from your name menu. Your
+            edits are kept. Load latest replaces them with the new values.</span
+          >
+          <p-button
+            label="Load latest"
+            severity="secondary"
+            size="small"
+            data-load-latest
+            (onClick)="loadLatest()"
+          />
+        </div>
+      }
       @if (conflict()) {
         <div class="av-alert" role="alert" data-conflict>
           {{ self() ? 'Your' : name() + "'s" }} availability was changed somewhere else, so your
@@ -377,6 +395,10 @@ export class AvailabilityForm {
   protected readonly tz = signal('');
   protected readonly busy = signal(false);
   protected readonly conflict = signal(false);
+  /** The profile the header menu saved while this form had unsaved edits: kept aside until the person loads it (own availability only). */
+  protected readonly stale = signal<UserAvailabilityDto | null>(null);
+  /** Text for the polite live region ("Your availability was updated."). */
+  protected readonly announcement = signal('');
   /** Show the error summary: after a failed save, and while the problems are being fixed. */
   protected readonly showSummary = signal(false);
   protected readonly server = signal<{
@@ -484,6 +506,42 @@ export class AvailabilityForm {
       this.userId();
       untracked(() => void this.load());
     });
+    // BUG-1: the page follows the header menu. Set out of office and I'm back write the shared store; a clean form takes the new
+    // values, a form with edits keeps them and offers "Load latest".
+    effect(() => {
+      const latest = this.myStore.profile();
+      this.dirty();
+      untracked(() => this.follow(latest));
+    });
+  }
+
+  private follow(latest: UserAvailabilityDto | null): void {
+    const d = this.dto();
+    if (this.userId() !== null || this.state() !== 'ready' || !latest || !d) return;
+    if (latest.rowVersion === d.rowVersion) {
+      this.stale.set(null);
+      return;
+    }
+    if (this.dirty()) {
+      this.stale.set(latest);
+      return;
+    }
+    this.apply(latest);
+    this.announcement.set('Your availability was updated.');
+  }
+
+  /** Drops the edits and shows what the menu saved. */
+  protected loadLatest(): void {
+    const latest = this.stale();
+    if (!latest) return;
+    this.apply(latest);
+    this.announcement.set('Showing your latest availability.');
+    // After the new values are drawn, so the radio that is checked by then is the one that gets focus.
+    setTimeout(() =>
+      this.host.nativeElement
+        .querySelector<HTMLElement>('input[name="av-status"]:checked')
+        ?.focus(),
+    );
   }
 
   /** True while there are edits that are not saved. */
@@ -521,6 +579,7 @@ export class AvailabilityForm {
   async load(): Promise<void> {
     this.state.set('loading');
     this.conflict.set(false);
+    this.stale.set(null);
     try {
       const id = this.userId();
       this.apply(
@@ -528,6 +587,8 @@ export class AvailabilityForm {
           id === null ? this.mine.getMyAvailability() : this.others.getUserAvailability(id),
         ),
       );
+      // The store always holds the newest copy the page has seen, so a stale header copy is never mistaken for a change.
+      if (id === null && this.dto()) this.myStore.set(this.dto()!);
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -552,6 +613,7 @@ export class AvailabilityForm {
     this.server.set({});
     this.showSummary.set(false);
     this.baseline.set(this.signature());
+    this.stale.set(null);
   }
 
   protected setStatus(value: Status): void {
