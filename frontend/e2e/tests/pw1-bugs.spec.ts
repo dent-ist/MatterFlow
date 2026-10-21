@@ -355,7 +355,7 @@ test.describe('Pod Work first release', () => {
       });
     }
 
-    test('the By member table scrolls inside its own named, keyboard-reachable region at 375 px; the page does not', async ({
+    test('at 375 px the By member table is cards with no scroll box of its own, and the page does not scroll sideways (#569)', async ({
       seed,
       personas,
       asUser,
@@ -364,10 +364,9 @@ test.describe('Pod Work first release', () => {
       const page = await asUser(fx.lead.username);
       await page.setViewportSize({ width: 375, height: 812 });
       await page.goto(`/pods/work?podId=${fx.busy.podId}&view=members`);
-      const region = page.getByRole('region', { name: /Pod members/ });
-      await expect(region).toBeVisible();
-      await expect(region).toHaveAttribute('tabindex', '0');
-      await expect(page.getByRole('button', { name: /Show tasks of/ }).first()).toBeVisible();
+      await expect(page.locator('[data-members]')).toBeVisible();
+      await expect(page.getByRole('region', { name: /Pod members/ })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /View tasks of/ }).first()).toBeVisible();
       expect(await pageSideScroll(page)).toBeLessThanOrEqual(0);
       await axeClean(page, 'axe at 375, By member');
     });
@@ -456,15 +455,15 @@ test.describe('Pod Work first release', () => {
 
       const page = await asUser(mine.username);
       await page.setViewportSize({ width: 1366, height: 768 });
+      const pw = new PodWorkPage(page);
       await page.goto(`/pods/work?podId=${pod.podId}&view=members`);
+      // The idle member is folded under "Show 1 member with no open work": open it to read both numbers.
       const open = (who: string) =>
         page.locator('[data-members] tbody tr').filter({ hasText: who }).locator('td').first();
       await expect(open(mine.username)).toHaveText('1');
+      await page.getByRole('button', { name: /Show 1 member with no open work/ }).click();
       await expect(open(other.username)).toHaveText('0');
-      await page
-        .getByRole('button', { name: /Show tasks of/ })
-        .first()
-        .click();
+      await page.getByRole('button', { name: `View tasks of ${mine.username}` }).click();
       await page
         .getByRole('button', { name: new RegExp(`change assignee of ${task.taskNumber}`) })
         .click();
@@ -473,8 +472,8 @@ test.describe('Pod Work first release', () => {
       await expect(open(other.username)).toHaveText('1');
       const after = await numbers(page);
       await page.reload();
-      await expect(open(other.username)).toHaveText('1');
-      expect(after).toEqual(await numbers(page));
+      await expect(pw.tab(/By member/)).toContainText('(1)');
+      expect(after.tabs).toEqual((await numbers(page)).tabs);
     });
   });
 });

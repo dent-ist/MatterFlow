@@ -151,7 +151,7 @@ test.describe('column filters work lists screenshots', () => {
     await expect(mine.locator('[data-task]').first()).toBeVisible();
     await shot(mine, 'pod-work-unassigned');
     await mine.getByRole('tab', { name: /^By member/ }).click();
-    await mine.getByRole('button', { name: `Show tasks of ${colleague.username}` }).click();
+    await mine.getByRole('button', { name: `View tasks of ${colleague.username}` }).click();
     await expect(mine).toHaveURL(/assignee=/);
     await shot(mine, 'pod-work-by-member');
 

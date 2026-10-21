@@ -2,12 +2,6 @@
   display: block;
 }
 
-.wp-help {
-  margin: 0 0 var(--mf-s3);
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-}
-
 .wp-field {
   display: grid;
   gap: var(--mf-s1);
@@ -27,29 +21,6 @@
 
 .wp-link {
   color: var(--mf-link);
-}
-
-.wp-members {
-  width: 100%;
-  margin-bottom: var(--mf-s4);
-  border-collapse: collapse;
-  background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-1);
-}
-
-.wp-members th,
-.wp-members td {
-  padding: var(--mf-s2) var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
-  text-align: left;
-}
-
-.wp-members th {
-  background: var(--mf-surface-alt);
-}
-
-.wp-note {
-  color: var(--mf-text-muted);
 }
 
 .wp-sr {
@@ -76,23 +47,6 @@
   gap: var(--mf-s2);
   max-width: none;
   margin: 0;
-}
-
-@media (min-width: 768px) and (min-height: 561px) {
-  /* The By member table is a short grid above the task list: it scrolls inside itself instead of taking the page. */
-  .mf-fill > .wp-members-wrap.wp-members-wrap {
-    flex: 0 1 auto;
-    max-height: 30dvh;
-    margin-bottom: var(--mf-s2);
-  }
-
-  .wp-members {
-    margin-bottom: 0;
-  }
-
-  .wp-help {
-    margin-bottom: var(--mf-s2);
-  }
 }
 
 /* "Sorted by ..." and Columns sit directly above the grid, at its right end (they used to be in the title row). */

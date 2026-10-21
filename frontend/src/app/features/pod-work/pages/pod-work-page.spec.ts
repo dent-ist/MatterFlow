@@ -317,20 +317,35 @@ describe('PodWorkPage', () => {
     expect(lastArgs()[ARG.podId]).toBe(5);
   });
 
-  it('shows the workload per member as facts with a way to show their tasks', async () => {
+  it('shows the workload per person as facts: the Not assigned row, people with work, idle members folded, View tasks per row (W1, #566)', async () => {
     const el = await open('/pods/work?podId=5&view=members');
     const cells = (r: Element) =>
-      Array.from(r.querySelectorAll('th, td')).map((c) => c.textContent?.trim());
+      Array.from(r.querySelectorAll('th, td')).map((c) =>
+        c.textContent?.replace(/\s+/g, ' ').trim(),
+      );
     const rows = Array.from(el.querySelectorAll('[data-members] tbody tr')).map(cells);
-    expect(rows[0].slice(0, 4)).toEqual(['Tariq M.', '9', '1', '0']);
-    expect(rows[1].slice(0, 4)).toEqual(['Sam K.', '0', '0', '0']);
+    expect(rows[0].slice(0, 2)).toEqual(['Not assigned to a person', '6']);
+    expect(rows[1].slice(0, 4)).toEqual(['Tariq M.', '9', '1', '0']);
+    // Sam K. has nothing open: folded, one click away.
+    expect(rows.map((r) => r[0]).join('|')).not.toContain('Sam K.');
+    expect(rows[2][0]).toContain('Show 1 member with no open work');
     expect(el.querySelector('[data-members] caption')!.textContent).toContain('not a ranking');
 
-    el.querySelector<HTMLButtonElement>('[data-members] button')!.click();
+    el.querySelector<HTMLButtonElement>('[data-member-row][data-user="9"] .pm-view')!.click();
     await settle();
     expect(query()['assignee']).toBe('9');
     expect(lastArgs()[ARG.assignee]).toEqual([9]);
-    expect(el.querySelector('[data-members] button')!.getAttribute('aria-pressed')).toBe('true');
+    expect(
+      el.querySelector('[data-member-row][data-user="9"] .pm-view')!.getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
+
+  it('"Not assigned to a person" goes to the Unassigned tab', async () => {
+    const el = await open('/pods/work?podId=5&view=members');
+    el.querySelector<HTMLButtonElement>('[data-member-row="unassigned"] .pm-view')!.click();
+    await settle();
+    expect(query()['view']).toBeUndefined();
+    expect(tab(el, 'Unassigned').getAttribute('aria-selected')).toBe('true');
   });
 
   it('says "No members yet." once for a Pod with nobody in it, with Add members for Pod.ManageMembers and no grid (BUG-6, #555)', async () => {
@@ -370,7 +385,9 @@ describe('PodWorkPage', () => {
     let el = await open('/pods/work?podId=5&view=members');
     expect(skip().target()?.label).toBe('Skip to member table');
     skip().target()!.focus();
-    expect(document.activeElement).toBe(el.querySelector('[data-members] tbody tr button'));
+    expect(document.activeElement).toBe(
+      el.querySelector('[data-members] [data-member-row] button'),
+    );
 
     TestBed.resetTestingModule();
     el = await open('/pods/work?podId=5');

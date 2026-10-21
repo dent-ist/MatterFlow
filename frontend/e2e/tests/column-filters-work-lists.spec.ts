@@ -419,7 +419,7 @@ test.describe('Column filters on the work lists', () => {
 
       // By member: "Show tasks" sets the Assignee filter, which is then a control on that tab.
       await podWork.tab(/^By member/).click();
-      await page.getByRole('button', { name: `Show tasks of ${colleague.username}` }).click();
+      await page.getByRole('button', { name: `View tasks of ${colleague.username}` }).click();
       await expect(page).toHaveURL(new RegExp(`assignee=${colleague.userId}`));
       await expect(rowControl(page, 'assignee')).toBeEnabled();
       await expect(rowControl(page, 'assignee')).toContainText(colleague.username);

@@ -39,8 +39,9 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
 import { PhoneSort } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PodMemberTable } from '../ui/pod-member-table';
 import { PodPickerList, memberCountText } from '../ui/pod-picker-list';
 import {
   PodStripKey,
@@ -63,8 +64,8 @@ type TabKey = 'queue' | 'members' | 'all';
     ColumnsNotice,
     FixedPage,
     PageHeader,
+    PodMemberTable,
     PodPickerList,
-    ScrollArea,
     FiltersBar,
     PhoneSort,
     RouterLink,
@@ -109,6 +110,19 @@ type TabKey = 'queue' | 'members' | 'all';
     .pw-empty__text {
       margin: 0;
       color: var(--mf-text-muted);
+    }
+    /*
+     * By member (#566): the workload table grows with the page, so in the fixed layout the panel scrolls as a whole (the table, then the task
+     * list under it) instead of the table getting a scroll box of its own. Below 768 px wide or 561 px high the page scrolls as it always does.
+     */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .pw-members-tab {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+      .pw-members-tab > mf-work-list {
+        min-height: 18rem;
+      }
     }
     .pw-linkonly ::ng-deep td[data-col='assignee'] .re-with-link .im-value {
       display: none;
@@ -204,6 +218,7 @@ type TabKey = 'queue' | 'members' | 'all';
         <div
           class="mf-fill"
           [class.pw-linkonly]="linkOnly()"
+          [class.pw-members-tab]="tab() === 'members' && !emptyMembers()"
           role="tabpanel"
           id="pw-panel"
           [attr.aria-labelledby]="'pw-tab-' + tab()"
@@ -224,48 +239,13 @@ type TabKey = 'queue' | 'members' | 'all';
                   }
                 </div>
               } @else {
-                <div class="mf-scroll wp-members-wrap" mfScrollArea="Pod members">
-                  <table class="wp-members" data-members>
-                    <caption class="wp-help">
-                      Open work per person. These are workload facts, not a ranking.
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Member</th>
-                        <th scope="col">Open</th>
-                        <th scope="col">Overdue</th>
-                        <th scope="col">On Hold</th>
-                        <th scope="col"><span class="wp-sr">Show tasks</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (m of d.memberLoads; track m.userId) {
-                        <tr>
-                          <th scope="row">
-                            {{ m.displayName }}
-                            @if (!m.isActive) {
-                              <span class="wp-note">(inactive)</span>
-                            }
-                          </th>
-                          <td>{{ m.open }}</td>
-                          <td>{{ m.overdue }}</td>
-                          <td>{{ m.onHold }}</td>
-                          <td>
-                            <button
-                              type="button"
-                              class="mf-btn"
-                              [attr.aria-pressed]="state().filters.assignee.includes(m.userId)"
-                              [attr.aria-label]="'Show tasks of ' + m.displayName"
-                              (click)="toggleMember(m.userId)"
-                            >
-                              Show tasks
-                            </button>
-                          </td>
-                        </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
+                <mf-pod-member-table
+                  [loads]="d.memberLoads"
+                  [unassigned]="d.unassigned"
+                  [selected]="state().filters.assignee"
+                  (memberToggle)="toggleMember($event)"
+                  (showUnassigned)="selectTab('queue')"
+                />
               }
             }
           }
@@ -448,7 +428,7 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     const root = this.host.nativeElement;
     const target =
       root.querySelector<HTMLElement>(
-        '[data-members] tbody tr button, [data-members] tbody tr a',
+        '[data-members] [data-member-row] button, [data-members] [data-member-row] a',
       ) ?? root.querySelector<HTMLElement>('[data-members-empty]');
     target?.focus();
     return !!target;
