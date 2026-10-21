@@ -33,13 +33,18 @@ const RECORD_TABS = {
     { key: 'tasks', label: 'Tasks', counted: true },
     { key: 'details', label: 'Details' },
   ],
+  asset: [
+    { key: 'details', label: 'Details' },
+    { key: 'tasks', label: 'Linked tasks', counted: true },
+    { key: 'history', label: 'History' },
+  ],
 } as const;
 
 /**
  * The tab strip of a Client or Matter page. `counts` gives the number (or `--` while loading, or null for none) of the tabs that show one.
  */
 export function recordTabs(
-  kind: 'client' | 'matter' | 'project',
+  kind: 'client' | 'matter' | 'project' | 'asset',
   counts: Partial<Record<string, number | string | null>> = {},
 ): MfTab[] {
   return RECORD_TABS[kind].map((t) => {
@@ -50,7 +55,10 @@ export function recordTabs(
 }
 
 /** The visible label of a tab (no count), for the document title. */
-export function recordTabLabel(kind: 'client' | 'matter' | 'project', key: string): string {
+export function recordTabLabel(
+  kind: 'client' | 'matter' | 'project' | 'asset',
+  key: string,
+): string {
   return RECORD_TABS[kind].find((t) => t.key === key)?.label ?? RECORD_TABS[kind][0].label;
 }
 
@@ -267,12 +275,12 @@ export class RecordSkeleton {
         { key: 'used-by', label: 'Used by', count: '--' },
       ];
     }
-    if (kind !== 'client' && kind !== 'matter' && kind !== 'project') return [];
+    if (kind !== 'client' && kind !== 'matter' && kind !== 'project' && kind !== 'asset') return [];
     return recordTabs(
       kind,
       kind === 'matter'
         ? { tasks: '--', projects: '--', assets: '--' }
-        : kind === 'project'
+        : kind === 'project' || kind === 'asset'
           ? { tasks: '--' }
           : { matters: '--' },
     );
@@ -324,6 +332,8 @@ export class RecordSkeleton {
         ];
       case 'client':
         return [{ label: 'Clients', link: '/clients' }];
+      case 'asset':
+        return [{ label: 'Assets', link: '/assets' }];
       case 'matter':
         return [{ label: 'Matters', link: '/matters' }];
       default:

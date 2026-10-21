@@ -49,21 +49,35 @@ type Mock = ReturnType<typeof vi.fn>;
 class Blank {}
 
 describe('Assets routes', () => {
-  it('redirects the old asset page /assets/:id to the list with that asset selected', async () => {
-    const redirect = ASSETS_ROUTES[0].children!.find((r) => r.path === ':assetId')!;
+  it('opens the record page at /assets/:id', () => {
+    const route = ASSETS_ROUTES[0].children!.find((r) => r.path === ':assetId')!;
+    expect(route.redirectTo).toBeUndefined();
+    expect(route.loadComponent).toBeDefined();
+    expect(route.title).toBe('Asset');
+  });
+
+  it('sends an older /assets?selected=<id> link once to /assets/<id>, and leaves other list addresses alone', async () => {
+    const list = ASSETS_ROUTES[0].children!.find((r) => r.path === '')!;
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
           {
             path: 'assets',
-            children: [{ path: '', component: Blank }, redirect],
+            children: [
+              { path: '', canActivate: list.canActivate, component: Blank },
+              { path: ':assetId', component: Blank },
+            ],
           },
         ]),
       ],
     });
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/assets/42');
-    expect(TestBed.inject(Router).url).toBe('/assets?selected=42');
+    await harness.navigateByUrl('/assets?selected=42&status=all');
+    expect(TestBed.inject(Router).url).toBe('/assets/42');
+    await harness.navigateByUrl('/assets?selected=abc');
+    expect(TestBed.inject(Router).url).toBe('/assets?selected=abc');
+    await harness.navigateByUrl('/assets?name=x');
+    expect(TestBed.inject(Router).url).toBe('/assets?name=x');
   });
 
   it('keeps the create and edit addresses', () => {

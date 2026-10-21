@@ -3,15 +3,14 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * The Assets screen (docs/ux/assets-screen): inline column filters in a second header row, the Filters toggle above the grid, and the
- * selected asset's details in a panel BELOW the grid (`/assets?selected=<id>`) instead of a page of their own.
+ * The Assets list (docs/ux/assets-screen, filters part; the master-detail panel was replaced by the record page, docs/ux/assets-review):
+ * inline column filters in a second header row, the Filters toggle above the grid, and a name that is a link to `/assets/:id`.
  */
-test.describe('Assets screen: column filters and details below the grid', () => {
+test.describe('Assets list: column filters and the record page link', () => {
   const filter = (page: Page, column: string) =>
     page.getByRole('textbox', { name: `Filter by ${column}` });
   const filtersToggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
-  const panel = (page: Page) => page.getByRole('region', { name: 'Asset details' });
-  const nameButton = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
+  const nameLink = (page: Page, name: string) => page.getByRole('link', { name, exact: true });
 
   async function openFilters(page: Page): Promise<void> {
     if ((await filtersToggle(page).getAttribute('aria-pressed')) !== 'true') {
@@ -97,7 +96,7 @@ test.describe('Assets screen: column filters and details below the grid', () => 
 
     await page.goto('/assets');
     await openFilters(page);
-    const names = page.locator('tbody tr[data-asset-id] button.as-name');
+    const names = page.locator('tbody tr[data-asset-id] a.mf-name');
 
     // Type (multi-select) narrows to the type's assets; Active is the default status, so the inactive one is hidden.
     await page.getByRole('button', { name: /^Filter by Type/ }).click();
@@ -161,10 +160,10 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     await expect(filter(page, 'Name')).toHaveValue(asset.displayName);
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'true');
     await expect(filtersToggle(page)).toContainText('(1)');
-    await expect(nameButton(page, asset.displayName)).toBeVisible();
+    await expect(nameLink(page, asset.displayName)).toBeVisible();
   });
 
-  test('clicking a name shows the details below the grid in the same screen; Esc closes and returns focus to the row', async ({
+  test('clicking a name opens the record page with focus on its heading; Back returns to the same list view with the row focused', async ({
     page,
     seed,
   }) => {
@@ -173,65 +172,31 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     const matter = await seed.matter({ name: `Detail Matter ${token}` });
     const first = await seed.asset(matter, `First ${token}`);
     const second = await seed.asset(matter, `Second ${token}`);
-    await page.goto(`/assets?name=${token}`);
-    await expect(panel(page)).toHaveCount(0);
+    await page.goto(`/assets?name=${token}&sort=-displayName&size=25`);
+    await expect(nameLink(page, first.displayName)).toBeVisible();
+    // The list keeps the whole height: there is no panel any more.
+    await expect(page.getByRole('region', { name: 'Asset details' })).toHaveCount(0);
 
-    await nameButton(page, first.displayName).click();
-    await expect(page).toHaveURL(new RegExp(`/assets\\?.*selected=${first.assetId}`));
-    await expect(panel(page)).toBeVisible();
-    await expect(panel(page).getByRole('heading', { name: first.displayName })).toBeVisible();
-    await expect(panel(page)).toContainText(matter.matterRef);
-    await expect(panel(page).getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(panel(page).getByRole('button', { name: 'Set inactive' })).toBeVisible();
-    await expect(panel(page).getByRole('tab', { name: 'Linked Tasks' })).toBeVisible();
+    await nameLink(page, second.displayName).click();
+    await expect(page).toHaveURL(new RegExp(`/assets/${second.assetId}$`));
+    await expect(page.getByRole('heading', { level: 1, name: second.displayName })).toBeFocused();
 
-    // The selected row is marked (aria-current, a left bar and a bold name), the other is not.
-    const row = page.locator(`tr[data-asset-id="${first.assetId}"]`);
-    await expect(row).toHaveAttribute('aria-current', 'true');
-    await expect(page.locator(`tr[data-asset-id="${second.assetId}"]`)).not.toHaveAttribute(
-      'aria-current',
-      'true',
-    );
-    expect(
-      await nameButton(page, first.displayName).evaluate((e) => getComputedStyle(e).fontWeight),
-    ).toBe('700');
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`/assets\\?name=${token}&sort=-displayName`));
+    await expect(filter(page, 'Name')).toHaveValue(token);
+    await expect(nameLink(page, second.displayName)).toBeFocused();
 
-    // Layout: the grid is above, the panel below it and about 40% of the main area, both inside the window.
-    const grid = (await page
-      .getByRole('region', { name: 'Assets list, scrollable' })
-      .boundingBox())!;
-    const box = (await panel(page).boundingBox())!;
-    expect(box.y).toBeGreaterThanOrEqual(grid.y + grid.height - 1);
-    expect(box.y + box.height).toBeLessThanOrEqual(768 + 1);
-    const main = (await page.locator('#mf-main').boundingBox())!;
-    expect(box.height / main.height).toBeGreaterThan(0.33);
-    expect(box.height / main.height).toBeLessThan(0.47);
-    const pageScroll = await page.evaluate(
-      () => document.documentElement.scrollHeight - document.documentElement.clientHeight,
-    );
-    expect(pageScroll).toBeLessThanOrEqual(1);
-
-    // Another selection swaps the same panel.
-    await nameButton(page, second.displayName).click();
-    await expect(panel(page).getByRole('heading', { name: second.displayName })).toBeVisible();
-    await expect(page).toHaveURL(new RegExp(`selected=${second.assetId}`));
-
-    // Keyboard: Enter on a name moves focus to the panel heading; Esc closes and returns to the row.
-    await nameButton(page, first.displayName).focus();
-    await page.keyboard.press('Enter');
-    await expect(panel(page).getByRole('heading', { name: first.displayName })).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(panel(page)).toHaveCount(0);
-    await expect(page).not.toHaveURL(/selected=/);
-    await expect(nameButton(page, first.displayName)).toBeFocused();
-
-    // The Close button does the same.
-    await nameButton(page, second.displayName).click();
-    await panel(page).getByRole('button', { name: 'Close details' }).click();
-    await expect(panel(page)).toHaveCount(0);
+    // The breadcrumb of the record page does the same.
+    await nameLink(page, first.displayName).click();
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: 'Assets' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/assets\\?name=${token}&sort=-displayName`));
+    await expect(nameLink(page, first.displayName)).toBeFocused();
   });
 
-  test('the old asset address, search results and links keep working: the list opens with the asset selected, even an inactive one', async ({
+  test('older addresses keep working: /assets/:id is the record page (also for an inactive asset), ?selected= redirects once, search opens the record page', async ({
     page,
     seed,
     admin,
@@ -245,21 +210,16 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     });
 
     await page.goto(`/assets/${asset.assetId}`);
-    await expect(page).toHaveURL(new RegExp(`/assets\\?.*selected=${asset.assetId}`));
-    await expect(panel(page).getByRole('heading', { name: asset.displayName })).toBeVisible();
-    await expect(page.locator(`tr[data-asset-id="${asset.assetId}"]`)).toHaveAttribute(
-      'aria-current',
-      'true',
-    );
+    await expect(page.getByRole('heading', { level: 1, name: asset.displayName })).toBeVisible();
 
-    // An inactive asset is not hidden by the Active default: it is shown selected (the list is narrowed to its matter, all states).
     await page.goto(`/assets/${old.assetId}`);
-    await expect(panel(page).getByRole('heading', { name: old.displayName })).toBeVisible();
-    await expect(panel(page).getByText('This asset is inactive')).toBeVisible();
-    await expect(page.locator(`tr[data-asset-id="${old.assetId}"]`)).toHaveAttribute(
-      'aria-current',
-      'true',
-    );
+    await expect(page.getByRole('heading', { level: 1, name: old.displayName })).toBeVisible();
+    await expect(page.getByText('This asset is inactive')).toBeVisible();
+
+    // An older link keeps working and applies no filter to the list behind it.
+    await page.goto(`/assets?selected=${asset.assetId}&status=all`);
+    await expect(page).toHaveURL(new RegExp(`/assets/${asset.assetId}$`));
+    await expect(page.getByRole('heading', { level: 1, name: asset.displayName })).toBeVisible();
 
     // From the header search.
     await page.goto('/dashboard');
@@ -270,41 +230,32 @@ test.describe('Assets screen: column filters and details below the grid', () => 
       .getByRole('region', { name: /^Assets/ })
       .getByRole('link', { name: asset.displayName })
       .click();
-    await expect(page).toHaveURL(new RegExp(`selected=${asset.assetId}`));
-    await expect(panel(page).getByRole('heading', { name: asset.displayName })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/assets/${asset.assetId}$`));
+    await expect(page.getByRole('heading', { level: 1, name: asset.displayName })).toBeVisible();
   });
 
-  test('Set inactive from the panel updates the row; Edit opens the edit form and Cancel returns to the list with the asset selected', async ({
+  test('Edit opens the edit form and Cancel returns to the record page; Set inactive updates the page in place', async ({
     page,
     seed,
   }) => {
-    const token = uid();
     const matter = await seed.matter();
-    const asset = await seed.asset(matter, `Editable ${token}`);
-    await page.goto(`/assets?name=${token}&selected=${asset.assetId}`);
-    await expect(panel(page).getByRole('heading', { name: asset.displayName })).toBeVisible();
+    const asset = await seed.asset(matter, `Editable ${uid()}`);
+    await page.goto(`/assets/${asset.assetId}`);
+    await expect(page.getByRole('heading', { level: 1, name: asset.displayName })).toBeVisible();
 
-    await panel(page).getByRole('button', { name: 'Edit' }).click();
+    await page.getByRole('button', { name: 'Edit', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/assets/${asset.assetId}/edit$`));
     await page.getByRole('button', { name: 'Cancel' }).click();
-    // Back on the list with the asset selected. On a database with more assets than one page the asset is not on page 1 of the unfiltered
-    // list, and the screen then narrows the list to its matter (`&matter=...&status=all`, the deep-link reveal): the selection is what counts.
-    await expect(page).toHaveURL(new RegExp(`/assets\\?selected=${asset.assetId}(&|$)`));
-    await expect(panel(page).getByRole('heading', { name: asset.displayName })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/assets/${asset.assetId}$`));
 
-    await page.goto(`/assets?name=${token}&selected=${asset.assetId}`);
-    await panel(page).getByRole('button', { name: 'Set inactive' }).click();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
-    await expect(panel(page).getByText('This asset is inactive')).toBeVisible();
-    await expect(
-      page.locator(`tr[data-asset-id="${asset.assetId}"]`).getByText('Inactive'),
-    ).toBeVisible();
+    await expect(page.getByText('This asset is inactive')).toBeVisible();
+    await expect(page.locator('[data-record-header]').getByText('Inactive')).toBeVisible();
   });
 
-  test('the header and the filter row stay while the rows scroll, and a selection keeps the scroll position', async ({
-    page,
-    seed,
-  }) => {
+  test('the header and the filter row stay while the rows scroll', async ({ page, seed }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const token = uid();
     const matter = await seed.matter();
@@ -329,49 +280,22 @@ test.describe('Assets screen: column filters and details below the grid', () => 
     expect(after.filter!.y).toBeCloseTo(before.filter!.y, 0);
     // The filter row is right under the header row.
     expect(after.filter!.y).toBeCloseTo(after.header!.y + after.header!.height, 0);
-
-    // Selecting a row further down neither jumps the grid to the top nor loses the row.
-    const rows = grid.locator('tbody tr[data-asset-id]');
-    const target = rows.nth(12);
-    const name = (await target.locator('button.as-name').textContent())!.trim();
-    await nameButton(page, name).click();
-    await expect(panel(page).getByRole('heading', { name })).toBeVisible();
-    await expect(target).toBeInViewport();
-    expect(await grid.evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
   });
 
-  test('below the fixed-layout size the page scrolls normally and choosing a row brings the panel into view (375 px)', async ({
-    page,
-    seed,
-  }) => {
+  test('the list does not scroll sideways at 375 px', async ({ page, seed }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     const token = uid();
     const matter = await seed.matter();
-    for (let from = 0; from < 20; from += 5) {
+    for (let from = 0; from < 10; from += 5) {
       await Promise.all(
         Array.from({ length: 5 }, (_, i) => seed.asset(matter, `Phone ${token} ${from + i + 100}`)),
       );
     }
     await page.goto(`/assets?name=${token}`);
-    const last = page.locator('tbody tr[data-asset-id] button.as-name').last();
-    await last.scrollIntoViewIfNeeded();
-    const name = (await last.textContent())!.trim();
-    await last.click();
-    await expect(panel(page).getByRole('heading', { name })).toBeVisible();
-    await expect(panel(page)).toBeInViewport();
+    await expect(page.locator('tbody tr[data-asset-id] a.mf-name').first()).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
-    const grid = (await page
-      .getByRole('region', { name: 'Assets list, scrollable' })
-      .boundingBox())!;
-    const box = (await panel(page).boundingBox())!;
-    expect(box.y).toBeGreaterThanOrEqual(grid.y + grid.height - 1);
-
-    // Esc closes it and brings the row back.
-    await page.keyboard.press('Escape');
-    await expect(panel(page)).toHaveCount(0);
-    await expect(last).toBeFocused();
   });
 });

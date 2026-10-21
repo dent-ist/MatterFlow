@@ -11,7 +11,7 @@ test.describe('Column filters on the Assets screen', () => {
   const filter = (page: Page, column: string) =>
     page.getByRole('textbox', { name: `Filter by ${column}` });
   const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
-  const names = (page: Page) => page.locator('tbody tr[data-asset-id] button.as-name');
+  const names = (page: Page) => page.locator('tbody tr[data-asset-id] a.mf-name');
   const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 
   async function seedSet(

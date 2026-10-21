@@ -1,14 +1,26 @@
 import { inject } from '@angular/core';
-import { Router, Routes } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, Routes } from '@angular/router';
 import { MF_ASSET_PICKER } from 'form-engine';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetPicker } from '../../shared/ui/asset-picker';
 
 /**
- * Assets (UX S08). `new` is matched before `:assetId`, which redirects to `/assets?selected=<id>`. ASSET_REF fields of an Asset type's form use the Matter-scoped asset picker;
- * it is provided here (not app-wide) so the form engine stays out of the initial bundle.
+ * Assets (UX S08). `/assets/:id` is the record page (#490); `new` is matched before it. An older link `/assets?selected=<id>` (bookmarks, the
+ * master-detail panel it opened) is sent once to `/assets/<id>` (#494). ASSET_REF fields of an Asset type's form use the Matter-scoped asset
+ * picker; it is provided here (not app-wide) so the form engine stays out of the initial bundle.
  */
+
+/** `/assets?selected=<id>` becomes `/assets/<id>`; any other address of the list opens the list. */
+export function selectedRedirect(
+  route: ActivatedRouteSnapshot,
+): true | ReturnType<Router['createUrlTree']> {
+  const value = route.queryParamMap.get('selected');
+  const id = Number(value);
+  return value && Number.isInteger(id) && id > 0
+    ? inject(Router).createUrlTree(['/assets', id])
+    : true;
+}
 export const ASSETS_ROUTES: Routes = [
   {
     path: '',
@@ -18,6 +30,7 @@ export const ASSETS_ROUTES: Routes = [
         path: '',
         pathMatch: 'full',
         title: 'Assets',
+        canActivate: [selectedRedirect],
         loadComponent: () => import('./pages/assets-list-page').then((m) => m.AssetsListPage),
       },
       {
@@ -35,14 +48,10 @@ export const ASSETS_ROUTES: Routes = [
         loadComponent: () => import('./pages/asset-form-page').then((m) => m.AssetFormPage),
       },
       {
-        // The asset page is the list with the asset selected (details below the grid); old links, search results and the
-        // links from Matters and Tasks keep working.
         path: ':assetId',
         pathMatch: 'full',
-        redirectTo: ({ params }) =>
-          inject(Router).createUrlTree(['/assets'], {
-            queryParams: { selected: params['assetId'] },
-          }),
+        title: 'Asset',
+        loadComponent: () => import('./pages/asset-record-page').then((m) => m.AssetRecordPage),
       },
     ],
   },

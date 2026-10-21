@@ -33,7 +33,7 @@ import { AdminColumn } from '../../../shared/ui/admin-list-state';
 import { columnDropOrder } from '../../../shared/ui/admin-card-spec';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { GridBody } from '../../../shared/ui/grid-body';
-import { RowLink } from '../../../shared/ui/row-nav';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -424,6 +424,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   constructor() {
     super();
+    // Back from a record page: focus goes to the name link of the row the person left (#494).
+    restoreRowFocus('assets', () => this.state() === 'ready');
     void this.loadTypes();
 
     // The controls move into the sheet while the grid scrolls sideways.

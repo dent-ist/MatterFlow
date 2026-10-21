@@ -31,6 +31,7 @@ export type RecordKind =
   | 'workflow'
   | 'workflowVersion'
   | 'step'
+  | 'asset'
   | 'assetType'
   | 'customField';
 
@@ -113,6 +114,13 @@ const KINDS: Record<
     path: '/admin/steps',
     view: 'Workflow.Manage',
     admin: { crumb: 'Step' },
+  },
+  asset: {
+    noun: 'asset',
+    list: 'assets',
+    label: 'Assets',
+    path: '/assets',
+    view: 'Asset.View',
   },
   assetType: {
     noun: 'asset type',
