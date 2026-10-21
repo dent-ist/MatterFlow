@@ -45,4 +45,19 @@ internal sealed class TaskAssetLinkRoleUsage(DbContext db) : IAssetLinkRoleUsage
 {
     public Task<bool> IsInUseAsync(int assetLinkRoleId, CancellationToken cancellationToken = default) =>
         db.Set<TaskAsset>().AnyAsync(l => l.AssetLinkRoleId == assetLinkRoleId, cancellationToken);
+
+    public async Task<IReadOnlyDictionary<int, int>> CountLinksAsync(IReadOnlyCollection<int> assetLinkRoleIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(assetLinkRoleIds);
+        if (assetLinkRoleIds.Count == 0)
+            return new Dictionary<int, int>();
+
+        var ids = assetLinkRoleIds.Distinct().Select(id => (int?)id).ToList();
+        var rows = await db.Set<TaskAsset>().AsNoTracking()
+            .Where(l => ids.Contains(l.AssetLinkRoleId))
+            .GroupBy(l => l.AssetLinkRoleId)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        return rows.Where(r => r.Key is not null).ToDictionary(r => r.Key!.Value, r => r.Count);
+    }
 }

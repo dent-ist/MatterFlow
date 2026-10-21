@@ -11548,6 +11548,7 @@ export interface AssetLinkRoleView {
     sortOrder: number;
     isActive: boolean;
     rowVersion: string;
+    linkCount?: number | undefined;
 
     [key: string]: any;
 }

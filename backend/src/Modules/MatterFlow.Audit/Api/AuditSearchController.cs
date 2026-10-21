@@ -18,7 +18,7 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
     /// the viewer's time zone (<c>X-Time-Zone</c>). <c>q</c> matches the stored summary or the field key. Paging is by cursor, newest first;
     /// the page size is capped at 200. Secrets and tokens are masked.
     /// </summary>
-    /// <param name="objectType">Object type, for example <c>Task</c>.</param>
+    /// <param name="objectType">Object type, for example <c>Task</c>; several types separated by commas (<c>User,Role,Pod</c>) match any of them (a group of related types, such as the access changes).</param>
     /// <param name="objectId">Object id; needs <c>objectType</c>.</param>
     /// <param name="actor">Acting user id; repeat the parameter for several people (any of them).</param>
     /// <param name="eventType">Event code, for example <c>TASK_STATUS_CHANGED</c>.</param>
@@ -32,7 +32,7 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
     [HttpGet("search", Name = "SearchAuditEvents")]
     [ProducesResponseType<AuditSearchPage>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<AuditSearchPage>> Search(
-        [FromQuery, StringLength(40)] string? objectType,
+        [FromQuery, StringLength(200)] string? objectType,
         [FromQuery, StringLength(40)] string? objectId,
         [FromQuery] int[]? actor,
         [FromQuery, StringLength(64)] string? eventType,

@@ -15,4 +15,8 @@ public interface IUserDirectory
 
     /// <summary>The users with the given ids that exist (missing ids are skipped), keyed by id.</summary>
     Task<IReadOnlyDictionary<int, UserInfo>> FindManyAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default);
+
+    /// <summary>Names of the Roles that exist (inactive ones too: history keeps their names), keyed by Role id. The default resolves nothing.</summary>
+    Task<IReadOnlyDictionary<int, string>> RoleNamesAsync(IReadOnlyCollection<int> roleIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, string>>(new Dictionary<int, string>());
 }

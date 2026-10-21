@@ -688,7 +688,7 @@
             "name": "objectType",
             "in": "query",
             "schema": {
-              "maxLength": 40,
+              "maxLength": 200,
               "minLength": 0,
               "type": "string"
             }
@@ -8554,6 +8554,13 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "linkCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

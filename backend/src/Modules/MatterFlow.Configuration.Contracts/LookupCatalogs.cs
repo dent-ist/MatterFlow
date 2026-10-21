@@ -76,4 +76,11 @@ public interface IAssetLinkRoleCatalog
 public interface IAssetLinkRoleUsage
 {
     Task<bool> IsInUseAsync(int assetLinkRoleId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The number of links that use each role (#639), in one grouped statement. Roles no link uses are absent (a missing key means 0). The default
+    /// counts nothing, so an implementation written before this member keeps working.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, int>> CountLinksAsync(IReadOnlyCollection<int> assetLinkRoleIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
 }

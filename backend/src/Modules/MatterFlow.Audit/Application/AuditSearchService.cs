@@ -89,8 +89,14 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
 
         if (!string.IsNullOrWhiteSpace(filter.ObjectType))
         {
-            var type = filter.ObjectType.Trim();
-            query = query.Where(e => e.ObjectType == type);
+            // One type, or several separated by commas (a group of related types): any of them.
+            string[] types = [.. filter.ObjectType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct()];
+            if (types.Length > 1 && !string.IsNullOrWhiteSpace(filter.ObjectId))
+                Fail("objectId", "An object id needs one object type.");
+            if (types.Length == 1)
+                query = query.Where(e => e.ObjectType == types[0]);
+            else if (types.Length > 1)
+                query = query.Where(e => types.Contains(e.ObjectType));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.ObjectId))
@@ -224,7 +230,8 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             .Concat(rows.Where(r => r.TaskId is not null).Select(r => new AuditObjectRef("Task", r.TaskId!.Value.ToString(CultureInfo.InvariantCulture))))
             .Distinct()
             .ToList();
-        var labels = await display.ObjectLabelsAsync(refs, cancellationToken);
+        var labels = new Dictionary<AuditObjectRef, string>(await display.ObjectLabelsAsync(refs, cancellationToken));
+        await AddStoredNamesAsync(refs, labels, cancellationToken);
 
         var correlationIds = rows.Select(r => r.CorrelationId).Distinct().ToList();
         var counts = await db.Set<AuditEvent>()
@@ -235,6 +242,38 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             .ToDictionaryAsync(g => g.Id, g => g.Count, cancellationToken);
 
         return rows.Select(r => ToItem(r, names, pods, labels, counts)).ToList();
+    }
+
+    /// <summary>The Administration records that carry their own name in the events (field <c>Name</c>, <c>Label</c> or <c>DisplayLabel</c>).</summary>
+    private static readonly string[] NamedTypes = ["AssetType", "Priority", "StatusLabel", "AssetLinkRole", "Role"];
+
+    private static readonly string[] NameFields = ["Name", "Label", "DisplayLabel"];
+
+    /// <summary>
+    /// A record that was deleted (a priority or link role nobody used) has no row any more: it keeps the last name its events stored. One
+    /// statement for the whole page, whatever the number of events (#649).
+    /// </summary>
+    private async Task AddStoredNamesAsync(IReadOnlyList<AuditObjectRef> refs, Dictionary<AuditObjectRef, string> labels, CancellationToken cancellationToken)
+    {
+        var missing = refs.Where(r => NamedTypes.Contains(r.ObjectType) && !labels.ContainsKey(r)).ToList();
+        if (missing.Count == 0)
+            return;
+
+        var types = missing.Select(r => r.ObjectType).Distinct().ToList();
+        var ids = missing.Select(r => r.ObjectId).Distinct().ToList();
+        var events = await db.Set<AuditEvent>()
+            .AsNoTracking()
+            .Where(e => types.Contains(e.ObjectType) && ids.Contains(e.ObjectId) && e.FieldKey != null && NameFields.Contains(e.FieldKey))
+            .OrderByDescending(e => e.Id)
+            .Select(e => new { e.ObjectType, e.ObjectId, e.NewValue, e.OldValue })
+            .ToListAsync(cancellationToken);
+        foreach (var e in events)
+        {
+            var key = new AuditObjectRef(e.ObjectType, e.ObjectId);
+            var name = e.NewValue ?? e.OldValue;
+            if (!string.IsNullOrWhiteSpace(name) && missing.Contains(key) && !labels.ContainsKey(key))
+                labels[key] = name;
+        }
     }
 
     private static AuditSearchItem ToItem(

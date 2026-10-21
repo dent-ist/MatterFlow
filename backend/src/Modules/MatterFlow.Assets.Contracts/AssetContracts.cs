@@ -28,4 +28,8 @@ public interface IAssetDirectory
 
     /// <summary>The Matter's Assets ordered by display name (a Matter holds a few hundred at most). Inactive ones only when asked.</summary>
     Task<IReadOnlyList<AssetSummary>> ListForMatterAsync(int matterId, bool includeInactive = false, CancellationToken cancellationToken = default);
+
+    /// <summary>Names of the Asset Types that exist (inactive ones too: history keeps their names), keyed by Asset Type id. The default resolves nothing.</summary>
+    Task<IReadOnlyDictionary<int, string>> AssetTypeNamesAsync(IReadOnlyCollection<int> assetTypeIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, string>>(new Dictionary<int, string>());
 }

@@ -1,6 +1,8 @@
 using System.Globalization;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Contracts;
+using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.WorkManagement.Contracts;
@@ -17,7 +19,8 @@ internal sealed class AuditDisplayLookup(
     IAssetDirectory assets,
     IMatterDirectory matters,
     IProjectDirectory projects,
-    IPodDirectory pods) : IAuditDisplayLookup
+    IPodDirectory pods,
+    IConfigurationNameDirectory configuration) : IAuditDisplayLookup
 {
     public async Task<IReadOnlyDictionary<int, string>> UserNamesAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
     {
@@ -75,8 +78,55 @@ internal sealed class AuditDisplayLookup(
                 labels[new("Project", Text(id))] = p.Name;
         }
 
+        await AddAdministrationLabelsAsync(objects, labels, cancellationToken);
         return labels;
     }
+
+    /// <summary>
+    /// The configuration records the Administration pages manage (#649): one statement per kind for the whole page of events. A record that
+    /// no longer exists stays out; the audit browser then uses the name stored in the events.
+    /// </summary>
+    private async Task AddAdministrationLabelsAsync(
+        IReadOnlyCollection<AuditObjectRef> objects,
+        Dictionary<AuditObjectRef, string> labels,
+        CancellationToken cancellationToken)
+    {
+        foreach (var (id, name) in await users.RoleNamesAsync(IdsOf(objects, "Role"), cancellationToken))
+            labels[new("Role", Text(id))] = name;
+
+        foreach (var (id, name) in await assets.AssetTypeNamesAsync(IdsOf(objects, "AssetType"), cancellationToken))
+            labels[new("AssetType", Text(id))] = name;
+
+        foreach (var (id, name) in await configuration.PriorityLabelsAsync(IdsOf(objects, "Priority"), cancellationToken))
+            labels[new("Priority", Text(id))] = name;
+
+        foreach (var (id, name) in await configuration.AssetLinkRoleNamesAsync(IdsOf(objects, "AssetLinkRole"), cancellationToken))
+            labels[new("AssetLinkRole", Text(id))] = name;
+
+        var codes = objects.Where(o => o.ObjectType == "StatusLabel").Select(o => o.ObjectId).Distinct().ToList();
+        foreach (var (code, name) in await configuration.StatusLabelNamesAsync(codes, cancellationToken))
+            labels[new("StatusLabel", code)] = name;
+
+        var owners = await configuration.FormOwnersAsync(IdsOf(objects, "FormDefinition"), cancellationToken);
+        var assetTypeIds = owners.Values.Where(o => o.Scope == FormOwnerKind.AssetType && o.OwnerId is not null).Select(o => o.OwnerId!.Value).Distinct().ToList();
+        var assetTypeNames = await assets.AssetTypeNamesAsync(assetTypeIds, cancellationToken);
+        foreach (var (definitionId, owner) in owners)
+        {
+            var label = FormLabel(owner, assetTypeNames);
+            if (label is not null)
+                labels[new("FormDefinition", Text(definitionId))] = label;
+        }
+    }
+
+    private static string? FormLabel(FormOwnerInfo owner, IReadOnlyDictionary<int, string> assetTypeNames) => owner.Scope switch
+    {
+        FormOwnerKind.Client => "Client custom fields",
+        FormOwnerKind.Matter => "Matter custom fields",
+        FormOwnerKind.Project => "Project custom fields",
+        FormOwnerKind.AssetType => owner.OwnerId is { } t && assetTypeNames.TryGetValue(t, out var name) ? $"{name} fields" : null,
+        FormOwnerKind.TaskType => owner.OwnerName is { } n ? $"{n} request form" : null,
+        _ => null,
+    };
 
     private static List<int> IdsOf(IReadOnlyCollection<AuditObjectRef> objects, string type) =>
         objects

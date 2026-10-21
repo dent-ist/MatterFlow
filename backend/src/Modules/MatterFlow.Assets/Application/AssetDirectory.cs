@@ -35,6 +35,18 @@ internal sealed class AssetDirectory(DbContext db) : IAssetDirectory
         return [.. rows.Select(ToSummary)];
     }
 
+    public async Task<IReadOnlyDictionary<int, string>> AssetTypeNamesAsync(IReadOnlyCollection<int> assetTypeIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(assetTypeIds);
+        if (assetTypeIds.Count == 0)
+            return new Dictionary<int, string>();
+
+        var ids = assetTypeIds.Distinct().ToList();
+        return await db.Set<AssetType>().AsNoTracking()
+            .Where(t => ids.Contains(t.Id))
+            .ToDictionaryAsync(t => t.Id, t => t.Name, cancellationToken);
+    }
+
     private IQueryable<AssetService.AssetRow> Rows() =>
         from a in db.Set<Asset>().AsNoTracking()
         join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id

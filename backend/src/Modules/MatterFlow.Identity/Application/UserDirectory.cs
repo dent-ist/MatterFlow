@@ -26,4 +26,16 @@ public sealed class UserDirectory(DbContext db) : IUserDirectory
             .ToListAsync(cancellationToken);
         return users.ToDictionary(u => u.UserId);
     }
+
+    public async Task<IReadOnlyDictionary<int, string>> RoleNamesAsync(IReadOnlyCollection<int> roleIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(roleIds);
+        if (roleIds.Count == 0)
+            return new Dictionary<int, string>();
+
+        var ids = roleIds.Distinct().ToList();
+        return await db.Set<Role>().AsNoTracking()
+            .Where(r => ids.Contains(r.Id))
+            .ToDictionaryAsync(r => r.Id, r => r.Name, cancellationToken);
+    }
 }

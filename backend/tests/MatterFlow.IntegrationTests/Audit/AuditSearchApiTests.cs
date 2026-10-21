@@ -94,6 +94,19 @@ public sealed class AuditSearchApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Several_object_types_separated_by_commas_match_any_of_them()
+    {
+        await InsertAsync("2026-10-01T10:00:00Z", "FIELD_CHANGED", "GrpA", "1", _adminId, "Name", "a", "b");
+        await InsertAsync("2026-10-01T10:01:00Z", "FIELD_CHANGED", "GrpB", "2", _adminId, "Name", "a", "b");
+        await InsertAsync("2026-10-01T10:02:00Z", "FIELD_CHANGED", "GrpC", "3", _adminId, "Name", "a", "b");
+
+        Ids(await SearchAsync("?objectType=GrpA,GrpB")).ShouldBe(["2", "1"]);
+        Ids(await SearchAsync("?objectType=GrpC,%20GrpA,GrpC")).ShouldBe(["3", "1"]);
+        Ids(await SearchAsync("?objectType=GrpB")).ShouldBe(["2"]);
+        (await _admin.GetAsync("/api/v1/audit/search?objectType=GrpA,GrpB&objectId=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Filters_by_object_type_object_id_actor_event_type_and_correlation()
     {
         await InsertAsync("2026-10-01T10:00:00Z", "TASK_CREATED", "Doc", "1", _adminId, summary: "Task TSK-1 created");

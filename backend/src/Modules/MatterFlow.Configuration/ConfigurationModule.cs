@@ -1,3 +1,4 @@
+using MatterFlow.Configuration.Application;
 using MatterFlow.Configuration.Application.Forms;
 using MatterFlow.Configuration.Application.Lookups;
 using MatterFlow.Configuration.Application.TaskTypes;
@@ -26,6 +27,7 @@ public static class ConfigurationModule
         services.AddScoped<IStatusLabelCatalog>(sp => sp.GetRequiredService<StatusLabelService>());
         services.AddScoped<AssetLinkRoleService>();
         services.AddScoped<IAssetLinkRoleCatalog>(sp => sp.GetRequiredService<AssetLinkRoleService>());
+        services.AddScoped<IConfigurationNameDirectory, ConfigurationNameDirectory>();
         services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
         services.AddScoped<TaskTypeService>();
         services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
