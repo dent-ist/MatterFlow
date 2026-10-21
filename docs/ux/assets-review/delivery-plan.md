@@ -159,11 +159,11 @@ Contract e2e over the seeded data of the review at four sizes (axe 0 including `
 
 - Owner decisions (2026-10-20): all recommendations of the review approved; no new or changed keyboard shortcuts in this phase (Phase 2 backlog #420); the record page replaces the master-detail design of `docs/ux/assets-screen`.
 - Planning (2026-10-20): epic #485 and issues #486 to #517 created and linked as sub-issues; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is certain (see "Backend work and SQL"); Admin pages list kit issues referenced: #543, #544, #575, #579 (epic #518).
-- First release (#486, #487, #488, #489, #490, #491, #492, #493, #494, #495): not started.
-- WP-AS1 Defects: not started.
-- WP-AS2 Record page core: not started.
-- WP-AS3 List contract: not started.
+- First release (#486, #487, #488, #489, #490, #491, #492, #493, #494, #495): done 2026-10-21 (ac35a6d, 5032692, 6a4cca5, 28e70cc, 6297cf3, 9b30943). `/assets/:id` is the record page, the list is on the admin grid, nothing in the Assets pages leads to a 403 by permission, a lost SQL deadlock is repeated once and then a 409. Open items: the cause of the single 500 of BUG-6 was not reproduced (the deadlock path is proven and fixed, see #486); the starter asset types were not each rendered on the Details tab (#493).
+- WP-AS1 Defects (2026-10-21, ac35a6d, 5032692, 6dbbe8b, 9b30943): #486, #487, #488, #489 done; unit, integration (real SQL Server deadlock tests) and e2e `as1-defects` green; axe 0 and no sideways scroll at four sizes; initial bundle 607.5 kB; screenshots `fixes/as1-defects/`; known limit: at 375 the list is still the table in its own scroll box until #502.
+- WP-AS2 Record page core (2026-10-21, 6a4cca5, 28e70cc, 6297cf3): #490, #491, #492, #493, #494, #495 done; unit and e2e `as2-record-page` green; axe 0 at four sizes with the overflow menu and the dialog open; screenshots `fixes/as2-record-page/`; the old panel code and the `selected` input of the list are dead but still there until #510; the Linked tasks and History tabs are the old components until #505.
+- WP-AS3 List contract (2026-10-21, 5032692, 3bbca98): #496 (API) and #497 done, and the grid-body states of #500 came with #497 (its spec and screenshots are still to do); open: #498 (the `linkedTaskCount` fields are on the API now), #499, #501 (sort `matter` is on the API now), #502, #503.
 - WP-AS4 Record page completion: not started.
-- WP-AS5 Forms and vocabulary: not started.
+- WP-AS5 Forms and vocabulary (2026-10-21, 157bd33): #511 and #512 done (one file, one pattern); unit and e2e `as5-forms` green, axe 0 at four sizes; screenshots `fixes/as5-forms/`; open: #513.
 - WP-AS6 Keyboard and permissions: not started.
 - WP-AS7 Docs and final verification: not started.
