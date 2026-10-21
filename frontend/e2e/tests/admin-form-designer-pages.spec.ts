@@ -20,9 +20,10 @@ test.describe('Form designer pages open from their lists', () => {
     const errors = collectErrors(page);
     await page.goto('/admin/custom-fields');
     await page
-      .getByRole('link', { name: /Edit fields/ })
+      .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
+    await page.getByRole('menuitem', { name: 'Edit fields' }).click();
     await expect(page).toHaveURL(/\/admin\/custom-fields\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
@@ -49,9 +50,10 @@ test.describe('Form designer pages open from their lists', () => {
     const errors = collectErrors(page);
     await page.goto('/admin/asset-types');
     await page
-      .getByRole('link', { name: /Edit fields/ })
+      .getByRole('button', { name: /^Actions for / })
       .first()
       .click();
+    await page.getByRole('menuitem', { name: 'Edit fields' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/.+\/form/);
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

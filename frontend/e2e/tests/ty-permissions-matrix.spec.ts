@@ -174,6 +174,13 @@ function targets(): Target[] {
       url: '/admin/asset-types?tab=link-roles',
       need: ['AssetType.Manage'],
     },
+    { name: 'Asset type', url: `/admin/asset-types/${assetType.id}`, need: ['AssetType.Manage'] },
+    {
+      name: 'Asset type, Fields tab',
+      url: `/admin/asset-types/${assetType.id}?tab=fields`,
+      need: ['AssetType.Manage'],
+    },
+    { name: 'New asset type', url: '/admin/asset-types/new', need: ['AssetType.Manage'] },
     { name: 'Asset type form', url: assetType.url, need: ['AssetType.Manage'] },
     { name: 'Custom Fields', url: '/admin/custom-fields', need: ['CustomField.Manage'] },
     { name: 'Custom Fields form', url: customField.url, need: ['CustomField.Manage'] },

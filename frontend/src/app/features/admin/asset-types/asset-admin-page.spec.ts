@@ -10,6 +10,7 @@ import { FakeAssetLinkRolesClient } from '../../../core/lookups/lookups-testing'
 import { anAssetType, pageOfAssetTypes } from '../../../shared/testing/asset-testing';
 import { ok } from '../../../shared/testing/org-testing';
 import { ADMIN_ROUTES } from '../admin.routes';
+import { ASSET_TAB_TEXT } from './asset-tabs';
 
 describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
   let harness: RouterTestingHarness;
@@ -52,27 +53,49 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
     return TestBed.inject(Router);
   }
 
-  it('is titled Asset Types (the Assets data list is another item), with two tabs', async () => {
+  const tabText = (t: HTMLElement): string => t.textContent!.replace(/\s+/g, ' ').trim();
+
+  it('is titled Asset Types (the Assets data list is another item), with the counted tabs Asset Types (n) and Link Roles (n)', async () => {
     await open('/admin/asset-types', 'AssetType.Manage');
     expect(el().querySelector('h1')!.textContent).toBe('Asset Types');
     // The breadcrumb says it is the Administration item "Asset Types" (#588), not the Assets data list.
     expect(el().querySelector('nav[aria-label=Breadcrumb]')!.textContent).toMatch(
       /Administration\s*>?\s*Asset Types/,
     );
-    expect(tabs().map((t) => t.textContent!.trim())).toEqual(['Asset Types', 'Asset Link Roles']);
-    expect(selected()).toBe('Asset Types');
+    expect(tabs().map(tabText)).toEqual(['Asset Types (1)', 'Link Roles (4)']);
+    expect(tabs().map((t) => t.getAttribute('aria-label'))).toEqual([
+      'Asset Types, 1 active',
+      'Link Roles, 4 active',
+    ]);
+    expect(selected()).toMatch(/^Asset Types/);
     expect(el().querySelector('[data-types]')).not.toBeNull();
   });
 
-  it('opens the Asset Link Roles tab from ?tab=link-roles and keeps the address in step', async () => {
+  it('has Filters and New asset type in the header and one line of description', async () => {
+    await open('/admin/asset-types', 'AssetType.Manage');
+    const header = el().querySelector('mf-page-header')!;
+    expect(header.querySelector('[data-new]')!.textContent).toContain('New asset type');
+    expect(header.querySelector('[data-filters-toggle]')).not.toBeNull();
+    expect(header.textContent).toContain('Each type has its own fields.');
+    // The list has no New button of its own.
+    expect(el().querySelectorAll('[data-new]')).toHaveLength(1);
+  });
+
+  it('keeps every tab description to one line of 90 characters or less', () => {
+    for (const text of Object.values(ASSET_TAB_TEXT)) expect(text.length).toBeLessThanOrEqual(90);
+  });
+
+  it('opens the Link Roles tab from ?tab=link-roles, with no Filters, and keeps the address in step', async () => {
     const router = await open('/admin/asset-types?tab=link-roles', 'AssetType.Manage');
-    expect(selected()).toBe('Asset Link Roles');
+    expect(selected()).toMatch(/^Link Roles/);
     expect(el().querySelector('[data-roles]')).not.toBeNull();
+    expect(el().querySelector('mf-page-header [data-filters-toggle]')).toBeNull();
+    expect(el().querySelector('mf-page-header [data-new]')).toBeNull();
 
     tabs()[0].click();
     await settle();
     expect(router.url).toBe('/admin/asset-types');
-    expect(selected()).toBe('Asset Types');
+    expect(selected()).toMatch(/^Asset Types/);
 
     tabs()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
     await settle();
@@ -83,43 +106,36 @@ describe('Assets set-up page (Asset Types, Asset Link Roles)', () => {
   it('redirects the old /admin/asset-link-roles address to the tab', async () => {
     const router = await open('/admin/asset-link-roles', 'AssetType.Manage');
     expect(router.url).toBe('/admin/asset-types?tab=link-roles');
-    expect(selected()).toBe('Asset Link Roles');
+    expect(selected()).toMatch(/^Link Roles/);
   });
 
-  it('asks before the tab switch or navigation drops a half-typed asset type (#530)', async () => {
-    const router = await open('/admin/asset-types', 'AssetType.Manage');
-    const leave = TestBed.inject(LeaveConfirmService);
-    const ask = vi.spyOn(leave, 'ask').mockResolvedValue(false);
+  it('asks once before the tab switch or navigation drops a half-typed link role; Stay keeps it (the route guard asks, #530)', async () => {
+    const router = await open('/admin/asset-types?tab=link-roles', 'AssetType.Manage');
+    const ask = vi.spyOn(TestBed.inject(LeaveConfirmService), 'ask').mockResolvedValue(false);
 
-    // Untouched form: the tab opens without a question.
-    el().querySelector<HTMLButtonElement>('p-button button, button.p-button')!.click();
-    await settle();
-    expect(el().querySelector('[data-editor]')).not.toBeNull();
-    tabs()[1].click();
-    await settle();
-    expect(ask).not.toHaveBeenCalled();
-    expect(selected()).toBe('Asset Link Roles');
+    // Untouched: the tab opens without a question.
     tabs()[0].click();
     await settle();
-
-    // Half-typed: Stay keeps the text on the same tab.
-    el().querySelector<HTMLButtonElement>('p-button button, button.p-button')!.click();
+    expect(ask).not.toHaveBeenCalled();
+    expect(selected()).toMatch(/^Asset Types/);
+    tabs()[1].click();
     await settle();
-    const name = el().querySelector<HTMLInputElement>('#type-name')!;
+
+    // Half-typed: Stay keeps the text on the same tab, one question.
+    const name = el().querySelector<HTMLInputElement>('#new-name')!;
     name.value = 'Half typed';
     name.dispatchEvent(new Event('input'));
     await settle();
-    tabs()[1].click();
+    tabs()[0].click();
     await settle();
     expect(ask).toHaveBeenCalledTimes(1);
-    expect(selected()).toBe('Asset Types');
-    expect(el().querySelector<HTMLInputElement>('#type-name')!.value).toBe('Half typed');
+    expect(selected()).toMatch(/^Link Roles/);
+    expect(el().querySelector<HTMLInputElement>('#new-name')!.value).toBe('Half typed');
 
-    // Navigating away asks too (the route guard), and Leave goes.
+    // Leaving the page asks too, and Leave goes.
     await router.navigateByUrl('/403');
     await settle();
     expect(ask).toHaveBeenCalledTimes(2);
-    expect(router.url).toBe('/admin/asset-types');
     ask.mockResolvedValue(true);
     await router.navigateByUrl('/403');
     await settle();

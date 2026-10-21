@@ -25,6 +25,8 @@ export interface FormVersion extends FormVersionSummary {
 export interface FormOwner {
   id: string;
   name: string;
+  /** The last breadcrumb step when it is shorter than the name: "Matter" for "Matter custom fields" (#645). */
+  crumb?: string;
 }
 
 /**

@@ -10,8 +10,8 @@
   } @else {
     <mf-page-header [crumbs]="formCrumbs()">
       <span mfTitle class="ttf-title">
-        <span class="ttf-title__name" [attr.title]="owner() ? 'Form: ' + owner()!.name : null">{{
-          owner() ? 'Form: ' + owner()!.name : heading()
+        <span class="ttf-title__name" [attr.title]="owner() ? headline() : null">{{
+          owner() ? headline() : heading()
         }}</span>
         @if (owner() && current(); as c) {
           <mf-badge [tone]="statusTone(c)" [icon]="statusIcon(c)" data-status>{{

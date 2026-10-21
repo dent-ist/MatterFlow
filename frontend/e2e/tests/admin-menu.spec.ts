@@ -35,17 +35,17 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page).toHaveURL(/status=all/);
   });
 
-  test('Asset Types and Asset Link Roles are tabs; the old link roles address redirects', async ({
+  test('Asset Types and Link Roles are counted tabs; the old link roles address redirects', async ({
     page,
   }) => {
     await page.goto('/admin/asset-link-roles');
     await expect(page).toHaveURL(/\/admin\/asset-types\?tab=link-roles$/);
     await expect(page.getByRole('heading', { name: 'Asset Types', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Asset Link Roles' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: /^Link Roles/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    await page.getByRole('tab', { name: 'Asset Types' }).click();
+    await page.getByRole('tab', { name: /^Asset Types/ }).click();
     await expect(page.getByRole('button', { name: 'New asset type' })).toBeVisible();
   });
 

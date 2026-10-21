@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+
+.at {
+  display: block;
+  min-width: 0;
+}
+
+.at__ctx {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at__panel {
+  min-width: 0;
+}
+
+/* The 720 px form card of the record pages (#361): one column, the fields keep --mf-field-max. */
+.at__card {
+  display: grid;
+  gap: var(--mf-s4);
+  box-sizing: border-box;
+  max-width: 720px;
+  padding: var(--mf-s5);
+  background: var(--mf-surface);
+  border-radius: var(--mf-radius-lg);
+  box-shadow: var(--mf-shadow-1);
+
+  h2 {
+    margin: 0;
+    font-size: var(--mf-fs-h3);
+  }
+}
+
+.at__card--fields {
+  justify-items: start;
+  gap: var(--mf-s3);
+
+  p {
+    margin: 0;
+  }
+}
+
+.at__hint {
+  color: var(--mf-text-muted);
+}
+
+/* A neutral note (a derived state, never red). */
+.at__note {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: baseline;
+  padding: var(--mf-s2) var(--mf-s3);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface-alt);
+}
+
+.at__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s3);
+}
+
+.at__error {
+  margin: var(--mf-s2) 0;
+  color: var(--mf-danger);
+}
+
+/* The validation summary at the top (the same look as the Workflow and Step pages, #361). */
+.at__summary {
+  margin: 0 0 var(--mf-s4);
+  padding: var(--mf-s3) var(--mf-s4);
+  border: 1px solid var(--mf-danger);
+  border-radius: var(--mf-radius);
+  background: var(--mf-danger-bg);
+  color: var(--mf-danger);
+
+  ul {
+    margin: var(--mf-s1) 0 0;
+    padding-left: var(--mf-s5);
+  }
+}

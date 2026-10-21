@@ -207,7 +207,24 @@ export const ADMIN_ROUTES: Routes = [
     pathMatch: 'full',
     redirectTo: () => inject(Router).parseUrl('/admin/asset-types?tab=link-roles'),
   },
+  {
+    // The asset type record page (#635): `new` is the same page with a plain header; the address is the record's own page, the designer is below it.
+    path: 'asset-types/new',
+    title: 'New asset type',
+    canActivate: [permissionGuard('AssetType.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./asset-types/asset-type-record-page').then((m) => m.AssetTypeRecordPage),
+  },
   assetTypeForm('asset-types/:ownerId/form'),
+  {
+    path: 'asset-types/:id',
+    title: 'Asset type',
+    canActivate: [permissionGuard('AssetType.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () =>
+      import('./asset-types/asset-type-record-page').then((m) => m.AssetTypeRecordPage),
+  },
   lazy('custom-fields', 'Custom Fields', 'CustomField.Manage', () =>
     import('./custom-fields/custom-fields-page').then((m) => m.CustomFieldsPage),
   ),

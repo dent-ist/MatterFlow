@@ -1,0 +1,214 @@
+@if (flow.failed()) {
+  <mf-record-state
+    kind="assetType"
+    [state]="state()"
+    [busy]="flow.retrying()"
+    [focusHeading]="true"
+    (retried)="retry()"
+  />
+} @else if (state() === 'loading') {
+  <span class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ flow.live() }}</span>
+  <mf-record-skeleton kind="assetType" [activeTab]="current()" />
+} @else {
+  <div class="at" data-asset-type-page>
+    <mf-record-header
+      kind="assetType"
+      [parents]="parents()"
+      [current]="headerName()"
+      [name]="headerName()"
+      [backTo]="backTo()"
+      [showStatus]="!isNew()"
+      [active]="assetType()?.isActive ?? true"
+      [actions]="headerActions()"
+    >
+      @if (!isNew() && assetType()?.description; as d) {
+        <span mfContext class="at__ctx" [attr.title]="d" data-context>{{ d }}</span>
+      }
+    </mf-record-header>
+
+    <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
+      {{ announcement() || flow.live() }}
+    </div>
+
+    @if (failure()) {
+      <p class="at__error" role="alert" data-failure>{{ failure() }}</p>
+    }
+    @if (conflict()) {
+      <p class="at__error" role="alert" data-conflict>
+        Someone else changed this asset type.
+        <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
+          Reload the latest version
+        </button>
+        (your unsaved edits will be discarded).
+      </p>
+    }
+    @if (summary().length > 0) {
+      <div class="at__summary" role="alert" data-summary>
+        Fix the following to save:
+        <ul>
+          @for (message of summary(); track message) {
+            <li>{{ message }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (!isNew()) {
+      <mf-tabs
+        label="Asset type sections"
+        idPrefix="at"
+        [tabs]="tabs()"
+        [selected]="current()"
+        (tabChange)="select($event)"
+      />
+    }
+    <div
+      class="at__panel"
+      role="tabpanel"
+      id="at-panel"
+      [attr.aria-labelledby]="isNew() ? null : 'at-tab-' + current()"
+      [attr.aria-label]="isNew() ? 'New asset type' : null"
+    >
+      @switch (current()) {
+        @case ('overview') {
+          <form
+            id="at-overview-form"
+            class="at__card"
+            (submit)="$event.preventDefault(); save()"
+            novalidate
+            data-overview-tab
+          >
+            <mf-text-field
+              inputId="at-name"
+              label="Name"
+              [required]="true"
+              [maxLength]="limits.assetTypeName"
+              [counter]="true"
+              [error]="fieldErrors()['name'] || null"
+              [value]="model().name"
+              (valueChange)="patch({ name: $event })"
+            />
+            <mf-text-field
+              inputId="at-description"
+              label="Description"
+              [multiline]="true"
+              [maxLength]="limits.assetTypeDescription"
+              [counter]="true"
+              [error]="fieldErrors()['description'] || null"
+              [value]="model().description"
+              (valueChange)="patch({ description: $event })"
+            />
+          </form>
+        }
+        @case ('fields') {
+          @if (assetType(); as t) {
+            <section class="at__card at__card--fields" aria-labelledby="at-fields" data-fields-tab>
+              <h2 id="at-fields">Fields</h2>
+              <mf-form-status-cell
+                [publishedVersion]="t.publishedFormVersionNo ?? null"
+                [fieldCount]="t.fieldCount ?? null"
+                [publishedAtUtc]="t.publishedAtUtc ?? null"
+                [draftVersion]="t.draftVersionNo ?? null"
+              />
+              @if (!noFields() && t.publishedAtUtc) {
+                <p data-form-published>Last published {{ t.publishedAtUtc | mfDate: 'date' }}.</p>
+              }
+              @if (t.draftVersionNo !== undefined && t.draftVersionNo !== null) {
+                <p data-form-draft>Draft v{{ t.draftVersionNo }} is in progress.</p>
+              }
+              @if (noFields()) {
+                <p class="at__note" role="note" data-no-fields>
+                  <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  This type has no published fields yet. Assets of this type are saved without extra
+                  information until a form is published.
+                </p>
+              }
+              <button type="button" class="mf-btn" (click)="openFields()" data-open-fields>
+                {{
+                  noFields() && (t.draftVersionNo ?? null) === null
+                    ? 'Create fields'
+                    : 'Edit fields'
+                }}
+              </button>
+              <p class="at__hint">
+                The fields are what people fill in for an asset of this type. They are designed on
+                their own page and published as a version; changing them never alters values already
+                saved.
+              </p>
+            </section>
+          }
+        }
+        @case ('assets') {
+          @if (assetType(); as t) {
+            <section class="at__card at__card--fields" aria-labelledby="at-assets" data-assets-tab>
+              <h2 id="at-assets">Assets</h2>
+              @if (t.assetCount) {
+                <p data-asset-count>
+                  {{ t.assetCount }} {{ t.assetCount === 1 ? 'asset has' : 'assets have' }} this
+                  type.
+                </p>
+                <a
+                  class="mf-btn"
+                  routerLink="/assets"
+                  [queryParams]="{ typeId: t.assetTypeId }"
+                  data-assets-link
+                  >View assets of this type</a
+                >
+              } @else {
+                <p data-asset-count>No asset has this type yet.</p>
+              }
+              @if (!t.isActive) {
+                <p class="at__hint">
+                  This type is inactive, so it can't be chosen for new assets. Existing assets keep
+                  it.
+                </p>
+              }
+            </section>
+          }
+        }
+      }
+
+      @if (showFooter()) {
+        <div class="at__footer mf-form-actions--sticky" data-footer>
+          <button
+            class="mf-btn mf-btn--primary"
+            type="submit"
+            form="at-overview-form"
+            [disabled]="busy()"
+            data-save
+          >
+            {{ isNew() ? 'Create asset type' : 'Save changes' }}
+          </button>
+          <button type="button" class="mf-btn" [disabled]="busy()" (click)="cancel()" data-cancel>
+            Cancel
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (canSeeActivity() && assetType(); as t) {
+      <mf-activity-drawer
+        objectType="AssetType"
+        [objectId]="t.assetTypeId"
+        [name]="t.name"
+        [visible]="activityOpen()"
+        (visibleChange)="activityOpen.set($event)"
+      />
+    }
+  </div>
+
+  <mf-confirm-dialog
+    [title]="deactivateCopy().title"
+    [confirmLabel]="deactivateCopy().confirm"
+    [cancelLabel]="deactivateCopy().cancel"
+    [danger]="deactivateCopy().danger"
+    [busy]="busy()"
+    [error]="deactivateOpen() ? failure() : ''"
+    [(visible)]="deactivateOpen"
+    (confirmed)="confirmDeactivate()"
+  >
+    <p data-deactivate-body>
+      {{ assetType()?.name }} can't be chosen for new assets. {{ deactivateCopy().body }}
+    </p>
+  </mf-confirm-dialog>
+}

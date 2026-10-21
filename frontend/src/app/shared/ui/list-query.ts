@@ -228,7 +228,8 @@ export abstract class LocalListPage<T> extends ListQueryPage {
     return true;
   }
 
-  private readonly matching = computed(() => {
+  /** Every row that passes the filters, in order, over all pages (a page that moves rows needs the neighbour on the next page). */
+  protected readonly matching = computed(() => {
     const status = this.statusFilter();
     const needle = (this.q() ?? '').trim().toLowerCase();
     this.listFilters()?.values();

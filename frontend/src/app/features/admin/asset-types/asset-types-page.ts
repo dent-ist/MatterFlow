@@ -12,518 +12,656 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AssetTypeResponse, AssetTypesClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { NotificationService } from '../../../core/notify/notification.service';
-import { serverFormErrors } from '../../../shared/forms/api-errors';
-import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
-import {
-  HasUnsavedChanges,
-  LeaveConfirmService,
-} from '../../../shared/guards/unsaved-changes.guard';
-import { TextField } from '../../../shared/ui/text-field';
-import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { ActiveBadge } from '../../../shared/ui/badge';
-import { LoadState } from '../../../shared/ui/data-table';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
-import { GridBody } from '../../../shared/ui/grid-body';
-import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
+import { ApiError } from '../../../core/http/api-error';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
+import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { ActiveBadge } from '../../../shared/ui/badge';
+import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridBody } from '../../../shared/ui/grid-body';
+import { LocalListPage } from '../../../shared/ui/list-query';
+import { parseStatus } from '../../../shared/ui/list-helpers';
+import { Pager } from '../../../shared/ui/pager';
+import { phoneCards } from '../../../shared/ui/record-card-list';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { rowActions } from '../../../shared/ui/row-actions';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { StripDef, stripActiveKey, stripItems, stripPick } from '../../../shared/ui/strip-items';
+import { DrillReturn } from '../../../shared/work-queue/drill';
+import { AdminTabCounts } from '../admin-tabs';
+import { AdminShellFilters } from '../task-types/shell-filters';
+import { ADMIN_LIST, AdminListLeave } from '../list-return';
+import { dialogCopy } from '../shared/dialog-copy';
+import { FormStatusCell } from '../shared/form-status-cell';
 
-/** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'fields', 'assets', 'status', 'actions'] as const;
+/** Every column of the grid, in order; the keys the filter definitions point at. */
+type Column = 'name' | 'fields' | 'assets' | 'status' | 'actions';
+
+/** The loaded cell class and the skeleton bone of each column: one definition for the table and its loading rows (#575). */
+const COLUMN_SPEC: Record<Column, AdminColumn> = {
+  name: { cls: 'mf-cell-name', bone: '12rem' },
+  fields: { cls: 'mf-cell-badge', bone: '14rem' },
+  assets: { cls: 'mf-cell-num', bone: '1.5rem' },
+  status: { cls: 'mf-cell-badge', bone: '4rem' },
+  actions: { cls: 'mf-cell-actions', bone: '1.5rem' },
+};
+
+/** The Assets column leaves below this window width (the kit's column-drop rule); the Fields cell is the point of the list and stays. */
+const ASSETS_ROOM = 900;
+
+/** The most asset types one request returns; the list is loaded whole (a firm has a handful), page after page when there are more. */
+const LOAD_PAGE_SIZE = 100;
 
 /**
- * Admin: Asset Types (UX S17), the first tab of the Assets set-up page. Name, description, order and active flag are edited here; the type's own fields are edited in the
- * form designer (`Edit fields`), which versions them. Types are deactivated, never deleted, so existing Assets keep working.
- * Needs `AssetType.Manage`.
+ * Admin: the Asset Types tab of the Asset Types page (UX S17, #634). The header (name, crumb, tabs with their counts, Filters, New asset type)
+ * belongs to `AssetAdminPage` on the admin list shell; this is the list: a health strip (Active, No published fields, Inactive, counted over
+ * the whole list), 44 px rows with the name as the link to the record page, the Fields cell (`mf-form-status-cell`: published and draft
+ * version, field count, date), the Assets count (only for a person who may see assets), the status and ONE overflow menu (Edit, Edit fields,
+ * History, Move up, Move down, Deactivate or Activate), the hidden-count line and phone cards below 640 px. The list is loaded whole and
+ * filtered here. Asset types are never deleted, only deactivated, so existing Assets keep working. Needs `AssetType.Manage`.
  */
 @Component({
   selector: 'mf-asset-types-page',
   imports: [
+    ActionMenu,
     ActiveBadge,
-    ScrollArea,
-    ConfirmDialog,
-    RouterLink,
-    Button,
-    TextField,
-    GridBody,
-    FiltersBar,
+    ActivityDrawer,
+    AdminCardList,
     ColumnFilterRow,
+    ConfirmDialog,
+    FiltersBar,
+    FormStatusCell,
+    GridBody,
+    Pager,
+    RouterLink,
+    RowLink,
+    ScrollArea,
+    WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill', '[class.at-editing]': 'editing()' },
-  styleUrl: '../../../shared/ui/page.scss',
+  host: { class: 'mf-fill' },
   template: `
-    <div class="pg-bar">
-      <p class="pg-muted pg-bar__intro">
-        Each type has its own fields. Fields are versioned; changing them never alters saved values.
-      </p>
-      @if (canManage()) {
-        <p-button label="New asset type" icon="pi pi-plus" (onClick)="startCreate()" />
-      }
+    <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
+      {{ announcement() }}
     </div>
 
-    <p class="pg-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</p>
+    @if (failure()) {
+      <p class="at-failure" role="alert" data-failure>
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
+      </p>
+    }
+
+    <mf-work-strip
+      label="Asset types summary"
+      [items]="strip()"
+      [interactive]="true"
+      [active]="stripActive()"
+      (pick)="pickStrip($event)"
+    />
+
+    <!-- The Filters button is in the page header; this draws the sheet it opens below 640 px (and the chips of a filtered address). -->
+    <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+
+    @if (phone()) {
+      <mf-admin-card-list
+        noun="asset types"
+        label="Asset types"
+        [items]="rows()"
+        [spec]="cardOf"
+        emptyText="No asset types yet. Use New asset type above to add the first one."
+        [filters]="filters"
+        [listId]="listId"
+        [state]="ls.state()"
+        [empty]="ls.empty()"
+        [filtered]="ls.filtered()"
+        [hidden]="ls.hidden()"
+        hiddenLabel="inactive"
+        (retry)="load()"
+        (clear)="clear()"
+        (showAll)="showAll()"
+      />
+    } @else {
+      <div class="mf-table-wrap" mfScrollArea="Asset types list" #scroll>
+        <div class="mf-scroll">
+          <table class="mf-grid" id="asset-types-table" data-types>
+            <caption class="mf-sr-only">
+              Asset types, in the order they are offered
+            </caption>
+            <thead>
+              <tr>
+                <th class="mf-cell-name" scope="col">Name</th>
+                <th class="mf-cell-badge" scope="col">Fields</th>
+                @if (assetsShown()) {
+                  <th class="mf-cell-num" scope="col">Assets</th>
+                }
+                <th class="mf-cell-badge" scope="col">Status</th>
+                <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
+              </tr>
+              @if (filters.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  id="asset-type-filter-row"
+                  [filters]="filters"
+                  [columns]="columns()"
+                ></tr>
+              }
+            </thead>
+            <tbody
+              mfGridBody
+              noun="asset types"
+              [columnSpec]="columnSpec()"
+              [filters]="filters"
+              emptyText="No asset types yet. Use New asset type above to add the first one."
+              [state]="ls.state()"
+              [empty]="ls.empty()"
+              [filtered]="ls.filtered()"
+              [hidden]="ls.hidden()"
+              hiddenLabel="inactive"
+              (retry)="load()"
+              (clear)="clear()"
+              (showAll)="showAll()"
+            >
+              @for (t of rows(); track t.assetTypeId) {
+                <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
+                  <td class="mf-cell-name">
+                    <a
+                      class="mf-name"
+                      [routerLink]="['/admin/asset-types', t.assetTypeId]"
+                      [mfRowLink]="listId"
+                      [rowKey]="t.assetTypeId"
+                      [state]="leave.state()"
+                      [attr.title]="t.name"
+                      data-open
+                      >{{ t.name }}</a
+                    >
+                  </td>
+                  <td class="mf-cell-badge" data-fields>
+                    <mf-form-status-cell
+                      [publishedVersion]="t.publishedFormVersionNo ?? null"
+                      [fieldCount]="t.fieldCount ?? null"
+                      [publishedAtUtc]="t.publishedAtUtc ?? null"
+                      [draftVersion]="t.draftVersionNo ?? null"
+                    />
+                  </td>
+                  @if (assetsShown()) {
+                    <td class="mf-cell-num" data-assets>
+                      @if (t.assetCount !== undefined && t.assetCount !== null) {
+                        {{ t.assetCount }}
+                      }
+                    </td>
+                  }
+                  <td class="mf-cell-badge"><mf-active-badge [active]="t.isActive" /></td>
+                  <td class="mf-cell-actions" [attr.data-actions-of]="t.assetTypeId">
+                    @if (menus().get(t.assetTypeId); as menu) {
+                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @if (state() === 'ready' && total() > 0) {
+      <mf-pager
+        [page]="shownPage()"
+        [pageSize]="pageSize()"
+        [pageSizes]="pageSizes"
+        [total]="total()"
+        [hidden]="hiddenCount()"
+        hiddenLabel="inactive"
+        (showAll)="showAll()"
+        (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
+      />
+    }
 
     <mf-confirm-dialog
-      title="Deactivate asset type?"
-      confirmLabel="Deactivate asset type"
-      cancelLabel="Keep active"
-      [danger]="true"
+      [title]="deactivateCopy().title"
+      [confirmLabel]="deactivateCopy().confirm"
+      [cancelLabel]="deactivateCopy().cancel"
+      [danger]="deactivateCopy().danger"
       [busy]="busy()"
-      [(visible)]="deactivateOpen"
+      [visible]="deactivating() !== null"
+      (visibleChange)="!$event && cancelDeactivate()"
       (confirmed)="confirmDeactivate()"
     >
-      <p>
-        {{ deactivateTarget()?.name }} can't be chosen for new assets.
-        @if (deactivateTarget()?.assetCount; as count) {
-          The {{ count }} existing {{ count === 1 ? 'asset keeps' : 'assets keep' }} this type.
-        } @else {
-          Existing assets keep this type.
-        }
-        You can activate it again later.
+      <p data-deactivate-body>
+        {{ deactivating()?.name }} can't be chosen for new assets. {{ deactivateCopy().body }}
       </p>
     </mf-confirm-dialog>
 
-    @if (editing()) {
-      <form
-        class="pg-form"
-        novalidate
-        data-editor
-        #editor
-        (submit)="$event.preventDefault(); save()"
-      >
-        <h2 class="pg-subtitle">{{ editingId() ? 'Edit asset type' : 'New asset type' }}</h2>
-        @if (summary().length > 0) {
-          <div class="pg-summary" role="alert" data-summary>
-            <ul>
-              @for (message of summary(); track message) {
-                <li>{{ message }}</li>
-              }
-            </ul>
-          </div>
-        }
-        <mf-text-field
-          inputId="type-name"
-          label="Name"
-          [required]="true"
-          [maxLength]="100"
-          [error]="nameError()"
-          [(value)]="name"
-        />
-        <mf-text-field
-          inputId="type-description"
-          label="Description"
-          [multiline]="true"
-          [maxLength]="500"
-          [error]="fieldError('description')"
-          [(value)]="description"
-        />
-        <div class="pg-filter">
-          <label for="type-order">Order</label>
-          <input
-            id="type-order"
-            class="mf-control pg-input"
-            type="number"
-            step="1"
-            [value]="sortOrder()"
-            (input)="sortOrder.set(+$any($event.target).value)"
-          />
-        </div>
-        @if (editingId()) {
-          <label class="pg-radio">
-            <input
-              type="checkbox"
-              [checked]="isActive()"
-              (change)="isActive.set($any($event.target).checked)"
-            />
-            Active (inactive types can't be chosen for new assets)
-          </label>
-        }
-        <div class="pg-actions">
-          <p-button
-            type="submit"
-            [label]="busy() ? 'Saving...' : editingId() ? 'Save changes' : 'Create asset type'"
-            [disabled]="busy()"
-          />
-          <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-        </div>
-      </form>
+    @if (activity(); as t) {
+      <mf-activity-drawer
+        objectType="AssetType"
+        [objectId]="t.assetTypeId"
+        [name]="t.name"
+        [visible]="true"
+        (visibleChange)="!$event && closeActivity()"
+      />
     }
-
-    <mf-filters-bar [filters]="filters" controls="asset-type-filter-row" [clearAlso]="['q']" />
-
-    <div class="mf-table-wrap" mfScrollArea="Asset types list" #scroll>
-      <div class="mf-scroll">
-        <table class="pg-table" data-types>
-          <caption class="pg-sr">
-            Asset types
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Fields</th>
-              <th scope="col">Assets</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="mf-col-actions"><span class="pg-sr">Actions</span></th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="asset-type-filter-row"
-                [filters]="filters"
-                [columns]="columns"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="asset types"
-            [filters]="filters"
-            emptyText="No asset types yet."
-            [state]="state()"
-            [empty]="rows().length === 0"
-            [filtered]="filters.activeCount() > 0"
-            [columns]="5"
-            (retry)="load()"
-            (clear)="clear()"
-          >
-            @for (t of rows(); track t.assetTypeId) {
-              <tr [attr.data-row]="t.name">
-                <td>
-                  <strong>{{ t.name }}</strong>
-                  @if (t.description) {
-                    <div class="pg-muted">{{ t.description }}</div>
-                  }
-                </td>
-                <td>
-                  @if (t.publishedFormVersionNo) {
-                    Published v{{ t.publishedFormVersionNo }}
-                  } @else {
-                    <span class="pg-muted">No published fields</span>
-                  }
-                  <a
-                    class="pg-link"
-                    [routerLink]="['/admin/asset-types', t.assetTypeId, 'form']"
-                    [attr.aria-label]="'Edit fields of ' + t.name"
-                    >Edit fields</a
-                  >
-                </td>
-                <td>{{ t.assetCount }}</td>
-                <td>
-                  <mf-active-badge [active]="t.isActive" />
-                </td>
-                <td class="mf-col-actions">
-                  @if (canManage()) {
-                    <span class="mf-row-actions">
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        [attr.aria-label]="'Edit ' + t.name"
-                        (click)="startEdit(t)"
-                        data-edit
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text"
-                        [class.mf-btn--danger]="t.isActive"
-                        [disabled]="busy()"
-                        [attr.aria-label]="(t.isActive ? 'Deactivate ' : 'Activate ') + t.name"
-                        (click)="onToggle(t)"
-                        data-toggle
-                      >
-                        {{ t.isActive ? 'Deactivate' : 'Activate' }}
-                      </button>
-                    </span>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
   `,
   styles: `
-    /* While the form is open (#530) the page body scrolls as one, so the whole form card shows at its natural height instead of being
-       cut off by the fixed page; the form is no longer boxed or sticky. */
-    :host(.at-editing) {
-      overflow-y: auto;
-    }
-    :host(.at-editing) .mf-scroll-area {
-      flex: none;
-      overflow-y: visible;
-    }
-    /* The page's fixed-page rule boxes a form above a list (max 45% of the height, its own scroll); the whole card shows instead. */
-    :host(.at-editing) .pg-form {
-      flex: none;
-      max-height: none;
-      margin-bottom: var(--mf-s4);
-      overflow-y: visible;
-    }
-    .pg-subtitle {
-      margin: 0;
-      font-size: var(--mf-fs-h3);
-    }
-    .pg-table {
-      table-layout: auto;
-    }
-    td .pg-link {
-      display: block;
+    .at-failure {
+      display: flex;
+      gap: var(--mf-s2);
+      align-items: center;
+      margin: var(--mf-s2) 0;
+      color: var(--mf-danger);
+      font-size: var(--mf-fs-sm);
     }
   `,
 })
-export class AssetTypesPage implements HasUnsavedChanges {
+export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
   private readonly api = inject(AssetTypesClient);
-  private readonly leave = inject(LeaveConfirmService);
-  private readonly editor = viewChild<ElementRef<HTMLElement>>('editor');
   private readonly auth = inject(AuthStore);
-  private readonly notify = inject(NotificationService);
   private readonly injector = inject(Injector);
+  private readonly drill = inject(DrillReturn);
+  private readonly report = AdminTabCounts.report('types');
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
 
-  protected readonly columns = COLUMNS;
+  protected readonly listId = ADMIN_LIST.assetTypes.id;
+  protected readonly leave = inject(AdminListLeave);
+  protected readonly phone = phoneCards();
+  private readonly assetsRoom = viewportAtLeast(ASSETS_ROOM);
+  protected readonly defaultSort = 'sortOrder';
+
   protected readonly canManage = computed(() => this.auth.has('AssetType.Manage'));
-  protected readonly state = signal<LoadState>('loading');
-  protected readonly rows = signal<AssetTypeResponse[]>([]);
-  /** Inline column filters: Name (`name`) and Status (`status`, Active by default). The old `q` is no longer read. */
+  /** The Assets count is null in the API without `Asset.View`: the column is not there for a person without it. */
+  protected readonly assetsShown = computed(() => this.assetsRoom() && this.auth.has('Asset.View'));
+  protected readonly columns = computed<readonly Column[]>(() => [
+    'name',
+    'fields',
+    ...(this.assetsShown() ? (['assets'] as const) : []),
+    'status',
+    'actions',
+  ]);
+  protected readonly columnSpec = computed<readonly AdminColumn[]>(() =>
+    this.columns().map((c) => COLUMN_SPEC[c]),
+  );
+
+  protected readonly busy = signal(false);
+  protected readonly failure = signal('');
+  protected readonly announcement = signal('');
+  protected readonly deactivating = signal<AssetTypeResponse | null>(null);
+  protected readonly activity = signal<AssetTypeResponse | null>(null);
+  protected readonly deactivateCopy = computed(() =>
+    dialogCopy.deactivateAssetType({ assets: this.deactivating()?.assetCount ?? null }),
+  );
+
+  /**
+   * Inline column filters, all applied here because the list is loaded whole: Name (`name`) and Status (`status`, Active by default). The
+   * health strip's "No published fields" has no control; it is a removable chip (`fields=none`).
+   */
   protected readonly filters: ListFilters = new ListFilters({
     screen: 'asset-types',
     noun: 'asset types',
+    sheetBelow: 640,
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       statusDef(),
+      {
+        key: 'fields',
+        label: 'Fields',
+        type: 'text',
+        noControl: true,
+        normalize: (v) => (v === 'none' ? v : null),
+        valueLabel: () => 'No published fields',
+      },
     ]),
   });
-  protected readonly busy = signal(false);
-  protected readonly announcement = signal('');
-  protected readonly deactivateOpen = signal(false);
-  protected readonly deactivateTarget = signal<AssetTypeResponse | null>(null);
-
-  protected readonly editing = signal(false);
-  protected readonly editingId = signal<number | null>(null);
-  protected readonly name = signal('');
-  protected readonly description = signal('');
-  protected readonly sortOrder = signal(0);
-  protected readonly isActive = signal(true);
-  protected readonly submitted = signal(false);
-  protected readonly serverErrors = signal<Record<string, string>>({});
-  protected readonly summary = signal<string[]>([]);
-
-  /** What the form held when it opened, to tell a half-typed form from an untouched one (#530). */
-  private readonly opened = signal('');
-  private readonly formState = computed(() =>
-    JSON.stringify([this.name(), this.description(), this.sortOrder(), this.isActive()]),
-  );
-
-  protected readonly nameError = computed(() =>
-    this.submitted() && this.name().trim() === '' ? 'Enter a name.' : this.fieldError('name'),
-  );
+  protected readonly ls = adminListState({
+    state: this.state,
+    rows: this.rows,
+    filters: this.filters,
+    hidden: this.hiddenCount,
+  });
 
   constructor() {
-    // Loads the list, and again when a filter changes.
+    super();
+    // The Filters button of the page header belongs to this tab.
+    AdminShellFilters.register({ filters: this.filters, controls: 'asset-type-filter-row' });
+    // The tab's count is the number of active types.
     effect(() => {
-      this.filterKey();
-      untracked(() => void this.load());
+      if (this.state() === 'ready') this.report(this.all().filter((t) => t.isActive).length);
     });
-    // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    // Back from a record puts focus on the name link of the row that was left.
+    restoreRowFocus(this.listId, () => this.state() === 'ready');
+    effect(() => untracked(() => void this.load()));
+    // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
 
-  protected clear(): void {
-    this.filters.clear(['q']);
+  protected override listFilters() {
+    return this.filters;
   }
 
-  protected fieldError(key: string): string | null {
-    return this.serverErrors()[key] ?? null;
+  protected override matchesFilters(t: AssetTypeResponse): boolean {
+    const name = this.filters.text('name').trim().toLowerCase();
+    if (name && !t.name.toLowerCase().includes(name)) return false;
+    return this.filters.text('fields') !== 'none' || this.hasNoFields(t);
   }
 
-  private readonly filterKey = computed(() => JSON.stringify(this.filters.queryParams()));
-  private requestId = 0;
+  protected override searchText(t: AssetTypeResponse): string {
+    return t.name;
+  }
+
+  protected override isActiveRow(t: AssetTypeResponse): boolean {
+    return t.isActive;
+  }
+
+  protected override sortValue(t: AssetTypeResponse, field: string): string | number {
+    return field === 'name' ? t.name : t.sortOrder;
+  }
+
+  /** Nothing is published: the type has no fields people can fill in yet. */
+  private hasNoFields(t: AssetTypeResponse): boolean {
+    return t.publishedFormVersionNo === undefined || t.publishedFormVersionNo === null;
+  }
+
+  // ---- the health strip (#634, the kit's stripItems)
+
+  private readonly stripDefs: readonly StripDef<AssetTypeResponse>[] = [
+    { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
+    {
+      key: 'noFields',
+      label: 'No published fields',
+      hint: 'Active asset types with no published form, so assets of the type have no fields',
+      matches: (t) => t.isActive && this.hasNoFields(t),
+      params: { status: null, fields: 'none' },
+    },
+    {
+      key: 'inactive',
+      label: 'Inactive',
+      matches: (t) => !t.isActive,
+      params: { status: 'inactive' },
+    },
+  ];
+  protected readonly strip = computed<WorkStripItem[]>(() =>
+    stripItems(this.state() === 'ready' ? this.all() : null, this.stripDefs),
+  );
+  protected readonly stripActive = computed<string | null>(() =>
+    stripActiveKey(this.stripDefs, (p) => {
+      if (p !== 'status') return this.filters.text(p) || null;
+      const status = parseStatus(this.filters.text('status'));
+      return status === 'active' ? null : status;
+    }),
+  );
+
+  protected pickStrip(key: string): void {
+    const to = stripPick(this.stripDefs, key, this.stripActive());
+    if (!to) return;
+    this.navigate({ ...to.params, page: null });
+    const item = this.strip().find((i) => i.key === to.key);
+    if (item) this.announcement.set(`${item.label}: ${item.count ?? 0} asset types.`);
+  }
+
+  // ---- loading
 
   async load(): Promise<void> {
-    const id = ++this.requestId;
-    if (this.state() === 'error') this.state.set('loading');
+    if (this.state() === 'error' || this.state() === 'forbidden') this.state.set('loading');
     try {
-      const page = await firstValueFrom(
-        this.api.listAssetTypes(
-          undefined,
-          this.filters.text('name') || undefined,
-          isActiveParam(parseStatus(this.filters.text('status'))),
-          1,
-          100,
-          'sortOrder',
+      const all: AssetTypeResponse[] = [];
+      for (let page = 1; ; page++) {
+        const result = await firstValueFrom(
+          this.api.listAssetTypes(
+            undefined,
+            undefined,
+            undefined,
+            page,
+            LOAD_PAGE_SIZE,
+            'sortOrder',
+          ),
+        );
+        all.push(...result.items);
+        if (all.length >= result.total || result.items.length === 0) break;
+      }
+      this.all.set(all);
+      this.state.set('ready');
+      this.filters.reportResults(this.total());
+    } catch (error) {
+      this.state.set(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
+    }
+  }
+
+  // ---- the row menu and the phone cards
+
+  protected readonly menus = computed(() => {
+    const map = new Map<number, ReturnType<typeof rowActions>>();
+    const list = this.matching();
+    list.forEach((t, i) => {
+      map.set(
+        t.assetTypeId,
+        rowActions(
+          t.name,
+          [
+            {
+              id: 'edit',
+              label: 'Edit',
+              icon: 'pi-pencil',
+              permission: 'AssetType.Manage',
+              run: () => void this.open(t),
+            },
+            {
+              id: 'fields',
+              label: 'Edit fields',
+              icon: 'pi-list',
+              permission: 'AssetType.Manage',
+              run: () => void this.openFields(t),
+            },
+            {
+              id: 'history',
+              label: 'History',
+              icon: 'pi-history',
+              permission: 'Audit.View',
+              run: () => this.activity.set(t),
+            },
+            {
+              id: 'up',
+              label: 'Move up',
+              icon: 'pi-arrow-up',
+              permission: 'AssetType.Manage',
+              reason: i === 0 ? 'Already first.' : undefined,
+              run: () => void this.move(t, -1),
+            },
+            {
+              id: 'down',
+              label: 'Move down',
+              icon: 'pi-arrow-down',
+              permission: 'AssetType.Manage',
+              reason: i === list.length - 1 ? 'Already last.' : undefined,
+              run: () => void this.move(t, 1),
+            },
+            t.isActive
+              ? {
+                  id: 'deactivate',
+                  label: 'Deactivate',
+                  kind: 'state' as const,
+                  permission: 'AssetType.Manage',
+                  run: () => this.deactivating.set(t),
+                }
+              : {
+                  id: 'activate',
+                  label: 'Activate',
+                  kind: 'state' as const,
+                  permission: 'AssetType.Manage',
+                  run: () => void this.setActive(t, true),
+                },
+          ],
+          { can: (permission) => this.auth.has(permission) },
         ),
       );
-      if (id !== this.requestId) return;
-      this.rows.set(page.items);
-      this.state.set('ready');
-      this.filters.reportResults(page.total);
-    } catch {
-      if (id === this.requestId) this.state.set('error');
-    }
-  }
+    });
+    return map;
+  });
 
-  /** A form with text the person has not saved: leaving the tab or the page asks first (#530). */
-  hasUnsavedChanges(): boolean {
-    return this.editing() && this.formState() !== this.opened();
-  }
+  /** The phone card of a type (#634): the same data and the same menu as the table row. */
+  protected readonly cardOf = (t: AssetTypeResponse): AdminCardSpec => ({
+    title: t.name,
+    link: ['/admin/asset-types', t.assetTypeId],
+    rowKey: t.assetTypeId,
+    state: this.leave.state(),
+    badges: [activeCardBadge(t.isActive)],
+    meta: [
+      this.formLine(t),
+      ...(this.auth.has('Asset.View') && typeof t.assetCount === 'number'
+        ? [t.assetCount === 1 ? '1 asset' : `${t.assetCount} assets`]
+        : []),
+    ],
+    actions: this.menus().get(t.assetTypeId) ?? null,
+  });
 
-  /** Opening another form over a half-typed one asks first; Stay keeps the text. */
-  private async mayReplaceForm(): Promise<boolean> {
-    return !this.hasUnsavedChanges() || (await this.leave.ask());
-  }
-
-  protected async startCreate(): Promise<void> {
-    if (!(await this.mayReplaceForm())) return;
-    this.reset();
-    const last = this.rows().at(-1);
-    this.sortOrder.set((last?.sortOrder ?? 0) + 10);
-    this.editingId.set(null);
-    this.opened.set(this.formState());
-    this.editing.set(true);
-  }
-
-  protected async startEdit(t: AssetTypeResponse): Promise<void> {
-    if (!(await this.mayReplaceForm())) return;
-    this.reset();
-    this.editingId.set(t.assetTypeId);
-    this.name.set(t.name);
-    this.description.set(t.description ?? '');
-    this.sortOrder.set(t.sortOrder);
-    this.isActive.set(t.isActive);
-    this.opened.set(this.formState());
-    this.editing.set(true);
-  }
-
-  protected cancel(): void {
-    this.editing.set(false);
-    this.reset();
-  }
-
-  private reset(): void {
-    this.name.set('');
-    this.description.set('');
-    this.sortOrder.set(0);
-    this.isActive.set(true);
-    this.submitted.set(false);
-    this.serverErrors.set({});
-    this.summary.set([]);
-  }
-
-  protected async save(deactivationConfirmed = false): Promise<void> {
-    this.submitted.set(true);
-    this.serverErrors.set({});
-    this.summary.set([]);
-    if (this.name().trim() === '') {
-      this.summary.set(['Enter a name.']);
-      focusFirstInvalid(this.injector, this.editor()?.nativeElement);
-      return;
-    }
-
-    const id = this.editingId();
-    const original = this.rows().find((r) => r.assetTypeId === id);
-    if (!deactivationConfirmed && original?.isActive && !this.isActive()) {
-      this.deactivateTarget.set(original);
-      this.deactivateOpen.set(true);
-      return;
-    }
-    const description = this.description().trim() || undefined;
-    this.busy.set(true);
-    try {
-      if (id === null) {
-        const created = await firstValueFrom(
-          this.api.createAssetType({
-            name: this.name().trim(),
-            description,
-            sortOrder: this.sortOrder(),
-          }),
-        );
-        this.announcement.set(
-          `Asset type ${created.name} created. Add its fields with Edit fields.`,
-        );
-        this.notify.success(`Asset type ${created.name} created`);
-      } else {
-        const current = this.rows().find((r) => r.assetTypeId === id)!;
-        const updated = await firstValueFrom(
-          this.api.updateAssetType(id, {
-            name: this.name().trim(),
-            description,
-            sortOrder: this.sortOrder(),
-            isActive: this.isActive(),
-            rowVersion: current.rowVersion,
-          }),
-        );
-        this.announcement.set(`Asset type ${updated.name} saved.`);
-        this.notify.success(`Asset type ${updated.name} saved`);
+  private formLine(t: AssetTypeResponse): string {
+    const parts: string[] = [];
+    if (this.hasNoFields(t)) parts.push('No published fields');
+    else {
+      parts.push(`Published v${t.publishedFormVersionNo}`);
+      if (typeof t.fieldCount === 'number') {
+        parts.push(t.fieldCount === 1 ? '1 field' : `${t.fieldCount} fields`);
       }
-      this.editing.set(false);
-      this.reset();
-      await this.load();
-    } catch (err) {
-      const errors = serverFormErrors(err);
-      this.serverErrors.set(errors.fields);
-      this.summary.set(
-        errors.conflict
-          ? ['Someone else changed this asset type. Cancel and reopen it to see the latest.']
-          : errors.summary,
-      );
-      focusFirstInvalid(this.injector, this.editor()?.nativeElement);
-    } finally {
-      this.busy.set(false);
     }
+    if (typeof t.draftVersionNo === 'number') parts.push(`draft v${t.draftVersionNo}`);
+    return parts.join(' · ');
   }
 
-  /** Activating needs no confirmation; deactivating asks first. */
-  protected onToggle(t: AssetTypeResponse): void {
-    if (!t.isActive) {
-      void this.toggleActive(t);
-      return;
-    }
-    this.deactivateTarget.set(t);
-    this.deactivateOpen.set(true);
+  private open(t: AssetTypeResponse): Promise<boolean> {
+    this.drill.leaveRow(this.listId, t.assetTypeId);
+    return this.router.navigate(['/admin/asset-types', t.assetTypeId], {
+      state: this.leave.state(),
+    });
   }
 
-  protected confirmDeactivate(): void {
-    const t = this.deactivateTarget();
-    this.deactivateOpen.set(false);
+  private openFields(t: AssetTypeResponse): Promise<boolean> {
+    this.drill.leaveRow(this.listId, t.assetTypeId);
+    return this.router.navigate(['/admin/asset-types', t.assetTypeId, 'form'], {
+      state: { ...this.leave.state(), keepRow: true },
+    });
+  }
+
+  protected closeActivity(): void {
+    const t = this.activity();
+    this.activity.set(null);
+    if (t) this.focusMenuOf(t.assetTypeId);
+  }
+
+  // ---- activate, deactivate
+
+  protected cancelDeactivate(): void {
+    this.deactivating.set(null);
+  }
+
+  protected async confirmDeactivate(): Promise<void> {
+    const t = this.deactivating();
     if (!t) return;
-    if (this.editing() && this.editingId() === t.assetTypeId) {
-      void this.save(true);
-    } else {
-      void this.toggleActive(t);
-    }
+    this.deactivating.set(null);
+    await this.setActive(t, false);
   }
 
-  protected async toggleActive(t: AssetTypeResponse): Promise<void> {
-    this.busy.set(true);
-    try {
-      const updated = await firstValueFrom(
+  protected async setActive(t: AssetTypeResponse, active: boolean): Promise<void> {
+    const updated = await this.run(() =>
+      firstValueFrom(
         this.api.updateAssetType(t.assetTypeId, {
           name: t.name,
           description: t.description,
           sortOrder: t.sortOrder,
-          isActive: !t.isActive,
+          isActive: active,
           rowVersion: t.rowVersion,
         }),
-      );
-      this.rows.update((list) => list.map((r) => (r.assetTypeId === t.assetTypeId ? updated : r)));
-      this.announcement.set(`${updated.name} ${updated.isActive ? 'activated' : 'deactivated'}.`);
-    } catch {
-      await this.load(); // failures are toasted by the HTTP layer; show the latest state
+      ),
+    );
+    if (!updated) return;
+    this.replace(updated);
+    this.announcement.set(`${updated.name} ${active ? 'activated' : 'deactivated'}.`);
+    this.focusMenuOf(t.assetTypeId);
+  }
+
+  // ---- order (#637): Move up and Move down swap the position with the neighbour in the list as it is shown
+
+  protected async move(t: AssetTypeResponse, delta: -1 | 1): Promise<void> {
+    const list = this.matching();
+    const index = list.findIndex((x) => x.assetTypeId === t.assetTypeId);
+    const other = list[index + delta];
+    if (!other || this.busy()) return;
+    // Two rows with the same position are given distinct ones, so the swap always changes the order.
+    const mine = t.sortOrder === other.sortOrder ? other.sortOrder + delta : other.sortOrder;
+    const first = await this.run(() => this.save(t, mine));
+    if (!first) return;
+    this.replace(first);
+    const second = await this.run(() => this.save(other, t.sortOrder));
+    if (!second) {
+      await this.load();
+      return;
+    }
+    this.replace(second);
+    const position = list.findIndex((x) => x.assetTypeId === t.assetTypeId) + delta + 1;
+    this.announcement.set(`${t.name} moved to position ${position} of ${list.length}.`);
+    this.focusMenuOf(t.assetTypeId);
+  }
+
+  private save(t: AssetTypeResponse, sortOrder: number): Promise<AssetTypeResponse> {
+    return firstValueFrom(
+      this.api.updateAssetType(t.assetTypeId, {
+        name: t.name,
+        description: t.description,
+        sortOrder,
+        isActive: t.isActive,
+        rowVersion: t.rowVersion,
+      }),
+    );
+  }
+
+  private replace(updated: AssetTypeResponse): void {
+    this.all.update((list) =>
+      list
+        .map((r) => (r.assetTypeId === updated.assetTypeId ? updated : r))
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.assetTypeId - b.assetTypeId),
+    );
+  }
+
+  private async run<T>(work: () => Promise<T>): Promise<T | undefined> {
+    this.busy.set(true);
+    this.failure.set('');
+    try {
+      return await work();
+    } catch (e) {
+      const error = e instanceof ApiError ? e : null;
+      if (error?.code === 'CONCURRENCY_CONFLICT') {
+        this.failure.set('Someone else changed the asset types. The list was reloaded; try again.');
+        await this.load();
+      } else {
+        this.failure.set(error?.message ?? 'Couldn’t save. Try again.');
+      }
+      return undefined;
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /** The row's menu button gets focus back after a change that re-renders the row (a moved row is a new element). */
+  private focusMenuOf(id: number): void {
+    afterNextRender(
+      () => {
+        const host = document.querySelector<HTMLElement>(`[data-actions-of="${id}"]`);
+        host?.querySelector<HTMLElement>('button[data-overflow]')?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 }

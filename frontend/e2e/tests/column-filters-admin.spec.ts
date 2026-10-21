@@ -356,7 +356,7 @@ test.describe('Column filters on the administration lists', () => {
       await select(page, 'Status').selectOption('all');
       await expect(rows).toHaveCount(2);
 
-      await page.getByRole('tab', { name: 'Asset Link Roles' }).click();
+      await page.getByRole('tab', { name: /^Link Roles/ }).click();
       await expect(page).toHaveURL(/tab=link-roles/);
       await expect(page).not.toHaveURL(/name=|status=/);
     });

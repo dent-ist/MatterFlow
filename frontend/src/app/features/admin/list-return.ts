@@ -6,11 +6,13 @@ import { originUrl } from '../../shared/work-queue/drill';
 import { Crumb } from '../../shared/ui/page-header';
 import { RETURN_STATE } from '../../shared/ui/row-nav';
 
-/** The ids of the three Administration lists in `data-row-list` and `DrillReturn` (#354), and the address of each. */
+/** The ids of the Administration lists with record pages in `data-row-list` and `DrillReturn` (#354), and the address of each. */
 export const ADMIN_LIST = {
   taskTypes: { id: 'admin-task-types', path: '/admin/task-types' },
   workflows: { id: 'admin-workflows', path: '/admin/workflows' },
   steps: { id: 'admin-steps', path: '/admin/steps' },
+  assetTypes: { id: 'admin-asset-types', path: '/admin/asset-types' },
+  customFields: { id: 'admin-custom-fields', path: '/admin/custom-fields' },
 } as const;
 
 export type AdminList = (typeof ADMIN_LIST)[keyof typeof ADMIN_LIST];

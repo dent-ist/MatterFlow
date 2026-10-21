@@ -28,7 +28,7 @@ export class CustomFieldFormDesignerApi extends AssetTypeFormDesignerApi {
   override getOwner(ownerId: string): Observable<FormOwner> {
     const object = customFieldObject(ownerId);
     return object
-      ? of({ id: ownerId, name: `${object.label} custom fields` })
+      ? of({ id: ownerId, name: `${object.label} custom fields`, crumb: object.label })
       : throwError(() => notFoundError(`There is no custom-field object '${ownerId}'.`));
   }
 
