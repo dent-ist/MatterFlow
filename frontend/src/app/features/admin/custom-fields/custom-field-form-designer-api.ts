@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { FormOwnerKind } from '../../../api/generated/api-client';
-import { AssetTypeFormDesignerApi } from '../asset-types/asset-type-form-designer-api';
+import {
+  AssetTypeFormDesignerApi,
+  notFoundError,
+} from '../asset-types/asset-type-form-designer-api';
 import { FormOwner } from '../task-types/form-designer-api';
 
 /** The three objects that carry admin-defined custom fields, with the route key used as the designer's owner id. */
@@ -25,12 +27,14 @@ export const customFieldObject = (key: string) => CUSTOM_FIELD_OBJECTS.find((o) 
 export class CustomFieldFormDesignerApi extends AssetTypeFormDesignerApi {
   override getOwner(ownerId: string): Observable<FormOwner> {
     const object = customFieldObject(ownerId);
-    return of({ id: ownerId, name: object ? `${object.label} custom fields` : ownerId });
+    return object
+      ? of({ id: ownerId, name: `${object.label} custom fields` })
+      : throwError(() => notFoundError(`There is no custom-field object '${ownerId}'.`));
   }
 
   protected override async findDefinitionId(ownerId: string): Promise<number> {
     const object = customFieldObject(ownerId);
-    if (!object) throw new Error(`Unknown custom-field object '${ownerId}'.`);
+    if (!object) throw notFoundError(`There is no custom-field object '${ownerId}'.`);
     const definition = await firstValueFrom(
       this.forms.ensureFormDefinition({ ownerKind: object.kind }),
     );

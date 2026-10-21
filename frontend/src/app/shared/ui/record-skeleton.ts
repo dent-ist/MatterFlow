@@ -278,9 +278,16 @@ export class RecordSkeleton {
     );
   });
   /** What the page is called in the loading message: "Loading task type". */
-  protected readonly noun = computed(() =>
-    this.kind() === 'taskType' ? 'task type' : this.kind(),
-  );
+  protected readonly noun = computed(() => {
+    const kind = this.kind();
+    return kind === 'taskType'
+      ? 'task type'
+      : kind === 'assetType'
+        ? 'asset type'
+        : kind === 'customField'
+          ? 'object'
+          : kind;
+  });
   protected readonly tab = computed(() => {
     const t = this.activeTab();
     return this.tabs().some((x) => x.key === t) ? t : (this.tabs()[0]?.key ?? 'details');
@@ -301,6 +308,18 @@ export class RecordSkeleton {
           { label: 'Administration', plain: true },
           { label: 'Task Types', link: '/admin/task-types' },
           { label: 'Workflow Steps', link: '/admin/steps' },
+          { label: '' },
+        ];
+      case 'assetType':
+        return [
+          { label: 'Administration', plain: true },
+          { label: 'Asset Types', link: '/admin/asset-types' },
+          { label: '' },
+        ];
+      case 'customField':
+        return [
+          { label: 'Administration', plain: true },
+          { label: 'Custom Fields', link: '/admin/custom-fields' },
           { label: '' },
         ];
       case 'client':

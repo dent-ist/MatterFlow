@@ -23,7 +23,16 @@ import { Crumb, PageHeader } from './page-header';
 
 /** The record pages that share these states. */
 export type RecordKind =
-  'client' | 'matter' | 'project' | 'task' | 'taskType' | 'workflow' | 'workflowVersion' | 'step';
+  | 'client'
+  | 'matter'
+  | 'project'
+  | 'task'
+  | 'taskType'
+  | 'workflow'
+  | 'workflowVersion'
+  | 'step'
+  | 'assetType'
+  | 'customField';
 
 /** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
 export type RecordFailure = 'notFound' | 'forbidden' | 'error';
@@ -38,8 +47,11 @@ const KINDS: Record<
     label: string;
     path: string;
     view: Permission;
-    /** Administration pages (#353): the breadcrumb starts `Administration > Task Types` and the last step is `crumb`, never the address id. */
-    admin?: { crumb: string };
+    /**
+     * Administration pages (#353): the breadcrumb starts `Administration > Task Types` and the last step is `crumb`, never the address id.
+     * `own` is for a record whose list is the page itself (Asset Types, Custom Fields, #541): `Administration > <list> > crumb`.
+     */
+    admin?: { crumb: string; own?: boolean };
   }
 > = {
   client: {
@@ -101,6 +113,22 @@ const KINDS: Record<
     path: '/admin/steps',
     view: 'Workflow.Manage',
     admin: { crumb: 'Step' },
+  },
+  assetType: {
+    noun: 'asset type',
+    list: 'Asset Types',
+    label: 'Asset Types',
+    path: '/admin/asset-types',
+    view: 'AssetType.Manage',
+    admin: { crumb: 'Asset type', own: true },
+  },
+  customField: {
+    noun: 'object',
+    list: 'Custom Fields',
+    label: 'Custom Fields',
+    path: '/admin/custom-fields',
+    view: 'CustomField.Manage',
+    admin: { crumb: 'Object', own: true },
   },
 };
 
@@ -323,6 +351,9 @@ export class RecordState {
         ? { label: info.label, link: info.path }
         : { label: info.label };
       const parent = this.parent();
+      if (info.admin.own) {
+        return [{ label: 'Administration' }, list, { label: info.admin.crumb }];
+      }
       return [
         { label: 'Administration' },
         this.auth.hasAny(['TaskType.Manage', 'Workflow.Manage'])

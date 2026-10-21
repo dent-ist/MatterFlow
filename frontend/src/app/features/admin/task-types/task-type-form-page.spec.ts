@@ -3,6 +3,8 @@ import { ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { throwError } from 'rxjs';
 
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { apiError } from '../../../core/lookups/lookups-testing';
 import {
   LeaveConfirmService,
@@ -302,5 +304,52 @@ describe('unsavedChangesGuard', () => {
     const leave = run(true) as Promise<boolean>;
     service.answer(true);
     expect(await leave).toBe(true);
+  });
+});
+
+describe('TaskTypeFormPage for Asset Types and Custom Fields (#541)', () => {
+  class NotFoundApi extends InMemoryFormDesignerApi {
+    override getOwner(): ReturnType<InMemoryFormDesignerApi['getOwner']> {
+      return throwError(() => apiError(404, 'NOT_FOUND', 'Gone.'));
+    }
+  }
+
+  async function open(ownerLabel: string, sectionPath: string): Promise<HTMLElement> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideFakeMe(new FakeMeApi(withPermissions('AssetType.Manage', 'CustomField.Manage'))),
+        { provide: FormDesignerApi, useClass: NotFoundApi },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(TaskTypeFormPage);
+    fixture.componentRef.setInput('ownerLabel', ownerLabel);
+    fixture.componentRef.setInput('sectionPath', sectionPath);
+    fixture.componentRef.setInput('ownerId', '99999');
+    for (let i = 0; i < 4; i++) {
+      await new Promise((r) => setTimeout(r));
+      fixture.detectChanges();
+    }
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('says it could not find the asset type, keeps the header and offers no Retry', async () => {
+    const el = await open('Asset Type', '/admin/asset-types');
+    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that asset type.");
+    expect(el.querySelector('[data-record-state="notFound"]')).not.toBeNull();
+    expect(el.querySelector('[data-retry]')).toBeNull();
+    expect(Array.from(el.querySelectorAll('nav li')).map((li) => li.textContent!.trim())).toEqual([
+      'Administration',
+      'Asset Types',
+      'Asset type',
+    ]);
+  });
+
+  it('says it could not find the object for Custom Fields', async () => {
+    const el = await open('Object', '/admin/custom-fields');
+    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that object.");
+    expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/custom-fields');
   });
 });

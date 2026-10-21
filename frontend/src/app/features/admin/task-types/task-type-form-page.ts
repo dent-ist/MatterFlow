@@ -143,13 +143,17 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
 
   private readonly quiet = inject(QuietRequests);
   private readonly pageTitle = inject(PageTitle);
-  /** The record kind whose 404, 403 and failure states the owner gets (#353); Asset Types and Custom Fields keep the plain failure block. */
+  /** The record kind whose 404, 403 and failure states the owner gets (#353, #541): Task Type, Step, Asset Type and the Custom Fields object. */
   protected readonly recordKind = computed<RecordKind | null>(() => {
     switch (this.ownerLabel()) {
       case 'Task Type':
         return 'taskType';
       case 'Step':
         return 'step';
+      case 'Asset Type':
+        return 'assetType';
+      case 'Object':
+        return 'customField';
       default:
         return null;
     }
@@ -230,12 +234,12 @@ export class TaskTypeFormPage implements HasUnsavedChanges {
       const state = this.state();
       const name = this.owner()?.name;
       if (kind && this.flow.failed()) this.pageTitle.set(recordStateTitle(kind, state));
-      // "Form: Data Processing Extended" for a Task Type or a Step.
-      else if (kind && name) this.pageTitle.set(shortTitleText(`Form: ${name}`));
       // The Asset Type and Custom Fields designers name the record too (#588): "Relativity Workspace: Fields", "Matter custom fields" (the owner's own name).
       else if (name && this.ownerLabel() === 'Asset Type')
         this.pageTitle.set(shortTitleText(`${name}: Fields`));
       else if (name && this.ownerLabel() === 'Object') this.pageTitle.set(shortTitleText(name));
+      // "Form: Data Processing Extended" for a Task Type or a Step.
+      else if (kind && name) this.pageTitle.set(shortTitleText(`Form: ${name}`));
     });
     effect(() => {
       const id = this.ownerId();

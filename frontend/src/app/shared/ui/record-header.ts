@@ -51,6 +51,8 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   workflow: { label: 'Workflows', link: '/admin/workflows' },
   workflowVersion: { label: 'Workflows', link: '/admin/workflows' },
   step: { label: 'Workflow Steps', link: '/admin/steps' },
+  assetType: { label: 'Asset Types', link: '/admin/asset-types' },
+  customField: { label: 'Custom Fields', link: '/admin/custom-fields' },
 };
 const LIST_PATHS = ['/clients', '/matters', '/projects'];
 

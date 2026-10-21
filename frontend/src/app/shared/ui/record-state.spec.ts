@@ -63,6 +63,8 @@ describe('Administration record kinds (#353)', () => {
       ['workflow', 'workflow', 'Workflow'],
       ['workflowVersion', 'workflow version', 'Workflow version'],
       ['step', 'step', 'Step'],
+      ['assetType', 'asset type', 'Asset type'],
+      ['customField', 'object', 'Object'],
     ];
     for (const [kind, noun, name] of nouns) {
       expect(recordStateText(kind, 'notFound')).toBe(`We couldn't find that ${noun}.`);
@@ -104,6 +106,25 @@ describe('mf-record-state', () => {
     expect(crumbs).toEqual(['Administration', 'Task Types', 'Workflows', 'Version']);
     expect(el.textContent).not.toContain('99999');
     expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/workflows');
+  });
+
+  it('names the Asset Types and Custom Fields pages in the crumb and links back to them (#541)', async () => {
+    const { el, host, settle } = await render(['AssetType.Manage', 'CustomField.Manage']);
+    host.kind.set('assetType');
+    await settle();
+    const crumbs = () =>
+      Array.from(el.querySelectorAll('nav li')).map((li) => li.textContent!.trim());
+    expect(crumbs()).toEqual(['Administration', 'Asset Types', 'Asset type']);
+    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that asset type.");
+    expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/asset-types');
+    expect(el.querySelector('[data-back-link]')!.textContent).toContain('Go to Asset Types');
+
+    host.kind.set('customField');
+    await settle();
+    expect(crumbs()).toEqual(['Administration', 'Custom Fields', 'Object']);
+    expect(el.querySelector('h1')!.textContent).toBe("We couldn't find that object.");
+    expect(el.querySelector('[data-back-link]')!.getAttribute('href')).toBe('/admin/custom-fields');
+    expect(el.textContent).not.toContain('99999');
   });
 
   it('shows the not-found text, the crumb and a link to the list, without Retry', async () => {

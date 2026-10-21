@@ -1,5 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, firstValueFrom, from } from 'rxjs';
+import { Observable, firstValueFrom, from, throwError } from 'rxjs';
 import type { DesignerDefinition, DesignerField, FormOption } from 'form-engine';
 import {
   AssetTypesClient,
@@ -11,6 +12,7 @@ import {
   FormVersionSummary as ServerSummary,
   FormsClient,
 } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
 import {
   FormDesignerApi,
   FormOwner,
@@ -24,6 +26,12 @@ const STATUS: Record<ServerStatus, FormVersionStatus> = {
   [ServerStatus.Published]: 'PUBLISHED',
   [ServerStatus.Retired]: 'RETIRED',
 };
+
+/** The answer for an address that names no record: the designer shows its "We couldn't find that ..." state (#541). */
+export function notFoundError(message: string): ApiError {
+  const response = new HttpErrorResponse({ status: 404, statusText: 'Not Found' });
+  return new ApiError(404, 'NOT_FOUND', message, undefined, response);
+}
 
 const present = <T>(value: T | null | undefined): T | undefined => value ?? undefined;
 
@@ -94,6 +102,10 @@ export class AssetTypeFormDesignerApi extends FormDesignerApi {
   private readonly filterable = new Map<number, Set<string>>();
 
   override getOwner(ownerId: string): Observable<FormOwner> {
+    // `/admin/asset-types/abc/form` names no asset type: the same 404 as an id that does not exist.
+    if (!/^\d+$/.test(ownerId)) {
+      return throwError(() => notFoundError(`There is no asset type '${ownerId}'.`));
+    }
     return from(
       firstValueFrom(this.types.getAssetType(Number(ownerId))).then((t) => ({
         id: ownerId,
