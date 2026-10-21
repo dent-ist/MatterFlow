@@ -7,24 +7,28 @@ using Microsoft.AspNetCore.Mvc;
 namespace MatterFlow.Identity.Api;
 
 /// <summary>
-/// Roles, role-permission assignment and the permission catalog (UX S12). Reading roles and the catalog needs <c>User.View</c>
-/// (the user drawer lists roles); creating, editing and deleting needs <c>Role.Manage</c>.
+/// Roles, role-permission assignment and the permission catalog (UX S12). Reading roles and the catalog needs <c>User.View</c> (the user
+/// drawer lists roles) or <c>Role.Manage</c> (each administration permission is enough to read what it manages, so the Roles tab works for
+/// a person who holds only that one; there is no <c>Role.View</c>); creating, editing and deleting needs <c>Role.Manage</c>.
 /// </summary>
 [ApiController]
 [Route("api/v1")]
 [Produces("application/json")]
 public class RolesController(RoleAdministration roles) : ControllerBase
 {
+    /// <summary>Who may read roles and the catalog: the users screens (<c>User.View</c>) and the role editor (<c>Role.Manage</c>).</summary>
+    internal const string ReadAccess = Permissions.User.View + "|" + Permissions.Role.Manage;
+
     /// <summary>Lists roles with member and permission counts (System Admin first).</summary>
     [HttpGet("roles", Name = "ListRoles")]
-    [RequirePermission(Permissions.User.View)]
+    [RequirePermission(ReadAccess)]
     [ProducesResponseType<RoleSummaryDto[]>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<RoleSummaryDto>>> List(CancellationToken cancellationToken) =>
         Ok(await roles.ListAsync(cancellationToken));
 
     /// <summary>Gets one role with its permission codes.</summary>
     [HttpGet("roles/{roleId:int}", Name = "GetRole")]
-    [RequirePermission(Permissions.User.View)]
+    [RequirePermission(ReadAccess)]
     [ProducesResponseType<RoleDetailDto>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Get(int roleId, CancellationToken cancellationToken) =>
         this.ToActionResult(await roles.GetAsync(roleId, cancellationToken));
@@ -57,7 +61,7 @@ public class RolesController(RoleAdministration roles) : ControllerBase
 
     /// <summary>The permission catalog grouped for the role editor.</summary>
     [HttpGet("permissions", Name = "ListPermissions")]
-    [RequirePermission(Permissions.User.View)]
+    [RequirePermission(ReadAccess)]
     [ProducesResponseType<PermissionGroupDto[]>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<PermissionGroupDto>>> Catalog(CancellationToken cancellationToken) =>
         Ok(await roles.CatalogAsync(cancellationToken));

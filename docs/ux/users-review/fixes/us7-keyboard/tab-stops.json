@@ -7,7 +7,7 @@
     "stopsPerPageOf25": 75
   },
   "after": {
-    "stopsBeforeFirstRowWithoutSkipLink": 29,
+    "stopsBeforeFirstRowWithoutSkipLink": 30,
     "stopsBeforeFirstRowWithSkipLink": 1,
     "stopsPerRow": 3,
     "stopsPerRowWithoutPodAssignment": 2,
