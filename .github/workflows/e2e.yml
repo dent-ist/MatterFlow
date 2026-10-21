@@ -9,7 +9,7 @@ name: e2e
 on:
   workflow_dispatch:
   schedule:
-    - cron: "43 3 * * *" # 03:43 UTC daily
+    - cron: "43 3 * * 1" # Mondays 03:43 UTC (weekly keeps the free Actions minutes; run on demand before a release)
   pull_request:
     types: [labeled, synchronize, reopened]
 

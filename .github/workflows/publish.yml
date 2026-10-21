@@ -3,8 +3,6 @@ name: publish
 # Builds the deployable package (API publish output with the Angular build in wwwroot, web.config and the settings template) and keeps it as
 # a workflow artifact. Runs on every push to dev and on demand. Deployment itself is manual (docs/runbook.md sections 5 and 7).
 on:
-  push:
-    branches: [dev]
   workflow_dispatch:
 
 concurrency:

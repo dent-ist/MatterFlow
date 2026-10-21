@@ -3,7 +3,9 @@ name: ci
 on:
   push:
     branches: [dev]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 
 # A newer push to the same branch / PR supersedes the run in progress.
 concurrency:

@@ -2,7 +2,7 @@ name: nightly
 
 on:
   schedule:
-    - cron: "17 3 * * *" # 03:17 UTC daily (runs against the default branch)
+    - cron: "17 3 * * 1" # Mondays 03:17 UTC (weekly keeps the free Actions minutes; runs against the default branch)
   workflow_dispatch:
 
 concurrency:

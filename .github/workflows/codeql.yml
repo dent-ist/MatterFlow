@@ -1,8 +1,6 @@
 name: codeql
 
 on:
-  push:
-    branches: [dev]
   schedule:
     - cron: "41 4 * * 1" # Mondays 04:41 UTC
   workflow_dispatch:
