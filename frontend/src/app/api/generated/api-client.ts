@@ -11567,6 +11567,8 @@ export interface AssetListItem {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+    linkedTaskCount?: number | undefined;
+    openLinkedTaskCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -11601,6 +11603,8 @@ export interface AssetResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+    linkedTaskCount?: number | undefined;
+    openLinkedTaskCount?: number | undefined;
 
     [key: string]: any;
 }

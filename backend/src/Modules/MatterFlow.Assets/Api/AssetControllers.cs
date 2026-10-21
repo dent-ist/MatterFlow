@@ -97,7 +97,7 @@ public class AssetsController(AssetService assets, IAssetDirectory directory, IE
     /// Lists Assets, usually of one Matter (<c>matterId</c>). <c>q</c> searches the display name, the Asset Type name and the external
     /// reference. The column filters <c>name</c>, <c>externalReference</c> (fragments of that column only), <c>matter</c> (fragment of the Matter
     /// reference, the typed pair such as <c>343-12</c>, or the Matter name) and <c>assetTypeId</c> (repeatable: any of the given Asset Types) combine with AND. Sort: displayName (default),
-    /// assetType, createdAt.
+    /// assetType, createdAt, matter (the Matter reference, then the name) and linkedTaskCount (the number of linked Tasks; a constant without <c>Task.View</c>). The counts <c>linkedTaskCount</c> and <c>openLinkedTaskCount</c> are null without <c>Task.View</c>.
     /// </summary>
     [HttpGet(Name = "ListAssets")]
     [Authorize(Policy = AssetPolicies.AssetView)]

@@ -1,9 +1,12 @@
 using System.Globalization;
 using System.Text.Json;
+using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
@@ -21,9 +24,12 @@ public sealed class AssetService(
     IMatterDirectory matters,
     IFormDefinitionResolver forms,
     IFormSubmissionValidator validator,
-    IFormValueStore valueStore)
+    IFormValueStore valueStore,
+    IPermissionChecker permissions,
+    IEnumerable<IAssetTaskLinkReader> taskLinks)
 {
-    public static readonly string[] SortFields = ["displayName", "assetType", "createdAt"];
+    /// <summary>Sort fields: <c>matter</c> is the Matter reference (then the name), <c>linkedTaskCount</c> the number of linked Tasks (constant without <c>Task.View</c>).</summary>
+    public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount"];
 
     /// <summary>Most Matters the Matter column filter expands to (they become an <c>IN</c> list).</summary>
     private const int MatterFilterLimit = 1000;
@@ -35,7 +41,14 @@ public sealed class AssetService(
         ["displayName"] = AssetSupport.By<AssetRow, string>(r => r.Asset.DisplayName),
         ["assetType"] = AssetSupport.By<AssetRow, string>(r => r.AssetTypeName),
         ["createdAt"] = AssetSupport.By<AssetRow, DateTime>(r => r.Asset.CreatedAtUtc),
+        ["matter"] = AssetSupport.By<AssetRow, string>(r => r.MatterRef),
+        ["linkedTaskCount"] = AssetSupport.By<AssetRow, int>(r => r.Linked),
     };
+
+    private IAssetTaskLinkReader? LinkReader => taskLinks.FirstOrDefault();
+
+    /// <summary>Link counts are Task data: only for a person with <c>Task.View</c>, and only when the Task module is there.</summary>
+    private bool CanCountTasks => permissions.Has(Permissions.Task.View) && LinkReader is not null;
 
     public async Task<Result<PagedResult<AssetListItem>>> ListAsync(AssetListQuery query, CancellationToken ct)
     {
@@ -66,10 +79,38 @@ public sealed class AssetService(
         }
 
         var total = await rows.CountAsync(ct);
-        var items = await AssetSupport.ApplySort(rows, sort.Count == 0 ? [new SortField("displayName", false)] : sort, Orderings, r => r.Asset.Id)
+
+        // The Matter and count sorts need their data inside the statement (a join on the Matter references, one grouped left join on the link
+        // counts); without them the plain rows are used. Without Task.View the count sort is a constant, so the order falls back to the tie-break.
+        var order = WithMatterThenName(sort.Count == 0 ? [new SortField("displayName", false)] : sort);
+        var ordered = rows;
+        if (order.Any(f => f.Field == "matter"))
+        {
+            ordered = from r in ordered
+                      join m in matters.SortKeys() on r.Asset.MatterId equals m.MatterId
+                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = m.MatterRef, Linked = r.Linked, Open = r.Open };
+        }
+
+        var countsJoined = order.Any(f => f.Field == "linkedTaskCount") && CanCountTasks;
+        if (countsJoined)
+        {
+            ordered = from r in ordered
+                      join g in LinkReader!.Grouped() on r.Asset.Id equals g.AssetId into joined
+                      from g in joined.DefaultIfEmpty()
+                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = r.MatterRef, Linked = (int?)g.Linked ?? 0, Open = (int?)g.Open ?? 0 };
+        }
+
+        var items = await AssetSupport.ApplySort(ordered, order, Orderings, r => r.Asset.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
             .ToListAsync(ct);
+
+        // One grouped statement for the whole page, never one per row (none at all when the count sort already brought the counts with the page).
+        IReadOnlyDictionary<int, AssetTaskCounts>? counts = !CanCountTasks
+            ? null
+            : countsJoined
+                ? items.ToDictionary(r => r.Asset.Id, r => new AssetTaskCounts(r.Linked, r.Open))
+                : await LinkReader!.CountForAssetsAsync([.. items.Select(r => r.Asset.Id)], ct);
 
         var matterCache = new Dictionary<int, MatterSummary?>();
         var list = new List<AssetListItem>(items.Count);
@@ -89,7 +130,9 @@ public sealed class AssetService(
                 row.Asset.IsActive,
                 AssetSupport.Encode(row.Asset.RowVersion),
                 AssetSupport.Utc(row.Asset.CreatedAtUtc),
-                AssetSupport.Utc(row.Asset.ModifiedAtUtc)));
+                AssetSupport.Utc(row.Asset.ModifiedAtUtc),
+                counts is null ? null : counts.GetValueOrDefault(row.Asset.Id)?.Linked ?? 0,
+                counts is null ? null : counts.GetValueOrDefault(row.Asset.Id)?.Open ?? 0));
         }
 
         return AssetSupport.Page(list, total, page);
@@ -333,6 +376,7 @@ public sealed class AssetService(
             ? await valueStore.GetAsync(FormValueOwnerKind.Asset, row.Asset.Id, existing, ct)
             : null;
         var published = await forms.GetPublishedVersionAsync(FormOwnerKind.AssetType, row.Asset.AssetTypeId, ct);
+        var counts = CanCountTasks ? (await LinkReader!.CountForAssetsAsync([row.Asset.Id], ct)).GetValueOrDefault(row.Asset.Id) : null;
 
         return new AssetResponse(
             row.Asset.Id,
@@ -352,8 +396,16 @@ public sealed class AssetService(
             dropped,
             AssetSupport.Encode(row.Asset.RowVersion),
             AssetSupport.Utc(row.Asset.CreatedAtUtc),
-            AssetSupport.Utc(row.Asset.ModifiedAtUtc));
+            AssetSupport.Utc(row.Asset.ModifiedAtUtc),
+            CanCountTasks ? counts?.Linked ?? 0 : null,
+            CanCountTasks ? counts?.Open ?? 0 : null);
     }
+
+    /// <summary>The Matter sort is "Matter reference, then display name": the name is the last tie-break before the id unless the person asked for it elsewhere.</summary>
+    private static IReadOnlyList<SortField> WithMatterThenName(IReadOnlyList<SortField> sort) =>
+        sort.Any(f => f.Field == "matter") && !sort.Any(f => f.Field == "displayName")
+            ? [.. sort, new SortField("displayName", false)]
+            : sort;
 
     /// <summary>
     /// Validates the submitted values against the type's published form before anything is written. Returns the version to store them
@@ -480,7 +532,7 @@ public sealed class AssetService(
     private IQueryable<AssetRow> Rows() =>
         from a in db.Set<Asset>().AsNoTracking()
         join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
-        select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive };
+        select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive, MatterRef = string.Empty, Linked = 0, Open = 0 };
 
     private async Task<MatterSummary?> MatterAsync(Dictionary<int, MatterSummary?> cache, int matterId, CancellationToken ct)
     {
@@ -502,5 +554,14 @@ public sealed class AssetService(
         public string AssetTypeName { get; init; } = string.Empty;
 
         public bool AssetTypeIsActive { get; init; }
+
+        /// <summary>The Matter reference; filled only when the list is sorted by Matter.</summary>
+        public string MatterRef { get; init; } = string.Empty;
+
+        /// <summary>The number of linked Tasks; filled only when the list is sorted by it (and the viewer has Task.View).</summary>
+        public int Linked { get; init; }
+
+        /// <summary>Of those, the open ones; filled together with <see cref="Linked"/>.</summary>
+        public int Open { get; init; }
     }
 }

@@ -8634,6 +8634,20 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "linkedTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "openLinkedTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -8774,6 +8788,20 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "linkedTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "openLinkedTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

@@ -12,6 +12,29 @@ namespace MatterFlow.WorkManagement.Application;
 /// </summary>
 internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog roles) : IAssetTaskLinkReader
 {
+    /// <summary>The one definition of the link counts: all linked Tasks and the open ones (New, In Progress, On Hold), grouped by Asset.</summary>
+    public IQueryable<AssetTaskCountRow> Grouped() =>
+        from l in db.Set<TaskAsset>().AsNoTracking()
+        join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+        group t by l.AssetId into g
+        select new AssetTaskCountRow
+        {
+            AssetId = g.Key,
+            Linked = g.Count(),
+            Open = g.Count(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold),
+        };
+
+    public async Task<IReadOnlyDictionary<int, AssetTaskCounts>> CountForAssetsAsync(IReadOnlyCollection<int> assetIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(assetIds);
+        if (assetIds.Count == 0)
+            return new Dictionary<int, AssetTaskCounts>();
+
+        var ids = assetIds.Distinct().ToList();
+        var rows = await Grouped().Where(r => ids.Contains(r.AssetId)).ToListAsync(cancellationToken);
+        return rows.ToDictionary(r => r.AssetId, r => new AssetTaskCounts(r.Linked, r.Open));
+    }
+
     public async Task<IReadOnlyList<AssetTaskLink>> ListForAssetAsync(int assetId, CancellationToken cancellationToken = default)
     {
         var rows = await (

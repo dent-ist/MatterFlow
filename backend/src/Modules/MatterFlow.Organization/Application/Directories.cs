@@ -7,6 +7,9 @@ namespace MatterFlow.Organization.Application;
 /// <summary>Implements the read-only lookups other modules use (<see cref="IMatterDirectory"/>).</summary>
 internal sealed class MatterDirectory(DbContext db) : IMatterDirectory
 {
+    public IQueryable<MatterSortKey> SortKeys() =>
+        db.Set<Matter>().AsNoTracking().Select(m => new MatterSortKey { MatterId = m.Id, MatterRef = m.MatterRef });
+
     public async Task<MatterSummary?> FindAsync(int matterId, CancellationToken cancellationToken = default)
     {
         var row = await Query().Where(r => r.Matter.Id == matterId).FirstOrDefaultAsync(cancellationToken);

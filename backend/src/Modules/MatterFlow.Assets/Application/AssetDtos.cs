@@ -166,6 +166,8 @@ public sealed class AssetLookupQuery
 /// <param name="RowVersion">Concurrency token (base64).</param>
 /// <param name="CreatedAtUtc">When the Asset was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Asset was last changed (UTC), if ever.</param>
+/// <param name="LinkedTaskCount">Every Task linked to the Asset. Null, not 0, when the viewer lacks <c>Task.View</c>; a 0 is a real 0.</param>
+/// <param name="OpenLinkedTaskCount">Of those, the Tasks that are New, In Progress or On Hold (the Task Queue's open states). Null without <c>Task.View</c>.</param>
 public sealed record AssetListItem(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -179,7 +181,9 @@ public sealed record AssetListItem(
     [property: Required] bool IsActive,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    int? LinkedTaskCount = null,
+    int? OpenLinkedTaskCount = null);
 
 /// <summary>An Asset with its type-specific values.</summary>
 /// <param name="AssetId">Internal id.</param>
@@ -200,6 +204,8 @@ public sealed record AssetListItem(
 /// <param name="RowVersion">Concurrency token (base64).</param>
 /// <param name="CreatedAtUtc">When the Asset was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Asset was last changed (UTC), if ever.</param>
+/// <param name="LinkedTaskCount">Every Task linked to the Asset. Null, not 0, when the viewer lacks <c>Task.View</c>; a 0 is a real 0.</param>
+/// <param name="OpenLinkedTaskCount">Of those, the Tasks that are New, In Progress or On Hold (the Task Queue's open states). Null without <c>Task.View</c>.</param>
 public sealed record AssetResponse(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -218,7 +224,9 @@ public sealed record AssetResponse(
     [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    int? LinkedTaskCount = null,
+    int? OpenLinkedTaskCount = null);
 
 /// <summary>An Asset offered by a picker.</summary>
 /// <param name="AssetId">Internal id.</param>

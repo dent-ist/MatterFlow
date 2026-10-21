@@ -24,9 +24,22 @@ public sealed record MatterSummary(
 /// <summary>A Project as other modules see it.</summary>
 public sealed record ProjectSummary(int ProjectId, int MatterId, string Name, bool IsActive);
 
+/// <summary>The Matter reference a list sorts by (see <see cref="IMatterDirectory.SortKeys"/>). A class with initialisers, not a positional record, so a query can join it.</summary>
+public sealed class MatterSortKey
+{
+    /// <summary>The Matter id.</summary>
+    public int MatterId { get; init; }
+
+    /// <summary>The padded reference, <c>00343-00012</c>, which sorts as text in the order a person reads it.</summary>
+    public string MatterRef { get; init; } = string.Empty;
+}
+
 /// <summary>Read-only lookups of Matters for other modules (Tasks, Assets, Search).</summary>
 public interface IMatterDirectory
 {
+    /// <summary>The Matter reference of every Matter, as a query a list of another module can join to sort by it (the Assets list sorts by Matter).</summary>
+    IQueryable<MatterSortKey> SortKeys();
+
     /// <summary>The Matter with the given id, or null.</summary>
     Task<MatterSummary?> FindAsync(int matterId, CancellationToken cancellationToken = default);
 
