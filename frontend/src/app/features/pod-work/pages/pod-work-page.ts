@@ -27,19 +27,30 @@ import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
-import { OPEN_STATUSES, QueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import {
+  OPEN_STATUSES,
+  QueueState,
+  dateDaysAgo,
+  queueArgs,
+} from '../../../shared/work-queue/queue-filters';
 import { PodOption } from '../../../shared/work-queue/pod-options';
 import { QueuePageBase } from '../../../shared/work-queue/queue-page';
 import { WorkViewControls } from '../../../shared/work-queue/work-view-controls';
 import { PhoneSort } from '../../../shared/work-queue/phone-sort';
 import { WorkList } from '../../../shared/work-queue/work-list';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { WorkTab, WorkTabs } from '../../../shared/work-queue/work-tabs';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { PodPickerList, memberCountText } from '../ui/pod-picker-list';
+import {
+  PodStripKey,
+  PodWorkStrip,
+  activePodStripKey,
+  podStripPatch,
+  withoutStripFilters,
+} from '../ui/pod-work-strip';
 
-type TabKey = 'queue' | 'members' | 'attention' | 'all';
+type TabKey = 'queue' | 'members' | 'all';
 
 /**
  * Pod Work (UX S04, ticket 50): the open work of one Pod. A filtered view, not a security boundary: everyone with Task.View can
@@ -58,7 +69,7 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
     PhoneSort,
     RouterLink,
     WorkList,
-    WorkStrip,
+    PodWorkStrip,
     WorkTabs,
     WorkViewControls,
   ],
@@ -174,7 +185,11 @@ type TabKey = 'queue' | 'members' | 'attention' | 'all';
           <mf-pod-picker-list [pods]="pods()" (chosen)="chooseFromList($event)" />
         }
       } @else {
-        <mf-work-strip label="Pod summary" [items]="summaryItems()" />
+        <mf-pod-work-strip
+          [summary]="data()?.summary ?? null"
+          [active]="activeStrip()"
+          (pick)="pickStrip($event)"
+        />
 
         <div class="wp-tabrow" data-tab-row>
           <mf-work-tabs
@@ -324,7 +339,9 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
 
   protected readonly tab = computed<TabKey>(() => {
     const view = this.state().view;
-    return view === 'members' || view === 'attention' || view === 'all' ? view : 'queue';
+    if (view === 'members') return 'members';
+    // The retired Overdue and on hold tab (`view=attention`) opens All open (the page then adds the Overdue filter to the address).
+    return view === 'all' || view === 'attention' ? 'all' : 'queue';
   });
 
   private readonly defs = computed(() => {
@@ -457,26 +474,22 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       : base;
   }
 
-  /** The Pod's header numbers (counts equal the tab totals, UAT-S04-6): facts about the work, never a ranking. */
-  protected readonly summaryItems = computed<WorkStripItem[]>(() => {
-    const sum = this.data()?.summary;
-    return [
-      { key: 'unassigned', label: 'Unassigned', count: sum?.unassignedToPerson ?? null },
-      { key: 'assigned', label: 'Assigned', count: sum?.assigned ?? null },
-      { key: 'overdue', label: 'Overdue', count: sum?.overdue ?? null, alert: true },
-      { key: 'onHold', label: 'On Hold', count: sum?.onHold ?? null },
-    ];
-  });
-
+  /** Tabs (W6, #562): Unassigned (tasks), By member (people with open work) and All open (tasks); the strip opens the rest. */
   protected readonly tabs = computed<WorkTab[]>(() => {
     const counts = this.data()?.counts;
     return [
       { key: 'queue', label: 'Unassigned', count: counts?.queue ?? null },
-      { key: 'members', label: 'By member', count: counts?.members ?? null },
-      { key: 'attention', label: 'Overdue and on hold', count: counts?.attention ?? null },
-      { key: 'all', label: 'All pod tasks', count: counts?.all ?? null },
+      { key: 'members', label: 'By member', count: counts?.membersWithWork ?? null },
+      { key: 'all', label: 'All open', count: counts?.all ?? null },
     ];
   });
+
+  /** The strip item whose filter is on (All open tab only), so a second click can switch it off. */
+  protected readonly activeStrip = computed<PodStripKey | null>(() =>
+    this.tab() === 'all'
+      ? activePodStripKey(this.state().filters, dateDaysAgo(this.clock.now(), 0, this.zone))
+      : null,
+  );
 
   protected override columnTab(): string {
     return this.tab();
@@ -505,8 +518,6 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
         return `Nothing waiting in ${name}.`;
       case 'members':
         return `Nobody in ${name} has open work.`;
-      case 'attention':
-        return `Nothing overdue or on hold in ${name}.`;
       default:
         return `No open tasks in ${name}.`;
     }
@@ -514,6 +525,8 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
 
   /** The remembered Pod is applied once, when the URL names none. */
   private pendingRemembered = false;
+  /** An old `view=attention` address is replaced once by All open with the Overdue filter (#562). */
+  private pendingAttention = false;
 
   private readonly pageTitle = inject(PageTitle);
   private readonly injector = inject(Injector);
@@ -526,16 +539,30 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
     const remembered = loadLastPod(this.userId());
+    let next = this.state();
+    let replace = false;
     if (!keys.includes('podId') && remembered !== null) {
       this.pendingRemembered = true;
-      this.navigate({ ...this.state(), podId: remembered }, true);
+      next = { ...next, podId: remembered };
+      replace = true;
     }
+    if (this.route.snapshot?.queryParamMap?.get('view') === 'attention') {
+      // The Overdue and on hold tab is retired: its address opens All open with the Overdue filter (the strip's Overdue item, #561).
+      this.pendingAttention = true;
+      next = { ...next, view: 'all', page: 1, filters: { ...next.filters, overdue: true } };
+      replace = true;
+    }
+    if (replace) this.navigate(next, true);
   }
 
   protected override shouldLoad(params: ParamMap): boolean {
     if (this.pendingRemembered) {
       if (!params.has('podId')) return false;
       this.pendingRemembered = false;
+    }
+    if (this.pendingAttention) {
+      if (params.get('view') === 'attention') return false;
+      this.pendingAttention = false;
     }
     return true;
   }
@@ -606,6 +633,20 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
       dir: null,
       filters: withoutFilters(this.state().filters, ['assignee']),
     });
+  }
+
+  /**
+   * A strip item applies its filter on All open (switching to it, keeping the pod) and replaces any other strip item; the pressed one
+   * switches off. The address carries the filter, so Back and bookmarks work (#561).
+   */
+  protected pickStrip(key: PodStripKey): void {
+    const s = this.state();
+    const base = withoutStripFilters(s.filters);
+    const patch =
+      key === this.activeStrip()
+        ? {}
+        : podStripPatch(key, dateDaysAgo(this.clock.now(), 0, this.zone));
+    this.navigate({ ...s, view: 'all', page: 1, filters: { ...base, ...patch } });
   }
 
   protected toggleMember(userId: number): void {

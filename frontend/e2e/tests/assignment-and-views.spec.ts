@@ -196,8 +196,8 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     await podWork.open();
 
     await podWork.choosePod(podA.name);
-    await podWork.tab(/^All pod tasks/).click();
-    await expect(podWork.tab(/^All pod tasks/)).toHaveAttribute('aria-selected', 'true');
+    await podWork.tab(/^All open/).click();
+    await expect(podWork.tab(/^All open/)).toHaveAttribute('aria-selected', 'true');
     await podWork.expectListed(inA.title, colleague.title);
     await podWork.expectNotListed(inB.title, noPod.title, pooled.title);
 

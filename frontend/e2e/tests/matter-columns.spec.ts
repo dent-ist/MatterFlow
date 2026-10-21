@@ -203,7 +203,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     const pod = new PodWorkPage(page);
     await pod.open();
     await pod.choosePod(String(w.pod['name']));
-    await pod.tab(/^All pod tasks/).click();
+    await pod.tab(/^All open/).click();
     await expect(page.locator('[data-task]').first()).toBeVisible();
     expect(await headers(page)).toEqual([
       'Ref',
@@ -229,7 +229,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
       await axeClean(page, `My Work ${wd}`);
       await pod.open();
       await pod.choosePod(String(w.pod['name']));
-      await pod.tab(/^All pod tasks/).click();
+      await pod.tab(/^All open/).click();
       await expect(page.locator('[data-task]').first()).toBeVisible();
       expect(await noPageScroll(page), `Pod Work no page scroll at ${wd}`).toBe(true);
       await axeClean(page, `Pod Work ${wd}`);

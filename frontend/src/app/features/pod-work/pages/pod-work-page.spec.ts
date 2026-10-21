@@ -38,8 +38,9 @@ function podPage(rows: TaskQueueRow[], extra: Record<string, unknown> = {}) {
     view: 'queue',
     pod: { podId: 5, name: 'Pod A', isActive: true },
     pods: PODS,
-    summary: { unassignedToPerson: 6, assigned: 31, overdue: 3, onHold: 4 },
-    counts: { queue: 6, members: 31, attention: 7, all: 37 },
+    summary: { unassignedToPerson: 6, assigned: 31, overdue: 3, onHold: 4, dueToday: 2, asap: 1 },
+    counts: { queue: 6, members: 31, attention: 7, all: 37, membersWithWork: 7 },
+    unassigned: 6,
     memberLoads: [
       {
         userId: 9,
@@ -142,12 +143,10 @@ describe('PodWorkPage', () => {
   afterEach(() => localStorage.clear());
 
   it('names the tab in the browser title, the table caption and the live region (M8)', async () => {
-    const el = await open('/pods/work?view=attention');
-    expect(document.title).toBe('Pod Work: Pod A: Overdue and on hold - MatterFlow');
-    expect(el.querySelector('caption')!.textContent!.trim()).toMatch(
-      /^Pod Work: Overdue and on hold/,
-    );
-    expect(el.querySelector('.wl-sr')!.textContent).toContain('Overdue and on hold: ');
+    const el = await open('/pods/work?view=all');
+    expect(document.title).toBe('Pod Work: Pod A: All open - MatterFlow');
+    expect(el.querySelector('caption')!.textContent!.trim()).toMatch(/^Pod Work: All open/);
+    expect(el.querySelector('.wl-sr')!.textContent).toContain('All open: ');
   });
 
   it('asks for the default Pod (the server picks the primary one) and the Pod queue', async () => {
@@ -158,23 +157,106 @@ describe('PodWorkPage', () => {
     expect(tab(el, 'Unassigned').getAttribute('aria-selected')).toBe('true');
   });
 
-  it('shows the Pod summary and a count on every tab', async () => {
+  it('shows the strip (Overdue, Due today, ASAP, On hold) and three tabs with counts (W5, W6, #561, #562)', async () => {
     const el = await open('/pods/work?x=1');
-    const summary = el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
-    expect(summary).toContain('Unassigned 6');
-    expect(summary).toContain('Assigned 31');
-    expect(summary).toContain('Overdue 3');
-    expect(summary).toContain('On Hold 4');
+    const strip = el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
+    expect(strip).toContain('Overdue 3');
+    expect(strip).toContain('Due today 2');
+    expect(strip).toContain('ASAP 1');
+    expect(strip).toContain('On hold 4');
+    expect(strip).not.toContain('Assigned');
+    expect(strip).not.toContain('Unassigned');
 
     const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) =>
       t.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual([
-      'Unassigned (6)',
-      'By member (31)',
-      'Overdue and on hold (7)',
-      'All pod tasks (37)',
-    ]);
+    // By member counts the people with open work, not their tasks; Overdue and on hold is the strip's now.
+    expect(tabs).toEqual(['Unassigned (6)', 'By member (7)', 'All open (37)']);
+  });
+
+  describe('the strip is four filters on All open (W5, #561)', () => {
+    const item = (el: HTMLElement, key: string) =>
+      el.querySelector<HTMLButtonElement>(`[data-strip-item="${key}"]`)!;
+
+    it('is a toolbar of toggle buttons, one per item, for a read-only person too', async () => {
+      const el = await open('/pods/work?podId=5', { permissions: ['Task.View', 'Pod.View'] });
+      const keys = Array.from(el.querySelectorAll('[data-strip-item]')).map((e) =>
+        e.getAttribute('data-strip-item'),
+      );
+      expect(keys).toEqual(['overdue', 'dueToday', 'asap', 'onHold']);
+      for (const key of keys) expect(item(el, key!).getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('Overdue opens All open with the Overdue filter, keeps the pod, is pressed, and a second click switches it off', async () => {
+      const el = await open('/pods/work?podId=5');
+      item(el, 'overdue').click();
+      await settle();
+      expect(query()).toMatchObject({ podId: '5', view: 'all', overdue: 'true' });
+      expect(lastArgs()[ARG.view]).toBe('all');
+      expect(item(el, 'overdue').getAttribute('aria-pressed')).toBe('true');
+      expect(tab(el, 'All open').getAttribute('aria-selected')).toBe('true');
+
+      item(el, 'overdue').click();
+      await settle();
+      expect(query()['overdue']).toBeUndefined();
+      expect(query()['view']).toBe('all');
+      expect(item(el, 'overdue').getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it("Due today is the due range of today (the viewer's day) and not overdue; ASAP and On hold are their own filters", async () => {
+      const el = await open('/pods/work?podId=5');
+      item(el, 'dueToday').click();
+      await settle();
+      expect(query()).toMatchObject({
+        dueFrom: '2026-10-14',
+        dueTo: '2026-10-14',
+        overdue: 'false',
+      });
+      expect(item(el, 'dueToday').getAttribute('aria-pressed')).toBe('true');
+
+      // One item at a time: another replaces the first.
+      item(el, 'asap').click();
+      await settle();
+      expect(query()['asap']).toBe('true');
+      expect(query()['dueFrom']).toBeUndefined();
+      expect(query()['overdue']).toBeUndefined();
+      expect(item(el, 'dueToday').getAttribute('aria-pressed')).toBe('false');
+
+      item(el, 'onHold').click();
+      await settle();
+      expect(query()['status']).toBe('ON_HOLD');
+      expect(query()['asap']).toBeUndefined();
+      expect(item(el, 'onHold').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it("the counts are the pod's and never follow the grid filters", async () => {
+      const el = await open('/pods/work?podId=5');
+      const counts = () => el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
+      const before = counts();
+      // A grid filter changes the rows asked for, never the summary numbers.
+      getPodWork.mockReturnValue(
+        of(
+          podPage([], {
+            counts: { queue: 0, members: 0, attention: 0, all: 0, membersWithWork: 0 },
+          }),
+        ),
+      );
+      await router().navigateByUrl('/pods/work?podId=5&view=all&q=zzz');
+      await settle();
+      expect(counts()).toBe(before);
+    });
+  });
+
+  it('the old Overdue and on hold address opens All open with the Overdue filter, replacing the address (W6, BUG-7, #562)', async () => {
+    const el = await open('/pods/work?podId=5&view=attention');
+    expect(query()).toMatchObject({ podId: '5', view: 'all', overdue: 'true' });
+    expect(tab(el, 'All open').getAttribute('aria-selected')).toBe('true');
+    expect(el.querySelector('[data-strip-item="overdue"]')!.getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    // Never loaded as the retired view: the one request is for All open.
+    expect(getPodWork).toHaveBeenCalledTimes(1);
+    expect(lastArgs()[ARG.view]).toBe('all');
   });
 
   it('lists my Pods first, marks the primary one, then the other Pods', async () => {
@@ -226,12 +308,12 @@ describe('PodWorkPage', () => {
 
   it('switches tabs through the URL and drops the member selection', async () => {
     const el = await open('/pods/work?podId=5&assignee=9');
-    tab(el, 'Overdue and on hold').click();
+    tab(el, 'All open').click();
     await settle();
 
-    expect(query()['view']).toBe('attention');
+    expect(query()['view']).toBe('all');
     expect(query()['assignee']).toBeUndefined();
-    expect(lastArgs()[ARG.view]).toBe('attention');
+    expect(lastArgs()[ARG.view]).toBe('all');
     expect(lastArgs()[ARG.podId]).toBe(5);
   });
 
@@ -420,28 +502,32 @@ describe('PodWorkPage', () => {
     expect(link(el)).toBeNull();
   });
 
-  it('the summary strip follows an assignment, with the same numbers as the tabs (BUG-3, #552)', async () => {
+  it("the tab counts follow an assignment, with the same numbers as the server's (BUG-3, #552)", async () => {
     const el = await open('/pods/work?podId=5');
-    const strip = () => el.querySelector('[data-strip]')!.textContent!.replace(/\s+/g, ' ');
-    expect(strip()).toContain('Unassigned 6');
-    expect(strip()).toContain('Assigned 31');
+    expect(tab(el, 'Unassigned').textContent).toContain('(6)');
+    expect(tab(el, 'By member').textContent).toContain('(7)');
 
-    // The server's answer after the assignment: one fewer unassigned, one more assigned.
+    // The server's answer after the assignment: one fewer unassigned task, one more person holding work.
     getPodWork.mockReturnValue(
       of(
         podPage([aRow({ assignedUser: undefined, status: 'NEW' })], {
-          summary: { unassignedToPerson: 5, assigned: 32, overdue: 3, onHold: 4 },
-          counts: { queue: 5, members: 32, attention: 7, all: 37 },
+          summary: {
+            unassignedToPerson: 5,
+            assigned: 32,
+            overdue: 3,
+            onHold: 4,
+            dueToday: 2,
+            asap: 1,
+          },
+          counts: { queue: 5, members: 32, attention: 7, all: 37, membersWithWork: 8 },
         }),
       ),
     );
     link(el)!.click();
     await settle();
 
-    expect(strip()).toContain('Unassigned 5');
-    expect(strip()).toContain('Assigned 32');
     expect(tab(el, 'Unassigned').textContent).toContain('(5)');
-    expect(tab(el, 'By member').textContent).toContain('(32)');
+    expect(tab(el, 'By member').textContent).toContain('(8)');
   });
 
   describe('header (BUG-1, #548)', () => {

@@ -103,7 +103,7 @@ const GRIDS: Grid[] = [
       const podWork = new PodWorkPage(page);
       await podWork.open();
       await podWork.choosePod(s.pod.name);
-      await podWork.tab(/^All pod tasks/).click();
+      await podWork.tab(/^All open/).click();
       await podWork.search(s.tag);
     },
   },
@@ -513,7 +513,7 @@ test.describe('Final verification (#240)', () => {
           const podWork = new PodWorkPage(p);
           await podWork.open();
           await podWork.choosePod(s.pod.name);
-          await podWork.tab(/^All pod tasks/).click();
+          await podWork.tab(/^All open/).click();
         },
         ready: '[data-task]',
       },

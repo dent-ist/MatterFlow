@@ -320,7 +320,7 @@ test.describe('Pod Work first release', () => {
           seen.push([what, await pageSideScroll(page)]);
         };
 
-        for (const view of ['queue', 'members', 'attention', 'all']) {
+        for (const view of ['queue', 'members', 'all']) {
           await page.goto(`/pods/work?podId=${fx.busy.podId}&view=${view}`);
           await expect(pw.tab(/./).first()).toBeVisible();
           await expect(
@@ -408,12 +408,12 @@ test.describe('Pod Work first release', () => {
       await page.goto(`/pods/work?podId=${pod.podId}`);
       await expect(pw.assignToMe(task.taskNumber)).toBeVisible();
       const before = await numbers(page);
-      expect(before.strip).toContain('Unassigned 2');
+      expect(before.tabs.join('|')).toContain('Unassigned (2)');
 
       await pw.assignToMe(task.taskNumber).click();
       // The row leaves after its 4-second grace; the numbers follow at once and must equal a reload.
-      await expect(page.locator('[data-strip]').first()).toContainText('Unassigned 1');
-      await expect(page.locator('[data-strip]').first()).toContainText('Assigned 1');
+      await expect(pw.tab(/Unassigned/)).toContainText('(1)');
+      await expect(pw.tab(/By member/)).toContainText('(1)');
       const after = await numbers(page);
       await page.reload();
       await expect(pw.tab(/Unassigned/)).toBeVisible();
@@ -430,9 +430,9 @@ test.describe('Pod Work first release', () => {
       });
       await page.reload();
       await pw.assignToMe(second.taskNumber).click();
-      await expect(page.locator('[data-strip]').first()).toContainText('Unassigned 1');
+      await expect(pw.tab(/Unassigned/)).toContainText('(1)');
       await page.getByRole('button', { name: 'Undo' }).click();
-      await expect(page.locator('[data-strip]').first()).toContainText('Unassigned 2');
+      await expect(pw.tab(/Unassigned/)).toContainText('(2)');
       const undone = await numbers(page);
       await page.reload();
       await expect(pw.tab(/Unassigned/)).toBeVisible();

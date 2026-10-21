@@ -50,6 +50,7 @@ export interface WorkStripItem {
       <ul
         class="strip"
         [class.seg]="segments()"
+        [class.row]="chipRow()"
         [attr.role]="roving() ? 'toolbar' : null"
         [attr.aria-orientation]="roving() ? 'horizontal' : null"
         [attr.aria-label]="label()"
@@ -220,6 +221,35 @@ export interface WorkStripItem {
       outline-offset: -2px;
       position: relative;
     }
+    /*
+     * Chip row (Pod Work, #563): below 640 px the items are one line of chips that scrolls inside the strip (never the page), each with a
+     * 44 px target. It replaces the 2x2 boxes of the rule below for a strip that asks for it; the other strips are unchanged.
+     */
+    @media (width < 640px) {
+      .strip.row {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: var(--mf-s2);
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: thin;
+      }
+      .strip.row li {
+        flex: none;
+      }
+      .strip.row .item {
+        width: auto;
+        min-height: 44px;
+        padding: 0 var(--mf-s3);
+        justify-content: center;
+        border: 1px solid var(--mf-border);
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .strip.row button.item.on {
+        border-color: var(--mf-primary);
+      }
+    }
     @media (width < 480px) {
       .strip.seg {
         display: flex;
@@ -275,6 +305,8 @@ export class WorkStrip {
   readonly interactive = input(false);
   /** Draws the items as one connected group of choices (single-select: the `active` one is filled) instead of loose chips (#581). Use with `interactive`. */
   readonly segments = input(false);
+  /** Below 640 px the items are one scrolling line of chips with 44 px targets instead of the 2x2 boxes (Pod Work, #563). */
+  readonly chipRow = input(false);
   readonly active = input<string | null>(null);
   /**
    * One Tab stop for the whole group, arrow keys move between the choices (a roving tabindex, as a toolbar): Left/Right, Home and End.

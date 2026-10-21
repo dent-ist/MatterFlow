@@ -176,7 +176,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
 
       await podWork.open();
       await podWork.choosePod(pod.name);
-      await podWork.tab(/^All pod tasks/).click();
+      await podWork.tab(/^All open/).click();
       await podWork.search(tag);
       await expect36(page, `Pod Work at ${width}`, active);
       await shot(page, `pod-work-compact-${width}x${height}`);
@@ -400,7 +400,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
       const podWork = new PodWorkPage(page);
       await podWork.open();
       await podWork.choosePod(pod.name);
-      await podWork.tab(/^All pod tasks/).click();
+      await podWork.tab(/^All open/).click();
       await expect(page.locator('[data-task]').filter({ hasText: tag })).toHaveCount(active);
       await axeClean(page, `Pod Work ${width}`);
     }
