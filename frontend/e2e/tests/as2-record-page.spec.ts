@@ -1,7 +1,8 @@
+import { TaskDetailPage } from '../pages/task-detail.page';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { failApi } from '../support/personas';
-import { SIZES, noHorizontalScroll, shot } from '../support/screens';
+import { SIZES, atEverySize, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
 
 /**
@@ -199,6 +200,106 @@ test.describe('Asset record page (WP-AS2)', () => {
     await page.goto(`/assets/${asset.assetId}?tab=tasks`);
     await page.locator('[data-tasks-tab] tbody a').first().click();
     await expect(page).toHaveURL(/\/tasks\/\d+/);
+  });
+
+  test('Details: the Asset and "<Type> fields (n)" sections; no schema request that must fail without Task.View; the matter link follows Matter.View', async ({
+    page,
+    seed,
+    admin,
+    personas,
+    asUser,
+  }) => {
+    const token = uid();
+    const world = await seed.world();
+    const type = await admin.post('/api/v1/asset-types', {
+      name: `Fields ${token}`,
+      description: null,
+      sortOrder: 6100,
+    });
+    const definition = await admin.get(
+      `/api/v1/forms/by-owner?ownerKind=AssetType&ownerId=${type.assetTypeId}`,
+    );
+    await seed.publishForm(definition.formDefinitionId, [
+      { key: 'workspace', label: 'Workspace id', control: 'TEXT', required: true },
+      { key: 'notes', label: 'Handling notes', control: 'TEXT' },
+    ]);
+    const asset = await admin.post('/api/v1/assets', {
+      matterId: world.matter.matterId,
+      assetTypeId: type.assetTypeId,
+      displayName: `Typed ${token}`,
+      externalReference: 'https://dms.example/folders/42',
+      description: 'First batch',
+      formValues: { workspace: 'WS-8841', notes: 'check later' },
+    });
+
+    // Admin: both sections, the values, the matter link; axe and no sideways scroll at four sizes.
+    await page.goto(`/assets/${asset.assetId}`);
+    await expect(page.locator('[data-section="asset"]')).toContainText('First batch');
+    await expect(page.locator('[data-type-fields-title]')).toContainText(
+      `Fields ${token} fields (2)`,
+    );
+    await expect(page.locator('[data-type-fields]')).toContainText('WS-8841');
+    await expect(page.locator('[data-details] [data-matter] a')).toHaveAttribute(
+      'href',
+      `/matters/${world.matter.matterId}`,
+    );
+    await atEverySize(page, 'as2-record-details-fields', async () => {
+      await expect(page.locator('[data-type-fields]')).toContainText('WS-8841');
+    });
+
+    // At 1366 the two sections sit side by side; at 768 they are one column.
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const a = (await page.locator('[data-section="asset"]').boundingBox())!;
+    const f = (await page.locator('[data-section="fields"]').boundingBox())!;
+    expect(f.x).toBeGreaterThan(a.x + a.width - 2);
+    await page.setViewportSize({ width: 768, height: 1024 });
+    const a2 = (await page.locator('[data-section="asset"]').boundingBox())!;
+    const f2 = (await page.locator('[data-section="fields"]').boundingBox())!;
+    expect(f2.y).toBeGreaterThan(a2.y + a2.height - 2);
+
+    // Asset.View only: no request to the schema endpoint, no console error, one muted sentence, the matter number as text.
+    const viewer = await personas.create({ label: 'assetview', permissions: ['Asset.View'] });
+    const plain = await asUser(viewer.username);
+    const requests: string[] = [];
+    const errors: string[] = [];
+    plain.on('request', (r) => requests.push(r.url()));
+    plain.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    await plain.goto(`/assets/${asset.assetId}`);
+    await expect(plain.locator('[data-fields-unavailable]')).toContainText(
+      'Type fields are not available with your access.',
+    );
+    await expect(plain.locator('[data-matter] a')).toHaveCount(0);
+    expect(requests.filter((u) => /\/forms\/versions\//.test(u))).toEqual([]);
+    expect(errors).toEqual([]);
+
+    // Task.View reads the schema.
+    const withTasks = await personas.create({
+      label: 'assettask',
+      permissions: ['Asset.View', 'Matter.View', 'Client.View', 'Task.View'],
+    });
+    const full = await asUser(withTasks.username);
+    await full.goto(`/assets/${asset.assetId}`);
+    await expect(full.locator('[data-type-fields]')).toContainText('WS-8841');
+    await expect(full.locator('[data-details] [data-matter] a')).toBeVisible();
+    await shot(full, 'as2-record-details-fields');
+  });
+
+  test('inbound link: the asset name on the Task page opens the record page', async ({
+    page,
+    seed,
+  }) => {
+    const { asset } = await assetWithTasks(seed, 0);
+    const world = await seed.world();
+    const other = await seed.asset(world.matter, `Task link ${uid()}`);
+    const task = await seed.task(world);
+    await seed.admin.post(`/api/v1/tasks/${task.taskId}/assets`, { assetId: other.assetId });
+    expect(asset.assetId).not.toBe(other.assetId);
+    const detail = new TaskDetailPage(page);
+    await detail.open(task.taskId);
+    await detail.showSection('Assets');
+    await page.locator(`li[data-asset-id="${other.assetId}"] [data-asset-link]`).click();
+    await expect(page).toHaveURL(new RegExp(`/assets/${other.assetId}$`));
+    await expect(page.getByRole('heading', { level: 1, name: other.displayName })).toBeVisible();
   });
 
   test('Back from the record page returns to page 2 of a filtered, sorted list with the row focused', async ({

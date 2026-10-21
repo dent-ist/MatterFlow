@@ -34,3 +34,16 @@ export function toRuntimeField(field: FormFieldModel): FormField {
 export function toFormDefinition(version: { fields: readonly FormFieldModel[] }): FormDefinition {
   return { fields: version.fields.map(toRuntimeField) };
 }
+
+/**
+ * The permissions that let a person read a published form schema (`GET /api/v1/forms/versions/{id}/schema`, `FormsController.ReadPolicy`): `Task.View`
+ * (renderers read published schemas with it) or one of the four form-owner management permissions. A page asks this before the request, so a
+ * request that is certain to answer 403 is never sent (decision V).
+ */
+export const FORM_SCHEMA_READ_PERMISSIONS = [
+  'Task.View',
+  'TaskType.Manage',
+  'Workflow.Manage',
+  'AssetType.Manage',
+  'CustomField.Manage',
+] as const;
