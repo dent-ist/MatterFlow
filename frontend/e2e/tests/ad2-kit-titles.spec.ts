@@ -106,14 +106,14 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     await shot(page, 'titles-custom-designer');
   });
 
-  test('the Administration menu has one item called Asset Types (and the data list is still Assets)', async ({
+  test('the Administration menu has one item called Asset types (and the data list is still Assets)', async ({
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/asset-types');
     const nav = page.getByRole('navigation', { name: /main|primary|sidebar/i }).first();
     await expect(
-      page.getByRole('link', { name: 'Asset Types', exact: true }).first(),
+      page.getByRole('link', { name: 'Asset types', exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Assets', exact: true })).toHaveCount(1);
     void nav;

@@ -21,7 +21,7 @@ import { PendingUsersStore } from '../../core/identity-admin/pending-users.store
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
-import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem } from './nav-items';
+import { ADMIN_NAV_ITEMS, NAV_GROUPS, NAV_ITEMS, NavItem } from './nav-items';
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
@@ -89,6 +89,13 @@ export class AppShell {
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
+  /** The visible items under their group label (Work, Records); a group with nothing visible is not drawn (S6, #621). */
+  protected readonly navGroups = computed(() =>
+    NAV_GROUPS.map((g) => ({
+      ...g,
+      items: this.navItems().filter((i) => i.group === g.key),
+    })).filter((g) => g.items.length > 0),
+  );
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));
 
   /** The global "Create task" button is redundant on the Create Task page itself (UXR-23). */

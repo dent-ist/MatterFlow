@@ -18,7 +18,9 @@
   >
     <i class="pi pi-bars" aria-hidden="true"></i>
   </button>
-  <a class="mf-logo" routerLink="/" aria-label="MatterFlow home">MatterFlow</a>
+  <a class="mf-logo" routerLink="/" aria-label="MatterFlow home"
+    ><img class="mf-logo__mark" src="favicon.svg" alt="" width="28" height="28" />MatterFlow</a
+  >
 
   @if (canSearch()) {
     <mf-global-search id="mf-search-row" class="mf-search" />
@@ -79,21 +81,26 @@
     >
       <i class="pi pi-times" aria-hidden="true"></i> Close menu
     </button>
-    <ul>
-      @for (item of navItems(); track item.path) {
-        <li>
-          <a
-            [routerLink]="item.path"
-            [class.mf-active]="isActive(item)"
-            [attr.aria-current]="isActive(item) ? 'page' : null"
-            [title]="item.label"
-          >
-            <i [class]="item.icon" aria-hidden="true"></i>
-            <span class="mf-nav-label">{{ item.label }}</span>
-          </a>
-        </li>
-      }
-    </ul>
+    @for (group of navGroups(); track group.key) {
+      <div class="mf-nav-group" [attr.data-nav-group]="group.key">
+        <p class="mf-nav-heading" [id]="'mf-nav-' + group.key + '-heading'">{{ group.label }}</p>
+        <ul [attr.aria-labelledby]="'mf-nav-' + group.key + '-heading'">
+          @for (item of group.items; track item.path) {
+            <li>
+              <a
+                [routerLink]="item.path"
+                [class.mf-active]="isActive(item)"
+                [attr.aria-current]="isActive(item) ? 'page' : null"
+                [title]="item.label"
+              >
+                <i [class]="item.icon" aria-hidden="true"></i>
+                <span class="mf-nav-label">{{ item.label }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
     @if (adminItems().length > 0) {
       <hr />
       <p class="mf-nav-heading" id="mf-admin-heading">Administration</p>

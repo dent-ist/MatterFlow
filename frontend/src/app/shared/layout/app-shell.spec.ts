@@ -87,6 +87,42 @@ describe('AppShell header search', () => {
     expect(box.getAttribute('placeholder')).toContain('Ctrl+K');
   });
 
+  it('groups the rail under Work and Records, each list labelled by its heading (S6, #621)', async () => {
+    const fixture = await create([
+      'Task.View',
+      'Pod.View',
+      'Client.View',
+      'Matter.View',
+      'Asset.View',
+      'AssetType.Manage',
+    ]);
+    const el = fixture.nativeElement as HTMLElement;
+    const groups = Array.from(el.querySelectorAll<HTMLElement>('[data-nav-group]')).map((g) => ({
+      heading: g.querySelector('.mf-nav-heading')!.textContent!.trim(),
+      labelledBy: g.querySelector('ul')!.getAttribute('aria-labelledby'),
+      headingId: g.querySelector('.mf-nav-heading')!.id,
+      items: Array.from(g.querySelectorAll('a')).map((a) => a.textContent!.trim()),
+    }));
+    expect(groups.map((g) => [g.heading, g.items])).toEqual([
+      ['Work', ['My Work', 'Task Queue', 'Pod Work']],
+      ['Records', ['Clients', 'Matters', 'Assets']],
+    ]);
+    for (const g of groups) expect(g.labelledBy).toBe(g.headingId);
+    // The two "assets" items differ in words (S5, #620), also in the tooltip of the icon rail.
+    const names = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
+    expect(names).toContain('Asset types');
+    expect(names).toContain('Assets');
+    expect(el.querySelector<HTMLElement>('nav a[title="Asset types"]')).not.toBeNull();
+  });
+
+  it('draws no group label for a group with nothing in it (S6, #621)', async () => {
+    const fixture = await create(['Client.View']);
+    const headings = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.mf-nav-heading'),
+    ).map((h) => h.textContent!.trim());
+    expect(headings).toEqual(['Records']);
+  });
+
   it('shows Pod Work with Pod.View and Task.View (#549)', async () => {
     expect(navLabels(await create(['Task.View', 'Pod.View']))).toContain('Pod Work');
   });
