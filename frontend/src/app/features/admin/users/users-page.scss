@@ -29,19 +29,6 @@
   clip-path: inset(50%);
 }
 
-.mf-scroll-hint {
-  flex: none;
-  margin: 0;
-  padding: var(--mf-s1) var(--mf-s3);
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-  background: var(--mf-surface);
-
-  &[hidden] {
-    display: none;
-  }
-}
-
 .mf-layout {
   display: flex;
   gap: var(--mf-s4);
@@ -62,28 +49,6 @@
   }
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  text-align: left;
-  background: var(--mf-surface-alt);
-}
-
-th,
-td {
-  padding: var(--mf-s2) var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
-}
-
-/* BUG-1: the status badge is never cut ("Pending acces" at 1920): the cell is as wide as its badge. */
-td[data-status] {
-  white-space: nowrap;
-  min-width: 11rem;
-}
-
 .mf-open-tasks {
   margin: 0 0 var(--mf-s2);
   font-weight: 600;
@@ -99,43 +64,44 @@ td[data-status] {
   outline-offset: 2px;
 }
 
-/* First seen is the day, on one line (the full time is the tooltip): the time wrapped the cell to five lines and made every row 119 px high. */
-td.us-seen {
-  white-space: nowrap;
-}
-
-/* At 1366 the nine columns are wider than the box (the filters are then in the sheet), so the row actions stay in view at the right edge
-   while the other columns scroll under them: Open and Grant access are never out of sight. */
-th.mf-col-actions,
-td.mf-col-actions {
-  position: sticky;
-  right: 0;
-}
-
-td.mf-col-actions {
-  z-index: 1;
-  background: var(--mf-surface);
-  box-shadow: -1px 0 0 var(--mf-border);
-}
-
-th.mf-col-actions {
-  z-index: 3;
-  background: var(--mf-surface-alt);
-  box-shadow:
-    inset 0 -1px 0 var(--mf-border),
-    -1px 0 0 var(--mf-border);
-}
-
-tr.mf-selected td.mf-col-actions {
-  background: var(--mf-selected-bg);
-}
-
-tr.mf-selected {
-  background: var(--mf-selected-bg);
-}
-
 .mf-mono {
   font-family: var(--mf-font-mono);
+}
+
+/* The selected row (the open panel), also under the sticky action cell. */
+.mf-grid tr.mf-selected td {
+  background: var(--mf-selected-bg);
+}
+
+/* The name is the row's one control: a button that looks like the link of the other lists (the panel is not an address yet). */
+.us-open {
+  /* The kit clamps .mf-name (two lines, one under an account line): it is the button itself, so the clamp works on its text. */
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mf-link);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* The Pods cell is one line (the primary pod and "+n", see mf-user-pods-cell [oneLine]): the row stays 44 px; #435 refines the popover. */
+.us-pods {
+  max-width: 14rem;
 }
 
 .mf-muted {

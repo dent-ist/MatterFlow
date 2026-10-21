@@ -185,7 +185,8 @@ test.describe('Dashboard permissions', () => {
     await page.goto('/admin/roles');
     await page.locator('button.mf-role', { hasText: role.name }).click();
     const group = page.locator('[data-group="Dashboard"]');
-    await expect(group.locator('legend')).toHaveText('Dashboard');
+    // The heading also says how many of the group are ticked ("Dashboard 0/8", #447).
+    await expect(group.locator('legend')).toHaveText(/^\s*Dashboard\s+\d+\/8/);
     await expect(group.locator('[data-perm]')).toHaveCount(8);
     await expect(group.locator('[data-perm="Dashboard.ViewCoverage"]')).toBeAttached();
     await expect(group.locator('[data-perm="Dashboard.ViewUnassigned"]')).toBeAttached();

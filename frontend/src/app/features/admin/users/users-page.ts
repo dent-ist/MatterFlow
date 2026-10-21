@@ -1,7 +1,7 @@
 import {
   ChangeDetectionStrategy,
-  DestroyRef,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   OnInit,
@@ -30,11 +30,20 @@ import {
 } from '../../../core/identity-admin/identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
+import { SkipTarget } from '../../../shared/layout/skip-target';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { AvailabilityDialog } from '../../../shared/availability/availability-dialog';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
+import { phoneCards } from '../../../shared/ui/record-card-list';
+import { availabilityDisplay } from '../../../core/availability/availability';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { columnDropOrder } from '../../../shared/ui/admin-card-spec';
+import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { rowActions } from '../../../shared/ui/row-actions';
 import { Badge } from '../../../shared/ui/badge';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
@@ -60,17 +69,7 @@ const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive',
 const PAGE_SIZE = 25;
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = [
-  'name',
-  'account',
-  'registered',
-  'email',
-  'roles',
-  'pods',
-  'availability',
-  'status',
-  'actions',
-] as const;
+const COLUMNS = ['name', 'roles', 'pods', 'availability', 'status', 'actions'] as const;
 
 /**
  * The status choices above the grid (#429): one of them is always pressed, and it is the `status` parameter of the address. Pending
@@ -123,9 +122,15 @@ const AVAILABILITY_OPTIONS = [
     FiltersBar,
     ColumnFilterRow,
     WorkStrip,
+    ActionMenu,
+    AdminCardList,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill', '(keydown.escape)': 'onPanelEscape($event)' },
+  host: {
+    class: 'mf-fill',
+    '(keydown.escape)': 'onPanelEscape($event)',
+    '(window:resize)': 'onResize()',
+  },
   templateUrl: './users-page.html',
   styleUrls: ['./users-page.scss', '../../../shared/ui/page.scss'],
 })
@@ -140,22 +145,44 @@ export class UsersPage implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
-  private readonly destroyRef = inject(DestroyRef);
   private readonly panelHeading = viewChild<ElementRef<HTMLElement>>('panelHeading');
   private readonly confirmBox = viewChild<ElementRef<HTMLElement>>('confirmBox');
   /** Set when focus should move to the panel heading / the deactivation question as soon as that element is on the page. */
   private readonly wantHeadingFocus = signal(false);
   private readonly wantConfirmFocus = signal(false);
-  /** True while the list is wider than its box (drives the "Scroll sideways" hint). */
-  protected readonly overflowing = signal(false);
   /** Pending access when someone is waiting, else Active; applies only while the address has no `status`. */
   private readonly defaultTab = signal<Tab>('active');
   private readonly ready = signal(false);
   /** True once the counts endpoint has answered at least once (the segments show `--` until then). */
   private readonly countsKnown = signal(false);
 
-  protected readonly columns = COLUMNS;
+  /**
+   * The optional columns leave in the kit's order as the window narrows (the Pods first, then Roles): below 1280 and 1100 px. The filter
+   * row follows, and a filter on a column that is not shown stays as a chip and in "Other filters".
+   */
+  /** Below 640 px the list is cards (#445), not a table. */
+  protected readonly phone = phoneCards();
+  private readonly zone = inject(USER_TIME_ZONE);
+  protected readonly drop = columnDropOrder(['pods', 'roles']);
+  protected readonly columnSpec: AdminColumn[] = [
+    { cls: 'mf-cell-name', bone: '14rem' },
+    { cls: 'mf-cell-muted', bone: '7rem', drop: this.drop.roles },
+    { cls: 'us-pods', bone: '8rem', drop: this.drop.pods },
+    { cls: 'mf-cell-badge', bone: '6rem' },
+    { cls: 'mf-cell-badge', bone: '5rem' },
+    { cls: 'mf-cell-actions', bone: '1.5rem' },
+  ];
+  /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
+  private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
+  protected readonly visibleColumns = computed<readonly string[]>(() => {
+    const width = this.viewport();
+    return COLUMNS.filter(
+      (c) =>
+        !(c === 'pods' && width < this.drop.pods) && !(c === 'roles' && width < this.drop.roles),
+    );
+  });
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
   private readonly roleOptions = computed(() =>
     this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
@@ -172,6 +199,7 @@ export class UsersPage implements OnInit {
     noun: 'users',
     openByDefault: true,
     sheetBelow: 640,
+    visibleColumns: this.visibleColumns,
     defs: computed((): FilterDef[] => [
       { key: 'name', label: 'Name', column: 'name', type: 'text' },
       { key: 'account', label: 'Windows account', column: 'account', type: 'text' },
@@ -279,6 +307,12 @@ export class UsersPage implements OnInit {
   protected readonly listState = computed<'loading' | 'ready' | 'error'>(() =>
     this.loadError() ? 'error' : this.loading() && this.users().length === 0 ? 'loading' : 'ready',
   );
+  /** Loading, error, empty and no-match, as the kit derives them: the skeleton has the real columns. */
+  protected readonly ls = adminListState({
+    state: this.listState,
+    rows: this.users,
+    filters: this.filters,
+  });
   protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.total() / PAGE_SIZE)));
   protected readonly dirty = computed(() => {
     const u = this.selected();
@@ -294,6 +328,13 @@ export class UsersPage implements OnInit {
   constructor() {
     // The Filters button and the one Clear filters sit in the page header (the shell of Users, Roles and Pods).
     AdminShellFilters.register({ filters: this.filters, controls: 'user-filter-row' });
+    // "Skip to table" (#452): the page's first Tab stop; it lands on the name of the first row (the filter row and the segments are skipped).
+    const offSkip = inject(SkipTarget).register({
+      label: 'Skip to table',
+      element: this.host.nativeElement,
+      focus: () => this.focusFirstRow(),
+    });
+    inject(DestroyRef).onDestroy(offSkip);
     effect(() => {
       const heading = this.panelHeading();
       if (heading && this.wantHeadingFocus()) {
@@ -321,25 +362,9 @@ export class UsersPage implements OnInit {
       () => {
         const area = this.scroll()?.nativeElement;
         this.filters.watchOverflow(area);
-        this.watchScrollHint(area);
       },
       { injector: this.injector },
     );
-  }
-
-  /**
-   * "Scroll sideways" hint (review round 5, UXR5-02): below about 1100 px the list is wider than its box, and the Availability and Status
-   * columns sit past the edge with nothing to say so. Shown only while the list actually overflows.
-   */
-  private watchScrollHint(area: HTMLElement | undefined): void {
-    if (!area || typeof ResizeObserver === 'undefined') return;
-    const measure = () => this.overflowing.set(area.scrollWidth > area.clientWidth + 1);
-    const observer = new ResizeObserver(measure);
-    observer.observe(area);
-    const table = area.querySelector('table');
-    if (table) observer.observe(table);
-    this.destroyRef.onDestroy(() => observer.disconnect());
-    measure();
   }
 
   async ngOnInit(): Promise<void> {
@@ -401,6 +426,7 @@ export class UsersPage implements OnInit {
     this.panelError.set('');
     this.confirmDeactivate.set(false);
     this.openerUserId = user.userId;
+    this.rememberOpener(user.userId);
     try {
       this.showDetail(await firstValueFrom(this.api.getUser(user.userId)));
       // BUG-2: the panel sits after the grid in the page, so focus goes to its heading (a keyboard user would otherwise Tab past every row).
@@ -412,6 +438,132 @@ export class UsersPage implements OnInit {
 
   /** The person whose row button opened the panel; focus goes back to that row when the panel closes (BUG-2). */
   private openerUserId: number | null = null;
+  /** The control that opened the panel (the name, Grant access, or the row menu's button); focus goes back to it when it is still there. */
+  private openerEl: HTMLElement | null = null;
+
+  /** Remembers where focus was (a control of the row or card, or the row menu's button after a menu item); else the row's own menu button or name. */
+  private rememberOpener(userId: number): void {
+    const active = document.activeElement;
+    const inList = active instanceof HTMLElement && this.host.nativeElement.contains(active);
+    this.openerEl = inList
+      ? active
+      : (this.rowOf(userId)?.querySelector<HTMLElement>(
+          'button[data-overflow], button[data-open]',
+        ) ?? null);
+  }
+
+  private rowOf(userId: number): HTMLElement | null {
+    return (
+      this.scroll()?.nativeElement.querySelector<HTMLElement>(`tr[data-user="${userId}"]`) ?? null
+    );
+  }
+
+  /** The person's account beside the name, for the accessible names of the row's controls ("Open Alex Abbott (kej01)"). */
+  protected nameWithAccount(user: UserSummaryDto): string {
+    return user.windowsAccount ? `${user.displayName} (${user.windowsAccount})` : user.displayName;
+  }
+
+  protected accountLine(user: UserSummaryDto): string {
+    const account = user.windowsAccount ?? '';
+    return user.isSeededAdmin ? `${account} · Seeded` : account;
+  }
+
+  /** The row's overflow menu (kit): Open for everyone, Edit availability and Activate / Deactivate with User.Manage. Pending rows have Grant access instead. */
+  protected menuFor(user: UserSummaryDto) {
+    return rowActions(
+      this.nameWithAccount(user),
+      [
+        { id: 'open', label: 'Open', icon: 'pi-user', run: () => void this.open(user) },
+        {
+          id: 'availability',
+          label: 'Edit availability',
+          icon: 'pi-calendar',
+          permission: 'User.Manage',
+          run: () => this.editAvailability(user),
+        },
+        user.isActive
+          ? {
+              id: 'deactivate',
+              label: 'Deactivate',
+              kind: 'state' as const,
+              permission: 'User.Manage',
+              run: () => void this.startStatusChange(user, false),
+            }
+          : {
+              id: 'activate',
+              label: 'Activate',
+              kind: 'state' as const,
+              permission: 'User.Manage',
+              run: () => void this.startStatusChange(user, true),
+            },
+      ],
+      { can: (p) => this.auth.has(p) },
+    );
+  }
+
+  /**
+   * A person as a phone card (#445): the name (a button: the panel has no address), the account under it, the status badge top right (none for
+   * Active), "Data Technician - 2 pods - Out of office until Oct 25", and the one primary action (Grant access) or the same row menu as the table.
+   */
+  protected readonly cardOf = (user: UserSummaryDto): AdminCardSpec => {
+    const waiting = user.isPending && this.canManage();
+    const pods = user.pods.length;
+    return {
+      title: user.displayName,
+      activate: () => void this.open(user),
+      rowKey: user.userId,
+      subtitle: this.accountLine(user),
+      badges: user.isPending
+        ? [{ text: 'Pending access', tone: 'warning', icon: 'pi-user-plus' }]
+        : user.isActive
+          ? []
+          : [{ text: 'Inactive', tone: 'neutral' }],
+      meta: [
+        {
+          text: [
+            this.rolesLabel(user),
+            pods === 0 ? 'No pod' : `${pods} ${pods === 1 ? 'pod' : 'pods'}`,
+            availabilityDisplay(user.availability, this.zone).label,
+          ].join(' · '),
+          attrs: { 'data-card-summary': '' },
+        },
+      ],
+      primary: waiting
+        ? {
+            label: 'Grant access',
+            ariaLabel: `Grant access to ${this.nameWithAccount(user)}`,
+            run: () => void this.open(user),
+          }
+        : undefined,
+      actions: waiting ? null : this.menuFor(user),
+    };
+  };
+
+  /** Deactivate and Activate open the person's panel with that status chosen: Deactivate shows its question (the open-task count), Activate is one Save away. */
+  private async startStatusChange(user: UserSummaryDto, active: boolean): Promise<void> {
+    await this.open(user);
+    if (this.selected()?.userId === user.userId) this.setActive(active);
+  }
+
+  /** The first stop of the list: the name of the first row, else the empty, error or no-access message, else the list itself. */
+  private focusFirstRow(): void {
+    const root = this.host.nativeElement;
+    const target =
+      root.querySelector<HTMLElement>(
+        'tbody tr[data-user] button[data-open], li.rc button[data-card-name]',
+      ) ??
+      root.querySelector<HTMLElement>(
+        ':is(td, div, p)[data-empty], :is(td, div, p)[data-error], :is(td, div, p)[data-forbidden]',
+      ) ??
+      root.querySelector<HTMLElement>('.mf-table-wrap');
+    if (!target) return;
+    if (!target.matches('a, button, [tabindex]')) target.setAttribute('tabindex', '-1');
+    target.focus();
+  }
+
+  protected onResize(): void {
+    this.viewport.set(window.innerWidth);
+  }
 
   /** The Task Queue address behind "View their tasks": that person's open tasks (the same statuses the count uses). */
   protected openTasksQuery(userId: number): Record<string, string | string[]> {
@@ -421,11 +573,12 @@ export class UsersPage implements OnInit {
   /** Close and Esc: asks first when there are unsaved edits (the same question as leaving the Roles tab), then returns focus to the row. */
   protected async requestClose(): Promise<void> {
     const opener = this.openerUserId;
+    const openerEl = this.openerEl;
     const asked = this.dirty();
     if (asked && !(await this.leave.ask())) return;
     this.closePanel();
-    // The question's dialog hands focus to the control that had it (the name box, now gone) once it has left the page: row again after that.
-    if (asked && opener !== null) this.focusRowAfterDialog(opener);
+    // The question's dialog hands focus to the control that had it (the name box, now gone) once it has left the page: the opener again after that.
+    if (asked && opener !== null) this.focusRowAfterDialog(opener, openerEl);
   }
 
   protected closePanel(): void {
@@ -438,6 +591,7 @@ export class UsersPage implements OnInit {
     this.wantHeadingFocus.set(false);
     this.wantConfirmFocus.set(false);
     this.openerUserId = null;
+    this.openerEl = null;
   }
 
   /** Esc inside the panel closes it (standard dialog behaviour, not an application shortcut). The availability dialog and popovers own their own Esc. */
@@ -451,11 +605,11 @@ export class UsersPage implements OnInit {
     void this.requestClose();
   }
 
-  private focusRowAfterDialog(userId: number): void {
+  private focusRowAfterDialog(userId: number, openerEl: HTMLElement | null): void {
     const done = (): void => {
       watcher.disconnect();
       clearTimeout(giveUp);
-      setTimeout(() => this.focusRow(userId), 50);
+      setTimeout(() => this.focusRow(userId, openerEl), 50);
     };
     const watcher = new MutationObserver(() => {
       if (!document.querySelector('.p-dialog-mask')) done();
@@ -465,13 +619,14 @@ export class UsersPage implements OnInit {
     if (!document.querySelector('.p-dialog-mask')) done();
   }
 
-  /** Puts focus on the row control that opened the panel; when the row is gone (the status filter dropped it) on the list itself. */
-  private focusRow(userId: number): void {
+  /** Puts focus on the control that opened the panel; when it is gone, on the person's name; when the row is gone (the segment dropped it) on the list itself. */
+  private focusRow(userId: number, el: HTMLElement | null = this.openerEl): void {
     const host = this.scroll()?.nativeElement;
-    const button = host?.querySelector<HTMLElement>(
-      `tr[data-user="${userId}"] .mf-row-actions button`,
-    );
-    (button ?? host)?.focus();
+    const target =
+      el && el.isConnected
+        ? el
+        : host?.querySelector<HTMLElement>(`tr[data-user="${userId}"] button[data-open]`);
+    (target ?? host)?.focus();
   }
 
   protected toggleRole(roleId: number, checked: boolean): void {

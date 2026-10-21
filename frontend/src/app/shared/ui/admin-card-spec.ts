@@ -10,6 +10,7 @@ import {
   output,
 } from '@angular/core';
 import { Params, RouterLink } from '@angular/router';
+import { Button } from 'primeng/button';
 import { ActionMenu } from './action-menu';
 import { ActiveBadge, Badge, BadgeTone } from './badge';
 import { CopyPart } from './copy-parts';
@@ -65,8 +66,12 @@ export class CardAttrs {
  */
 export interface AdminCardSpec {
   title: string;
-  /** Router commands to the record. */
-  link: string | unknown[];
+  /** Router commands to the record. Not needed with `activate`. */
+  link?: string | unknown[];
+  /** A record that opens something without an address of its own (the Users panel): the title is then a button that runs this. */
+  activate?: () => void;
+  /** The card's one primary action (Grant access on a pending person): a 44 px button before the overflow menu. */
+  primary?: { label: string; ariaLabel?: string; run: () => void };
   /** Query parameters of the link, for a record that opens in a dialog of its own list page (`{ edit: id }`). */
   queryParams?: Record<string, string | number>;
   /** The record's key: Back to the list focuses this card's link (the list-return rule). */
@@ -148,6 +153,7 @@ export function columnDropOrder<const K extends string>(ids: readonly K[]): Reco
     RouterLink,
     RowStop,
     CardAttrs,
+    Button,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -171,7 +177,8 @@ export function columnDropOrder<const K extends string>(ids: readonly K[]): Reco
       <ng-template [mfRecordCard]="cards()" let-c>
         <mf-record-card
           [name]="c.spec.title"
-          [link]="c.spec.link"
+          [link]="c.spec.link ?? []"
+          [activate]="c.spec.activate ?? null"
           [queryParams]="c.spec.queryParams"
           [state]="c.spec.state"
           [list]="listId()"
@@ -208,6 +215,16 @@ export function columnDropOrder<const K extends string>(ids: readonly K[]): Reco
                 <span class="rc-text">{{ l.text }}</span>
               }
             </p>
+          }
+          @if (c.spec.primary; as primary) {
+            <p-button
+              mfCardAside
+              size="small"
+              data-card-primary
+              [label]="primary.label"
+              [ariaLabel]="primary.ariaLabel ?? primary.label"
+              (onClick)="primary.run()"
+            />
           }
           @if (c.menu; as menu) {
             <mf-action-menu

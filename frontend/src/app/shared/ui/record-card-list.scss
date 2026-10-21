@@ -45,6 +45,18 @@
   overflow-wrap: anywhere;
 }
 
+/* The name as a button (a card with no address): the same look as the link. */
+.rc-name--button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--mf-fs-lg);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
 .rc-name::after {
   content: '';
   position: absolute;
@@ -98,6 +110,11 @@
 .rc-badges:empty,
 .rc-aside:empty {
   display: none;
+}
+
+/* The card's primary action (Grant access): a 44 px target, above the stretched name link. */
+.rc-aside .p-button {
+  min-height: 44px;
 }
 
 .rc-meta {

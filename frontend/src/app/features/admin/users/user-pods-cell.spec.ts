@@ -76,6 +76,23 @@ describe('UserPodsCell', () => {
       expect(q('[data-pod-count]').textContent).toContain('2 pods');
     });
 
+    it('one line: the primary pod and "+n", every pod stays in the tooltip and in the button name', async () => {
+      await create([pod(1, 'Processing'), pod(2, 'Review', true), pod(3, 'Intake')], {
+        canEdit: true,
+      });
+      fixture.componentRef.setInput('oneLine', true);
+      await settle();
+      const chips = all('[data-pod-chip]');
+      expect(chips.map((c) => c.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+        'Review Primary',
+      ]);
+      expect(q('[data-pod-more]').textContent).toContain('+2');
+      expect(q('[data-pod-more]').getAttribute('title')).toBe('Processing, Intake');
+      expect(el().classList).toContain('upc--one');
+      expect(q('[data-pods-trigger]').getAttribute('aria-label')).toContain('Processing');
+      expect(q('[data-pods-trigger]').getAttribute('aria-label')).toContain('Intake');
+    });
+
     it('says No pod when the person has none', async () => {
       await create([], { canEdit: false });
       expect(q('[data-no-pod]').textContent).toContain('No pod');

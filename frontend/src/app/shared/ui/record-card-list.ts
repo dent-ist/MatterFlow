@@ -251,17 +251,30 @@ export class RecordCardList {
   host: { class: 'rc-card' },
   template: `
     <span class="rc-icon"><ng-content select="[mfCardIcon]" /></span>
-    <a
-      class="rc-name"
-      [routerLink]="link()"
-      [state]="state()"
-      [queryParams]="queryParams()"
-      [attr.title]="name()"
-      [mfRowLink]="list()"
-      [rowKey]="rowKey()"
-      data-card-name
-      >{{ name() }}</a
-    >
+    @if (activate(); as go) {
+      <!-- A record without an address of its own (the Users panel): the name is a button, the card's box still is its target. -->
+      <button
+        type="button"
+        class="rc-name rc-name--button"
+        [attr.title]="name()"
+        data-card-name
+        (click)="go()"
+      >
+        {{ name() }}
+      </button>
+    } @else {
+      <a
+        class="rc-name"
+        [routerLink]="link()"
+        [state]="state()"
+        [queryParams]="queryParams()"
+        [attr.title]="name()"
+        [mfRowLink]="list()"
+        [rowKey]="rowKey()"
+        data-card-name
+        >{{ name() }}</a
+      >
+    }
     <span class="rc-badges"><ng-content select="[mfCardBadges]" /></span>
     <span class="rc-aside"><ng-content select="[mfCardAside]" /></span>
     <div class="rc-meta"><ng-content select="[mfCardMeta]" /></div>
@@ -270,8 +283,10 @@ export class RecordCardList {
 })
 export class RecordCard {
   readonly name = input.required<string>();
-  /** Router commands to the record. */
-  readonly link = input.required<string | unknown[]>();
+  /** Router commands to the record (not needed when `activate` is given). */
+  readonly link = input<string | unknown[]>([]);
+  /** For a record that opens something without an address of its own (the Users panel): the name is then a button that runs this. */
+  readonly activate = input<(() => void) | null>(null);
   /** Query parameters of the link (a card that opens a dialog of its own list page, `?edit=<id>`). */
   readonly queryParams = input<Record<string, string | number> | undefined>(undefined);
   /** The list this card belongs to and the record's key: Back to the list then focuses this link (#281). Leave empty to opt out. */

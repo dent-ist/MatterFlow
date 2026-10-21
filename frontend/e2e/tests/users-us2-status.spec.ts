@@ -115,7 +115,7 @@ test.describe('#429 status segments', () => {
     await expect(segment(page, 'pending')).toHaveClass(/tinted/);
     await page.goto(`/admin/users?status=active&name=${TAG}`);
     await expect(page.locator(`tr[data-user="${waiting.userId}"]`)).toHaveCount(0);
-    await expect(page.locator(`tr[data-user="${working.userId}"]`)).toHaveCount(0); // its name has no tag
+    await expect(page.locator(`tr[data-user="${working.userId}"]`)).toBeVisible(); // its name has the tag too, and it has access
   });
 
   test('choosing a segment updates the address and the grid; Back keeps the earlier segment; reload keeps it', async ({

@@ -6,6 +6,7 @@ import { TaskDetailPage } from '../pages/task-detail.page';
 import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { openEditAvailability } from '../support/users-grid';
 
 /**
  * My profile (availability and work hours, epic #68 / issue #70): setting out of office from the profile and the header, the
@@ -243,7 +244,7 @@ test.describe('My profile: availability and work hours', () => {
 
     await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
     const row = page.locator('tbody tr', { hasText: name });
-    await row.getByRole('button', { name: `Edit availability of ${name}` }).click();
+    await openEditAvailability(row);
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
     await expect(dialog.locator('[data-preview]')).toContainText(`${name}'s current status`);
     await dialog.getByRole('radio', { name: /Out of office/ }).check();
@@ -382,12 +383,13 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
 
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
-      await expect(
-        page.locator('tbody tr', { hasText: name }).locator('[data-availability-chip]'),
-      ).toBeVisible();
+      // A table row from 640 px (with the availability chip), a card below (its summary line says it, #445).
+      const row = page.locator(size.width < 640 ? 'li.rc' : 'tbody tr', { hasText: name });
+      if (size.width < 640) await expect(row.locator('[data-card-summary]')).toBeVisible();
+      else await expect(row.locator('[data-availability-chip]')).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
 
-      await page.getByRole('button', { name: `Edit availability of ${name}` }).click();
+      await openEditAvailability(row);
       const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
       await expect(dialog.locator('[data-preview-chip]')).toBeVisible();
       expect(await axeViolations(page)).toEqual([]);
@@ -495,7 +497,7 @@ test.describe('profile screenshots', () => {
       // Back to the unfiltered list (at phone width the filters are in a sheet that would cover the rows).
       await view.goto('/admin/users?status=active&name=e2e-profshot');
       await expect(view.locator('tbody tr').first()).toBeVisible();
-      await view.getByRole('button', { name: `Edit availability of ${names[1]}` }).click();
+      await openEditAvailability(view.locator('tbody tr', { hasText: names[1] }));
       await expect(view.getByRole('dialog').locator('[data-preview-chip]')).toBeVisible();
       await shot(view, size.n, '08-admin-edit-availability-dialog', false);
       await view.keyboard.press('Escape');

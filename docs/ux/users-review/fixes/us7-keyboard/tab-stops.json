@@ -1,0 +1,17 @@
+{
+  "page": "/admin/users (Users tab), 1366x768, status All, first page",
+  "measured": "real Tab presses in Chromium (recorded, never gated)",
+  "before": {
+    "stopsBeforeFirstRow": 33,
+    "stopsPerRow": 3,
+    "stopsPerPageOf25": 75
+  },
+  "after": {
+    "stopsBeforeFirstRowWithoutSkipLink": 29,
+    "stopsBeforeFirstRowWithSkipLink": 1,
+    "stopsPerRow": 3,
+    "stopsPerRowWithoutPodAssignment": 2,
+    "rowsOnPage": 25,
+    "stopsInTableForThePage": 75
+  }
+}

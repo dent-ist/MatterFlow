@@ -13,6 +13,7 @@ import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-ap
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
+import { SkipTarget } from '../../../shared/layout/skip-target';
 import { UsersPage } from './users-page';
 
 describe('UsersPage', () => {
@@ -20,6 +21,7 @@ describe('UsersPage', () => {
   let api: InMemoryIdentityAdminApi;
   /** Address the page starts on (the filters are read from it). */
   let startUrl = '/admin/users';
+  let width = 1920;
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
 
@@ -50,6 +52,12 @@ describe('UsersPage', () => {
     ...permissions: Permission[]
   ): Promise<void> {
     localStorage.clear();
+    // A wide window: every column is on screen (the narrow-window drop rule is covered by its own test).
+    Object.defineProperty(window, 'innerWidth', {
+      value: width,
+      configurable: true,
+      writable: true,
+    });
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
@@ -67,14 +75,10 @@ describe('UsersPage', () => {
     await settle();
   }
 
-  beforeEach(() => (startUrl = '/admin/users'));
-
-  /** Opens the filter row (it is closed by default). */
-  async function openRow(): Promise<void> {
-    if (el().querySelector('[data-filter-row]')) return;
-    q('[data-filters-toggle]').click();
-    await settle();
-  }
+  beforeEach(() => {
+    startUrl = '/admin/users';
+    width = 1920;
+  });
 
   const control = <T extends HTMLElement = HTMLElement>(column: string): T =>
     q<T>(`[aria-label="Filter by ${column}"]`);
@@ -93,10 +97,21 @@ describe('UsersPage', () => {
       (b) => b.getAttribute('aria-pressed') === 'true',
     )?.dataset['stripItem'];
 
+  /** The names of the listed people (the name button is the one control of the Name cell). */
   const rows = (): string[] =>
-    Array.from(el().querySelectorAll('tbody tr')).map((r) =>
-      r.querySelector('td')!.textContent!.trim(),
+    Array.from(el().querySelectorAll('tbody tr[data-user]')).map((r) =>
+      r.querySelector('button[data-open]')!.textContent!.trim(),
     );
+
+  /** The first row of the person: the name button that opens them. */
+  const nameButton = (id: number): HTMLButtonElement =>
+    q<HTMLButtonElement>(`[data-user="${id}"] button[data-open]`);
+
+  /** Opens the row menu of a person. */
+  async function openMenu(id: number): Promise<void> {
+    q(`[data-user="${id}"] [data-overflow]`).click();
+    await settle();
+  }
 
   it('opens on the pending queue with counts, and publishes the pending count for the nav badge', async () => {
     await create('User.View', 'User.Manage');
@@ -111,11 +126,37 @@ describe('UsersPage', () => {
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
   });
 
-  it('shows First seen as the day only on one line, with the full time as its tooltip (the time made every row five lines high)', async () => {
+  it('puts the name over the Windows account, makes the name the one control of the cell, and names it with the account (#432)', async () => {
     await create('User.View', 'User.Manage');
-    const cell = q('tbody tr td.us-seen');
-    expect(cell.textContent!.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
-    expect(cell.getAttribute('title')).toMatch(/\d{1,2}:\d{2}\s?[AP]M/);
+    const cell = q('[data-user="4"] td.mf-cell-name');
+    expect(cell.querySelector('button[data-open]')!.textContent!.trim()).toBe('Priya Patel');
+    expect(cell.querySelector('[data-account]')!.textContent!.trim()).toBe('KE\\ppatel');
+    expect(cell.querySelectorAll('a, button').length).toBe(1);
+    expect(cell.querySelector('button[data-open]')!.getAttribute('aria-label')).toBe(
+      'Open Priya Patel (KE\\ppatel)',
+    );
+    // Email and First seen are not columns any more (they are in the panel; the filters stay).
+    const headers = Array.from(el().querySelectorAll('thead th')).map((th) =>
+      th.textContent!.trim(),
+    );
+    expect(headers).toEqual(['Name', 'Roles', 'Pods', 'Availability', 'Status', 'Actions']);
+  });
+
+  it('marks the seeded administrator beside the account, not as a badge', async () => {
+    await create('User.View', 'User.Manage');
+    await chooseStatus('all');
+    expect(q('[data-user="1"] [data-account]').textContent!.replace(/\s+/g, ' ')).toContain(
+      'Seeded',
+    );
+  });
+
+  it('shows a status badge only when the person is not simply Active', async () => {
+    await create('User.View', 'User.Manage');
+    await chooseStatus('all');
+    expect(q('[data-user="4"] [data-status] mf-badge').textContent).toContain('Pending access');
+    expect(q('[data-user="5"] [data-status] mf-badge').textContent).toContain('Inactive');
+    expect(el().querySelector('[data-user="2"] [data-status] mf-badge')).toBeNull();
+    expect(q('[data-user="2"] [data-status]').textContent).toContain('Active'); // for a screen reader
   });
 
   it('opens on Active when no one is waiting, and the Pending segment is not tinted', async () => {
@@ -213,21 +254,19 @@ describe('UsersPage', () => {
       el().querySelector('#users-search, #users-status, #users-availability, mf-search-box'),
     ).toBeNull();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
-    for (const column of [
-      'Name',
-      'Windows account',
-      'First seen',
-      'Email',
-      'Roles',
-      'Availability',
-    ]) {
+    // The filters of the columns on screen are in the row; the others (Windows account, First seen, Email) are in "Other filters".
+    for (const column of ['Name', 'Roles', 'Availability']) {
       expect(
         el().querySelector(`[aria-label^="Filter by ${column}"]`),
         `Filter by ${column}`,
       ).not.toBeNull();
     }
+    for (const column of ['Windows account', 'First seen', 'Email']) {
+      expect(el().querySelector(`[aria-label^="Filter by ${column}"]`), column).toBeNull();
+    }
+    expect(el().querySelector('[data-more-filters]')).not.toBeNull();
     expect(el().querySelector('[aria-label^="Filter by Status"]')).toBeNull();
-    // Status is a column of the grid.
+    // Status is a column of the grid (a badge only when not Active).
     expect(
       Array.from(el().querySelectorAll('thead th')).map((th) => th.textContent!.trim()),
     ).toContain('Status');
@@ -275,7 +314,8 @@ describe('UsersPage', () => {
     // The link opens the row with the values in it; the status is the pressed segment.
     expect(pressed()).toBe('all');
     expect(control<HTMLInputElement>('Name').value).toBe('ana');
-    expect(control<HTMLInputElement>('Windows account').value).toBe('dd');
+    // The Windows account and Email filters are not columns of the grid: they show as chips.
+    expect(el().querySelector('[data-filter-chips]')).not.toBeNull();
   });
 
   it('shows the filtered empty state inside the table with Clear filters, keeping the headers and the row', async () => {
@@ -295,7 +335,7 @@ describe('UsersPage', () => {
   it('grants a role to a pending user: the drawer saves, the queue shrinks', async () => {
     await create('User.View', 'User.Manage');
 
-    await press('Grant access'); // first row: Priya Patel
+    await press('Grant access'); // first row: Priya Patel (the one action of a pending row)
     expect(q('[data-panel] h2').textContent).toContain('Priya Patel');
     expect(button('Save changes')!.disabled).toBe(true);
 
@@ -419,8 +459,7 @@ describe('UsersPage', () => {
   });
 
   describe('focus and Esc (BUG-2)', () => {
-    const rowButton = (id: number): HTMLButtonElement =>
-      el().querySelector<HTMLButtonElement>(`[data-user="${id}"] .mf-row-actions button`)!;
+    const rowButton = (id: number): HTMLButtonElement => nameButton(id);
 
     it('moves focus to the panel heading on open, closes on Esc and puts focus back on the row button', async () => {
       await create('User.View', 'User.Manage');
@@ -498,7 +537,8 @@ describe('UsersPage', () => {
 
   it('is read-only without User.Manage', async () => {
     await create('User.View');
-    await press('Open');
+    nameButton(4).click(); // the first pending person
+    await settle();
 
     expect(button('Save changes')).toBeUndefined();
     expect(q<HTMLInputElement>('[data-role="5"]').closest('fieldset')!.disabled).toBe(true);
@@ -560,63 +600,215 @@ describe('UsersPage', () => {
       expect(el().textContent).toContain('No users match these filters');
     });
 
-    it('offers "Edit availability" only with User.Manage', async () => {
-      await create('User.View');
-      await chooseStatus('active');
-      expect(el().querySelector('[data-edit-availability]')).toBeNull();
-    });
-
-    it('says "Scroll sideways" only while the list is wider than its box (the Availability column can be out of sight)', async () => {
-      const callbacks: (() => void)[] = [];
-      const original = globalThis.ResizeObserver;
-      globalThis.ResizeObserver = class {
-        constructor(callback: () => void) {
-          callbacks.push(callback);
-        }
-        observe = vi.fn();
-        disconnect = vi.fn();
-        unobserve = vi.fn();
-      } as unknown as typeof ResizeObserver;
-      try {
-        await create('User.View');
-        await chooseStatus('active');
-        const hint = q('[data-scroll-hint]');
-        expect(hint.hidden).toBe(true);
-        const area = q('.mf-table-wrap');
-        Object.defineProperty(area, 'clientWidth', { value: 600, configurable: true });
-        Object.defineProperty(area, 'scrollWidth', { value: 1000, configurable: true });
-        callbacks.forEach((c) => c());
-        fixture.detectChanges();
-        expect(hint.hidden).toBe(false);
-        expect(hint.textContent).toContain('Scroll sideways to see every column.');
-        Object.defineProperty(area, 'scrollWidth', { value: 600, configurable: true });
-        callbacks.forEach((c) => c());
-        fixture.detectChanges();
-        expect(hint.hidden).toBe(true);
-      } finally {
-        globalThis.ResizeObserver = original;
-      }
-    });
-
-    it('opens the availability dialog for the chosen user', async () => {
+    it('opens the availability dialog for the chosen user, from the row menu', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');
-      el()
-        .querySelector<HTMLButtonElement>('[data-user="2"] [data-edit-availability] button')!
-        .click();
+      await openMenu(2);
+      q('[data-action="availability"]').click();
       await settle();
       const dialog = document.querySelector('.p-dialog');
       expect(dialog?.textContent).toContain('Availability of Dana Director');
     });
   });
 
+  describe('Skip to table (#452)', () => {
+    it("offers the link as the page's skip target and moves focus to the name of the first row", async () => {
+      await create('User.View', 'User.Manage');
+      const target = TestBed.inject(SkipTarget).target()!;
+      expect(target.label).toBe('Skip to table');
+      target.focus();
+      expect(document.activeElement).toBe(
+        el().querySelector('tbody tr[data-user] button[data-open]'),
+      );
+    });
+
+    it('lands on the empty message when no one is listed, and withdraws the link with the page', async () => {
+      startUrl = '/admin/users?status=all&name=nobody-like-this';
+      await create('User.View');
+      TestBed.inject(SkipTarget).target()!.focus();
+      // Focus moves into the page (the exact element is the empty message or its Clear filters button; the e2e checks it in a browser).
+      expect(document.activeElement).not.toBe(document.body);
+      fixture.destroy();
+      expect(TestBed.inject(SkipTarget).target()).toBeNull();
+    });
+  });
+
+  describe('row actions: one control for the name, one for the action (#432, #433)', () => {
+    const menuItems = (): string[] =>
+      Array.from(document.querySelectorAll('[role="menuitem"]')).map((i) =>
+        i.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+
+    it('has no "Scroll sideways" hint: the grid fits', async () => {
+      await create('User.View');
+      expect(el().querySelector('[data-scroll-hint]')).toBeNull();
+      expect(el().textContent).not.toContain('Scroll sideways');
+    });
+
+    it('gives a pending person with User.Manage the one primary action, Grant access, and an account in its name', async () => {
+      await create('User.View', 'User.Manage');
+      const grant = q<HTMLButtonElement>('[data-user="4"] [data-grant] button');
+      expect(grant.getAttribute('aria-label')).toBe('Grant access to Priya Patel (KE\\ppatel)');
+      expect(el().querySelector('[data-user="4"] [data-overflow]')).toBeNull();
+      // Two Tab stops on the row: the name and the action.
+      expect(el().querySelectorAll('[data-user="4"] button, [data-user="4"] a').length).toBe(2);
+    });
+
+    it('opens the menu of an active person: Open, Edit availability, Deactivate; the button names the person and the account', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      expect(q('[data-user="2"] [data-overflow]').getAttribute('aria-label')).toBe(
+        'Actions for Dana Director (KE\\ddirector)',
+      );
+      await openMenu(2);
+      expect(menuItems()).toEqual(['Open', 'Edit availability', 'Deactivate']);
+    });
+
+    it('offers Activate for an inactive person', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('inactive');
+      await openMenu(5);
+      expect(menuItems()).toEqual(['Open', 'Edit availability', 'Activate']);
+    });
+
+    it('offers only Open without User.Manage: nothing that edits, and no Grant access', async () => {
+      await create('User.View');
+      expect(el().querySelector('[data-grant]')).toBeNull();
+      await openMenu(4);
+      expect(menuItems()).toEqual(['Open']);
+      expect(el().querySelector('[data-edit-availability]')).toBeNull();
+    });
+
+    it('Deactivate from the menu opens the person with the question on screen and Deactivate user as the button', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openMenu(2);
+      q('[data-action="deactivate"]').click();
+      await settle();
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+      expect(q('[data-confirm]').textContent).toContain('Deactivate Dana Director?');
+      expect(button('Deactivate user')).toBeDefined();
+    });
+
+    it('Activate from the menu opens the person with Active chosen and a Save changes that is ready', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('inactive');
+      await openMenu(5);
+      q('[data-action="activate"]').click();
+      await settle();
+      expect(q<HTMLInputElement>('[data-status-active]').checked).toBe(true);
+      expect(button('Save changes')!.disabled).toBe(false);
+    });
+
+    it('Open from the menu opens the panel, Esc closes it and focus goes back to the menu button', async () => {
+      await create('User.View');
+      await chooseStatus('active');
+      q<HTMLButtonElement>('[data-user="2"] [data-overflow]').focus();
+      await openMenu(2);
+      q('[data-action="open"]').click();
+      await settle();
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+      q('[data-panel-heading]').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await settle();
+      expect(document.activeElement).toBe(q('[data-user="2"] [data-overflow]'));
+    });
+  });
+
+  describe('phone cards below 640 px (#445)', () => {
+    const original = window.matchMedia;
+    beforeEach(() => {
+      // A phone: every max-width query is on.
+      window.matchMedia = ((query: string) => ({
+        matches: /max-width/.test(query),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as never;
+    });
+    afterEach(() => {
+      window.matchMedia = original;
+    });
+    const cards = (): HTMLElement[] => Array.from(el().querySelectorAll<HTMLElement>('li.rc'));
+    const cardOf = (name: string): HTMLElement =>
+      cards().find((c) => c.querySelector('[data-card-name]')!.textContent!.trim() === name)!;
+
+    it('shows one card per person instead of the table: name, account, badge, one summary line and the one primary action', async () => {
+      await create('User.View', 'User.Manage');
+      expect(el().querySelector('table')).toBeNull();
+      expect(cards().length).toBe(2); // the two people waiting
+      const priya = cardOf('Priya Patel');
+      expect(priya.textContent).toContain('KE\\ppatel');
+      expect(priya.textContent).toContain('Pending access');
+      expect(priya.querySelector('[data-card-summary]')!.textContent).toContain('None · No pod');
+      const grant = priya.querySelector<HTMLButtonElement>(
+        '[data-card-primary] button, button[data-card-primary]',
+      )!;
+      expect(grant.getAttribute('aria-label')).toBe('Grant access to Priya Patel (KE\\ppatel)');
+      expect(priya.querySelector('[data-overflow]')).toBeNull(); // Grant access is the action of a waiting person
+    });
+
+    it('the name is a button that opens the panel, the other people have the row menu and no badge when Active', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      const dana = cardOf('Dana Director');
+      expect(dana.querySelector('mf-badge')).toBeNull();
+      expect(dana.querySelector('[data-overflow]')!.getAttribute('aria-label')).toBe(
+        'Actions for Dana Director (KE\\ddirector)',
+      );
+      expect(dana.querySelector('[data-card-primary]')).toBeNull();
+      dana.querySelector<HTMLButtonElement>('button[data-card-name]')!.click();
+      await settle();
+      expect(q('[data-panel-heading]').textContent).toContain('Dana Director');
+    });
+
+    it('without User.Manage there is no Grant access, only the menu with Open', async () => {
+      await create('User.View');
+      expect(el().querySelector('[data-card-primary]')).toBeNull();
+      expect(cardOf('Priya Patel').querySelector('[data-overflow]')).not.toBeNull();
+    });
+
+    it('says Inactive on the card of an inactive person and keeps the states of the list (empty message)', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('inactive');
+      expect(cardOf('Dee Disabled').textContent).toContain('Inactive');
+      startUrl = '/admin/users?status=all&name=nobody-like-this';
+      TestBed.resetTestingModule();
+      await create('User.View');
+      expect(el().textContent).toContain('No users match these filters');
+    });
+  });
+
+  describe('narrow windows: the columns leave in the kit order', () => {
+    it('drops Pods below 1280 and Roles below 1100 from the filter row; their filters stay as chips and in Other filters', async () => {
+      width = 1000;
+      startUrl = '/admin/users?status=all&roleId=2';
+      await create('User.View');
+      expect(el().querySelector('[aria-label^="Filter by Roles"]')).toBeNull();
+      expect(el().querySelector('[data-filter-chips]')).not.toBeNull();
+      const dropped = Array.from(el().querySelectorAll('thead tr:first-child th[data-drop]')).map(
+        (th) => [th.textContent!.trim(), th.getAttribute('data-drop')],
+      );
+      expect(dropped).toEqual([
+        ['Roles', '1100'],
+        ['Pods', '1280'],
+      ]);
+    });
+  });
+
   describe('Pods column (inline assignment)', () => {
     const podCell = (userId: number): HTMLElement =>
       q(`[data-user="${userId}"] [data-pods-cell] mf-user-pods-cell`);
-    const chipsOf = (userId: number): string[] =>
-      Array.from(podCell(userId).querySelectorAll('[data-pod-chip]')).map((c) =>
+    /** Every pod of the person, by name: the chip of the grid's one-line cell (the primary pod) and the pods behind its "+n" tooltip. */
+    const chipsOf = (userId: number): string[] => {
+      const cell = podCell(userId);
+      const shown = Array.from(cell.querySelectorAll('[data-pod-chip]')).map((c) =>
         c.textContent!.replace(/\s+/g, ' ').trim(),
       );
+      const more = cell.querySelector('[data-pod-more]')?.getAttribute('title');
+      return [...shown, ...(more ? more.split(', ') : [])].sort();
+    };
     const trigger = (userId: number): HTMLButtonElement =>
       podCell(userId).querySelector<HTMLButtonElement>('[data-pods-trigger]')!;
     const popover = (): HTMLElement => q('[data-pods-popover]');

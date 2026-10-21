@@ -5,6 +5,7 @@ import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { openEditAvailability, rowMenuItems } from '../support/users-grid';
 
 /**
  * UX / QA review round 5 (issue #74, epic #68): the profile availability screen, the Swimlane and Users tabs at 1024 and 768, and the
@@ -92,7 +93,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     }
   });
 
-  test('UXR5-02: the Users list tells a narrow screen to scroll sideways, and a wide one does not', async ({
+  test('UXR5-02: the Users list no longer needs a "Scroll sideways" hint: the six-column grid fits (#432)', async ({
     page,
     seed,
   }) => {
@@ -101,12 +102,9 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto(query);
     await expect(page.locator(`tbody tr`)).toHaveCount(1);
-    await expect(page.locator('[data-scroll-hint]')).toBeVisible();
-    await expect(page.locator('[data-scroll-hint]')).toHaveText(
-      'Scroll sideways to see every column.',
-    );
+    await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.locator('[data-scroll-hint]')).toBeHidden();
+    await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
   });
 
   test('UXR5-05: a one-line Swimlane card title is a 24 px target (axe target-size) at 1024', async ({
@@ -133,7 +131,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     await page.goto(
       `/admin/users?status=all&name=${encodeURIComponent(person.username.split('\\')[1])}`,
     );
-    await page.getByRole('button', { name: /Edit availability of/ }).click();
+    await openEditAvailability(page.locator('tbody tr').first());
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('[data-actions]')).toBeVisible();
     await expect
@@ -145,7 +143,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
       .toBeLessThanOrEqual(2);
     // Esc closes it and focus goes back to the button that opened it.
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('button', { name: /Edit availability of/ })).toBeFocused();
+    await expect(page.locator('tbody tr').first().locator('button[data-overflow]')).toBeFocused();
   });
 
   test('the header "Set out of office" dialog returns focus to the account menu button on Esc, Cancel and Save', async ({
@@ -508,7 +506,7 @@ test.describe('review round 5 screenshots', () => {
     await expect(page.locator('[data-availability-chip]')).toHaveCount(1);
     await shot(page, '11-admin-users-filter-out-of-office-1366');
     await page.goto(`/admin/users?status=active&name=Taro Tokyo ${tag}`);
-    await page.getByRole('button', { name: /Edit availability of Taro Tokyo/ }).click();
+    await openEditAvailability(page.locator('tbody tr', { hasText: 'Taro Tokyo' }));
     await shot(page, '12-admin-edit-availability-dialog-1366');
     await page.keyboard.press('Escape');
 
@@ -517,7 +515,8 @@ test.describe('review round 5 screenshots', () => {
     await at(dirPage, 1366, 768);
     await dirPage.goto(`/admin/users?status=active&name=${tag}`);
     await expect(dirPage.locator('[data-availability-chip]').first()).toBeVisible();
-    await expect(dirPage.locator('[data-edit-availability]')).toHaveCount(0);
+    expect(await rowMenuItems(dirPage.locator('tbody tr').first())).toEqual(['Open']);
+    await dirPage.keyboard.press('Escape');
     await shot(dirPage, '13-director-users-list-no-edit-1366');
 
     // --- Dashboard Users and Swimlane ---

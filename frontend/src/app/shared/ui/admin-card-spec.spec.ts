@@ -224,3 +224,54 @@ describe('AdminCardList (#579)', () => {
     expect(f.componentInstance.retried).toBe(1);
   });
 });
+
+const activated: string[] = [];
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [AdminCardList],
+  template: `<mf-admin-card-list
+    noun="people"
+    label="People"
+    [items]="[1, 2]"
+    [spec]="cardOf"
+    state="ready"
+  />`,
+})
+class NoAddressHost {
+  readonly cardOf = (n: number): AdminCardSpec => ({
+    title: `Person ${n}`,
+    rowKey: n,
+    activate: () => activated.push(`open ${n}`),
+    primary:
+      n === 1
+        ? {
+            label: 'Grant access',
+            ariaLabel: 'Grant access to Person 1',
+            run: () => activated.push('grant 1'),
+          }
+        : undefined,
+  });
+}
+
+describe('AdminCardList: a record without an address of its own (#445)', () => {
+  it('draws the name as a button that runs activate, and one primary action', () => {
+    activated.length = 0;
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(NoAddressHost);
+    document.body.appendChild(fixture.nativeElement);
+    fixture.detectChanges();
+    const cards = (fixture.nativeElement as HTMLElement).querySelectorAll('li[data-record-card]');
+    expect(cards.length).toBe(2);
+    expect(cards[0].querySelector('a[data-card-name]')).toBeNull();
+    const name = cards[0].querySelector<HTMLButtonElement>('button[data-card-name]')!;
+    expect(name.textContent?.trim()).toBe('Person 1');
+    name.click();
+    expect(activated).toEqual(['open 1']);
+    const primary = cards[0].querySelector<HTMLButtonElement>('[data-card-primary] button')!;
+    expect(primary.getAttribute('aria-label')).toBe('Grant access to Person 1');
+    primary.click();
+    expect(activated).toEqual(['open 1', 'grant 1']);
+    expect(cards[1].querySelector('[data-card-primary]')).toBeNull();
+  });
+});

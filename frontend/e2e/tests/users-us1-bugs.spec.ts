@@ -5,11 +5,12 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { Persona } from '../support/personas';
+import { userName, userRow } from '../support/users-grid';
 import { TaskApi } from '../support/tasks';
 
 /**
  * Users epic #422, WP-US1 first release (#423 BUG-1/BUG-5, #424 BUG-2, #425 BUG-3): the interim fixes on the current grid and panel.
- *  - no status badge is cut at 375, 768, 1366 and 1920, and the "Scroll sideways" hint is shown exactly while the list really scrolls;
+ *  - no status badge is cut at 375, 768, 1366 and 1920 (the "Scroll sideways" hint is gone with the nine-column grid, #432);
  *  - opening a user moves focus to the panel heading, Esc and Close close it and focus returns to the row button, Esc with unsaved edits asks;
  *  - choosing Inactive shows the question in view with focus on it, the button reads "Deactivate user" and goes back with Active.
  * Screenshots for docs/ux/users-review/fixes/us1-bugs/ are written when E2E_SCREENSHOTS is set to the output folder.
@@ -27,14 +28,18 @@ let active: Persona;
 let pending: Persona;
 const TAG = `us1b${Math.floor(Math.random() * 90000) + 10000}`;
 
+/** The Windows account of each person of this file, to find their card below 640 px (#445). */
+const ACCOUNT = new Map<number, string>();
+
 test.beforeAll(async ({ personas }) => {
   active = await personas.create({ label: `${TAG}act`, roles: ['Data Technician'] });
   pending = await personas.create({ label: `${TAG}pend`, displayNameLength: 130 });
-  await personas.create({
+  const off = await personas.create({
     label: `${TAG}off`,
     roles: ['Data Technician'],
     disabled: true,
   });
+  for (const p of [active, pending, off]) ACCOUNT.set(p.userId, p.username);
 });
 
 const listUrl = (extra = '') => `/admin/users?status=all&account=e2e-${TAG}${extra}`;
@@ -42,11 +47,17 @@ const listUrl = (extra = '') => `/admin/users?status=all&account=e2e-${TAG}${ext
 async function openList(page: Page, width = 1366, height = 768, extra = ''): Promise<void> {
   await page.setViewportSize({ width, height });
   await page.goto(listUrl(extra));
-  await expect(page.locator('tr[data-user]')).toHaveCount(3);
+  // The table from 640 px, cards below (#445).
+  await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-user]')).toHaveCount(3);
 }
 
-const rowButton = (page: Page, userId: number) =>
-  page.locator(`tr[data-user="${userId}"] .mf-row-actions button`).first();
+/** The name of the person: the one control of the Name cell (#432); it opens the panel. */
+const rowOf = (page: Page, userId: number) => userRow(page, userId, ACCOUNT.get(userId)!);
+const rowButton = (page: Page, userId: number) => userName(rowOf(page, userId));
+const grantButton = (page: Page, userId: number) =>
+  rowOf(page, userId).locator('[data-grant] button, [data-card-primary] button');
+const menuButton = (page: Page, userId: number) =>
+  rowOf(page, userId).locator('button[data-overflow]');
 
 /**
  * axe violations, without the one artifact of a scrolled page: a 24 px check box that sits half under the fixed header or the sticky Save bar
@@ -70,18 +81,22 @@ const noSideScroll = (page: Page) =>
 
 test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
   for (const { width, height } of SIZES) {
-    test(`no badge is cut and the hint follows the real overflow at ${width}`, async ({ page }) => {
+    test(`no badge is cut and there is no scroll hint at ${width}`, async ({ page }) => {
       await openList(page, width, height);
-      const badges = page.locator('tr[data-user] [data-status] mf-badge');
+      const badges = page.locator('tr[data-user] [data-status] mf-badge, li.rc mf-badge');
+      // A badge only when the person is not simply Active (#432): Pending access and Inactive here, none for the active person.
       expect(await badges.allTextContents()).toEqual(
         expect.arrayContaining([
           expect.stringContaining('Pending access'),
-          expect.stringContaining('Active'),
           expect.stringContaining('Inactive'),
         ]),
       );
+      await expect(
+        rowOf(page, active.userId).locator('[data-status] mf-badge, .rc-badges mf-badge'),
+      ).toHaveCount(0);
       const cut = await page.evaluate(() =>
-        Array.from(document.querySelectorAll<HTMLElement>('tr[data-user] [data-status]'))
+        Array.from(document.querySelectorAll<HTMLElement>('tr[data-user] [data-status], li.rc'))
+          .filter((cell) => !!cell.querySelector('mf-badge'))
           .map((cell) => {
             const badge = cell.querySelector<HTMLElement>('mf-badge')!;
             const inner = badge.firstElementChild as HTMLElement | null;
@@ -98,14 +113,8 @@ test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
       );
       expect(cut).toEqual([]);
 
-      // The hint is on exactly while the scroll region is wider than its box.
-      const overflows = await page.evaluate(() => {
-        const area = document.querySelector<HTMLElement>('.mf-table-wrap')!;
-        return area.scrollWidth > area.clientWidth + 1;
-      });
-      const hint = page.locator('[data-scroll-hint]');
-      if (overflows) await expect(hint).toBeVisible();
-      else await expect(hint).toBeHidden();
+      // The grid fits: there is no "Scroll sideways" hint any more.
+      await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
       expect(await noSideScroll(page)).toBe(true);
     });
   }
@@ -130,7 +139,7 @@ test.describe('BUG-2: focus and Esc', () => {
 
   test('Close does the same, and Grant access for a pending person too', async ({ page }) => {
     await openList(page);
-    const grant = rowButton(page, pending.userId);
+    const grant = grantButton(page, pending.userId);
     await expect(grant).toHaveText('Grant access');
     await grant.focus();
     await page.keyboard.press('Enter');
@@ -165,10 +174,8 @@ test.describe('BUG-2: focus and Esc', () => {
     await openList(page);
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-panel]')).toBeVisible();
-    await page
-      .locator(`tr[data-user="${active.userId}"] [data-edit-availability] button`)
-      .first()
-      .click();
+    await menuButton(page, active.userId).click();
+    await page.getByRole('menuitem', { name: 'Edit availability' }).click();
     const dialog = page.locator('.p-dialog');
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
@@ -185,7 +192,7 @@ test.describe('BUG-2: focus and Esc', () => {
     await page.goto(listUrl());
     await expect(page.locator('tr[data-user]')).toHaveCount(3);
     const button = rowButton(page, active.userId);
-    await expect(button).toHaveText('Open');
+    await expect(button).toHaveAttribute('aria-label', /^Open /);
     await button.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-panel-heading]')).toBeFocused();

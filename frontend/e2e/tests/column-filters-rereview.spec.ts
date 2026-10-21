@@ -48,7 +48,7 @@ test.describe('Column filters re-review', () => {
     await expect(clearButtons(page)).toHaveCount(1);
   });
 
-  test('a person row of the Users list is one or two lines high and Open stays in view at 1366 px (RR-03)', async ({
+  test('a person row of the Users list is exactly 44 px and the row action stays in view at 1366 px (RR-03, #432)', async ({
     page,
     seed,
   }) => {
@@ -63,13 +63,13 @@ test.describe('Column filters re-review', () => {
     for (const box of await rows.evaluateAll((trs) =>
       trs.map((tr) => tr.getBoundingClientRect().height),
     )) {
-      expect(box).toBeLessThan(100); // the First seen time wrapped to five lines: 119 px
+      expect(box).toBeGreaterThanOrEqual(43); // 44 px; the collapsed border adds up to a pixel (the First seen time wrapped to 119 px)
+      expect(box).toBeLessThanOrEqual(45);
     }
-    await expect(rows.first().locator('td.us-seen')).toHaveText(
-      /^\s*[A-Z][a-z]{2} \d{1,2}, \d{4}\s*$/,
-    );
-    // The grid scrolls sideways at this width (the filters are in the sheet), yet the row actions are never out of sight.
-    const open = rows.filter({ hasText: a.username }).getByRole('button', { name: /^Open / });
+    // The action is never out of sight.
+    const open = rows
+      .filter({ hasText: a.username })
+      .getByRole('button', { name: /^Actions for / });
     await expect(open).toBeVisible();
     const regionBox = (await region.boundingBox())!;
     const openBox = (await open.boundingBox())!;

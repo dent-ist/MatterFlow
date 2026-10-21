@@ -219,10 +219,34 @@ let nextId = 0;
       </span>
     }
   `,
+  host: { '[class.upc--one]': 'oneLine()' },
   styles: `
     :host {
       display: inline-block;
       max-width: 100%;
+    }
+    /* One line (the Users grid): the chips never wrap, a long pod name is cut with an ellipsis (the whole text is in the button's name). */
+    :host(.upc--one) {
+      display: block;
+    }
+    :host(.upc--one) .upc-value,
+    :host(.upc--one) .upc-static,
+    :host(.upc--one) .upc-chips {
+      flex-wrap: nowrap;
+    }
+    :host(.upc--one) .upc-trigger {
+      max-width: 100%;
+    }
+    :host(.upc--one) .upc-chip {
+      min-width: 0;
+    }
+    :host(.upc--one) .upc-name {
+      overflow: hidden;
+      max-width: 8.5rem;
+      text-overflow: ellipsis;
+    }
+    :host(.upc--one) .upc-count {
+      display: none;
     }
     .upc-value,
     .upc-static {
@@ -413,6 +437,11 @@ export class UserPodsCell implements OnDestroy {
   readonly canEdit = input(false);
   /** A save for this person is running. */
   readonly busy = input(false);
+  /**
+   * One line (the Users grid, rows are 44 px): the primary pod (else the first) and "+n" for the others; every pod stays in the tooltip and in the
+   * accessible name. Off: up to three chips that may wrap (the pod's own screens).
+   */
+  readonly oneLine = input(false);
 
   /** The popover opened: the page loads the pod list if it has not yet. */
   readonly opened = output<void>();
@@ -431,12 +460,20 @@ export class UserPodsCell implements OnDestroy {
   private readonly popRef = viewChild<ElementRef<HTMLElement>>('pop');
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
 
-  protected readonly shown = computed(() => this.pods().slice(0, MAX_CHIPS));
-  protected readonly hidden = computed(() => Math.max(0, this.pods().length - MAX_CHIPS));
+  /** The pods the cell draws as chips: all that fit, or in one line the primary one (else the first). */
+  private readonly chipPods = computed(() => {
+    const pods = this.pods();
+    if (!this.oneLine()) return { shown: pods.slice(0, MAX_CHIPS), rest: pods.slice(MAX_CHIPS) };
+    const first = pods.find((p) => p.isPrimary) ?? pods[0];
+    return first
+      ? { shown: [first], rest: pods.filter((p) => p !== first) }
+      : { shown: [], rest: [] };
+  });
+  protected readonly shown = computed(() => this.chipPods().shown);
+  protected readonly hidden = computed(() => this.chipPods().rest.length);
   protected readonly hiddenNames = computed(() =>
-    this.pods()
-      .slice(MAX_CHIPS)
-      .map((p) => p.name)
+    this.chipPods()
+      .rest.map((p) => p.name)
       .join(', '),
   );
 

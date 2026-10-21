@@ -15,111 +15,136 @@
       controls="user-filter-row"
       [clearAlso]="['q']"
     />
-    <p class="mf-scroll-hint" data-scroll-hint [hidden]="!overflowing()">
-      Scroll sideways to see every column.
-    </p>
-    <div class="mf-table-wrap" mfScrollArea="Users list" #scroll>
-      <div class="mf-scroll">
-        <table>
-          <caption class="mf-sr">
-            Users
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Windows account</th>
-              <th scope="col">First seen</th>
-              <th scope="col">Email</th>
-              <th scope="col">Roles</th>
-              <th scope="col">Pods</th>
-              <th scope="col">Availability</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="mf-col-actions"><span class="mf-sr">Actions</span></th>
-            </tr>
-            @if (filters.rowVisible()) {
-              <tr
-                mfColumnFilterRow
-                id="user-filter-row"
-                [filters]="filters"
-                [columns]="columns"
-              ></tr>
-            }
-          </thead>
-          <tbody
-            mfGridBody
-            noun="users"
-            [filters]="filters"
-            [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
-            [state]="listState()"
-            [empty]="users().length === 0"
-            [filtered]="filters.activeCount() > 0"
-            [columns]="9"
-            (retry)="reload()"
-            (clear)="clearFilters()"
-          >
-            @for (u of users(); track u.userId) {
-              <tr [attr.data-user]="u.userId" [class.mf-selected]="selected()?.userId === u.userId">
-                <td>
-                  {{ u.displayName }}
-                  @if (u.isSeededAdmin) {
-                    <mf-badge tone="info">Seeded</mf-badge>
-                  }
-                </td>
-                <td class="mf-mono">{{ u.windowsAccount }}</td>
-                <td class="us-seen" [attr.title]="u.registeredAtUtc | mfDate">
-                  {{ u.registeredAtUtc | mfDate: 'date' }}
-                </td>
-                <td>{{ u.email }}</td>
-                <td>{{ rolesLabel(u) }}</td>
-                <td data-pods-cell>
-                  <mf-user-pods-cell
-                    [displayName]="u.displayName"
-                    [pods]="u.pods"
-                    [catalog]="podChoices()"
-                    [catalogFailed]="podChoicesFailed()"
-                    [canEdit]="canEditPods()"
-                    [busy]="podsBusy().has(u.userId)"
-                    (opened)="loadPodChoices()"
-                    (applied)="applyPods(u, $event)"
-                  />
-                </td>
-                <td><mf-availability-chip [availability]="u.availability" /></td>
-                <td data-status>
-                  @if (u.isPending) {
-                    <mf-badge tone="warning" icon="pi-user-plus">Pending access</mf-badge>
-                  } @else if (u.isActive) {
-                    <mf-badge tone="success">Active</mf-badge>
-                  } @else {
-                    <mf-badge tone="neutral">Inactive</mf-badge>
-                  }
-                </td>
-                <td class="mf-col-actions">
-                  <span class="mf-row-actions">
-                    <p-button
-                      [label]="u.isPending && canManage() ? 'Grant access' : 'Open'"
-                      [text]="true"
-                      [ariaLabel]="
-                        (u.isPending && canManage() ? 'Grant access to ' : 'Open ') + u.displayName
-                      "
-                      (onClick)="open(u)"
-                    />
-                    @if (canManage() && !u.isPending) {
-                      <p-button
-                        label="Edit availability"
-                        [text]="true"
-                        [ariaLabel]="'Edit availability of ' + u.displayName"
-                        data-edit-availability
-                        (onClick)="editAvailability(u)"
-                      />
-                    }
-                  </span>
-                </td>
+    @if (phone()) {
+      <mf-admin-card-list
+        noun="users"
+        label="Users"
+        [items]="users()"
+        [spec]="cardOf"
+        [filters]="filters"
+        [state]="ls.state()"
+        [empty]="ls.empty()"
+        [filtered]="ls.filtered()"
+        [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
+        (retry)="reload()"
+        (clear)="clearFilters()"
+      />
+    } @else {
+      <div class="mf-table-wrap" mfScrollArea="Users list" #scroll>
+        <div class="mf-scroll">
+          <table class="mf-grid" id="users-table" data-users>
+            <caption class="mf-sr-only">
+              Users
+            </caption>
+            <thead>
+              <tr>
+                <th class="mf-cell-name" scope="col">Name</th>
+                <th class="mf-cell-muted" scope="col" [attr.data-drop]="drop.roles">Roles</th>
+                <th class="us-pods" scope="col" [attr.data-drop]="drop.pods">Pods</th>
+                <th class="mf-cell-badge" scope="col">Availability</th>
+                <th class="mf-cell-badge" scope="col">Status</th>
+                <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
               </tr>
-            }
-          </tbody>
-        </table>
+              @if (filters.rowVisible()) {
+                <tr
+                  mfColumnFilterRow
+                  id="user-filter-row"
+                  [filters]="filters"
+                  [columns]="visibleColumns()"
+                ></tr>
+              }
+            </thead>
+            <tbody
+              mfGridBody
+              noun="users"
+              [columnSpec]="columnSpec"
+              [filters]="filters"
+              [emptyText]="
+                tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'
+              "
+              [state]="ls.state()"
+              [empty]="ls.empty()"
+              [filtered]="ls.filtered()"
+              (retry)="reload()"
+              (clear)="clearFilters()"
+            >
+              @for (u of users(); track u.userId) {
+                <tr
+                  [attr.data-user]="u.userId"
+                  [class.mf-selected]="selected()?.userId === u.userId"
+                >
+                  <td class="mf-cell-name">
+                    <button
+                      type="button"
+                      class="mf-name us-open"
+                      data-open
+                      [attr.title]="u.displayName"
+                      [attr.aria-label]="'Open ' + nameWithAccount(u)"
+                      (click)="open(u)"
+                    >
+                      {{ u.displayName }}
+                    </button>
+                    <span class="mf-desc" [attr.title]="accountLine(u)" data-account>
+                      <span class="mf-mono">{{ u.windowsAccount }}</span>
+                      @if (u.isSeededAdmin) {
+                        <span> &middot; Seeded</span>
+                      }
+                    </span>
+                  </td>
+                  <td
+                    class="mf-cell-muted"
+                    [attr.data-drop]="drop.roles"
+                    [attr.title]="rolesLabel(u)"
+                  >
+                    {{ rolesLabel(u) }}
+                  </td>
+                  <td class="us-pods" data-pods-cell [attr.data-drop]="drop.pods">
+                    <mf-user-pods-cell
+                      [displayName]="u.displayName"
+                      [pods]="u.pods"
+                      [catalog]="podChoices()"
+                      [catalogFailed]="podChoicesFailed()"
+                      [canEdit]="canEditPods()"
+                      [busy]="podsBusy().has(u.userId)"
+                      [oneLine]="true"
+                      (opened)="loadPodChoices()"
+                      (applied)="applyPods(u, $event)"
+                    />
+                  </td>
+                  <td class="mf-cell-badge">
+                    <mf-availability-chip [availability]="u.availability" />
+                  </td>
+                  <td class="mf-cell-badge" data-status>
+                    @if (u.isPending) {
+                      <mf-badge tone="warning" icon="pi-user-plus">Pending access</mf-badge>
+                    } @else if (u.isActive) {
+                      <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
+                      <span class="mf-sr-only">Active</span>
+                    } @else {
+                      <mf-badge tone="neutral">Inactive</mf-badge>
+                    }
+                  </td>
+                  <td class="mf-cell-actions">
+                    @if (u.isPending && canManage()) {
+                      <p-button
+                        label="Grant access"
+                        size="small"
+                        data-grant
+                        [ariaLabel]="'Grant access to ' + nameWithAccount(u)"
+                        (onClick)="open(u)"
+                      />
+                    } @else {
+                      @let menu = menuFor(u);
+                      <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    }
     @if (listState() === 'ready' && total() > 0) {
       <mf-pager
         [page]="page()"

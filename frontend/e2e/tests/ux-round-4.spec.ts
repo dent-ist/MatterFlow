@@ -403,8 +403,11 @@ test.describe('Round 4: administration naming', () => {
   }) => {
     await seed.user([], 'waiting'); // no role: stays in Access Pending
     await page.goto('/admin/users');
-    await page.getByRole('button', { name: /^Filters/ }).click();
-    await expect(page.getByRole('combobox', { name: 'Filter by Status' })).toHaveValue('pending');
+    await expect(page).toHaveURL(/status=pending/); // the default is written into the address (#429)
+    await expect(page.locator('[data-strip-item="pending"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   test('UXR4-15: a grouped audit row shows the Object it is about', async ({

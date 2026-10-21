@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
+import { openEditAvailability, userRow } from '../support/users-grid';
 
 /**
  * Users epic #422, lane C:
@@ -97,10 +98,7 @@ test.describe('#428 availability dialog: one date hint', () => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await page.setViewportSize({ width, height });
       await page.goto(`/admin/users?status=all&account=e2e-${TAG}av`);
-      await page
-        .locator(`tr[data-user="${person.userId}"] [data-edit-availability] button`)
-        .first()
-        .click();
+      await openEditAvailability(userRow(page, person.userId, person.username));
       const dialog = page.getByRole('dialog');
       await expect(dialog).toBeVisible();
       await dialog.getByLabel(/Out of office/).check();
