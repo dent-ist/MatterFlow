@@ -7306,6 +7306,10 @@ export interface IReportAdminClient {
      * @return OK
      */
     getReportsStatus(): Observable<ReportsStatusResponse>;
+    /**
+     * @return OK
+     */
+    checkReportsStatus(): Observable<ReportsStatusResponse>;
 }
 
 @Injectable({
@@ -7351,6 +7355,56 @@ export class ReportAdminClient implements IReportAdminClient {
     }
 
     protected processGetReportsStatus(response: HttpResponseBase): Observable<ReportsStatusResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportsStatusResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    checkReportsStatus(): Observable<ReportsStatusResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/status/check";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCheckReportsStatus(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCheckReportsStatus(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportsStatusResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportsStatusResponse>;
+        }));
+    }
+
+    protected processCheckReportsStatus(response: HttpResponseBase): Observable<ReportsStatusResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -13623,10 +13677,22 @@ export interface ReorderRequest {
     [key: string]: any;
 }
 
+export interface ReportLoginDetailsResponse {
+    loginName: string;
+    writesDenied: boolean;
+    auditTablesDenied: boolean;
+    readableTables: number;
+    compatibilityLevel: number;
+    checkedAtUtc: string;
+
+    [key: string]: any;
+}
+
 export interface ReportsStatusResponse {
     enabled: boolean;
     state: string;
     message: string;
+    login: ReportLoginDetailsResponse | undefined;
 
     [key: string]: any;
 }

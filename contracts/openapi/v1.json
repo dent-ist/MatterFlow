@@ -4749,6 +4749,26 @@
         }
       }
     },
+    "/api/v1/report-admin/status/check": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "CheckReportsStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportsStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/search": {
       "get": {
         "tags": [
@@ -13767,11 +13787,46 @@
           }
         }
       },
+      "ReportLoginDetailsResponse": {
+        "required": [
+          "loginName",
+          "writesDenied",
+          "auditTablesDenied",
+          "readableTables",
+          "compatibilityLevel",
+          "checkedAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "loginName": {
+            "type": "string"
+          },
+          "writesDenied": {
+            "type": "boolean"
+          },
+          "auditTablesDenied": {
+            "type": "boolean"
+          },
+          "readableTables": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "compatibilityLevel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "checkedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ReportsStatusResponse": {
         "required": [
           "enabled",
           "state",
-          "message"
+          "message",
+          "login"
         ],
         "type": "object",
         "properties": {
@@ -13783,6 +13838,16 @@
           },
           "message": {
             "type": "string"
+          },
+          "login": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportLoginDetailsResponse"
+              }
+            ]
           }
         }
       },

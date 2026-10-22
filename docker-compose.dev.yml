@@ -33,5 +33,28 @@ services:
       - -c
       - /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -b -Q "IF DB_ID('MatterFlow') IS NULL CREATE DATABASE MatterFlow;"
 
+  # One-shot: creates the read-only report login (demo only) and adds it to the role mf_report_reader once the API has applied the schema.
+  # WAIT_SECONDS=0 (db:up) creates only the login and user; db:report-login waits for the role, so a first start works without a second command.
+  report-login-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+    profiles: ["tools"]
+    environment:
+      MSSQL_SA_PASSWORD: "MatterFlow_Dev1!"
+      WAIT_SECONDS: "0"
+    volumes:
+      - ./tools/db:/scripts:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        q() { /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -d MatterFlow -b -h -1 -W "$$@"; }
+        waited=0
+        until [ "$$(q -Q "SET NOCOUNT ON; SELECT DATABASE_PRINCIPAL_ID('mf_report_reader')" | tr -d '[:space:]')" != "NULL" ] || [ "$$waited" -ge "$$WAIT_SECONDS" ]; do sleep 2; waited=$$((waited + 2)); done
+        q -i /scripts/provision-report-login.sql
+
 volumes:
   matterflow-sql-data:

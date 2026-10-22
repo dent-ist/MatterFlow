@@ -35,6 +35,32 @@ public sealed class SqlServerFixture : IAsyncLifetime
         return cs;
     }
 
+    /// <summary>Server-level part of a SQL login for the reports tests: creates the login (unique name) and returns a connection string for the database.</summary>
+    public async Task<ReportLogin> CreateServerLoginAsync(string databaseConnectionString, string? serverRole = null)
+    {
+        var name = "rl_" + Guid.NewGuid().ToString("N")[..12];
+        const string password = "Rpt!Passw0rd#2026x";
+        await ExecuteAsync(_container.GetConnectionString(), $"CREATE LOGIN [{name}] WITH PASSWORD = '{password}', CHECK_POLICY = OFF;" + (serverRole is null ? "" : $" ALTER SERVER ROLE {serverRole} ADD MEMBER [{name}];"));
+        var builder = new SqlConnectionStringBuilder(databaseConnectionString) { UserID = name, Password = password, IntegratedSecurity = false, ConnectTimeout = 10 };
+        return new ReportLogin(name, builder.ConnectionString);
+    }
+
+    /// <summary>Database-level part: the user for the login, optionally in a database role (the database must be migrated for the role to exist).</summary>
+    public static async Task CreateDatabaseUserAsync(string databaseConnectionString, string login, params string[] roles)
+    {
+        await ExecuteAsync(databaseConnectionString, $"CREATE USER [{login}] FOR LOGIN [{login}];" + string.Concat(roles.Select(r => $" ALTER ROLE [{r}] ADD MEMBER [{login}];")));
+    }
+
+    /// <summary>A scalar query run with the given connection string (used to test what a login may do).</summary>
+    public static async Task<object?> ScalarAsync(string connectionString, string sql)
+    {
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = sql;
+        return await cmd.ExecuteScalarAsync();
+    }
+
     public static async Task ExecuteAsync(string connectionString, string sql)
     {
         await using var connection = new SqlConnection(connectionString);
@@ -44,6 +70,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
         await cmd.ExecuteNonQueryAsync();
     }
 }
+
+/// <summary>A SQL login created for a reports test: its name and a connection string for the test database.</summary>
+public sealed record ReportLogin(string Name, string ConnectionString);
 
 [CollectionDefinition(Name)]
 public sealed class SqlServerCollection : ICollectionFixture<SqlServerFixture>

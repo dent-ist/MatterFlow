@@ -1,6 +1,8 @@
 using MatterFlow.Reports.Application;
+using MatterFlow.Reports.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatterFlow.Reports;
 
@@ -11,7 +13,9 @@ public static class ReportsModule
     public static IServiceCollection AddReportsModule(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddControllers().AddApplicationPart(typeof(ReportsModule).Assembly);
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IReportsAvailability, ReportsAvailability>();
+        services.AddHostedService<ReportsStartupProbeService>();
         return services;
     }
 }

@@ -29,4 +29,32 @@ public class SourceHygieneRulesTests
 
         offenders.ShouldBeEmpty("Use SqlException.Number is 2601 or 2627 instead of matching message text: " + string.Join(", ", offenders));
     }
+
+    /// <summary>Reports epic #671 (spec 7.10, 16.3 e): only the Reports module reads the report connection, so nothing else can run SQL as the report login.</summary>
+    [Fact]
+    public void Only_the_reports_module_reads_the_report_connection_string()
+    {
+        var offenders = ProductSources()
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(f => File.ReadAllText(f).Contains("ReportsReadOnly", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .Order()
+            .ToList();
+
+        offenders.ShouldBeEmpty("Only MatterFlow.Reports may resolve ConnectionStrings:ReportsReadOnly: " + string.Join(", ", offenders));
+    }
+
+    /// <summary>Inside the module only <c>ReportsAvailability</c> reads the setting; everything else asks <c>IReportsAvailability.ReportConnectionString</c>, which is null unless the login passed the probe.</summary>
+    [Fact]
+    public void Inside_the_reports_module_one_class_reads_the_report_connection_string()
+    {
+        var offenders = ProductSources()
+            .Where(f => f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(f => File.ReadAllText(f).Contains("GetConnectionString(", StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .Order()
+            .ToList();
+
+        offenders.ShouldBe(["ReportsAvailability.cs"]);
+    }
 }

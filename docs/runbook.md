@@ -272,6 +272,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Uploads:** an email upload near 12 MB succeeds; a larger one is refused cleanly.
 - [ ] **Rich text description (script 26, decision R):** after the upgrade, an old task still shows its description as it was (plain text with line breaks); paste a table from Outlook into a new task's Description, save, reload: the table is there; paste a table of more than 200 cells: it arrives as text with a notice; no CSP violation in the console. Support note: the database column `Task.DescriptionFormat` is `TEXT` for tasks created before the upgrade and `HTML` after; a description error `HTML_TOO_LARGE`, `TABLE_TOO_LARGE` or `TOO_COMPLEX` means the pasted content is over a limit (100,000 characters of HTML, 200 table cells, nesting 20), not a server fault.
 - [ ] **Upgrade drill:** do section 7.2 once on a copy of production data, including `--migrate-only` run by the DBA account, and the rollback restore of section 7.3.
+- [ ] **Report login (section 11):** with `ConnectionStrings__ReportsReadOnly` set, Administration > Reports shows "Ready" with writes and audit tables denied; temporarily adding the login to `db_datareader` turns it to `TooPrivileged` (then restore).
 - [ ] **Backups:** the nightly and log backups run, and one restore drill succeeded (section 8).
 
 ## 10. Troubleshooting
@@ -287,3 +288,43 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - **Display names show as `KE\sam`:** AD lookup is off (default) or failing; an admin can edit the profile.
 - **Wrong "overdue" times:** check the client sends `X-Time-Zone`; the server falls back to `Firm:TimeZoneId`.
 - **Blank page after an upgrade:** a stale cached `index.html` pointing to removed hashed files; hard refresh, and check that no proxy overrides `Cache-Control`.
+
+## 11. Reports: the read-only report login
+
+Every report runs on its **own SQL login** that can read business data and nothing else (epic #671, ADR 029, `docs/ux/reports-review/README.md` sections 7 and 8). Reports are **off** until this login exists and passes the startup check; there is no fallback to the application login.
+
+### 11.1 What the schema script already did
+
+Script `30-reports.sql` (run by the app at startup like every script) created the database role **`mf_report_reader`**: `SELECT` on the tables listed as `allow` in `db/report-access.json`, an explicit `DENY` on audit, sign-in identities, seed/migration bookkeeping, notifications, permissions and the Reports tables, and a `DENY` on every write, `EXECUTE` and `ALTER` right in `dbo`. The role is **not** a member of `db_datareader`. A test in the build fails when a table is added without a decision in `db/report-access.json`, so the list cannot drift silently.
+
+### 11.2 What the DBA does once (production)
+
+1. Create the login on the SQL Server. SQL authentication with a long random password kept in the IIS/secret store, or a dedicated Windows/Entra account if policy prefers. **Not** the app-pool gMSA (the report identity must never be able to write):
+   `CREATE LOGIN [mf_reports] WITH PASSWORD = N'<generated>', CHECK_POLICY = ON;`
+2. In the MatterFlow database: `CREATE USER [mf_reports] FOR LOGIN [mf_reports]; ALTER ROLE mf_report_reader ADD MEMBER [mf_reports];`
+3. Do **not** add the login to `sysadmin`, `db_owner`, `db_datareader`, `db_datawriter`, `db_ddladmin`, `mf_app` or `mf_migrator`, and grant no `IMPERSONATE`, no `EXECUTE`, no extra `SELECT`.
+4. Put the connection string in the secret store / environment as `ConnectionStrings__ReportsReadOnly`, for example
+   `Server=<sql>;Database=MatterFlow;User Id=mf_reports;Password=<secret>;Encrypt=True;TrustServerCertificate=False;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly`.
+   It must name a **different login** than the application's (`ConnectionStrings:MatterFlow`/`Default`/`Migrations`); the same login is refused. The app forces a small pool (8), a 10 s connect timeout and read intent.
+5. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'MatterFlow'`.
+6. Optional: a Resource Governor workload group for the login (`MAX_DOP 2`, `REQUEST_MAX_MEMORY_GRANT_PERCENT 10`).
+7. Restart the site (or press "Check again" on Administration > Reports > Settings). The health panel must show the login name, **writes denied**, **audit tables denied** and "can read N tables".
+8. Review the list of readable tables quarterly (schema browser) and rotate the password like any service account.
+
+### 11.3 The startup check and its states
+
+At startup (and on "Check again", `POST /api/v1/report-admin/status/check`) the app connects with the report login and asks SQL Server what it may do (`IS_MEMBER`, `IS_SRVROLEMEMBER`, `HAS_PERMS_BY_NAME`; it reads no data and writes nothing). Reports stay **off** and the page says why:
+
+| State | Meaning | Fix |
+|---|---|---|
+| `NotConfigured` | `ConnectionStrings:ReportsReadOnly` is missing or invalid | Section 11.2 step 4 |
+| `SharedWithApplication` | the report string is the application's own login | Create the separate login |
+| `LoginFailed` | cannot connect (SQL error number is shown, never the server text) | Password, login, database user, network |
+| `RoleMissing` | connects, but is not in `mf_report_reader` | Step 2 |
+| `TooPrivileged` | sysadmin, db_owner, a broad role, can write/execute/create, or can read a denied table | Remove the extra rights (step 3) |
+| `CompatibilityTooLow` | compatibility level below 130 | Raise it, or ask for the table-valued-parameter fallback |
+
+### 11.4 Demo / development
+
+`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.**
+

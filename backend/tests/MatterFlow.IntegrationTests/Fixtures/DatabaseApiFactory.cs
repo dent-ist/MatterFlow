@@ -14,7 +14,7 @@ namespace MatterFlow.IntegrationTests.Fixtures;
 /// Test users are chosen with the <c>X-Dev-User</c> header. A test-only controller supplies permission-protected endpoints until the
 /// feature controllers exist.
 /// </summary>
-public sealed class DatabaseApiFactory(string connectionString, string? environment = null, bool seedStarterConfiguration = false, int dashboardCacheSeconds = 0, int? readTimeoutSeconds = null)
+public sealed class DatabaseApiFactory(string connectionString, string? environment = null, bool seedStarterConfiguration = false, int dashboardCacheSeconds = 0, int? readTimeoutSeconds = null, string? reportsConnectionString = null)
     : WebApplicationFactory<Program>
 {
     public const string AdminAccount = @"ke\kekim";
@@ -35,6 +35,9 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("Migrations:Enabled", "true");
         // The notification scheduler's timer stays off in tests; the scheduler tests call NotificationScheduler.RunOnceAsync themselves.
         builder.UseSetting("Notifications:Scheduler:Enabled", "false");
+        // The report login is a separate connection (epic #671). Tests run in Development, whose appsettings point at the demo login of a dev
+        // container, so it is blanked unless the test brings its own.
+        builder.UseSetting("ConnectionStrings:ReportsReadOnly", reportsConnectionString ?? "");
         builder.UseSetting("Auth:Provider", "Dev");
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
         builder.UseSetting("Seed:StarterConfiguration:Enabled", seedStarterConfiguration ? "true" : "false");

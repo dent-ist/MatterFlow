@@ -12,4 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The access catalogue of the report login (script 30): the startup probe and the schema browser need the same allow/deny list as the database. -->
+    <EmbeddedResource Include="..\..\..\..\db\report-access.json" LogicalName="db.report-access.json" />
+  </ItemGroup>
 </Project>

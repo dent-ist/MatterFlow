@@ -81,7 +81,7 @@ npm run setup      # frontend dependencies and the form-engine library (first ti
 npm start          # starts SQL Server (Docker), then the API on :5080 and the Angular dev server on :4200
 ```
 
-`npm start` sets the development environment variables itself (local Docker connection string, initial admin `KE\kekim`, Dev auth, starter data) and stops both servers on Ctrl+C. Other scripts: `npm run db:up`, `db:down`, `db:reset` (deletes the database volume), `api`, `web`, `form-engine`. Open http://localhost:4200 (Swagger at http://localhost:5080/swagger).
+`npm start` sets the development environment variables itself (local Docker connection string, initial admin `KE\kekim`, Dev auth, starter data) and stops both servers on Ctrl+C. `npm start` also provisions the demo read-only report login (`db:report-login`, see `docs/runbook.md` section 11). Other scripts: `npm run db:up`, `db:down`, `db:reset` (deletes the database volume), `api`, `web`, `form-engine`. Open http://localhost:4200 (Swagger at http://localhost:5080/swagger).
 
 ## Walking skeleton: run it end to end
 
