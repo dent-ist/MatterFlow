@@ -246,6 +246,11 @@ export class MoreFilters {
     }
     /* Row 1 of the stacked bar: the quick views at the left (their own auto margin), the buttons at the right, never re-ordered. */
     .fbar--row1 {
+      margin-bottom: 0;
+    }
+    /* The grid's own header band is the separation below the toolbar (the 36 px title row of the page header, #600, took the 4 px that the
+       density contracts of the work lists leave out: chrome 230 px, 11 Task Queue rows at 1366x768, #755); a row 2 needs the gap. */
+    .fbar--row1:has(+ .fbar--row2) {
       margin-bottom: var(--mf-s1);
     }
     /* A phone (the work lists, #192): one Filters button; its sheet holds every filter, so "Other filters" is not offered. */
