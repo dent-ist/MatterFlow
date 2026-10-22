@@ -33,6 +33,8 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         builder.UseSetting("ConnectionStrings:MatterFlow", connectionString);
         builder.UseSetting("ConnectionStrings:Default", connectionString);
         builder.UseSetting("Migrations:Enabled", "true");
+        // The notification scheduler's timer stays off in tests; the scheduler tests call NotificationScheduler.RunOnceAsync themselves.
+        builder.UseSetting("Notifications:Scheduler:Enabled", "false");
         builder.UseSetting("Auth:Provider", "Dev");
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
         builder.UseSetting("Seed:StarterConfiguration:Enabled", seedStarterConfiguration ? "true" : "false");

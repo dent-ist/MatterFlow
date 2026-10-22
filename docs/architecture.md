@@ -206,6 +206,10 @@ CREATE TABLE dbo.SchemaMigration (
 
 Failed scripts are rolled back and **not** recorded as applied; the failure is logged (and the startup aborts). `Success=0` rows are only written for scripts that cannot run in a transaction (4.4) so operators can see the partial state. A `Success=0` row blocks startup until an operator fixes the database and removes the row (documented runbook).
 
+### 4.2a Background work: the notification scheduler
+
+The host has one background job (epic #753, `MatterFlow.Notifications`): `NotificationSchedulerService`, a `BackgroundService` with a 5-minute `PeriodicTimer`. Being a hosted service it starts only after the migrations and seeds above have finished. Each tick opens a scope and calls `NotificationScheduler.RunOnceAsync`, which takes the SQL Server application lock `Notifications.Scheduler` without waiting (a late or second run is skipped), then runs the `INotificationJob`s in order: `task-due` (events 2 and 4), `task-stalled` (event 6) and, at most once a day, `retention`. Jobs are idempotent by the unique key of `dbo.Notification`; one job failing is logged and does not stop the others. Time-based rules use the firm time zone (`Firm:TimeZoneId`). The Notifications module may reference only Contracts, so the job reads the task, matter and audit tables through its own SQL in one place (`Infrastructure/Scheduling`); the integration tests run those statements against the real schema. The health entry `notification-scheduler` on `/health/live` turns `Degraded` after 30 minutes without a completed run. On IIS the pool must stay running (runbook 6.1). Tests switch the timer off (`Notifications:Scheduler:Enabled=false`) and call `RunOnceAsync`.
+
 ### 4.3 Startup sequence
 
 Runs in `Program.cs` **before** the host starts listening (before `app.Run()`; not in a hosted service, so no request can arrive against an old schema).

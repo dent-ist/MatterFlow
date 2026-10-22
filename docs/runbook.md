@@ -46,6 +46,7 @@ password in any setting.
 | `Dashboard:Workload:LightMax`, `Dashboard:Workload:NormalMax` | Defaults `3` and `8`. Load levels of the Dashboard Users tab by number of open Tasks per person: `IDLE` (0), `LIGHT` (up to LightMax), `NORMAL` (up to NormalMax), `HEAVY` above. A capacity hint for leads, not a performance rating; no restart-free change (per process configuration). |
 | `Queries:ReadCommandTimeoutSeconds` | Default `15`. SQL command timeout of the Task queue, My Work, Pod Work, search, audit browser and dashboard reads (all other calls keep 30 s). A query over the limit is cancelled and answered with 503 `QUERY_TIMEOUT` ("narrow the filters"), so one pathological filter cannot hold a connection. `0` keeps the 30 s default. |
 | `Hosting:ServeSpa` | Unset (default): the Angular build in `wwwroot` is served when `wwwroot/index.html` exists and the environment is not Development. `true` forces it on, `false` runs the API alone. |
+| `Notifications:Scheduler:Enabled` | Default `true`. The background timer that makes the scheduled notifications and removes old ones (section 6.1). Further keys `IntervalMinutes`, `InitialDelaySeconds`, `DegradedAfterMinutes`, `RetentionBatchPauseMilliseconds`. |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set in `web.config`). |
 
 ## 3. Database and migrations
@@ -151,7 +152,8 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 ### 5.5 IIS site
 
 1. App pool `MatterFlow`: **.NET CLR version: No Managed Code**, pipeline Integrated, identity **Custom account** `KE\svc-matterflow$` (leave the password empty for a gMSA),
-   Start mode `AlwaysRunning`, Idle time-out `0` (the first request otherwise waits for the app to start).
+   Start mode `AlwaysRunning`, Idle time-out `0` (the first request otherwise waits for the app to start, and the notification scheduler, section 6.1, would stop with the idle pool).
+   `configure-iis.ps1`, shipped in every win-x64 package, sets both and the site's `preloadEnabled` idempotently (`.\configure-iis.ps1 -SiteName MatterFlow -AppPoolName MatterFlow`).
 2. Site `MatterFlow`: physical path `C:\inetpub\matterflow`, application pool `MatterFlow`, HTTPS binding on 443 with the certificate and host name `matterflow.firm.local`.
    Remove the HTTP binding, or keep it only to redirect (section 5.5 step 4).
 3. **Authentication** (site level): *Windows Authentication* Enabled, *Anonymous Authentication* Disabled. These switches are locked at server level
@@ -175,12 +177,33 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 
 | URL | Meaning |
 |---|---|
-| `/health/live` | 200 `Healthy` as long as the process runs; no dependency checks. |
+| `/health/live` | 200 `Healthy` as long as the process runs; no dependency checks. Also lists the notification scheduler (section 6.1): 200 `Degraded` when it has not completed a run for 30 minutes. |
 | `/health/ready` | 200 `{"status":"ready"}` when the database is reachable with the application connection and `dbo.SchemaMigration` lists every script embedded in this build as applied successfully. Otherwise 503 `{"status":"not_ready","reason":"..."}` with one of: `database_not_configured`, `database_unreachable`, `migrations_pending`, `migration_failed`. No server names, messages or stack traces. |
 
 Both are exempt from the app's own authorization (anonymous at the API level). On IIS they are behind Windows authentication like everything else, so an external
 monitor needs a domain account (or `curl --negotiate`). Ship the Windows Event Log and the application log to the firm's monitoring and alert on 503 from `/health/ready`
 for more than a few minutes.
+
+### 6.1 Notification scheduler
+
+The in-app notifications that no person's action causes (a task is due within a day, a task is overdue, an unassigned or on-hold task has waited for a while) and the
+clean-up of old notifications are made by a background timer inside the web application (`NotificationSchedulerService`, epic #753). It needs the process to stay up:
+
+- **IIS:** the application pool must have Start mode `AlwaysRunning` and Idle time-out `0`, and the site `preloadEnabled` (script `configure-iis.ps1`, section 5.5). With the default
+  idle time-out of 20 minutes the pool sleeps, the timer stops and no scheduled notification is made until the next request wakes the app. The IIS role service *Application Initialization*
+  (`Web-AppInit`) lets preload start the app after a recycle; without it the app starts with the first signed-in request after a recycle (a recycle is rare: the pool's periodic restart, a deploy).
+- **Rhythm:** every 5 minutes (first run 30 seconds after start). One run takes the SQL Server application lock `Notifications.Scheduler` without waiting, so overlapping runs and a second web server
+  never execute twice; the late one logs "another run holds the lock" and skips. Running a step again creates nothing new (keys carry the due date or the start of the state).
+- **Steps, in this order:** `task-due` (events 2 and 4, the firm time zone `Firm:TimeZoneId` decides "today"), `task-stalled` (event 6: unassigned 2 calendar days, on hold 5 calendar days), and once a day
+  `retention` (deletes read notifications older than 90 days and any notification older than 365 days, in batches of 1,000 with a 100 ms pause). A step that throws is logged
+  (`Notification scheduler: <step> failed`) and the other steps and the timer carry on. Each finished step logs how many rows it created or deleted.
+- **First run after the release:** every task that is already overdue is reported once to its assignee and its matter's managers (the current state, never one notice per missed day). Expect a burst of
+  notifications for the first few minutes after the first deploy.
+- **Health:** `/health/live` lists the check `notification-scheduler`. It is `Healthy` while a run completed in the last 30 minutes and `Degraded` (HTTP 200, text `Degraded`) when none did; it is never `Unhealthy`,
+  because people can still work. `/health/ready` is not affected. Alert on `Degraded` for more than an hour: look in the application log for `Notification scheduler` lines, check that the pool is running
+  (`startMode`), and that the database account has DELETE on `dbo.Notification` (script 29).
+- **Settings** (all optional): `Notifications:Scheduler:Enabled` (default `true`; `false` switches the timer off, for example on a second web server that must not run it), `IntervalMinutes` (5),
+  `InitialDelaySeconds` (30), `DegradedAfterMinutes` (30), `RetentionBatchPauseMilliseconds` (100).
 
 ## 7. Upgrade and rollback
 

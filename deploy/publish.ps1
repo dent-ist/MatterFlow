@@ -43,7 +43,10 @@ Copy-Item -Path (Join-Path $browser '*') -Destination $wwwroot -Recurse -Force
 
 Write-Host '==> Deployment templates'
 Copy-Item (Join-Path $root 'deploy\appsettings.Production.template.json') $Output -Force
-if ($Runtime -like 'win-*') { Copy-Item (Join-Path $root 'deploy\web.config') (Join-Path $Output 'web.config') -Force }
+if ($Runtime -like 'win-*') {
+  Copy-Item (Join-Path $root 'deploy\web.config') (Join-Path $Output 'web.config') -Force
+  Copy-Item (Join-Path $root 'deploy\configure-iis.ps1') $Output -Force
+}
 
 $count = (Get-ChildItem $wwwroot -Recurse -File).Count
 Write-Host "Published to $Output ($count static files)"

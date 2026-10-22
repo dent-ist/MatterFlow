@@ -68,6 +68,10 @@ conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_pa
   export Auth__Dev__DefaultUser='ke\kekim'
   export Bootstrap__SystemAdmins__0='ke\kekim'
   export Seed__StarterConfiguration__Enabled=true
+  # The notification scheduler (timer inside the API, epic #753) ticks every minute here instead of every five, so the scheduled-notification
+  # specs do not wait five minutes. Production keeps the defaults (first run after 30 s, then every 5 minutes).
+  export Notifications__Scheduler__InitialDelaySeconds=2
+  export Notifications__Scheduler__IntervalMinutes=1
   # The per-user request budgets (RateLimits, SEC2-03) are sized for people. The suite runs all workers and every setup call as one System
   # Admin, so under load it used up the task-write budget (429 TOO_MANY_REQUESTS on POST /tasks in test setup). Raised for this throwaway
   # stack only; the defaults in code and in production configuration are unchanged.

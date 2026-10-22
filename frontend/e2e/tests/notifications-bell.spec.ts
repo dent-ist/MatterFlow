@@ -188,6 +188,33 @@ test.describe('Notification bell and panel', () => {
   });
 });
 
+test.describe('Scheduled notifications reach the bell', () => {
+  test('an overdue task shows up for its assignee within a scheduler tick, once', async ({
+    seed,
+    admin,
+    asUser,
+  }) => {
+    test.setTimeout(180_000);
+    const { tech, world } = await setup(seed, admin);
+    const yesterday = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+    const title = `Overdue ${uid()}`;
+    await seed.task(world, { title, assignedUserId: tech.userId, dueDate: yesterday });
+
+    const page = await asUser(tech.username);
+    await page.goto('/tasks');
+    // Assigned (create path) at once; overdue when the scheduler runs (every minute on the e2e stack).
+    await expect(badge(page)).toHaveText('2', { timeout: 120_000 });
+    await bell(page).click();
+    const rows = panel(page).locator('[data-notification-item]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first()).toContainText('is overdue');
+    await expect(rows.first()).toContainText(title);
+    await page.waitForTimeout(65_000); // another tick: nothing new for the same due date
+    await page.reload();
+    await expect(badge(page)).toHaveText('2');
+  });
+});
+
 test.describe('Notifications page', () => {
   test('filter, paging and mark all as read, restored from the address', async ({
     admin,

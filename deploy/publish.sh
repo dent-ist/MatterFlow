@@ -30,6 +30,6 @@ cp -R "$browser/." "$out/wwwroot/"
 
 echo "==> Deployment templates"
 cp "$root/deploy/appsettings.Production.template.json" "$out/"
-case "$rid" in win-*) cp "$root/deploy/web.config" "$out/web.config" ;; esac
+case "$rid" in win-*) cp "$root/deploy/web.config" "$out/web.config"; cp "$root/deploy/configure-iis.ps1" "$out/" ;; esac
 
 echo "Published to $out ($(find "$out/wwwroot" -type f | wc -l) static files)"

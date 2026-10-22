@@ -39,7 +39,7 @@ public static class ModuleComposition
         services.AddWorkViewsModule(configuration);
         services.AddSearchModule();
         services.AddIntakeModule();
-        services.AddNotificationsModule();
+        services.AddNotificationsModule(configuration);
         services.AddStarterConfigurationSeeding();
         return services;
     }
