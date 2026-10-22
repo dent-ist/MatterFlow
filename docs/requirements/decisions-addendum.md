@@ -341,3 +341,24 @@ Owner brief of 2026-10-22; the items below are the owner's binding decisions plu
 9. **No new or changed keyboard shortcuts (owner).** Phase 2 backlog #420.
 10. **Bundle (owner):** Reports pages are lazy routes; the generated api-client and lookup-store are never imported statically from eager shell code; initial bundle stays under 700 kB.
 11. **Audit:** every run (user, report, version, parameters, row count, truncated) and every change to SQL, parameters and assignments is logged.
+
+
+## AH. Notifications decisions (decided 2026-10-22, epic #753; review `docs/ux/notifications-review/`)
+
+Owner decisions (2026-10-22) first, PM decisions after. Letter AH was chosen by the owner for this epic (AD is the last section on dev; AE to AG are reserved by other epics).
+
+1. **Bell, panel, page (owner).** Bell in the header next to the user menu with an unread count; a panel of recent notifications, newest first (one-line message, time, unread dot, link to the task or matter; clicking marks read; Mark all as read; link to `/notifications` with a read/unread filter and paging). Accessibility: polite live region, name "Notifications, n unread", no sound.
+2. **Delivery (owner).** The client polls every 30 seconds. No email, no Teams, no browser push, no sounds in this release. A daily digest email may come later; the design stays open and is not in scope.
+3. **Rules (owner).** Created by the server in the same transaction as the action; recipients only; never the person who made the change; a person sees only notifications for objects they may still view (permission re-checked on every read).
+4. **First-release events (owner approved all 8).** Technician: task assigned to you; your task overdue or due within a day; comment on or mention of you in your task. Project manager (Primary or Secondary of the matter): task on your matter becomes overdue; new task on your matter (skipped when you created it); task unassigned or on hold for a while; you were set as a matter's Primary or Secondary manager. Pod Lead: task unassigned in your pod.
+5. **Preferences and housekeeping (owner).** A "Notifications" section on My profile with one switch per event type, all on by default. Read notifications are deleted after about 90 days.
+6. **Data (owner).** A new `Notification` table through a new numbered SQL script (the next free number at implementation time). Scheduled events need a background job.
+7. **No new or changed keyboard shortcuts (owner, #420); the initial bundle stays under 700 kB (owner):** the bell is lazy-loaded and eager shell code never statically imports the generated API client or the lookup store.
+8. **New module, not an existing one (PM, #730).** `MatterFlow.Notifications` with `.Contracts`; other modules call only `INotificationPublisher`. The audit log and task Activity are not the source (compliance record, no recipients, not mutable).
+9. **Endpoints under `/me/notifications`, no new permission (PM, #732, #733).** The bell needs `Task.View`; `contracts/permissions.json` is unchanged. Visibility is re-checked with the task/matter predicate in list, count and poll; hidden rows are never shown as placeholders.
+10. **Cheap polling (PM, #733, #745).** One `poll` call with `sinceId`, ETag and 304; jitter; pause when the tab is hidden or the shell is offline; errors never toast. About 100 requests per minute for 50 users.
+11. **One notification per person per action, with a priority order (PM, #730).** Messages are server-written snapshots (README 3.1). Idempotency by a unique key that carries the due date or state-change time.
+12. **Preferences stored sparsely and applied at creation (PM, #734).** Turning a switch off stops future items; existing ones stay; turning on does not backfill.
+13. **Scheduler is new infrastructure (PM, #741).** `BackgroundService`, 5-minute tick, `sp_getapplock`, IIS always-running configured in `deploy/`, degraded health when stalled. Catch-up sends current state only.
+14. **No toast, no sound, no tab-title count for new items (PM).** Badge and polite live region only.
+15. **Dependencies and open questions (PM).** Events 4 to 7 wait for the Project Manager role epic (not on dev when written); mentions need a new composer picker (#737, cuttable); thresholds for "a while" are 2 days unassigned and 5 days on hold; see README section 14 for Q1 to Q8.
