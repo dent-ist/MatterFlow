@@ -41,6 +41,27 @@ public sealed class ReportAnalyzeApiTests(SqlServerFixture sql) : IAsyncLifetime
         body.Occurrences.Count.ShouldBe(3);
         body.Issues.Select(i => i.Code).ShouldBe(["AT_SIGN_NOT_ALLOWED"]);
         body.DateRangeCandidates.ShouldBe(["PERIOD"]);
+        body.Validation.IsValid.ShouldBeFalse();
+        body.Validation.Errors.Select(e => e.Code).ShouldBe(["AT_SIGN_NOT_ALLOWED"]);
+        body.Validation.SqlHash.Length.ShouldBe(64);
+    }
+
+    [Fact]
+    public async Task The_validator_verdict_reaches_the_editor_with_codes_and_positions()
+    {
+        var manager = await _h.UserWithAsync(@"KE\manager", "Report.Manage");
+        const string ok = "SELECT p.Name FROM dbo.Pod p WHERE p.PodId = :POD";
+        const string bad = "SELECT 1;\nDROP TABLE dbo.Pod";
+
+        var good = (await (await manager.PostAsJsonAsync(Analyze, new AnalyzeRequest(ok))).Content.ReadFromJsonAsync<AnalyzeResponse>())!;
+        var refused = (await (await manager.PostAsJsonAsync(Analyze, new AnalyzeRequest(bad))).Content.ReadFromJsonAsync<AnalyzeResponse>())!;
+
+        good.Validation.IsValid.ShouldBeTrue();
+        good.Validation.SqlHash.ShouldBe(Convert.ToHexString(MatterFlow.Reports.Domain.SqlValidator.Hash(ok)));
+        refused.Validation.IsValid.ShouldBeFalse();
+        var error = refused.Validation.Errors.ShouldHaveSingleItem();
+        error.Code.ShouldBe("MULTIPLE_STATEMENTS");
+        (error.Line, error.Column).ShouldBe((2, 1));
     }
 
     [Fact]

@@ -56,16 +56,24 @@ public sealed record PlaceholderOccurrenceResponse(string Name, int Start, int L
 /// <param name="Column">1-based column.</param>
 public sealed record SqlIssueResponse(string Code, string Message, int Position, int Line, int Column);
 
+/// <summary>The verdict of the one-SELECT-only check (defence in depth; the report login's permissions are the real control).</summary>
+/// <param name="IsValid">True when the query is exactly one SELECT without forbidden constructs.</param>
+/// <param name="Errors">Every reason with a stable code and the position in the text as typed.</param>
+/// <param name="SqlHash">SHA-256 of the exact text (hex), stored with the version.</param>
+public sealed record SqlValidationResponse(bool IsValid, IReadOnlyList<SqlIssueResponse> Errors, string SqlHash);
+
 /// <summary>What the editor shows next to the query: placeholders with positions and problems. Nothing is executed.</summary>
 /// <param name="Placeholders">Distinct placeholders in order of first appearance.</param>
 /// <param name="Occurrences">Every token with its position.</param>
 /// <param name="Issues">Problems with the text.</param>
 /// <param name="DateRangeCandidates">Names X for which both X_FROM and X_TO are used (proposed as one date range).</param>
+/// <param name="Validation">The one-SELECT-only verdict.</param>
 public sealed record AnalyzeResponse(
     IReadOnlyList<DetectedPlaceholderResponse> Placeholders,
     IReadOnlyList<PlaceholderOccurrenceResponse> Occurrences,
     IReadOnlyList<SqlIssueResponse> Issues,
-    IReadOnlyList<string> DateRangeCandidates);
+    IReadOnlyList<string> DateRangeCandidates,
+    SqlValidationResponse Validation);
 
 /// <summary>Report administration (<c>Report.Manage</c>). The authoring endpoints arrive with the admin API issues.</summary>
 [ApiController]
@@ -99,15 +107,20 @@ public class ReportAdminController(IReportsAvailability availability) : Controll
         if (text.Length > SqlScanner.MaxQueryLength)
         {
             var tooLong = new SqlIssueResponse(ScanIssueCodes.TextTooLong, $"The query is longer than {SqlScanner.MaxQueryLength:N0} characters.", SqlScanner.MaxQueryLength, 1, 1);
-            return new AnalyzeResponse([], [], [tooLong], []);
+            return new AnalyzeResponse([], [], [tooLong], [], new SqlValidationResponse(false, [tooLong], Convert.ToHexString(SqlValidator.Hash(text))));
         }
 
         var scan = SqlScanner.Scan(text);
+        var verdict = SqlValidator.Validate(text, scan, SqlPlaceholderRewriter.RewriteMapped(text, scan.Occurrences, o => SqlPlaceholderRewriter.ParameterName(o.Name)));
         return new AnalyzeResponse(
             scan.Placeholders.Select(p => new DetectedPlaceholderResponse(p.Name, p.DisplayName, p.Position, p.Line, p.Column, p.Occurrences, p.IsBuiltIn)).ToList(),
             scan.Occurrences.Select(o => new PlaceholderOccurrenceResponse(o.Name, o.Start, o.Length, o.Line, o.Column)).ToList(),
             scan.Issues.Select(i => new SqlIssueResponse(i.Code, i.Message, i.Position, i.Line, i.Column)).ToList(),
-            scan.DateRangeCandidates);
+            scan.DateRangeCandidates,
+            new SqlValidationResponse(
+                verdict.IsValid,
+                verdict.Errors.Select(e => new SqlIssueResponse(e.Code, e.Message, e.Position, e.Line, e.Column)).ToList(),
+                Convert.ToHexString(verdict.Hash)));
     }
 
     private const int MaxAnalyzeBytes = 256 * 1024;

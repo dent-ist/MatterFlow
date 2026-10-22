@@ -12363,6 +12363,7 @@ export interface AnalyzeResponse {
     occurrences: PlaceholderOccurrenceResponse[];
     issues: SqlIssueResponse[];
     dateRangeCandidates: string[];
+    validation: SqlValidationResponse;
 
     [key: string]: any;
 }
@@ -13957,6 +13958,14 @@ export interface SqlIssueResponse {
     position: number;
     line: number;
     column: number;
+
+    [key: string]: any;
+}
+
+export interface SqlValidationResponse {
+    isValid: boolean;
+    errors: SqlIssueResponse[];
+    sqlHash: string;
 
     [key: string]: any;
 }

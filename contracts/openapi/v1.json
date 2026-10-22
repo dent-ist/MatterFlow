@@ -8916,7 +8916,8 @@
           "placeholders",
           "occurrences",
           "issues",
-          "dateRangeCandidates"
+          "dateRangeCandidates",
+          "validation"
         ],
         "type": "object",
         "properties": {
@@ -8943,6 +8944,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "validation": {
+            "$ref": "#/components/schemas/SqlValidationResponse"
           }
         }
       },
@@ -14556,6 +14560,28 @@
           "column": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "SqlValidationResponse": {
+        "required": [
+          "isValid",
+          "errors",
+          "sqlHash"
+        ],
+        "type": "object",
+        "properties": {
+          "isValid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SqlIssueResponse"
+            }
+          },
+          "sqlHash": {
+            "type": "string"
           }
         }
       },

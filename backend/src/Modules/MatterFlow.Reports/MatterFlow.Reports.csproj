@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" />
   </ItemGroup>
   <ItemGroup>
     <!-- The access catalogue of the report login (script 30): the startup probe and the schema browser need the same allow/deny list as the database. -->
