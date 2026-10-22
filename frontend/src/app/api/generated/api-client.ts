@@ -3395,6 +3395,89 @@ export class UserAvailabilityClient implements IUserAvailabilityClient {
     }
 }
 
+export interface IMatterManagersClient {
+    /**
+     * @param q (optional) 
+     * @param take (optional) 
+     * @return OK
+     */
+    lookupMatterManagers(q?: string | undefined, take?: number | undefined): Observable<MatterManagerItem[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterManagersClient implements IMatterManagersClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param q (optional) 
+     * @param take (optional) 
+     * @return OK
+     */
+    lookupMatterManagers(q?: string | undefined, take?: number | undefined): Observable<MatterManagerItem[]> {
+        let url_ = this.baseUrl + "/api/v1/users/matter-managers?";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (take === null)
+            throw new globalThis.Error("The parameter 'take' cannot be null.");
+        else if (take !== undefined)
+            url_ += "take=" + encodeURIComponent("" + take) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLookupMatterManagers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLookupMatterManagers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterManagerItem[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterManagerItem[]>;
+        }));
+    }
+
+    protected processLookupMatterManagers(response: HttpResponseBase): Observable<MatterManagerItem[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterManagerItem[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMeClient {
     /**
      * @return OK
@@ -6057,12 +6140,19 @@ export interface IMattersClient {
      * @param matterRef (optional) 
      * @param name (optional) 
      * @param client (optional) 
+     * @param primaryManagerId (optional) 
+     * @param secondaryManagerId (optional) 
+     * @param managerId (optional) 
+     * @param managedByMe (optional) 
+     * @param hasNoManager (optional) 
+     * @param hasPrimaryManager (optional) 
+     * @param hasSecondaryManager (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse>;
     /**
      * @return Created
      */
@@ -6088,6 +6178,10 @@ export interface IMattersClient {
      * @return OK
      */
     getMatterSummary(matterId: number): Observable<MatterSummaryResponse>;
+    /**
+     * @return OK
+     */
+    setMatterManagers(matterId: number, body: SetMatterManagersRequest): Observable<MatterResponse>;
     /**
      * @return OK
      */
@@ -6119,12 +6213,19 @@ export class MattersClient implements IMattersClient {
      * @param matterRef (optional) 
      * @param name (optional) 
      * @param client (optional) 
+     * @param primaryManagerId (optional) 
+     * @param secondaryManagerId (optional) 
+     * @param managerId (optional) 
+     * @param managedByMe (optional) 
+     * @param hasNoManager (optional) 
+     * @param hasPrimaryManager (optional) 
+     * @param hasSecondaryManager (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
+    listMatters(q?: string | undefined, clientId?: number | undefined, isActive?: boolean | undefined, isSensitive?: boolean | undefined, matterRef?: string | undefined, name?: string | undefined, client?: string | undefined, primaryManagerId?: number | undefined, secondaryManagerId?: number | undefined, managerId?: number | undefined, managedByMe?: boolean | undefined, hasNoManager?: boolean | undefined, hasPrimaryManager?: boolean | undefined, hasSecondaryManager?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfMatterResponse> {
         let url_ = this.baseUrl + "/api/v1/matters?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -6154,6 +6255,34 @@ export class MattersClient implements IMattersClient {
             throw new globalThis.Error("The parameter 'client' cannot be null.");
         else if (client !== undefined)
             url_ += "Client=" + encodeURIComponent("" + client) + "&";
+        if (primaryManagerId === null)
+            throw new globalThis.Error("The parameter 'primaryManagerId' cannot be null.");
+        else if (primaryManagerId !== undefined)
+            url_ += "PrimaryManagerId=" + encodeURIComponent("" + primaryManagerId) + "&";
+        if (secondaryManagerId === null)
+            throw new globalThis.Error("The parameter 'secondaryManagerId' cannot be null.");
+        else if (secondaryManagerId !== undefined)
+            url_ += "SecondaryManagerId=" + encodeURIComponent("" + secondaryManagerId) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "ManagerId=" + encodeURIComponent("" + managerId) + "&";
+        if (managedByMe === null)
+            throw new globalThis.Error("The parameter 'managedByMe' cannot be null.");
+        else if (managedByMe !== undefined)
+            url_ += "ManagedByMe=" + encodeURIComponent("" + managedByMe) + "&";
+        if (hasNoManager === null)
+            throw new globalThis.Error("The parameter 'hasNoManager' cannot be null.");
+        else if (hasNoManager !== undefined)
+            url_ += "HasNoManager=" + encodeURIComponent("" + hasNoManager) + "&";
+        if (hasPrimaryManager === null)
+            throw new globalThis.Error("The parameter 'hasPrimaryManager' cannot be null.");
+        else if (hasPrimaryManager !== undefined)
+            url_ += "HasPrimaryManager=" + encodeURIComponent("" + hasPrimaryManager) + "&";
+        if (hasSecondaryManager === null)
+            throw new globalThis.Error("The parameter 'hasSecondaryManager' cannot be null.");
+        else if (hasSecondaryManager !== undefined)
+            url_ += "HasSecondaryManager=" + encodeURIComponent("" + hasSecondaryManager) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -6523,6 +6652,63 @@ export class MattersClient implements IMattersClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterSummaryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setMatterManagers(matterId: number, body: SetMatterManagersRequest): Observable<MatterResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/managers";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetMatterManagers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetMatterManagers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterResponse>;
+        }));
+    }
+
+    protected processSetMatterManagers(response: HttpResponseBase): Observable<MatterResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -9810,13 +9996,17 @@ export interface ITaskQueueClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
 }
 
 @Injectable({
@@ -9861,13 +10051,17 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
         let url_ = this.baseUrl + "/api/v1/task-queue?";
         if (group === null)
             throw new globalThis.Error("The parameter 'group' cannot be null.");
@@ -9981,6 +10175,22 @@ export class TaskQueueClient implements ITaskQueueClient {
             throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
         else if (updatedTo !== undefined)
             url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
+        if (managedByMe === null)
+            throw new globalThis.Error("The parameter 'managedByMe' cannot be null.");
+        else if (managedByMe !== undefined)
+            url_ += "managedByMe=" + encodeURIComponent("" + managedByMe) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (dueWithin === null)
+            throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
+        else if (dueWithin !== undefined)
+            url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -10077,13 +10287,17 @@ export interface IMyWorkClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
 }
 
 @Injectable({
@@ -10132,13 +10346,17 @@ export class MyWorkClient implements IMyWorkClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
         let url_ = this.baseUrl + "/api/v1/my-work?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -10268,6 +10486,22 @@ export class MyWorkClient implements IMyWorkClient {
             throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
         else if (updatedTo !== undefined)
             url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
+        if (managedByMe === null)
+            throw new globalThis.Error("The parameter 'managedByMe' cannot be null.");
+        else if (managedByMe !== undefined)
+            url_ += "managedByMe=" + encodeURIComponent("" + managedByMe) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (dueWithin === null)
+            throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
+        else if (dueWithin !== undefined)
+            url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -10361,13 +10595,17 @@ export interface IPodWorkClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
 }
 
 @Injectable({
@@ -10413,13 +10651,17 @@ export class PodWorkClient implements IPodWorkClient {
      * @param projectText (optional) 
      * @param updatedFrom (optional) 
      * @param updatedTo (optional) 
+     * @param managedByMe (optional) 
+     * @param managerId (optional) 
+     * @param role (optional) 
+     * @param dueWithin (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
         let url_ = this.baseUrl + "/api/v1/pod-work?";
         if (podId === null)
             throw new globalThis.Error("The parameter 'podId' cannot be null.");
@@ -10537,6 +10779,22 @@ export class PodWorkClient implements IPodWorkClient {
             throw new globalThis.Error("The parameter 'updatedTo' cannot be null.");
         else if (updatedTo !== undefined)
             url_ += "updatedTo=" + encodeURIComponent("" + updatedTo) + "&";
+        if (managedByMe === null)
+            throw new globalThis.Error("The parameter 'managedByMe' cannot be null.");
+        else if (managedByMe !== undefined)
+            url_ += "managedByMe=" + encodeURIComponent("" + managedByMe) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (dueWithin === null)
+            throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
+        else if (dueWithin !== undefined)
+            url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -12359,6 +12617,8 @@ export interface CreateMatterRequest {
     matterNumber: string;
     name: string;
     isSensitive?: boolean;
+    primaryManagerId?: number | undefined;
+    secondaryManagerId?: number | undefined;
     formValues?: any | undefined;
 
     [key: string]: any;
@@ -12798,6 +13058,22 @@ export interface MarkAllReadResponse {
     [key: string]: any;
 }
 
+export interface MatterManagerItem {
+    userId: number;
+    displayName: string;
+    availability: UserAvailabilitySummary;
+
+    [key: string]: any;
+}
+
+export interface MatterManagerResponse {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
 export interface MatterResponse {
     matterId: number;
     clientId: number;
@@ -12809,6 +13085,8 @@ export interface MatterResponse {
     name: string;
     isActive: boolean;
     isSensitive: boolean;
+    primaryManager: MatterManagerResponse | undefined;
+    secondaryManager: MatterManagerResponse | undefined;
     projectCount: number;
     openTaskCount: number | undefined;
     overdueTaskCount: number | undefined;
@@ -13376,6 +13654,14 @@ export interface SetActiveRequest {
 
 export interface SetAssetActiveRequest {
     isActive?: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetMatterManagersRequest {
+    primaryManagerId?: number | undefined;
+    secondaryManagerId?: number | undefined;
     rowVersion: string;
 
     [key: string]: any;
@@ -14097,6 +14383,8 @@ export interface UpdateMatterRequest {
     isSensitive?: boolean;
     rowVersion: string;
     formValues?: any | undefined;
+    primaryManagerId?: number | undefined;
+    secondaryManagerId?: number | undefined;
 
     [key: string]: any;
 }
@@ -14588,6 +14876,8 @@ export enum ApiProblemDetailsCode {
     DUPLICATE_NAME = "DUPLICATE_NAME",
     MATTER_INACTIVE = "MATTER_INACTIVE",
     MATTER_HAS_OPEN_TASKS = "MATTER_HAS_OPEN_TASKS",
+    MANAGER_NOT_ELIGIBLE = "MANAGER_NOT_ELIGIBLE",
+    MANAGER_DUPLICATE = "MANAGER_DUPLICATE",
     CLIENT_INACTIVE = "CLIENT_INACTIVE",
     PROJECT_INACTIVE = "PROJECT_INACTIVE",
     POD_INACTIVE = "POD_INACTIVE",

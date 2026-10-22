@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { MattersClient } from '../../../api/generated/api-client';
+import {
+  MatterManagersClient,
+  MatterResponse,
+  MattersClient,
+} from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import {
@@ -16,8 +20,12 @@ import {
 } from '../../../shared/testing/org-testing';
 import { MattersListPage } from './matters-list-page';
 
+const ANN = { userId: 11, displayName: 'Ann Lee', isActive: true };
+const BOB = { userId: 12, displayName: 'Bob Roe', isActive: true };
+
 describe('MattersListPage', () => {
-  let api: { listMatters: ReturnType<typeof vi.fn> };
+  let api: { listMatters: ReturnType<typeof vi.fn>; setMatterManagers: ReturnType<typeof vi.fn> };
+  let managers: { lookupMatterManagers: ReturnType<typeof vi.fn> };
   let writeText: ReturnType<typeof vi.fn>;
   let query: ReturnType<typeof fakeQuery>;
   let navigate: ReturnType<typeof vi.fn>;
@@ -25,24 +33,30 @@ describe('MattersListPage', () => {
   async function create(
     permissions: Permission[] = ['Matter.View', 'Matter.Create'],
     params: Record<string, string> = {},
+    matters: MatterResponse[] = [
+      aMatter(),
+      aMatter({
+        matterId: 8,
+        matterRef: '00001-00012',
+        clientNumber: '00001',
+        clientName: 'Beta LLC',
+        clientId: 2,
+        isSensitive: true,
+        isActive: false,
+      }),
+    ],
   ) {
     localStorage.clear();
     api = {
-      listMatters: vi.fn().mockReturnValue(
-        ok(
-          pageOfMatters(
-            aMatter(),
-            aMatter({
-              matterId: 8,
-              matterRef: '00001-00012',
-              clientNumber: '00001',
-              clientName: 'Beta LLC',
-              clientId: 2,
-              isSensitive: true,
-              isActive: false,
-            }),
-          ),
-        ),
+      listMatters: vi.fn().mockReturnValue(ok(pageOfMatters(...matters))),
+      setMatterManagers: vi.fn().mockImplementation((id: number) => ok(aMatter({ matterId: id }))),
+    };
+    managers = {
+      lookupMatterManagers: vi.fn().mockReturnValue(
+        ok([
+          { userId: 11, displayName: 'Ann Lee', availability: { state: 'AVAILABLE' } },
+          { userId: 12, displayName: 'Bob Roe', availability: { state: 'AVAILABLE' } },
+        ]),
       ),
     };
     writeText = vi.fn().mockResolvedValue(undefined);
@@ -54,6 +68,7 @@ describe('MattersListPage', () => {
         query.provider,
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: api },
+        { provide: MatterManagersClient, useValue: managers },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
@@ -285,6 +300,8 @@ describe('MattersListPage', () => {
         'Matter reference',
         'Name',
         'Client',
+        'Project manager',
+        'Secondary project manager',
         'Open tasks',
         'Overdue',
         'Status',
@@ -304,7 +321,14 @@ describe('MattersListPage', () => {
     it('leaves the count columns out without Task.View and no longer shows the Projects count', async () => {
       const fixture = await create(['Matter.View']);
       const el: HTMLElement = fixture.nativeElement;
-      expect(heads(el)).toEqual(['Matter reference', 'Name', 'Client', 'Status']);
+      expect(heads(el)).toEqual([
+        'Matter reference',
+        'Name',
+        'Client',
+        'Project manager',
+        'Secondary project manager',
+        'Status',
+      ]);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -337,6 +361,169 @@ describe('MattersListPage', () => {
         queryParams: { sort: '-overdue', page: null },
         queryParamsHandling: 'merge',
       });
+    });
+  });
+  describe('project managers (epic #667)', () => {
+    const pm = (el: HTMLElement, row: number, which: 'primary' | 'secondary') => {
+      const tr = el.querySelectorAll('tbody tr')[row];
+      return tr.querySelector(`[data-${which}-manager]`)?.textContent?.trim();
+    };
+
+    it('shows the Primary and the Secondary manager; an empty cell stays empty', async () => {
+      const fixture = await create(['Matter.View'], {}, [
+        aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
+        aMatter({ matterId: 2, matterRef: '00343-00013', primaryManager: undefined }),
+        aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
+      ]);
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(pm(el, 0, 'primary')).toBe('Ann Lee');
+      expect(pm(el, 0, 'secondary')).toBe('Bob Roe');
+      expect(pm(el, 1, 'primary')).toBe('');
+      expect(pm(el, 1, 'secondary')).toBe('');
+      expect(pm(el, 2, 'primary')).toBe('');
+      expect(pm(el, 2, 'secondary')).toBe('Bob Roe');
+      // A matter without a manager is normal: no wording, no badge, no warning anywhere on the page.
+      expect(el.textContent).not.toMatch(/unassigned|no manager|no project manager|warning/i);
+      expect(el.querySelector('mf-badge[severity=danger], .pg-warn')).toBeNull();
+    });
+
+    it('sorts by the manager columns and offers the eligible people plus None as filter choices', async () => {
+      const fixture = await create(['Matter.View']);
+      const el: HTMLElement = fixture.nativeElement;
+
+      const header = Array.from(el.querySelectorAll('thead tr:first-child th')).find(
+        (h) => h.textContent?.trim() === 'Project manager',
+      )!;
+      header.querySelector('button')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { sort: 'primaryManager', page: null },
+        queryParamsHandling: 'merge',
+      });
+
+      const select = control<HTMLSelectElement>(el, 'Project manager');
+      expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+        'Any',
+        'None',
+        'Ann Lee',
+        'Bob Roe',
+      ]);
+      select.value = '11';
+      select.dispatchEvent(new Event('change'));
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { primaryManager: '11', page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('sends the manager filters to the API: a person, None, and Mine', async () => {
+      await create(['Matter.View', 'Matter.BeManager'], {
+        primaryManager: '11',
+        secondaryManager: 'none',
+        mine: 'true',
+      });
+
+      const call = api.listMatters.mock.calls.at(-1)!;
+      // primaryManagerId, secondaryManagerId, managerId, managedByMe, hasNoManager, hasPrimaryManager, hasSecondaryManager
+      expect(call.slice(7, 14)).toEqual([
+        11,
+        undefined,
+        undefined,
+        true,
+        undefined,
+        undefined,
+        false,
+      ]);
+    });
+
+    it('offers Mine only to people who can be a project manager, and it toggles the address', async () => {
+      const without = await create(['Matter.View']);
+      expect(without.nativeElement.querySelector('[data-mine]')).toBeNull();
+      TestBed.resetTestingModule();
+
+      const fixture = await create(['Matter.View', 'Matter.BeManager']);
+      const mine: HTMLButtonElement = fixture.nativeElement.querySelector('[data-mine]')!;
+      expect(mine.getAttribute('aria-pressed')).toBe('false');
+      mine.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { mine: 'true', page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('shows the managers on a phone card only when set', async () => {
+      const fixture = await create(['Matter.View'], {}, [
+        aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
+        aMatter({ matterId: 2, matterRef: '00343-00013' }),
+        aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
+      ]);
+      const page = fixture.componentInstance as unknown as {
+        managersLine: (m: MatterResponse) => string;
+      };
+
+      expect(page.managersLine(aMatter({ primaryManager: ANN, secondaryManager: BOB }))).toBe(
+        'PM: Ann Lee / Bob Roe',
+      );
+      expect(page.managersLine(aMatter({ secondaryManager: BOB }))).toBe('PM: Bob Roe');
+      expect(page.managersLine(aMatter())).toBe('');
+    });
+
+    it('has no tick boxes and no bulk action without Matter.AssignManagers', async () => {
+      const fixture = await create(['Matter.View', 'Matter.Edit']);
+      const el: HTMLElement = fixture.nativeElement;
+
+      expect(
+        el.querySelector('[data-select-row], [data-select-all], [data-bulk-managers]'),
+      ).toBeNull();
+    });
+
+    it('ticks rows, offers Set project managers, and saves each matter with its own row version', async () => {
+      const fixture = await create(['Matter.View', 'Matter.AssignManagers'], {}, [
+        aMatter({ matterId: 1, rowVersion: 'V1', primaryManager: ANN }),
+        aMatter({ matterId: 2, matterRef: '00343-00013', rowVersion: 'V2', secondaryManager: ANN }),
+        aMatter({ matterId: 3, matterRef: '00343-00014', rowVersion: 'V3' }),
+      ]);
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('[data-selection-bar]')).toBeNull();
+
+      const boxes = el.querySelectorAll<HTMLInputElement>('[data-select-row]');
+      expect(boxes[0].getAttribute('aria-label')).toBe('Select 00343-00012 Merger Review');
+      boxes[0].click();
+      boxes[1].click();
+      await settle(fixture);
+      expect(el.querySelector('[data-selection-count]')?.textContent).toContain('2 selected');
+
+      el.querySelector<HTMLButtonElement>('[data-bulk-managers]')!.click();
+      await settle(fixture);
+      const dialog = document.body.querySelector('[data-managers-dialog]')!;
+      expect(dialog.querySelector('[data-managers-bulk-note]')?.textContent).toContain(
+        '2 matters selected',
+      );
+      const secondary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=secondary]')!;
+      expect(secondary.value).toBe('__keep__');
+      secondary.value = '12';
+      secondary.dispatchEvent(new Event('change'));
+      await settle(fixture);
+      document.body
+        .querySelector<HTMLButtonElement>(
+          '[data-confirm-primary] button, button[data-confirm-primary]',
+        )!
+        .click();
+      await settle(fixture);
+
+      // The Primary stays what each matter has; the Secondary is Bob on both; each call carries its matter's own row version.
+      expect(api.setMatterManagers).toHaveBeenCalledWith(1, {
+        primaryManagerId: 11,
+        secondaryManagerId: 12,
+        rowVersion: 'V1',
+      });
+      expect(api.setMatterManagers).toHaveBeenCalledWith(2, {
+        primaryManagerId: undefined,
+        secondaryManagerId: 12,
+        rowVersion: 'V2',
+      });
+      expect(api.setMatterManagers).toHaveBeenCalledTimes(2);
+      expect(api.listMatters.mock.calls.length).toBeGreaterThan(1); // reloaded
     });
   });
 });

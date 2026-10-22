@@ -418,8 +418,8 @@ describe('API arguments', () => {
   it('passes only what is set, with the sort direction only when sorting', () => {
     const state = { ...emptyState(), page: 2, pageSize: 25 };
     const args = queueArgs(state);
-    expect(args.slice(0, 27).every((a) => a === undefined)).toBe(true);
-    expect(args.slice(27)).toEqual([undefined, undefined, 2, 25]);
+    expect(args.slice(0, 31).every((a) => a === undefined)).toBe(true);
+    expect(args.slice(31)).toEqual([undefined, undefined, 2, 25]);
 
     const sorted = queueArgs({
       ...state,
@@ -431,7 +431,7 @@ describe('API arguments', () => {
     expect(sorted[1]).toEqual(['NEW']);
     expect(sorted[17]).toBe(false); // asap
     expect(sorted[18]).toBe(true); // overdue
-    expect(sorted.slice(27)).toEqual(['due', 'desc', 2, 25]);
+    expect(sorted.slice(31)).toEqual(['due', 'desc', 2, 25]);
   });
 
   it('can leave the pod filter out (Pod Work has its own Pod)', () => {
@@ -507,7 +507,7 @@ describe('tasks on matters a person manages (project manager epic, #667)', () =>
   it('reads a named manager and ignores values the API would refuse', () => {
     const named = parse({ managerId: '12', role: 'primary' });
     expect(named.filters.managerId).toBe(12);
-    expect(queueArgs(named).slice(27, 30)).toEqual([12, 'primary', undefined]);
+    expect(queueArgs(named).slice(28, 31)).toEqual([12, 'primary', undefined]);
 
     const bad = parse({ managedByMe: 'maybe', role: 'boss', dueWithin: '5', managerId: '-3' });
     expect(bad.filters.managedByMe).toBe(false);

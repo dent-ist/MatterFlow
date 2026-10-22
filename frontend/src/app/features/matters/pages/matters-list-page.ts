@@ -5,18 +5,25 @@ import {
   computed,
   effect,
   inject,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { MatterResponse, MattersClient } from '../../../api/generated/api-client';
+import {
+  MatterManagerItem,
+  MatterManagersClient,
+  MatterResponse,
+  MattersClient,
+} from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
-import { FilterDef } from '../../../shared/filters/filter-def';
+import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
@@ -41,22 +48,31 @@ import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
 
 /** Below this width the Client column (the least informative one) leaves the table (#266). */
 const CLIENT_COLUMN_MIN_PX = 900;
+/** Below this width the Secondary project manager column leaves the table (the Primary stays), epic #667. */
+const SECONDARY_COLUMN_MIN_PX = 1100;
+/** The "None" choice of a project manager filter (the matters with nobody in that place); the API argument is `hasPrimaryManager=false`. */
+const NO_MANAGER = 'none';
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
   matterRef: '7rem',
   name: '16rem',
+  select: '1.5rem',
   client: '14rem',
+  primaryManager: '9rem',
+  secondaryManager: '9rem',
   openTasks: '3rem',
   overdue: '3rem',
   status: '5rem',
 };
 
 /**
- * Matters list (UX S06): Reference (plain text with a copy button), Name (the one link), Client (a link; from 900 px), Open tasks and Overdue
+ * Matters list (UX S06): Reference (plain text with a copy button), Name (the one link), Client (a link; from 900 px), the Primary project
+ * manager (and from 1100 px the Secondary; an empty cell stays empty, a matter without a manager is normal), Open tasks and Overdue
  * (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive beside it),
  * open by default from 640 px; a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
  */
@@ -85,9 +101,32 @@ const BONES: Record<string, string> = {
     RecordSort,
     CopyButton,
     RowLink,
+    MatterManagersDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    .ml-mine[aria-pressed='true'] {
+      border-color: var(--mf-primary);
+      background: var(--mf-selected-bg);
+    }
+    .ml-selbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s3);
+      padding: var(--mf-s2) var(--mf-s3);
+      background: var(--mf-selected-bg);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+    }
+    .ml-selcol {
+      width: 2.25rem;
+    }
+    .ml-pm {
+      overflow-wrap: anywhere;
+    }
+  `,
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Matters">
@@ -97,6 +136,20 @@ const BONES: Record<string, string> = {
           controls="matter-filter-row"
           [clearAlso]="['q']"
         />
+        @if (canBeManager()) {
+          <button
+            mfActions
+            type="button"
+            class="mf-btn ml-mine"
+            [attr.aria-pressed]="mine()"
+            title="Only matters I manage"
+            data-mine
+            (click)="toggleMine()"
+          >
+            <i class="pi pi-user" aria-hidden="true"></i>
+            Mine
+          </button>
+        }
         <p-button
           mfActions
           *mfHasPermission="'Matter.Create'"
@@ -117,6 +170,21 @@ const BONES: Record<string, string> = {
       </mf-filters-bar>
 
       <div class="mf-fill">
+        @if (!phone() && canAssign() && selected().size > 0) {
+          <div class="ml-selbar" role="region" aria-label="Selected matters" data-selection-bar>
+            <span data-selection-count>{{ selected().size }} selected</span>
+            <button type="button" class="mf-btn" data-bulk-managers (click)="bulkOpen.set(true)">
+              Set project managers
+            </button>
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              (click)="selected.set(emptySelection)"
+            >
+              Clear selection
+            </button>
+          </div>
+        }
         @if (phone()) {
           <mf-record-card-list
             noun="matters"
@@ -168,6 +236,9 @@ const BONES: Record<string, string> = {
                     <span class="rc-text" data-card-client>{{ m.clientName }}</span>
                   }
                 </p>
+                @if (managersLine(m); as line) {
+                  <p mfCardMeta class="rc-line" data-card-managers>{{ line }}</p>
+                }
                 @if (counts()) {
                   <mf-task-count
                     mfCardCounts
@@ -202,6 +273,18 @@ const BONES: Record<string, string> = {
                 </caption>
                 <thead>
                   <tr>
+                    @if (canAssign()) {
+                      <th scope="col" class="ml-selcol">
+                        <input
+                          type="checkbox"
+                          aria-label="Select all matters on this page"
+                          data-select-all
+                          [checked]="allSelected()"
+                          [indeterminate]="selected().size > 0 && !allSelected()"
+                          (change)="toggleAll($any($event.target).checked)"
+                        />
+                      </th>
+                    }
                     <th
                       mfSort="matterRef"
                       [sort]="sort()"
@@ -226,6 +309,24 @@ const BONES: Record<string, string> = {
                         (sorted)="setSort($event)"
                       >
                         Client
+                      </th>
+                    }
+                    <th
+                      mfSort="primaryManager"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Project manager
+                    </th>
+                    @if (showSecondary()) {
+                      <th
+                        mfSort="secondaryManager"
+                        [sort]="sort()"
+                        [defaultSort]="defaultSort"
+                        (sorted)="setSort($event)"
+                      >
+                        Secondary project manager
                       </th>
                     }
                     @if (counts()) {
@@ -283,6 +384,17 @@ const BONES: Record<string, string> = {
                   />
                   @for (m of rows(); track m.matterId) {
                     <tr>
+                      @if (canAssign()) {
+                        <td class="ml-selcol">
+                          <input
+                            type="checkbox"
+                            [attr.aria-label]="'Select ' + m.matterRef + ' ' + m.name"
+                            data-select-row
+                            [checked]="selected().has(m.matterId)"
+                            (change)="toggleRow(m.matterId, $any($event.target).checked)"
+                          />
+                        </td>
+                      }
                       <td>
                         <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
                       </td>
@@ -317,6 +429,14 @@ const BONES: Record<string, string> = {
                               {{ m.clientName }}</span
                             >
                           }
+                        </td>
+                      }
+                      <td class="ml-pm" data-primary-manager>
+                        {{ m.primaryManager?.displayName }}
+                      </td>
+                      @if (showSecondary()) {
+                        <td class="ml-pm" data-secondary-manager>
+                          {{ m.secondaryManager?.displayName }}
                         </td>
                       }
                       @if (counts()) {
@@ -363,6 +483,11 @@ const BONES: Record<string, string> = {
           />
         }
       </div>
+      <mf-matter-managers-dialog
+        [targets]="bulkTargets()"
+        [(visible)]="bulkOpen"
+        (saved)="bulkSaved()"
+      />
     </mf-fixed-page>
   `,
 })
@@ -373,6 +498,35 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   private readonly auth = inject(AuthStore);
   private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
+  private readonly wideForSecondary = viewportAtLeast(SECONDARY_COLUMN_MIN_PX);
+  private readonly managersApi = inject(MatterManagersClient);
+  private readonly quiet = inject(QuietRequests);
+
+  /** The people who can be named a project manager (the filter's choices); empty until loaded, and when the lookup fails. */
+  private readonly managers = signal<readonly MatterManagerItem[]>([]);
+  protected readonly emptySelection: ReadonlySet<number> = new Set<number>();
+  /** The matters ticked for the bulk "Set project managers" (only offered with Matter.AssignManagers). */
+  protected readonly selected = signal<ReadonlySet<number>>(this.emptySelection);
+  protected readonly bulkOpen = signal(false);
+  protected readonly canAssign = computed(() => this.auth.has('Matter.AssignManagers'));
+  /** The "Mine" quick filter is for people who can be a project manager. */
+  protected readonly canBeManager = computed(() => this.auth.has('Matter.BeManager'));
+  protected readonly mine = computed(() => this.filters.text('mine') === 'true');
+  protected readonly showSecondary = computed(() => this.wideForSecondary());
+  protected readonly allSelected = computed(
+    () => this.rows().length > 0 && this.rows().every((m) => this.selected().has(m.matterId)),
+  );
+  protected readonly bulkTargets = computed<ManagerTarget[]>(() =>
+    this.rows()
+      .filter((m) => this.selected().has(m.matterId))
+      .map((m) => ({
+        matterId: m.matterId,
+        label: `${m.matterRef} ${m.name}`,
+        rowVersion: m.rowVersion,
+        primary: m.primaryManager ?? null,
+        secondary: m.secondaryManager ?? null,
+      })),
+  );
 
   /** Below 640 px the list is cards, not a table (WP12). */
   protected readonly phone = phoneCards();
@@ -381,6 +535,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     { value: 'matterRef', label: 'Reference' },
     { value: 'name', label: 'Name' },
     { value: 'clientNumber', label: 'Client' },
+    { value: 'primaryManager', label: 'Project manager' },
     ...(this.counts()
       ? [
           { value: 'openTasks', label: 'Open tasks', descFirst: true },
@@ -397,9 +552,12 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly clientLink = computed(() => this.auth.canLink('client'));
   /** The columns of the grid, in order; the keys the filter definitions point at. */
   protected readonly columns = computed(() => [
+    ...(this.canAssign() ? ['select'] : []),
     'matterRef',
     'name',
     ...(this.showClient() ? ['client'] : []),
+    'primaryManager',
+    ...(this.showSecondary() ? ['secondaryManager'] : []),
     ...(this.counts() ? ['openTasks', 'overdue'] : []),
     'status',
   ]);
@@ -420,6 +578,18 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       ref,
       name,
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
+      this.managerDef('primaryManager', 'Project manager'),
+      this.managerDef('secondaryManager', 'Secondary project manager'),
+      // Quick filter "Mine" (the header button): the matters the viewer manages, as Primary or Secondary. A removable chip, no column.
+      {
+        key: 'mine',
+        label: 'Mine',
+        type: 'select',
+        noControl: true,
+        bareChip: true,
+        options: [{ value: 'true', label: 'Mine: matters I manage' }],
+        normalize: (v: string) => (v === 'true' ? 'true' : null),
+      },
       status,
       sensitive,
       // `?clientId=` (a link from a client): no control, a removable chip.
@@ -443,6 +613,12 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   constructor() {
     super();
+    void this.loadManagers();
+    // A new page of rows never keeps a tick from the old one.
+    effect(() => {
+      this.rows();
+      untracked(() => this.selected.set(this.emptySelection));
+    });
     registerTableSkip({ copyButton: true });
     restoreRowFocus('matters', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
@@ -454,6 +630,83 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   protected override listFilters() {
     return this.filters;
+  }
+
+  /** A project manager column filter: a select of the eligible people with "None" (nobody in that place) after the leading "Any". */
+  private managerDef(key: 'primaryManager' | 'secondaryManager', label: string): FilterDef {
+    return {
+      key,
+      label,
+      column: key,
+      type: 'select',
+      allLabel: 'Any',
+      options: () => this.managerOptions(key),
+      normalize: (v: string) => (v === NO_MANAGER || /^[1-9]\d*$/.test(v) ? v : null),
+      valueLabel: (v: string) => (v === NO_MANAGER ? 'None' : this.managerName(v)),
+    };
+  }
+
+  private managerOptions(key: 'primaryManager' | 'secondaryManager'): FilterOption[] {
+    const people = this.managers().map((p) => ({ value: String(p.userId), label: p.displayName }));
+    const current = this.filters?.text(key);
+    // Somebody named by a link or by the rows on screen who is not in the list (lost the role) stays choosable, so the control shows its value.
+    const extra =
+      current && current !== NO_MANAGER && !people.some((p) => p.value === current)
+        ? [{ value: current, label: this.managerName(current) }]
+        : [];
+    return [{ value: NO_MANAGER, label: 'None' }, ...people, ...extra];
+  }
+
+  private managerName(id: string): string {
+    const known = this.managers().find((p) => String(p.userId) === id)?.displayName;
+    if (known) return known;
+    for (const m of this.rows()) {
+      for (const p of [m.primaryManager, m.secondaryManager]) {
+        if (p && String(p.userId) === id) return p.displayName;
+      }
+    }
+
+    return 'Selected person';
+  }
+
+  private async loadManagers(): Promise<void> {
+    try {
+      this.managers.set(
+        await firstValueFrom(
+          this.quiet.run(() => this.managersApi.lookupMatterManagers(undefined, 50)),
+        ),
+      );
+    } catch {
+      // The filter then offers only "Any" and "None".
+    }
+  }
+
+  /** "PM: Ann / Bob" on a phone card; only what is set, nothing at all for a matter without a manager. */
+  protected managersLine(m: MatterResponse): string {
+    const names = [m.primaryManager?.displayName, m.secondaryManager?.displayName].filter(
+      (n): n is string => !!n,
+    );
+    return names.length > 0 ? `PM: ${names.join(' / ')}` : '';
+  }
+
+  protected toggleMine(): void {
+    this.filters.set('mine', this.mine() ? '' : 'true');
+  }
+
+  protected toggleRow(id: number, on: boolean): void {
+    const next = new Set(this.selected());
+    if (on) next.add(id);
+    else next.delete(id);
+    this.selected.set(next);
+  }
+
+  protected toggleAll(on: boolean): void {
+    this.selected.set(on ? new Set(this.rows().map((m) => m.matterId)) : this.emptySelection);
+  }
+
+  /** After the bulk dialog saved some matters: show the new managers (the ticks stay on the matters that could not be changed). */
+  protected bulkSaved(): void {
+    void this.load();
   }
 
   protected override fetch() {
@@ -472,6 +725,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   private list(isActive: boolean | undefined, page: number, size: number) {
     const clientId = Number(this.filters.text('clientId'));
     const sensitive = this.filters.text('isSensitive');
+    const primary = this.filters.text('primaryManager');
+    const secondary = this.filters.text('secondaryManager');
     return firstValueFrom(
       this.api.listMatters(
         undefined,
@@ -481,17 +736,23 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         this.filters.text('matterRef') || undefined,
         this.filters.text('name') || undefined,
         this.filters.text('client') || undefined,
+        managerId(primary),
+        managerId(secondary),
         undefined,
+        this.mine() ? true : undefined,
         undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
+        primary === NO_MANAGER ? false : undefined,
+        secondary === NO_MANAGER ? false : undefined,
         page,
         size,
         this.sort() || undefined,
       ),
     );
   }
+}
+
+/** The user id a project manager filter names (undefined for "Any" and for "None", which is `hasPrimaryManager=false`). */
+function managerId(value: string): number | undefined {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
 }
