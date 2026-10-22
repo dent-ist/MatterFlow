@@ -1,0 +1,273 @@
+{
+  "$comment": "Access catalogue of the report login (role mf_report_reader). Every table is classified here: allow = SELECT granted, deny = explicit DENY SELECT and VIEW DEFINITION. A unit test fails for an unclassified table (CREATE TABLE in db/scripts) and when the GRANT/DENY lines in the scripts differ from this file; a schema test checks the effective permissions. A new table needs an entry here and a GRANT or DENY line in the script that creates it. Docs: docs/ux/reports-review/README.md section 8.1.",
+  "runnerTables": [
+    "SchemaMigration"
+  ],
+  "tables": [
+    {
+      "name": "AppUser",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Asset",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "AssetLinkRole",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "AssetType",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "AuditEvent",
+      "access": "deny",
+      "reason": "Audit trail: who did what. Must never be readable through a report."
+    },
+    {
+      "name": "AuditEventGuard",
+      "access": "deny",
+      "reason": "Internal guard table of the audit trail (TRUNCATE protection)."
+    },
+    {
+      "name": "Client",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "CustomFieldIndex",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "FormDefinition",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "FormField",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "FormFieldOption",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "FormValueSet",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "FormVersion",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Matter",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Notification",
+      "access": "deny",
+      "reason": "Per-person notifications (personal inbox), not report data."
+    },
+    {
+      "name": "NotificationPreference",
+      "access": "deny",
+      "reason": "Per-person notification switches, not report data."
+    },
+    {
+      "name": "Permission",
+      "access": "deny",
+      "reason": "Authorization catalogue; not report data."
+    },
+    {
+      "name": "Pod",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "PodMember",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Priority",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Project",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "ReportCategory",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportDefinition",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportFavourite",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportParameter",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportRecent",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportRun",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "ReportVersion",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "Role",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "RolePermission",
+      "access": "deny",
+      "reason": "Authorization grants per role; not report data."
+    },
+    {
+      "name": "RoleReport",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "SavedReportView",
+      "access": "deny",
+      "reason": "The Reports module's own tables: report SQL, assignments, views and the run log are not report data."
+    },
+    {
+      "name": "SchemaMigration",
+      "access": "deny",
+      "reason": "Created by the schema runner, not by a script: applied scripts, checksums, who applied them."
+    },
+    {
+      "name": "SeedMarker",
+      "access": "deny",
+      "reason": "Internal one-time seed bookkeeping."
+    },
+    {
+      "name": "StepDefinition",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "StepDefinitionTag",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "StepInstance",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "StepTag",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Task",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TaskAsset",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TaskComment",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TaskCommentRevision",
+      "access": "deny",
+      "reason": "Edit history of comments; the current comment is readable, its revisions are not needed."
+    },
+    {
+      "name": "TaskStatusLabel",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TaskType",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "TaskTypeWorkflowEligibility",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "UserAvailability",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "UserIdentity",
+      "access": "deny",
+      "reason": "Sign-in identities (Windows account names, sign-in bookkeeping). Credentials side of a user."
+    },
+    {
+      "name": "UserRole",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "UserWorkHour",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "WorkflowDefinition",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "WorkflowInstance",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "WorkflowVersion",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
+      "name": "WorkflowVersionStep",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    }
+  ]
+}

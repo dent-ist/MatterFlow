@@ -38,3 +38,4 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 ## Script list (later scripts)
 
 - `29-notifications.sql`: `dbo.Notification` (in-app notifications, poll cursor `Id`, dedupe index) and `dbo.NotificationPreference` (sparse switches); `mf_app` may update only `ReadUtc` / `Enabled` (epic #753, issue #729).
+- `30-reports.sql`: the Reports tables (`ReportCategory`, `ReportDefinition`, `ReportVersion` (append-only), `ReportParameter`, `RoleReport`, `SavedReportView`, `ReportFavourite`, `ReportRecent`, `ReportRun` (completed through `usp_ReportRunComplete`, kept two years)) and the read-only role `mf_report_reader` with its GRANT/DENY lines from `db/report-access.json` (epic #671, issue #677). Every later script that adds a table must classify it in `db/report-access.json` and add the matching GRANT or DENY line.
