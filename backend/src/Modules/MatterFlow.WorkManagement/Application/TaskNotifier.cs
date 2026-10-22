@@ -22,16 +22,49 @@ public sealed class TaskNotifier(
     /// <summary>
     /// Events 1 and 8 for a Task that was just created or whose assignment just changed. Event 1 (<c>TaskAssigned</c>): a person other than the actor
     /// became the assignee. Event 8 (<c>PodTaskUnassigned</c>): the Task is now in a Pod without a person (created that way, or the person was removed),
-    /// told to the Pod's leads. The two cannot hit one Task in one action (one needs an assignee, the other none).
+    /// told to the Pod's leads. The two cannot hit one Task in one action (one needs an assignee, the other none). Event 5 (<c>MatterTaskCreated</c>), on
+    /// creation only: the matter's Primary and Secondary manager are told that someone else created a Task. It joins the same publish call, so a manager
+    /// who is also the new assignee gets event 1 and not event 5 (the central rules keep the higher priority).
     /// </summary>
     public async Task AssignmentChangedAsync(WorkTask task, int? previousUserId, bool created, DateTime now, CancellationToken ct)
     {
         var requests = new List<NotificationRequest>();
         var actorId = currentUser.UserId;
 
+        MatterSummary? matter = null;
+        var matterLoaded = false;
+        async Task<MatterSummary?> MatterAsync()
+        {
+            if (!matterLoaded)
+            {
+                matter = await matters.FindAsync(task.MatterId, ct);
+                matterLoaded = true;
+            }
+
+            return matter;
+        }
+
+        if (created)
+        {
+            var found = await MatterAsync();
+            var managers = new[] { found?.PrimaryManagerId, found?.SecondaryManagerId }.OfType<int>().Where(u => u != actorId).Distinct().ToArray();
+            if (managers.Length > 0)
+            {
+                requests.Add(new NotificationRequest(
+                    NotificationEventType.MatterTaskCreated,
+                    NotificationObjectKinds.Task,
+                    task.Id,
+                    task.MatterId,
+                    actorId,
+                    NotificationMessages.MatterTaskCreated(await ActorNameAsync(ct), task.Number, task.Title, found?.Name ?? "a matter"),
+                    "created:" + task.Id.ToString(CultureInfo.InvariantCulture),
+                    managers));
+            }
+        }
+
         if (task.AssignedUserId is { } assignee && assignee != previousUserId && assignee != actorId && task.AssignedAtUtc is { } assignedAt)
         {
-            var message = NotificationMessages.TaskAssigned(await ActorNameAsync(ct), task.Number, task.Title, await MatterNameAsync(task.MatterId, ct));
+            var message = NotificationMessages.TaskAssigned(await ActorNameAsync(ct), task.Number, task.Title, (await MatterAsync())?.Name ?? "a matter");
             requests.Add(new NotificationRequest(
                 NotificationEventType.TaskAssigned,
                 NotificationObjectKinds.Task,
@@ -97,6 +130,4 @@ public sealed class TaskNotifier(
         return info?.DisplayName ?? "Someone";
     }
 
-    private async Task<string> MatterNameAsync(int matterId, CancellationToken ct) =>
-        (await matters.FindAsync(matterId, ct))?.Name ?? "a matter";
 }

@@ -54,7 +54,9 @@ internal sealed class MatterDirectory(DbContext db) : IMatterDirectory
         r.Matter.Name,
         r.Matter.IsActive,
         r.Matter.IsSensitive,
-        r.ClientIsActive);
+        r.ClientIsActive,
+        r.Matter.PrimaryManagerId,
+        r.Matter.SecondaryManagerId);
 
     private sealed class Row
     {

@@ -10,6 +10,8 @@ namespace MatterFlow.Organization.Contracts;
 /// <param name="IsActive">Tasks can be created only on an active Matter.</param>
 /// <param name="IsSensitive">Display-only sensitivity flag (addendum O).</param>
 /// <param name="ClientIsActive">False when the owning Client is inactive.</param>
+/// <param name="PrimaryManagerId">The Primary project manager (epic #667), or null.</param>
+/// <param name="SecondaryManagerId">The Secondary project manager, or null.</param>
 public sealed record MatterSummary(
     int MatterId,
     int ClientId,
@@ -19,7 +21,9 @@ public sealed record MatterSummary(
     string Name,
     bool IsActive,
     bool IsSensitive,
-    bool ClientIsActive);
+    bool ClientIsActive,
+    int? PrimaryManagerId = null,
+    int? SecondaryManagerId = null);
 
 /// <summary>A Project as other modules see it.</summary>
 public sealed record ProjectSummary(int ProjectId, int MatterId, string Name, bool IsActive);

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
+using MatterFlow.Notifications.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Identity;
@@ -22,7 +23,8 @@ public sealed class MatterService(
     IPermissionChecker permissions,
     ICurrentUser currentUser,
     IUserDirectory users,
-    IMatterManagerEligibility eligibility)
+    IMatterManagerEligibility eligibility,
+    INotificationPublisher notifications)
 {
     public const string SortPrimaryManager = "primaryManager";
     public const string SortSecondaryManager = "secondaryManager";
@@ -290,6 +292,7 @@ public sealed class MatterService(
             IsSensitive = request.IsSensitive,
         };
         db.Set<Matter>().Add(matter);
+        var newManagers = wantsManagers ? NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId) : [];
         if (wantsManagers)
             await ApplyManagersAsync(matter, request.PrimaryManagerId, request.SecondaryManagerId, ct);
         audit.Write(new AuditEntry
@@ -317,6 +320,13 @@ public sealed class MatterService(
             {
                 db.ChangeTracker.Clear();
                 return OrganizationSupport.ConcurrencyError(); // the Client's number changed between the read and the insert
+            }
+
+            if (newManagers.Count > 0)
+            {
+                // Event 7: the matter has its id now; the rows commit with the matter.
+                await NotifyManagersSetAsync(matter, newManagers, ct);
+                await db.SaveChangesAsync(ct);
             }
 
             if (plan.Value is { } formPlan)
@@ -351,6 +361,7 @@ public sealed class MatterService(
         if (plan.IsFailure)
             return plan.Error!;
 
+        IReadOnlyList<(int UserId, bool Primary)> updatedManagers = [];
         if (request.PrimaryManagerId is not null || request.SecondaryManagerId is not null)
         {
             var allowed = permissions.Require(Permissions.Matter.AssignManagers);
@@ -363,11 +374,14 @@ public sealed class MatterService(
             if (valid.IsFailure)
                 return valid.Error!;
 
+            updatedManagers = NewlySet(matter, primary, secondary);
             await ApplyManagersAsync(matter, primary, secondary, ct);
         }
 
         matter.Name = request.Name.Trim();
         matter.IsSensitive = request.IsSensitive;
+        if (updatedManagers.Count > 0)
+            await NotifyManagersSetAsync(matter, updatedManagers, ct); // event 7, in the same save
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
 
         IReadOnlyList<string> dropped = [];
@@ -416,8 +430,11 @@ public sealed class MatterService(
         if (valid.IsFailure)
             return valid.Error!;
 
+        var newly = NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId);
         if (!await ApplyManagersAsync(matter, request.PrimaryManagerId, request.SecondaryManagerId, ct))
             return await GetAsync(id, ct);
+
+        await NotifyManagersSetAsync(matter, newly, ct); // event 7, saved with the change
 
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
         try
@@ -647,6 +664,45 @@ public sealed class MatterService(
         return errors.Count == 0
             ? Result.Success()
             : Error.Validation("Choose active users who can be project managers.", errors, ErrorCodes.ManagerNotEligible);
+    }
+
+    /// <summary>The people who are about to hold a manager place they did not hold in that place before (a person moving from Secondary to Primary counts).</summary>
+    private static List<(int UserId, bool Primary)> NewlySet(Matter matter, int? primary, int? secondary)
+    {
+        var list = new List<(int UserId, bool Primary)>();
+        if (primary is { } p && p != matter.PrimaryManagerId)
+            list.Add((p, true));
+        if (secondary is { } s && s != matter.SecondaryManagerId)
+            list.Add((s, false));
+        return list;
+    }
+
+    /// <summary>
+    /// Event 7 (<c>MatterManagerSet</c>, epic #753): tells each newly set manager, except the person who set them, "Ann Lee made you Primary manager of
+    /// Acme v. Smith.". The rows join the caller's unit of work and commit with the change.
+    /// </summary>
+    private async Task NotifyManagersSetAsync(Matter matter, IReadOnlyList<(int UserId, bool Primary)> newly, CancellationToken ct)
+    {
+        var actorId = currentUser.UserId;
+        var recipients = newly.Where(n => n.UserId != actorId).ToList();
+        if (recipients.Count == 0)
+            return;
+
+        var actorName = !string.IsNullOrWhiteSpace(currentUser.DisplayName)
+            ? currentUser.DisplayName
+            : actorId is { } id ? (await users.FindAsync(id, ct))?.DisplayName ?? "Someone" : "Someone";
+        var stamp = DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);
+        await notifications.PublishAsync(
+            [.. recipients.Select(n => new NotificationRequest(
+                NotificationEventType.MatterManagerSet,
+                NotificationObjectKinds.Matter,
+                matter.Id,
+                matter.Id,
+                actorId,
+                NotificationMessages.MatterManagerSet(actorName, n.Primary, matter.Name),
+                $"mgr:{matter.Id.ToString(CultureInfo.InvariantCulture)}:{(n.Primary ? "Primary" : "Secondary")}:{stamp}",
+                [n.UserId]))],
+            ct);
     }
 
     /// <summary>Sets the two managers on a tracked matter and queues one audit event per changed place (names as old and new value). Returns false when nothing changed.</summary>
