@@ -46,6 +46,15 @@ describe('ToastHost (#616)', () => {
     expect(polite.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('leaves no --mf-toast-h on the page while no toast is shown or after the host is destroyed (#754)', async () => {
+    const root = document.documentElement;
+    root.style.setProperty('--mf-toast-h', '99px');
+    const { fixture } = setup();
+    await flush(fixture);
+    fixture.destroy();
+    expect(root.style.getPropertyValue('--mf-toast-h')).toBe('');
+  });
+
   it('announces a warning assertively too', async () => {
     const { fixture, el } = setup();
     notify.warn('Careful');

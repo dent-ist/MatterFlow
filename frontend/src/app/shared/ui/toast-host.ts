@@ -1,5 +1,16 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, HostListener, computed, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  afterNextRender,
+  computed,
+  inject,
+  viewChild,
+} from '@angular/core';
 import { NotificationService, ToastSeverity } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
 
@@ -36,6 +47,7 @@ const ICONS: Record<ToastSeverity, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
+      #stack
       class="th"
       (mouseenter)="hold()"
       (mouseleave)="release()"
@@ -198,6 +210,35 @@ const ICONS: Record<ToastSeverity, string> = {
   `,
 })
 export class ToastHost {
+  private readonly root = inject(DOCUMENT).documentElement;
+  private readonly stack = viewChild<ElementRef<HTMLElement>>('stack');
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    // On a phone a page without a pager has no room under its last row for the full-width toast: publish how far the toast reaches up
+    // from the bottom of the window (plus a gap) as `--mf-toast-h`; the shell pads the page by it (#754). Removed when no toast is shown.
+    afterNextRender(() => {
+      const el = this.stack()?.nativeElement;
+      if (!el) return;
+      const publish = () => {
+        const reach =
+          el.offsetHeight > 0 ? this.root.clientHeight - el.getBoundingClientRect().top : 0;
+        if (reach > 0) this.root.style.setProperty('--mf-toast-h', `${Math.ceil(reach) + 16}px`);
+        else this.root.style.removeProperty('--mf-toast-h');
+      };
+      const win = this.root.ownerDocument.defaultView;
+      win?.addEventListener('resize', publish);
+      const observer =
+        typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(publish);
+      observer?.observe(el);
+      destroyRef.onDestroy(() => {
+        observer?.disconnect();
+        win?.removeEventListener('resize', publish);
+        this.root.style.removeProperty('--mf-toast-h');
+      });
+    });
+  }
+
   protected readonly notify = inject(NotificationService);
   protected readonly undo = inject(UndoService);
 

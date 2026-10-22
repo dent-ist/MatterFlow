@@ -329,6 +329,8 @@
 
   .mf-main {
     padding: var(--mf-s4);
+    /* While a toast is on screen (toast host publishes `--mf-toast-h`), the last row can still be scrolled above it (#754). */
+    padding-bottom: var(--mf-toast-h, var(--mf-s4));
   }
 }
 
