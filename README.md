@@ -117,6 +117,8 @@ The same flow is covered by an automated test: `backend/tests/MatterFlow.Integra
 
 ### Extra dev users
 
+To run the whole stack as another dev user, use `npm run start:user1` or `npm run start:user2` (the API signs every browser request in as `KE\user1` or `KE\user2`, role Data Technician); plain `npm start` stays `KE\kekim` (System Admin). They share ports 5080 and 4200, so stop one before starting another. Add more by copying the `start:user1` / `api:user1` pair in the root `package.json`.
+
 `backend/src/MatterFlow.Api/appsettings.Development.json` seeds `KE\user1` to `KE\user10` (role Data Technician) at startup when the Dev auth provider is used. Add or change entries under `Dev:Users` (`Username`, `DisplayName`, `Email`, `Roles`); existing users are never changed. To act as one of them, set `Auth__Dev__DefaultUser='KE\user3'`, or send `X-Dev-User: KE\user3`.
 
 ### Demo data

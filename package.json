@@ -5,11 +5,16 @@
   "scripts": {
     "setup": "npm --prefix frontend ci && npm --prefix frontend exec -- ng build form-engine",
     "start": "npm run db:up && npm run form-engine && concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"npm:api\" \"npm:web\"",
+    "start:user1": "npm run db:up && npm run form-engine && concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"npm:api:user1\" \"npm:web\"",
+    "start:user2": "npm run db:up && npm run form-engine && concurrently --kill-others-on-fail --names api,web --prefix-colors blue,green \"npm:api:user2\" \"npm:web\"",
     "db:up": "docker compose -f docker-compose.dev.yml up -d --wait sqlserver && docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init",
     "db:down": "docker compose -f docker-compose.dev.yml down",
     "db:reset": "docker compose -f docker-compose.dev.yml down -v && npm run db:up",
     "form-engine": "npm --prefix frontend exec -- ng build form-engine",
-    "api": "cross-env ASPNETCORE_ENVIRONMENT=Development \"ConnectionStrings__Default=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"ConnectionStrings__MatterFlow=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"Bootstrap__SystemAdmins__0=KE\\kekim\" \"Auth__Dev__DefaultUser=KE\\kekim\" Seed__StarterConfiguration__Enabled=true dotnet run --project backend/src/MatterFlow.Api",
+    "api": "cross-env \"Auth__Dev__DefaultUser=KE\\kekim\" npm run api:run",
+    "api:user1": "cross-env \"Auth__Dev__DefaultUser=KE\\user1\" npm run api:run",
+    "api:user2": "cross-env \"Auth__Dev__DefaultUser=KE\\user2\" npm run api:run",
+    "api:run": "cross-env ASPNETCORE_ENVIRONMENT=Development \"ConnectionStrings__Default=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"ConnectionStrings__MatterFlow=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"Bootstrap__SystemAdmins__0=KE\\kekim\" Seed__StarterConfiguration__Enabled=true dotnet run --project backend/src/MatterFlow.Api",
     "web": "npm --prefix frontend run start:api",
     "seed:demo": "node tools/seed-demo/seed-demo.mjs"
   },
