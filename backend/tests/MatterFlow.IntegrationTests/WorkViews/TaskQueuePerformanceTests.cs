@@ -237,7 +237,22 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
             timings.Order().ElementAt(1).ShouldBeLessThan(1500, name);
             // The text filters are conditions inside the existing reads, never extra reads and never one read per row.
             baseline[name] = statements;
-            statements.ShouldBeLessThan(query.Contains("my-work") || query.Contains("pod-work") ? 25 : 15, name);
+            if (query.Contains("my-work") || query.Contains("pod-work"))
+            {
+                // These pages read a fixed set of things (rows, counts, strip, members); a fixed ceiling went stale each time the page gained a
+                // count (Pod Work is at 25 since its strip and workload counts). What matters here is that the text filter adds nothing, so
+                // the same page without the filter is read and must take exactly as many statements.
+                var unfiltered = query[..query.IndexOf('?')] + "?pageSize=100";
+                await OkAsync(await http.GetAsync(unfiltered));
+                _commands.Clear();
+                await OkAsync(await http.GetAsync(unfiltered));
+                var withoutFilter = _commands.Snapshot().Count;
+                statements.ShouldBe(withoutFilter, $"{name}: a text filter is a condition inside the existing reads, the page takes {withoutFilter} without it");
+            }
+            else
+            {
+                statements.ShouldBeLessThan(15, name);
+            }
         }
 
         baseline["matter reference"].ShouldBe(baseline["client name"]);

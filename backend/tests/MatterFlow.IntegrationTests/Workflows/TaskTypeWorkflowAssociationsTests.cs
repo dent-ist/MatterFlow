@@ -251,11 +251,12 @@ public sealed class TaskTypeWorkflowAssociationsTests(SqlServerFixture sql) : IA
         await _factory.GrantRoleAsync(taskTypeAdmin, await _factory.CreateRoleAsync("Task type admin", Permissions.Task.View, Permissions.TaskType.Manage));
         await _factory.GrantRoleAsync(workflowAdmin, await _factory.CreateRoleAsync("Workflow admin", Permissions.Workflow.Manage));
 
-        // Task Types tab: Task.View reads the list (and its workflow filter); the workflow and step lists stay closed.
+        // Task Types tab: Task.View reads the list (and its workflow filter). TaskType.Manage also reads the workflow list, which names and
+        // offers the eligible workflows (TY-P, e433b35); the step library and a single workflow stay closed to it.
         var types = As(taskTypeAdmin);
         (await types.GetAsync($"/api/v1/task-types?workflowId={f.W1}")).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await types.GetAsync("/api/v1/workflows")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await types.GetAsync($"/api/v1/workflows?taskTypeId={f.T1}")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await types.GetAsync("/api/v1/workflows")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await types.GetAsync($"/api/v1/workflows?taskTypeId={f.T1}")).StatusCode.ShouldBe(HttpStatusCode.OK);
         (await types.GetAsync("/api/v1/step-definitions")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
         // Workflows and Workflow Steps tabs: Workflow.Manage reads both lists, task type names included, without reading task types.
