@@ -240,6 +240,11 @@
       "reason": "Sign-in identities (Windows account names, sign-in bookkeeping). Credentials side of a user."
     },
     {
+      "name": "UserMatterActivitySeen",
+      "access": "deny",
+      "reason": "Per-person read marker of the My Matters activity panel (bookkeeping), not report data."
+    },
+    {
       "name": "UserRole",
       "access": "allow",
       "reason": "Business data that reports may read."
