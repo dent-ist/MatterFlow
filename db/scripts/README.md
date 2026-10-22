@@ -34,3 +34,7 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 ## Status
 
 `01-init.sql` (schema conventions, `dbo.TaskNumberSeq`) and `02-identity-authz.sql` (AppUser, UserIdentity, Role, Permission, RolePermission, UserRole, System Admin role row) exist. Real tables arrive in later scripts.
+
+## Script list (later scripts)
+
+- `28-notifications.sql`: `dbo.Notification` (in-app notifications, poll cursor `Id`, dedupe index) and `dbo.NotificationPreference` (sparse switches); `mf_app` may update only `ReadUtc` / `Enabled` (epic #753, issue #729).
