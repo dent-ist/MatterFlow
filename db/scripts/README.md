@@ -37,4 +37,4 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 
 ## Script list (later scripts)
 
-- `28-notifications.sql`: `dbo.Notification` (in-app notifications, poll cursor `Id`, dedupe index) and `dbo.NotificationPreference` (sparse switches); `mf_app` may update only `ReadUtc` / `Enabled` (epic #753, issue #729).
+- `29-notifications.sql`: `dbo.Notification` (in-app notifications, poll cursor `Id`, dedupe index) and `dbo.NotificationPreference` (sparse switches); `mf_app` may update only `ReadUtc` / `Enabled` (epic #753, issue #729).

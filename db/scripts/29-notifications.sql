@@ -1,4 +1,4 @@
--- 28-notifications.sql
+-- 29-notifications.sql
 -- Purpose: the in-app notification store (epic #753, issue #729; docs/ux/notifications-review/README.md section 7):
 --   dbo.Notification (one row per recipient and event, written by the server in the same transaction as the action) and
 --   dbo.NotificationPreference (the "Notifications" switches on My profile, stored sparsely).
