@@ -54,9 +54,20 @@ const rowOf = (page: Page, userId: number, account: string) => userRow(page, use
 const onBody = (page: Page) =>
   page.evaluate(() => document.activeElement === document.body || !document.activeElement);
 
+/**
+ * The most Tab presses a walk may take: one per control on the page, and a few more. A fixed number broke on a database the suite had used,
+ * where the roles list of the user panel has hundreds of checkboxes (one Tab stop each), not the dozen of a fresh one.
+ */
+const tabBudget = (page: Page): Promise<number> =>
+  page.evaluate(
+    () =>
+      document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]').length + 20,
+  );
+
 /** Presses Tab until the locator has focus (at most `max` times); returns how many presses it took. Fails when it never does. */
-async function tabTo(page: Page, target: Locator, max = 300): Promise<number> {
-  for (let n = 1; n <= max; n++) {
+async function tabTo(page: Page, target: Locator, max?: number): Promise<number> {
+  const limit = max ?? (await tabBudget(page));
+  for (let n = 1; n <= limit; n++) {
     await page.keyboard.press('Tab');
     expect(await onBody(page), 'focus landed on body').toBe(false);
     if (await target.evaluate((el) => el === document.activeElement).catch(() => false)) return n;
@@ -64,8 +75,9 @@ async function tabTo(page: Page, target: Locator, max = 300): Promise<number> {
   throw new Error(`Tab never reached ${target}`);
 }
 
-async function shiftTabTo(page: Page, target: Locator, max = 300): Promise<number> {
-  for (let n = 1; n <= max; n++) {
+async function shiftTabTo(page: Page, target: Locator, max?: number): Promise<number> {
+  const limit = max ?? (await tabBudget(page));
+  for (let n = 1; n <= limit; n++) {
     await page.keyboard.press('Shift+Tab');
     expect(await onBody(page), 'focus landed on body').toBe(false);
     if (await target.evaluate((el) => el === document.activeElement).catch(() => false)) return n;

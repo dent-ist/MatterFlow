@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { onlyDefaultPriorities } from '../support/isolate';
 import { PLAN, WorkloadSeed, crowdPlan, seedWorkload } from '../support/workload';
 
 /**
@@ -357,6 +358,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
   test('the toolbar is one line at 1366, wraps without sideways scroll at 375, and the strip keeps its place while loading', async ({
     page,
   }) => {
+    await onlyDefaultPriorities(page);
     await page.setViewportSize({ width: 1366, height: 768 });
     await openUsers(page);
     const bar = (await page.locator('[role="toolbar"]').boundingBox())!;

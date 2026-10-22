@@ -665,7 +665,7 @@ test.describe('Clients final verification (#287)', () => {
     await axeClean(page, 'matter, reduced motion');
   });
 
-  test('a lost connection on a list: the error says so and Retry brings the rows back', async ({
+  test('a lost connection on a list: the error says so, Retry fails again while offline, and the rows come back by themselves when the connection does', async ({
     page,
     context,
   }) => {
@@ -674,12 +674,19 @@ test.describe('Clients final verification (#287)', () => {
     await expect(page.locator('main table tbody tr td a').first()).toBeVisible();
     await context.setOffline(true);
     await page.getByRole('columnheader', { name: /^Name/ }).getByRole('button').first().click();
-    const retry = page.getByRole('button', { name: 'Retry' });
+    // The offline banner has its own Retry (it belongs to the whole app); this one is the list's.
+    const retry = page
+      .getByLabel('Clients list, scrollable')
+      .getByRole('button', { name: 'Retry' });
     await expect(retry).toBeVisible();
     await axeClean(page, 'clients list, offline');
-    await context.setOffline(false);
+    // Retry while still offline reads again and fails again, with the same message and the button still there.
     await retry.click();
+    await expect(retry).toBeVisible();
+    // When the connection returns the list reads itself once (the shared list state, #611): no click is needed and the button goes.
+    await context.setOffline(false);
     await expect(page.locator('main table tbody tr td a').first()).toBeVisible();
+    await expect(retry).toHaveCount(0);
   });
 
   test('Tab stops before the first row of each list (recorded; the skip link is Tab 1)', async ({

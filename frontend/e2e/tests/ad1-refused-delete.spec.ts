@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Page } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { toasts } from '../support/toasts';
@@ -32,6 +32,22 @@ async function noSideScroll(page: Page, what: string): Promise<void> {
   expect(overflow, `${what}: page-level horizontal scroll`).toBeLessThanOrEqual(0);
 }
 
+/**
+ * On a database the suite has used a new row is far down its list: scroll the button into view and let the (smooth) scroll end first,
+ * because a scroll of the list closes an open row menu.
+ */
+async function scrolledIntoView(button: Locator): Promise<void> {
+  await button.scrollIntoViewIfNeeded();
+  let last = -1;
+  await expect(async () => {
+    const top = (await button.boundingBox())!.y;
+    const settled = top === last;
+    last = top;
+    await new Promise((r) => setTimeout(r, 150));
+    expect(settled, 'the list has stopped scrolling').toBe(true);
+  }).toPass({ timeout: 10_000 });
+}
+
 test.describe('a refused delete is reported once (#537)', () => {
   test('Priorities: one inline message, no toast, axe clean at four widths (a delete the server refuses after the page offered it)', async ({
     page,
@@ -49,6 +65,7 @@ test.describe('a refused delete is reported once (#537)', () => {
       await page.goto('/admin/priorities');
       // Unused when the page loaded, so Delete is offered; a task is filed on it before the confirm (the race the server must refuse).
       const row = page.locator(`tbody tr[data-row="${label}"], li.rc:has-text("${label}")`);
+      await scrolledIntoView(row.getByRole('button', { name: /^Actions for / }));
       await row.getByRole('button', { name: /^Actions for / }).click();
       await page.getByRole('menuitem', { name: 'Delete' }).click();
       await seed.task(world, { priorityId: priority.id });
@@ -83,6 +100,7 @@ test.describe('a refused delete is reported once (#537)', () => {
       await page.goto('/admin/asset-link-roles');
       const menu = page.getByRole('button', { name: `Actions for ${name}` });
       await expect(menu).toBeVisible();
+      await scrolledIntoView(menu);
       // The role is unused when the page loads, so Delete is offered; a link is made before the person confirms.
       await seed.admin.post(`/api/v1/tasks/${task.taskId}/assets`, {
         assetId: asset.assetId,

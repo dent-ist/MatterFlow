@@ -2,6 +2,7 @@ import { Locator, Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { onlyDefaultPriorities } from '../support/isolate';
 import { TaskQueuePage } from '../pages/queues.pages';
 import {
   CoverageSeed,
@@ -497,6 +498,7 @@ test.describe('Users tab: workload', () => {
   test('the table fits 1366 and 1920 without sideways scroll, sorts by its headers and follows the toolbar', async ({
     page,
   }) => {
+    await onlyDefaultPriorities(page);
     for (const width of [1366, 1920]) {
       await page.setViewportSize({ width, height: 768 });
       await openUsers(page);

@@ -72,15 +72,33 @@ test.describe('workflow tabs and tags screenshots', () => {
 
       await page.goto('/admin/workflows');
       await expect(page.getByRole('tab', { name: 'Workflows' })).toBeVisible();
-      await expect(page.locator('table[data-workflows] tbody tr').first()).toBeVisible();
+      // Below 640 px the rows are cards.
+      await expect(
+        page
+          .locator('table[data-workflows] tbody tr')
+          .or(page.getByRole('list', { name: 'Workflows', exact: true }).getByRole('listitem'))
+          .first(),
+      ).toBeVisible();
       await shoot('workflows-tab');
 
       await page.goto('/admin/steps');
-      await expect(page.locator('table[data-steps] tbody tr').first()).toBeVisible();
+      // Below 640 px the rows are cards.
+      await expect(
+        page
+          .locator('table[data-steps] tbody tr')
+          .or(page.getByRole('list', { name: 'Workflow Steps', exact: true }).getByRole('listitem'))
+          .first(),
+      ).toBeVisible();
       await shoot('workflow-steps-tab');
 
       await page.goto('/admin/steps?tags=QC&tags=Review');
-      await expect(page.locator('table[data-steps] tbody tr').first()).toBeVisible();
+      // Below 640 px the rows are cards.
+      await expect(
+        page
+          .locator('table[data-steps] tbody tr')
+          .or(page.getByRole('list', { name: 'Workflow Steps', exact: true }).getByRole('listitem'))
+          .first(),
+      ).toBeVisible();
       // The filters are column filters (#79): the Tags dropdown in the filter row, or the tag checkboxes in the sheet at phone width.
       const tagsFilter = page.getByRole('button', { name: /^Filter by Tags,/ });
       if (!(await tagsFilter.isVisible())) {
@@ -102,9 +120,10 @@ test.describe('workflow tabs and tags screenshots', () => {
       const library = page.locator('[data-library]');
       // The library shows the first 50 of every step in the database: search for the tagged steps of this run instead of hoping they
       // are among them. Below 1280 px the library is a drawer opened from Add step.
-      const search = page.getByPlaceholder('Title, description or tag');
-      if (!(await search.isVisible()))
-        await page.getByRole('button', { name: /^Add step/ }).click();
+      const search = page.getByRole('searchbox', { name: 'Search steps' });
+      // The page must have drawn before it is asked whether the library is a pane (isVisible does not wait).
+      await expect(page.locator('[data-steps]')).toBeVisible();
+      if (!(await search.isVisible())) await page.getByRole('button', { name: /Add step/ }).click();
       await search.fill('Relativity');
       await expect(library.locator('[data-lib]').first()).toBeVisible();
       await expect(library.locator('[data-tag]').first()).toBeVisible();

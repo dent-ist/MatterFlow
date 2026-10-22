@@ -425,7 +425,8 @@ test.describe('Round 4: administration naming', () => {
       description: 'A new description',
     });
     await page.goto('/admin/audit');
-    await page.getByRole('button', { name: /^Filters/ }).click();
+    // The filter row is open from the start (Audit redesign, #650); the Filters button would close it.
+    await expect(page.locator('[data-filter-row]')).toBeVisible();
     await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
     await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
     const group = page.locator('tr[data-group]').first();

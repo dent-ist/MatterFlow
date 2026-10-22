@@ -49,7 +49,7 @@ test.describe('Offline banner (#611)', () => {
     page,
     seed,
   }) => {
-    await seed.client({ name: `Offline ${Date.now()}` });
+    await seed.client({ name: `Offline ${Date.now()}` }); // so the list has at least one row
     // Both list pages are opened once while online, in the same document, so their code is loaded; then the list is read afresh offline.
     const rail = page.getByRole('navigation', { name: 'Main' });
     await page.goto('/clients');
@@ -74,7 +74,8 @@ test.describe('Offline banner (#611)', () => {
     });
     await goOffline(page, false);
     await expect(page.getByText("Couldn't load clients.")).toHaveCount(0, { timeout: 10_000 });
-    await expect(page.getByRole('link', { name: /Offline \d+/ }).first()).toBeVisible();
+    // The rows are back. (Any client link: on a database with many clients the one made above is not on the first page.)
+    await expect(page.locator('main table tbody tr td a').first()).toBeVisible();
     await page.waitForTimeout(1500);
     // One automatic retry (the shared list state), not a storm.
     expect(reads.length, reads.join('\n')).toBe(1);

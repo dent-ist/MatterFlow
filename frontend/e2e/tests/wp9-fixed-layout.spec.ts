@@ -90,7 +90,10 @@ test.describe('Fixed layout (#200)', () => {
         i % 3 === 0 ? { dueDate: dateInZone(FIRM_ZONE, -9 + i) } : {},
       );
     }
-    const priorities = await admin.get<{ id: number; label: string }[]>('/api/v1/priorities');
+    // Active ones only: the Labels specs leave deactivated priorities behind, and a task cannot be filed on one.
+    const priorities = (
+      await admin.get<{ id: number; label: string; isActive: boolean }[]>('/api/v1/priorities')
+    ).filter((p) => p.isActive);
     for (const p of priorities) await make(`Prio ${p.label} ${tag}`, { priorityId: p.id });
     const long = await make(`${'Long title words '.repeat(10).slice(0, 170)} ${tag}`.slice(0, 170));
     const token = await make(`T${tag}${'x'.repeat(80)}`);

@@ -489,7 +489,36 @@ test.describe('Dashboard Breakdowns', () => {
         od: li.querySelector('.od-text')?.getAttribute('href') ?? null,
       })),
     );
-    expect(pie).toEqual(bars);
+    // The pie keeps at most eight slices: the seven largest in their order and the rest added up as "Other" (groupSlices). The suite adds
+    // priorities as it runs (the Labels specs), so on a used database there can be more than eight bars.
+    const keep = new Set(
+      bars
+        .map((b, i) => ({ i, c: b.count }))
+        .sort((a, b) => b.c - a.c || a.i - b.i)
+        .slice(0, 7)
+        .map((x) => x.i),
+    );
+    const expectedPie =
+      bars.length <= 8
+        ? bars
+        : [
+            ...bars.filter((_, i) => keep.has(i)),
+            {
+              label: 'Other',
+              count: bars.filter((_, i) => !keep.has(i)).reduce((n, b) => n + b.count, 0),
+              href: null,
+              od: null,
+            },
+          ];
+    if (bars.length > 8 && bars.length - keep.size === 1) {
+      // A single left-over row stays as it is (not grouped).
+      expectedPie.splice(
+        expectedPie.length - 1,
+        1,
+        bars.find((_, i) => !keep.has(i))!,
+      );
+    }
+    expect(pie).toEqual(expectedPie);
     const total = bars.reduce((n, b) => n + b.count, 0);
     await expect(priority.locator('[data-pie-centre]')).toHaveText(String(total));
     await expect(priority.locator('svg[role="img"]')).toHaveAttribute(
@@ -532,9 +561,12 @@ test.describe('Dashboard Breakdowns', () => {
       await expect(priority.locator('[data-pie]')).toBeVisible();
       const snap = () =>
         priority.evaluate((host) => {
+          // Relative to the card: hovering a legend row below the fold scrolls the page (more rows than fit at 375), which moves every box
+          // on the screen together and is not what this test is about. A box that moves inside the card still shows.
+          const origin = host.getBoundingClientRect();
           const r = (e: Element | null) => {
             const b = e!.getBoundingClientRect();
-            return [b.x, b.y, b.width, b.height];
+            return [b.x - origin.x, b.y - origin.y, b.width, b.height];
           };
           return {
             svg: r(host.querySelector('svg')),

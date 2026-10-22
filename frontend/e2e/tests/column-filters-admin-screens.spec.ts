@@ -54,6 +54,7 @@ test.describe('column filters admin screenshots', () => {
       page
         .getByRole('region', { name: `${region}, scrollable` })
         .locator('tbody tr')
+        .or(page.locator('li.rc')) // below 640 px the rows are cards
         .first();
 
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -113,7 +114,7 @@ test.describe('column filters admin screenshots', () => {
     // The Audit filter row is open from the start (AD7, #646).
     await shot(page, 'admin-audit-filters-open');
     await page.getByRole('button', { name: /^Filter by When/ }).click();
-    await page.getByRole('button', { name: 'Last 7 days' }).click();
+    await page.getByLabel('Presets').getByRole('button', { name: 'Last 7 days' }).click(); // the quick view of the page has the same name
     await shot(page, 'admin-audit-when-presets');
     await page.keyboard.press('Escape');
     await page.goto(`/admin/audit?eventType=CLIENT_CREATED&q=${token}`);

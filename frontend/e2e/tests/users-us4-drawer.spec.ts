@@ -256,7 +256,13 @@ test.describe('#439 Access', () => {
     await openList(page);
     await openDrawer(page, worker.userId);
     const names: string[] = [];
-    for (let i = 0; i < 400; i++) {
+    // One press per control on the page and a few more (a used database has hundreds of roles, one checkbox each).
+    const budget = await page.evaluate(
+      () =>
+        document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]').length +
+        20,
+    );
+    for (let i = 0; i < budget; i++) {
       await page.keyboard.press('Tab');
       const where = await page.evaluate(() => {
         const a = document.activeElement as HTMLElement | null;

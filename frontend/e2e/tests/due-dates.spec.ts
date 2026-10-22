@@ -107,7 +107,18 @@ test.describe('ASAP and overdue (SCN-015)', () => {
 
     const tokyo = new TaskDetailPage(await asUser('ke\\kekim', { timezoneId: 'Asia/Tokyo' }));
     await tokyo.open(taskId);
-    await expect(tokyo.due.locator('.dc')).toHaveAttribute('title', /3:30 AM/);
+    // 14:30 in New York is 3:30 AM or 4:30 AM the next day in Tokyo, depending on whether New York is on daylight saving time that day
+    // (it ends on the first Sunday of November, which falls inside the ten days this test looks ahead).
+    const nyOffsetHours = Number(
+      /GMT([+-]\d+)/.exec(
+        new Intl.DateTimeFormat('en-US', { timeZone: FIRM_ZONE, timeZoneName: 'shortOffset' })
+          .formatToParts(new Date(`${day}T12:00:00Z`))
+          .find((p) => p.type === 'timeZoneName')!.value,
+      )![1],
+    );
+    const tokyoMinutes = (14 * 60 + 30 + (9 - nyOffsetHours) * 60) % (24 * 60);
+    const tokyoTime = `${Math.floor(tokyoMinutes / 60) % 12 || 12}:30 ${tokyoMinutes < 720 ? 'AM' : 'PM'}`;
+    await expect(tokyo.due.locator('.dc')).toHaveAttribute('title', new RegExp(tokyoTime));
     await expect(tokyo.due).not.toContainText('Overdue');
   });
 });

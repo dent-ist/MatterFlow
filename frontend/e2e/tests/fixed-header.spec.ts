@@ -231,10 +231,12 @@ test.describe('Fixed-header screens at 1366x768', () => {
     await page.goto('/admin/audit');
     const region = page.getByRole('region', { name: 'Audit events list, scrollable' });
     await expect(region.locator('tbody tr').first()).toBeVisible();
-    const closed = await box(region);
-    await page.getByRole('button', { name: /^Filters/ }).click();
+    // The filter row is open from the start (Audit redesign, #650): measure it open, then close it with Filters.
     await expect(page.getByRole('textbox', { name: 'Filter by Summary or field' })).toBeVisible();
     const open = await box(region);
+    await page.getByRole('button', { name: /^Filters/ }).click();
+    await expect(page.locator('[data-filter-row]')).toHaveCount(0);
+    const closed = await box(region);
     // The filter row is one more sticky head row inside the grid: it costs the grid a few dozen pixels, not a form's height.
     expect(open.height).toBeGreaterThan(150);
     expect(open.height).toBeLessThanOrEqual(closed.height);

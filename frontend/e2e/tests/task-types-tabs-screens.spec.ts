@@ -90,21 +90,29 @@ test.describe('task types tabs screenshots', () => {
       await shoot('tab-1-task-types');
 
       await page.goto(`/admin/workflows?name=${token}`);
-      await expect(page.locator('table[data-workflows] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-workflows] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('tab-2-workflows');
 
       await page.goto(`/admin/steps?title=${token}`);
-      await expect(page.locator('table[data-steps] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-steps] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('tab-3-workflow-steps');
 
       await page.goto(`/admin/workflows?taskType=${many.id}`);
       await expect(page.locator('[data-filtered-by]')).toContainText(many.name);
-      await expect(page.locator('table[data-workflows] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-workflows] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('workflows-filtered-by-task-type');
 
       await page.goto(`/admin/workflows?step=${shared.id}`);
       await expect(page.locator('[data-filtered-by]')).toContainText(shared.title);
-      await expect(page.locator('table[data-workflows] tbody tr').first()).toBeVisible();
+      await expect(
+        page.locator('table[data-workflows] tbody tr, li[data-record-card]').first(),
+      ).toBeVisible();
       await shoot('workflows-filtered-by-step');
 
       await page.goto(`/admin/task-types?workflow=${flows[0].workflowDefinitionId}`);

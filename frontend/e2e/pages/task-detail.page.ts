@@ -198,9 +198,12 @@ export class TaskDetailPage {
     await expect(this.page.getByRole('dialog', { name: 'Edit task details' })).toBeVisible();
   }
 
-  /** The status badge text in the header (New, In Progress, On Hold, Completed, Cancelled). */
+  /**
+   * The Status tile of the facts strip in the header (New, In Progress, On Hold, Completed, Cancelled). It is the only place the page shows the
+   * status; its text reads "StatusIn Progress" (label and value are separate spans), so the tile is asked, not a word boundary in the header.
+   */
   async expectStatus(label: string): Promise<void> {
-    await expect(this.header).toContainText(new RegExp(`\\b${label}\\b`));
+    await expect(this.header.locator('li[data-status]')).toContainText(label);
   }
 
   /** Opens the status menu in the header and returns the item for an action. */

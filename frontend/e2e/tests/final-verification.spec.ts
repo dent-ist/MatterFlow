@@ -367,7 +367,10 @@ test.describe('Final verification (#240)', () => {
     const director = await seed.user(['Director'], 'final-dash');
     const tech = await seed.user(['Data Technician'], 'final-dash-tech');
     const pod = await seed.pod(undefined, [tech.userId]);
-    const priorities = await admin.get<{ id: number; label: string }[]>('/api/v1/priorities');
+    // Active ones only: the Labels specs leave deactivated priorities behind, and a task cannot be filed on one.
+    const priorities = (
+      await admin.get<{ id: number; label: string; isActive: boolean }[]>('/api/v1/priorities')
+    ).filter((p) => p.isActive);
     const mk = (w: typeof world, title: string, extra: Record<string, unknown> = {}) =>
       seed.task(w, { title: `${title} ${tag}`, assignedPodId: pod.podId, ...extra });
     const ids: number[] = [];
