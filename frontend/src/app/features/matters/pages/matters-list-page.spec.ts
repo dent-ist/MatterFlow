@@ -484,7 +484,9 @@ describe('MattersListPage', () => {
         aMatter({ matterId: 3, matterRef: '00343-00014', rowVersion: 'V3' }),
       ]);
       const el: HTMLElement = fixture.nativeElement;
-      expect(el.querySelector('[data-selection-bar]')).toBeNull();
+      expect(el.querySelector('[data-selection-bar], [data-select-row]')).toBeNull(); // the grid is normal until Select
+      el.querySelector<HTMLButtonElement>('[data-select-mode]')!.click();
+      await settle(fixture);
 
       const boxes = el.querySelectorAll<HTMLInputElement>('[data-select-row]');
       expect(boxes[0].getAttribute('aria-label')).toBe('Select 00343-00012 Merger Review');

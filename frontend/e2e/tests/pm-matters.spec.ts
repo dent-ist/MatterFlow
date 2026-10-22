@@ -84,6 +84,7 @@ test.describe('Matters list: project managers', () => {
     const page = await asUser(fx.director.username);
     await page.goto(`/matters?name=${fx.token}`);
 
+    await page.locator('[data-select-mode]').click();
     await rowOf(page, 'No manager one').locator('[data-select-row]').check();
     await rowOf(page, 'No manager two').locator('[data-select-row]').check();
     await page.getByRole('button', { name: 'Set project managers' }).click();
@@ -108,9 +109,9 @@ test.describe('Matters list: project managers', () => {
       const page = await asUser(fx[key].username);
       await page.goto(`/matters?name=${fx.token}`);
       await expect(page.locator('tbody tr').first()).toBeVisible();
-      await expect(page.locator('[data-select-row], [data-select-all], [data-mine]')).toHaveCount(
-        0,
-      );
+      await expect(
+        page.locator('[data-select-mode], [data-select-row], [data-select-all], [data-mine]'),
+      ).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Set project managers' })).toHaveCount(0);
     });
   }

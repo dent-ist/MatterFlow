@@ -256,10 +256,11 @@ test.describe('Clients final verification (#287)', () => {
         } else {
           await expect(page.locator('[role=tablist]')).toBeVisible();
           const tabsTop = await top(page, '[role=tablist]');
-          if (w >= 1024)
-            expect(tabsTop, `${s.key}: tabs y`).toBeLessThanOrEqual(s.long ? 200 : 200);
+          // A matter also carries the project manager line and the small health strip (epic #667): up to 50 px more on a desktop, 130 on a phone.
+          const extra = s.key.startsWith('matter') ? (phone ? 130 : 50) : 0;
+          if (w >= 1024) expect(tabsTop, `${s.key}: tabs y`).toBeLessThanOrEqual(200 + extra);
           else if (phone)
-            expect(tabsTop, `${s.key}: tabs y`).toBeLessThanOrEqual(s.long ? 260 : 200);
+            expect(tabsTop, `${s.key}: tabs y`).toBeLessThanOrEqual((s.long ? 260 : 200) + extra);
           if (s.long) console.log(`${s.key} ${w}x${h}: tabs at y ${Math.round(tabsTop)}`);
         }
         await statusNotClipped(page, `${s.key} at ${w}`);

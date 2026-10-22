@@ -251,7 +251,7 @@ const SCREENS: Screen[] = [
     noun: 'matters',
     url: (w) => `/matters?name=${w.token}&status=all`,
     nameCol: 2,
-    statusCol: 6,
+    statusCol: 7, // Reference, Name, Client, Project manager, Open tasks, Overdue, Status
   },
   {
     key: 'projects',
@@ -580,7 +580,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       expect(
         (await sheet.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
-      ).toEqual(['Reference', 'Name', 'Client', 'Open tasks', 'Overdue']);
+      ).toEqual(['Reference', 'Name', 'Client', 'Project manager', 'Open tasks', 'Overdue']);
       // The sheet also carries Status and Sensitive (#272).
       await expect(sheet.getByLabel('Filter by Sensitive')).toBeVisible();
       await expect(sheet.getByLabel('Filter by Status')).toBeVisible();

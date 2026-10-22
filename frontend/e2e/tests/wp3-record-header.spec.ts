@@ -178,10 +178,14 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
         const bodyTop = c.tabs
           ? await top(page, '[role=tablist]')
           : await top(page, 'mf-record-header + *');
+        // A matter also carries the project manager line and the small health strip (epic #667): up to 50 px more on a desktop, 130 on a phone.
+        const extra = c.key.startsWith('matter') ? (phone ? 130 : 50) : 0;
         if (w >= 1024) {
-          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(200);
+          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(200 + extra);
         } else if (phone) {
-          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(c.long ? 260 : 200);
+          expect(bodyTop, `${c.key} tabs y at ${w}`).toBeLessThanOrEqual(
+            (c.long ? 260 : 200) + extra,
+          );
         }
         if (w === 1366 || w === 375)
           console.log(`${c.key} ${w}x${h}: body at y ${Math.round(bodyTop)}`);
