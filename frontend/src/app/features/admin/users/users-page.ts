@@ -61,7 +61,6 @@ import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip'
 import { StripDef, stripActiveKey, stripPick } from '../../../shared/ui/strip-items';
 import { AdminTabCounts } from '../admin-tabs';
 import { AdminShellFilters } from '../task-types/shell-filters';
-import { impactLine } from '../shared/dialog-copy';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
 import { UserDrawer, UserDrawerIntent } from './user-drawer';
 import { availabilityShown } from './user-availability';

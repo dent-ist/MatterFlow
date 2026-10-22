@@ -397,7 +397,9 @@ export class StepEditPage implements HasUnsavedChanges {
     const problems: string[] = [];
     if (this.title().trim() === '') problems.push('Enter a title.');
     if (!isValidDocumentationUrl(this.documentationUrl())) {
-      problems.push('Enter a full web address starting with http:// or https://, or a OneNote link starting with onenote:https://.');
+      problems.push(
+        'Enter a full web address starting with http:// or https://, or a OneNote link starting with onenote:https://.',
+      );
     }
     if (problems.length > 0) {
       this.summary.set(problems);

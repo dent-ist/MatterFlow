@@ -71,6 +71,8 @@ describe('RowEdit', () => {
     field: InlineField,
     row: TaskQueueRow,
     permissions: Permission[] = [
+      // Task.View is what lets the lookup store read the priority list (AD-D #519); nobody sees a queue row without it.
+      'Task.View',
       'Task.SetPriority',
       'Task.Assign',
       'Task.ChangeStatus',

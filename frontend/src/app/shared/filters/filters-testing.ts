@@ -122,7 +122,7 @@ export async function mountFilters<H extends FiltersTestHost>(
   );
   config.options = o.options ?? {};
   localStorage.clear();
-  originalMatchMedia ??= window.matchMedia;
+  if (!savedMatchMedia) savedMatchMedia = { value: window.matchMedia };
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     writable: true,
@@ -165,15 +165,20 @@ export async function mountFilters<H extends FiltersTestHost>(
   };
 }
 
-let originalMatchMedia: typeof window.matchMedia | undefined;
+/**
+ * What `window.matchMedia` was before the first mount. jsdom has none (undefined), and the unit-test runner shares one window between spec
+ * files (isolate: false), so a mock left behind makes later specs read a narrow, non-desktop screen (the Task header lost its Activity
+ * button depending on the file order).
+ */
+let savedMatchMedia: { value: typeof window.matchMedia | undefined } | undefined;
 
 /** Call after each test (together with `vi.restoreAllMocks()` in the spec). */
 export function cleanup(): void {
-  if (originalMatchMedia) {
+  if (savedMatchMedia) {
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       writable: true,
-      value: originalMatchMedia,
+      value: savedMatchMedia.value,
     });
   }
   document.body.querySelectorAll('mf-filter-popover').forEach((n) => n.remove());
