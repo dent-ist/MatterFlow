@@ -2190,6 +2190,51 @@
         }
       }
     },
+    "/api/v1/users/matter-managers": {
+      "get": {
+        "tags": [
+          "MatterManagers"
+        ],
+        "operationId": "LookupMatterManagers",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "maxLength": 100,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterManagerItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -3925,6 +3970,58 @@
             }
           },
           {
+            "name": "PrimaryManagerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "SecondaryManagerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ManagerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ManagedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "HasNoManager",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "HasPrimaryManager",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "HasSecondaryManager",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "Page",
             "in": "query",
             "schema": {
@@ -4159,6 +4256,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MatterSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/managers": {
+      "put": {
+        "tags": [
+          "Matters"
+        ],
+        "operationId": "SetMatterManagers",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMatterManagersRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMatterManagersRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMatterManagersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterResponse"
                 }
               }
             }
@@ -6850,6 +6998,38 @@
             }
           },
           {
+            "name": "managedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueWithin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -7190,6 +7370,38 @@
             }
           },
           {
+            "name": "managedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueWithin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -7501,6 +7713,38 @@
             "schema": {
               "type": "string",
               "format": "date"
+            }
+          },
+          {
+            "name": "managedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueWithin",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           },
           {
@@ -8640,6 +8884,8 @@
               "DUPLICATE_NAME",
               "MATTER_INACTIVE",
               "MATTER_HAS_OPEN_TASKS",
+              "MANAGER_NOT_ELIGIBLE",
+              "MANAGER_DUPLICATE",
               "CLIENT_INACTIVE",
               "PROJECT_INACTIVE",
               "POD_INACTIVE",
@@ -10263,6 +10509,24 @@
           "isSensitive": {
             "type": "boolean"
           },
+          "primaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "secondaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
           "formValues": {
             "type": [
               "null",
@@ -11758,6 +12022,46 @@
           }
         }
       },
+      "MatterManagerItem": {
+        "required": [
+          "userId",
+          "displayName",
+          "availability"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/UserAvailabilitySummary"
+          }
+        }
+      },
+      "MatterManagerResponse": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "MatterResponse": {
         "required": [
           "matterId",
@@ -11770,6 +12074,8 @@
           "name",
           "isActive",
           "isSensitive",
+          "primaryManager",
+          "secondaryManager",
           "projectCount",
           "openTaskCount",
           "overdueTaskCount",
@@ -11814,6 +12120,26 @@
           },
           "isSensitive": {
             "type": "boolean"
+          },
+          "primaryManager": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterManagerResponse"
+              }
+            ]
+          },
+          "secondaryManager": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterManagerResponse"
+              }
+            ]
           },
           "projectCount": {
             "type": "integer",
@@ -13771,6 +14097,35 @@
         "properties": {
           "isActive": {
             "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "SetMatterManagersRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "primaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "secondaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           },
           "rowVersion": {
             "type": "string"
@@ -16522,6 +16877,24 @@
               "null",
               "object"
             ]
+          },
+          "primaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "secondaryManagerId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -18265,6 +18638,9 @@
     },
     {
       "name": "UserAvailability"
+    },
+    {
+      "name": "MatterManagers"
     },
     {
       "name": "Me"

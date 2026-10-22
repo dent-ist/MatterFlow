@@ -18,6 +18,8 @@ public static class ErrorCodes
     public const string DuplicateName = "DUPLICATE_NAME";
     public const string MatterInactive = "MATTER_INACTIVE";
     public const string MatterHasOpenTasks = "MATTER_HAS_OPEN_TASKS";
+    public const string ManagerNotEligible = "MANAGER_NOT_ELIGIBLE";
+    public const string ManagerDuplicate = "MANAGER_DUPLICATE";
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";
     public const string PodInactive = "POD_INACTIVE";

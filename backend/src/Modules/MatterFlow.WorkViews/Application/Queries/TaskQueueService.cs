@@ -24,6 +24,7 @@ public sealed class TaskQueueService(
     IClock clock,
     IUserTimeZone timeZone,
     ICurrentUser currentUser,
+    IPermissionChecker permissions,
     IPodDirectory podDirectory,
     IUserAvailabilityReader availability)
 {
@@ -375,9 +376,14 @@ public sealed class TaskQueueService(
         if (page.IsFailure)
             return page.Error!;
 
-        var filter = TaskQueueFilter.From(query);
-        if (filter.IsFailure)
-            return filter.Error!;
+        var parsed = TaskQueueFilter.From(query);
+        if (parsed.IsFailure)
+            return parsed.Error!;
+
+        var managers = ResolveManager(parsed.Value);
+        if (managers.IsFailure)
+            return managers.Error!;
+        var filter = managers;
 
         var sort = defaultSort;
         if (!string.IsNullOrWhiteSpace(query.Sort))
@@ -400,8 +406,52 @@ public sealed class TaskQueueService(
         return (filter.Value, page.Value, sort, descending, QueueClock.Create(clock.UtcNow, timeZone));
     }
 
+    /// <summary>
+    /// "Managed by me" becomes the caller's id; asking for another person's matters needs <c>Matter.AssignManagers</c> (a project manager sees their
+    /// own by default, searching beyond that is the permission's point). Naming two different people is a 400.
+    /// </summary>
+    private Result<TaskQueueFilter> ResolveManager(TaskQueueFilter filter)
+    {
+        if (!filter.ManagedByMe && filter.ManagerId is null)
+            return filter;
+
+        var me = currentUser.UserId;
+        if (filter.ManagedByMe)
+        {
+            if (me is null)
+                return Error.Validation("managedByMe", "NO_USER", "managedByMe needs a signed-in user.");
+            if (filter.ManagerId is { } named && named != me)
+                return Error.Validation("managerId", "MANAGER_MISMATCH", "managedByMe and managerId name different people.");
+
+            return filter with { ManagerId = me };
+        }
+
+        if (filter.ManagerId != me)
+        {
+            var allowed = permissions.Require(Permissions.Matter.AssignManagers);
+            if (allowed.IsFailure)
+                return allowed.Error!;
+        }
+
+        return filter;
+    }
+
     internal IQueryable<WorkTask> ApplyFilter(IQueryable<WorkTask> rows, TaskQueueFilter f, QueueClock c)
     {
+        if (f.ManagerId is { } managerId)
+        {
+            // The Matter's Primary and/or Secondary project manager (a Matter without one never matches). A subquery on the small Matter table.
+            rows = f.ManagerRole switch
+            {
+                TaskQueueFilter.RolePrimary => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.PrimaryManagerId == managerId)),
+                TaskQueueFilter.RoleSecondary => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.SecondaryManagerId == managerId)),
+                _ => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && (m.PrimaryManagerId == managerId || m.SecondaryManagerId == managerId))),
+            };
+        }
+
+        if (f.DueWithinDays is { } dueWithin)
+            rows = rows.Where(TaskQueueRules.DueWithin(c, dueWithin));
+
         if (f.Text is { } text)
         {
             var pattern = TextMatch.ContainsPattern(text);

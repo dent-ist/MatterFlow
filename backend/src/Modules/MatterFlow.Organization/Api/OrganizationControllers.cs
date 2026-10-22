@@ -22,6 +22,7 @@ internal static class OrganizationPolicies
     public const string MatterEdit = Prefix + Permissions.Matter.Edit;
     public const string MatterEditNumber = Prefix + Permissions.Matter.EditNumber;
     public const string MatterSetActive = Prefix + Permissions.Matter.SetActive;
+    public const string MatterAssignManagers = Prefix + Permissions.Matter.AssignManagers;
     public const string ProjectView = Prefix + Permissions.Project.View;
     public const string ProjectCreate = Prefix + Permissions.Project.Create;
     public const string ProjectEdit = Prefix + Permissions.Project.Edit;
@@ -108,7 +109,7 @@ public class ClientsController(ClientService clients, CustomFieldValues customFi
 [Route("api/v1/matters")]
 public class MattersController(MatterService matters, CustomFieldValues customFields) : ControllerBase
 {
-    /// <summary>Lists Matters. <c>q</c> accepts <c>343-12</c>, <c>00343-00012</c>, a client or matter number, or a name fragment. Sort: matterRef (default), name, clientNumber, createdAt, openTasks, overdue (Task counts; ties by the default order).</summary>
+    /// <summary>Lists Matters. <c>q</c> accepts <c>343-12</c>, <c>00343-00012</c>, a client or matter number, or a name fragment. Sort: matterRef (default), name, clientNumber, createdAt, openTasks, overdue (Task counts; ties by the default order), primaryManager, secondaryManager (by name, matters without one last). Manager filters: primaryManagerId, secondaryManagerId, managerId (either), managedByMe, hasNoManager, hasPrimaryManager, hasSecondaryManager.</summary>
     [HttpGet(Name = "ListMatters")]
     [Authorize(Policy = OrganizationPolicies.MatterView)]
     [ProducesResponseType<PagedResult<MatterResponse>>(StatusCodes.Status200OK, "application/json")]
@@ -166,6 +167,18 @@ public class MattersController(MatterService matters, CustomFieldValues customFi
     [ProducesResponseType<MatterResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Update(int matterId, [FromBody] UpdateMatterRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await matters.UpdateAsync(matterId, request, cancellationToken));
+
+    /// <summary>
+    /// Sets or clears a Matter's Primary and Secondary project manager (both values are replaced; send null to clear). Restricted to
+    /// <c>Matter.AssignManagers</c>, not <c>Matter.Edit</c>. A person must be an active user holding <c>Matter.BeManager</c> (400 <c>MANAGER_NOT_ELIGIBLE</c>),
+    /// the two must differ (400 <c>MANAGER_DUPLICATE</c>); a person already on the matter is always accepted, a Secondary without a Primary is allowed.
+    /// Recorded as one MATTER_MANAGER_CHANGED event per changed place.
+    /// </summary>
+    [HttpPut("{matterId:int}/managers", Name = "SetMatterManagers")]
+    [Authorize(Policy = OrganizationPolicies.MatterAssignManagers)]
+    [ProducesResponseType<MatterResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SetManagers(int matterId, [FromBody] SetMatterManagersRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await matters.SetManagersAsync(matterId, request, cancellationToken));
 
     /// <summary>Changes a Matter's number. Restricted to <c>Matter.EditNumber</c> and recorded as MATTER_NUMBER_CHANGED.</summary>
     [HttpPut("{matterId:int}/number", Name = "ChangeMatterNumber")]

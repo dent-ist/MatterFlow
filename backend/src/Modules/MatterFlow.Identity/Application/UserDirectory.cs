@@ -27,6 +27,9 @@ public sealed class UserDirectory(DbContext db) : IUserDirectory
         return users.ToDictionary(u => u.UserId);
     }
 
+    public IQueryable<UserNameKey> NameKeys() =>
+        db.Set<AppUser>().AsNoTracking().Select(u => new UserNameKey { UserId = u.Id, DisplayName = u.DisplayName });
+
     public async Task<IReadOnlyDictionary<int, string>> RoleNamesAsync(IReadOnlyCollection<int> roleIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(roleIds);

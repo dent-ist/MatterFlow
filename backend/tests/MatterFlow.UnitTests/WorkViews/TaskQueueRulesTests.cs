@@ -78,6 +78,50 @@ public class TaskQueueRulesTests
 
     [Theory]
     [InlineData("America/New_York")]
+    [InlineData("Pacific/Kiritimati")]
+    [InlineData("UTC")]
+    public void DueWithin_is_open_with_a_date_in_the_window_and_not_overdue_and_the_dashboard_window_is_its_two_day_case(string zone)
+    {
+        var now = new DateTime(2026, 10, 14, 4, 30, 0, DateTimeKind.Utc);
+        var clock = ClockIn(zone, now);
+        var overdue = TaskQueueRules.Overdue(clock).Compile();
+        var two = TaskQueueRules.DueWithin(clock, 2).Compile();
+        var three = TaskQueueRules.DueWithin(clock, 3).Compile();
+        var seven = TaskQueueRules.DueWithin(clock, 7).Compile();
+        var dashboard = TaskQueueRules.DueSoonExcludingOverdue(clock).Compile();
+        foreach (var status in new[] { TaskStatusCode.New, TaskStatusCode.OnHold, TaskStatusCode.Completed })
+        {
+            for (var offset = -2; offset <= 9; offset++)
+            {
+                var t = Task(status, clock.Today.AddDays(offset));
+                dashboard(t).ShouldBe(two(t), $"{status} {offset}");
+                three(t).ShouldBe(status != TaskStatusCode.Completed && offset is >= 0 and <= 3, $"3 days: {status} {offset}");
+                seven(t).ShouldBe(status != TaskStatusCode.Completed && offset is >= 0 and <= 7, $"7 days: {status} {offset}");
+                (seven(t) && overdue(t)).ShouldBeFalse("never overlaps Overdue");
+            }
+
+            three(Task(status, null)).ShouldBeFalse("ASAP has no date");
+        }
+    }
+
+    [Fact]
+    public void Sort_onHoldSince_orders_the_holds_first_by_when_they_went_on_hold_and_the_rest_after()
+    {
+        var rows = new[]
+        {
+            Row(1, 1, null, createdDays: 0, status: TaskStatusCode.New),
+            Row(2, 1, null, createdDays: 5, status: TaskStatusCode.OnHold),
+            Row(3, 1, null, createdDays: 2, status: TaskStatusCode.OnHold),
+            Row(4, 1, null, createdDays: 9, status: TaskStatusCode.InProgress),
+        }.AsQueryable();
+
+        Ids(rows, TaskQueueRules.SortOnHoldSince).ShouldBe([3, 2, 1, 4]);
+        Ids(rows, TaskQueueRules.SortOnHoldSince, descending: true).ShouldBe([2, 3, 4, 1]); // the rest follow in the same direction
+        TaskQueueRules.SortFields.ShouldContain(TaskQueueRules.SortOnHoldSince);
+    }
+
+    [Theory]
+    [InlineData("America/New_York")]
     [InlineData("America/Los_Angeles")]
     [InlineData("Pacific/Kiritimati")]
     [InlineData("UTC")]

@@ -73,7 +73,32 @@ public sealed class MatterListQuery : OrgListQuery
     [StringLength(200)]
     public string? Client { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "clientId", "isActive", "isSensitive", "matterRef", "name", "client"];
+    /// <summary>Only matters whose Primary project manager is this user.</summary>
+    public int? PrimaryManagerId { get; init; }
+
+    /// <summary>Only matters whose Secondary project manager is this user.</summary>
+    public int? SecondaryManagerId { get; init; }
+
+    /// <summary>Only matters this user manages, as Primary or Secondary.</summary>
+    public int? ManagerId { get; init; }
+
+    /// <summary>True: only matters the caller manages (Primary or Secondary). False is the same as leaving it out.</summary>
+    public bool? ManagedByMe { get; init; }
+
+    /// <summary>True: only matters with no manager at all; false: only matters with at least one. A plain filter, never a count or a warning anywhere.</summary>
+    public bool? HasNoManager { get; init; }
+
+    /// <summary>True: only matters with a Primary; false: only matters without one (the column filter's Any and None).</summary>
+    public bool? HasPrimaryManager { get; init; }
+
+    /// <summary>True: only matters with a Secondary; false: only matters without one.</summary>
+    public bool? HasSecondaryManager { get; init; }
+
+    internal static readonly string[] Keys =
+    [
+        "page", "pageSize", "sort", "q", "clientId", "isActive", "isSensitive", "matterRef", "name", "client",
+        "primaryManagerId", "secondaryManagerId", "managerId", "managedByMe", "hasNoManager", "hasPrimaryManager", "hasSecondaryManager",
+    ];
 }
 
 /// <summary>Project list filters.</summary>
@@ -103,6 +128,9 @@ public sealed class ProjectListQuery : OrgListQuery
 /// <summary>Audit event type codes written by the Organization module.</summary>
 public static class OrganizationAuditEvents
 {
+    /// <summary>A matter's Primary or Secondary project manager was set, changed or cleared (field key <c>PrimaryManager</c> or <c>SecondaryManager</c>; old and new value are the people's names).</summary>
+    public const string MatterManagerChanged = "MATTER_MANAGER_CHANGED";
+
     public const string ClientCreated = "CLIENT_CREATED";
     public const string ClientNumberChanged = "CLIENT_NUMBER_CHANGED";
     public const string MatterCreated = "MATTER_CREATED";

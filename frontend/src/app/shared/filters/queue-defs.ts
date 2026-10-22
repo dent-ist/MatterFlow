@@ -41,6 +41,8 @@ export interface QueueDefOptions {
     client?: (id: string) => string;
     matter?: (id: string) => string;
     project?: (id: string) => string;
+    /** The person a `managerId` link names (`?managerId=12` shows "Project manager: Dana Director"). */
+    manager?: (id: string) => string;
   };
 }
 
@@ -255,6 +257,53 @@ export function queueFilterDefs(
       normalize: asId,
       valueLabel: options.names?.project,
     },
+    // Project Manager epic (#667), link-only: tasks on matters a person manages. A removable chip, never a column; a matter without a manager
+    // is not matched and nothing says so.
+    {
+      key: 'managedByMe',
+      label: 'Managed by me',
+      type: 'select',
+      param: 'managedByMe',
+      noControl: true,
+      bareChip: true,
+      options: [{ value: 'true', label: 'On matters I manage' }],
+      normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
+    },
+    {
+      key: 'managerId',
+      label: 'Project manager',
+      type: 'text',
+      noControl: true,
+      normalize: asId,
+      valueLabel: (id: string) =>
+        options.names?.manager?.(id) ??
+        lookups.users?.find((o) => o.value === id)?.label ??
+        'selected person',
+    },
+    {
+      key: 'role',
+      label: 'As',
+      type: 'select',
+      param: 'role',
+      noControl: true,
+      options: [
+        { value: 'primary', label: 'Primary manager' },
+        { value: 'secondary', label: 'Secondary manager' },
+      ],
+      normalize: (v: string) => (v === 'primary' || v === 'secondary' ? v : null),
+    },
+    {
+      key: 'dueWithin',
+      label: 'Due within',
+      type: 'select',
+      param: 'dueWithin',
+      noControl: true,
+      options: [
+        { value: '3', label: '3 days' },
+        { value: '7', label: '7 days' },
+      ],
+      normalize: (v: string) => (v === '3' || v === '7' ? v : null),
+    },
   ];
   const omit = options.omit ?? [];
   return defs.filter((d) => !omit.includes(d.key));
@@ -342,5 +391,9 @@ export function filtersToValues(f: QueueFilters): Record<string, FilterValue> {
     client: f.client === null ? '' : String(f.client),
     matter: f.matter === null ? '' : String(f.matter),
     project: f.project === null ? '' : String(f.project),
+    managedByMe: f.managedByMe ? 'true' : '',
+    managerId: f.managerId === null ? '' : String(f.managerId),
+    role: f.role,
+    dueWithin: f.dueWithin === null ? '' : String(f.dueWithin),
   };
 }

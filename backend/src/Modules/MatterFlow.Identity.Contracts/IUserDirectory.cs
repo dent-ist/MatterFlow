@@ -19,4 +19,7 @@ public interface IUserDirectory
     /// <summary>Names of the Roles that exist (inactive ones too: history keeps their names), keyed by Role id. The default resolves nothing.</summary>
     Task<IReadOnlyDictionary<int, string>> RoleNamesAsync(IReadOnlyCollection<int> roleIds, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, string>>(new Dictionary<int, string>());
+
+    /// <summary>Every user's id and display name as a query, so another module can order or join a list by a person's name inside one statement (for example the Matters list sorted by project manager). The default is empty.</summary>
+    IQueryable<UserNameKey> NameKeys() => Enumerable.Empty<UserNameKey>().AsQueryable();
 }

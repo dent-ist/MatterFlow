@@ -91,6 +91,8 @@ public sealed class ChangeNumberRequest
 /// <param name="Name">Matter name.</param>
 /// <param name="IsActive">Tasks can be created only on an active Matter.</param>
 /// <param name="IsSensitive">Display-only warning flag; does not restrict access.</param>
+/// <param name="PrimaryManager">The Primary project manager; null when none is set (normal, not a warning).</param>
+/// <param name="SecondaryManager">The Secondary project manager (same rights as the Primary); null when none is set. May be set without a Primary.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter.</param>
 /// <param name="OpenTaskCount">Open Tasks (New, In Progress, On Hold) of the Matter, project Tasks included; null when the viewer lacks <c>Task.View</c>.</param>
 /// <param name="OverdueTaskCount">Open Tasks past their due moment in the viewer's time zone; null when the viewer lacks <c>Task.View</c>.</param>
@@ -112,6 +114,8 @@ public sealed record MatterResponse(
     [property: Required] string Name,
     [property: Required] bool IsActive,
     [property: Required] bool IsSensitive,
+    MatterManagerResponse? PrimaryManager,
+    MatterManagerResponse? SecondaryManager,
     [property: Required] int ProjectCount,
     int? OpenTaskCount,
     int? OverdueTaskCount,
@@ -122,6 +126,31 @@ public sealed record MatterResponse(
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc);
+
+/// <summary>A matter's project manager as lists and headers show them.</summary>
+/// <param name="UserId">User id.</param>
+/// <param name="DisplayName">Display name (history keeps the name of a user who has since been disabled).</param>
+/// <param name="IsActive">False once the user is disabled; the person stays on the matter until someone changes it.</param>
+public sealed record MatterManagerResponse(
+    [property: Required] int UserId,
+    [property: Required] string DisplayName,
+    [property: Required] bool IsActive);
+
+/// <summary>Sets or clears a matter's project managers. Both values are replaced: leave one out (or null) to clear it.</summary>
+public sealed class SetMatterManagersRequest
+{
+    /// <summary>The Primary project manager (an active user holding <c>Matter.BeManager</c>), or null for none. An unchanged current value is always accepted, also for a person who has lost the role since.</summary>
+    [Range(1, int.MaxValue)]
+    public int? PrimaryManagerId { get; init; }
+
+    /// <summary>The Secondary project manager (same rules as the Primary; different from it), or null for none. Allowed without a Primary.</summary>
+    [Range(1, int.MaxValue)]
+    public int? SecondaryManagerId { get; init; }
+
+    /// <summary>The <c>rowVersion</c> last read (the matters list carries it per row, so a bulk change sends each row's own).</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
 
 /// <summary>Creates a Matter under a Client.</summary>
 public sealed class CreateMatterRequest
@@ -140,6 +169,14 @@ public sealed class CreateMatterRequest
 
     /// <summary>Show the sensitive-matter warning banner (display only).</summary>
     public bool IsSensitive { get; init; }
+
+    /// <summary>Optional Primary project manager. Accepted only with <c>Matter.AssignManagers</c> (403 otherwise); an active user holding <c>Matter.BeManager</c>.</summary>
+    [Range(1, int.MaxValue)]
+    public int? PrimaryManagerId { get; init; }
+
+    /// <summary>Optional Secondary project manager (same rules; different from the Primary).</summary>
+    [Range(1, int.MaxValue)]
+    public int? SecondaryManagerId { get; init; }
 
     /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
     public Dictionary<string, JsonElement>? FormValues { get; init; }
@@ -162,6 +199,14 @@ public sealed class UpdateMatterRequest
     /// Omit the property to leave the values untouched. Only the changed fields are validated.
     /// </summary>
     public Dictionary<string, JsonElement>? FormValues { get; init; }
+
+    /// <summary>Sets the Primary project manager when given (needs <c>Matter.AssignManagers</c>, 403 otherwise). Omitted means unchanged; to clear a manager use <c>PUT /matters/{id}/managers</c>.</summary>
+    [Range(1, int.MaxValue)]
+    public int? PrimaryManagerId { get; init; }
+
+    /// <summary>Sets the Secondary project manager when given; same rules as <see cref="PrimaryManagerId"/>.</summary>
+    [Range(1, int.MaxValue)]
+    public int? SecondaryManagerId { get; init; }
 }
 
 /// <summary>Sets a Matter or Project active or inactive.</summary>

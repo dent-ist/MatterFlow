@@ -34,6 +34,9 @@ describe('work list filters on the shared definitions', () => {
     },
     search: { q: 'merger' },
     'status given in lower case': { status: 'new' },
+    'tasks on matters I manage': { managedByMe: 'true', status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] },
+    'secondary manager, due in 7 days': { managedByMe: 'true', role: 'secondary', dueWithin: '7' },
+    'matters of a named manager': { managerId: '12', role: 'primary' },
   };
 
   for (const [name, link] of Object.entries(LINKS)) {
@@ -69,6 +72,10 @@ describe('work list filters on the shared definitions', () => {
       });
       expect(values['asap']).toBe(queue.asap === null ? '' : String(queue.asap));
       expect(values['overdue']).toBe(queue.overdue === null ? '' : String(queue.overdue));
+      expect(values['managedByMe']).toBe(queue.managedByMe ? 'true' : '');
+      expect(values['managerId']).toBe(queue.managerId === null ? '' : String(queue.managerId));
+      expect(values['role']).toBe(queue.role);
+      expect(values['dueWithin']).toBe(queue.dueWithin === null ? '' : String(queue.dueWithin));
 
       // And back: the same parameters (status codes upper-cased, as QueueFilters writes them).
       const written = Object.fromEntries(
@@ -178,6 +185,10 @@ describe('work list definitions for the column filters', () => {
         'client',
         'matter',
         'project',
+        'managedByMe',
+        'managerId',
+        'role',
+        'dueWithin',
       ].sort(),
     );
   });
@@ -323,5 +334,18 @@ describe('work list definitions: tabs, presets and fixed values', () => {
     expect(optionsOf(status).map((o) => o.value)).toEqual(['IN_PROGRESS']);
     expect(status.valueLabel?.('NEW')).toBe('New');
     expect(status.valueLabel?.('ON_HOLD')).toBe('ON_HOLD');
+  });
+});
+
+describe('the managed-by filters are link-only', () => {
+  it('have no control, only a removable chip', () => {
+    const defs = queueFilterDefs();
+    for (const key of ['managedByMe', 'managerId', 'role', 'dueWithin']) {
+      expect(defs.find((d) => d.key === key)?.noControl).toBe(true);
+    }
+
+    expect(optionsOf(defs.find((d) => d.key === 'managedByMe')!)[0]?.label).toBe(
+      'On matters I manage',
+    );
   });
 });

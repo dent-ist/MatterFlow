@@ -35,10 +35,14 @@ const ARG = {
   projectText: 25,
   updatedFrom: 26,
   updatedTo: 27,
-  sort: 28,
-  dir: 29,
-  page: 30,
-  pageSize: 31,
+  managedByMe: 28,
+  managerId: 29,
+  role: 30,
+  dueWithin: 31,
+  sort: 32,
+  dir: 33,
+  page: 34,
+  pageSize: 35,
 };
 
 const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
@@ -330,6 +334,28 @@ describe('TaskQueuePage', () => {
     expect(query()['clientText']).toBeUndefined();
     expect(query()['creator']).toBe('2');
     expect(lastArgs()[ARG.clientText]).toBeUndefined();
+  });
+
+  it('reads the project manager link: tasks on matters I manage, a removable chip, sent to the API', async () => {
+    const el = await open('/tasks?managedByMe=true&status=NEW&status=ON_HOLD&role=secondary');
+    expect(chips(el)).toContain('Managed by me: On matters I manage');
+    expect(chips(el)).toContain('As: Secondary manager');
+    expect(lastArgs()[ARG.managedByMe]).toBe(true);
+    expect(lastArgs()[ARG.role]).toBe('secondary');
+    expect(lastArgs()[ARG.status]).toEqual(['NEW', 'ON_HOLD']);
+
+    el.querySelector<HTMLButtonElement>('[data-chip="managedByMe"] .fch__x')!.click();
+    await settle();
+    expect(query()['managedByMe']).toBeUndefined();
+    expect(lastArgs()[ARG.managedByMe]).toBeUndefined();
+    expect(query()['role']).toBe('secondary');
+  });
+
+  it('sends dueWithin and the on-hold sort from a My Matters link', async () => {
+    await open('/tasks?managedByMe=true&dueWithin=3&status=NEW&sort=onHoldSince&dir=asc');
+    expect(lastArgs()[ARG.dueWithin]).toBe(3);
+    expect(lastArgs()[ARG.sort]).toBe('onHoldSince');
+    expect(lastArgs()[ARG.dir]).toBe('asc');
   });
 
   it('typing in a column filter writes the address, resets the page and reloads once', async () => {

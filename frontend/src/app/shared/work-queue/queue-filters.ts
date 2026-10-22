@@ -35,6 +35,15 @@ export interface QueueFilters {
   projectText: string;
   updatedFrom: string | null;
   updatedTo: string | null;
+  /**
+   * Project Manager epic (#667): only tasks on matters the viewer manages (`managedByMe=true`), or on matters `managerId` manages (needs
+   * Matter.AssignManagers). `role` narrows it to the Primary or the Secondary place ('' = either). `dueWithin` (3 or 7) is open, not overdue,
+   * due within that many days. Link-only filters: removable chips, no column.
+   */
+  managedByMe: boolean;
+  managerId: number | null;
+  role: '' | 'primary' | 'secondary';
+  dueWithin: 3 | 7 | null;
 }
 
 export type SortDirection = 'asc' | 'desc';
@@ -76,6 +85,7 @@ export const SORT_FIELDS: readonly string[] = [
   'age',
   'assignee',
   'client',
+  'onHoldSince',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;
@@ -109,6 +119,10 @@ export function emptyFilters(): QueueFilters {
     projectText: '',
     updatedFrom: null,
     updatedTo: null,
+    managedByMe: false,
+    managerId: null,
+    role: '',
+    dueWithin: null,
   };
 }
 
@@ -152,6 +166,15 @@ function bool(params: ParamMap, key: string): boolean | null {
 function date(params: ParamMap, key: string): string | null {
   const v = params.get(key);
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+
+function managerRole(value: string | null): '' | 'primary' | 'secondary' {
+  const v = value?.trim().toLowerCase();
+  return v === 'primary' || v === 'secondary' ? v : '';
+}
+
+function dueWithin(value: string | null): 3 | 7 | null {
+  return value === '3' ? 3 : value === '7' ? 7 : null;
 }
 
 function statuses(params: ParamMap): string[] {
@@ -204,6 +227,10 @@ export function parseQueueState(
       projectText: params.get('projectText')?.trim() ?? '',
       updatedFrom: date(params, 'updatedFrom'),
       updatedTo: date(params, 'updatedTo'),
+      managedByMe: bool(params, 'managedByMe') === true,
+      managerId: id(params, 'managerId'),
+      role: managerRole(params.get('role')),
+      dueWithin: dueWithin(params.get('dueWithin')),
     },
     sort: sort && SORT_FIELDS.includes(sort) ? sort : null,
     dir: dir === 'asc' || dir === 'desc' ? dir : null,
@@ -259,6 +286,10 @@ export function toQueryParams(
     projectText: f.projectText || null,
     updatedFrom: f.updatedFrom,
     updatedTo: f.updatedTo,
+    managedByMe: f.managedByMe ? 'true' : null,
+    managerId: f.managerId === null ? null : String(f.managerId),
+    role: f.role || null,
+    dueWithin: f.dueWithin === null ? null : String(f.dueWithin),
     sort: state.sort,
     dir: state.sort && state.dir ? state.dir : null,
     page: state.page > 1 ? String(state.page) : null,
@@ -305,6 +336,9 @@ export function filterCount(f: QueueFilters): number {
     f.clientText,
     f.projectText,
     f.updatedFrom || f.updatedTo,
+    f.managedByMe || f.managerId,
+    f.role,
+    f.dueWithin,
   ].filter(Boolean).length;
 }
 
@@ -519,6 +553,10 @@ export function queueArgs(
   projectText: string | undefined,
   updatedFrom: string | undefined,
   updatedTo: string | undefined,
+  managedByMe: boolean | undefined,
+  managerId: number | undefined,
+  role: string | undefined,
+  dueWithin: number | undefined,
   sort: string | undefined,
   dir: string | undefined,
   page: number | undefined,
@@ -554,6 +592,10 @@ export function queueArgs(
     f.projectText || undefined,
     f.updatedFrom ?? undefined,
     f.updatedTo ?? undefined,
+    f.managedByMe ? true : undefined,
+    f.managerId ?? undefined,
+    f.role || undefined,
+    f.dueWithin ?? undefined,
     state.sort ?? undefined,
     state.sort ? (state.dir ?? undefined) : undefined,
     state.page,

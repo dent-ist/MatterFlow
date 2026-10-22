@@ -100,6 +100,10 @@ describe('queue filter state', () => {
       projectText: '',
       updatedFrom: null,
       updatedTo: null,
+      managedByMe: false,
+      managerId: null,
+      role: '',
+      dueWithin: null,
     });
     expect([s.sort, s.dir, s.page, s.pageSize]).toEqual(['due', 'desc', 3, 100]);
   });
@@ -479,5 +483,42 @@ describe('dateDaysAgo', () => {
     expect(dateDaysAgo(new Date('2026-10-30T12:00:00Z'), -2, 'America/New_York')).toBe(
       '2026-11-01',
     );
+  });
+});
+
+describe('tasks on matters a person manages (project manager epic, #667)', () => {
+  it('round-trips managedByMe, role and dueWithin through the URL and the API arguments', () => {
+    const state = parse({ managedByMe: 'true', role: 'secondary', dueWithin: '7' });
+    expect(state.filters.managedByMe).toBe(true);
+    expect(state.filters.role).toBe('secondary');
+    expect(state.filters.dueWithin).toBe(7);
+    expect(filterCount(state.filters)).toBe(3);
+
+    const params = toQueryParams(state);
+    expect(params['managedByMe']).toBe('true');
+    expect(params['managerId']).toBeNull();
+    expect(params['role']).toBe('secondary');
+    expect(params['dueWithin']).toBe('7');
+
+    // The positional arguments of the generated client: ..., updatedTo, managedByMe, managerId, role, dueWithin, sort.
+    expect(queueArgs(state).slice(26, 31)).toEqual([undefined, true, undefined, 'secondary', 7]);
+  });
+
+  it('reads a named manager and ignores values the API would refuse', () => {
+    const named = parse({ managerId: '12', role: 'primary' });
+    expect(named.filters.managerId).toBe(12);
+    expect(queueArgs(named).slice(27, 30)).toEqual([12, 'primary', undefined]);
+
+    const bad = parse({ managedByMe: 'maybe', role: 'boss', dueWithin: '5', managerId: '-3' });
+    expect(bad.filters.managedByMe).toBe(false);
+    expect(bad.filters.role).toBe('');
+    expect(bad.filters.dueWithin).toBeNull();
+    expect(bad.filters.managerId).toBeNull();
+    expect(filterCount(bad.filters)).toBe(0);
+    expect(toQueryParams(bad)['managedByMe']).toBeNull();
+  });
+
+  it('knows the onHoldSince sort', () => {
+    expect(parse({ sort: 'onHoldSince', dir: 'asc' }).sort).toBe('onHoldSince');
   });
 });

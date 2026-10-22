@@ -88,6 +88,13 @@ describe('ClientDetailPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       1,
       25,
       undefined,
@@ -111,12 +118,12 @@ describe('ClientDetailPage', () => {
     expect(el().querySelector('[role=tabpanel]')!.getAttribute('aria-labelledby')).toBe(
       'client-tab-details',
     );
-    expect(matters.listMatters.mock.calls.map((c) => c[8])).toEqual([5]); // only the Overview's short list (no Task.View); the grid loads when its tab opens
+    expect(matters.listMatters.mock.calls.map((c) => c[15])).toEqual([5]); // only the Overview's short list (no Task.View); the grid loads when its tab opens
     expect(el().querySelector('aside')).toBeNull();
 
     await openTab('matters');
     expect(tab('Matters').getAttribute('aria-selected')).toBe('true');
-    expect(matters.listMatters.mock.calls.some((c) => c[8] === 25)).toBe(true); // the grid loads when its tab opens
+    expect(matters.listMatters.mock.calls.some((c) => c[15] === 25)).toBe(true); // the grid loads when its tab opens
     for (const key of [undefined, 'details', 'nonsense']) {
       await openTab(key);
       expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
@@ -238,6 +245,13 @@ describe('ClientDetailPage', () => {
       false,
       '343-12',
       'merger',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       undefined,
       2,
       25,

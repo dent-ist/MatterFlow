@@ -47,6 +47,8 @@ export function aMatter(overrides: Partial<MatterResponse> = {}): MatterResponse
     name: 'Merger Review',
     isActive: true,
     isSensitive: false,
+    primaryManager: undefined,
+    secondaryManager: undefined,
     projectCount: 1,
     openTaskCount: 0,
     overdueTaskCount: undefined,

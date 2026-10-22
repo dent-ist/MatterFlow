@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
@@ -18,9 +19,15 @@ public sealed class MatterService(
     CustomFieldValues custom,
     IOrganizationTaskCounts taskCounts,
     IMatterAssetCounts assetCounts,
-    IPermissionChecker permissions)
+    IPermissionChecker permissions,
+    ICurrentUser currentUser,
+    IUserDirectory users,
+    IMatterManagerEligibility eligibility)
 {
-    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
+    public const string SortPrimaryManager = "primaryManager";
+    public const string SortSecondaryManager = "secondaryManager";
+
+    public static readonly string[] SortFields = ["matterRef", "name", "clientNumber", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue, SortPrimaryManager, SortSecondaryManager];
 
     private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
@@ -32,7 +39,19 @@ public sealed class MatterService(
         ["createdAt"] = OrganizationSupport.By<MatterRow, DateTime>(r => r.Matter.CreatedAtUtc),
         [OrganizationSupport.SortOpenTasks] = OrganizationSupport.By<MatterRow, int>(r => r.Open),
         [OrganizationSupport.SortOverdue] = OrganizationSupport.By<MatterRow, int>(r => r.Overdue),
+        [SortPrimaryManager] = ByName(r => r.PrimaryManagerName == null, r => r.PrimaryManagerName),
+        [SortSecondaryManager] = ByName(r => r.SecondaryManagerName == null, r => r.SecondaryManagerName),
     };
+
+    /// <summary>Orders by a manager's name with the matters that have none last, whichever way the name sorts.</summary>
+    private static Func<IQueryable<MatterRow>, bool, bool, IOrderedQueryable<MatterRow>> ByName(
+        Expression<Func<MatterRow, bool>> isEmpty,
+        Expression<Func<MatterRow, string?>> name) =>
+        (query, descending, then) =>
+        {
+            var ordered = then ? ((IOrderedQueryable<MatterRow>)query).ThenBy(isEmpty) : query.OrderBy(isEmpty);
+            return descending ? ordered.ThenByDescending(name) : ordered.ThenBy(name);
+        };
 
     public async Task<Result<PagedResult<MatterResponse>>> ListAsync(MatterListQuery query, CancellationToken ct)
     {
@@ -48,6 +67,8 @@ public sealed class MatterService(
             rows = rows.Where(r => r.Matter.IsActive == active);
         if (query.IsSensitive is { } sensitive)
             rows = rows.Where(r => r.Matter.IsSensitive == sensitive);
+
+        rows = ApplyManagerFilters(rows, query);
 
         var q = query.Q?.Trim();
         if (!string.IsNullOrEmpty(q))
@@ -82,6 +103,27 @@ public sealed class MatterService(
 
         var total = await rows.CountAsync(ct);
 
+        // Sorting by a manager's name needs the names inside the statement (a left join on the user names the Identity module offers).
+        if (sort.Any(f => f.Field is SortPrimaryManager or SortSecondaryManager))
+        {
+            rows = from r in rows
+                   join p in users.NameKeys() on r.Matter.PrimaryManagerId equals (int?)p.UserId into primary
+                   from p in primary.DefaultIfEmpty()
+                   join sc in users.NameKeys() on r.Matter.SecondaryManagerId equals (int?)sc.UserId into secondary
+                   from sc in secondary.DefaultIfEmpty()
+                   select new MatterRow
+                   {
+                       Matter = r.Matter,
+                       ClientName = r.ClientName,
+                       ClientIsActive = r.ClientIsActive,
+                       ProjectCount = r.ProjectCount,
+                       Open = r.Open,
+                       Overdue = r.Overdue,
+                       PrimaryManagerName = p.DisplayName,
+                       SecondaryManagerName = sc.DisplayName,
+                   };
+        }
+
         // The count sorts need the counts inside the statement (one grouped left join); without Task.View they are constants, so the order falls back to the default.
         var canCount = CanCountTasks;
         var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
@@ -98,6 +140,8 @@ public sealed class MatterService(
                        ProjectCount = r.ProjectCount,
                        Open = (int?)g.Open ?? 0,
                        Overdue = (int?)g.Overdue ?? 0,
+                       PrimaryManagerName = r.PrimaryManagerName,
+                       SecondaryManagerName = r.SecondaryManagerName,
                    };
         }
 
@@ -109,11 +153,13 @@ public sealed class MatterService(
         IReadOnlyDictionary<int, TaskCountRow> byMatter = canCount && !joinCounts
             ? await taskCounts.ForKeysAsync(TaskCountScope.Matter, [.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, TaskCountRow>();
+        var people = await ManagersAsync(items.Select(r => r.Matter), ct);
         return OrganizationSupport.Page(
             items.Select(r => ToResponse(
                 r,
                 !canCount ? null : joinCounts ? r.Open : byMatter.GetValueOrDefault(r.Matter.Id)?.Open ?? 0,
-                !canCount ? null : joinCounts ? r.Overdue : byMatter.GetValueOrDefault(r.Matter.Id)?.Overdue ?? 0)).ToList(),
+                !canCount ? null : joinCounts ? r.Overdue : byMatter.GetValueOrDefault(r.Matter.Id)?.Overdue ?? 0,
+                people)).ToList(),
             total,
             page);
     }
@@ -151,7 +197,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(id, ct);
-        return ToResponse(row, open, overdue, await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped);
     }
 
     /// <summary>
@@ -191,7 +237,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(row.Matter.Id, ct);
-        return ToResponse(row, open, overdue, await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), []);
     }
 
     public async Task<Result<MatterResponse>> CreateAsync(CreateMatterRequest request, CancellationToken ct)
@@ -223,6 +269,18 @@ public sealed class MatterService(
         if (plan.IsFailure)
             return plan.Error!;
 
+        var wantsManagers = request.PrimaryManagerId is not null || request.SecondaryManagerId is not null;
+        if (wantsManagers)
+        {
+            var allowed = permissions.Require(Permissions.Matter.AssignManagers);
+            if (allowed.IsFailure)
+                return allowed.Error!;
+
+            var valid = await ValidateManagersAsync(request.PrimaryManagerId, request.SecondaryManagerId, null, ct);
+            if (valid.IsFailure)
+                return valid.Error!;
+        }
+
         var matter = new Matter
         {
             ClientId = client.Id,
@@ -232,6 +290,8 @@ public sealed class MatterService(
             IsSensitive = request.IsSensitive,
         };
         db.Set<Matter>().Add(matter);
+        if (wantsManagers)
+            await ApplyManagersAsync(matter, request.PrimaryManagerId, request.SecondaryManagerId, ct);
         audit.Write(new AuditEntry
         {
             EventType = OrganizationAuditEvents.MatterCreated,
@@ -291,6 +351,21 @@ public sealed class MatterService(
         if (plan.IsFailure)
             return plan.Error!;
 
+        if (request.PrimaryManagerId is not null || request.SecondaryManagerId is not null)
+        {
+            var allowed = permissions.Require(Permissions.Matter.AssignManagers);
+            if (allowed.IsFailure)
+                return allowed.Error!;
+
+            var primary = request.PrimaryManagerId ?? matter.PrimaryManagerId;
+            var secondary = request.SecondaryManagerId ?? matter.SecondaryManagerId;
+            var valid = await ValidateManagersAsync(primary, secondary, matter, ct);
+            if (valid.IsFailure)
+                return valid.Error!;
+
+            await ApplyManagersAsync(matter, primary, secondary, ct);
+        }
+
         matter.Name = request.Name.Trim();
         matter.IsSensitive = request.IsSensitive;
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
@@ -321,6 +396,41 @@ public sealed class MatterService(
         }
 
         return await GetAsync(id, dropped, ct);
+    }
+
+    /// <summary>
+    /// Sets or clears both project managers (needs <c>Matter.AssignManagers</c> at the API). Both values are replaced; an unchanged value is always
+    /// accepted. One <c>MATTER_MANAGER_CHANGED</c> event per changed place, in one correlation. Saving the values already stored is a no-op.
+    /// </summary>
+    public async Task<Result<MatterResponse>> SetManagersAsync(int id, SetMatterManagersRequest request, CancellationToken ct)
+    {
+        var matter = await db.Set<Matter>().SingleOrDefaultAsync(m => m.Id == id, ct);
+        if (matter is null)
+            return OrganizationSupport.NotFound("Matter");
+
+        var version = OrganizationSupport.CheckRowVersion(matter.RowVersion, request.RowVersion);
+        if (version.IsFailure)
+            return version.Error!;
+
+        var valid = await ValidateManagersAsync(request.PrimaryManagerId, request.SecondaryManagerId, matter, ct);
+        if (valid.IsFailure)
+            return valid.Error!;
+
+        if (!await ApplyManagersAsync(matter, request.PrimaryManagerId, request.SecondaryManagerId, ct))
+            return await GetAsync(id, ct);
+
+        OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return OrganizationSupport.ConcurrencyError();
+        }
+
+        return await GetAsync(id, ct);
     }
 
     /// <summary>Changes the Matter number (needs Matter.EditNumber at the API). Writes MATTER_NUMBER_CHANGED.</summary>
@@ -440,7 +550,13 @@ public sealed class MatterService(
             && BusinessNumber.TryParse(parts[1], out matterNumber);
     }
 
-    private static MatterResponse ToResponse(MatterRow r, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
+    private static MatterResponse ToResponse(
+        MatterRow r,
+        int? openTaskCount,
+        int? overdueTaskCount,
+        IReadOnlyDictionary<int, MatterManagerResponse> people,
+        CustomFieldView? view = null,
+        IReadOnlyList<string>? dropped = null) => new(
         r.Matter.Id,
         r.Matter.ClientId,
         r.Matter.ClientNumber.Value,
@@ -451,6 +567,8 @@ public sealed class MatterService(
         r.Matter.Name,
         r.Matter.IsActive,
         r.Matter.IsSensitive,
+        PersonOf(people, r.Matter.PrimaryManagerId),
+        PersonOf(people, r.Matter.SecondaryManagerId),
         r.ProjectCount,
         openTaskCount,
         overdueTaskCount,
@@ -461,6 +579,124 @@ public sealed class MatterService(
         OrganizationSupport.Encode(r.Matter.RowVersion),
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc));
+
+    private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
+        userId is { } id ? people.GetValueOrDefault(id) : null;
+
+    /// <summary>The managers of the given matters as the DTOs show them, one lookup for all of them.</summary>
+    private async Task<IReadOnlyDictionary<int, MatterManagerResponse>> ManagersAsync(IEnumerable<Matter> matters, CancellationToken ct)
+    {
+        var ids = matters.SelectMany(m => new[] { m.PrimaryManagerId, m.SecondaryManagerId }).OfType<int>().Distinct().ToList();
+        if (ids.Count == 0)
+            return new Dictionary<int, MatterManagerResponse>();
+
+        var found = await users.FindManyAsync(ids, ct);
+        return found.ToDictionary(kv => kv.Key, kv => new MatterManagerResponse(kv.Value.UserId, kv.Value.DisplayName, kv.Value.IsActive));
+    }
+
+    private IQueryable<MatterRow> ApplyManagerFilters(IQueryable<MatterRow> rows, MatterListQuery query)
+    {
+        if (query.PrimaryManagerId is { } primary)
+            rows = rows.Where(r => r.Matter.PrimaryManagerId == primary);
+        if (query.SecondaryManagerId is { } secondary)
+            rows = rows.Where(r => r.Matter.SecondaryManagerId == secondary);
+        if (query.ManagerId is { } either)
+            rows = rows.Where(r => r.Matter.PrimaryManagerId == either || r.Matter.SecondaryManagerId == either);
+        if (query.ManagedByMe == true)
+        {
+            var me = currentUser.UserId ?? 0; // no user, no matters (0 is never a user id)
+            rows = rows.Where(r => r.Matter.PrimaryManagerId == me || r.Matter.SecondaryManagerId == me);
+        }
+
+        if (query.HasNoManager is { } none)
+        {
+            rows = none
+                ? rows.Where(r => r.Matter.PrimaryManagerId == null && r.Matter.SecondaryManagerId == null)
+                : rows.Where(r => r.Matter.PrimaryManagerId != null || r.Matter.SecondaryManagerId != null);
+        }
+
+        if (query.HasPrimaryManager is { } hasPrimary)
+            rows = hasPrimary ? rows.Where(r => r.Matter.PrimaryManagerId != null) : rows.Where(r => r.Matter.PrimaryManagerId == null);
+        if (query.HasSecondaryManager is { } hasSecondary)
+            rows = hasSecondary ? rows.Where(r => r.Matter.SecondaryManagerId != null) : rows.Where(r => r.Matter.SecondaryManagerId == null);
+        return rows;
+    }
+
+    /// <summary>
+    /// Checks a new pair of managers: not the same person twice, and every person who is not already on this matter must be an active user holding
+    /// <c>Matter.BeManager</c>. A person already on the matter (in either place) is always accepted, so someone who lost the role stays.
+    /// </summary>
+    private async Task<Result> ValidateManagersAsync(int? primary, int? secondary, Matter? current, CancellationToken ct)
+    {
+        if (primary is not null && primary == secondary)
+        {
+            return Error.Validation("secondaryManagerId", ErrorCodes.ManagerDuplicate, "The Primary and the Secondary project manager must be different people.", ErrorCodes.ManagerDuplicate);
+        }
+
+        var staying = new[] { current?.PrimaryManagerId, current?.SecondaryManagerId };
+        var candidates = new[] { primary, secondary }.OfType<int>().Where(id => !staying.Contains(id)).ToList();
+        if (candidates.Count == 0)
+            return Result.Success();
+
+        var eligible = await eligibility.EligibleAsync(candidates, ct);
+        var errors = new Dictionary<string, IReadOnlyList<FieldError>>();
+        if (primary is { } p && candidates.Contains(p) && !eligible.Contains(p))
+            errors["primaryManagerId"] = [new FieldError(ErrorCodes.ManagerNotEligible, "Choose an active user who can be a project manager.")];
+        if (secondary is { } s && candidates.Contains(s) && !eligible.Contains(s))
+            errors["secondaryManagerId"] = [new FieldError(ErrorCodes.ManagerNotEligible, "Choose an active user who can be a project manager.")];
+        return errors.Count == 0
+            ? Result.Success()
+            : Error.Validation("Choose active users who can be project managers.", errors, ErrorCodes.ManagerNotEligible);
+    }
+
+    /// <summary>Sets the two managers on a tracked matter and queues one audit event per changed place (names as old and new value). Returns false when nothing changed.</summary>
+    private async Task<bool> ApplyManagersAsync(Matter matter, int? primary, int? secondary, CancellationToken ct)
+    {
+        var primaryChanged = matter.PrimaryManagerId != primary;
+        var secondaryChanged = matter.SecondaryManagerId != secondary;
+        if (!primaryChanged && !secondaryChanged)
+            return false;
+
+        var ids = new[] { matter.PrimaryManagerId, matter.SecondaryManagerId, primary, secondary }.OfType<int>().Distinct().ToList();
+        var names = await users.FindManyAsync(ids, ct);
+        string? NameOf(int? id) => id is { } v ? names.GetValueOrDefault(v)?.DisplayName ?? $"User {v}" : null;
+
+        void Audit(string place, int? before, int? after)
+        {
+            var oldName = NameOf(before);
+            var newName = NameOf(after);
+            audit.Write(new AuditEntry
+            {
+                EventType = OrganizationAuditEvents.MatterManagerChanged,
+                ObjectType = nameof(Matter),
+                ObjectIdFactory = () => matter.Id.ToString(CultureInfo.InvariantCulture), // a matter created in the same request has no id yet
+                MatterId = matter.Id == 0 ? null : matter.Id,
+                FieldKey = place + "Manager",
+                OldValue = oldName,
+                NewValue = newName,
+                Summary = (oldName, newName) switch
+                {
+                    (null, not null) => $"{place} project manager set to {newName}.",
+                    (not null, null) => $"{place} project manager {oldName} removed.",
+                    _ => $"{place} project manager changed from {oldName} to {newName}.",
+                },
+            });
+        }
+
+        if (primaryChanged)
+        {
+            Audit("Primary", matter.PrimaryManagerId, primary);
+            matter.PrimaryManagerId = primary;
+        }
+
+        if (secondaryChanged)
+        {
+            Audit("Secondary", matter.SecondaryManagerId, secondary);
+            matter.SecondaryManagerId = secondary;
+        }
+
+        return true;
+    }
 
     internal sealed class MatterRow
     {
@@ -475,5 +711,10 @@ public sealed class MatterService(
         public int Open { get; init; }
 
         public int Overdue { get; init; }
+
+        /// <summary>Filled only while the list sorts by a manager's name.</summary>
+        public string? PrimaryManagerName { get; init; }
+
+        public string? SecondaryManagerName { get; init; }
     }
 }

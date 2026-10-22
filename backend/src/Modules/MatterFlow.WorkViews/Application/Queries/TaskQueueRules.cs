@@ -86,6 +86,8 @@ public static class TaskQueueRules
     public const string SortAge = "age";
     public const string SortAssignee = "assignee";
     public const string SortClient = "client";
+    /// <summary>On hold since (project managers' oldest hold first): Tasks that are On Hold by the time they went on hold, all other Tasks after them (epic #667).</summary>
+    public const string SortOnHoldSince = "onHoldSince";
     public const string SortMatterName = "matterName";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
@@ -102,7 +104,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -143,12 +145,18 @@ public static class TaskQueueRules
     /// <see cref="DueSoon"/> without <see cref="Overdue"/>, so Overdue + Due soon on the Dashboard equals My Work's "Due soon and overdue" (BUG-13);
     /// a unit test and an integration test hold the two together.
     /// </summary>
-    public static Expression<Func<WorkTask, bool>> DueSoonExcludingOverdue(QueueClock clock)
+    public static Expression<Func<WorkTask, bool>> DueSoonExcludingOverdue(QueueClock clock) => DueWithin(clock, DueSoonDays);
+
+    /// <summary>
+    /// Open with an explicit due date today or within <paramref name="days"/> days and not overdue (the Task Queue's <c>dueWithin=3|7</c>, My Matters'
+    /// "due in 3 / 7 days"). <see cref="DueSoonExcludingOverdue"/> is this with <see cref="DueSoonDays"/>: there is one definition of overdue.
+    /// </summary>
+    public static Expression<Func<WorkTask, bool>> DueWithin(QueueClock clock, int days)
     {
         ArgumentNullException.ThrowIfNull(clock);
         var now = clock.NowUtc;
         var today = clock.Today;
-        var lastDay = today.AddDays(DueSoonDays);
+        var lastDay = today.AddDays(days);
         return t =>
             (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold)
             && t.DueDate != null
@@ -228,6 +236,11 @@ public static class TaskQueueRules
                 return descending
                     ? rows.OrderByDescending(r => r.DueSortKey == null ? 0 : 1).ThenByDescending(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id)
                     : rows.OrderBy(r => r.DueSortKey == null ? 0 : 1).ThenBy(r => r.DueSortKey).ThenBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
+            case SortOnHoldSince:
+                // Tasks that are On Hold first, ordered by when they went on hold (oldest first when ascending); every other Task after them, in the default order.
+                return descending
+                    ? rows.OrderBy(r => r.Status == TaskStatusCode.OnHold ? 0 : 1).ThenByDescending(r => r.StatusChangedAtUtc).ThenByDescending(r => r.Id)
+                    : rows.OrderBy(r => r.Status == TaskStatusCode.OnHold ? 0 : 1).ThenBy(r => r.StatusChangedAtUtc).ThenBy(r => r.Id);
             case SortCreated:
                 return descending ? rows.OrderByDescending(r => r.CreatedAtUtc).ThenByDescending(r => r.Id) : rows.OrderBy(r => r.CreatedAtUtc).ThenBy(r => r.Id);
             case SortNumber:

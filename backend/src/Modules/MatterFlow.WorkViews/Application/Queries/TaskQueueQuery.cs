@@ -18,6 +18,7 @@ public class TaskQueueQuery
         "q", "status", "priority", "pod", "noPod", "assignee", "unassigned", "creator", "client", "matter", "project", "type", "workflow",
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
         "matterText", "clientText", "projectText", "updatedFrom", "updatedTo",
+        "managedByMe", "managerId", "role", "dueWithin",
     ];
 
     /// <summary>All parameters of the Task Queue.</summary>
@@ -137,6 +138,25 @@ public class TaskQueueQuery
     [FromQuery(Name = "updatedTo")]
     public DateOnly? UpdatedTo { get; init; }
 
+    /// <summary>
+    /// True: only Tasks on Matters the caller manages (as Primary or Secondary, see <c>role</c>). False is the same as leaving it out. A Matter
+    /// without a manager is never matched; this is a filter, not a warning.
+    /// </summary>
+    [FromQuery(Name = "managedByMe")]
+    public bool? ManagedByMe { get; init; }
+
+    /// <summary>Only Tasks on Matters this user manages. For anybody but the caller this needs <c>Matter.AssignManagers</c> (403 otherwise). A different person than <c>managedByMe</c> names is a 400.</summary>
+    [FromQuery(Name = "managerId")]
+    public int? ManagerId { get; init; }
+
+    /// <summary><c>primary</c>, <c>secondary</c> or <c>both</c> (default): which place of the Matter the manager (<c>managedByMe</c> / <c>managerId</c>) holds.</summary>
+    [FromQuery(Name = "role"), StringLength(10)]
+    public string? Role { get; init; }
+
+    /// <summary><c>3</c> or <c>7</c>: only open Tasks with an explicit due date today or within that many days, overdue Tasks excluded (the My Matters strip's "due in 3 / 7 days").</summary>
+    [FromQuery(Name = "dueWithin")]
+    public int? DueWithin { get; init; }
+
     /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
@@ -250,8 +270,19 @@ public sealed record TaskQueueFilter(
     string? ClientText = null,
     string? ProjectText = null,
     DateOnly? UpdatedFrom = null,
-    DateOnly? UpdatedTo = null)
+    DateOnly? UpdatedTo = null,
+    bool ManagedByMe = false,
+    int? ManagerId = null,
+    string ManagerRole = TaskQueueFilter.RoleBoth,
+    int? DueWithinDays = null)
 {
+    public const string RolePrimary = "primary";
+    public const string RoleSecondary = "secondary";
+    public const string RoleBoth = "both";
+
+    /// <summary>The <c>dueWithin</c> values the My Matters strip uses.</summary>
+    public static readonly IReadOnlyList<int> DueWithinValues = [3, 7];
+
     /// <summary>Parses and validates the filter part of a query.</summary>
     public static Result<TaskQueueFilter> From(TaskQueueQuery query)
     {
@@ -264,6 +295,17 @@ public sealed record TaskQueueFilter(
             if (!statuses.Contains(status))
                 statuses.Add(status);
         }
+
+        var role = RoleBoth;
+        if (!string.IsNullOrWhiteSpace(query.Role))
+        {
+            role = query.Role.Trim().ToLowerInvariant();
+            if (role is not (RolePrimary or RoleSecondary or RoleBoth))
+                return Error.Validation("role", "UNKNOWN_ROLE", $"Unknown role '{query.Role}'. Allowed: primary, secondary, both.");
+        }
+
+        if (query.DueWithin is { } within && !DueWithinValues.Contains(within))
+            return Error.Validation("dueWithin", "UNKNOWN_DUE_WITHIN", "dueWithin must be 3 or 7.");
 
         return new TaskQueueFilter(
             Clean(query.Q),
@@ -292,7 +334,11 @@ public sealed record TaskQueueFilter(
             Clean(query.ClientText),
             Clean(query.ProjectText),
             query.UpdatedFrom,
-            query.UpdatedTo);
+            query.UpdatedTo,
+            query.ManagedByMe == true,
+            query.ManagerId,
+            role,
+            query.DueWithin);
     }
 
     /// <summary>True when no filter is set at all (a plain link): My Work then counts and lists Created by me as open tasks only.</summary>
@@ -301,7 +347,7 @@ public sealed record TaskQueueFilter(
         && Creators.Count == 0 && ClientId is null && MatterId is null && ProjectId is null && TaskTypes.Count == 0 && Workflows.Count == 0
         && CreatedFrom is null && CreatedTo is null && DueFrom is null && DueTo is null && Asap is null && Overdue is null && Requestor is null
         && CompletedFrom is null && CompletedTo is null && MatterText is null && ClientText is null && ProjectText is null
-        && UpdatedFrom is null && UpdatedTo is null;
+        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null;
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 

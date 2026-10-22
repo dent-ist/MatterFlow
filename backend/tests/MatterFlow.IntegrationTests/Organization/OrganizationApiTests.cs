@@ -563,6 +563,7 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
             (HttpMethod.Post, "/api/v1/matters", new { clientId, matterNumber = "9", name = "N" }, Permissions.Matter.Create),
             (HttpMethod.Put, $"/api/v1/matters/{matterId}", new { name = "N", isSensitive = false, rowVersion = "AA==" }, Permissions.Matter.Edit),
             (HttpMethod.Put, $"/api/v1/matters/{matterId}/number", new { number = "9", rowVersion = "AA==" }, Permissions.Matter.EditNumber),
+            (HttpMethod.Put, $"/api/v1/matters/{matterId}/managers", new { primaryManagerId = (int?)null, secondaryManagerId = (int?)null, rowVersion = "AA==" }, Permissions.Matter.AssignManagers),
             (HttpMethod.Post, $"/api/v1/matters/{matterId}/active", new { isActive = false, rowVersion = "AA==" }, Permissions.Matter.SetActive),
             (HttpMethod.Post, "/api/v1/projects", new { matterId, name = "N" }, Permissions.Project.Create),
             (HttpMethod.Put, "/api/v1/projects/1", new { name = "N", rowVersion = "AA==" }, Permissions.Project.Edit),
