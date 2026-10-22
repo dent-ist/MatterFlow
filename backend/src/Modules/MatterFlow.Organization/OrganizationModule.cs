@@ -22,6 +22,7 @@ public static class OrganizationModule
         services.AddScoped<ProjectService>();
         services.AddScoped<IMatterDirectory, MatterDirectory>();
         services.AddScoped<IProjectDirectory, ProjectDirectory>();
+        services.AddScoped<MatterFlow.Notifications.Contracts.IObjectVisibility, MatterObjectVisibility>();
         services.TryAddScoped<IMatterTaskGuard, NoTasksMatterTaskGuard>();
         services.TryAddScoped<IOrganizationTaskCounts, NoTasksOrganizationTaskCounts>();
         services.TryAddScoped<IMatterAssetCounts, NoAssetsMatterAssetCounts>();

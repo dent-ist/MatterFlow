@@ -8,6 +8,7 @@
     <ProjectReference Include="..\Modules\MatterFlow.Assets\MatterFlow.Assets.csproj" />
     <ProjectReference Include="..\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj" />
     <ProjectReference Include="..\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Notifications\MatterFlow.Notifications.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />

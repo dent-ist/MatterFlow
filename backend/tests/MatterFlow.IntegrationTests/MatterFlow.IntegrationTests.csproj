@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj" />

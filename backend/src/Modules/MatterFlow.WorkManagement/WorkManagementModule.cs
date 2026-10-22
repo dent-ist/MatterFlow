@@ -36,6 +36,7 @@ public static class WorkManagementModule
         services.RemoveAll<IMatterTaskGuard>();
         services.AddScoped<IMatterTaskGuard, MatterTaskGuard>();
         services.AddScoped<IPriorityUsage, TaskPriorityUsage>();
+        services.AddScoped<MatterFlow.Notifications.Contracts.IObjectVisibility, TaskObjectVisibility>();
         return services;
     }
 }

@@ -30,5 +30,6 @@
     <ProjectReference Include="..\Modules\MatterFlow.WorkViews\MatterFlow.WorkViews.csproj" />
     <ProjectReference Include="..\Modules\MatterFlow.Search\MatterFlow.Search.csproj" />
     <ProjectReference Include="..\Modules\MatterFlow.Intake\MatterFlow.Intake.csproj" />
+    <ProjectReference Include="..\Modules\MatterFlow.Notifications\MatterFlow.Notifications.csproj" />
   </ItemGroup>
 </Project>

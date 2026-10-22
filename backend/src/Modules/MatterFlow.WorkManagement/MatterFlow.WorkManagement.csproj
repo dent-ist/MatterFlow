@@ -8,6 +8,7 @@
     <ProjectReference Include="..\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
     <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
     <ProjectReference Include="..\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MatterFlow.UnitTests" />

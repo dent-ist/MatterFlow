@@ -9,7 +9,8 @@ namespace MatterFlow.Api.Http;
 /// <item><c>X-Content-Type-Options: nosniff</c>, <c>X-Frame-Options: DENY</c> (plus <c>frame-ancestors 'none'</c>),
 /// <c>Referrer-Policy: no-referrer</c>, a <c>Permissions-Policy</c> that switches the powerful features off, and
 /// <c>Cross-Origin-Opener-Policy: same-origin</c>.</item>
-/// <item><c>Cache-Control: no-store</c> on <c>/api</c>: lists of users, audit events and forms must not sit in a browser or proxy cache.</item>
+/// <item><c>Cache-Control: no-store</c> on <c>/api</c>: lists of users, audit events and forms must not sit in a browser or proxy cache
+/// (except a response that itself says <c>private, no-cache</c>, the revalidated notification poll).</item>
 /// </list>
 /// HSTS is added by the host (<c>UseHsts</c>) outside Development.
 /// </summary>
@@ -46,7 +47,11 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             headers["Cross-Origin-Opener-Policy"] = "same-origin";
             if (isApi)
             {
-                headers["Cache-Control"] = "no-store";
+                // One exception: an endpoint may ask for "private, no-cache" (store, but revalidate every time) so that an ETag works; the notification
+                // poll does, because it is called every 30 seconds and almost always unchanged. Shared caches may still never keep it.
+                var own = headers.CacheControl.ToString();
+                if (!(own.Contains("private", StringComparison.OrdinalIgnoreCase) && own.Contains("no-cache", StringComparison.OrdinalIgnoreCase)))
+                    headers["Cache-Control"] = "no-store";
                 headers["Pragma"] = "no-cache";
             }
 

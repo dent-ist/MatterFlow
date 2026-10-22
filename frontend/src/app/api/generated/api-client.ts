@@ -5190,6 +5190,403 @@ export class IntakeClient implements IIntakeClient {
     }
 }
 
+export interface INotificationsClient {
+    /**
+     * @param filter (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listNotifications(filter?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<NotificationListResponse>;
+    /**
+     * @param sinceId (optional) 
+     * @param initial (optional) 
+     * @return OK
+     */
+    pollNotifications(sinceId?: number | undefined, initial?: boolean | undefined): Observable<NotificationPollResponse>;
+    /**
+     * @return No Content
+     */
+    markNotificationRead(id: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    markAllNotificationsRead(): Observable<MarkAllReadResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NotificationsClient implements INotificationsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param filter (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listNotifications(filter?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<NotificationListResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/notifications?";
+        if (filter === null)
+            throw new globalThis.Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "Filter=" + encodeURIComponent("" + filter) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListNotifications(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListNotifications(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NotificationListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NotificationListResponse>;
+        }));
+    }
+
+    protected processListNotifications(response: HttpResponseBase): Observable<NotificationListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NotificationListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param sinceId (optional) 
+     * @param initial (optional) 
+     * @return OK
+     */
+    pollNotifications(sinceId?: number | undefined, initial?: boolean | undefined): Observable<NotificationPollResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/notifications/poll?";
+        if (sinceId === null)
+            throw new globalThis.Error("The parameter 'sinceId' cannot be null.");
+        else if (sinceId !== undefined)
+            url_ += "sinceId=" + encodeURIComponent("" + sinceId) + "&";
+        if (initial === null)
+            throw new globalThis.Error("The parameter 'initial' cannot be null.");
+        else if (initial !== undefined)
+            url_ += "initial=" + encodeURIComponent("" + initial) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPollNotifications(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPollNotifications(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NotificationPollResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NotificationPollResponse>;
+        }));
+    }
+
+    protected processPollNotifications(response: HttpResponseBase): Observable<NotificationPollResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NotificationPollResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status === 304) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Modified", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    markNotificationRead(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/me/notifications/{id}/read";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMarkNotificationRead(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMarkNotificationRead(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processMarkNotificationRead(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    markAllNotificationsRead(): Observable<MarkAllReadResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/notifications/read-all";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMarkAllNotificationsRead(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMarkAllNotificationsRead(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MarkAllReadResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MarkAllReadResponse>;
+        }));
+    }
+
+    protected processMarkAllNotificationsRead(response: HttpResponseBase): Observable<MarkAllReadResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MarkAllReadResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface INotificationPreferencesClient {
+    /**
+     * @return OK
+     */
+    getNotificationPreferences(): Observable<NotificationPreferencesResponse>;
+    /**
+     * @return OK
+     */
+    updateNotificationPreferences(body: UpdateNotificationPreferencesRequest): Observable<NotificationPreferencesResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NotificationPreferencesClient implements INotificationPreferencesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getNotificationPreferences(): Observable<NotificationPreferencesResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/notification-preferences";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNotificationPreferences(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNotificationPreferences(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NotificationPreferencesResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NotificationPreferencesResponse>;
+        }));
+    }
+
+    protected processGetNotificationPreferences(response: HttpResponseBase): Observable<NotificationPreferencesResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NotificationPreferencesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateNotificationPreferences(body: UpdateNotificationPreferencesRequest): Observable<NotificationPreferencesResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/notification-preferences";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateNotificationPreferences(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateNotificationPreferences(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NotificationPreferencesResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NotificationPreferencesResponse>;
+        }));
+    }
+
+    protected processUpdateNotificationPreferences(response: HttpResponseBase): Observable<NotificationPreferencesResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NotificationPreferencesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IClientsClient {
     /**
      * @param q (optional) 
@@ -12395,6 +12792,12 @@ export interface LinkTaskAssetRequest {
     [key: string]: any;
 }
 
+export interface MarkAllReadResponse {
+    marked: number;
+
+    [key: string]: any;
+}
+
 export interface MatterResponse {
     matterId: number;
     clientId: number;
@@ -12490,6 +12893,59 @@ export interface MyWorkPage {
     counts: MyWorkCounts;
     attention: MyWorkAttention;
     bucketCounts?: MyWorkBucketCounts | undefined;
+
+    [key: string]: any;
+}
+
+export interface NotificationItem {
+    id: number;
+    eventType: string;
+    objectKind: string;
+    objectId: number;
+    matterId: number | undefined;
+    message: string;
+    createdUtc: string;
+    readUtc: string | undefined;
+    isRead: boolean;
+
+    [key: string]: any;
+}
+
+export interface NotificationListResponse {
+    items: NotificationItem[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface NotificationPollResponse {
+    unreadCount: number;
+    latestId: number;
+    items: NotificationItem[];
+
+    [key: string]: any;
+}
+
+export interface NotificationPreferenceInput {
+    eventType: string;
+    enabled?: boolean;
+
+    [key: string]: any;
+}
+
+export interface NotificationPreferenceItem {
+    eventType: string;
+    enabled: boolean;
+    group: string;
+    label: string;
+
+    [key: string]: any;
+}
+
+export interface NotificationPreferencesResponse {
+    items: NotificationPreferenceItem[];
 
     [key: string]: any;
 }
@@ -13641,6 +14097,12 @@ export interface UpdateMatterRequest {
     isSensitive?: boolean;
     rowVersion: string;
     formValues?: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+    items: NotificationPreferenceInput[];
 
     [key: string]: any;
 }

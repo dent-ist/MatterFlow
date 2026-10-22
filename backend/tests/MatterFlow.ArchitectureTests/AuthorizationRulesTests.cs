@@ -25,7 +25,7 @@ public class AuthorizationRulesTests
     {
         yield return typeof(Program).Assembly;
         yield return typeof(IdentityModule).Assembly;
-        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake" })
+        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Notifications" })
             yield return Assembly.Load($"MatterFlow.{name}");
     }
 

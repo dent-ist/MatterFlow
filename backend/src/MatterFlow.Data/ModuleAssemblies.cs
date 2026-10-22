@@ -3,6 +3,7 @@ using MatterFlow.Assets;
 using MatterFlow.Audit;
 using MatterFlow.Configuration;
 using MatterFlow.Identity;
+using MatterFlow.Notifications;
 using MatterFlow.Organization;
 using MatterFlow.WorkflowEngine;
 using MatterFlow.WorkManagement;
@@ -21,5 +22,6 @@ public static class ModuleAssemblies
         typeof(AssetsModule).Assembly,
         typeof(WorkflowEngineModule).Assembly,
         typeof(WorkManagementModule).Assembly,
+        typeof(NotificationsModule).Assembly,
     ];
 }
