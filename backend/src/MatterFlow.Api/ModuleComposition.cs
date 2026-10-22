@@ -11,6 +11,7 @@ using MatterFlow.Identity.Seeding;
 using MatterFlow.Intake;
 using MatterFlow.Notifications;
 using MatterFlow.Organization;
+using MatterFlow.Reports;
 using MatterFlow.Search;
 using MatterFlow.WorkflowEngine;
 using MatterFlow.WorkManagement;
@@ -40,6 +41,7 @@ public static class ModuleComposition
         services.AddSearchModule();
         services.AddIntakeModule();
         services.AddNotificationsModule(configuration);
+        services.AddReportsModule(configuration);
         services.AddStarterConfigurationSeeding();
         return services;
     }

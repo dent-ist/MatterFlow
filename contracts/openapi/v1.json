@@ -4729,6 +4729,26 @@
         }
       }
     },
+    "/api/v1/report-admin/status": {
+      "get": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "GetReportsStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportsStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/search": {
       "get": {
         "tags": [
@@ -13747,6 +13767,25 @@
           }
         }
       },
+      "ReportsStatusResponse": {
+        "required": [
+          "enabled",
+          "state",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "RoleDetailDto": {
         "required": [
           "roleId",
@@ -18682,6 +18721,9 @@
     },
     {
       "name": "Projects"
+    },
+    {
+      "name": "ReportAdmin"
     },
     {
       "name": "Search"

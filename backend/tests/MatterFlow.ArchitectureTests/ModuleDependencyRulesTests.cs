@@ -29,6 +29,7 @@ public class ModuleDependencyRulesTests
         ["Search"] = ["WorkManagement", "Organization", "Assets", "Configuration", "Identity"],
         ["Intake"] = ["Identity"],
         ["Notifications"] = ["Identity"],
+        ["Reports"] = ["Identity", "Audit"],
     };
 
     /// <summary>Query-side modules may additionally read other modules' internals (rule 3) and use the DbContext.</summary>

@@ -62,6 +62,7 @@ Format: **Decision / Rationale.** Detailed designs follow in the numbered sectio
 | 026 | Matter status is `IsActive` only. A Matter can be deactivated only when all Tasks are Completed/Cancelled. Inactive Client blocks new Matters. Inactive Project blocks new Tasks. *(MAT-008)* | Addendum B plus consistent extension. |
 | 027 | No attachments, no file storage anywhere in the system. | Addendum C. |
 | 028 | Starter role/permission matrix is seeded but fully editable (section 6.3). *(OPEN-03, OPEN-18)* | Gives a runnable system. |
+| 029 | **Reports module**: admin-written SQL reports run on a separate read-only SQL login (role `mf_report_reader`, allow-list catalogue, no fallback to the app login), real SQL parameters only, validator as defence in depth. Details: `docs/adr/029-reports-module.md`. *(epic #671, addendum AI)* | The database permissions are the security boundary, not the parser. |
 
 ---
 
