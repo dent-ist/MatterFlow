@@ -29,6 +29,17 @@ public sealed class PodDirectory(DbContext db) : IPodDirectory
             .Select(m => new PodInfo(m.PodId, m.Pod.Name, m.Pod.IsActive))
             .SingleOrDefaultAsync(cancellationToken);
 
+    /// <summary>The name of the starter role that marks a Pod's leads (see <c>StarterRoles</c>).</summary>
+    public const string PodLeadRoleName = "Pod Lead";
+
+    public async Task<IReadOnlyList<int>> GetLeadUserIdsAsync(int podId, CancellationToken cancellationToken = default) =>
+        await db.Set<PodMember>().AsNoTracking()
+            .Where(m => m.PodId == podId && m.User.IsActive)
+            .Where(m => db.Set<UserRole>().Any(r => r.UserId == m.UserId && r.Role.IsActive && r.Role.Name == PodLeadRoleName))
+            .OrderBy(m => m.UserId)
+            .Select(m => m.UserId)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<int>> GetMemberUserIdsAsync(int podId, CancellationToken cancellationToken = default) =>
         await db.Set<PodMember>().AsNoTracking()
             .Where(m => m.PodId == podId)

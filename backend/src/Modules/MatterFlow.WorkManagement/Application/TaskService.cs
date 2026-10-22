@@ -47,6 +47,7 @@ public sealed class TaskService
     private readonly IFormDefinitionResolver _forms;
     private readonly IFormSubmissionValidator _validator;
     private readonly IFormValueStore _valueStore;
+    private readonly TaskNotifier _notifier;
 
     public TaskService(
         DbContext db,
@@ -67,7 +68,8 @@ public sealed class TaskService
         IWorkflowInstanceService workflows,
         IFormDefinitionResolver forms,
         IFormSubmissionValidator validator,
-        IFormValueStore valueStore)
+        IFormValueStore valueStore,
+        TaskNotifier notifier)
     {
         _db = db;
         _tx = tx;
@@ -88,6 +90,7 @@ public sealed class TaskService
         _forms = forms;
         _validator = validator;
         _valueStore = valueStore;
+        _notifier = notifier;
     }
 
     // ---- read
@@ -348,6 +351,9 @@ public sealed class TaskService
 
             dropped = saved.Value.DroppedFields;
         }
+
+        // Notifications of the same action (events 1 and 8): added to this transaction's unit of work, saved with it.
+        await _notifier.AssignmentChangedAsync(task, previousUserId: null, created: true, now, ct);
 
         await _db.SaveChangesAsync(ct);
         return new Created(task.Id, new CommandNotes(assignment.UserNotInPodWarning ? [UserNotInPodWarning] : [], dropped, []));
@@ -690,6 +696,9 @@ public sealed class TaskService
         WriteAssigned(task, oldPod, oldUser);
         if (assignment.AutoStarted)
             TaskAudit.StatusChanged(_audit, task, oldStatus, task.Status, "ASSIGNMENT");
+
+        // Notifications of the same action (events 1 and 8): added to this transaction's unit of work, saved with it.
+        await _notifier.AssignmentChangedAsync(task, oldUser, created: false, _clock.UtcNow, ct);
 
         await _db.SaveChangesAsync(ct);
         return new CommandNotes(assignment.UserNotInPodWarning ? [UserNotInPodWarning] : [], [], []);

@@ -21,7 +21,8 @@ public sealed class TaskCommentService(
     IPermissionChecker permissions,
     ICurrentUser currentUser,
     IClock clock,
-    IUserDirectory users)
+    IUserDirectory users,
+    TaskNotifier notifier)
 {
     /// <summary>Stable validation code for comment markup beyond the structural caps (SEC2-01).</summary>
     public const string TooComplexCode = "TOO_COMPLEX";
@@ -98,6 +99,7 @@ public sealed class TaskCommentService(
                 db.Set<TaskComment>().Add(comment);
                 await db.SaveChangesAsync(token);
                 TaskAudit.CommentAdded(audit, task, comment);
+                await notifier.CommentAddedAsync(task, comment, token); // event 3: same transaction as the comment
                 await db.SaveChangesAsync(token);
                 return comment.Id;
             },

@@ -31,4 +31,11 @@ public interface IPodDirectory
 
     /// <summary>The ids of the users who belong to a Pod.</summary>
     Task<IReadOnlyList<int>> GetMemberUserIdsAsync(int podId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The active users who lead a Pod: its members who hold the active "Pod Lead" role (Pod Lead is a role, not a flag; addendum E).
+    /// One indexed query. The default says nobody, so test doubles need not implement it.
+    /// </summary>
+    Task<IReadOnlyList<int>> GetLeadUserIdsAsync(int podId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<int>>([]);
 }
