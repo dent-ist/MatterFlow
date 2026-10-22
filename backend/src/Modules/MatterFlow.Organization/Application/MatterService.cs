@@ -175,10 +175,10 @@ public sealed class MatterService(
         var projects = await db.Set<Project>().AsNoTracking().CountAsync(p => p.MatterId == id, ct);
         var assets = await assetCounts.CountAsync(id, ct);
         if (!CanCountTasks)
-            return new MatterSummaryResponse(id, null, null, null, null, null, projects, assets);
+            return new MatterSummaryResponse(id, null, null, null, null, null, null, projects, assets);
 
         var strip = await taskCounts.StripAsync(TaskCountScope.Matter, id, ct);
-        return new MatterSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, projects, assets);
+        return new MatterSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon, strip.Unassigned, projects, assets);
     }
 
     private async Task<(int? Open, int? Overdue)> CountsOfAsync(int matterId, CancellationToken ct)

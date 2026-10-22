@@ -35,6 +35,8 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
         var queueClock = Now();
         var overdue = TaskQueueRules.Overdue(queueClock);
         var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(queueClock);
+        System.Linq.Expressions.Expression<Func<WorkTask, bool>> unassigned = t =>
+            t.AssignedUserId == null && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold);
         var tasks = db.Set<WorkTask>().AsNoTracking();
         tasks = scope switch
         {
@@ -51,8 +53,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
             Asap = g.AsQueryable().Count(TaskQueueRules.Asap),
             OnHold = g.AsQueryable().Count(t => t.Status == TaskStatusCode.OnHold),
             DueSoon = g.AsQueryable().Count(dueSoon),
+            Unassigned = g.AsQueryable().Count(unassigned),
         }).FirstOrDefaultAsync(cancellationToken);
-        return row is null ? new TaskStripCounts(0, 0, 0, 0, 0) : new TaskStripCounts(row.Open, row.Overdue, row.Asap, row.OnHold, row.DueSoon);
+        return row is null ? new TaskStripCounts(0, 0, 0, 0, 0) : new TaskStripCounts(row.Open, row.Overdue, row.Asap, row.OnHold, row.DueSoon, row.Unassigned);
     }
 
     public async Task<IReadOnlyList<MatterTaskCount>> TopMattersAsync(int clientId, int take, CancellationToken cancellationToken = default)

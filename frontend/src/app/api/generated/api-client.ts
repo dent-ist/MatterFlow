@@ -13108,6 +13108,7 @@ export interface MatterSummaryResponse {
     asap: number | undefined;
     onHold: number | undefined;
     dueSoon: number | undefined;
+    unassigned: number | undefined;
     projectCount: number;
     assetCount: number;
 

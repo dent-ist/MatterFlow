@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import {
   AssetsClient,
   AuditEventsClient,
+  MatterManagersClient,
   MattersClient,
   ProjectsClient,
   TaskQueueClient,
@@ -39,6 +40,7 @@ describe('MatterDetailPage', () => {
     getMatter: ReturnType<typeof vi.fn>;
     setMatterActive: ReturnType<typeof vi.fn>;
     getMatterSummary: ReturnType<typeof vi.fn>;
+    setMatterManagers: ReturnType<typeof vi.fn>;
   };
   let projects: { listProjects: ReturnType<typeof vi.fn> };
   let assets: { listAssets: ReturnType<typeof vi.fn> };
@@ -55,6 +57,11 @@ describe('MatterDetailPage', () => {
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
       setMatterActive: vi.fn().mockReturnValue(ok(aMatter({ isActive: false }))),
+      setMatterManagers: vi
+        .fn()
+        .mockReturnValue(
+          ok(aMatter({ primaryManager: { userId: 12, displayName: 'Bob Roe', isActive: true } })),
+        ),
       getMatterSummary: vi.fn().mockReturnValue(
         ok({
           matterId: 7,
@@ -63,6 +70,7 @@ describe('MatterDetailPage', () => {
           dueSoon: 1,
           asap: 1,
           onHold: 1,
+          unassigned: 2,
           projectCount: 1,
           assetCount: 0,
         }),
@@ -78,6 +86,21 @@ describe('MatterDetailPage', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: matters },
+        {
+          provide: MatterManagersClient,
+          useValue: {
+            lookupMatterManagers: vi.fn().mockReturnValue(
+              ok([
+                { userId: 11, displayName: 'Ann Lee', availability: { state: 'AVAILABLE' } },
+                {
+                  userId: 12,
+                  displayName: 'Bob Roe',
+                  availability: { state: 'OUT_OF_OFFICE', outUntil: '2026-10-30T00:00:00Z' },
+                },
+              ]),
+            ),
+          },
+        },
         { provide: ProjectsClient, useValue: projects },
         { provide: AssetsClient, useValue: assets },
         { provide: TaskQueueClient, useValue: queue },
@@ -771,6 +794,104 @@ describe('MatterDetailPage', () => {
       await create(['Matter.View']);
       expect(tab('Assets')).toBeUndefined();
       expect(matters.getMatterSummary).not.toHaveBeenCalled();
+    });
+  });
+  describe('project managers and the health strip (epic #667)', () => {
+    const ann = { userId: 11, displayName: 'Ann Lee', isActive: true };
+    const bob = { userId: 12, displayName: 'Bob Roe', isActive: true };
+
+    it('shows Primary and Secondary in the header line; nothing at all when none is set and the viewer cannot assign', async () => {
+      await create(['Matter.View'], aMatter({ primaryManager: ann, secondaryManager: bob }));
+      const line = el().querySelector('[data-managers]')!;
+      expect(line.textContent).toContain('Project manager:');
+      expect(line.querySelector('[data-primary-manager]')?.textContent).toBe('Ann Lee');
+      expect(line.textContent).toContain('(primary)');
+      expect(line.textContent).toContain('Bob Roe');
+      expect(line.textContent).toContain('(secondary)');
+      expect(el().querySelector('[data-change-managers]')).toBeNull(); // no Matter.AssignManagers
+
+      TestBed.resetTestingModule();
+      await create(['Matter.View'], aMatter());
+      expect(el().querySelector('[data-managers]')).toBeNull();
+      expect(el().textContent).not.toMatch(/no project manager|unassigned manager/i);
+    });
+
+    it('offers a quiet Add project manager link only with Matter.AssignManagers', async () => {
+      await create(['Matter.View', 'Matter.AssignManagers'], aMatter());
+      expect(el().querySelector('[data-add-managers]')?.textContent?.trim()).toBe(
+        'Add project manager',
+      );
+      expect(el().querySelector('[data-change-managers]')).toBeNull();
+    });
+
+    it('Change opens the two-picker dialog, marks out-of-office people, saves with the row version and shows the result', async () => {
+      await create(
+        ['Matter.View', 'Matter.AssignManagers'],
+        aMatter({ rowVersion: 'RV1', primaryManager: ann }),
+      );
+      const change = el().querySelector<HTMLButtonElement>('[data-change-managers]')!;
+      change.focus();
+      change.click();
+      await settle(fixture);
+
+      const dialog = document.body.querySelector('[data-managers-dialog]')!;
+      const primary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=primary]')!;
+      const secondary = dialog.querySelector<HTMLSelectElement>('[data-manager-select=secondary]')!;
+      expect(primary.value).toBe('11');
+      expect(secondary.value).toBe('');
+      expect(Array.from(secondary.options).map((o) => o.textContent?.trim())).toEqual([
+        'None',
+        'Ann Lee',
+        expect.stringContaining('Bob Roe (out of office until'),
+      ]);
+      // The same person twice is refused in the dialog.
+      secondary.value = '11';
+      secondary.dispatchEvent(new Event('change'));
+      await settle(fixture);
+      expect(dialog.querySelector('[data-managers-same]')).not.toBeNull();
+
+      primary.value = '12';
+      primary.dispatchEvent(new Event('change'));
+      secondary.value = '';
+      secondary.dispatchEvent(new Event('change'));
+      await settle(fixture);
+      document.body
+        .querySelector<HTMLButtonElement>(
+          '[data-confirm-primary] button, button[data-confirm-primary]',
+        )!
+        .click();
+      await settle(fixture);
+
+      expect(matters.setMatterManagers).toHaveBeenCalledWith(7, {
+        primaryManagerId: 12,
+        secondaryManagerId: undefined,
+        rowVersion: 'RV1',
+      });
+      expect(el().querySelector('[data-primary-manager]')?.textContent).toBe('Bob Roe');
+    });
+
+    it("draws the health strip with Open, Overdue, Unassigned and On hold as links to the matter's tasks, and nothing without Task.View", async () => {
+      await create(['Matter.View', 'Task.View']);
+      const items = Array.from(
+        el().querySelectorAll(
+          '[data-matter-health] [data-strip-item], mf-matter-health-strip [data-strip-item]',
+        ),
+      );
+      expect(items.map((i) => i.getAttribute('data-strip-item'))).toEqual([
+        'open',
+        'overdue',
+        'unassigned',
+        'onHold',
+      ]);
+      const unassigned = items[2];
+      expect(unassigned.textContent).toContain('2');
+      expect(unassigned.getAttribute('href')).toBe(
+        '/tasks?matter=7&status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
+      );
+
+      TestBed.resetTestingModule();
+      await create(['Matter.View']);
+      expect(el().querySelector('mf-matter-health-strip [data-strip-item]')).toBeNull();
     });
   });
 });

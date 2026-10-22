@@ -135,6 +135,20 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
     }
 
     [Fact]
+    public async Task The_matter_summary_unassigned_number_equals_the_queue_total_it_links_to()
+    {
+        var assigned = await OkAsync(await _h.Admin.PostAsJsonAsync("/api/v1/tasks", _h.NewTask(_w, ordered: false, title: "m1-assigned", extra: new() { ["matterId"] = _m1, ["assignedUserId"] = _pmA })), HttpStatusCode.Created);
+        TaskId(assigned).ShouldBeGreaterThan(0);
+
+        var summary = await OkAsync(await _pmAClient.GetAsync($"/api/v1/matters/{_m1}/summary"));
+        var queue = await OkAsync(await _pmAClient.GetAsync($"/api/v1/task-queue?matter={_m1}&unassigned=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&pageSize=100"));
+
+        summary.GetProperty("unassigned").GetInt32().ShouldBe(queue.GetProperty("total").GetInt32());
+        summary.GetProperty("unassigned").GetInt32().ShouldBe(4); // soon, overdue, asap, hold-second; the assigned one is not counted
+        summary.GetProperty("openTasks").GetInt32().ShouldBe(5);
+    }
+
+    [Fact]
     public async Task My_Work_and_Pod_Work_accept_the_same_filters_and_unknown_ones_are_still_refused()
     {
         (await _pmAClient.GetAsync("/api/v1/my-work?managedByMe=true&dueWithin=3")).StatusCode.ShouldBe(HttpStatusCode.OK);

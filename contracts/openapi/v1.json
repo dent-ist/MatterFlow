@@ -12209,6 +12209,7 @@
           "asap",
           "onHold",
           "dueSoon",
+          "unassigned",
           "projectCount",
           "assetCount"
         ],
@@ -12247,6 +12248,13 @@
             "format": "int32"
           },
           "dueSoon": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unassigned": {
             "type": [
               "null",
               "integer"

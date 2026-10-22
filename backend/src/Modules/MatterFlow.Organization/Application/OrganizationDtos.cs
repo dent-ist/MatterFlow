@@ -346,6 +346,7 @@ public sealed record ClientSummaryResponse(
 /// <param name="Asap">Open Tasks with no due date.</param>
 /// <param name="OnHold">Tasks On Hold.</param>
 /// <param name="DueSoon">Open Tasks that are not overdue and not ASAP, due today to two days ahead.</param>
+/// <param name="Unassigned">Open Tasks with no person assigned (the Task Queue's <c>unassigned=true</c>); null without <c>Task.View</c>.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter (archived included).</param>
 /// <param name="AssetCount">Number of Assets of the Matter (retired included).</param>
 public sealed record MatterSummaryResponse(
@@ -355,6 +356,7 @@ public sealed record MatterSummaryResponse(
     int? Asap,
     int? OnHold,
     int? DueSoon,
+    int? Unassigned,
     [property: Required] int ProjectCount,
     [property: Required] int AssetCount);
 

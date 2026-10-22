@@ -483,11 +483,13 @@ const BONES: Record<string, string> = {
           />
         }
       </div>
-      <mf-matter-managers-dialog
-        [targets]="bulkTargets()"
-        [(visible)]="bulkOpen"
-        (saved)="bulkSaved()"
-      />
+      @if (canAssign()) {
+        <mf-matter-managers-dialog
+          [targets]="bulkTargets()"
+          [(visible)]="bulkOpen"
+          (saved)="bulkSaved()"
+        />
+      }
     </mf-fixed-page>
   `,
 })

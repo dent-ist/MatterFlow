@@ -37,6 +37,8 @@ import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { MatterHealthStrip } from '../ui/matter-health-strip';
+import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
 import { MatterProjects } from './matter-projects';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
@@ -73,9 +75,24 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     ScopedTasks,
     SummaryStrip,
     MatterProjects,
+    MatterHealthStrip,
+    MatterManagersDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
+  styles: `
+    /* Under the header, wrapping: a phone shows the line under the name instead of cutting it. */
+    .md-managers {
+      margin: 0;
+      padding: var(--mf-s1) 0;
+      color: var(--mf-text-muted);
+      overflow-wrap: anywhere;
+    }
+    .md-link {
+      min-height: 0;
+      padding: 0 var(--mf-s2);
+    }
+  `,
   template: `
     <mf-fixed-page>
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
@@ -106,6 +123,45 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                 }
               </span>
             </mf-record-header>
+            @if (m.primaryManager || m.secondaryManager || canAssign()) {
+              <p data-managers class="md-managers">
+                @if (m.primaryManager || m.secondaryManager) {
+                  Project manager:
+                  @if (m.primaryManager; as p) {
+                    <span data-primary-manager>{{ p.displayName }}</span>
+                    <span class="pg-muted">(primary)</span>
+                  }
+                  @if (m.primaryManager && m.secondaryManager) {
+                    ,
+                  }
+                  @if (m.secondaryManager; as sc) {
+                    <span data-secondary-manager>{{ sc.displayName }}</span>
+                    <span class="pg-muted">(secondary)</span>
+                  }
+                  @if (canAssign()) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text md-link"
+                      data-change-managers
+                      (click)="managersOpen.set(true)"
+                    >
+                      Change
+                    </button>
+                  }
+                } @else {
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text md-link"
+                    data-add-managers
+                    (click)="managersOpen.set(true)"
+                  >
+                    Add project manager
+                  </button>
+                }
+              </p>
+            }
+
+            <mf-matter-health-strip [matterId]="m.matterId" [reload]="healthReload()" />
 
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
@@ -223,6 +279,14 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
               />
             }
 
+            @if (canAssign()) {
+              <mf-matter-managers-dialog
+                [targets]="[managerTarget(m)]"
+                [(visible)]="managersOpen"
+                (saved)="managersSaved($event.updated[0], m.openTaskCount)"
+              />
+            }
+
             <mf-confirm-dialog
               [title]="m.isActive ? 'Set matter inactive' : 'Reactivate matter'"
               [confirmLabel]="m.isActive ? 'Set inactive' : 'Set active'"
@@ -331,6 +395,9 @@ export class MatterDetailPage {
     })),
   );
   protected readonly toggleOpen = signal(false);
+  protected readonly managersOpen = signal(false);
+  protected readonly healthReload = signal(0);
+  protected readonly canAssign = computed(() => this.auth.has('Matter.AssignManagers'));
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);
   protected readonly busy = signal(false);
@@ -431,6 +498,24 @@ export class MatterDetailPage {
         untracked(() => this.activityOpen.set(true));
       }
     });
+  }
+
+  protected managerTarget(m: MatterResponse): ManagerTarget {
+    return {
+      matterId: m.matterId,
+      label: `${m.matterRef} ${m.name}`,
+      rowVersion: m.rowVersion,
+      primary: m.primaryManager ?? null,
+      secondary: m.secondaryManager ?? null,
+    };
+  }
+
+  /** The managers were saved: show them (the open count is not part of that answer, keep ours). */
+  protected managersSaved(
+    updated: MatterResponse | undefined,
+    openTaskCount: number | undefined,
+  ): void {
+    if (updated) this.matter.set({ ...updated, openTaskCount });
   }
 
   protected select(key: string): void {

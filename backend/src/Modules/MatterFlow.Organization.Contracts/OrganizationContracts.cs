@@ -113,7 +113,8 @@ public sealed class TaskCountRow
 /// <param name="Asap">Open Tasks with no due date.</param>
 /// <param name="OnHold">Tasks On Hold.</param>
 /// <param name="DueSoon">Open, not overdue, with a due date today to two days ahead.</param>
-public sealed record TaskStripCounts(int Open, int Overdue, int Asap, int OnHold, int DueSoon);
+/// <param name="Unassigned">Open Tasks with no person assigned (a Pod may be set); the Task Queue's <c>unassigned=true</c>.</param>
+public sealed record TaskStripCounts(int Open, int Overdue, int Asap, int OnHold, int DueSoon, int Unassigned = 0);
 
 /// <summary>One Matter of a Client with its open and overdue Task counts.</summary>
 public sealed record MatterTaskCount(int MatterId, int Open, int Overdue);

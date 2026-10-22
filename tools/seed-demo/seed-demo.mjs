@@ -657,6 +657,47 @@ function planTasks(total, ctx, opts, rng) {
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Task execution
 
+/**
+ * Project managers on the Demo matters (epic #667): a spread of cases for the Matters list, the matter header and My Matters: Primary only,
+ * Primary and Secondary, a Secondary without a Primary, a manager who is out of office, and four matters with no manager (which is normal).
+ * Only matters that have no manager yet are touched, so a re-run, or a change somebody made by hand, is never overwritten.
+ */
+async function ensureManagers(admin, ctx, opts, summary) {
+  summary.managersSet = 0;
+  const people = ctx.users.filter((u) => u.roleName === 'Project Manager' && u.userId !== null);
+  if (people.length < 2) {
+    log('Project managers: fewer than two Project Manager test users, no managers assigned.');
+    return;
+  }
+  const [a, b, c] = [people[0], people[1], people[2] ?? people[0]];
+  // matter index -> [primary, secondary]
+  const plan = [
+    [a, null],
+    [a, null],
+    [a, b],
+    [b, null],
+    [null, b],
+    [b, a],
+    [c, null],
+    [c, a],
+  ];
+  const matters = ctx.matters.filter((m) => m.matterId !== null);
+  for (let m = 0; m < plan.length && m < matters.length; m++) {
+    const [primary, secondary] = plan[m];
+    const matter = matters[m];
+    if (matter.primaryManager || matter.secondaryManager) continue;
+    summary.managersSet++;
+    if (opts.dryRun) continue;
+    const current = await admin.get(`/api/v1/matters/${matter.matterId}`);
+    await admin.put(`/api/v1/matters/${matter.matterId}/managers`, {
+      primaryManagerId: primary?.userId ?? undefined,
+      secondaryManagerId: secondary?.userId ?? undefined,
+      rowVersion: current.rowVersion,
+    });
+  }
+  log(`Project managers: ${summary.managersSet} matters ${opts.dryRun ? 'to get' : 'got'} managers.`);
+}
+
 async function pool(items, width, job) {
   let next = 0;
   const workers = Array.from({ length: Math.min(width, items.length) }, async () => {
@@ -966,6 +1007,8 @@ async function main() {
   await ensureUsers(admin, ctx, opts, summary);
   step('Demo clients, matters, projects and assets');
   await ensureOrganization(admin, ctx, opts, summary);
+  step('Project managers');
+  await ensureManagers(admin, ctx, opts, summary);
 
   step('Tasks');
   const matterIds = ctx.matters.map((m) => m.matterId).filter((id) => id !== null);
