@@ -16,6 +16,7 @@ export interface SectionIcon {
 export const EXTRA_SECTIONS: readonly SectionIcon[] = [
   { prefix: '/tasks/new', icon: 'pi pi-plus' },
   { prefix: '/profile', icon: 'pi pi-user-edit' },
+  { prefix: '/notifications', icon: 'pi pi-bell' },
   { prefix: '/search', icon: 'pi pi-search' },
   { prefix: '/access-pending', icon: 'pi pi-lock' },
   { prefix: '/403', icon: 'pi pi-ban' },

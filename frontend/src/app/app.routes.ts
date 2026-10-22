@@ -89,6 +89,14 @@ export const routes: Routes = [
           import('./features/profile/profile.routes').then((m) => m.PROFILE_ROUTES),
       },
       {
+        path: 'notifications',
+        canActivate: [permissionGuard('Task.View')],
+        loadChildren: () =>
+          import('./features/notifications/notifications.routes').then(
+            (m) => m.NOTIFICATIONS_ROUTES,
+          ),
+      },
+      {
         path: 'search',
         loadChildren: () => import('./features/search/search.routes').then((m) => m.SEARCH_ROUTES),
       },
