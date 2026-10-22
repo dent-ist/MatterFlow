@@ -3,6 +3,7 @@ import { Api } from '../support/api';
 import { expect, test } from '../support/fixtures';
 import {
   SIZES,
+  clickRowMenu,
   draftWorld,
   expectNoViolations,
   noSideScroll,
@@ -281,7 +282,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
         });
         return last;
       });
-      await rowMenu(page, titles[visibleLast]).click();
+      await clickRowMenu(page, titles[visibleLast]);
       const menu = page.getByRole('menu');
       await expect(menu).toBeVisible();
       const box = (await menu.boundingBox())!;

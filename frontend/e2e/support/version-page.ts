@@ -77,6 +77,27 @@ export const stepRow = (page: Page, title: string) =>
 export const rowMenu = (page: Page, title: string) =>
   page.getByRole('button', { name: `Actions for ${title}`, exact: true });
 
+/**
+ * Clicks a row's actions button after scrolling it into view and letting the pane come to rest. A click by Playwright may nudge a
+ * scroll area by a few pixels to bring a button near its edge into view, and any scroll of the page or of a pane closes an open row menu
+ * (by design: the menu is placed from the button's position). Scrolling first, then clicking a button that is already in view, leaves the
+ * menu open (the menus test of ty6-version-editor failed in every full run).
+ */
+export async function clickRowMenu(page: Page, title: string): Promise<void> {
+  const button = rowMenu(page, title);
+  await button.scrollIntoViewIfNeeded();
+  await expect(async () => {
+    const tops = await button.evaluate(async (b) => {
+      const read = () => Math.round(b.getBoundingClientRect().top * 10);
+      const first = read();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return [first, read()];
+    });
+    expect(tops[1], 'the pane has stopped scrolling').toBe(tops[0]);
+  }).toPass({ timeout: 10_000 });
+  await button.click();
+}
+
 /** Tab stops (focusable controls that are reachable with Tab) inside an element. */
 export async function tabStops(page: Page, selector: string): Promise<number> {
   return page.locator(selector).evaluate(
