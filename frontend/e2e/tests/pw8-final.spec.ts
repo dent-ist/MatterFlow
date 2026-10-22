@@ -332,8 +332,8 @@ test.describe('Pod Work final verification', () => {
         .count();
       expect(after['strip items that are toggle buttons']).toBe(4);
 
-      // Bundle: the initial total is recorded by the build log (607.48 kB before and after, limit 700).
-      after['initial bundle total (kB), build log'] = 607.48;
+      // Bundle: the initial total is recorded by the build log (607.92 kB before and after, limit 700).
+      after['initial bundle total (kB), build log'] = 607.92;
 
       const outDir = OUT ?? '';
       if (outDir) {

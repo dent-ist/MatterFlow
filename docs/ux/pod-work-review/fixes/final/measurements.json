@@ -1,0 +1,24 @@
+{
+  "before": {
+    "title height at 768 (px)": "wrapped letter by letter (\"Po / d / Wo / rk\"), BUG-1",
+    "pod select width with the 76-character name at 1366 (px)": 560,
+    "title top, Pod Work minus My Work (px)": 6,
+    "By member rows in view at 1366x768 (no scroll)": 4,
+    "By member nested scroll boxes": 1,
+    "page width minus window at 375 (px)": 236,
+    "first card under the title at 375 (px)": 330,
+    "strip items that are toggle buttons": 0,
+    "initial bundle total (kB), build log": 607
+  },
+  "after": {
+    "title height at 768 (px)": 36,
+    "pod select width with the 76-character name at 1366 (px)": 308,
+    "title top, Pod Work minus My Work (px)": 0,
+    "By member rows in view at 1366x768 (no scroll)": 8,
+    "By member nested scroll boxes": 0,
+    "page width minus window at 375 (px)": 0,
+    "first card under the title at 375 (px)": 194,
+    "strip items that are toggle buttons": 4,
+    "initial bundle total (kB), build log": 607.92
+  }
+}

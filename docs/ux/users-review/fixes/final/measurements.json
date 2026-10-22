@@ -1,0 +1,20 @@
+{
+  "before": {
+    "grid width needed minus box at 1366 (px)": 515,
+    "row heights on the first page, smallest (px)": 51,
+    "row heights on the first page, largest (px)": 204,
+    "Tab stops before the first row at 1366": 33,
+    "Roles section top in the panel at 1366x768 (px, window 768)": "below the fold",
+    "Esc closes the panel": false,
+    "sideways-scroll hint on a phone": true
+  },
+  "after": {
+    "grid width needed minus box at 1366 (px)": 0,
+    "row heights on the first page, smallest (px)": 44,
+    "row heights on the first page, largest (px)": 45,
+    "Tab stops before the first row at 1366": 30,
+    "Roles section top in the panel at 1366x768 (px, window 768)": 149,
+    "Esc closes the panel": true,
+    "sideways-scroll hint on a phone": false
+  }
+}

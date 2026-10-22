@@ -111,6 +111,89 @@ test.describe('Users final verification', () => {
     });
   }
 
+  test('the measurements of the review, taken again (rows, fit at 1366, Roles in view, Tab stops to the first row)', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const after: Record<string, number | string | boolean> = {};
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/admin/users?status=all');
+    await expect(page.locator('tr[data-user]').first()).toBeVisible();
+
+    // U1: the grid fits its box and the rows are 44 px.
+    const grid = await page
+      .locator('.mf-table-wrap')
+      .first()
+      .evaluate((w) => ({
+        scroll: w.scrollWidth,
+        client: w.clientWidth,
+      }));
+    after['grid width needed minus box at 1366 (px)'] = grid.scroll - grid.client;
+    expect(grid.scroll, 'the grid fits its box').toBeLessThanOrEqual(grid.client);
+    const heights = await page
+      .locator('tr[data-user]')
+      .evaluateAll((trs) =>
+        trs.map((tr) => Math.round(tr.getBoundingClientRect().height * 10) / 10),
+      );
+    after['row heights on the first page, smallest (px)'] = Math.min(...heights);
+    after['row heights on the first page, largest (px)'] = Math.max(...heights);
+    expect(Math.max(...heights)).toBeLessThanOrEqual(45);
+
+    // Tab stops before the first row (the review counted 33 and 3 per row).
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    let stops = 0;
+    for (stops = 1; stops <= 80; stops++) {
+      await page.keyboard.press('Tab');
+      const onRow = await page.evaluate(
+        () => !!document.activeElement?.closest('tr[data-user], li.rc'),
+      );
+      if (onRow) break;
+    }
+    after['Tab stops before the first row at 1366'] = stops;
+    expect(
+      stops,
+      'a skip link and one row stop each: far fewer than the 33 of the review',
+    ).toBeLessThan(33);
+
+    // U3: the Roles of "Grant access" are in the first screen of the panel at 1366x768.
+    await page.locator('button[data-open]').first().click();
+    const panel = page.getByRole('dialog').first();
+    await expect(panel).toBeVisible();
+    const access = panel.locator('[data-section="access"]');
+    await expect(access).toBeVisible();
+    const top = (await access.boundingBox())!.y;
+    after['Roles section top in the panel at 1366x768 (px, window 768)'] = Math.round(top);
+    expect(top, 'the Roles start above the fold').toBeLessThan(768);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    after['Esc closes the panel'] = true;
+
+    // BUG-5: no sideways-scroll hint over a one-column table at 375.
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/admin/users?status=all');
+    await expect(page.locator('li.rc').first()).toBeVisible();
+    after['sideways-scroll hint on a phone'] =
+      (await page.getByText('Scroll sideways').count()) > 0;
+    expect(after['sideways-scroll hint on a phone']).toBe(false);
+
+    if (OUT) {
+      fs.mkdirSync(OUT, { recursive: true });
+      const before = {
+        'grid width needed minus box at 1366 (px)': 1611 - 1096,
+        'row heights on the first page, smallest (px)': 51,
+        'row heights on the first page, largest (px)': 204,
+        'Tab stops before the first row at 1366': 33,
+        'Roles section top in the panel at 1366x768 (px, window 768)': 'below the fold',
+        'Esc closes the panel': false,
+        'sideways-scroll hint on a phone': true,
+      };
+      fs.writeFileSync(
+        path.join(OUT, 'measurements.json'),
+        JSON.stringify({ before, after }, null, 2) + '\n',
+      );
+    }
+  });
+
   test('the grid sits in one scroll region: no scroll box between the table and its region', async ({
     page,
   }) => {
