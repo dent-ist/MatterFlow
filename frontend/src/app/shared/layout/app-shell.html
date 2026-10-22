@@ -51,6 +51,10 @@
     />
   }
 
+  @if (auth.has('Task.View')) {
+    <mf-notification-bell />
+  }
+
   <mf-user-menu (shortcuts)="toggleHelp()" />
 </header>
 
