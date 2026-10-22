@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, HostListener, viewChild } from '@angular/core';
 import { AccountCard } from './account-card';
+import { NotificationPreferences } from './notification-preferences';
 import { AvailabilityForm } from '../../shared/availability/availability-form';
 import { HasUnsavedChanges } from '../../shared/guards/unsaved-changes.guard';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -10,10 +11,11 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'mf-profile-page',
-  imports: [PageHeader, AvailabilityForm, AccountCard],
+  imports: [PageHeader, AvailabilityForm, AccountCard, NotificationPreferences],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    .profile-account {
+    .profile-account,
+    .profile-notifications {
       max-width: 46rem;
       margin-top: var(--mf-s5);
     }
@@ -25,6 +27,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     />
     <mf-availability-form />
     <mf-account-card class="profile-account" />
+    <mf-notification-preferences class="profile-notifications" />
   `,
 })
 export class ProfilePage implements HasUnsavedChanges {
