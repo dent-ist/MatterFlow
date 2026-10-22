@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(52);
+        codes.Count.ShouldBe(55);
     }
 
     [Fact]
@@ -93,6 +93,26 @@ public class PermissionCatalogTests
         // The group sits before Oversight (the roles page lists groups in catalog order).
         var groups = Catalog().Select(c => c.Group).Distinct().ToList();
         groups.IndexOf("Dashboard").ShouldBeLessThan(groups.IndexOf("Oversight"));
+    }
+
+    [Fact]
+    public void The_Reports_group_has_Manage_Assign_and_Run_and_no_starter_role_holds_any_of_them()
+    {
+        var reports = Catalog().Where(c => c.Group == "Reports").ToList();
+
+        reports.Select(c => c.Code).ShouldBe(["Report.Manage", "Report.Assign", "Report.Run"]);
+        reports.ShouldAllBe(c => c.Description.Length > 20);
+
+        // The System Admin role holds every permission implicitly; the owner picks the trusted roles for Report.Run (spec section 3).
+        foreach (var role in StarterRoles.All)
+        {
+            role.Permissions.ShouldNotContain(Permissions.Report.Manage, role.Name);
+            role.Permissions.ShouldNotContain(Permissions.Report.Assign, role.Name);
+            role.Permissions.ShouldNotContain(Permissions.Report.Run, role.Name);
+        }
+
+        var groups = Catalog().Select(c => c.Group).Distinct().ToList();
+        groups.IndexOf("Reports").ShouldBeLessThan(groups.IndexOf("Oversight"));
     }
 
     [Fact]

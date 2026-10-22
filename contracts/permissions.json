@@ -257,6 +257,21 @@
       "description": "See how many tasks each person completed per task type (training and coverage planning)"
     },
     {
+      "code": "Report.Manage",
+      "group": "Reports",
+      "description": "Create and edit reports, categories and parameters, preview and activate them, browse the report schema and read the run log"
+    },
+    {
+      "code": "Report.Assign",
+      "group": "Reports",
+      "description": "Choose which roles can run which reports. Shows report names only, never the SQL"
+    },
+    {
+      "code": "Report.Run",
+      "group": "Reports",
+      "description": "Run the reports assigned to your roles, keep personal views and download the result as CSV"
+    },
+    {
       "code": "Audit.View",
       "group": "Oversight",
       "description": "Browse the audit log"

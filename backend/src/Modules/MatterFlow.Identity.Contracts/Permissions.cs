@@ -225,6 +225,14 @@ public static class Permissions
         public const string ViewCoverage = "Dashboard.ViewCoverage";
     }
 
+    /// <summary>Reports permissions (epic #671): authoring, assignment to roles and running.</summary>
+    public static class Report
+    {
+        public const string Manage = "Report.Manage";
+        public const string Assign = "Report.Assign";
+        public const string Run = "Report.Run";
+    }
+
     /// <summary>Audit permissions.</summary>
     public static class Audit
     {
@@ -286,6 +294,9 @@ public static class Permissions
         Dashboard.ViewSwimlane,
         Dashboard.ViewUsers,
         Dashboard.ViewCoverage,
+        Report.Manage,
+        Report.Assign,
+        Report.Run,
         Audit.View,
     ];
 }
