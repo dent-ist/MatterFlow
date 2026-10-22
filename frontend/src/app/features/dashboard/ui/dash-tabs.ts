@@ -175,6 +175,14 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
     .end:empty {
       display: none;
     }
+    /* On a small phone the Scope and Refresh controls do not fit beside the title once the pods have been read, so they take their own line
+       then. Taking it from the start (while the first read is still going) keeps the page from jumping down by that line when the Scope
+       appears (a 36 px layout shift on every tab at 375 px). */
+    @media (max-width: 400px) {
+      .end {
+        flex-basis: 100%;
+      }
+    }
     /* The tab list is the only part of the row that may be wider than the window: it scrolls inside itself (contain: inline-size, so what is inside never
        adds to the width of the row or the document, whatever the number or the width of the tabs). */
     .strip {
