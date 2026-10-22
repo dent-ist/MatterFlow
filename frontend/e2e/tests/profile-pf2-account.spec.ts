@@ -81,6 +81,9 @@ test.describe('pf2-account-card: the read-only Account card (#527)', () => {
     expect(axeAvailable(), 'axe-core must be available (set E2E_AXE_PATH)').toBe(true);
     for (const size of SIZES) {
       await me.setViewportSize(size);
+      // From the top of the page: the Notifications section below the card makes the page taller, and where the previous step left the scroll
+      // position put a day checkbox under the sticky header (axe then measures it against the header's buttons).
+      await me.evaluate(() => window.scrollTo(0, 0));
       expect(await axeViolations(me), `account card at ${size.width}`).toEqual([]);
       await noHorizontalScroll(me);
       await card.scrollIntoViewIfNeeded();
