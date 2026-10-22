@@ -7310,6 +7310,10 @@ export interface IReportAdminClient {
      * @return OK
      */
     checkReportsStatus(): Observable<ReportsStatusResponse>;
+    /**
+     * @return OK
+     */
+    analyzeReportSql(body: AnalyzeRequest): Observable<AnalyzeResponse>;
 }
 
 @Injectable({
@@ -7415,6 +7419,60 @@ export class ReportAdminClient implements IReportAdminClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportsStatusResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    analyzeReportSql(body: AnalyzeRequest): Observable<AnalyzeResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/analyze";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAnalyzeReportSql(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAnalyzeReportSql(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AnalyzeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AnalyzeResponse>;
+        }));
+    }
+
+    protected processAnalyzeReportSql(response: HttpResponseBase): Observable<AnalyzeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AnalyzeResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -12294,6 +12352,21 @@ export interface AdvancedSearchPage {
     [key: string]: any;
 }
 
+export interface AnalyzeRequest {
+    sql: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface AnalyzeResponse {
+    placeholders: DetectedPlaceholderResponse[];
+    occurrences: PlaceholderOccurrenceResponse[];
+    issues: SqlIssueResponse[];
+    dateRangeCandidates: string[];
+
+    [key: string]: any;
+}
+
 export interface ApiFieldError {
     code: string;
     message: string;
@@ -13036,6 +13109,18 @@ export interface DashboardTypeSeries {
     [key: string]: any;
 }
 
+export interface DetectedPlaceholderResponse {
+    name: string;
+    displayName: string;
+    position: number;
+    line: number;
+    column: number;
+    occurrences: number;
+    isBuiltIn: boolean;
+
+    [key: string]: any;
+}
+
 export interface EditTaskCommentRequest {
     bodyHtml: string;
     rowVersion: string;
@@ -13472,6 +13557,16 @@ export interface PingResponse {
     [key: string]: any;
 }
 
+export interface PlaceholderOccurrenceResponse {
+    name: string;
+    start: number;
+    length: number;
+    line: number;
+    column: number;
+
+    [key: string]: any;
+}
+
 export interface PodChoice {
     podId: number;
     name: string;
@@ -13852,6 +13947,16 @@ export interface SetUserRolesRequest {
 export interface SkipStepRequest {
     rowVersion: string;
     comment?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SqlIssueResponse {
+    code: string;
+    message: string;
+    position: number;
+    line: number;
+    column: number;
 
     [key: string]: any;
 }

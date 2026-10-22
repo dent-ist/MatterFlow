@@ -4769,6 +4769,46 @@
         }
       }
     },
+    "/api/v1/report-admin/analyze": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "AnalyzeReportSql",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/search": {
       "get": {
         "tags": [
@@ -8857,6 +8897,55 @@
           }
         }
       },
+      "AnalyzeRequest": {
+        "required": [
+          "sql"
+        ],
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AnalyzeResponse": {
+        "required": [
+          "placeholders",
+          "occurrences",
+          "issues",
+          "dateRangeCandidates"
+        ],
+        "type": "object",
+        "properties": {
+          "placeholders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetectedPlaceholderResponse"
+            }
+          },
+          "occurrences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceholderOccurrenceResponse"
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SqlIssueResponse"
+            }
+          },
+          "dateRangeCandidates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ApiFieldError": {
         "required": [
           "code",
@@ -11619,6 +11708,45 @@
           }
         }
       },
+      "DetectedPlaceholderResponse": {
+        "required": [
+          "name",
+          "displayName",
+          "position",
+          "line",
+          "column",
+          "occurrences",
+          "isBuiltIn"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "line": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "column": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "occurrences": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isBuiltIn": {
+            "type": "boolean"
+          }
+        }
+      },
       "EditTaskCommentRequest": {
         "required": [
           "bodyHtml",
@@ -13067,6 +13195,37 @@
           }
         }
       },
+      "PlaceholderOccurrenceResponse": {
+        "required": [
+          "name",
+          "start",
+          "length",
+          "line",
+          "column"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "start": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "length": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "line": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "column": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "PodChoice": {
         "required": [
           "podId",
@@ -14367,6 +14526,36 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "SqlIssueResponse": {
+        "required": [
+          "code",
+          "message",
+          "position",
+          "line",
+          "column"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "line": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "column": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
