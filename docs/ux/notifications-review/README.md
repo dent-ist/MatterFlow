@@ -257,5 +257,5 @@ A daily housekeeping step in the scheduler deletes `ReadUtc < now - 90 days` in 
 | Q4 | Which time zone defines "overdue"/"due within a day" for the scheduler? | The firm time zone used by the Dashboard and My Work today. |
 | Q5 | Unread notifications are never deleted by the 90-day rule. Add a 1-year hard limit? | Yes, 365 days for unread, same job. |
 | Q6 | Show the unread count in the browser tab title ("(3) MatterFlow")? | Not now; trivial to add later. |
-| Q7 | Where is the Project Manager role epic and its data (Matter.PrimaryManagerId / SecondaryManagerId)? Events 4 to 7 wait for it. | Link it as a dependency of the event issues. |
+| Q7 | Events 4 to 7 wait for the Project Manager role epic #667 (decisions AG). Confirm its manager columns and the script that adds them before NT-B4, NT-B5, NT-C2 (event 4) and NT-C3. | Treat #667 as a dependency of those issues. |
 | Q8 | Should "Mark as unread" exist on the page? | No (clicking reads, as decided). |

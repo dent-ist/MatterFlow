@@ -121,4 +121,4 @@ Contract e2e over the full flow with two users at four sizes, scheduler idempote
 
 (One line per work package; keep other packages' lines when merging. Format: `WP name (date, commit): issues done / open; tests; bundle size; screenshots folder; known limits.`)
 
-- Planning (2026-10-22): epic #753 and 24 sub-issues #729 to #752 created; no code started. Open questions for the owner: README section 14 (Q1 mentions scope is the main one). Events 4 to 7 depend on the Project Manager role epic (not found on dev).
+- Planning (2026-10-22): epic #753 and 24 sub-issues #729 to #752 created; no code started. Open questions for the owner: README section 14 (Q1 mentions scope is the main one). Events 4 to 7 depend on the Project Manager role epic #667.
