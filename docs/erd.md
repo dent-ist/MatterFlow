@@ -94,6 +94,8 @@ erDiagram
     char_11 MatterRef UK "computed 00343-00012"
     nvarchar_300 Name
     bit IsActive
+    int PrimaryManagerId FK "nullable, AppUser (28)"
+    int SecondaryManagerId FK "nullable, AppUser (28)"
     nvarchar_max CustomFieldsJson
     rowversion RowVersion
   }
@@ -155,9 +157,10 @@ Also: UNIQUE `(ClientId, ClientNumber)` `UQ_Client_IdNumber` - target of the Mat
 | MatterRef | char(11) | no | **persisted computed** `ClientNumber + '-' + MatterNumber`; UNIQUE `UQ_Matter_Ref` (also implied by the above; makes `00343-00012` lookups one seek). Not an independently entered business identifier. |
 | Name | nvarchar(300) | no | |
 | IsActive | bit | no | default 1. Set to 0 only if no Task of the Matter is in NEW/IN_PROGRESS/ON_HOLD (app rule + Matter row lock) |
+| PrimaryManagerId, SecondaryManagerId | int | yes | script 28 (epic #667). Optional Primary and Secondary project manager, FKs to `AppUser` (no cascade, like the other user references); `CK_Matter_ManagersDiffer` rejects the same user in both. A matter without a manager is normal (existing rows stay NULL), a Secondary without a Primary is allowed. Who may be named (active user holding `Matter.BeManager`) is an API rule, so a manager who later loses the role stays. |
 | CustomFieldsJson, RowVersion | | | |
 
-Indexes: `IX_Matter_Client (ClientId, IsActive)`, `IX_Matter_Name (Name)`.
+Indexes: `IX_Matter_Client (ClientId, IsActive)`, `IX_Matter_Name (Name)`, filtered `IX_Matter_PrimaryManager (PrimaryManagerId) INCLUDE (IsActive) WHERE PrimaryManagerId IS NOT NULL` and the same for `IX_Matter_SecondaryManager`.
 
 ### Project
 | Column | Type | Null | Notes |

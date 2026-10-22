@@ -49,6 +49,17 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     /// <summary>Display-only sensitivity flag (addendum O); does not restrict access.</summary>
     public bool IsSensitive { get; set; }
 
+    /// <summary>
+    /// Optional Primary project manager (epic #667). A matter without a manager is normal. Changes are audited by <c>MATTER_MANAGER_CHANGED</c> events
+    /// (with the people's names), not as generic field changes.
+    /// </summary>
+    [AuditExplicit]
+    public int? PrimaryManagerId { get; set; }
+
+    /// <summary>Optional Secondary project manager, with the same rights as the Primary. Allowed without a Primary; never the same person as the Primary.</summary>
+    [AuditExplicit]
+    public int? SecondaryManagerId { get; set; }
+
     [AuditJsonFields("custom")]
     public string? CustomFieldsJson { get; set; }
 

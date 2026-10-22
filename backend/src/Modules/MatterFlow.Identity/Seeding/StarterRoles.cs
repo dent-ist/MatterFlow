@@ -37,6 +37,9 @@ public static class StarterRoles
         Permissions.Project.Create, Permissions.Project.Edit, Permissions.Project.Archive,
     ];
 
+    /// <summary>Project Manager epic (#667): who may change a matter's managers (Director and Project Manager by default; administrators can take it away).</summary>
+    private static readonly string[] AssignManagers = [Permissions.Matter.AssignManagers];
+
     private static readonly string[] NumbersAndActivation =
     [
         Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
@@ -48,12 +51,12 @@ public static class StarterRoles
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage]),
-        new("Project Manager", "Manages clients, matters and projects; sees the Dashboard summary and swimlane.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage,
+        new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; sees the Dashboard summary and swimlane.",
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
             [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,

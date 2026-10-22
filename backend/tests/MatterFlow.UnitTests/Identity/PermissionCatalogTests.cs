@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(50);
+        codes.Count.ShouldBe(52);
     }
 
     [Fact]
@@ -140,6 +140,12 @@ public class PermissionCatalogTests
         P("Director").ShouldContain(Permissions.User.View);
         P("Project Manager").ShouldNotContain(Permissions.Audit.View);
         P("Project Manager").ShouldContain(Permissions.Matter.SetActive);
+        P("Project Manager").ShouldContain(Permissions.Matter.BeManager);
+        P("Project Manager").ShouldContain(Permissions.Matter.AssignManagers);
+        P("Director").ShouldContain(Permissions.Matter.AssignManagers);
+        P("Director").ShouldNotContain(Permissions.Matter.BeManager);
+        P("Pod Lead").ShouldNotContain(Permissions.Matter.AssignManagers);
+        P("Data Technician").ShouldNotContain(Permissions.Matter.BeManager);
         P("Project Manager").ShouldNotContain(Permissions.Pod.Manage);
         P("Pod Lead").ShouldContain(Permissions.Pod.ManageMembers);
         P("Pod Lead").ShouldNotContain(Permissions.Client.EditNumber);

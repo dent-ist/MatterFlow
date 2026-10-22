@@ -39,6 +39,12 @@ public static class Permissions
 
         /// <summary>Activate or deactivate matters.</summary>
         public const string SetActive = "Matter.SetActive";
+
+        /// <summary>Can be named as a matter's project manager (Primary or Secondary). A marker permission: it opens no screen by itself.</summary>
+        public const string BeManager = "Matter.BeManager";
+
+        /// <summary>Set or clear the Primary and Secondary project manager of matters, and search all matters on My Matters.</summary>
+        public const string AssignManagers = "Matter.AssignManagers";
     }
 
     /// <summary>Project permissions.</summary>
@@ -238,6 +244,8 @@ public static class Permissions
         Matter.Edit,
         Matter.EditNumber,
         Matter.SetActive,
+        Matter.BeManager,
+        Matter.AssignManagers,
         Project.View,
         Project.Create,
         Project.Edit,

@@ -33,6 +33,20 @@ describe('AuthStore', () => {
     expect(store.isPending()).toBe(false);
   });
 
+  it('knows Matter.BeManager (the marker) and Matter.AssignManagers as two separate rights', async () => {
+    const marker = setup(withPermissions('Matter.View', 'Matter.BeManager'));
+    await marker.store.ensureLoaded();
+    expect(marker.store.has('Matter.BeManager')).toBe(true);
+    expect(marker.store.has('Matter.AssignManagers')).toBe(false);
+  });
+
+  it('Matter.AssignManagers does not imply Matter.BeManager', async () => {
+    const assigner = setup(withPermissions('Matter.View', 'Matter.AssignManagers'));
+    await assigner.store.ensureLoaded();
+    expect(assigner.store.has('Matter.AssignManagers')).toBe(true);
+    expect(assigner.store.has('Matter.BeManager')).toBe(false);
+  });
+
   it('treats ACCESS_PENDING as restricted with no permissions', async () => {
     const { store } = setup(profileOf({ status: 'ACCESS_PENDING', permissions: ['Task.View'] }));
     await store.ensureLoaded();

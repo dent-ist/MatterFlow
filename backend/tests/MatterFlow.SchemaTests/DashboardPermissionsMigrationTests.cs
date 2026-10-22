@@ -106,7 +106,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
         await RunAsync(cs, new ScriptsBefore(25));
         await ExecAsync(cs, "INSERT dbo.Role (Name, IsActive) VALUES (N'Director', 1), (N'Pod Lead', 1), (N'Project Manager', 1), (N'Custom', 1);");
 
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
+        await RunAsync(cs, new ScriptsBefore(28)); // script 28 grants other permissions to the same role names
 
         (await GrantsAsync(cs, "Director")).ShouldBe(["Dashboard.ViewCoverage"]);
         (await GrantsAsync(cs, "Pod Lead")).ShouldBe(["Dashboard.ViewCoverage"]);
@@ -135,7 +135,7 @@ public class DashboardPermissionsMigrationTests(SqlServerFixture sql)
               OR (r.Name = N'Custom' AND p.Code IN ('Task.Assign', 'Task.View'));
             """);
 
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
+        await RunAsync(cs, new ScriptsBefore(28)); // script 28 grants other permissions to the same role names
 
         (await GrantsAsync(cs, "Technician")).ShouldBe(["Dashboard.View", "Dashboard.ViewUnassigned", "Task.Assign", "Task.View"]);
         (await GrantsAsync(cs, "Project Manager")).ShouldBe(["Dashboard.View", "Dashboard.ViewSummary", "Dashboard.ViewSwimlane", "Task.Assign", "Task.View"]);

@@ -60,6 +60,7 @@ export const STUB_SCENARIOS: Record<string, MeProfile & { label: string }> = {
       'Matter.Edit',
       'Matter.EditNumber',
       'Matter.SetActive',
+      'Matter.AssignManagers',
       'Project.Create',
       'Project.Edit',
       'Project.Archive',

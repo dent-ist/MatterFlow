@@ -47,6 +47,16 @@
       "description": "Activate or deactivate matters"
     },
     {
+      "code": "Matter.BeManager",
+      "group": "Client/Matter",
+      "description": "Can be named as a matter's project manager (Primary or Secondary). A marker: it opens no screen by itself"
+    },
+    {
+      "code": "Matter.AssignManagers",
+      "group": "Client/Matter",
+      "description": "Set or clear the Primary and Secondary project manager of matters, and search all matters on My Matters"
+    },
+    {
       "code": "Project.View",
       "group": "Project",
       "description": "View projects"

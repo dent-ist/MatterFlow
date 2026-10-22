@@ -358,7 +358,7 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 
 | Group | Codes |
 |---|---|
-| Client/Matter | `Client.View/Create/Edit/EditNumber`, `Matter.View/Create/Edit/EditNumber/SetActive` |
+| Client/Matter | `Client.View/Create/Edit/EditNumber`, `Matter.View/Create/Edit/EditNumber/SetActive`, `Matter.BeManager` (marker: can be named a matter's Primary or Secondary project manager), `Matter.AssignManagers` (set or clear a matter's managers; migration `28-matter-managers.sql`, epic #667) |
 | Project | `Project.View/Create/Edit/Archive` |
 | Task | `Task.View/Create/Edit/Assign/SetPriority/ChangeStatus/Complete/Cancel/Reopen/Comment` |
 | Workflow execution | `Workflow.Execute` (start, save inputs, complete, skip), `Workflow.StepReopen` |
@@ -375,6 +375,8 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 | Client/Matter/Project/Asset View | X | X | X | X | X |
 | Client/Matter Create/Edit | X | X | X | - | - |
 | EditNumber, Matter.SetActive | X | X | - | - | - |
+| Matter.BeManager (can be named project manager) | - | X | - | - | - |
+| Matter.AssignManagers (set a matter's managers) | X | X | - | - | - |
 | Project Create/Edit/Archive | X | X | X | X | - |
 | Asset Create/Edit/Link | X | X | X | X | X |
 | Task.View/Create/Comment | X | X | X | X | X |
