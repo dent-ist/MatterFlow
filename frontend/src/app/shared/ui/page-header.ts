@@ -196,6 +196,10 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       color: var(--mf-text-muted);
       font-size: 0.75em;
       vertical-align: 0.04em;
+      /* One em wide before the icon font has loaded as well as after, so the title does not widen when it arrives (layout shift, #756). */
+      display: inline-block;
+      width: 1em;
+      text-align: center;
     }
     .ph__actions {
       display: flex;
@@ -213,6 +217,12 @@ export function truncateCrumb(label: string, max = CRUMB_MAX): string {
       min-width: 0;
       max-width: min(22rem, 100%);
       text-overflow: ellipsis;
+    }
+    /* An icon in the actions is one em wide before the icon font has loaded as well as after, so the actions do not grow by a few pixels
+       (and wrap under the title on a small phone) when the font arrives (layout shift, #756). */
+    :host ::ng-deep .ph__actions .pi {
+      width: 1em;
+      text-align: center;
     }
     /* The context line: one line under the title, 13px, muted (its whole text is the tooltip). */
     .ph__desc {
