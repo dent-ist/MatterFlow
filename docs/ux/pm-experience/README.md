@@ -218,6 +218,22 @@ All additive, `/api/v1`, OpenAPI and nswag regenerated (CI drift check). Every e
 6. **Bundle**: 614 kB of 700 kB; five tabs and charts must stay lazy.
 7. **Menu without role names**: a data rule keyed on the landing test; a PM with Dashboard granted back still lands on My Matters.
 
+## 10a. Fixtures (PX-01, #759, built)
+
+Backend integration fixture `backend/tests/MatterFlow.IntegrationTests/Fixtures/PmScopeFixture.cs` (extends the epic #667 data in `docs/ux/pm-review/fixtures.md`, nothing there is redone). `PmScopeFixture.BuildAsync(factory)` builds, through the public API (managers through `PUT /matters/{id}/managers`, so the audit trail is real), on a fresh test database:
+
+| Person | Role | Manages |
+|---|---|---|
+| `PmFew` | PM (Matter.BeManager + view permissions, no AssignManagers) | exactly 3 matters: `few1` (Primary), `few2` (Secondary), `few3` (Primary, PmOther Secondary) |
+| `PmMany` | PM | exactly 40 matters `many01` to `many40` (Primary; every fifth has PmOther as Secondary) |
+| `PmNone` | PM | nothing (empty scope) |
+| `PmOther` | PM | `few2` (Primary), `primaryOnly`, `secondaryOnly` (Secondary, no Primary), `sensitiveManaged`, `sensitiveOther` (Secondary), Secondary of 8 `many` matters |
+| `PmNoTaskView` | Matter.View + BeManager + AssignManagers, no Task.View | nothing (403 on My Matters) |
+| `Director` | Matter.AssignManagers, cannot be named | nothing (may use scope=all) |
+| `Technician` | work permissions, no manager permission | assignee of the tasks on `none1` and `sensitiveManaged` |
+
+Matters without a manager: `none1`, `none2` (normal, nothing flagged) and `sensitiveOpen` (sensitive-ready). Sensitive-ready matters (the `IsSensitive` flag is set; with `Features:SensitiveMatterAccess` off the product ignores it): `sensitiveManaged` (Primary PmOther, task assigned to the technician), `sensitiveOpen` (no manager), `sensitiveOther` (Secondary PmOther only). Clients: `Managed` (matters of PmFew and PmOther), `Mixed` (matters of PmMany, PmOther and unmanaged ones), `Unmanaged` (no matter any PM manages). Every matter has a project; `few1`, `few2`, `many01`, `many02`, `primaryOnly`, `none1` and `sensitiveManaged` have two assets; `few1`, `many01`, `primaryOnly`, `none1` and `sensitiveManaged` have one task. `ManagedKeys(userId, role)` gives the expected set for assertions. `PmScopeFixtureTests` pins today's answers of the Matters list, the Task Queue and My Matters on this data; they are the safety net of PX-02 (#760). The end-to-end side (`frontend/e2e/support/pm-fixtures.ts`) and the demo seeder (`tools/seed-demo`) are the frontend lane's; they can mirror this table.
+
 ## 11. Out of scope
 
 Sensitive-matter design (separate epic), status report, Gantt, time or budget, email, scheduled reports, matter-level comments or notes (Q4), keyboard shortcuts (#420), new notification events (epic #753 owns them).
