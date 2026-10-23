@@ -7829,6 +7829,84 @@ export class SearchClient implements ISearchClient {
     }
 }
 
+export interface IMatterBulkTasksClient {
+    /**
+     * @return OK
+     */
+    bulkChangeMatterTasks(matterId: number, body: BulkTasksRequest): Observable<BulkTasksResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterBulkTasksClient implements IMatterBulkTasksClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    bulkChangeMatterTasks(matterId: number, body: BulkTasksRequest): Observable<BulkTasksResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/tasks/bulk";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processBulkChangeMatterTasks(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processBulkChangeMatterTasks(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BulkTasksResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BulkTasksResponse>;
+        }));
+    }
+
+    protected processBulkChangeMatterTasks(response: HttpResponseBase): Observable<BulkTasksResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BulkTasksResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ITasksClient {
     /**
      * @param page (optional) 
@@ -13434,6 +13512,40 @@ export interface AuditSearchPage {
     nextCursor: number | undefined;
     pageSize: number;
     timeZone: string;
+
+    [key: string]: any;
+}
+
+export interface BulkReassignTo {
+    userId?: number | undefined;
+    podId?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface BulkTaskResult {
+    taskId: number;
+    ok: boolean;
+    code: string | undefined;
+    message: string | undefined;
+    warnings: string[];
+
+    [key: string]: any;
+}
+
+export interface BulkTasksRequest {
+    taskIds: number[];
+    reassignTo?: BulkReassignTo | undefined;
+    priorityId?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface BulkTasksResponse {
+    correlationId: string;
+    changed: number;
+    failed: number;
+    results: BulkTaskResult[];
 
     [key: string]: any;
 }

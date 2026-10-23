@@ -23,6 +23,7 @@ public static class WorkManagementModule
         services.AddScoped<TaskPresenter>();
         services.AddScoped<TaskNotifier>();
         services.AddScoped<TaskService>();
+        services.AddScoped<TaskBulkService>();
         services.AddScoped<TaskLifecycleService>();
         services.AddScoped<TaskWorkflowService>();
         services.AddScoped<TaskCommentService>();

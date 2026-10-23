@@ -652,7 +652,7 @@ public sealed class TaskService
         return new AssignTasksBatchResponse(results);
     }
 
-    private async Task<Result<CommandNotes>> AssignCoreAsync(long taskId, AssignTaskRequest request, CancellationToken ct)
+    internal async Task<Result<CommandNotes>> AssignCoreAsync(long taskId, AssignTaskRequest request, CancellationToken ct)
     {
         var task = await _tx.LockTaskAsync(taskId, ct);
         if (task is null)
@@ -710,7 +710,7 @@ public sealed class TaskService
         return done.IsFailure ? done.Error! : await _presenter.GetAsync(taskId, null, ct);
     }
 
-    private async Task<Result<bool>> SetPriorityCoreAsync(long taskId, SetTaskPriorityRequest request, CancellationToken ct)
+    internal async Task<Result<bool>> SetPriorityCoreAsync(long taskId, SetTaskPriorityRequest request, CancellationToken ct)
     {
         var task = await _tx.LockTaskAsync(taskId, ct);
         if (task is null)
