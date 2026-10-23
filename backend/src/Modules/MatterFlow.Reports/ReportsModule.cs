@@ -33,6 +33,13 @@ public static class ReportsModule
         services.AddHostedService<ReportRunRetentionService>();
         services.AddScoped<ReportRunService>();
         services.AddScoped<ReportAuthoringService>();
+        services.AddMemoryCache();
+        services.AddSingleton<ReportChoiceGate>();
+        services.AddScoped<ReportChoiceService>();
+        services.AddScoped<IReportAdminStore, ReportAdminStore>();
+        services.AddScoped<ReportAdminService>();
+        services.AddSingleton<IReportSchemaReader, ReportSchemaReader>();
+        services.AddScoped<ReportSchemaService>();
         return services;
     }
 }

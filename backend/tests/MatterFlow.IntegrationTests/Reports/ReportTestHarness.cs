@@ -120,5 +120,19 @@ internal sealed class ReportTestHarness : IAsyncDisposable
         return sb.Length == 0 ? "[]" : sb.ToString();
     }
 
+    /// <summary>Audit rows about reports (object type <c>Report</c>, or the given one), oldest first; optionally for one object id.</summary>
+    public async Task<List<JsonElement>> AuditAsync(int? objectId = null, string objectType = "Report")
+    {
+        await using var connection = new SqlConnection(AppConnection);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT AuditEventId, ActorUserId, EventType, ObjectType, ObjectId, FieldKey, OldValue, NewValue, Summary FROM dbo.AuditEvent WHERE ObjectType = @t AND (@o IS NULL OR ObjectId = CAST(@o AS varchar(40))) ORDER BY AuditEventId FOR JSON PATH";
+        command.Parameters.AddWithValue("@t", objectType);
+        command.Parameters.AddWithValue("@o", (object?)objectId ?? DBNull.Value);
+        return JsonDocument.Parse(await ReadJsonAsync(command)).RootElement.EnumerateArray().Select(e => e.Clone()).ToList();
+    }
+
+    public static string?[] EventTypes(IEnumerable<JsonElement> events) => events.Select(e => e.GetProperty("EventType").GetString()).ToArray();
+
     public async ValueTask DisposeAsync() => await Factory.DisposeAsync();
 }

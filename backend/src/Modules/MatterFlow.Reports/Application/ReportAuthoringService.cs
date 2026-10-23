@@ -2,6 +2,7 @@ using System.Text.Json;
 using MatterFlow.Reports.Domain;
 using MatterFlow.Reports.Domain.Parameters;
 using MatterFlow.SharedKernel.Identity;
+using MatterFlow.SharedKernel.Results;
 using Microsoft.Extensions.Options;
 
 namespace MatterFlow.Reports.Application;
@@ -37,13 +38,30 @@ public sealed record PreviewProblem(int Status, string Code, string Message);
 
 public sealed record ReportStateResult(bool Ok, ReportStateProblem? Problem, bool IsActive, int? CurrentVersionId, byte[]? RowVersion);
 
-public sealed record ReportStateProblem(int Status, string Code, string Message);
+public sealed record ReportStateProblem(int Status, string Code, string Message, IReadOnlyDictionary<string, IReadOnlyList<FieldError>>? Errors = null);
 
-/// <summary>What saving a version did.</summary>
-/// <param name="Version">The appended version (or the current one when nothing changed).</param>
-/// <param name="Unchanged">True when text and parameters equal the current version, so no new version was written.</param>
+/// <summary>What saving did.</summary>
+/// <param name="Version">The version after the save (the appended one, or the current one when no version was written).</param>
+/// <param name="Unchanged">True when no new version was written (text and parameters equal the current version, or only details were saved).</param>
 /// <param name="Deactivated">True when the report was active and had to be deactivated because the new text was not previewed.</param>
-public sealed record SaveVersionResult(AddedVersion? Version, bool Unchanged, bool Deactivated, PreviewResult? Preview, ReportStateProblem? Problem);
+public sealed record SaveVersionResult(SaveOutcome? Version, bool Unchanged, bool Deactivated, PreviewResult? Preview, ReportStateProblem? Problem);
+
+/// <summary>A save from the editor: details and/or a new version.</summary>
+/// <param name="ExpectedRowVersion">The row version the editor last read (from <c>If-Match</c>).</param>
+/// <param name="Details">The unversioned fields; null leaves them alone.</param>
+/// <param name="Sql">The query text; null saves no version.</param>
+/// <param name="ParametersJson">The parameter definitions (JSON array).</param>
+/// <param name="RestoredFromVersionNo">Set by a restore (always appends a version).</param>
+public sealed record SaveReportCommand(
+    int ReportId,
+    byte[]? ExpectedRowVersion,
+    ReportDetails? Details,
+    string? Sql,
+    string? ParametersJson,
+    string? ChangeNote,
+    bool KeepActive,
+    IReadOnlyDictionary<string, JsonElement> SampleValues,
+    int? RestoredFromVersionNo = null);
 
 /// <summary>
 /// Preview, the activation gate and the version rule for report authors (spec 6.6, 6.7). A preview runs the unsaved editor text through the same
@@ -61,6 +79,7 @@ public sealed class ReportAuthoringService
     private readonly ReportRunGate _gate;
     private readonly IReportsAvailability _availability;
     private readonly ReportsOptions _options;
+    private readonly ReportChoiceService _choices;
 
     public ReportAuthoringService(
         ICurrentUser user,
@@ -70,7 +89,8 @@ public sealed class ReportAuthoringService
         IReportRunLog log,
         ReportRunGate gate,
         IReportsAvailability availability,
-        IOptions<ReportsOptions> options)
+        IOptions<ReportsOptions> options,
+        ReportChoiceService choices)
     {
         _user = user;
         _builtIns = builtIns;
@@ -80,6 +100,7 @@ public sealed class ReportAuthoringService
         _gate = gate;
         _availability = availability;
         _options = options.Value;
+        _choices = choices;
     }
 
     /// <summary>
@@ -102,7 +123,7 @@ public sealed class ReportAuthoringService
         IReadOnlyList<ReportParameterDefinition> definitions;
         try
         {
-            definitions = ParameterDefinitionJson.Deserialize(parametersJson ?? report.ParametersJson ?? "[]");
+            definitions = ParameterDefinitionValidator.Normalize(ParameterDefinitionJson.Deserialize(parametersJson ?? report.ParametersJson ?? "[]"));
         }
         catch (JsonException)
         {
@@ -119,6 +140,16 @@ public sealed class ReportAuthoringService
         }
 
         var context = await _builtIns.CreateAsync(userId, cancellationToken);
+
+        // The author's unsaved SELECT lists run exactly as they will for users (no cache, so an edit shows at once); sample values come from the real lists.
+        var choices = await _choices.ResolveAsync(definitions, compiled.UsedPlaceholders, context, start, adminDetail: true, useCache: false, cancellationToken);
+        if (choices.Errors.Count > 0)
+        {
+            await _log.RecordRejectedAsync(start, "CHOICES_FAILED", CancellationToken.None);
+            return new PreviewResult(false, "Rejected", [], [], 0, false, 0, [], choices.Errors, null, null, false, null, null);
+        }
+
+        definitions = choices.Definitions;
         var values = ReportSamples.Complete(definitions, sampleValues, context);
         var bind = ParameterBinder.Bind(definitions, values, context, compiled.UsedPlaceholders);
         if (!bind.IsValid)
@@ -205,29 +236,81 @@ public sealed class ReportAuthoringService
     }
 
     /// <summary>
-    /// Saves a new version of a report. If <paramref name="keepActive"/> the text is previewed first (nothing is written when that fails); a version that passed
-    /// keeps an active report active, anything else deactivates it ("Saved as version n. Preview it to activate.").
+    /// Saves a report: the unversioned details and/or a new version of the SQL and parameter definitions, in one step. Identical text and parameters write
+    /// no version. If <see cref="SaveReportCommand.KeepActive"/> the text is previewed first (nothing is lost when that fails); a version that passed keeps
+    /// an active report active, anything else deactivates it ("Saved as version n. Preview it to activate.").
     /// </summary>
-    public async Task<SaveVersionResult> SaveVersionAsync(int reportId, string sql, string parametersJson, string? changeNote, bool keepActive, IReadOnlyDictionary<string, JsonElement> sampleValues, CancellationToken cancellationToken)
+    public async Task<SaveVersionResult> SaveAsync(SaveReportCommand command, CancellationToken cancellationToken)
     {
-        var report = await _store.GetAsync(reportId, cancellationToken);
+        var report = await _store.GetAsync(command.ReportId, cancellationToken);
         if (report is null)
-            return new SaveVersionResult(null, false, false, null, new ReportStateProblem(404, "NOT_FOUND", "This report does not exist."));
+            return SaveFailed(404, ErrorCodes.NotFound, "This report does not exist.");
+        if (command.ExpectedRowVersion is { } expected && !expected.AsSpan().SequenceEqual(report.RowVersion))
+            return SaveFailed(409, ErrorCodes.ConcurrencyConflict, "The report was changed by someone else. Reload it and apply your changes again.");
 
-        var hash = SqlValidator.Hash(sql);
-        if (report.SqlHash is not null && hash.AsSpan().SequenceEqual(report.SqlHash) && Canonical(parametersJson) == Canonical(report.ParametersJson ?? "[]"))
-            return new SaveVersionResult(new AddedVersion(report.CurrentVersionId!.Value, report.CurrentVersionNo!.Value, report.IsActive, report.RowVersion), true, false, null, null);
+        string? parametersJson = null;
+        byte[]? hash = null;
+        var contentChanged = false;
+        if (command.Sql is not null)
+        {
+            var normalized = NormalizeParameters(command.ParametersJson ?? "[]", out var problem);
+            if (problem is not null)
+                return new SaveVersionResult(null, false, false, null, problem);
+            parametersJson = normalized;
+            hash = SqlValidator.Hash(command.Sql);
+            contentChanged = command.RestoredFromVersionNo is not null
+                || report.SqlHash is null
+                || !hash.AsSpan().SequenceEqual(report.SqlHash)
+                || Canonical(parametersJson) != Canonical(report.ParametersJson ?? "[]");
+        }
 
         PreviewResult? preview = null;
         var previewedOk = false;
-        if (keepActive && report.IsActive)
+        if (contentChanged && command.KeepActive && report.IsActive && command.RestoredFromVersionNo is null)
         {
-            preview = await PreviewAsync(reportId, sql, parametersJson, sampleValues, cancellationToken);
+            preview = await PreviewAsync(command.ReportId, command.Sql, parametersJson, command.SampleValues, cancellationToken);
             previewedOk = preview.Success;
         }
 
-        var added = await _store.AddVersionAsync(reportId, sql, hash, parametersJson, changeNote, previewedOk, _user.UserId, CancellationToken.None);
-        return new SaveVersionResult(added, false, report.IsActive && !added.IsActive, preview, null);
+        var saved = await _store.SaveAsync(
+            new SaveDefinition(command.ReportId, command.ExpectedRowVersion, command.Details, command.Sql, hash, parametersJson, command.ChangeNote, previewedOk, command.RestoredFromVersionNo, _user.UserId),
+            CancellationToken.None);
+        return saved.Status switch
+        {
+            StoreStatus.Ok => new SaveVersionResult(saved.Value, !saved.Value!.VersionAdded, saved.Value.Deactivated, preview, null),
+            StoreStatus.Conflict => SaveFailed(409, ErrorCodes.ConcurrencyConflict, "The report was changed by someone else. Reload it and apply your changes again."),
+            StoreStatus.DuplicateName => SaveFailed(409, "DUPLICATE_NAME", "Another report already has this name."),
+            StoreStatus.CategoryInvalid => SaveFailed(422, "CATEGORY_INVALID", "Choose an active category."),
+            _ => SaveFailed(404, ErrorCodes.NotFound, "This report does not exist."),
+        };
+    }
+
+    /// <summary>Reads, normalises and checks the parameter definitions of a save; returns the canonical JSON or the problem (422 with a message per parameter field).</summary>
+    public static string NormalizeParameters(string json, out ReportStateProblem? problem)
+    {
+        problem = null;
+        IReadOnlyList<ReportParameterDefinition> definitions;
+        try
+        {
+            definitions = ParameterDefinitionValidator.Normalize(ParameterDefinitionJson.Deserialize(json));
+        }
+        catch (JsonException)
+        {
+            problem = new ReportStateProblem(400, "PARAMETERS_INVALID", "The parameter definitions could not be read.");
+            return "[]";
+        }
+
+        var issues = ParameterDefinitionValidator.Validate(definitions);
+        if (issues.Count > 0)
+        {
+            var errors = issues
+                .GroupBy(i => i.Parameter.Length == 0 ? "parameters" : $"parameters.{i.Parameter}.{i.Field}", StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => (IReadOnlyList<FieldError>)g.Select(i => new FieldError(i.Code, i.Message)).ToList());
+            problem = new ReportStateProblem(422, "REPORT_DEFINITION_INVALID", "Some parameter definitions are not valid.", errors);
+            return "[]";
+        }
+
+        return ParameterDefinitionJson.Serialize(definitions);
     }
 
     /// <summary>Parameter definitions compared as data: the same definitions written in a different order of properties are equal.</summary>
@@ -235,7 +318,7 @@ public sealed class ReportAuthoringService
     {
         try
         {
-            return ParameterDefinitionJson.Serialize(ParameterDefinitionJson.Deserialize(parametersJson));
+            return ParameterDefinitionJson.Serialize(ParameterDefinitionValidator.Normalize(ParameterDefinitionJson.Deserialize(parametersJson)));
         }
         catch (JsonException)
         {
@@ -245,6 +328,8 @@ public sealed class ReportAuthoringService
 
     private static PreviewResult Refused(int status, string code, string message) =>
         new(false, "Refused", [], [], 0, false, 0, [], [], null, null, false, null, new PreviewProblem(status, code, message));
+
+    private static SaveVersionResult SaveFailed(int status, string code, string message) => new(null, false, false, null, new ReportStateProblem(status, code, message));
 
     private static ReportStateResult Failed(int status, string code, string message) => new(false, new ReportStateProblem(status, code, message), false, null, null);
 }

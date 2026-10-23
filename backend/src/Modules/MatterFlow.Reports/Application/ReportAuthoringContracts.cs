@@ -15,9 +15,6 @@ public sealed record AuthoringReport(
     int? MaxRows,
     byte[] RowVersion);
 
-/// <summary>The result of appending a version.</summary>
-public sealed record AddedVersion(int VersionId, int VersionNo, bool IsActive, byte[] RowVersion);
-
 /// <summary>Reads and changes the report definition rows for authoring (application connection).</summary>
 public interface IReportDefinitionStore
 {
@@ -33,8 +30,29 @@ public interface IReportDefinitionStore
     Task<byte[]?> SetActiveAsync(int reportId, bool active, int? userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Appends a version and makes it current in one transaction. When <paramref name="previewedOk"/> the version counts as previewed and an active report
-    /// stays active; otherwise the report is deactivated (unreviewed SQL is never served).
+    /// Saves a report in one serializable transaction: checks the row version (when given), updates the unversioned details (when given) and appends a
+    /// version (when text is given and it differs from the current one, or when it is a restore). Writes the audit events in the same transaction.
+    /// When <see cref="SaveDefinition.PreviewedOk"/> the new version counts as previewed and an active report stays active; otherwise it is deactivated
+    /// (unreviewed SQL is never served).
     /// </summary>
-    Task<AddedVersion> AddVersionAsync(int reportId, string sqlText, byte[] sqlHash, string parametersJson, string? changeNote, bool previewedOk, int? userId, CancellationToken cancellationToken);
+    Task<StoreResult<SaveOutcome>> SaveAsync(SaveDefinition save, CancellationToken cancellationToken);
 }
+
+/// <summary>What to save. <see cref="Details"/> null leaves the details alone; <see cref="SqlText"/> null saves no version.</summary>
+/// <param name="ExpectedRowVersion">The row version the author last read; a different current value is a concurrent change.</param>
+/// <param name="RestoredFromVersionNo">Set when the version is a copy of an older one (audited as a restore, always appended).</param>
+public sealed record SaveDefinition(
+    int ReportId,
+    byte[]? ExpectedRowVersion,
+    ReportDetails? Details,
+    string? SqlText,
+    byte[]? SqlHash,
+    string? ParametersJson,
+    string? ChangeNote,
+    bool PreviewedOk,
+    int? RestoredFromVersionNo,
+    int? UserId);
+
+/// <param name="VersionAdded">False when only details changed or nothing changed.</param>
+/// <param name="Deactivated">True when an active report was deactivated by this save.</param>
+public sealed record SaveOutcome(int VersionId, int VersionNo, bool IsActive, bool VersionAdded, bool Deactivated, byte[] RowVersion);

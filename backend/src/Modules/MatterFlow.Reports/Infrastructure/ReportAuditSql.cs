@@ -20,7 +20,7 @@ internal static class ReportAuditSql
         command.CommandText = Insert;
         command.Parameters.Add(new SqlParameter("@actor", SqlDbType.Int) { Value = (object?)actorUserId ?? DBNull.Value });
         command.Parameters.Add(new SqlParameter("@eventType", SqlDbType.VarChar, 64) { Value = entry.EventType });
-        command.Parameters.Add(new SqlParameter("@objectType", SqlDbType.VarChar, 40) { Value = ReportAuditEvents.ObjectType });
+        command.Parameters.Add(new SqlParameter("@objectType", SqlDbType.VarChar, 40) { Value = entry.ObjectType });
         command.Parameters.Add(new SqlParameter("@objectId", SqlDbType.VarChar, 40) { Value = entry.ReportId.ToString(System.Globalization.CultureInfo.InvariantCulture) });
         command.Parameters.Add(new SqlParameter("@fieldKey", SqlDbType.VarChar, 100) { Value = (object?)entry.FieldKey ?? DBNull.Value });
         command.Parameters.Add(new SqlParameter("@old", SqlDbType.NVarChar, -1) { Value = (object?)entry.OldValue ?? DBNull.Value });

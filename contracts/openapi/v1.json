@@ -5110,6 +5110,461 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "ListReportVersions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportVersionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/categories": {
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "ListReportCategories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "CreateReportCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/categories/{categoryId}": {
+      "put": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "UpdateReportCategory",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports": {
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "ListAdminReports",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "CreateReport",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}": {
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "GetAdminReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "UpdateReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveVersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/versions/{versionNo}": {
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "GetReportVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportVersionDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/versions/{versionNo}/compare": {
+      "get": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "CompareReportVersions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "against",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportVersionComparisonResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/versions/{versionNo}/restore": {
+      "post": {
+        "tags": [
+          "ReportDefinitions"
+        ],
+        "operationId": "RestoreReportVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "versionNo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveVersionResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/reports/{id}/runs": {
@@ -5264,6 +5719,359 @@
             "description": "No Content",
             "content": {
               "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/schema": {
+      "get": {
+        "tags": [
+          "ReportSchema"
+        ],
+        "operationId": "SearchReportSchema",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/schema/{table}": {
+      "get": {
+        "tags": [
+          "ReportSchema"
+        ],
+        "operationId": "GetReportSchemaTable",
+        "parameters": [
+          {
+            "name": "table",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaTableResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/{id}/choices/{parameter}": {
+      "post": {
+        "tags": [
+          "ReportChoices"
+        ],
+        "operationId": "GetReportChoices",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "parameter",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChoiceListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/choices/test": {
+      "post": {
+        "tags": [
+          "ReportChoices"
+        ],
+        "operationId": "TestReportChoiceQuery",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoiceTestRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoiceTestRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChoiceTestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChoiceTestResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/roles": {
+      "get": {
+        "tags": [
+          "ReportAssignment"
+        ],
+        "operationId": "GetRolesOfReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RoleAssignmentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ReportAssignment"
+        ],
+        "operationId": "SetRolesOfReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReportRolesRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReportRolesRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReportRolesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDiffResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/roles/{roleId}/reports": {
+      "get": {
+        "tags": [
+          "ReportAssignment"
+        ],
+        "operationId": "GetReportsOfRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportAssignmentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ReportAssignment"
+        ],
+        "operationId": "SetReportsOfRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleReportsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleReportsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleReportsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentDiffResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/assignment-matrix": {
+      "get": {
+        "tags": [
+          "ReportAssignment"
+        ],
+        "operationId": "GetReportAssignmentMatrix",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentMatrixResponse"
+                }
+              }
             }
           }
         }
@@ -10620,6 +11428,81 @@
           }
         }
       },
+      "AssignmentCellResponse": {
+        "required": [
+          "roleId",
+          "reportId"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AssignmentDiffResponse": {
+        "required": [
+          "added",
+          "removed",
+          "assignedCount",
+          "ownerName"
+        ],
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedIdResponse"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedIdResponse"
+            }
+          },
+          "assignedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ownerName": {
+            "type": "string"
+          }
+        }
+      },
+      "AssignmentMatrixResponse": {
+        "required": [
+          "roles",
+          "reports",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NamedIdResponse"
+            }
+          },
+          "reports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportAssignmentResponse"
+            }
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssignmentCellResponse"
+            }
+          }
+        }
+      },
       "AssignTaskBatchItem": {
         "required": [
           "rowVersion"
@@ -11253,6 +12136,106 @@
           }
         }
       },
+      "ChoiceListResponse": {
+        "required": [
+          "options",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOptionResponse"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ChoiceOptionResponse": {
+        "required": [
+          "value",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ChoiceTestRequest": {
+        "required": [
+          "sql",
+          "valueType"
+        ],
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "valueType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ChoiceTestResponse": {
+        "required": [
+          "success",
+          "options",
+          "total",
+          "truncated",
+          "durationMs",
+          "errorCode",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOptionResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ClientResponse": {
         "required": [
           "clientId",
@@ -11828,6 +12811,32 @@
           }
         }
       },
+      "CreatedReportResponse": {
+        "required": [
+          "reportId",
+          "versionId",
+          "versionNo",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "CreateFormDraftRequest": {
         "type": "object",
         "properties": {
@@ -11967,6 +12976,85 @@
             "type": [
               "null",
               "object"
+            ]
+          }
+        }
+      },
+      "CreateReportRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "description",
+          "helpText",
+          "sortOrder",
+          "timeoutSeconds",
+          "maxRows",
+          "sql",
+          "parameters",
+          "changeNote"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeoutSeconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxRows": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "changeNote": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -12978,6 +14066,37 @@
           },
           "isBuiltIn": {
             "type": "boolean"
+          }
+        }
+      },
+      "DiffLineResponse": {
+        "required": [
+          "kind",
+          "text",
+          "oldLine",
+          "newLine"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "oldLine": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "newLine": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -14593,6 +15712,22 @@
           }
         }
       },
+      "NamedIdResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
       "NotificationItem": {
         "required": [
           "id",
@@ -16009,6 +17144,325 @@
           }
         }
       },
+      "ReportAssignmentResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "categoryId",
+          "categoryName",
+          "categorySortOrder",
+          "sortOrder",
+          "description",
+          "isActive",
+          "assigned"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "categorySortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "assigned": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReportCategoryResponse": {
+        "required": [
+          "categoryId",
+          "name",
+          "sortOrder",
+          "isActive",
+          "reportCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "reportCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportDetailResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "categoryId",
+          "categoryName",
+          "description",
+          "helpText",
+          "sortOrder",
+          "isActive",
+          "timeoutSeconds",
+          "maxRows",
+          "versionId",
+          "versionNo",
+          "sql",
+          "parameters",
+          "changeNote",
+          "canActivate",
+          "roleCount",
+          "createdAtUtc",
+          "createdByName",
+          "modifiedAtUtc",
+          "modifiedByName",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "timeoutSeconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxRows": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "versionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "changeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canActivate": {
+            "type": "boolean"
+          },
+          "roleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "modifiedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportListItemResponse": {
+        "required": [
+          "reportId",
+          "name",
+          "categoryId",
+          "categoryName",
+          "sortOrder",
+          "description",
+          "isActive",
+          "versionNo",
+          "previewed",
+          "roleCount",
+          "lastRunAtUtc",
+          "modifiedAtUtc",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "versionNo": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "previewed": {
+            "type": "boolean"
+          },
+          "roleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastRunAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "modifiedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportListResponse": {
+        "required": [
+          "items",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportListItemResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ReportLoginDetailsResponse": {
         "required": [
           "loginName",
@@ -16261,6 +17715,122 @@
           }
         }
       },
+      "ReportVersionComparisonResponse": {
+        "required": [
+          "fromVersionNo",
+          "toVersionNo",
+          "sql",
+          "parametersAdded",
+          "parametersRemoved",
+          "parametersChanged"
+        ],
+        "type": "object",
+        "properties": {
+          "fromVersionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "toVersionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sql": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiffLineResponse"
+            }
+          },
+          "parametersAdded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parametersRemoved": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parametersChanged": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReportVersionDetailResponse": {
+        "required": [
+          "version",
+          "sql",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/ReportVersionResponse"
+          },
+          "sql": {
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
+      "ReportVersionResponse": {
+        "required": [
+          "versionId",
+          "versionNo",
+          "createdAtUtc",
+          "createdByUserId",
+          "createdByName",
+          "changeNote",
+          "isCurrent",
+          "hash"
+        ],
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "changeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "hash": {
+            "type": "string"
+          }
+        }
+      },
       "ResultColumnResponse": {
         "required": [
           "name",
@@ -16273,6 +17843,46 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "RoleAssignmentResponse": {
+        "required": [
+          "roleId",
+          "name",
+          "description",
+          "isActive",
+          "isSystemAdmin",
+          "memberCount",
+          "assigned"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isSystemAdmin": {
+            "type": "boolean"
+          },
+          "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assigned": {
+            "type": "boolean"
           }
         }
       },
@@ -16463,6 +18073,29 @@
           }
         }
       },
+      "SaveCategoryRequest": {
+        "required": [
+          "name",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "SaveFormDraftRequest": {
         "required": [
           "fields",
@@ -16618,6 +18251,88 @@
           },
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "SchemaColumnResponse": {
+        "required": [
+          "name",
+          "type",
+          "isNullable",
+          "isPrimaryKey"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "isNullable": {
+            "type": "boolean"
+          },
+          "isPrimaryKey": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SchemaPageResponse": {
+        "required": [
+          "tables",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "type": "object",
+        "properties": {
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaTableResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SchemaTableResponse": {
+        "required": [
+          "schema",
+          "name",
+          "fullName",
+          "isView",
+          "columns"
+        ],
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "isView": {
+            "type": "boolean"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaColumnResponse"
+            }
           }
         }
       },
@@ -16819,6 +18534,42 @@
               "null",
               "boolean"
             ]
+          }
+        }
+      },
+      "SetReportRolesRequest": {
+        "required": [
+          "roleIds"
+        ],
+        "type": "object",
+        "properties": {
+          "roleIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "SetRoleReportsRequest": {
+        "required": [
+          "reportIds"
+        ],
+        "type": "object",
+        "properties": {
+          "reportIds": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         }
       },
@@ -19726,6 +21477,96 @@
           }
         }
       },
+      "UpdateReportRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "description",
+          "helpText",
+          "sortOrder",
+          "timeoutSeconds",
+          "maxRows",
+          "sql",
+          "parameters",
+          "changeNote",
+          "keepActive",
+          "sampleValues"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "helpText": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeoutSeconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "maxRows": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "changeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keepActive": {
+            "type": "boolean"
+          },
+          "sampleValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
       "UpdateRoleRequest": {
         "required": [
           "name",
@@ -21407,7 +23248,19 @@
       "name": "ReportAdmin"
     },
     {
+      "name": "ReportDefinitions"
+    },
+    {
       "name": "Reports"
+    },
+    {
+      "name": "ReportSchema"
+    },
+    {
+      "name": "ReportChoices"
+    },
+    {
+      "name": "ReportAssignment"
     },
     {
       "name": "Search"

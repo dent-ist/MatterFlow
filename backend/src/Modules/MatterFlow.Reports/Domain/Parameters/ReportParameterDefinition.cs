@@ -79,7 +79,13 @@ public sealed record ReportParameterDefinition
 
     public OptionsKind? OptionsKind { get; init; }
 
-    /// <summary>The fixed list, or the list the query produced (resolved by the caller before binding).</summary>
+    /// <summary>
+    /// For <see cref="OptionsKind.Query"/>: the second SELECT (columns <c>Value</c> and <c>Label</c>) that produces the list. It goes through the same
+    /// validator, executor and login as a report. Never offered to people who only run reports.
+    /// </summary>
+    public string? OptionsSql { get; init; }
+
+    /// <summary>The fixed list, or the list the query produced (resolved by the caller before binding; a resolved list is never stored).</summary>
     public IReadOnlyList<ParameterOption> Options { get; init; } = [];
 
     /// <summary>Number: lowest/highest value.</summary>

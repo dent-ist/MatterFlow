@@ -7,6 +7,7 @@ namespace MatterFlow.Reports.Application;
 public static class ReportAuditEvents
 {
     public const string ObjectType = "Report";
+    public const string CategoryObjectType = "ReportCategory";
 
     public const string Created = "REPORT_CREATED";
     public const string Updated = "REPORT_UPDATED";
@@ -24,7 +25,7 @@ public static class ReportAuditEvents
 }
 
 /// <summary>One audit row about a report. The full SQL is never part of it: versions hold the text, events hold the version number and a short hash.</summary>
-public sealed record ReportAuditEntry(string EventType, int ReportId, string Summary, string? FieldKey = null, string? OldValue = null, string? NewValue = null)
+public sealed record ReportAuditEntry(string EventType, int ReportId, string Summary, string? FieldKey = null, string? OldValue = null, string? NewValue = null, string ObjectType = ReportAuditEvents.ObjectType)
 {
     public const int SummaryLimit = 500;
     public const int ValueLimit = 4000;
@@ -43,12 +44,20 @@ public sealed record ReportAuditEntry(string EventType, int ReportId, string Sum
     public static ReportAuditEntry ChoiceSqlChanged(int reportId, string name, string parameter, byte[]? oldHash, byte[] newHash) =>
         new(ReportAuditEvents.ChoiceSqlChanged, reportId, Limit($"Report '{name}': choice list query of {parameter} changed"), "choiceSql:" + parameter, ShortHash(oldHash), ShortHash(newHash));
 
+    /// <summary>Name, description, help text, order, time limit or row cap changed (no new version). Lists the fields, not their values.</summary>
+    public static ReportAuditEntry DetailsChanged(int reportId, string name, IReadOnlyCollection<string> fields) =>
+        new(ReportAuditEvents.Updated, reportId, Limit($"Report '{name}': details changed ({string.Join(", ", fields)})"), "details", null, Limit(string.Join(", ", fields), ValueLimit));
+
     public static ReportAuditEntry Activated(int reportId, string name, int versionNo) => new(ReportAuditEvents.Activated, reportId, Limit($"Report '{name}' activated (version {versionNo})"), "isActive", "false", "true");
 
     public static ReportAuditEntry Deactivated(int reportId, string name, string reason) => new(ReportAuditEvents.Deactivated, reportId, Limit($"Report '{name}' deactivated{(reason.Length == 0 ? "" : ": " + reason)}"), "isActive", "true", "false");
 
     public static ReportAuditEntry VersionRestored(int reportId, string name, int fromVersion, int newVersion) =>
         new(ReportAuditEvents.VersionRestored, reportId, Limit($"Report '{name}': version {fromVersion} restored as version {newVersion}"), "version", fromVersion.ToString(CultureInfo.InvariantCulture), newVersion.ToString(CultureInfo.InvariantCulture));
+
+    /// <summary>A category was created or changed (object type <c>ReportCategory</c>, object id the category). Lists what changed, not the report names.</summary>
+    public static ReportAuditEntry CategorySaved(int categoryId, string name, string? oldName, bool created, string change) =>
+        new(ReportAuditEvents.CategoryChanged, categoryId, Limit(created ? $"Report category '{name}' created" : $"Report category '{name}': {change}"), "category", oldName, name, ReportAuditEvents.CategoryObjectType);
 
     public static ReportAuditEntry CategoryChanged(int reportId, string name, string? oldCategory, string newCategory) =>
         new(ReportAuditEvents.CategoryChanged, reportId, Limit($"Report '{name}' moved to category '{newCategory}'"), "category", oldCategory, newCategory);

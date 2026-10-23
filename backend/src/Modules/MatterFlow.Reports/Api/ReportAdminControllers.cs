@@ -166,7 +166,7 @@ public sealed record ReportRunLogPageResponse(IReadOnlyList<ReportRunLogItemResp
 /// <summary>Whether a report is active after an activate or deactivate.</summary>
 public sealed record ReportStateResponse(int ReportId, bool IsActive, int? CurrentVersionId, string? RowVersion);
 
-/// <summary>Report administration (<c>Report.Manage</c>). The authoring endpoints arrive with the admin API issues.</summary>
+/// <summary>Report administration (<c>Report.Manage</c>): health, analyze, preview, activate, the run log and saving a version. Lists, details, categories and versions are in <see cref="ReportDefinitionsController"/>.</summary>
 [ApiController]
 [Route("api/v1/report-admin")]
 [Produces("application/json")]
@@ -268,7 +268,7 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
         page.Items.Select(i => new ReportRunLogItemResponse(i.RunId, i.ReportId, i.ReportName, i.VersionNo, i.UserId, i.UserName, i.StartedAtUtc, i.FinishedAtUtc, i.Status, i.Kind, i.RowCount, i.Truncated, i.DurationMs, i.ErrorCode, i.Parameters)).ToList(),
         page.NextBefore);
 
-    private static PreviewResponse MapPreview(PreviewResult result) => new(
+    internal static PreviewResponse MapPreview(PreviewResult result) => new(
         result.Success,
         result.Status,
         result.Columns.Select(c => new ResultColumnResponse(c.Name, ReportsController.ColumnTypeName(c.Type))).ToList(),
@@ -286,7 +286,8 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
     /// <summary>
     /// Saves a new version of a report (the SQL and its parameter definitions). Identical text and parameters write nothing. A new version of an active
     /// report stays active only when <c>keepActive</c> is set and the text passed a preview in this same call; otherwise the report is deactivated until
-    /// it is previewed again ("Saved as version n. Preview it to activate.").
+    /// it is previewed again ("Saved as version n. Preview it to activate."). <c>If-Match</c> is optional here; when sent, a changed report answers 409.
+    /// The editor uses <c>PUT /reports/{id}</c>, which also saves the details and requires it.
     /// </summary>
     [HttpPost("reports/{id:int}/versions", Name = "SaveReportVersion")]
     [Authorize(Policy = ReportPolicies.Manage)]
@@ -299,9 +300,19 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
         if (request.Sql.Length > SqlScanner.MaxQueryLength)
             return ReportProblems.Create(this, new RunProblem(400, SqlValidationCodes.TextTooLong, "The query is too long."));
 
-        var result = await authoring.SaveVersionAsync(id, request.Sql, request.Parameters?.GetRawText() ?? "[]", request.ChangeNote, request.KeepActive, request.SampleValues ?? [], cancellationToken);
+        byte[]? expected = null;
+        if (Request.Headers.IfMatch.Count > 0)
+        {
+            if (!IfMatch.TryRead(Request.Headers.IfMatch.ToString(), out var parsed))
+                return IfMatch.Problem(this, Request.Headers.IfMatch.ToString());
+            expected = parsed;
+        }
+
+        var result = await authoring.SaveAsync(
+            new SaveReportCommand(id, expected, null, request.Sql, request.Parameters?.GetRawText() ?? "[]", request.ChangeNote, request.KeepActive, request.SampleValues ?? []),
+            cancellationToken);
         if (result.Problem is { } problem)
-            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message));
+            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message, problem.Errors));
 
         var v = result.Version!;
         return Ok(new SaveVersionResponse(v.VersionId, v.VersionNo, v.IsActive, result.Deactivated, result.Unchanged, Convert.ToBase64String(v.RowVersion), result.Preview is null ? null : MapPreview(result.Preview)));

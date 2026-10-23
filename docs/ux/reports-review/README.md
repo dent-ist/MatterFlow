@@ -58,6 +58,8 @@ ReportRun        (ReportRunId BIGINT PK, ReportId, ReportVersionId, UserId, Star
                   CorrelationId UNIQUEIDENTIFIER)   -- index (UserId, StartedAt), (ReportId, StartedAt)
 ```
 
+**Decision (wave 2, issue #708): `ReportParameter` stays unused in release one; the parameter definitions live only in `ReportVersion.ParametersJson`.** The table above describes an editable working copy that is copied into the version on every save. Because every save that changes the SQL or the parameters writes a new version, and the editor keeps the unsaved state in the browser, a server-side working copy would be a second copy of the same data that has to be kept in step in a transaction on every save, restore and activation, and that can diverge from the version a run actually uses (a run always uses the snapshot of the current version, so an old version also runs with the parameters it was saved with). The JSON snapshot is also what the run, the preview and the restore read. The table was created by script 30 (immutable) and is kept, denied for the report login, for a later "draft / autosave" feature; nothing writes or reads it today.
+
 Rules: deactivating a report keeps everything (history, versions, runs, views); roles and views stay but the report disappears from listings and cannot run. Categories can be renamed/reordered/deactivated, not deleted. The run log is append-only like the audit trail (the app role gets INSERT/SELECT and UPDATE only on the three completion columns through a stored procedure, no DELETE); retention is an open question (Q6). Definition changes also write `dbo.AuditEvent` entries (section 13).
 
 ## 3. Permissions (names follow `contracts/permissions.json`: `Entity.Action`, group `Reports`)
@@ -114,6 +116,8 @@ Assign side (`Report.Assign`):
 - `GET /api/report-admin/reports/{id}/roles`, `PUT` full replace of the role set (returns diff for audit).
 - `GET /api/report-admin/roles/{roleId}/reports`, `PUT` full replace for a role (checklist, only ids the caller may list).
 - `GET /api/report-admin/assignment-matrix` roles x reports (names only) for the matrix view.
+
+Implementation notes (wave 2; prefix is `/api/v1`, not `/api`): the editor saves with `PUT /report-admin/reports/{id}` (details plus, when sent, SQL and parameters; `If-Match` with the row version is required, missing gives 428 `IF_MATCH_REQUIRED`, a changed row gives 409 `CONCURRENCY_CONFLICT`); `POST .../versions` stays as "save a version only" with an optional `If-Match`; `GET .../versions/{n}/compare?against=` returns the line diff; `POST .../versions/{n}/restore` needs `If-Match`; `POST /report-admin/reports/{id}/choices/test` tests an unsaved choice SELECT; `POST /reports/{id}/choices/{param}` serves fixed and SELECT lists to people who may run the report (a lookup parameter answers 400 `NO_CHOICE_LIST`: the matter, client, user and pod pickers and their own permissions serve those); `GET /report-admin/schema?search=&page=&pageSize=` and `GET /report-admin/schema/{table}` are the schema browser; assignment is `GET/PUT /report-admin/reports/{id}/roles`, `GET/PUT /report-admin/roles/{roleId}/reports` and `GET /report-admin/assignment-matrix` (`Report.Assign`, names only). Validation failures are 422 `REPORT_DEFINITION_INVALID` with `errors` keyed by field (`name`, `sql`, `parameters.NAME.field`). There is no DELETE anywhere.
 
 ## 5. Parameters
 

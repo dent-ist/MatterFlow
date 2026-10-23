@@ -43,6 +43,7 @@ public sealed class ReportRunService
     private readonly IReportsAvailability _availability;
     private readonly ReportsOptions _options;
     private readonly IReportResultSink _results;
+    private readonly ReportChoiceService _choices;
 
     public ReportRunService(
         ICurrentUser user,
@@ -53,7 +54,8 @@ public sealed class ReportRunService
         ReportRunGate gate,
         IReportsAvailability availability,
         IOptions<ReportsOptions> options,
-        IReportResultSink results)
+        IReportResultSink results,
+        ReportChoiceService choices)
     {
         _user = user;
         _builtIns = builtIns;
@@ -64,6 +66,7 @@ public sealed class ReportRunService
         _availability = availability;
         _options = options.Value;
         _results = results;
+        _choices = choices;
     }
 
     public const string UnavailableMessage = "Reports are not available right now. Ask an administrator.";
@@ -94,7 +97,16 @@ public sealed class ReportRunService
         }
 
         var context = await _builtIns.CreateAsync(userId, requestAborted);
-        var bind = ParameterBinder.Bind(definitions, parameters, context, compiled.UsedPlaceholders);
+
+        // SELECT-driven choice lists come from the same engine; a value is always checked against the current list.
+        var choices = await _choices.ResolveAsync(definitions, compiled.UsedPlaceholders, context, start, adminDetail: false, useCache: true, requestAborted);
+        if (choices.Errors.Count > 0)
+        {
+            await _log.RecordRejectedAsync(start, "CHOICES_FAILED", CancellationToken.None);
+            return RunResult.Fail(503, "REPORT_CHOICES_FAILED", $"A list of choices could not be loaded (reference {Reference(correlation)}). Try again or tell an administrator.", reference: Reference(correlation));
+        }
+
+        var bind = ParameterBinder.Bind(choices.Definitions, parameters, context, compiled.UsedPlaceholders);
         if (!bind.IsValid)
         {
             await _log.RecordRejectedAsync(start with { ParametersJson = LogJson(bind.Parameters) }, "PARAMETERS_INVALID", CancellationToken.None);
