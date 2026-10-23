@@ -18,7 +18,9 @@ import {
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { QuietRequests } from '../../core/http/interceptors';
+import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../shared/ui/entity-picker';
+import { phoneCards } from '../../shared/ui/record-card-list';
 import {
   MmFilters,
   MmRange,
@@ -50,7 +52,7 @@ const clientOption = (c: {
  */
 @Component({
   selector: 'mf-mm-filter-bar',
-  imports: [EntityPicker, NgTemplateOutlet],
+  imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -88,6 +90,9 @@ const clientOption = (c: {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .fb--phone {
+      margin-bottom: var(--mf-s2);
+    }
     @media (max-width: 639.98px) {
       .fb__field,
       .fb__client,
@@ -103,7 +108,30 @@ const clientOption = (c: {
     }
   `,
   template: `
-    <ng-container *ngTemplateOutlet="controls" />
+    @if (phone()) {
+      <div class="fb fb--phone">
+        <button
+          type="button"
+          class="mf-btn"
+          data-filters-open
+          aria-haspopup="dialog"
+          (click)="sheet.set(true)"
+        >
+          <i class="pi pi-filter" aria-hidden="true"></i>
+          Filters{{ active() > 0 ? ' (' + active() + ')' : '' }}
+        </button>
+      </div>
+      <mf-confirm-dialog
+        title="Filters"
+        cancelLabel="Show results"
+        [showConfirm]="false"
+        [(visible)]="sheet"
+      >
+        <ng-container *ngTemplateOutlet="controls" />
+      </mf-confirm-dialog>
+    } @else {
+      <ng-container *ngTemplateOutlet="controls" />
+    }
     <ng-template #controls>
       <div class="fb" data-mm-filters>
         @if (canClient()) {
@@ -211,6 +239,9 @@ export class MyMattersFilterBar {
   private readonly people = inject(MatterManagersClient);
   private readonly quiet = inject(QuietRequests);
 
+  protected readonly phone = phoneCards();
+  /** The phone's Filters sheet. */
+  protected readonly sheet = signal(false);
   protected readonly roles: MmRole[] = ['both', 'primary', 'secondary'];
   protected readonly ranges: MmRange[] = ['today', '2w', '4w', 'custom'];
   protected readonly roleLabels = ROLE_LABELS;
