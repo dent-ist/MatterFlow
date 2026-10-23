@@ -44,9 +44,9 @@ public class SourceHygieneRulesTests
         offenders.ShouldBeEmpty("Only MatterFlow.Reports may resolve ConnectionStrings:ReportsReadOnly: " + string.Join(", ", offenders));
     }
 
-    /// <summary>Inside the module only <c>ReportsAvailability</c> reads the setting; everything else asks <c>IReportsAvailability.ReportConnectionString</c>, which is null unless the login passed the probe.</summary>
+    /// <summary>Inside the module only <c>ReportsAvailability</c> (the report login) and <c>ReportAppConnection</c> (the application's own, for the Reports tables) read connection strings; everything else asks <c>IReportsAvailability.ReportConnectionString</c>, which is null unless the login passed the probe.</summary>
     [Fact]
-    public void Inside_the_reports_module_one_class_reads_the_report_connection_string()
+    public void Inside_the_reports_module_two_classes_read_connection_strings_and_they_stay_apart()
     {
         var offenders = ProductSources()
             .Where(f => f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
@@ -55,6 +55,11 @@ public class SourceHygieneRulesTests
             .Order()
             .ToList();
 
-        offenders.ShouldBe(["ReportsAvailability.cs"]);
+        offenders.ShouldBe(["ReportAppConnection.cs", "ReportsAvailability.cs"]);
+
+        // The executor (the code that runs report SQL) never touches the application connection; the availability class never reads the application's.
+        var module = ProductSources().Where(f => f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal)).ToList();
+        File.ReadAllText(module.Single(f => f.EndsWith("ReportExecutor.cs", StringComparison.Ordinal))).ShouldNotContain("ReportAppConnection");
+        File.ReadAllText(module.Single(f => f.EndsWith("ReportAppConnection.cs", StringComparison.Ordinal))).ShouldNotContain("ReportsReadOnly");
     }
 }

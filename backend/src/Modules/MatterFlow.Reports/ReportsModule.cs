@@ -16,6 +16,16 @@ public static class ReportsModule
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IReportsAvailability, ReportsAvailability>();
         services.AddHostedService<ReportsStartupProbeService>();
+
+        services.Configure<ReportsOptions>(configuration.GetSection(ReportsOptions.SectionName));
+        services.AddSingleton<ReportRunGate>();
+        services.AddSingleton<ReportAppConnection>();
+        services.AddSingleton<InMemoryResultStore>();
+        services.AddSingleton<IReportResultSink, InMemoryResultSink>();
+        services.AddScoped<IReportCatalog, ReportCatalog>();
+        services.AddScoped<IReportRunLog, ReportRunLog>();
+        services.AddScoped<IReportExecutor, ReportExecutor>();
+        services.AddScoped<ReportRunService>();
         return services;
     }
 }

@@ -7484,6 +7484,136 @@ export class ReportAdminClient implements IReportAdminClient {
     }
 }
 
+export interface IReportsClient {
+    /**
+     * @return OK
+     */
+    runReport(id: number, body: RunReportRequest): Observable<RunReportResponse>;
+    /**
+     * @return No Content
+     */
+    cancelMyReportRun(): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ReportsClient implements IReportsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    runReport(id: number, body: RunReportRequest): Observable<RunReportResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/{id}/runs";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRunReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRunReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<RunReportResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<RunReportResponse>;
+        }));
+    }
+
+    protected processRunReport(response: HttpResponseBase): Observable<RunReportResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as RunReportResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    cancelMyReportRun(): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/reports/runs/current";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCancelMyReportRun(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCancelMyReportRun(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processCancelMyReportRun(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ISearchClient {
     /**
      * @param q (optional) 
@@ -13932,6 +14062,13 @@ export interface ReportsStatusResponse {
     [key: string]: any;
 }
 
+export interface ResultColumnResponse {
+    name: string;
+    type: string;
+
+    [key: string]: any;
+}
+
 export interface RoleDetailDto {
     roleId: number;
     name: string;
@@ -13951,6 +14088,23 @@ export interface RoleSummaryDto {
     isSystemAdmin: boolean;
     memberCount: number;
     permissionCount: number;
+
+    [key: string]: any;
+}
+
+export interface RunReportRequest {
+    parameters: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface RunReportResponse {
+    runId: string;
+    columns: ResultColumnResponse[];
+    rowCount: number;
+    truncated: boolean;
+    durationMs: number;
+    maxRows: number;
 
     [key: string]: any;
 }

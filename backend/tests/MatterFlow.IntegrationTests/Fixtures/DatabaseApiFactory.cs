@@ -19,6 +19,9 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
 {
     public const string AdminAccount = @"ke\kekim";
 
+    /// <summary>Extra configuration values for a test (for example a lowered <c>Reports:GlobalConcurrency</c>).</summary>
+    public IReadOnlyList<(string Key, string Value)> ExtraSettings { get; init; } = [];
+
     /// <summary>A clock the host uses instead of the system clock, for tests whose result depends on the time of day or the zone.</summary>
     public MatterFlow.SharedKernel.Time.IClock? Clock { get; init; }
 
@@ -39,6 +42,8 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         // container, so it is blanked unless the test brings its own.
         builder.UseSetting("ConnectionStrings:ReportsReadOnly", reportsConnectionString ?? "");
         builder.UseSetting("Auth:Provider", "Dev");
+        foreach (var (key, value) in ExtraSettings)
+            builder.UseSetting(key, value);
         // The factory runs in Development, where the SME starter configuration would otherwise be seeded into every test database.
         builder.UseSetting("Seed:StarterConfiguration:Enabled", seedStarterConfiguration ? "true" : "false");
         builder.UseSetting("Bootstrap:SystemAdmins:0", AdminAccount);
