@@ -82,13 +82,18 @@ export type PickerSearch = (query: string) => Promise<PickerOption[]>;
             (keydown)="onKey($event)"
             (blur)="close()"
           />
-          @if (open()) {
+          @if (open() && (loading() || options().length === 0)) {
+            <!-- No option to list: the note is a status message, not a listbox without options (axe aria-required-children). -->
+            <div
+              class="mf-picker__list mf-picker__note"
+              role="status"
+              [id]="inputId() + '-list'"
+              data-picker-note
+            >
+              {{ loading() ? 'Searching...' : 'No matches.' }}
+            </div>
+          } @else if (open()) {
             <ul class="mf-picker__list" role="listbox" [id]="inputId() + '-list'">
-              @if (loading()) {
-                <li class="mf-picker__note" role="presentation">Searching...</li>
-              } @else if (options().length === 0) {
-                <li class="mf-picker__note" role="presentation">No matches.</li>
-              }
               @for (o of options(); track o.id; let i = $index) {
                 <li
                   role="option"

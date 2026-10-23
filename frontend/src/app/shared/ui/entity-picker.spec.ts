@@ -75,6 +75,17 @@ describe('mf-entity-picker', () => {
     expect(el().textContent).toContain('No matches.');
   });
 
+  it('has no listbox without options: "Searching..." and "No matches." are a status message (axe aria-required-children)', async () => {
+    search.mockResolvedValue([]);
+    await type('zzz');
+    expect(el().querySelector('[role=listbox]')).toBeNull();
+    expect(el().querySelector('[data-picker-note]')!.getAttribute('role')).toBe('status');
+    search.mockResolvedValue([acme]);
+    await type('ac');
+    expect(el().querySelector('[role=listbox] [role=option]')).not.toBeNull();
+    expect(el().querySelector('[data-picker-note]')).toBeNull();
+  });
+
   it('hides Change when locked and shows a required error', async () => {
     fixture.componentRef.setInput('selected', acme);
     fixture.componentRef.setInput('locked', true);

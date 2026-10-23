@@ -67,8 +67,8 @@ test.describe('My Matters: All matters', () => {
 
     // The Project manager filter narrows every panel to that person's matters; the role then applies.
     await page.goto(`/my-matters?scope=all&clientId=${clientId}`);
-    await page.getByRole('combobox', { name: 'Project manager' }).fill('PM Two all1');
-    await page.getByRole('option', { name: /PM Two all1/ }).click();
+    await page.getByRole('combobox', { name: 'Project manager' }).fill(w.other.displayName!);
+    await page.getByRole('option', { name: w.other.displayName! }).click();
     await expect(page).toHaveURL(new RegExp(`managerId=${w.other.userId}`));
     await expect(strip(page, 'matters')).toHaveText('1');
     await expect(strip(page, 'overdue')).toHaveText('1');

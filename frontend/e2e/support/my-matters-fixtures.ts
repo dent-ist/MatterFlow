@@ -1,6 +1,6 @@
 import { Json } from './api';
 import { Persona, Personas } from './personas';
-import { Seeder, World } from './seed';
+import { Seeder, World, uid } from './seed';
 
 /**
  * A small world of its own for the My Matters specs (epic #667): one Project Manager, one client, matters with exactly the managers and tasks a
@@ -30,15 +30,16 @@ export function inDays(days: number): string {
 
 export async function mmWorld(seed: Seeder, personas: Personas, label: string): Promise<MmWorld> {
   const world = await seed.world();
+  const token = uid().slice(0, 5);
   const pm = await personas.create({
     label: `${label}-pm`,
     roles: ['Project Manager'],
-    displayName: `PM One ${label}`,
+    displayName: `PM One ${label} ${token}`,
   });
   const other = await personas.create({
     label: `${label}-pm2`,
     roles: ['Project Manager'],
-    displayName: `PM Two ${label}`,
+    displayName: `PM Two ${label} ${token}`,
   });
   let next = 1; // the world's own matter holds 00001
   return {
