@@ -1,6 +1,6 @@
 # Project Manager role and "My Matters": review and specification
 
-Scope: the **Project Manager (PM)** role as a user of MatterFlow, the two manager fields on a Matter, the **My Matters** landing page that replaces My Work as the PM's home, and the changes this needs in the Matters list, the matter record, the landing rule, permissions, data model and API. Written on `origin/dev` (2026-10-22). **Documentation only: no application code was changed, nothing was built or run.** Code facts below come from reading `origin/dev` (named files); anything not in the code is marked *proposed*. Plan and estimates: `delivery-plan.md`. Decisions: `docs/requirements/decisions-addendum.md` section AG.
+Scope: the **Project Manager (PM)** role as a user of MatterFlow, the two manager fields on a Matter, the **My Matters** landing page that replaces My Work as the PM's home, and the changes this needs in the Matters list, the matter record, the landing rule, permissions, data model and API. Written on `origin/dev` (2026-10-22). **Status (2026-10-23): built and on `dev` (WP-PM1 to WP-PM5, final verification #706 pending); this document is the specification as written on 2026-10-22 and the code, `my-matters-api.md`, `performance.md` and addendum AG items 12 to 22 are the record where they differ (answers to Q1 to Q11, the System Admin's landing).** The text below was written as documentation only, before anything was built. Code facts below come from reading `origin/dev` (named files); anything not in the code is marked _proposed_. Plan and estimates: `delivery-plan.md`. Decisions: `docs/requirements/decisions-addendum.md` section AG.
 
 ## 0. Binding owner decisions (not re-opened here)
 
@@ -219,6 +219,8 @@ All queries start from `matterIds = SELECT Id FROM Matter WHERE IsActive AND (Pr
 Status reports, Gantt/timeline, time and budget tracking, per-matter dashboards beyond the small strip, email or digest, keyboard shortcuts (#420), merging My Work and My Matters, matter-level access control, manager hierarchy or approval workflow, more than two managers, notification delivery (separate epic), Dashboard (department) changes.
 
 ## 12. Open questions for the owner (recommended answer first)
+
+**All eleven are answered** (addendum AG items 13 to 22); the one change from the recommendation is Q2: the Project Manager role and the Director both get `Matter.AssignManagers`.
 
 - **Q1** The "Project Manager" role already exists as a starter role. OK to extend it (add `Matter.BeManager`; existing databases get the grant by script) rather than create a second role? *Recommended: yes.*
 - **Q2** Who gets `Matter.AssignManagers` by default? *Recommended: Director only; admins can tick it on Project Manager.* (Owner text: a PM "with the permission".)

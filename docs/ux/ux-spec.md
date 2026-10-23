@@ -10,7 +10,7 @@ Helper file: `docs/ux/tokens.css` (design tokens as CSS custom properties).
 3. Design principles
 4. Design tokens, badges, accessibility (WCAG 2.1 AA)
 5. Global patterns (app shell, tables, forms, dialogs, errors, permissions, numbers, record pages)
-6. Screen specifications S01 to S23
+6. Screen specifications S01 to S24
 7. Component inventory (Angular)
 8. Copy deck
 9. User-acceptance checklists per screen
@@ -44,6 +44,7 @@ Header (persistent): Logo | Global Search | [Create Task] | User menu (name, Win
   Windows Integrated Auth: no sign-in/sign-out form.
 Left nav (items hidden when the user lacks the matching View permission):
   Dashboard                        /dashboard
+  My Matters                       /my-matters   (Matter.BeManager + Matter.View + Task.View; above My Work, S24)
   My Work                          /my-work
   Task Queue                       /tasks
   Pod Work                         /pods/work
@@ -75,7 +76,7 @@ No notification bell, no approvals inbox, no billing widgets, no reports/exports
 
 ### 2.2 Navigation rules
 - Left nav items require the matching `*.View` permission; unusable items are **hidden**. Within pages see §5.7 for hide vs disable.
-- Default landing: My Work if the user has any Pod membership or assignment, else Task Queue, else Dashboard. A user with zero permissions is redirected to Access Pending from every route.
+- Default landing: My Matters if the user holds `Matter.BeManager`, `Matter.View` and `Task.View` (a Project Manager; **not** the System Admin, who holds every permission implicitly and keeps the landing below unless they also hold the Project Manager role, #691 and addendum AG item 12); else My Work if the user has any Pod membership or assignment, else Task Queue, else Dashboard (the full rule is `defaultLandingPath`, #628). A user with zero permissions is redirected to Access Pending from every route.
 - Breadcrumbs on detail pages: `Clients > 00343 Acme Corp > 00343-00012 Merger Review > TSK-1042`.
 - The combined Matter reference `#####-#####` (monospace, e.g. `00343-00012`) links to Matter detail wherever it appears.
 - Every list row's primary identifier is a real link (keyboard reachable, middle-click opens a new tab).
@@ -1291,6 +1292,17 @@ Read-only, append-only, server-paginated; no export (addendum F). Object refs li
 **Keyboard.** Status radios, From/Until with their calendar buttons, Note, then per working day: checkbox, start time, end time (each native time field is several tab stops: hour, minute, AM/PM), the two helper buttons, Time zone, Save, Discard. The error summary takes focus on a failed Save.
 **Users administration.** An Availability column (chip: Available, Off hours, Out of office until ...), an Availability filter (All, Available, Out of office, Off hours; `GET /users?availability=`), "Edit availability" with `User.Manage`; below about 1100 px the list scrolls sideways and says "Scroll sideways to see every column." Screens: `docs/ux/profile-availability/` and `docs/ux/review-round-5.md`.
 
+### S24 My Matters (epic #667; review `docs/ux/pm-review/`, API `docs/ux/pm-review/my-matters-api.md`)
+
+**Purpose.** The Project Manager's home: what needs attention on the matters they manage, as a Primary or a Secondary manager (identical rights). It is a default view, never access control: `Matter.View` still shows every matter. No status report, Gantt, time or budget, email, and no new or changed keyboard shortcut (#420).
+**Who and route.** `/my-matters`, menu item "My Matters" above "My Work" for holders of `Matter.BeManager` **and** `Matter.View` **and** `Task.View` (the menu item, the route guard and the landing rule use the same three permissions; without them the item is hidden and the address shows the 403 page with no request and no toast). Landing: these three permissions put a person here, except the System Admin, who keeps the previous landing and can still open the page from the menu. The API (`/api/v1/my-matters/*`) needs `Task.View` and `Matter.BeManager` or `Matter.AssignManagers`.
+**Layout (1366 px, one scroll, no tabs).** Header "My Matters"; filters Client, Role (Both, Primary, Secondary) and Dates (Today, Next 2 weeks, Next 4 weeks default, Custom), kept in the address (`?clientId=&role=&range=&from=&to=`) and restored by Back; with `Matter.AssignManagers` also a scope switch "My matters / All matters" (`scope=all`), a Project manager filter, and a "Set project managers" link that opens the Matters list in selection mode. Then the **count strip** (Matters I manage, Open tasks, Overdue, Due in 3 days, Due in 7 days, Unassigned, On hold with the oldest hold age; each cell is a link to the list whose total equals the cell, 3 is inside 7 and they are never summed), then the panels in reading order: **Needs my attention** (Overdue, Due soon, Unassigned, Stuck on hold over 7 days; ten rows per group and "View all"), **Matter health** (Client, Matter, Open, Overdue, Due this week, Unassigned, % workflow complete, Next deadline, Flag, "+ New task"), **Upcoming deadlines** (2 or 4 weeks, by day, 25 rows), **Workload and capacity** (pod, then person, alphabetical, never ranked, out-of-office chip), **Recent activity** (7 days, 30 rows, "Show more", unread marker, "Mark all as read").
+**Rules.** Flag: Red = an open task is overdue; Amber = none overdue but one is unassigned, due within 3 days or on hold longer than 7 days; Green otherwise (no open tasks is Green); the word comes first and colour second, "How is this decided?" states the rule, and the flag never ranks matters or people. % workflow complete = steps done or skipped over all steps of the matter's open tasks. **A matter without a manager is normal: it is never flagged, listed as a problem or counted** (in the All scope it is an ordinary row; "No project manager" exists only as a plain filter option on the Matters list). Activity shows structured facts only (comment text is never shown); the unread marker moves only with "Mark all as read" or by opening an event, and the first visit has nothing unread. Bulk re-assign and re-prioritise live on the matter's Tasks tab (Select mode, at most 100 tasks, a result list, no undo), not on this page.
+**Manager fields elsewhere.** Matters list: "Project manager" (Primary) and "Secondary" columns with inline filters (the Secondary leaves below 1440 px, the Primary below 900 px), a "Mine" quick filter, `?managerId=`, a "No project manager" filter option and, with `Matter.AssignManagers`, a bulk "Set project managers". Matter header: "Project manager: <Primary>, <Secondary>" (nothing when none is set and the viewer cannot assign) and a Change dialog with `Matter.AssignManagers`; out-of-office people are marked but can be chosen; a person who lost the role stays on the matter.
+**States.** Each panel loads and fails on its own with Retry. A manager with no matters sees "You are not the project manager of any matter yet." with a link to My Work (and "Show all matters" with `Matter.AssignManagers`), in a calm tone and with no count of unmanaged matters.
+**Phone and tablet.** At 375 px one "Filters (n)" button opens a sheet, the strip is one scrolling chip row, health rows are cards with a 44 px "+ New task", Workload and Recent activity show five lines then "Show all"; at 768 px the lower panels use two columns. No sideways page scroll and axe 0 at 1366x768, 1920x1080, 768x1024 and 375x812.
+**Keyboard.** Existing keys only: Tab order is scope, Client, Role, Dates, the seven counts, panel links, sort buttons, rows; Enter and Space activate; focus returns to the row after Back and to the trigger after menus and dialogs.
+
 ---
 
 ## 7. Component inventory (reusable Angular components)
@@ -1567,7 +1579,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-X-1 Matter references always shown as `#####-#####` zero-padded, monospace, linking to the Matter.
 - [ ] UAT-X-2 Priority is a labelled badge with glyph; no numeric priority anywhere.
 - [ ] UAT-X-3 No due date shows ASAP (not red); ASAP tasks never count or style as overdue (SCN-015).
-- [ ] UAT-X-4 No approval controls, billing widgets, notification bell, step assignee pickers, attachment upload/list, bulk reassign, export buttons, subtasks, dependencies, related-task links, cloning anywhere.
+- [ ] UAT-X-4 No approval controls, billing widgets, notification bell, step assignee pickers, attachment upload/list, bulk reassign (except the Project Manager's bulk change inside one matter, epic #667), export buttons, subtasks, dependencies, related-task links, cloning anywhere.
 - [ ] UAT-X-5 Controls the user lacks permission for are hidden (or disabled with a reason when state-blocked); direct URL/API access is still denied.
 - [ ] UAT-X-6 Keyboard-only: every action reachable, visible focus ring, no trap, dialogs return focus.
 - [ ] UAT-X-7 Screen reader (NVDA): landmarks, headings, labels, errors announced, table headers/sort announced.
@@ -1858,6 +1870,21 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S23-4 Only the person themselves or a `User.Manage` holder edits availability; everyone else has no button and gets 403 from the API.
 - [ ] UAT-S23-5 Focus returns to the header menu button after the "Set out of office" dialog closes; axe is clean on every state.
 
+### S24 My Matters and the manager fields (epic #667)
+
+- [ ] UAT-S24-1 A Project Manager (role, no pod, no matters) opens the app on My Matters with "You are not the project manager of any matter yet."; My Work is right below it in the menu; the logo and the 404 "Go to" link say My Matters.
+- [ ] UAT-S24-2 The System Admin keeps the Dashboard (or My Work) landing and still opens My Matters from the menu; a System Admin who also has the Project Manager role lands on My Matters. A Director, a Read-Only Observer and a technician have no My Matters item and meet the 403 page at the address.
+- [ ] UAT-S24-3 A manager without `Task.View` keeps the old landing, has no My Matters item and meets the 403 page at the address with no request and no toast.
+- [ ] UAT-S24-4 Each of the seven strip counts opens a list with exactly that total; Client, Role and Dates change every panel and the strip, are in the address and come back with Back; Clear filters resets them.
+- [ ] UAT-S24-5 Needs my attention groups overdue, due soon, unassigned and stuck on hold, each row opens the task and Back returns to the same place; "View all" totals match the groups.
+- [ ] UAT-S24-6 Matter health: Red, Amber and Green follow the rule in the popover (overdue; unassigned, due in 3 days or on hold over 7 days; else), the word is shown with the colour, sorting announces `aria-sort`, "+ New task" opens Create task with the matter fixed and returns to My Matters on Create and Cancel.
+- [ ] UAT-S24-7 A matter without a manager shows no warning, flag, badge or count on My Matters, the Matters list, the matter header and the Task Queue.
+- [ ] UAT-S24-8 Workload lists pods and people alphabetically with out-of-office chips and no ranking or "overloaded" wording; Recent activity shows an event by somebody else as unread until "Mark all as read" (kept after a reload) and never shows comment text.
+- [ ] UAT-S24-9 With `Matter.AssignManagers` (Director, Project Manager) the All matters scope, the Project manager filter and "Set project managers" appear and the strip equals the lists; without it there is no switch, filter or link, `scope=all` in the address is ignored and the API answers 403. More than 5,000 matters in scope asks the person to narrow by client or manager.
+- [ ] UAT-S24-10 On a matter's Tasks tab, Select mode re-assigns or re-prioritises up to 100 tasks, the dialog states the count and "no undo", a task that cannot change is listed with the reason and the rest change; the controls are hidden without `Task.Assign` / `Task.SetPriority`.
+- [ ] UAT-S24-11 Setting Primary and Secondary on the matter header and in bulk on the Matters list is audited per field; a Secondary without a Primary is allowed; a person who lost the role stays on the matter; an ineligible person is refused (`MANAGER_NOT_ELIGIBLE`).
+- [ ] UAT-S24-12 Keyboard only with the existing keys (no new or changed shortcut), focus visible and returned, axe 0 and no page-level sideways scroll at four sizes with the menus, dialogs and the phone Filters sheet open.
+
 ---
 
 ## Appendix A: Addendum deltas applied to baseline §19
@@ -1905,6 +1932,8 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Task.Comment` | Comment composer (shortcut `C`); without it the internal-only note takes its place |
 | `Workflow.Execute` / `Workflow.StepEdit` / `Workflow.StepReopen` | Complete/skip steps; edit inputs; reopen step |
 | `Asset.View/Create/Edit/Link` | Assets screens; the Assets tab of a Matter; on the Task page `Asset.View` shows the Assets section's list and count and the asset names in the request form (otherwise "not available", no Asset API request), `Asset.Link` the Link asset button |
+| `Matter.BeManager` | Can be named a matter's Primary or Secondary project manager; with `Matter.View` and `Task.View` it shows the My Matters menu item and route and decides the landing (not for the System Admin, who lands as before)                              |
+| `Matter.AssignManagers` | Change a matter's managers (header Change, bulk "Set project managers"), My Matters' All matters scope and Project manager filter                                                                                                                 |
 | `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin; on the Task page the `n open` hint in the Assignee menu, the Pod choice in Edit and Pod Work as a `?from=` origin |
 | `Role.Manage` | Users & Roles admin (incl. grant access) |
 | `User.Manage` | Administration > Users edits, and "Edit availability" for another person (everyone edits their own availability with `Task.View`) |
