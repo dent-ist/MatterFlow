@@ -6891,6 +6891,123 @@
         }
       }
     },
+    "/api/v1/my-matters/health": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersHealth",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "maxLength": 4,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersHealthPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/summary": {
       "get": {
         "tags": [
@@ -12682,6 +12799,141 @@
             "items": {
               "$ref": "#/components/schemas/UserPodDto"
             }
+          }
+        }
+      },
+      "MyMattersHealthPage": {
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize",
+          "sort",
+          "dir",
+          "amberDueDays",
+          "stuckOnHoldDays",
+          "timeZone"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersHealthRow"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "dir": {
+            "type": "string"
+          },
+          "amberDueDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stuckOnHoldDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timeZone": {
+            "type": "string"
+          }
+        }
+      },
+      "MyMattersHealthRow": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "matterName",
+          "clientId",
+          "clientNumber",
+          "clientName",
+          "open",
+          "overdue",
+          "dueThisWeek",
+          "unassigned",
+          "percentComplete",
+          "nextDeadline",
+          "flag",
+          "flagReasons",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientNumber": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueThisWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percentComplete": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "nextDeadline": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "flag": {
+            "type": "string"
+          },
+          "flagReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "query": {
+            "type": "string"
           }
         }
       },

@@ -10281,6 +10281,21 @@ export class DashboardBoardClient implements IDashboardBoardClient {
 
 export interface IMyMattersClient {
     /**
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersHealth(sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersHealthPage>;
+    /**
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -10304,6 +10319,111 @@ export class MyMattersClient implements IMyMattersClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersHealth(sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersHealthPage> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/health?";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersHealth(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersHealth(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersHealthPage>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersHealthPage>;
+        }));
+    }
+
+    protected processGetMyMattersHealth(response: HttpResponseBase): Observable<MyMattersHealthPage> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersHealthPage;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -13590,6 +13710,40 @@ export interface MeResponse {
     isSystemAdmin: boolean;
     hasWork: boolean;
     pods: UserPodDto[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersHealthPage {
+    items: MyMattersHealthRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    sort: string;
+    dir: string;
+    amberDueDays: number;
+    stuckOnHoldDays: number;
+    timeZone: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersHealthRow {
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    clientId: number;
+    clientNumber: string;
+    clientName: string;
+    open: number;
+    overdue: number;
+    dueThisWeek: number;
+    unassigned: number;
+    percentComplete: number | undefined;
+    nextDeadline: string | undefined;
+    flag: string;
+    flagReasons: string[];
+    query: string;
 
     [key: string]: any;
 }
