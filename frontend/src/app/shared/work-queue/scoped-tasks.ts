@@ -9,11 +9,12 @@ import {
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
-import { TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
+import { BulkTasksResponse, TaskQueueClient, TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { LookupStore } from '../../core/lookups/lookup-store';
@@ -25,6 +26,7 @@ import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
 import { LoadState } from '../ui/data-table';
 import { PageFooter } from '../ui/page-footer';
+import { phoneCards } from '../ui/record-card-list';
 import { Pager } from '../ui/pager';
 import { QueueChoices, mergeOptions } from './queue-choices';
 import { OPEN_STATUSES, dateDaysAgo, parseQueueState, queueArgs } from './queue-filters';
@@ -35,7 +37,9 @@ import {
   scopedViewFilters,
   scopedViewOwns,
 } from './scoped-view';
+import { BULK_MAX, BulkMode, BulkTarget, BulkTasksDialog } from './bulk-tasks-dialog';
 import { SummaryStrip } from './summary-strip';
+import { TaskSelectList, isBulkEditable } from './task-select-list';
 import { ColumnAction } from './column-menu-items';
 import { ColumnWidthMap } from './column-widths';
 import { TaskTable } from './task-table';
@@ -78,10 +82,40 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
  */
 @Component({
   selector: 'mf-scoped-tasks',
-  imports: [Button, HasPermissionDirective, PageFooter, Pager, SummaryStrip, TaskTable, FiltersBar],
+  imports: [
+    BulkTasksDialog,
+    Button,
+    HasPermissionDirective,
+    PageFooter,
+    Pager,
+    SummaryStrip,
+    TaskSelectList,
+    TaskTable,
+    FiltersBar,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
+    .st-selbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin: 0 0 var(--mf-s2);
+      padding: var(--mf-s2) var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+    }
+    .st-selnote {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    @media (max-width: 639.98px) {
+      .st-selbar .mf-btn {
+        min-height: 44px;
+      }
+    }
     .st-state {
       padding: var(--mf-s5) var(--mf-s4);
       text-align: center;
@@ -117,32 +151,95 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
             (onClick)="create()"
           />
         }
+        @if (canBulk()) {
+          <button
+            mfBarStart
+            type="button"
+            class="mf-btn"
+            data-select-mode
+            [attr.aria-pressed]="selecting()"
+            (click)="selecting() ? endSelecting() : selecting.set(true)"
+          >
+            <i class="pi pi-check-square" aria-hidden="true"></i> Select
+          </button>
+        }
       </mf-filters-bar>
+      @if (selecting()) {
+        <div class="st-selbar" role="region" aria-label="Selected tasks" data-selection-bar>
+          <span data-selection-count>{{ selected().size }} selected</span>
+          @if (canAssign()) {
+            <button
+              type="button"
+              class="mf-btn"
+              data-bulk="assign"
+              [disabled]="selected().size === 0"
+              (click)="openBulk('assign')"
+            >
+              Re-assign...
+            </button>
+          }
+          @if (canPrioritise()) {
+            <button
+              type="button"
+              class="mf-btn"
+              data-bulk="priority"
+              [disabled]="selected().size === 0"
+              (click)="openBulk('priority')"
+            >
+              Set priority...
+            </button>
+          }
+          <button
+            type="button"
+            class="mf-btn"
+            data-selection-clear
+            [disabled]="selected().size === 0"
+            (click)="clearSelection()"
+          >
+            Clear selection
+          </button>
+          <button type="button" class="mf-btn" data-selection-done (click)="endSelecting()">
+            Done
+          </button>
+          <span class="st-selnote" role="status" data-selection-note>{{ selectionNote() }}</span>
+        </div>
+      }
 
-      <mf-task-table
-        [rows]="rows()"
-        [columns]="columns()"
-        [caption]="caption()"
-        [hideContext]="true"
-        [origin]="projectId() === null ? 'matter' : 'project'"
-        [rowList]="rowList()"
-        [state]="state()"
-        [filters]="filters"
-        [filterRowId]="filterRowId"
-        [filtered]="filters.activeCount() > 0"
-        [emptyText]="emptyText()"
-        [sort]="sort()"
-        [dir]="dir()"
-        [colWidths]="colWidths()"
-        [canHideColumns]="false"
-        (columnResized)="onColumnResized($event)"
-        (columnAction)="onColumnAction($event)"
-        [resetKey]="filterKey() + '|' + sort() + '|' + dir() + '|' + page()"
-        (sortChange)="sortBy($event)"
-        (retry)="load()"
-        (clearFilters)="filters.clear()"
-        (rowChange)="replaceRow($event)"
-      />
+      @if (selecting()) {
+        <mf-task-select-list
+          [rows]="rows()"
+          [selected]="selected()"
+          [phone]="phone()"
+          label="Tasks of this matter, select tasks"
+          (pick)="toggleRow($event.row, $event.on)"
+          (toggleAll)="toggleAll($event)"
+        />
+      } @else {
+        <mf-task-table
+          [rows]="rows()"
+          [columns]="columns()"
+          [caption]="caption()"
+          [hideContext]="true"
+          [origin]="projectId() === null ? 'matter' : 'project'"
+          [rowList]="rowList()"
+          [state]="state()"
+          [filters]="filters"
+          [filterRowId]="filterRowId"
+          [filtered]="filters.activeCount() > 0"
+          [emptyText]="emptyText()"
+          [sort]="sort()"
+          [dir]="dir()"
+          [colWidths]="colWidths()"
+          [canHideColumns]="false"
+          (columnResized)="onColumnResized($event)"
+          (columnAction)="onColumnAction($event)"
+          [resetKey]="filterKey() + '|' + sort() + '|' + dir() + '|' + page()"
+          (sortChange)="sortBy($event)"
+          (retry)="load()"
+          (clearFilters)="filters.clear()"
+          (rowChange)="replaceRow($event)"
+        />
+      }
       @if (rows().length > 0) {
         <div mfPageFooter>
           <mf-pager
@@ -153,6 +250,13 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           />
         </div>
       }
+      <mf-bulk-tasks-dialog
+        [mode]="bulkMode()"
+        [matterId]="matterId()"
+        [targets]="targets()"
+        [(visible)]="bulkOpen"
+        (finished)="bulkFinished($event)"
+      />
     }
   `,
 })
@@ -188,6 +292,29 @@ export class ScopedTasks {
   private readonly zone = inject(USER_TIME_ZONE);
 
   protected readonly pageSize = PAGE_SIZE;
+  protected readonly phone = phoneCards();
+
+  // --- bulk change (epic #667, #699) ---------------------------------------------------------------------------------------------
+  /** Selection mode: the grid becomes a list with a checkbox per open task. */
+  protected readonly selecting = signal(false);
+  protected readonly selected = signal<ReadonlySet<number>>(new Set<number>());
+  /** The tasks ticked so far, kept across pages and filters so the result list can name them. */
+  private readonly picked = new Map<number, BulkTarget>();
+  protected readonly bulkOpen = signal(false);
+  private readonly selectList = viewChild(TaskSelectList, { read: ElementRef });
+  private bulkWasOpen = false;
+  protected readonly bulkMode = signal<BulkMode>('assign');
+  protected readonly selectionNote = signal('');
+  protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
+  protected readonly canPrioritise = computed(() => this.auth.has('Task.SetPriority'));
+  protected readonly canBulk = computed(
+    () => this.canView() && (this.canAssign() || this.canPrioritise()),
+  );
+  protected readonly targets = computed<BulkTarget[]>(() =>
+    [...this.selected()].map(
+      (id) => this.picked.get(id) ?? { taskId: id, taskNumber: `Task ${id}`, title: '' },
+    ),
+  );
   protected readonly canView = computed(() => this.auth.has('Task.View'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly page = signal(1);
@@ -354,6 +481,14 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
+    // When the bulk dialog closes, focus goes to the grid (the list of tasks), not back to a button that may now be disabled.
+    effect(() => {
+      const open = this.bulkOpen();
+      untracked(() => {
+        if (this.bulkWasOpen && !open) this.focusGrid();
+        this.bulkWasOpen = open;
+      });
+    });
     // An empty, filtered grid has its own Clear filters button: the bar then shows none (one Clear filters at a time).
     effect(() =>
       this.filters.emptyClear.set(
@@ -402,6 +537,90 @@ export class ScopedTasks {
       queryParams: { view: next },
       queryParamsHandling: 'merge',
     });
+  }
+
+  private focusGrid(): void {
+    const put = (): void => this.selectList()?.nativeElement.focus({ preventScroll: true });
+    put();
+    // The closing dialog keeps its focus trap until its leave animation ends: once more when the page has it back.
+    setTimeout(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body || active.closest('.p-dialog-mask')) put();
+    }, 350);
+  }
+
+  protected toggleRow(row: TaskQueueRow, on: boolean): void {
+    const next = new Set(this.selected());
+    if (on) {
+      if (next.size >= BULK_MAX && !next.has(row.taskId)) {
+        this.selectionNote.set(`You can select at most ${BULK_MAX} tasks at once.`);
+        this.selected.set(next); // re-emit so the box the person just ticked goes back to unticked
+        return;
+      }
+      next.add(row.taskId);
+      this.picked.set(row.taskId, {
+        taskId: row.taskId,
+        taskNumber: row.taskNumber,
+        title: row.title,
+      });
+    } else {
+      next.delete(row.taskId);
+    }
+    this.selectionNote.set('');
+    this.selected.set(next);
+  }
+
+  protected toggleAll(on: boolean): void {
+    const next = new Set(this.selected());
+    let capped = false;
+    for (const row of this.rows().filter(isBulkEditable)) {
+      if (!on) {
+        next.delete(row.taskId);
+      } else if (next.size < BULK_MAX || next.has(row.taskId)) {
+        next.add(row.taskId);
+        this.picked.set(row.taskId, {
+          taskId: row.taskId,
+          taskNumber: row.taskNumber,
+          title: row.title,
+        });
+      } else {
+        capped = true;
+      }
+    }
+    this.selectionNote.set(capped ? `You can select at most ${BULK_MAX} tasks at once.` : '');
+    this.selected.set(next);
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set<number>());
+    this.picked.clear();
+    this.selectionNote.set('');
+  }
+
+  protected endSelecting(): void {
+    this.selecting.set(false);
+    this.clearSelection();
+  }
+
+  protected openBulk(mode: BulkMode): void {
+    if (this.selected().size === 0) return;
+    this.bulkMode.set(mode);
+    this.bulkOpen.set(true);
+  }
+
+  /** The run finished: what was changed leaves the selection, what was not stays ticked, the grid and the strip read again. */
+  protected bulkFinished(answer: BulkTasksResponse): void {
+    const next = new Set(this.selected());
+    for (const r of answer.results) {
+      if (r.ok) {
+        next.delete(r.taskId);
+        this.picked.delete(r.taskId);
+      }
+    }
+    this.selected.set(next);
+    this.selectionNote.set('');
+    this.stripReload.update((n) => n + 1);
+    void this.load();
   }
 
   /** An inline edit in the grid: the row stays as it is now and the strip asks for its numbers again. */
