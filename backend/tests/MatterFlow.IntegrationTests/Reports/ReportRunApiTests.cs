@@ -63,12 +63,12 @@ public sealed class ReportRunApiTests(SqlServerFixture sql)
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var runId = Guid.Parse((await ReadAsync(response)).GetProperty("runId").GetString()!);
         var userId = await h.Tasks.UserIdAsync(@"KE\runner");
-        var stored = h.Factory.Services.GetRequiredService<MatterFlow.Reports.Infrastructure.InMemoryResultStore>().Get(userId, runId)!;
-        var row = stored.Rows.ShouldHaveSingleItem();
-        row[0].ShouldBe(h.Login.Name);
-        row[0].ShouldNotBe(new SqlConnectionStringBuilder(h.AppConnection).UserID);
-        row[1].ShouldBe("MatterFlow.Reports");
-        row[2].ShouldBe(1);
+        var stored = h.Factory.Services.GetRequiredService<MatterFlow.Reports.Application.Results.ReportResultStore>().Get(userId, runId).Result!.Table;
+        stored.RowCount.ShouldBe(1);
+        stored.Get(0, 0).ShouldBe(h.Login.Name);
+        stored.Get(0, 0).ShouldNotBe(new SqlConnectionStringBuilder(h.AppConnection).UserID);
+        stored.Get(0, 1).ShouldBe("MatterFlow.Reports");
+        stored.Get(0, 2).ShouldBe(1L);
     }
 
     [Fact]

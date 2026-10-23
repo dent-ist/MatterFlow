@@ -32,7 +32,8 @@ public enum ReportColumnType
     DateTime,
 }
 
-public sealed record ResultColumn(string Name, ReportColumnType Type);
+/// <param name="Floating">For decimal columns: the source is a floating point type (float, real), kept as double instead of decimal.</param>
+public sealed record ResultColumn(string Name, ReportColumnType Type, bool Floating = false);
 
 /// <summary>The current version of an active report that the caller's role may run, as the engine needs it.</summary>
 public sealed record RunnableReport(

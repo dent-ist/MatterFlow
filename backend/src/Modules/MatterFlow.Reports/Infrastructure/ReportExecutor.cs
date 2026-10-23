@@ -70,6 +70,13 @@ internal sealed class ReportExecutor(IReportsAvailability availability, IOptions
                     for (var i = 0; i < copy.Length; i++)
                         copy[i] = buffer[i] is DBNull ? null : buffer[i];
                     retaining = sink.TryAdd(copy);
+
+                    // The sink refused a row before the cap (its memory budget): a full run keeps nothing partial, so stop reading now.
+                    if (!retaining && rows < request.MaxRows && request.RetainRows >= request.MaxRows)
+                    {
+                        command.Cancel();
+                        break;
+                    }
                 }
             }
 
@@ -134,7 +141,7 @@ internal sealed class ReportExecutor(IReportsAvailability availability, IOptions
             var candidate = name;
             for (var n = 2; !used.Add(candidate); n++)
                 candidate = $"{name} ({n.ToString(CultureInfo.InvariantCulture)})";
-            columns.Add(new ResultColumn(candidate, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i))));
+            columns.Add(new ResultColumn(candidate, TypeOf(reader.GetFieldType(i), reader.GetDataTypeName(i)), reader.GetFieldType(i) == typeof(double) || reader.GetFieldType(i) == typeof(float)));
         }
 
         return columns;

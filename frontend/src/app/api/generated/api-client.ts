@@ -7493,6 +7493,18 @@ export interface IReportsClient {
      * @return No Content
      */
     cancelMyReportRun(): Observable<void>;
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @param filter (optional) 
+     * @return OK
+     */
+    getReportRows(runId: string, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, filter?: string | undefined): Observable<ReportRowsResponse>;
+    /**
+     * @return No Content
+     */
+    dropReportResult(runId: string): Observable<void>;
 }
 
 @Injectable({
@@ -7595,6 +7607,130 @@ export class ReportsClient implements IReportsClient {
     }
 
     protected processCancelMyReportRun(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @param filter (optional) 
+     * @return OK
+     */
+    getReportRows(runId: string, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, filter?: string | undefined): Observable<ReportRowsResponse> {
+        let url_ = this.baseUrl + "/api/v1/reports/runs/{runId}/rows?";
+        if (runId === undefined || runId === null)
+            throw new globalThis.Error("The parameter 'runId' must be defined.");
+        url_ = url_.replace("{runId}", encodeURIComponent("" + runId));
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (filter === null)
+            throw new globalThis.Error("The parameter 'filter' cannot be null.");
+        else if (filter !== undefined)
+            url_ += "filter=" + encodeURIComponent("" + filter) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetReportRows(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetReportRows(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportRowsResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportRowsResponse>;
+        }));
+    }
+
+    protected processGetReportRows(response: HttpResponseBase): Observable<ReportRowsResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportRowsResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    dropReportResult(runId: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/reports/runs/{runId}";
+        if (runId === undefined || runId === null)
+            throw new globalThis.Error("The parameter 'runId' must be defined.");
+        url_ = url_.replace("{runId}", encodeURIComponent("" + runId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDropReportResult(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDropReportResult(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDropReportResult(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -14899,6 +15035,18 @@ export interface ReportLoginDetailsResponse {
     readableTables: number;
     compatibilityLevel: number;
     checkedAtUtc: string;
+
+    [key: string]: any;
+}
+
+export interface ReportRowsResponse {
+    columns: ResultColumnResponse[];
+    rows: any[][];
+    totalRows: number;
+    filteredRows: number;
+    page: number;
+    pageSize: number;
+    truncated: boolean;
 
     [key: string]: any;
 }

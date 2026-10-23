@@ -1,4 +1,5 @@
 using MatterFlow.Reports.Application;
+using MatterFlow.Reports.Application.Results;
 using MatterFlow.Reports.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,8 +21,9 @@ public static class ReportsModule
         services.Configure<ReportsOptions>(configuration.GetSection(ReportsOptions.SectionName));
         services.AddSingleton<ReportRunGate>();
         services.AddSingleton<ReportAppConnection>();
-        services.AddSingleton<InMemoryResultStore>();
-        services.AddSingleton<IReportResultSink, InMemoryResultSink>();
+        services.AddSingleton<ReportResultStore>();
+        services.AddSingleton<IReportResultSink>(sp => sp.GetRequiredService<ReportResultStore>());
+        services.AddHostedService<ReportResultSweeper>();
         services.AddScoped<IReportCatalog, ReportCatalog>();
         services.AddScoped<IReportRunLog, ReportRunLog>();
         services.AddScoped<IReportExecutor, ReportExecutor>();
