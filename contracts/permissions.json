@@ -57,6 +57,11 @@
       "description": "Set or clear the Primary and Secondary project manager of matters, and search all matters on My Matters"
     },
     {
+      "code": "Matter.ViewSensitive",
+      "group": "Client/Matter",
+      "description": "See all sensitive matters (every sensitive matter, with all its tasks and assets, regardless of manager or assignment). Grants access to every sensitive matter"
+    },
+    {
       "code": "Project.View",
       "group": "Project",
       "description": "View projects"

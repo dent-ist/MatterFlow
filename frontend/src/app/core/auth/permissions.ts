@@ -14,6 +14,7 @@ export const PERMISSIONS = [
   'Matter.SetActive',
   'Matter.BeManager',
   'Matter.AssignManagers',
+  'Matter.ViewSensitive',
   'Project.View',
   'Project.Create',
   'Project.Edit',

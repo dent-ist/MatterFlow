@@ -51,7 +51,7 @@ public static class StarterRoles
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Matter.ViewSensitive, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage]),

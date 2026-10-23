@@ -45,6 +45,12 @@ public static class Permissions
 
         /// <summary>Set or clear the Primary and Secondary project manager of matters, and search all matters on My Matters.</summary>
         public const string AssignManagers = "Matter.AssignManagers";
+
+        /// <summary>
+        /// See all sensitive matters (every sensitive matter, with all its tasks and assets, regardless of manager or assignment). Grants access to every sensitive matter.
+        /// It has an effect (the SeeAll flag of the visibility rule) and does not imply <see cref="View"/>.
+        /// </summary>
+        public const string ViewSensitive = "Matter.ViewSensitive";
     }
 
     /// <summary>Project permissions.</summary>
@@ -254,6 +260,7 @@ public static class Permissions
         Matter.SetActive,
         Matter.BeManager,
         Matter.AssignManagers,
+        Matter.ViewSensitive,
         Project.View,
         Project.Create,
         Project.Edit,

@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(55);
+        codes.Count.ShouldBe(56);
     }
 
     [Fact]
@@ -164,6 +164,10 @@ public class PermissionCatalogTests
         P("Project Manager").ShouldContain(Permissions.Matter.AssignManagers);
         P("Director").ShouldContain(Permissions.Matter.AssignManagers);
         P("Director").ShouldNotContain(Permissions.Matter.BeManager);
+        // Sensitive matters (#788): only the Director sees every sensitive matter by default; the permission is not implied by anything else.
+        P("Director").ShouldContain(Permissions.Matter.ViewSensitive);
+        foreach (var role in StarterRoles.All.Where(r => r.Name != "Director"))
+            role.Permissions.ShouldNotContain(Permissions.Matter.ViewSensitive, role.Name);
         P("Pod Lead").ShouldNotContain(Permissions.Matter.AssignManagers);
         P("Data Technician").ShouldNotContain(Permissions.Matter.BeManager);
         P("Project Manager").ShouldNotContain(Permissions.Pod.Manage);
