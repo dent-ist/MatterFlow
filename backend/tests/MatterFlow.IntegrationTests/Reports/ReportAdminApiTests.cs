@@ -70,7 +70,7 @@ public sealed class ReportAdminApiTests(SqlServerFixture sql)
         detail.GetProperty("rowVersion").GetString().ShouldBe(rowVersion);
         var events = await h.AuditAsync(id);
         ReportTestHarness.EventTypes(events).ShouldBe(["REPORT_CREATED"]);
-        events[0].GetProperty("Summary").GetString().ShouldContain("Overdue tasks");
+        events[0].GetProperty("Summary").GetString()!.ShouldContain("Overdue tasks");
 
         var etag = (await manager.GetAsync($"{Base}/reports/{id}")).Headers.ETag;
         etag!.Tag.ShouldBe($"\"{rowVersion}\"");
@@ -247,7 +247,7 @@ public sealed class ReportAdminApiTests(SqlServerFixture sql)
         (await manager.PostAsync($"{Base}/reports/{id}/activate", null)).StatusCode.ShouldBe(HttpStatusCode.Conflict);
         var events = await h.AuditAsync(id);
         ReportTestHarness.EventTypes(events).ShouldContain("REPORT_VERSION_RESTORED");
-        events.Single(e => e.GetProperty("EventType").GetString() == "REPORT_VERSION_RESTORED").GetProperty("Summary").GetString().ShouldContain("version 1 restored as version 3");
+        events.Single(e => e.GetProperty("EventType").GetString() == "REPORT_VERSION_RESTORED").GetProperty("Summary").GetString()!.ShouldContain("version 1 restored as version 3");
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public sealed class ReportAdminApiTests(SqlServerFixture sql)
         list.EnumerateArray().Select(c => c.GetProperty("name").GetString()).ShouldBe(["Finance & billing"]);
         var events = await h.AuditAsync(id, "ReportCategory");
         ReportTestHarness.EventTypes(events).ShouldBe(["REPORT_CATEGORY_CHANGED", "REPORT_CATEGORY_CHANGED", "REPORT_CATEGORY_CHANGED"]);
-        events[1].GetProperty("Summary").GetString().ShouldContain("renamed from 'Finance'");
+        events[1].GetProperty("Summary").GetString()!.ShouldContain("renamed from 'Finance'");
     }
 
     [Fact]
