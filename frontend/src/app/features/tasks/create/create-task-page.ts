@@ -140,6 +140,11 @@ export class CreateTaskPage implements HasUnsavedChanges {
   readonly projectId = input<string>();
   /** Query parameter `taskType=<id>`: deep link that skips the type chooser (ignored when it is not a type the user may use). */
   readonly taskType = input<string>();
+  /**
+   * Query parameter `returnTo=<address>`: the page the person came from (My Matters' "+ New task", #695). Creating the task or cancelling
+   * leaves for it instead of the task or the Task Queue. Only an address on My Matters counts; anything else is ignored.
+   */
+  readonly returnTo = input<string>();
 
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -249,12 +254,22 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   /** Crumb steps before "Create task": Tasks, and the Matter when the page was opened from one (only for a person who may open it). */
   protected readonly headerParents = computed<Crumb[]>(() => {
-    const parents: Crumb[] = [{ label: 'Tasks', link: '/tasks' }];
+    const back = this.backTarget();
+    const parents: Crumb[] = [
+      back ? { label: 'My Matters', link: back } : { label: 'Tasks', link: '/tasks' },
+    ];
     const from = this.matter();
     if (from && this.matterId() !== undefined && this.auth.canLink('matter')) {
       parents.push({ label: from.label.split(' ')[0], link: ['/matters', from.id] });
     }
     return parents;
+  });
+  /** Where Create and Cancel go when the page was opened from My Matters: that page, with its filters (a same-origin address on `/my-matters` only). */
+  protected readonly backTarget = computed<string | null>(() => {
+    const url = this.returnTo();
+    if (!url || !url.startsWith('/my-matters') || url.startsWith('//')) return null;
+    const path = url.split(/[?#]/)[0];
+    return path === '/my-matters' ? url : null;
   });
   private readonly matterRecords = new Map<number, MatterResponse>();
   protected readonly projects = signal<ProjectResponse[]>([]);
@@ -790,7 +805,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
         this.resetForAnother();
         return;
       }
-      await this.router.navigateByUrl(`/tasks/${created.taskId}`);
+      await this.router.navigateByUrl(this.backTarget() ?? `/tasks/${created.taskId}`);
     } catch (err) {
       this.showServerError(err);
     } finally {
@@ -867,6 +882,6 @@ export class CreateTaskPage implements HasUnsavedChanges {
   }
 
   protected cancel(): void {
-    void this.router.navigateByUrl('/tasks');
+    void this.router.navigateByUrl(this.backTarget() ?? '/tasks');
   }
 }

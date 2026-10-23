@@ -23,6 +23,18 @@ import {
 import { MyMattersStrip } from '../my-matters-strip';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
+import { HealthPanel, HealthSort } from '../panels/health-panel';
+
+const SORTS: readonly HealthSort[] = [
+  'nextDeadline',
+  'client',
+  'matter',
+  'open',
+  'overdue',
+  'dueThisWeek',
+  'unassigned',
+  'flag',
+];
 
 const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
 
@@ -56,7 +68,14 @@ function storage(): Storage | null {
  */
 @Component({
   selector: 'mf-my-matters-page',
-  imports: [AttentionPanel, DeadlinesPanel, MyMattersFilterBar, MyMattersStrip, PageHeader],
+  imports: [
+    AttentionPanel,
+    DeadlinesPanel,
+    HealthPanel,
+    MyMattersFilterBar,
+    MyMattersStrip,
+    PageHeader,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -124,6 +143,18 @@ function storage(): Storage | null {
         [filters]="filters()"
         (rangeChange)="setRange($event)"
       />
+      <mf-mm-health
+        class="mm__health"
+        [filters]="filters()"
+        [sort]="sort()"
+        [dir]="dir()"
+        [pageNumber]="page()"
+        [filtered]="active() > 0"
+        (sortChange)="setSort($event.sort, $event.dir)"
+        (pageChange)="setPage($event)"
+        (clearFilters)="clear()"
+        (showAll)="update({ scope: 'all' })"
+      />
     </div>
   `,
 })
@@ -141,6 +172,17 @@ export class MyMattersPage {
     equal: same,
   });
   protected readonly active = computed(() => activeFilterCount(this.filters()));
+  protected readonly sort = computed<HealthSort | null>(() => {
+    const s = this.params().get('sort');
+    return SORTS.includes(s as HealthSort) ? (s as HealthSort) : null;
+  });
+  protected readonly dir = computed<'asc' | 'desc'>(() =>
+    this.params().get('dir') === 'desc' ? 'desc' : 'asc',
+  );
+  protected readonly page = computed(() => {
+    const n = Number.parseInt(this.params().get('page') ?? '', 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  });
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
 
@@ -225,5 +267,17 @@ export class MyMattersPage {
       }),
       page: null,
     });
+  }
+
+  protected setSort(sort: HealthSort, dir: 'asc' | 'desc'): void {
+    this.go({
+      sort: sort === 'nextDeadline' && dir === 'asc' ? null : sort,
+      dir: dir === 'asc' ? null : dir,
+      page: null,
+    });
+  }
+
+  protected setPage(page: number): void {
+    this.go({ page: page > 1 ? page : null });
   }
 }
