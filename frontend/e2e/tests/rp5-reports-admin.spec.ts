@@ -358,7 +358,8 @@ test.describe('the editor (#713 to #715)', () => {
     expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('TEXTAREA');
     await page.locator('[data-sql-problems] button').first().focus();
     await page.keyboard.press('Enter');
-    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('TEXTAREA');
+    // The cursor is placed after the next render (`goToProblem`), so focus arrives a moment after the key, not within it.
+    await expect.poll(() => page.evaluate(() => document.activeElement?.tagName)).toBe('TEXTAREA');
     // The editor is operated with Tab, Shift+Tab, Enter and Space: walk the tabs with the arrow keys.
     await tab(page, 'Query').focus();
     await page.keyboard.press('ArrowRight');

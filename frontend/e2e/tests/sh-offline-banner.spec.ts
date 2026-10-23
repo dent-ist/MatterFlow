@@ -54,7 +54,7 @@ test.describe('Offline banner (#611)', () => {
     const rail = page.getByRole('navigation', { name: 'Main' });
     await page.goto('/clients');
     await expect(page.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
-    await rail.getByRole('link', { name: 'Matters' }).click();
+    await rail.getByRole('link', { name: 'Matters', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Matters', level: 1 })).toBeVisible();
     await goOffline(page);
     await expect(page.locator('[data-offline-banner]')).toBeVisible();

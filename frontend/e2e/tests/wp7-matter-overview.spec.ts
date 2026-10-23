@@ -316,7 +316,9 @@ test.describe('WP7: Matter Overview (#263)', () => {
       asap: 0,
       onHold: 0,
     });
-    await expect(page.locator('[data-strip-item="open"]')).toHaveClass(/zero/);
+    await expect(page.locator('[data-matter-overview] [data-strip-item="open"]')).toHaveClass(
+      /zero/,
+    );
     await shot(page, 'matter-overview-empty');
   });
 
@@ -509,7 +511,9 @@ for (const [w, h] of SIZES) {
     await axeClean(page, `matter overview ${w}x${h}`);
     await noSidewaysScroll(page);
     if (w < 480) {
-      const open = (await page.locator('[data-strip-item="open"]').boundingBox())!;
+      const open = (await page
+        .locator('[data-matter-overview] [data-strip-item="open"]')
+        .boundingBox())!;
       expect(open.height, '44 px target on a phone').toBeGreaterThanOrEqual(44);
     }
     await shot(page, 'matter-overview');

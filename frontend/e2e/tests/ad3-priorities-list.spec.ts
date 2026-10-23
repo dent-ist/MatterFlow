@@ -157,7 +157,16 @@ test.describe('the Priorities list (#605)', () => {
     const first = page.locator(`tr[data-row="${extras[0].label}"]`);
     const second = page.locator(`tr[data-row="${extras[1].label}"]`);
     await expect(first).toBeVisible();
-    await second.dragTo(first);
+    await expect(second).toHaveAttribute('draggable', 'true'); // not while the page is busy
+    // By hand with intermediate moves: `dragTo` moves in one jump, and the HTML5 drag needs `dragover` events on the target before the drop;
+    // with one jump the drop sometimes arrived before the first `dragover` (the order did not change in 2 of 3 full runs).
+    const from = (await second.boundingBox())!;
+    const to = (await first.boundingBox())!;
+    await page.mouse.move(from.x + 20, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + 24, from.y + from.height / 2 - 4, { steps: 4 });
+    await page.mouse.move(to.x + 24, to.y + to.height / 2, { steps: 12 });
+    await page.mouse.up();
     const order = (await admin.get<Json[]>('/api/v1/priorities')).map((p) => p.label);
     expect(order.indexOf(extras[1].label)).toBeLessThan(order.indexOf(extras[0].label));
     await expect(page.locator('[data-announce]')).toContainText('moved to position');

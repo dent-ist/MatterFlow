@@ -102,8 +102,12 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me.locator('[data-ooo-label]')).toHaveCount(0);
 
     await page.reload(); // the Name filter is in the address
+    // An active person with nothing to report reads a plain muted "Available" (`data-availability-plain`); "Off hours" is a chip. Which one
+    // shows depends on the time of day the test runs, so either is right.
     await expect(
-      page.locator('tbody tr', { hasText: name }).locator('[data-availability-chip]'),
+      page
+        .locator('tbody tr', { hasText: name })
+        .locator('[data-availability-chip], [data-availability-plain]'),
     ).toHaveText(/Available|Off hours/);
   });
 

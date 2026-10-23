@@ -64,13 +64,27 @@ const tabBudget = (page: Page): Promise<number> =>
       document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]').length + 20,
   );
 
+/**
+ * After one key press: fails when focus fell to the body, and says whether the target has it. One round trip instead of two (the walk of a
+ * long roles list is hundreds of presses, and the test timed out at about 640 roles on a database the suite had used).
+ */
+async function focusStep(page: Page, target: Locator): Promise<boolean> {
+  const hit = await target
+    .evaluate((el) => ({
+      body: document.activeElement === document.body || !document.activeElement,
+      at: el === document.activeElement,
+    }))
+    .catch(async () => ({ body: await onBody(page), at: false }));
+  expect(hit.body, 'focus landed on body').toBe(false);
+  return hit.at;
+}
+
 /** Presses Tab until the locator has focus (at most `max` times); returns how many presses it took. Fails when it never does. */
 async function tabTo(page: Page, target: Locator, max?: number): Promise<number> {
   const limit = max ?? (await tabBudget(page));
   for (let n = 1; n <= limit; n++) {
     await page.keyboard.press('Tab');
-    expect(await onBody(page), 'focus landed on body').toBe(false);
-    if (await target.evaluate((el) => el === document.activeElement).catch(() => false)) return n;
+    if (await focusStep(page, target)) return n;
   }
   throw new Error(`Tab never reached ${target}`);
 }
@@ -79,8 +93,7 @@ async function shiftTabTo(page: Page, target: Locator, max?: number): Promise<nu
   const limit = max ?? (await tabBudget(page));
   for (let n = 1; n <= limit; n++) {
     await page.keyboard.press('Shift+Tab');
-    expect(await onBody(page), 'focus landed on body').toBe(false);
-    if (await target.evaluate((el) => el === document.activeElement).catch(() => false)) return n;
+    if (await focusStep(page, target)) return n;
   }
   throw new Error(`Shift+Tab never reached ${target}`);
 }
@@ -111,6 +124,12 @@ async function axeClean(page: Page) {
 }
 
 test.describe('#454 the six keyboard flows', () => {
+  // These walks press Tab through the roles list of the panel, one stop per role: hundreds of presses on a database the suite has used
+  // (643 roles after three full runs, 36 to 48 s a flow). The time limit follows the data; no assertion changes.
+  test.beforeEach(() => {
+    test.slow();
+  });
+
   test('1. grant access: skip link, Grant access, a role, Save changes; focus lands on a row, with the toast reachable', async ({
     page,
   }) => {
@@ -228,19 +247,19 @@ test.describe('#454 the six keyboard flows', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-editor]')).toBeVisible();
     const box = page.locator('[data-perm="Asset.View"]');
-    await tabTo(page, box, 120);
+    await tabTo(page, box);
     await page.keyboard.press('Space');
     await expect(box).toBeChecked();
     const chip = page.getByRole('button', { name: 'Undo: added Asset.View' });
     await expect(chip).toBeVisible();
-    await shiftTabTo(page, chip, 120);
+    await shiftTabTo(page, chip);
     await page.keyboard.press('Enter');
     await expect(box).not.toBeChecked();
     await expect(chip).toHaveCount(0);
     expect(await onBody(page)).toBe(false);
     await box.focus();
     await page.keyboard.press('Space');
-    await tabTo(page, page.getByRole('button', { name: 'Save changes' }), 120);
+    await tabTo(page, page.getByRole('button', { name: 'Save changes' }));
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-changes]')).toHaveCount(0);
     expect(await onBody(page)).toBe(false);

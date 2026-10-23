@@ -383,7 +383,8 @@ test.describe('Rich text description with tables (issue #80)', () => {
     await expect(box).toHaveAttribute('tabindex', '0');
     await box.focus();
     await page.keyboard.press('ArrowRight');
-    expect(await box.evaluate((e) => e.scrollLeft)).toBeGreaterThan(0);
+    // The scroll is smooth (the page sets `scroll-behavior`), so the offset is read until it has moved, not once right after the key.
+    await expect.poll(() => box.evaluate((e) => e.scrollLeft)).toBeGreaterThan(0);
   });
 
   test('a table can be inserted, filled and extended with the keyboard alone, and saved from the edit dialog', async ({
