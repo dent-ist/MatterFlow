@@ -635,6 +635,15 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       },
       status,
       sensitive,
+      // `?managerId=` (a link from My Matters' All matters scope, #701): matters where that person is Primary or Secondary; no control, a removable chip.
+      {
+        key: 'managerId',
+        label: 'Project manager (either)',
+        type: 'text',
+        noControl: true,
+        normalize: (v: string) => (/^[1-9]\d*$/.test(v) ? v : null),
+        valueLabel: () => this.managerName(this.filters.text('managerId')),
+      },
       // `?clientId=` (a link from a client): no control, a removable chip.
       {
         key: 'clientId',
@@ -786,7 +795,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         this.filters.text('client') || undefined,
         managerId(primary),
         managerId(secondary),
-        undefined,
+        managerId(this.filters.text('managerId')),
         this.mine() ? true : undefined,
         undefined,
         primary === NO_MANAGER ? false : undefined,

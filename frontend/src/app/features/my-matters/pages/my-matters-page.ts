@@ -1,22 +1,173 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { MyMattersFilterBar } from '../my-matters-filter-bar';
+import {
+  DEFAULT_FILTERS,
+  MmFilters,
+  activeFilterCount,
+  filtersToParams,
+  parseFilters,
+} from '../my-matters-filters';
+import { MyMattersStrip } from '../my-matters-strip';
+
+const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
+
+function same(a: MmFilters, b: MmFilters): boolean {
+  return (
+    a.scope === b.scope &&
+    a.role === b.role &&
+    a.clientId === b.clientId &&
+    a.range === b.range &&
+    a.from === b.from &&
+    a.to === b.to &&
+    a.managerId === b.managerId
+  );
+}
+
+function storage(): Storage | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * My Matters (epic #667): the Project Manager's home. This is the landing target and the route (#691); the page itself (filters, count
- * strip and panels) follows in #692 and the issues after it.
+ * My Matters (epic #667, README 6): the Project Manager's home. A count strip, Needs my attention, Upcoming deadlines, Matter health, Workload
+ * and capacity and Recent activity, each loading and failing on its own. The matters are "mine" (primary or secondary manager) by default, a
+ * default view and not a limit on access; with `Matter.AssignManagers` the scope can be All matters. The filters (client, role, dates,
+ * scope, project manager) and the health table's sort and page live in the address, so Back restores them; the last filters are also
+ * remembered per person in the browser as a convenience. One scrolling page, no tabs, no nested scroll boxes. Different from the
+ * department Dashboard: it answers "what is on fire on my matters", not "how is the department doing".
  */
 @Component({
   selector: 'mf-my-matters-page',
-  imports: [PageHeader, RouterLink],
+  imports: [MyMattersFilterBar, MyMattersStrip, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    :host {
+      display: block;
+    }
+  `,
   template: `
-    <mf-page-header
-      heading="My Matters"
-      description="The matters you manage as primary or secondary project manager."
+    <mf-page-header heading="My Matters" [description]="description()"> </mf-page-header>
+
+    <mf-mm-filter-bar
+      [filters]="filters()"
+      [active]="active()"
+      (filterChange)="update($event)"
+      (clear)="clear()"
+      (clientName)="clientName.set($event)"
+      (managerName)="managerName.set($event)"
     />
-    <p data-no-matters>You are not the project manager of any matter yet.</p>
-    <a routerLink="/my-work">Go to My Work</a>
+
+    <mf-mm-strip [filters]="filters()" [clientName]="clientName()" [managerName]="managerName()" />
   `,
 })
-export class MyMattersPage {}
+export class MyMattersPage {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthStore);
+
+  private readonly params = toSignal(this.route.queryParamMap, {
+    initialValue: this.route.snapshot.queryParamMap,
+  });
+
+  protected readonly canAll = computed(() => this.auth.has('Matter.AssignManagers'));
+  protected readonly filters = computed(() => parseFilters(this.params(), this.canAll()), {
+    equal: same,
+  });
+  protected readonly active = computed(() => activeFilterCount(this.filters()));
+  protected readonly clientName = signal<string | null>(null);
+  protected readonly managerName = signal<string | null>(null);
+
+  protected readonly description = computed(() =>
+    this.filters().scope === 'all'
+      ? 'All active matters, whoever manages them. Each count opens the list it counts.'
+      : 'The matters you manage as primary or secondary project manager. This is your default view, not a limit on what you can open.',
+  );
+
+  constructor() {
+    this.restoreRemembered();
+    // Remember the filters per person, as a convenience only (the address stays the source of truth).
+    effect(() => {
+      const f = this.filters();
+      untracked(() => this.remember(f));
+    });
+  }
+
+  private rememberKey(): string {
+    return `mf-my-matters-filters-${this.auth.profile()?.userId ?? 0}`;
+  }
+
+  /** A visit with no filters in the address starts from the filters the person last used. */
+  private restoreRemembered(): void {
+    const q = this.route.snapshot.queryParamMap;
+    if (FILTER_KEYS.some((k) => q.has(k))) return;
+    try {
+      const raw = storage()?.getItem(this.rememberKey());
+      if (!raw) return;
+      const kept = parseFilters(new URLSearchParams(raw) as unknown as typeof q, this.canAll());
+      if (same(kept, DEFAULT_FILTERS)) return;
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: filtersToParams(kept),
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    } catch {
+      // Storage may be blocked; the page then starts from the defaults.
+    }
+  }
+
+  private remember(f: MmFilters): void {
+    try {
+      const out = new URLSearchParams();
+      for (const [k, v] of Object.entries(filtersToParams(f))) {
+        if (v !== null && v !== undefined) out.set(k, String(v));
+      }
+      const s = storage();
+      if (!s) return;
+      if (out.size === 0) s.removeItem(this.rememberKey());
+      else s.setItem(this.rememberKey(), out.toString());
+    } catch {
+      // Not remembering is fine.
+    }
+  }
+
+  private go(queryParams: Record<string, string | number | null>): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  /** A filter changed: the address changes, the health table goes back to its first page. */
+  protected update(patch: Partial<MmFilters>): void {
+    const next: MmFilters = { ...this.filters(), ...patch };
+    if (patch.scope === 'mine') next.managerId = null;
+    this.go({ ...filtersToParams(next), page: null });
+  }
+
+  protected clear(): void {
+    this.go({
+      ...filtersToParams({
+        ...DEFAULT_FILTERS,
+        scope: this.filters().scope === 'all' ? 'all' : 'mine',
+      }),
+      page: null,
+    });
+  }
+}
