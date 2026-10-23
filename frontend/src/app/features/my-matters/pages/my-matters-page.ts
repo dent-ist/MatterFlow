@@ -24,6 +24,7 @@ import { MyMattersStrip } from '../my-matters-strip';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
 import { HealthPanel, HealthSort } from '../panels/health-panel';
+import { WorkloadPanel } from '../panels/workload-panel';
 
 const SORTS: readonly HealthSort[] = [
   'nextDeadline',
@@ -75,6 +76,7 @@ function storage(): Storage | null {
     MyMattersFilterBar,
     MyMattersStrip,
     PageHeader,
+    WorkloadPanel,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
@@ -155,6 +157,7 @@ function storage(): Storage | null {
         (clearFilters)="clear()"
         (showAll)="update({ scope: 'all' })"
       />
+      <mf-mm-workload class="mm__workload" [filters]="filters()" />
     </div>
   `,
 })
