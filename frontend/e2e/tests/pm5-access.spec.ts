@@ -174,6 +174,9 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
     personas,
     asUser,
   }) => {
+    // Twelve axe runs over the page of every matter (scope=all): 43 s on a fresh database, over a minute after three full runs left
+    // their matters behind. The time limit follows the data; no assertion changes.
+    test.slow();
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
     const w = await mmWorld(seed, personas, 'ax1');
     const a = await w.matter('Axe alpha');

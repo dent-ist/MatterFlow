@@ -159,7 +159,11 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     status = 0;
     await page.getByRole('button', { name: 'Retry' }).click();
     await expect(heading(page)).toContainText('Matter custom fields');
-    await expect(page.getByRole('button', { name: 'Create new draft' })).toBeVisible();
+    // The Matter form is a singleton the whole suite shares: depending on what earlier specs left (published, or a draft in progress) the
+    // bar offers Create new draft, Open draft or Publish. Any of them proves the designer drew its action bar after Retry.
+    await expect(
+      page.getByRole('button', { name: /^(Create new draft|Open draft|Publish)/ }).first(),
+    ).toBeVisible();
   });
 
   test('permissions: Task.View only gets the 403 page; each manager gets the 404 of their own designer', async ({

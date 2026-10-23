@@ -103,6 +103,58 @@ test.describe('Notification bell and panel', () => {
     await expect(panel(page).locator('.np__item--unread')).toHaveCount(0);
   });
 
+  test('a comment by somebody else is a notification, opened and read with the keyboard alone; no key opens the panel but the bell', async ({
+    admin,
+    seed,
+    asUser,
+  }) => {
+    test.setTimeout(150_000);
+    const { tech, assign } = await setup(seed, admin);
+    const title = `Comment target ${uid()}`;
+    const task = await assign(title);
+    const page = await asUser(tech.username);
+    await page.goto('/tasks');
+    await expect(badge(page)).toHaveText('1'); // the assignment
+
+    await admin.post(`/api/v1/tasks/${task.taskId}/comments`, {
+      bodyHtml: '<p>Please re-run the search with the new terms</p>',
+    });
+    await expect(badge(page)).toHaveText('2', { timeout: 50_000 });
+
+    // The keys of the app (existing ones and letters that are not shortcuts) do not open the panel; only the bell does.
+    await page
+      .locator('main h1')
+      .first()
+      .evaluate((h) => {
+        h.setAttribute('tabindex', '-1');
+        (h as HTMLElement).focus();
+      });
+    for (const key of ['n', 'b', '.', 'x']) await page.keyboard.press(key);
+    await expect(panel(page)).toHaveCount(0);
+
+    await bell(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#np-title')).toBeFocused();
+    const comment = panel(page).locator('[data-notification-item]', { hasText: 'commented on' });
+    await expect(comment).toContainText(task.taskNumber);
+    await expect(comment).toContainText('Please re-run the search');
+    // Tab walks the panel: Mark all as read, the items, View all; Enter on the comment item opens the task and reads it.
+    for (let i = 0; i < 6; i++) {
+      await page.keyboard.press('Tab');
+      if (
+        await comment.evaluate(
+          (el) => el === document.activeElement || el.contains(document.activeElement),
+        )
+      )
+        break;
+    }
+    await expect(comment).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(new RegExp(`/tasks/${task.taskId}`));
+    await expect(panel(page)).toHaveCount(0);
+    await expect(badge(page)).toHaveText('1');
+  });
+
   test('the actor is never notified', async ({ admin, seed, asUser }) => {
     const { tech, assign } = await setup(seed, admin);
     await assign(`Actor ${uid()}`);

@@ -242,7 +242,7 @@ All K tests use an `IN_PROGRESS` task with a 5-step workflow unless stated. FND-
 | | FRM-06 | IT | Unknown key; option not available; user ref inactive; asset ref cross-matter; regex ReDoS pattern | `UNKNOWN_FIELD`, `OPTION_NOT_ALLOWED`, `REF_INVALID`, `CROSS_MATTER_REFERENCE`; regex timeout handled as failure not 500 | #30 |
 | | FRM-07 | DB | Update/delete rows of PUBLISHED/RETIRED FormVersion, fields, options | Trigger raises error | #29 |
 | | FRM-08 | IT | Publish atomicity | New PUBLISHED and old RETIRED in one transaction; failure leaves old PUBLISHED; second DRAFT/PUBLISHED blocked by filtered unique index | #29 |
-| | FRM-09 | MAN/E2E | Designer: add, reorder (drag + buttons), rule builder, preview parity, keyboard only (UAT-S14-*) | | #32 |
+| | FRM-09 | MAN/E2E | Designer: add, reorder (Up and Down buttons; no drag, #411 not planned), rule builder, preview parity, keyboard only (UAT-S14-*) | | #32 |
 | Task Types | TT-01 | IT | Task type with no published eligible workflow | Not selectable in create, POST rejected; flagged in admin (UAT-S14-8, S09-3) | #34 |
 | Priorities and labels | PRI-01 | IT | Rename/deactivate priority in use; exactly one default; five fixed statuses editable labels, codes read-only | Historical tasks still display; second default rejected | #33 |
 | Assets | AST-06 | IT | Asset type / link roles configurable; relationship label stored | Link requires `Asset.Link`; label from configured list | #36, #37 |
