@@ -470,3 +470,15 @@ Owner decisions of 2026-10-23, recorded as given. Extends section AG (epic #667)
 **Proposed by the review (answer in `docs/ux/pm-experience/README.md` section 12):** Q1 AG-14 gave the starter PM role `Matter.AssignManagers`, so the All switch shows for every starter PM; Q2 trends derived from existing columns with the limitation stated; Q3 "More" group; Q4 "Add a comment" posts to a task of the matter, no matter-level notes; Q5 Since-your-last-visit moves only on Mark as read.
 
 **Status (2026-10-23): planned**, 29 issues #759 to #787, about 117 agent-hours (`docs/ux/pm-experience/delivery-plan.md`).
+
+## AJ. Sensitive matter access control (decided 2026-10-23, epic #788, phase-20; design `docs/ux/sensitive-matters/README.md`, plan `docs/ux/sensitive-matters/delivery-plan.md`)
+
+This replaces the "display-only" rule of addendum O for `Matter.IsSensitive`.
+
+1. **Visibility rule (owner).** A sensitive matter is visible only to (a) its Primary and Secondary project manager, (b) holders of the new permission `Matter.ViewSensitive` (all sensitive matters; held by default by the System Administrator and the Director role; assignable to any role), and (c) the people to whom a task of that matter is currently assigned, for those tasks only (plus the matter header needed to open them). A sensitive matter without a manager is visible to (b) and (c) only.
+2. **Everyone else sees nothing:** not in lists, counts, totals, search and suggestions, dashboards, notifications, activity and audit views, pickers, bulk actions or exports. Direct addresses and API calls return 404, never 403. Access ends immediately when a manager is removed, a task is reassigned or the permission is taken away.
+3. **Enforced on the server, in one place:** one shared rule (`IMatterVisibility` in SharedKernel, C# predicate plus SQL functions for raw-SQL modules). The frontend only reflects it and holds no sensitive data in lookups, pickers, caches, titles, messages or exports.
+4. **Marking and un-marking is an audited action** (dedicated event). Today anyone with `Matter.Create`/`Matter.Edit` can set the flag; the design proposes restricting un-marking (open question Q3).
+5. **Reports (epic #671) are NOT decided here.** Open decision for the Reports work: filtered views for reports or trusted report roles. Until decided, addendum AI item 6 (option A: reports not filtered) stays as the interim state; the interaction risks are listed in README section 15 of the design.
+6. **No new or changed keyboard shortcuts** (Phase 2 backlog #420). No SQL script number is claimed: next free number at implementation time.
+7. **Proposed answers awaiting the owner:** Q1 to Q10 in README section 17 (assignee keeps access until reassigned; minimal matter header for assignees; un-mark restricted; audit history stays restricted; ranker shows only visible counts; generic number-conflict text accepted; staged go-live switch).
