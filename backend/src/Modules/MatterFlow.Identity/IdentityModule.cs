@@ -68,6 +68,7 @@ public static class IdentityModule
 
         services.Configure<MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
         services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterVisibility, MatterVisibility>();
+        services.AddScoped<MatterFlow.SharedKernel.Visibility.IManagedMatterScope, ManagedMatterScope>();
 
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));

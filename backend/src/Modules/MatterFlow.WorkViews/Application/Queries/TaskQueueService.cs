@@ -8,6 +8,7 @@ using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkflowEngine.Domain;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -24,9 +25,9 @@ public sealed class TaskQueueService(
     IClock clock,
     IUserTimeZone timeZone,
     ICurrentUser currentUser,
-    IPermissionChecker permissions,
     IPodDirectory podDirectory,
-    IUserAvailabilityReader availability)
+    IUserAvailabilityReader availability,
+    IManagedMatterScope managed)
 {
     public const string ViewActive = "active";
     public const string ViewDueSoon = "dueSoon";
@@ -428,7 +429,7 @@ public sealed class TaskQueueService(
 
         if (filter.ManagerId != me)
         {
-            var allowed = permissions.Require(Permissions.Matter.AssignManagers);
+            var allowed = managed.RequireAllScope();
             if (allowed.IsFailure)
                 return allowed.Error!;
         }
@@ -440,13 +441,14 @@ public sealed class TaskQueueService(
     {
         if (f.ManagerId is { } managerId)
         {
-            // The Matter's Primary and/or Secondary project manager (a Matter without one never matches). A subquery on the small Matter table.
-            rows = f.ManagerRole switch
+            // The Matter's Primary and/or Secondary project manager (a Matter without one never matches), through the shared scope rule.
+            var place = f.ManagerRole switch
             {
-                TaskQueueFilter.RolePrimary => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.PrimaryManagerId == managerId)),
-                TaskQueueFilter.RoleSecondary => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.SecondaryManagerId == managerId)),
-                _ => rows.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && (m.PrimaryManagerId == managerId || m.SecondaryManagerId == managerId))),
+                TaskQueueFilter.RolePrimary => ManagerPlace.Primary,
+                TaskQueueFilter.RoleSecondary => ManagerPlace.Secondary,
+                _ => ManagerPlace.Either,
             };
+            rows = managed.WhereMatterManagedBy(rows, t => t.MatterId, managerId, place);
         }
 
         if (f.DueWithinDays is { } dueWithin)

@@ -30,6 +30,31 @@ public class SourceHygieneRulesTests
         offenders.ShouldBeEmpty("Use SqlException.Number is 2601 or 2627 instead of matching message text: " + string.Join(", ", offenders));
     }
 
+    /// <summary>
+    /// Epic #758 PX-02 (#760): "matters managed by X" is one rule (<c>IManagedMatterScope</c>), and that seam is where the sensitive-matter visibility hook is applied.
+    /// A query that compares the Primary or Secondary manager column with a value anywhere else copies the rule and would bypass the hook. The only places that may:
+    /// the rule itself and the visibility predicate (SharedKernel), and the change detection of the manager write path in MatterService.
+    /// A new endpoint that needs a "managed by" filter calls <c>IManagedMatterScope</c>; extending this list needs a reason in the commit.
+    /// </summary>
+    [Fact]
+    public void Managed_by_filters_go_through_the_shared_scope_and_so_through_the_visibility_hook()
+    {
+        var pattern = new System.Text.RegularExpressions.Regex(@"(Primary|Secondary)ManagerId\s*(==|!=)(?>\s*)(?!null\b)", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var allowed = new Dictionary<string, int>
+        {
+            ["VisibilityPredicates.cs"] = 2,
+            ["MatterService.cs"] = 2, // changed-manager detection when the managers are set (a write, not a filter)
+        };
+        var found = ProductSources()
+            .Select(f => (Name: Path.GetFileName(f), Count: pattern.Matches(File.ReadAllText(f)).Count))
+            .Where(x => x.Count > 0)
+            .ToDictionary(x => x.Name, x => x.Count);
+
+        found.OrderBy(kv => kv.Key, StringComparer.Ordinal).ToList()
+            .ShouldBe(allowed.OrderBy(kv => kv.Key, StringComparer.Ordinal).ToList(),
+                "A manager column is compared outside the shared scope. Use IManagedMatterScope (WhereManagedBy / WhereMatterManagedBy) so the visibility hook of the sensitive-matter epic applies.");
+    }
+
     /// <summary>Reports epic #671 (spec 7.10, 16.3 e): only the Reports module reads the report connection, so nothing else can run SQL as the report login.</summary>
     [Fact]
     public void Only_the_reports_module_reads_the_report_connection_string()

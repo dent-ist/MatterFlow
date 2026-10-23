@@ -4,6 +4,7 @@ using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -138,7 +139,7 @@ public sealed class MyMattersScope
 /// <c>Matter.AssignManagers</c> and <c>Task.View</c> are checked by the controller's policies; the All matters scope and a named manager need
 /// <c>Matter.AssignManagers</c> here (403). A matter with no manager is in no "mine" scope, ever.
 /// </summary>
-public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions)
+public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IManagedMatterScope managed, IMatterVisibility visibility)
 {
     public const string ScopeMine = "mine";
     public const string ScopeAll = "all";
@@ -169,7 +170,7 @@ public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTime
             return Error.Validation("managerId", "SCOPE_REQUIRED", "managerId needs scope=all.");
         if (all)
         {
-            var allowed = permissions.Require(Permissions.Matter.AssignManagers);
+            var allowed = managed.RequireAllScope();
             if (allowed.IsFailure)
                 return allowed.Error!;
         }
@@ -181,12 +182,18 @@ public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTime
         int? manager = all ? query.ManagerId : me;
         if (manager is { } who)
         {
-            matters = role switch
+            var place = role switch
             {
-                TaskQueueFilter.RolePrimary => matters.Where(m => m.PrimaryManagerId == who),
-                TaskQueueFilter.RoleSecondary => matters.Where(m => m.SecondaryManagerId == who),
-                _ => matters.Where(m => m.PrimaryManagerId == who || m.SecondaryManagerId == who),
+                TaskQueueFilter.RolePrimary => ManagerPlace.Primary,
+                TaskQueueFilter.RoleSecondary => ManagerPlace.Secondary,
+                _ => ManagerPlace.Either,
             };
+            matters = managed.WhereManagedBy(matters, m => m.PrimaryManagerId, m => m.SecondaryManagerId, m => m.Id, who, place);
+        }
+        else
+        {
+            // The All scope without a named manager: every matter the caller may see (the sensitive-matter hook; a no-op until it is enabled).
+            matters = visibility.WhereMatterVisible(matters, m => m.Id);
         }
 
         if (all && await matters.CountAsync(ct) > MyMattersScope.MaxMatters)

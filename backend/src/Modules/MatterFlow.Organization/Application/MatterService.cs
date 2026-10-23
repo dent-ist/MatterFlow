@@ -9,6 +9,7 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
+using MatterFlow.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
@@ -24,7 +25,8 @@ public sealed class MatterService(
     ICurrentUser currentUser,
     IUserDirectory users,
     IMatterManagerEligibility eligibility,
-    INotificationPublisher notifications)
+    INotificationPublisher notifications,
+    IManagedMatterScope managed)
 {
     public const string SortPrimaryManager = "primaryManager";
     public const string SortSecondaryManager = "secondaryManager";
@@ -613,17 +615,18 @@ public sealed class MatterService(
 
     private IQueryable<MatterRow> ApplyManagerFilters(IQueryable<MatterRow> rows, MatterListQuery query)
     {
+        // "Managed by X" is one rule for every list (IManagedMatterScope), which also applies the sensitive-matter visibility hook.
+        IQueryable<MatterRow> ManagedBy(IQueryable<MatterRow> source, int manager, ManagerPlace place) =>
+            managed.WhereManagedBy(source, r => r.Matter.PrimaryManagerId, r => r.Matter.SecondaryManagerId, r => r.Matter.Id, manager, place);
+
         if (query.PrimaryManagerId is { } primary)
-            rows = rows.Where(r => r.Matter.PrimaryManagerId == primary);
+            rows = ManagedBy(rows, primary, ManagerPlace.Primary);
         if (query.SecondaryManagerId is { } secondary)
-            rows = rows.Where(r => r.Matter.SecondaryManagerId == secondary);
+            rows = ManagedBy(rows, secondary, ManagerPlace.Secondary);
         if (query.ManagerId is { } either)
-            rows = rows.Where(r => r.Matter.PrimaryManagerId == either || r.Matter.SecondaryManagerId == either);
+            rows = ManagedBy(rows, either, ManagerPlace.Either);
         if (query.ManagedByMe == true)
-        {
-            var me = currentUser.UserId ?? 0; // no user, no matters (0 is never a user id)
-            rows = rows.Where(r => r.Matter.PrimaryManagerId == me || r.Matter.SecondaryManagerId == me);
-        }
+            rows = ManagedBy(rows, managed.CurrentUserId ?? 0, ManagerPlace.Either); // no user, no matters (0 is never a user id)
 
         if (query.HasNoManager is { } none)
         {
