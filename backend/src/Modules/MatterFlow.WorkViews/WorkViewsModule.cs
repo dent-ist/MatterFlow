@@ -21,6 +21,7 @@ public static class WorkViewsModule
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
         services.AddScoped<CoverageService>();
+        services.AddScoped<MyMattersWorkloadService>();
         services.AddScoped<MyMattersAttentionService>();
         services.AddScoped<MyMattersHealthService>();
         services.AddScoped<MyMattersScopeResolver>();

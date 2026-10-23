@@ -10329,6 +10329,17 @@ export interface IMyMattersClient {
      * @return OK
      */
     getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary>;
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersWorkload(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload>;
 }
 
 @Injectable({
@@ -10699,6 +10710,91 @@ export class MyMattersClient implements IMyMattersClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersWorkload(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/workload?";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersWorkload(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersWorkload(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersWorkload>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersWorkload>;
+        }));
+    }
+
+    protected processGetMyMattersWorkload(response: HttpResponseBase): Observable<MyMattersWorkload> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersWorkload;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -14009,6 +14105,40 @@ export interface MyMattersTaskItem {
     dueAtUtc: string | undefined;
     assigneeId: number | undefined;
     assigneeName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MyMattersWorkload {
+    timeZone: string;
+    asOfUtc: string;
+    open: number;
+    pods: MyMattersWorkloadPod[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersWorkloadPerson {
+    userId: number | undefined;
+    displayName: string | undefined;
+    isActive: boolean;
+    open: number;
+    overdue: number;
+    onHold: number;
+    availability: UserAvailabilitySummary | undefined;
+    query: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersWorkloadPod {
+    podId: number | undefined;
+    podName: string | undefined;
+    open: number;
+    overdue: number;
+    onHold: number;
+    query: string;
+    people: MyMattersWorkloadPerson[];
 
     [key: string]: any;
 }

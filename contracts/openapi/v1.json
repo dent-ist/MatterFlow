@@ -7253,6 +7253,85 @@
         }
       }
     },
+    "/api/v1/my-matters/workload": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersWorkload",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersWorkload"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/task-queue": {
       "get": {
         "tags": [
@@ -13350,6 +13429,138 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "MyMattersWorkload": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "open",
+          "pods"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersWorkloadPod"
+            }
+          }
+        }
+      },
+      "MyMattersWorkloadPerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive",
+          "open",
+          "overdue",
+          "onHold",
+          "availability",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availability": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserAvailabilitySummary"
+              }
+            ]
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "MyMattersWorkloadPod": {
+        "required": [
+          "podId",
+          "podName",
+          "open",
+          "overdue",
+          "onHold",
+          "query",
+          "people"
+        ],
+        "type": "object",
+        "properties": {
+          "podId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "podName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersWorkloadPerson"
+            }
           }
         }
       },
