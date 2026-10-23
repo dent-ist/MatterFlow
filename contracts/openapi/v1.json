@@ -6891,6 +6891,172 @@
         }
       }
     },
+    "/api/v1/my-matters/attention": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersAttention",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersAttention"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-matters/deadlines": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersDeadlines",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersDeadlines"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/health": {
       "get": {
         "tags": [
@@ -12802,6 +12968,108 @@
           }
         }
       },
+      "MyMattersAttention": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "stuckOnHoldDays",
+          "groups"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stuckOnHoldDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersAttentionGroup"
+            }
+          }
+        }
+      },
+      "MyMattersAttentionGroup": {
+        "required": [
+          "kind",
+          "total",
+          "query",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersTaskItem"
+            }
+          }
+        }
+      },
+      "MyMattersDeadlines": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "days",
+          "fromDate",
+          "toDate",
+          "total",
+          "query",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "toDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersTaskItem"
+            }
+          }
+        }
+      },
       "MyMattersHealthPage": {
         "required": [
           "items",
@@ -13002,6 +13270,86 @@
               "string"
             ],
             "format": "date-time"
+          }
+        }
+      },
+      "MyMattersTaskItem": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "title",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "clientName",
+          "factCode",
+          "factDays",
+          "dueDate",
+          "dueAtUtc",
+          "assigneeId",
+          "assigneeName"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "factCode": {
+            "type": "string"
+          },
+          "factDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "assigneeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assigneeName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

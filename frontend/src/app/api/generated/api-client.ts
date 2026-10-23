@@ -10281,6 +10281,29 @@ export class DashboardBoardClient implements IDashboardBoardClient {
 
 export interface IMyMattersClient {
     /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersAttention(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention>;
+    /**
+     * @param days (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersDeadlines(days?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
+    /**
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
@@ -10319,6 +10342,181 @@ export class MyMattersClient implements IMyMattersClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersAttention(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/attention?";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersAttention(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersAttention(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersAttention>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersAttention>;
+        }));
+    }
+
+    protected processGetMyMattersAttention(response: HttpResponseBase): Observable<MyMattersAttention> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersAttention;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param days (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersDeadlines(days?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/deadlines?";
+        if (days === null)
+            throw new globalThis.Error("The parameter 'days' cannot be null.");
+        else if (days !== undefined)
+            url_ += "days=" + encodeURIComponent("" + days) + "&";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersDeadlines(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersDeadlines(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersDeadlines>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersDeadlines>;
+        }));
+    }
+
+    protected processGetMyMattersDeadlines(response: HttpResponseBase): Observable<MyMattersDeadlines> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersDeadlines;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -13714,6 +13912,37 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface MyMattersAttention {
+    timeZone: string;
+    asOfUtc: string;
+    stuckOnHoldDays: number;
+    groups: MyMattersAttentionGroup[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersAttentionGroup {
+    kind: string;
+    total: number;
+    query: string;
+    items: MyMattersTaskItem[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersDeadlines {
+    timeZone: string;
+    asOfUtc: string;
+    days: number;
+    fromDate: string;
+    toDate: string;
+    total: number;
+    query: string;
+    items: MyMattersTaskItem[];
+
+    [key: string]: any;
+}
+
 export interface MyMattersHealthPage {
     items: MyMattersHealthRow[];
     total: number;
@@ -13762,6 +13991,24 @@ export interface MyMattersSummary {
     onHold: DashboardCount;
     oldestHoldDays: number | undefined;
     oldestHoldSinceUtc: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MyMattersTaskItem {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    clientName: string;
+    factCode: string;
+    factDays: number | undefined;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    assigneeId: number | undefined;
+    assigneeName: string | undefined;
 
     [key: string]: any;
 }
