@@ -4809,6 +4809,170 @@
         }
       }
     },
+    "/api/v1/report-admin/reports/{id}/preview": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "PreviewReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/activate": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "ActivateReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportStateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/deactivate": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "DeactivateReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportStateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/versions": {
+      "post": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "SaveReportVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveVersionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveVersionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveVersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/reports/{id}/runs": {
       "post": {
         "tags": [
@@ -14680,6 +14844,25 @@
           }
         }
       },
+      "ParameterErrorResponse": {
+        "required": [
+          "name",
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ParsedEmailResponse": {
         "required": [
           "subject",
@@ -15212,6 +15395,121 @@
           }
         }
       },
+      "PreviewRequest": {
+        "required": [
+          "sql",
+          "parameters",
+          "sampleValues"
+        ],
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "sampleValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
+      "PreviewResponse": {
+        "required": [
+          "success",
+          "status",
+          "columns",
+          "rows",
+          "rowCount",
+          "exceedsCap",
+          "durationMs",
+          "validationErrors",
+          "parameterErrors",
+          "sqlError",
+          "sqlErrorLine",
+          "countsForActivation",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultColumnResponse"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "rowCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "exceedsCap": {
+            "type": "boolean"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validationErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SqlIssueResponse"
+            }
+          },
+          "parameterErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterErrorResponse"
+            }
+          },
+          "sqlError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sqlErrorLine": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "countsForActivation": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "PriorityView": {
         "required": [
           "id",
@@ -15681,6 +15979,37 @@
           }
         }
       },
+      "ReportStateResponse": {
+        "required": [
+          "reportId",
+          "isActive",
+          "currentVersionId",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "currentVersionId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ResultColumnResponse": {
         "required": [
           "name",
@@ -15928,6 +16257,93 @@
             "type": [
               "null",
               "string"
+            ]
+          }
+        }
+      },
+      "SaveVersionRequest": {
+        "required": [
+          "sql",
+          "parameters",
+          "changeNote",
+          "keepActive",
+          "sampleValues"
+        ],
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "changeNote": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keepActive": {
+            "type": "boolean"
+          },
+          "sampleValues": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
+      "SaveVersionResponse": {
+        "required": [
+          "versionId",
+          "versionNo",
+          "isActive",
+          "deactivated",
+          "unchanged",
+          "rowVersion",
+          "preview"
+        ],
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "deactivated": {
+            "type": "boolean"
+          },
+          "unchanged": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "preview": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PreviewResponse"
+              }
             ]
           }
         }

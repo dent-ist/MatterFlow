@@ -27,7 +27,10 @@ public static class ReportsModule
         services.AddScoped<IReportCatalog, ReportCatalog>();
         services.AddScoped<IReportRunLog, ReportRunLog>();
         services.AddScoped<IReportExecutor, ReportExecutor>();
+        services.AddScoped<BuiltInContextFactory>();
+        services.AddScoped<IReportDefinitionStore, ReportDefinitionStore>();
         services.AddScoped<ReportRunService>();
+        services.AddScoped<ReportAuthoringService>();
         return services;
     }
 }

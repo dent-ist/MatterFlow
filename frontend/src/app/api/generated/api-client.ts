@@ -7314,6 +7314,22 @@ export interface IReportAdminClient {
      * @return OK
      */
     analyzeReportSql(body: AnalyzeRequest): Observable<AnalyzeResponse>;
+    /**
+     * @return OK
+     */
+    previewReport(id: number, body: PreviewRequest): Observable<PreviewResponse>;
+    /**
+     * @return OK
+     */
+    activateReport(id: number): Observable<ReportStateResponse>;
+    /**
+     * @return OK
+     */
+    deactivateReport(id: number): Observable<ReportStateResponse>;
+    /**
+     * @return OK
+     */
+    saveReportVersion(id: number, body: SaveVersionRequest): Observable<SaveVersionResponse>;
 }
 
 @Injectable({
@@ -7473,6 +7489,226 @@ export class ReportAdminClient implements IReportAdminClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AnalyzeResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    previewReport(id: number, body: PreviewRequest): Observable<PreviewResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/reports/{id}/preview";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPreviewReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPreviewReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PreviewResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PreviewResponse>;
+        }));
+    }
+
+    protected processPreviewReport(response: HttpResponseBase): Observable<PreviewResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PreviewResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    activateReport(id: number): Observable<ReportStateResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/reports/{id}/activate";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processActivateReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processActivateReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportStateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportStateResponse>;
+        }));
+    }
+
+    protected processActivateReport(response: HttpResponseBase): Observable<ReportStateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportStateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    deactivateReport(id: number): Observable<ReportStateResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/reports/{id}/deactivate";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeactivateReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeactivateReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportStateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportStateResponse>;
+        }));
+    }
+
+    protected processDeactivateReport(response: HttpResponseBase): Observable<ReportStateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportStateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveReportVersion(id: number, body: SaveVersionRequest): Observable<SaveVersionResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/reports/{id}/versions";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveReportVersion(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveReportVersion(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<SaveVersionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<SaveVersionResponse>;
+        }));
+    }
+
+    protected processSaveReportVersion(response: HttpResponseBase): Observable<SaveVersionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SaveVersionResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -14767,6 +15003,14 @@ export interface PagedResultOfUserSummaryDto {
     [key: string]: any;
 }
 
+export interface ParameterErrorResponse {
+    name: string;
+    code: string;
+    message: string;
+
+    [key: string]: any;
+}
+
 export interface ParsedEmailResponse {
     subject: string;
     body: string;
@@ -14924,6 +15168,32 @@ export interface PodWorkSummary {
     [key: string]: any;
 }
 
+export interface PreviewRequest {
+    sql: string | undefined;
+    parameters: JsonElement | undefined;
+    sampleValues: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface PreviewResponse {
+    success: boolean;
+    status: string;
+    columns: ResultColumnResponse[];
+    rows: any[][];
+    rowCount: number;
+    exceedsCap: boolean;
+    durationMs: number;
+    validationErrors: SqlIssueResponse[];
+    parameterErrors: ParameterErrorResponse[];
+    sqlError: string | undefined;
+    sqlErrorLine: number | undefined;
+    countsForActivation: boolean;
+    rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface PriorityView {
     id: number;
     label: string;
@@ -15060,6 +15330,15 @@ export interface ReportsStatusResponse {
     [key: string]: any;
 }
 
+export interface ReportStateResponse {
+    reportId: number;
+    isActive: boolean;
+    currentVersionId: number | undefined;
+    rowVersion: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface ResultColumnResponse {
     name: string;
     type: string;
@@ -15131,6 +15410,28 @@ export interface SaveStepValuesRequest {
     rowVersion: string;
     values?: any | undefined;
     skipComment?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface SaveVersionRequest {
+    sql: string | undefined;
+    parameters: JsonElement | undefined;
+    changeNote: string | undefined;
+    keepActive: boolean;
+    sampleValues: any | undefined;
+
+    [key: string]: any;
+}
+
+export interface SaveVersionResponse {
+    versionId: number;
+    versionNo: number;
+    isActive: boolean;
+    deactivated: boolean;
+    unchanged: boolean;
+    rowVersion: string;
+    preview: PreviewResponse | undefined;
 
     [key: string]: any;
 }

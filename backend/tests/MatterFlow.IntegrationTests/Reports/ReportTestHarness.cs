@@ -96,6 +96,8 @@ internal sealed class ReportTestHarness : IAsyncDisposable
         return reportId;
     }
 
+    public static StringContent Json(object value) => TaskHarness.Body(value);
+
     public static StringContent Parameters(object values) => TaskHarness.Body(new { parameters = values });
 
     public async Task<JsonElement> RunLogAsync(int reportId)

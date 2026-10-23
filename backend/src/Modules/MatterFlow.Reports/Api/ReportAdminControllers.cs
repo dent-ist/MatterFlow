@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Reports.Application;
 using MatterFlow.Reports.Domain;
@@ -81,11 +82,70 @@ public sealed record AnalyzeResponse(
     IReadOnlyList<string> DateRangeCandidates,
     SqlValidationResponse Validation);
 
+/// <summary>The author's unsaved editor state to preview.</summary>
+/// <param name="Sql">The query text; null previews the saved version.</param>
+/// <param name="Parameters">The parameter definitions as in the version snapshot (a JSON array); null uses the saved ones.</param>
+/// <param name="SampleValues">Values the author typed, by parameter name. Required parameters without a value or default get a sample (0, today, "sample", the first option).</param>
+public sealed record PreviewRequest(string? Sql, JsonElement? Parameters, Dictionary<string, JsonElement>? SampleValues);
+
+/// <summary>A parameter value that was refused.</summary>
+public sealed record ParameterErrorResponse(string Name, string Code, string Message);
+
+/// <summary>The result of a preview: the first rows, or why not. Shown to administrators only (it may contain SQL Server's own message).</summary>
+/// <param name="Success">True when the query ran.</param>
+/// <param name="Status">Succeeded, Truncated, Failed, TimedOut, Cancelled or Rejected.</param>
+/// <param name="Columns">Columns of the result.</param>
+/// <param name="Rows">At most 20 rows.</param>
+/// <param name="RowCount">Rows counted, up to the cap.</param>
+/// <param name="ExceedsCap">True when the full result would be cut off at the row cap.</param>
+/// <param name="DurationMs">Run time.</param>
+/// <param name="ValidationErrors">Why the text was refused.</param>
+/// <param name="ParameterErrors">Why the sample values were refused.</param>
+/// <param name="SqlError">SQL Server's message when the query failed.</param>
+/// <param name="SqlErrorLine">Line of the error in the query, when known.</param>
+/// <param name="CountsForActivation">True when this exact saved version passed, so Activate is now possible.</param>
+/// <param name="RowVersion">The report's row version after the preview marked it (base64), when it did.</param>
+public sealed record PreviewResponse(
+    bool Success,
+    string Status,
+    IReadOnlyList<ResultColumnResponse> Columns,
+    IReadOnlyList<IReadOnlyList<object?>> Rows,
+    int RowCount,
+    bool ExceedsCap,
+    int DurationMs,
+    IReadOnlyList<SqlIssueResponse> ValidationErrors,
+    IReadOnlyList<ParameterErrorResponse> ParameterErrors,
+    string? SqlError,
+    int? SqlErrorLine,
+    bool CountsForActivation,
+    string? RowVersion);
+
+/// <summary>A new version of a report.</summary>
+/// <param name="Sql">The query text.</param>
+/// <param name="Parameters">The parameter definitions (JSON array, as in the version snapshot).</param>
+/// <param name="ChangeNote">Optional note (300 characters) shown in the history.</param>
+/// <param name="KeepActive">Preview the text first and keep an active report active when it passes.</param>
+/// <param name="SampleValues">Sample values for that preview.</param>
+public sealed record SaveVersionRequest(string? Sql, JsonElement? Parameters, string? ChangeNote, bool KeepActive, Dictionary<string, JsonElement>? SampleValues);
+
+/// <summary>What saving did.</summary>
+/// <param name="VersionId">Id of the current version after the save.</param>
+/// <param name="VersionNo">Its number.</param>
+/// <param name="IsActive">Whether the report is active now.</param>
+/// <param name="Deactivated">True when an active report was deactivated because the new text was not previewed.</param>
+/// <param name="Unchanged">True when nothing changed, so no version was written.</param>
+/// <param name="RowVersion">Row version of the report (base64).</param>
+/// <param name="Preview">The preview that ran as part of the save, if any.</param>
+public sealed record SaveVersionResponse(int VersionId, int VersionNo, bool IsActive, bool Deactivated, bool Unchanged, string RowVersion, PreviewResponse? Preview);
+
+/// <summary>Whether a report is active after an activate or deactivate.</summary>
+public sealed record ReportStateResponse(int ReportId, bool IsActive, int? CurrentVersionId, string? RowVersion);
+
 /// <summary>Report administration (<c>Report.Manage</c>). The authoring endpoints arrive with the admin API issues.</summary>
 [ApiController]
 [Route("api/v1/report-admin")]
 [Produces("application/json")]
-public class ReportAdminController(IReportsAvailability availability) : ControllerBase
+public class ReportAdminController(IReportsAvailability availability, ReportAuthoringService authoring) : ControllerBase
 {
     /// <summary>Whether reports can run and, if not, why (missing or unsafe report login, failed probe).</summary>
     [HttpGet("status", Name = "GetReportsStatus")]
@@ -132,6 +192,80 @@ public class ReportAdminController(IReportsAvailability availability) : Controll
                 verdict.Errors.Select(e => new SqlIssueResponse(e.Code, e.Message, e.Position, e.Line, e.Column)).ToList(),
                 Convert.ToHexString(verdict.Hash)));
     }
+
+    /// <summary>
+    /// Runs the unsaved editor text with sample values on the read-only login: first 20 rows, column names and types, duration, whether the full result
+    /// would hit the row cap; 15 s limit; logged as a preview and counted as the author's one running report. A successful preview of exactly the saved
+    /// text and parameters is what allows activation. Validation and SQL errors are returned in full (administrators only).
+    /// </summary>
+    [HttpPost("reports/{id:int}/preview", Name = "PreviewReport")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [RequestSizeLimit(MaxAnalyzeBytes)]
+    [ProducesResponseType<PreviewResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Preview(int id, [FromBody] PreviewRequest request, CancellationToken cancellationToken)
+    {
+        var result = await authoring.PreviewAsync(id, request.Sql, request.Parameters?.GetRawText(), request.SampleValues ?? [], cancellationToken);
+        if (result.Problem is { } problem)
+            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message));
+
+        return Ok(MapPreview(result));
+    }
+
+    /// <summary>Activates a report so the roles it is assigned to can run it. 409 <c>PREVIEW_REQUIRED</c> unless its current version passed a preview.</summary>
+    [HttpPost("reports/{id:int}/activate", Name = "ActivateReport")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [ProducesResponseType<ReportStateResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Activate(int id, CancellationToken cancellationToken) => State(id, await authoring.ActivateAsync(id, cancellationToken));
+
+    /// <summary>Deactivates a report: it disappears from the users' lists and cannot run; history, versions and assignments stay.</summary>
+    [HttpPost("reports/{id:int}/deactivate", Name = "DeactivateReport")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [ProducesResponseType<ReportStateResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken) => State(id, await authoring.DeactivateAsync(id, cancellationToken));
+
+    private static PreviewResponse MapPreview(PreviewResult result) => new(
+        result.Success,
+        result.Status,
+        result.Columns.Select(c => new ResultColumnResponse(c.Name, ReportsController.ColumnTypeName(c.Type))).ToList(),
+        result.Rows,
+        result.RowCount,
+        result.ExceedsCap,
+        result.DurationMs,
+        result.ValidationErrors.Select(e => new SqlIssueResponse(e.Code, e.Message, e.Position, e.Line, e.Column)).ToList(),
+        result.ParameterErrors.Select(e => new ParameterErrorResponse(e.Name, e.Code, e.Message)).ToList(),
+        result.SqlError,
+        result.SqlErrorLine,
+        result.CountsForActivation,
+        result.RowVersion is null ? null : Convert.ToBase64String(result.RowVersion));
+
+    /// <summary>
+    /// Saves a new version of a report (the SQL and its parameter definitions). Identical text and parameters write nothing. A new version of an active
+    /// report stays active only when <c>keepActive</c> is set and the text passed a preview in this same call; otherwise the report is deactivated until
+    /// it is previewed again ("Saved as version n. Preview it to activate.").
+    /// </summary>
+    [HttpPost("reports/{id:int}/versions", Name = "SaveReportVersion")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [RequestSizeLimit(MaxAnalyzeBytes)]
+    [ProducesResponseType<SaveVersionResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SaveVersion(int id, [FromBody] SaveVersionRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Sql))
+            return ReportProblems.Create(this, new RunProblem(400, "SQL_REQUIRED", "Enter a query."));
+        if (request.Sql.Length > SqlScanner.MaxQueryLength)
+            return ReportProblems.Create(this, new RunProblem(400, SqlValidationCodes.TextTooLong, "The query is too long."));
+
+        var result = await authoring.SaveVersionAsync(id, request.Sql, request.Parameters?.GetRawText() ?? "[]", request.ChangeNote, request.KeepActive, request.SampleValues ?? [], cancellationToken);
+        if (result.Problem is { } problem)
+            return ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message));
+
+        var v = result.Version!;
+        return Ok(new SaveVersionResponse(v.VersionId, v.VersionNo, v.IsActive, result.Deactivated, result.Unchanged, Convert.ToBase64String(v.RowVersion), result.Preview is null ? null : MapPreview(result.Preview)));
+    }
+
+    private IActionResult State(int id, ReportStateResult result) =>
+        result.Problem is { } problem
+            ? ReportProblems.Create(this, new RunProblem(problem.Status, problem.Code, problem.Message))
+            : Ok(new ReportStateResponse(id, result.IsActive, result.CurrentVersionId, result.RowVersion is null ? null : Convert.ToBase64String(result.RowVersion)));
 
     private const int MaxAnalyzeBytes = 256 * 1024;
 

@@ -1,11 +1,8 @@
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
 using MatterFlow.Reports.Domain;
 using MatterFlow.Reports.Domain.Parameters;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace MatterFlow.Reports.Application;
@@ -38,40 +35,34 @@ public sealed record RunResult(RunResponse? Response, RunProblem? Problem)
 public sealed class ReportRunService
 {
     private readonly ICurrentUser _user;
-    private readonly IPodDirectory _pods;
+    private readonly BuiltInContextFactory _builtIns;
     private readonly IReportCatalog _catalog;
     private readonly IReportExecutor _executor;
     private readonly IReportRunLog _log;
     private readonly ReportRunGate _gate;
     private readonly IReportsAvailability _availability;
     private readonly ReportsOptions _options;
-    private readonly IConfiguration _configuration;
-    private readonly TimeProvider _time;
     private readonly IReportResultSink _results;
 
     public ReportRunService(
         ICurrentUser user,
-        IPodDirectory pods,
+        BuiltInContextFactory builtIns,
         IReportCatalog catalog,
         IReportExecutor executor,
         IReportRunLog log,
         ReportRunGate gate,
         IReportsAvailability availability,
         IOptions<ReportsOptions> options,
-        IConfiguration configuration,
-        TimeProvider time,
         IReportResultSink results)
     {
         _user = user;
-        _pods = pods;
+        _builtIns = builtIns;
         _catalog = catalog;
         _executor = executor;
         _log = log;
         _gate = gate;
         _availability = availability;
         _options = options.Value;
-        _configuration = configuration;
-        _time = time;
         _results = results;
     }
 
@@ -102,7 +93,7 @@ public sealed class ReportRunService
             return RunResult.Fail(409, "REPORT_INVALID", "This report cannot be run. Tell an administrator.", reference: Reference(correlation));
         }
 
-        var context = await BuiltInsAsync(userId, requestAborted);
+        var context = await _builtIns.CreateAsync(userId, requestAborted);
         var bind = ParameterBinder.Bind(definitions, parameters, context, compiled.UsedPlaceholders);
         if (!bind.IsValid)
         {
@@ -165,23 +156,6 @@ public sealed class ReportRunService
         GateDenial.RateLimited => RunResult.Fail(429, "REPORT_RATE_LIMITED", "You have started many reports this hour. Try again later."),
         _ => RunResult.Fail(429, "REPORT_BUSY", "Reports are busy right now. Try again in a moment."),
     };
-
-    private async Task<BuiltInContext> BuiltInsAsync(int userId, CancellationToken cancellationToken)
-    {
-        var pods = await _pods.GetUserPodsAsync(userId, includeInactive: false, cancellationToken);
-        var primary = await _pods.GetPrimaryPodAsync(userId, cancellationToken);
-        var now = _time.GetUtcNow().UtcDateTime;
-        var zone = UserTimeZone.Resolve(null, _configuration["Firm:TimeZoneId"]).Zone;
-        var local = TimeZoneInfo.ConvertTimeFromUtc(now, zone);
-        return new BuiltInContext(
-            userId,
-            _user.DisplayName ?? "",
-            DateOnly.FromDateTime(local),
-            now,
-            pods.Select(p => p.Pod.PodId).Order().ToList(),
-            primary?.PodId,
-            (int)zone.GetUtcOffset(now).TotalMinutes);
-    }
 
     /// <summary>The parameter values as bound (long values already shortened) as a JSON array of "NAME=value" strings; fits the 4,000-character column.</summary>
     internal static string LogJson(IReadOnlyList<BoundParameter> parameters)
