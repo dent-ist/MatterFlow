@@ -41,6 +41,14 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
       },
       {
+        path: 'my-matters',
+        // The Project Manager's page (#691): the marker permission plus the two View permissions (the menu item has the same rule). Without
+        // them the 403 page shows and the page never starts, so it sends no request and raises no toast.
+        canActivate: [permissionAllGuard('Matter.BeManager', 'Matter.View', 'Task.View')],
+        loadChildren: () =>
+          import('./features/my-matters/my-matters.routes').then((m) => m.MY_MATTERS_ROUTES),
+      },
+      {
         path: 'my-work',
         canActivate: [permissionGuard('Task.View')],
         loadChildren: () =>

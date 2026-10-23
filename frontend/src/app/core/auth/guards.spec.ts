@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
+import { AuthStore } from './auth.store';
 import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from './auth-testing';
 import {
   ErrorRequest,
   ForbiddenRequest,
   accessGuard,
   landingGuard,
+  landingLink,
   pendingOnlyGuard,
   permissionAllGuard,
   permissionGuard,
@@ -156,6 +158,76 @@ describe('permissionAllGuard (#549)', () => {
     );
     expect(result instanceof UrlTree && TestBed.inject(Router).serializeUrl(result)).toBe('/403');
     expect(TestBed.inject(ForbiddenRequest).url()).toBe('/pods/work?podId=3');
+  });
+});
+
+describe('landing for project managers (#691)', () => {
+  it('lands the holder of Matter.BeManager, Matter.View and Task.View on My Matters, before My Work', async () => {
+    setup(
+      profileOf({ permissions: ['Matter.BeManager', 'Matter.View', 'Task.View'], hasWork: true }),
+    );
+    expect(await run(landingGuard)).toBe('/my-matters');
+  });
+
+  it('lands a manager with no matters and no work on My Matters too (a positive empty state, not another page)', async () => {
+    setup(profileOf({ permissions: ['Matter.BeManager', 'Matter.View', 'Task.View'] }));
+    expect(await run(landingGuard)).toBe('/my-matters');
+  });
+
+  it('puts a manager who also holds a Dashboard tab on My Matters (the marker permission decides)', async () => {
+    setup(
+      profileOf({
+        permissions: [
+          'Matter.BeManager',
+          'Matter.View',
+          'Task.View',
+          'Dashboard.View',
+          'Dashboard.ViewSummary',
+        ],
+      }),
+    );
+    expect(await run(landingGuard)).toBe('/my-matters');
+  });
+
+  it('does not change the landing without Task.View: My Matters would be a page of dead links', async () => {
+    setup(profileOf({ permissions: ['Matter.BeManager', 'Matter.View', 'Client.View'] }));
+    expect(await run(landingGuard)).toBe('/clients');
+  });
+
+  it('does not change the landing without Matter.View or without the marker permission (Director, technician)', async () => {
+    setup(profileOf({ permissions: ['Matter.BeManager', 'Task.View'], hasWork: true }));
+    expect(await run(landingGuard)).toBe('/my-work');
+    TestBed.resetTestingModule();
+    setup(
+      profileOf({
+        permissions: [
+          'Matter.View',
+          'Matter.AssignManagers',
+          'Task.View',
+          'Dashboard.View',
+          'Dashboard.ViewSummary',
+        ],
+      }),
+    );
+    expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('guards the route with all three permissions: 403 for a manager without Task.View, no page load', async () => {
+    setup(withPermissions('Matter.BeManager', 'Matter.View'));
+    const state = { url: '/my-matters' } as RouterStateSnapshot;
+    const guard = permissionAllGuard('Matter.BeManager', 'Matter.View', 'Task.View');
+    const result = await TestBed.runInInjectionContext(() => guard(undefined, state));
+    expect(result instanceof UrlTree && TestBed.inject(Router).serializeUrl(result)).toBe('/403');
+    TestBed.resetTestingModule();
+    setup(withPermissions('Matter.BeManager', 'Matter.View', 'Task.View'));
+    expect(await TestBed.runInInjectionContext(() => guard(undefined, state))).toBe(true);
+  });
+
+  it('names the 403 and 404 link "My Matters" for a manager', async () => {
+    setup(profileOf({ permissions: ['Matter.BeManager', 'Matter.View', 'Task.View'] }));
+    const store = TestBed.inject(AuthStore);
+    await store.ensureLoaded();
+    expect(landingLink(store)).toEqual({ path: '/my-matters', name: 'My Matters' });
   });
 });
 

@@ -70,6 +70,79 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(page).toHaveURL(/\/my-work/);
   });
 
+  test('Project Managers land on My Matters; My Work stays in the menu (#691)', async ({
+    personas,
+    asUser,
+    seed,
+  }) => {
+    // The Project Manager starter role holds Matter.BeManager, Matter.View and Task.View: no matters, no pod, still My Matters.
+    const pm = await personas.create({ label: 'land-pm', roles: ['Project Manager'] });
+    const page = await asUser(pm.username);
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/my-matters/);
+    await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
+    // A positive empty state with a way to My Work (no counts of unmanaged matters, no warning).
+    await expect(page.locator('[data-no-matters]')).toContainText(
+      'You are not the project manager of any matter yet.',
+    );
+    const nav = page.getByRole('navigation').first();
+    const items = await nav.getByRole('link').allInnerTexts();
+    const work = items.map((t) => t.trim()).filter((t) => ['My Matters', 'My Work'].includes(t));
+    expect(work).toEqual(['My Matters', 'My Work']);
+    await nav.getByRole('link', { name: 'My Work' }).click();
+    await expect(page).toHaveURL(/\/my-work/);
+    // The logo and the 404 link follow the same rule.
+    await page.getByRole('link', { name: 'MatterFlow home' }).click();
+    await expect(page).toHaveURL(/\/my-matters/);
+    await page.goto('/no-such-page');
+    await expect(page.locator('[data-state-actions] [data-back-link]')).toHaveText(
+      'Go to My Matters',
+    );
+
+    // A manager without Task.View keeps the old rule, has no menu item and meets the 403 page at the address (no request, no toast).
+    const noTask = await personas.create({
+      label: 'land-notask',
+      permissions: ['Client.View', 'Matter.View', 'Matter.BeManager', 'Matter.AssignManagers'],
+    });
+    const noTaskPage = await asUser(noTask.username);
+    await noTaskPage.goto('/');
+    await expect(noTaskPage).toHaveURL(/\/clients/);
+    await expect(noTaskPage.getByRole('link', { name: 'My Matters' })).toHaveCount(0);
+    const calls: string[] = [];
+    noTaskPage.on('request', (r) => {
+      if (r.url().includes('/api/v1/my-matters')) calls.push(r.url());
+    });
+    await noTaskPage.goto('/my-matters');
+    await expect(
+      noTaskPage.getByRole('heading', {
+        name: "You don't have permission to view this.",
+        level: 1,
+      }),
+    ).toBeVisible();
+    await expect(noTaskPage).toHaveURL(/\/my-matters$/);
+    expect(calls).toEqual([]);
+
+    // A Director who is also a manager lands on My Matters; the plain Director and the technician are unchanged.
+    const both = await personas.create({
+      label: 'land-dirpm',
+      roles: ['Director'],
+      permissions: ['Matter.BeManager'],
+    });
+    const bothPage = await asUser(both.username);
+    await bothPage.goto('/');
+    await expect(bothPage).toHaveURL(/\/my-matters/);
+    const director = await personas.named('director');
+    const directorPage = await asUser(director.username);
+    await directorPage.goto('/');
+    await expect(directorPage).toHaveURL(/\/dashboard/);
+    await expect(directorPage.getByRole('link', { name: 'My Matters' })).toHaveCount(0);
+    const tech = await personas.named('technician');
+    await seed.pod(undefined, [tech.userId]);
+    const techPage = await asUser(tech.username);
+    await techPage.goto('/');
+    await expect(techPage).toHaveURL(/\/my-work/);
+  });
+
   test('Access Pending "Check again" lands by the same rule once access is granted', async ({
     personas,
     asUser,

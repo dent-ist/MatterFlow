@@ -9,6 +9,7 @@ export const APP_PATHS = {
   forbidden: '/403',
   error: '/error',
   dashboard: '/dashboard',
+  myMatters: '/my-matters',
   myWork: '/my-work',
   taskQueue: '/tasks',
 } as const;
@@ -25,7 +26,9 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
 
 /**
  * Default landing, the one rule behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
- * "Check again" (S4a, #628; UX 2.2 amended):
+ * "Check again" (S4a, #628; UX 2.2 amended; Project Managers, #691):
+ *   0. My Matters, if the person can be a matter's project manager (`Matter.BeManager`) and may see matters and tasks (`Matter.View`,
+ *      `Task.View`): the marker permission decides, never a role name; My Work stays in the menu;
  *   1. My Work, if the person has Task.View and any pod membership or assignment (`hasWork`);
  *   2. else the Dashboard, if they hold any Dashboard tab permission (Summary, Breakdowns, Trends, Swimlane, Users or Unassigned);
  *   3. else Task Queue, if they have Task.View;
@@ -34,10 +37,22 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
  * Nobody lands on a page the navigation hides: My Work and Task Queue need Task.View, the Dashboard needs a tab.
  */
 export function defaultLandingPath(store: AuthStore): string {
+  if (canOpenMyMatters(store)) return APP_PATHS.myMatters;
   if (store.has('Task.View') && store.profile()?.hasWork) return APP_PATHS.myWork;
   if (store.hasAnyDashboardTab()) return APP_PATHS.dashboard;
   if (store.has('Task.View')) return APP_PATHS.taskQueue;
   return LANDING_FALLBACKS.find((f) => store.hasAny(f.permissions))?.path ?? APP_PATHS.forbidden;
+}
+
+/** My Matters needs all three (the menu item and the route use the same test): a manager who cannot see tasks would meet a page of dead links. */
+export const MY_MATTERS_PERMISSIONS: readonly Permission[] = [
+  'Matter.BeManager',
+  'Matter.View',
+  'Task.View',
+];
+
+export function canOpenMyMatters(store: AuthStore): boolean {
+  return MY_MATTERS_PERMISSIONS.every((p) => store.has(p));
 }
 
 /** The landing rule by its name in the delivery plan (`landingFor(permissions)`): the address a person's home, logo and "Go to ..." links lead to. */

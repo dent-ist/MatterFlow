@@ -115,6 +115,19 @@ describe('AppShell header search', () => {
     expect(el.querySelector<HTMLElement>('nav a[title="Asset types"]')).not.toBeNull();
   });
 
+  it('offers My Matters above My Work to a manager with Task.View and Matter.View, and My Work stays (#691)', async () => {
+    const fixture = await create(['Matter.BeManager', 'Matter.View', 'Task.View']);
+    expect(navLabels(fixture)).toEqual(['My Matters', 'My Work', 'Task Queue', 'Matters']);
+  });
+
+  it('hides My Matters without Task.View or without Matter.View, never disabled (#691)', async () => {
+    expect(navLabels(await create(['Matter.BeManager', 'Matter.View']))).not.toContain(
+      'My Matters',
+    );
+    TestBed.resetTestingModule();
+    expect(navLabels(await create(['Matter.BeManager', 'Task.View']))).not.toContain('My Matters');
+  });
+
   it('draws no group label for a group with nothing in it (S6, #621)', async () => {
     const fixture = await create(['Client.View']);
     const headings = Array.from(

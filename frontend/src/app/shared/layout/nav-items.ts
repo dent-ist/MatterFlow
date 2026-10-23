@@ -38,6 +38,15 @@ export const NAV_ITEMS: NavItem[] = [
     needsDashboardTab: true,
   },
   {
+    // Project Managers' home (#691): above My Work, which stays in the menu. The same three permissions as the route's guard.
+    label: 'My Matters',
+    group: 'work',
+    icon: 'pi pi-clipboard',
+    path: '/my-matters',
+    permissions: ['Matter.BeManager'],
+    permissionsAll: ['Matter.BeManager', 'Matter.View', 'Task.View'],
+  },
+  {
     label: 'My Work',
     group: 'work',
     icon: 'pi pi-user',
