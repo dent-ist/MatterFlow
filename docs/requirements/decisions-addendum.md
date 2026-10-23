@@ -446,3 +446,27 @@ Answers to the open questions of the review (README section 14):
 | Q6 tab title count | Not now. |
 | Q7 dependency on the Project Manager epic | Resolved: the manager columns of script 28 are on `dev`, events 4 to 7 are built. |
 | Q8 Mark as unread | No (opening an item reads it). |
+
+## AK. Project Manager experience (decided 2026-10-23, epic #758; review `docs/ux/pm-experience/`)
+
+Owner decisions of 2026-10-23, recorded as given. Extends section AG (epic #667); nothing in AG is reversed except item 5 below.
+
+1. **"Projects" means Matters (owner).** Project Managers are assigned to Matters, not to the Projects entity. The UI keeps the word **Matter**.
+2. **"My matters" is the default scope everywhere (owner).** For people holding `Matter.BeManager` the Matters list, Task Queue, Assets, Clients and Projects lists open scoped to matters they manage (Primary or Secondary, identical), with a visible, remembered **My matters / All** switch. **All** only for holders of `Matter.AssignManagers`. An explicit address (a link with filters) always wins over the remembered scope. Scope is a default view, not access control.
+3. **Search stays global (owner).** Results outside the PM's matters carry a small text label ("Other matter").
+4. **Backend filters (owner).** Add the missing "linked to matters managed by me" filters for Assets and Clients (and Projects); Task Queue and Matters list already have `managedByMe`. One shared scope service resolves "managed by me" for all of them.
+5. **Per-matter overview REVERSES AG item 8 / the earlier "no per-matter dashboards" decision (owner).** The matter record Overview tab is enriched: task counts by status, next five deadlines, who is working on it, linked assets, recent activity, health flag with reasons. Still no status report, Gantt, time or budget tracking, or email.
+6. **Shorter menu (owner).** For the Project Manager: My Matters (landing), Matters, Tasks, Assets (of my matters), Reports (when epic #671 exists), search. Pod Work, the department Dashboard and everyone's-tasks views are not in the PM's menu. The rule is data keyed on the landing test, not on a role name; Clients, Projects and My Work move to a collapsed "More" group (proposed, Q3).
+7. **Dashboard hidden from the Project Manager role through permissions (owner).** `Dashboard.View` and the tab permissions are removed from the starter role (still configurable by administrators). My Matters gains the monitoring views instead: tabs **Overview, Deadlines (2 to 4 weeks, calendar/list by matter), Workload (open work per person, who is away), Trends (overdue over time, created vs closed per week, average task age, on hold), Activity (what changed since I last looked)**, and a "Since your last visit" summary at the top of Overview.
+8. **Quick actions per matter (owner).** + New task (exists), bulk re-assign / re-prioritise (exists), add a comment, open the matter's tasks.
+9. **Starter Reports (owner).** Assigned to the Project Manager role: "Open and overdue tasks by matter" and "Tasks completed this month"; tables, CSV only; no status report, no email.
+10. **Notifications (owner).** PM notifications give direct links to the matter (verified in the epic, events stay in epic #753).
+11. **Identical Primary and Secondary; a matter with no manager is normal (owner, unchanged from AG).** No warning, no red flag.
+12. **No new or changed keyboard shortcuts (owner).** Phase 2, #420.
+13. **Initial bundle under 700 kB (owner).** About 614 kB now; every new page, tab and chart is lazy.
+14. **Sensitive matters are a separate epic (owner).** `Matter.ViewSensitive`; visible to Primary/Secondary PMs, holders of the permission and assignees of tasks on the matter, invisible to everyone else. This epic does not design it; every new PM view, filter and endpoint goes through the shared visibility rule that epic defines, built once as a seam (#760).
+15. **Review after the build (owner).** One issue, "PM experience review with screenshots at four widths" (#787, about 8 agent-hours): an agent walks the product as a PM through four scenarios (morning check, handling an overdue task, adding work to a matter, preparing for a client call); recommendations become follow-up issues.
+
+**Proposed by the review (answer in `docs/ux/pm-experience/README.md` section 12):** Q1 AG-14 gave the starter PM role `Matter.AssignManagers`, so the All switch shows for every starter PM; Q2 trends derived from existing columns with the limitation stated; Q3 "More" group; Q4 "Add a comment" posts to a task of the matter, no matter-level notes; Q5 Since-your-last-visit moves only on Mark as read.
+
+**Status (2026-10-23): planned**, 29 issues #759 to #787, about 117 agent-hours (`docs/ux/pm-experience/delivery-plan.md`).
