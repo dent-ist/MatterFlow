@@ -21,6 +21,8 @@ public static class WorkViewsModule
         services.AddScoped<SwimlaneService>();
         services.AddScoped<WorkloadService>();
         services.AddScoped<CoverageService>();
+        services.AddScoped<MyMattersScopeResolver>();
+        services.AddScoped<MyMattersSummaryService>();
         services.RemoveAll<IOrganizationTaskCounts>();
         services.AddScoped<IOrganizationTaskCounts, OrganizationTaskCounts>();
         services.RemoveAll<IConfigurationTaskCounts>();

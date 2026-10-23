@@ -6824,6 +6824,85 @@
         }
       }
     },
+    "/api/v1/my-matters/summary": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersSummary",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/task-queue": {
       "get": {
         "tags": [
@@ -12536,6 +12615,74 @@
             "items": {
               "$ref": "#/components/schemas/UserPodDto"
             }
+          }
+        }
+      },
+      "MyMattersSummary": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "scope",
+          "role",
+          "matters",
+          "openTasks",
+          "overdue",
+          "dueIn3Days",
+          "dueIn7Days",
+          "unassigned",
+          "onHold",
+          "oldestHoldDays",
+          "oldestHoldSinceUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "matters": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "openTasks": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "dueIn3Days": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "dueIn7Days": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "unassigned": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "onHold": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "oldestHoldDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "oldestHoldSinceUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -19052,6 +19199,9 @@
     },
     {
       "name": "DashboardBoard"
+    },
+    {
+      "name": "MyMatters"
     },
     {
       "name": "TaskQueue"

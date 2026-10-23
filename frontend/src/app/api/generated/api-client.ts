@@ -10149,6 +10149,119 @@ export class DashboardBoardClient implements IDashboardBoardClient {
     }
 }
 
+export interface IMyMattersClient {
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MyMattersClient implements IMyMattersClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/summary?";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersSummary>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersSummary>;
+        }));
+    }
+
+    protected processGetMyMattersSummary(response: HttpResponseBase): Observable<MyMattersSummary> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersSummary;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface ITaskQueueClient {
     /**
      * @param group (optional) 
@@ -13347,6 +13460,24 @@ export interface MeResponse {
     isSystemAdmin: boolean;
     hasWork: boolean;
     pods: UserPodDto[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersSummary {
+    timeZone: string;
+    asOfUtc: string;
+    scope: string;
+    role: string;
+    matters: DashboardCount;
+    openTasks: DashboardCount;
+    overdue: DashboardCount;
+    dueIn3Days: DashboardCount;
+    dueIn7Days: DashboardCount;
+    unassigned: DashboardCount;
+    onHold: DashboardCount;
+    oldestHoldDays: number | undefined;
+    oldestHoldSinceUtc: string | undefined;
 
     [key: string]: any;
 }
