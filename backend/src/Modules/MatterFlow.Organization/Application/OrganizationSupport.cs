@@ -131,6 +131,9 @@ public static class OrganizationAuditEvents
     /// <summary>A matter's Primary or Secondary project manager was set, changed or cleared (field key <c>PrimaryManager</c> or <c>SecondaryManager</c>; old and new value are the people's names).</summary>
     public const string MatterManagerChanged = "MATTER_MANAGER_CHANGED";
 
+    /// <summary>A matter was marked sensitive or un-marked (field key <c>IsSensitive</c>; old and new value are <c>Sensitive</c> / <c>Not sensitive</c>). Shown only to people who can see the matter.</summary>
+    public const string MatterSensitivityChanged = "MATTER_SENSITIVITY_CHANGED";
+
     public const string ClientCreated = "CLIENT_CREATED";
     public const string ClientNumberChanged = "CLIENT_NUMBER_CHANGED";
     public const string MatterCreated = "MATTER_CREATED";

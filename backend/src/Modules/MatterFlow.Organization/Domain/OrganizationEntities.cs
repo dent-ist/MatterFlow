@@ -46,7 +46,12 @@ public class Matter : AuditedEntity<int>, IAuditScoped
 
     public bool IsActive { get; set; } = true;
 
-    /// <summary>Display-only sensitivity flag (addendum O); does not restrict access.</summary>
+    /// <summary>
+    /// Sensitivity flag. A warning banner (addendum O) and, once the go-live switch <c>Features:SensitiveMatterAccess</c> is on, the access rule of epic #788
+    /// (only its managers, holders of <c>Matter.ViewSensitive</c> and people assigned a task on it see the matter). Changes are audited by a dedicated
+    /// <c>MATTER_SENSITIVITY_CHANGED</c> event, not as a generic field change.
+    /// </summary>
+    [AuditExplicit]
     public bool IsSensitive { get; set; }
 
     /// <summary>

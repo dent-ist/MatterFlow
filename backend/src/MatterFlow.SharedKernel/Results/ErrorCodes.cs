@@ -19,6 +19,13 @@ public static class ErrorCodes
     public const string MatterInactive = "MATTER_INACTIVE";
     public const string MatterHasOpenTasks = "MATTER_HAS_OPEN_TASKS";
     public const string ManagerNotEligible = "MANAGER_NOT_ELIGIBLE";
+
+    /// <summary>
+    /// Marking a matter sensitive would end the caller's own access to it (sensitive-matter rule, epic #788). Resend the same request with
+    /// <c>confirmLossOfAccess</c> true to go ahead. Nothing about the matter is revealed beyond what the caller already sees.
+    /// </summary>
+    public const string SensitiveConfirmationRequired = "SENSITIVE_CONFIRMATION_REQUIRED";
+
     public const string ManagerDuplicate = "MANAGER_DUPLICATE";
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";

@@ -10955,6 +10955,7 @@
               "MATTER_INACTIVE",
               "MATTER_HAS_OPEN_TASKS",
               "MANAGER_NOT_ELIGIBLE",
+              "SENSITIVE_CONFIRMATION_REQUIRED",
               "MANAGER_DUPLICATE",
               "CLIENT_INACTIVE",
               "PROJECT_INACTIVE",
@@ -21370,6 +21371,9 @@
             "type": "string"
           },
           "isSensitive": {
+            "type": "boolean"
+          },
+          "confirmLossOfAccess": {
             "type": "boolean"
           },
           "rowVersion": {

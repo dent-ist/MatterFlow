@@ -167,7 +167,7 @@ public sealed class CreateMatterRequest
     [Required, StringLength(300, MinimumLength = 1)]
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>Show the sensitive-matter warning banner (display only).</summary>
+    /// <summary>Mark the matter sensitive: a warning banner, and with sensitive-matter access control on, visible only to its managers and holders of <c>Matter.ViewSensitive</c> (and people assigned a task on it). Without <c>Matter.ViewSensitive</c> a manager must be named (400 <c>SENSITIVE_NEEDS_MANAGER</c>).</summary>
     public bool IsSensitive { get; init; }
 
     /// <summary>Optional Primary project manager. Accepted only with <c>Matter.AssignManagers</c> (403 otherwise); an active user holding <c>Matter.BeManager</c>.</summary>
@@ -189,6 +189,13 @@ public sealed class UpdateMatterRequest
     public string Name { get; init; } = string.Empty;
 
     public bool IsSensitive { get; init; }
+
+    /// <summary>
+    /// True to go ahead when marking the matter sensitive would end the caller's own access to it (the caller is neither a manager of it afterwards nor holds
+    /// <c>Matter.ViewSensitive</c>). Without it the server answers 409 <c>SENSITIVE_CONFIRMATION_REQUIRED</c>, which the screen turns into a confirmation
+    /// dialog. Ignored while sensitive-matter access control is off.
+    /// </summary>
+    public bool ConfirmLossOfAccess { get; init; }
 
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]

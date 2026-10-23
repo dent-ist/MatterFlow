@@ -274,6 +274,15 @@ public sealed class MatterService(
         if (existing is not null)
             return DuplicateNumber(client.ClientNumber, number.Value, await ShownAsync(existing, ct));
 
+        // A matter nobody can see helps nobody: without Matter.ViewSensitive the creator must name a manager (the response below still returns it once).
+        if (visibility.Enabled && request.IsSensitive && !visibility.Current.SeeAll && request.PrimaryManagerId is null && request.SecondaryManagerId is null)
+        {
+            return Error.Validation(
+                "isSensitive",
+                "SENSITIVE_NEEDS_MANAGER",
+                "A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.");
+        }
+
         var plan = await custom.PlanCreateAsync(CustomFieldTarget.Matter, request.FormValues, ct);
         if (plan.IsFailure)
             return plan.Error!;
@@ -336,6 +345,13 @@ public sealed class MatterService(
                 await db.SaveChangesAsync(ct);
             }
 
+            if (request.IsSensitive)
+            {
+                // Created marked: the dedicated event carries the matter id (known only now), so it is shown only to people who can see the matter.
+                AuditSensitivity(matter, null, true);
+                await db.SaveChangesAsync(ct);
+            }
+
             if (plan.Value is { } formPlan)
             {
                 var saved = await custom.SaveAsync(CustomFieldTarget.Matter, matter.Id, matter.Id, formPlan, ct);
@@ -364,6 +380,18 @@ public sealed class MatterService(
         if (version.IsFailure)
             return version.Error!;
 
+        // Marking a matter sensitive can end the actor's own access (they are neither a manager afterwards nor hold Matter.ViewSensitive): ask first.
+        // Un-marking needs no extra check: with the rule on, only managers and Matter.ViewSensitive holders can see a sensitive matter to edit it at all.
+        if (visibility.Enabled && request.IsSensitive && !matter.IsSensitive && !request.ConfirmLossOfAccess && !visibility.Current.SeeAll
+            && visibility.Current.UserId is { } actor
+            && (request.PrimaryManagerId ?? matter.PrimaryManagerId) != actor && (request.SecondaryManagerId ?? matter.SecondaryManagerId) != actor)
+        {
+            return Error.Conflict(
+                ErrorCodes.SensitiveConfirmationRequired,
+                "You will no longer see this matter after it is marked sensitive. Confirm to continue.",
+                new Dictionary<string, object?> { ["willLoseAccess"] = true });
+        }
+
         var plan = await custom.PlanUpdateAsync(CustomFieldTarget.Matter, id, request.FormValues, ct);
         if (plan.IsFailure)
             return plan.Error!;
@@ -386,6 +414,8 @@ public sealed class MatterService(
         }
 
         matter.Name = request.Name.Trim();
+        if (matter.IsSensitive != request.IsSensitive)
+            AuditSensitivity(matter, matter.IsSensitive, request.IsSensitive);
         matter.IsSensitive = request.IsSensitive;
         if (updatedManagers.Count > 0)
             await NotifyManagersSetAsync(matter, updatedManagers, ct); // event 7, in the same save
@@ -730,6 +760,22 @@ public sealed class MatterService(
                 [n.UserId]))],
             ct);
     }
+
+    /// <summary>Queues the dedicated MATTER_SENSITIVITY_CHANGED event (actor and time come from the audit writer; the matter id is filled in after the insert on create).</summary>
+    private void AuditSensitivity(Matter matter, bool? before, bool after) =>
+        audit.Write(new AuditEntry
+        {
+            EventType = OrganizationAuditEvents.MatterSensitivityChanged,
+            ObjectType = nameof(Matter),
+            ObjectIdFactory = () => matter.Id.ToString(CultureInfo.InvariantCulture),
+            MatterId = matter.Id == 0 ? null : matter.Id,
+            FieldKey = "IsSensitive",
+            OldValue = before is { } b ? SensitivityLabel(b) : null,
+            NewValue = SensitivityLabel(after),
+            Summary = after ? "Matter marked sensitive." : "Matter no longer marked sensitive.",
+        });
+
+    private static string SensitivityLabel(bool sensitive) => sensitive ? "Sensitive" : "Not sensitive";
 
     /// <summary>Sets the two managers on a tracked matter and queues one audit event per changed place (names as old and new value). Returns false when nothing changed.</summary>
     private async Task<bool> ApplyManagersAsync(Matter matter, int? primary, int? secondary, CancellationToken ct)

@@ -18002,6 +18002,7 @@ export interface UpdateClientRequest {
 export interface UpdateMatterRequest {
     name: string;
     isSensitive?: boolean;
+    confirmLossOfAccess?: boolean;
     rowVersion: string;
     formValues?: any | undefined;
     primaryManagerId?: number | undefined;
@@ -18519,6 +18520,7 @@ export enum ApiProblemDetailsCode {
     MATTER_INACTIVE = "MATTER_INACTIVE",
     MATTER_HAS_OPEN_TASKS = "MATTER_HAS_OPEN_TASKS",
     MANAGER_NOT_ELIGIBLE = "MANAGER_NOT_ELIGIBLE",
+    SENSITIVE_CONFIRMATION_REQUIRED = "SENSITIVE_CONFIRMATION_REQUIRED",
     MANAGER_DUPLICATE = "MANAGER_DUPLICATE",
     CLIENT_INACTIVE = "CLIENT_INACTIVE",
     PROJECT_INACTIVE = "PROJECT_INACTIVE",
