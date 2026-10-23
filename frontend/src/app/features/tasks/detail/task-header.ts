@@ -198,6 +198,14 @@ export class TaskHeader {
           : null;
       case 'search':
         return at(RECORD_ORIGINS.search.paths, '/search', RECORD_ORIGINS.search.label);
+      case 'my-matters':
+        return this.auth.has('Matter.BeManager')
+          ? at(
+              RECORD_ORIGINS['my-matters'].paths,
+              '/my-matters',
+              RECORD_ORIGINS['my-matters'].label,
+            )
+          : null;
     }
   });
 

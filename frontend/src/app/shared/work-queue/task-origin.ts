@@ -35,4 +35,5 @@ const PARAMS: Readonly<Record<RecordOrigin, { from: RecordOrigin }>> = {
   project: { from: 'project' },
   dashboard: { from: 'dashboard' },
   search: { from: 'search' },
+  'my-matters': { from: 'my-matters' },
 };

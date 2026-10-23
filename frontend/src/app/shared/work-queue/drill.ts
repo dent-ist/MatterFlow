@@ -29,7 +29,7 @@ export function parseFrom(value: string | null | undefined): DrillSource | null 
  * The pages other than the three work lists a task is opened from (T9, #324): a Matter's or a Project's Tasks tab, the Dashboard and Search.
  * Only the Task page reads them (its crumb, Back link and navigation highlight); the work lists' own `DRILL_SOURCES` are unchanged.
  */
-export type RecordOrigin = 'matter' | 'project' | 'dashboard' | 'search';
+export type RecordOrigin = 'matter' | 'project' | 'dashboard' | 'search' | 'my-matters';
 export type TaskOrigin = DrillSource | RecordOrigin;
 
 export interface RecordOriginInfo {
@@ -46,6 +46,8 @@ export const RECORD_ORIGINS: Readonly<Record<RecordOrigin, RecordOriginInfo>> = 
   project: { label: 'Project', nav: '/projects', paths: [] },
   dashboard: { label: 'Dashboard', nav: '/dashboard', paths: ['/dashboard'] },
   search: { label: 'Search', nav: null, paths: ['/search', '/search/advanced'] },
+  // My Matters (#693): a row of a panel opens the task, Back returns to the page with its filters.
+  'my-matters': { label: 'My Matters', nav: '/my-matters', paths: ['/my-matters'] },
 };
 
 /** The whitelisted value of `?from=` for the Task page (the work lists and the record pages), or null: anything else is dropped. */

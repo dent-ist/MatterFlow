@@ -15,11 +15,14 @@ import { MyMattersFilterBar } from '../my-matters-filter-bar';
 import {
   DEFAULT_FILTERS,
   MmFilters,
+  MmRange,
   activeFilterCount,
   filtersToParams,
   parseFilters,
 } from '../my-matters-filters';
 import { MyMattersStrip } from '../my-matters-strip';
+import { AttentionPanel } from '../panels/attention-panel';
+import { DeadlinesPanel } from '../panels/deadlines-panel';
 
 const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
 
@@ -53,11 +56,51 @@ function storage(): Storage | null {
  */
 @Component({
   selector: 'mf-my-matters-page',
-  imports: [MyMattersFilterBar, MyMattersStrip, PageHeader],
+  imports: [AttentionPanel, DeadlinesPanel, MyMattersFilterBar, MyMattersStrip, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
       display: block;
+    }
+    .mm__grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'attention deadlines'
+        'health health'
+        'workload activity';
+      gap: var(--mf-s3);
+      align-items: start;
+    }
+    .mm__attention {
+      grid-area: attention;
+    }
+    .mm__deadlines {
+      grid-area: deadlines;
+    }
+    .mm__health {
+      grid-area: health;
+    }
+    .mm__workload {
+      grid-area: workload;
+    }
+    .mm__activity {
+      grid-area: activity;
+    }
+    .mm__grid > * {
+      min-width: 0;
+    }
+    /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, workload, activity. */
+    @media (max-width: 639.98px) {
+      .mm__grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          'attention'
+          'health'
+          'deadlines'
+          'workload'
+          'activity';
+      }
     }
   `,
   template: `
@@ -73,6 +116,15 @@ function storage(): Storage | null {
     />
 
     <mf-mm-strip [filters]="filters()" [clientName]="clientName()" [managerName]="managerName()" />
+
+    <div class="mm__grid">
+      <mf-mm-attention class="mm__attention" [filters]="filters()" />
+      <mf-mm-deadlines
+        class="mm__deadlines"
+        [filters]="filters()"
+        (rangeChange)="setRange($event)"
+      />
+    </div>
   `,
 })
 export class MyMattersPage {
@@ -159,6 +211,10 @@ export class MyMattersPage {
     const next: MmFilters = { ...this.filters(), ...patch };
     if (patch.scope === 'mine') next.managerId = null;
     this.go({ ...filtersToParams(next), page: null });
+  }
+
+  protected setRange(range: MmRange): void {
+    this.update(range === '2w' || range === '4w' ? { range, from: null, to: null } : { range });
   }
 
   protected clear(): void {
