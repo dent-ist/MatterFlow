@@ -6891,6 +6891,135 @@
         }
       }
     },
+    "/api/v1/my-matters/activity": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersActivity",
+        "parameters": [
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersActivity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-matters/activity/seen": {
+      "post": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "MarkMyMattersActivitySeen",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkActivitySeenRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkActivitySeenRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkActivitySeenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersActivitySeen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/attention": {
       "get": {
         "tags": [
@@ -12714,6 +12843,20 @@
           }
         }
       },
+      "MarkActivitySeenRequest": {
+        "type": "object",
+        "properties": {
+          "upToEventId": {
+            "maximum": 9223372036854776000,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "MarkAllReadResponse": {
         "required": [
           "marked"
@@ -13044,6 +13187,170 @@
             "items": {
               "$ref": "#/components/schemas/UserPodDto"
             }
+          }
+        }
+      },
+      "MyMattersActivity": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "sinceUtc",
+          "seenEventId",
+          "latestEventId",
+          "unreadCount",
+          "hasMore",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sinceUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "seenEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "latestEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unreadCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersActivityItem"
+            }
+          }
+        }
+      },
+      "MyMattersActivityItem": {
+        "required": [
+          "eventId",
+          "occurredAtUtc",
+          "kind",
+          "actorId",
+          "actorName",
+          "matterId",
+          "matterRef",
+          "matterName",
+          "clientName",
+          "taskId",
+          "taskNumber",
+          "taskTitle",
+          "from",
+          "to",
+          "managerPlace",
+          "isUnread"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "managerPlace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isUnread": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MyMattersActivitySeen": {
+        "required": [
+          "seenEventId",
+          "seenAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "seenEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seenAtUtc": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

@@ -10281,6 +10281,22 @@ export class DashboardBoardClient implements IDashboardBoardClient {
 
 export interface IMyMattersClient {
     /**
+     * @param take (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersActivity(take?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity>;
+    /**
+     * @return OK
+     */
+    markMyMattersActivitySeen(body: MarkActivitySeenRequest): Observable<MyMattersActivitySeen>;
+    /**
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -10353,6 +10369,150 @@ export class MyMattersClient implements IMyMattersClient {
     constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
         this.http = http;
         this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param take (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersActivity(take?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/activity?";
+        if (take === null)
+            throw new globalThis.Error("The parameter 'take' cannot be null.");
+        else if (take !== undefined)
+            url_ += "take=" + encodeURIComponent("" + take) + "&";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersActivity(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersActivity(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersActivity>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersActivity>;
+        }));
+    }
+
+    protected processGetMyMattersActivity(response: HttpResponseBase): Observable<MyMattersActivity> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersActivity;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    markMyMattersActivitySeen(body: MarkActivitySeenRequest): Observable<MyMattersActivitySeen> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/activity/seen";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMarkMyMattersActivitySeen(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMarkMyMattersActivitySeen(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersActivitySeen>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersActivitySeen>;
+        }));
+    }
+
+    protected processMarkMyMattersActivitySeen(response: HttpResponseBase): Observable<MyMattersActivitySeen> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersActivitySeen;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
     }
 
     /**
@@ -13928,6 +14088,12 @@ export interface LinkTaskAssetRequest {
     [key: string]: any;
 }
 
+export interface MarkActivitySeenRequest {
+    upToEventId?: number | undefined;
+
+    [key: string]: any;
+}
+
 export interface MarkAllReadResponse {
     marked: number;
 
@@ -14004,6 +14170,47 @@ export interface MeResponse {
     isSystemAdmin: boolean;
     hasWork: boolean;
     pods: UserPodDto[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersActivity {
+    timeZone: string;
+    asOfUtc: string;
+    sinceUtc: string;
+    seenEventId: number;
+    latestEventId: number;
+    unreadCount: number;
+    hasMore: boolean;
+    items: MyMattersActivityItem[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersActivityItem {
+    eventId: number;
+    occurredAtUtc: string;
+    kind: string;
+    actorId: number | undefined;
+    actorName: string | undefined;
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    clientName: string;
+    taskId: number | undefined;
+    taskNumber: string | undefined;
+    taskTitle: string | undefined;
+    from: string | undefined;
+    to: string | undefined;
+    managerPlace: string | undefined;
+    isUnread: boolean;
+
+    [key: string]: any;
+}
+
+export interface MyMattersActivitySeen {
+    seenEventId: number;
+    seenAtUtc: string;
 
     [key: string]: any;
 }
