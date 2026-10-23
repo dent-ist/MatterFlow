@@ -143,6 +143,37 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(techPage).toHaveURL(/\/my-work/);
   });
 
+  test('a System Admin keeps the Dashboard landing unless they are also a Project Manager by role (#691)', async ({
+    personas,
+    asUser,
+  }) => {
+    // The administrator holds every permission, which includes Matter.BeManager: that must not move their home to My Matters.
+    const admin = await personas.named('systemAdmin');
+    const adminPage = await asUser(admin.username);
+    await adminPage.goto('/');
+    await expect(adminPage).toHaveURL(/\/dashboard/);
+    await adminPage.goto('/no-such-page');
+    await expect(adminPage.locator('[data-state-actions] [data-back-link]')).toHaveText(
+      'Go to Dashboard',
+    );
+    await adminPage.getByRole('link', { name: 'MatterFlow home' }).click();
+    await expect(adminPage).toHaveURL(/\/dashboard/);
+    // Menu item and route are unchanged: the administrator can still open My Matters from the menu.
+    await adminPage
+      .getByRole('navigation')
+      .first()
+      .getByRole('link', { name: 'My Matters' })
+      .click();
+    await expect(adminPage).toHaveURL(/\/my-matters/);
+    await expect(adminPage.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
+
+    // Explicitly a Project Manager as well: My Matters, like any other manager.
+    const both = await personas.named('systemAdminProjectManager');
+    const bothPage = await asUser(both.username);
+    await bothPage.goto('/');
+    await expect(bothPage).toHaveURL(/\/my-matters/);
+  });
+
   test('Access Pending "Check again" lands by the same rule once access is granted', async ({
     personas,
     asUser,

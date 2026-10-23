@@ -6,6 +6,7 @@ import {
   ErrorRequest,
   ForbiddenRequest,
   accessGuard,
+  canOpenMyMatters,
   landingGuard,
   landingLink,
   pendingOnlyGuard,
@@ -210,6 +211,26 @@ describe('landing for project managers (#691)', () => {
       }),
     );
     expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it('keeps the System Admin on the previous landing: the admin holds every permission, which is not a choice to manage matters (#691)', async () => {
+    setup(profileOf({ isSystemAdmin: true, roles: ['System Admin'], hasWork: true }));
+    expect(await run(landingGuard)).toBe('/my-work');
+    TestBed.resetTestingModule();
+    setup(profileOf({ isSystemAdmin: true, roles: ['System Admin'] }));
+    expect(await run(landingGuard)).toBe('/dashboard');
+    TestBed.resetTestingModule();
+    setup(profileOf({ isSystemAdmin: true, roles: ['System Admin'] }));
+    const store = TestBed.inject(AuthStore);
+    await store.ensureLoaded();
+    expect(landingLink(store)).toEqual({ path: '/dashboard', name: 'Dashboard' });
+    // The menu item and the route guard are unchanged: the admin can still open My Matters.
+    expect(canOpenMyMatters(store)).toBe(true);
+  });
+
+  it('lands a System Admin who also holds the Project Manager role on My Matters', async () => {
+    setup(profileOf({ isSystemAdmin: true, roles: ['System Admin', 'Project Manager'] }));
+    expect(await run(landingGuard)).toBe('/my-matters');
   });
 
   it('guards the route with all three permissions: 403 for a manager without Task.View, no page load', async () => {

@@ -28,7 +28,8 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
  * Default landing, the one rule behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
  * "Check again" (S4a, #628; UX 2.2 amended; Project Managers, #691):
  *   0. My Matters, if the person can be a matter's project manager (`Matter.BeManager`) and may see matters and tasks (`Matter.View`,
- *      `Task.View`): the marker permission decides, never a role name; My Work stays in the menu;
+ *      `Task.View`): the marker permission decides; My Work stays in the menu. The System Admin holds every permission implicitly, so the
+ *      permissions say nothing about them: they keep the landing below unless they also hold the Project Manager role (`landsOnMyMatters`);
  *   1. My Work, if the person has Task.View and any pod membership or assignment (`hasWork`);
  *   2. else the Dashboard, if they hold any Dashboard tab permission (Summary, Breakdowns, Trends, Swimlane, Users or Unassigned);
  *   3. else Task Queue, if they have Task.View;
@@ -37,7 +38,7 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
  * Nobody lands on a page the navigation hides: My Work and Task Queue need Task.View, the Dashboard needs a tab.
  */
 export function defaultLandingPath(store: AuthStore): string {
-  if (canOpenMyMatters(store)) return APP_PATHS.myMatters;
+  if (landsOnMyMatters(store)) return APP_PATHS.myMatters;
   if (store.has('Task.View') && store.profile()?.hasWork) return APP_PATHS.myWork;
   if (store.hasAnyDashboardTab()) return APP_PATHS.dashboard;
   if (store.has('Task.View')) return APP_PATHS.taskQueue;
@@ -53,6 +54,19 @@ export const MY_MATTERS_PERMISSIONS: readonly Permission[] = [
 
 export function canOpenMyMatters(store: AuthStore): boolean {
   return MY_MATTERS_PERMISSIONS.every((p) => store.has(p));
+}
+
+/** The starter role whose members land on My Matters even when they are also System Admin. */
+export const PROJECT_MANAGER_ROLE = 'Project Manager';
+
+/**
+ * Step 0 of the landing rule. `store.has` is true for everything for a System Admin, so a System Admin lands on My Matters only when they
+ * are explicitly a Project Manager (the role is on their profile). Only the landing differs: the menu item and the route guard stay
+ * permission-only (`canOpenMyMatters`), so the administrator can still open My Matters, they just do not start there.
+ */
+export function landsOnMyMatters(store: AuthStore): boolean {
+  if (!canOpenMyMatters(store)) return false;
+  return !store.isSystemAdmin() || (store.profile()?.roles ?? []).includes(PROJECT_MANAGER_ROLE);
 }
 
 /** The landing rule by its name in the delivery plan (`landingFor(permissions)`): the address a person's home, logo and "Go to ..." links lead to. */

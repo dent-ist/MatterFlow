@@ -94,6 +94,13 @@ export const PERSONAS = {
       'AssetType.Manage',
     ],
   },
+  /** A System Admin (holds every permission implicitly): keeps the Dashboard / My Work landing, not My Matters (#691). */
+  systemAdmin: { label: 'sysadmin', roles: ['System Admin'] },
+  /** A System Admin who is explicitly also a Project Manager: lands on My Matters. */
+  systemAdminProjectManager: {
+    label: 'sysadmin-pm',
+    roles: ['System Admin', 'Project Manager'],
+  },
   clientViewOnly: { label: 'clientview', permissions: ['Client.View'] },
   taskViewOnly: { label: 'taskview', permissions: ['Task.View', 'Matter.View', 'Client.View'] },
   userManageOnly: { label: 'usermanage', permissions: ['User.View', 'User.Manage'] },
