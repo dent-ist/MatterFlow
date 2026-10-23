@@ -10,6 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   ClientsClient,
@@ -52,7 +53,7 @@ const clientOption = (c: {
  */
 @Component({
   selector: 'mf-mm-filter-bar',
-  imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet],
+  imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -82,7 +83,16 @@ const clientOption = (c: {
       min-width: 9rem;
       max-width: 22rem;
     }
+    .fb__link {
+      align-self: center;
+      color: var(--mf-link);
+    }
     @media (max-width: 639.98px) {
+      .fb__link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
     }
     .fb__hint {
       flex: 1 0 100%;
@@ -211,6 +221,16 @@ const clientOption = (c: {
               (change)="filterChange.emit({ to: $any($event.target).value || null })"
             />
           </div>
+        }
+        @if (filters().scope === 'all') {
+          <a
+            class="fb__link"
+            data-set-managers
+            routerLink="/matters"
+            [queryParams]="{ isActive: 'true' }"
+            [state]="{ selectManagers: true }"
+            >Set project managers</a
+          >
         }
         @if (active() > 0) {
           <button type="button" class="mf-btn" data-clear-filters (click)="clear.emit()">

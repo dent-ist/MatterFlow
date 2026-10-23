@@ -550,7 +550,12 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly bulkOpen = signal(false);
   protected readonly canAssign = computed(() => this.auth.has('Matter.AssignManagers'));
   /** Selection mode: the tick column is there only after "Select", so the grid keeps its normal columns for everybody else. */
-  protected readonly selecting = signal(false);
+  protected readonly selecting = signal(
+    // My Matters' "Set project managers" link (#701) opens the list already in selection mode (router state, never the address).
+    this.canAssign() &&
+      typeof history !== 'undefined' &&
+      history.state?.['selectManagers'] === true,
+  );
   /** The "Mine" quick filter is for people who can be a project manager. */
   protected readonly canBeManager = computed(() => this.auth.has('Matter.BeManager'));
   protected readonly mine = computed(() => this.filters.text('mine') === 'true');

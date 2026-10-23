@@ -85,6 +85,14 @@ function storage(): Storage | null {
     :host {
       display: block;
     }
+    .mm__scope {
+      display: inline-flex;
+    }
+    .mm__scope .mf-btn[aria-pressed='true'] {
+      border-color: var(--mf-primary);
+      background: var(--mf-selected-bg);
+      font-weight: 700;
+    }
     .mm__grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -124,10 +132,36 @@ function storage(): Storage | null {
           'workload'
           'activity';
       }
+      .mm__scope .mf-btn {
+        min-height: 44px;
+      }
     }
   `,
   template: `
-    <mf-page-header heading="My Matters" [description]="description()"> </mf-page-header>
+    <mf-page-header heading="My Matters" [description]="description()">
+      @if (canAll()) {
+        <div mfActions class="mm__scope" role="group" aria-label="Scope" data-ph-selector>
+          <button
+            type="button"
+            class="mf-btn"
+            data-scope="mine"
+            [attr.aria-pressed]="filters().scope === 'mine'"
+            (click)="update({ scope: 'mine', managerId: null })"
+          >
+            My matters
+          </button>
+          <button
+            type="button"
+            class="mf-btn"
+            data-scope="all"
+            [attr.aria-pressed]="filters().scope === 'all'"
+            (click)="update({ scope: 'all' })"
+          >
+            All matters
+          </button>
+        </div>
+      }
+    </mf-page-header>
 
     <mf-mm-filter-bar
       [filters]="filters()"
