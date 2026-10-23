@@ -342,3 +342,11 @@ ESLint is not run on `e2e/` (its angular-eslint rules target the app); Prettier 
 | `users-us7-keyboard`, `users-us7-flows` | skip link and Tab stops; the six keyboard-only flows and axe with overlays |
 | `users-us7-matrix` | the permission matrix of the Users area (`fixes/us7-keyboard/permission-matrix.md`) |
 
+
+## Project Manager role and My Matters (epic #667, WP-PM4)
+
+Each spec builds the matters and tasks it needs in a world of its own (`support/my-matters-fixtures.ts`: one Project Manager, a second one, one client, matters with exactly the managers and tasks a test names), so the numbers on the page are written down in the test and not read back from the page.
+
+| Spec | Covers |
+|---|---|
+| `pm4-my-matters` (17) | The page and its panels (#692, #693, #695, #696, #697): every strip cell opens a list whose total equals the cell; Role, Client and Dates in the address, over every panel, restored by Back, Clear filters; a manager with no matters sees a positive empty state; one failing panel leaves the others working and Retry reloads it; Needs my attention groups, rows that open the task and Back, View all totals, no item for a matter nobody manages; Upcoming deadlines by day, the 2 / 4 week toggle, overdue not in it, a stuck hold with its age; Matter health rows, flag words and reasons, sort with `aria-sort`, "How is this decided?", matter link; a matter without a manager is never flagged, listed or counted; "+ New task" creates the task on the right matter and returns to My Matters at 1366 and 375, Cancel returns too, a foreign `returnTo` is ignored; Workload by pod and person with an out-of-office chip and matching totals; Recent activity: first visit nothing unread, an event by somebody else unread until Mark all as read (survives a reload), opening an event marks it, comments only as "commented on"; axe and no sideways scroll at four sizes |

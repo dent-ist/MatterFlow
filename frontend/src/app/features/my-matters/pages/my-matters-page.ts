@@ -21,6 +21,7 @@ import {
   parseFilters,
 } from '../my-matters-filters';
 import { MyMattersStrip } from '../my-matters-strip';
+import { ActivityPanel } from '../panels/activity-panel';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
 import { HealthPanel, HealthSort } from '../panels/health-panel';
@@ -70,6 +71,7 @@ function storage(): Storage | null {
 @Component({
   selector: 'mf-my-matters-page',
   imports: [
+    ActivityPanel,
     AttentionPanel,
     DeadlinesPanel,
     HealthPanel,
@@ -158,6 +160,7 @@ function storage(): Storage | null {
         (showAll)="update({ scope: 'all' })"
       />
       <mf-mm-workload class="mm__workload" [filters]="filters()" />
+      <mf-mm-activity class="mm__activity" [filters]="filters()" />
     </div>
   `,
 })
