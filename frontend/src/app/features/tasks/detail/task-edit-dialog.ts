@@ -26,11 +26,9 @@ import {
   ProjectResponse,
   ProjectsClient,
   TasksClient,
-  UsersLookupClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
-import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
@@ -42,7 +40,8 @@ import {
   zonedLocalToUtc,
 } from '../../../core/time/time';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
-import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
+import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
+import { PickerOption } from '../../../shared/ui/entity-picker';
 import { splitFormErrors } from '../../../shared/ui/custom-fields';
 import { Dialog } from 'primeng/dialog';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
@@ -103,7 +102,7 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
     DateInput,
     Dialog,
     DialogFocus,
-    EntityPicker,
+    AssigneePicker,
     MatterRef,
     RichTextEditor,
     TitleArea,
@@ -361,13 +360,14 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
                     <p class="mf-field__error" role="alert">{{ e }}</p>
                   }
                 </div>
-                <mf-entity-picker
+                <mf-assignee-picker
                   inputId="td-assignee"
                   label="Assignee"
                   placeholder="Search users"
                   help="Any active user can be assigned, not only members of the Pod. Clear the choice to leave the task unassigned."
                   [error]="err('assignedUserId')"
-                  [search]="searchUsers"
+                  [podId]="model().podId"
+                  [taskTypeId]="store.task()?.taskType?.taskTypeId"
                   [selected]="assignee()"
                   (selectedChange)="onAssignee($event)"
                 />
@@ -566,7 +566,6 @@ export class TaskEditDialog {
   private readonly tasks = inject(TasksClient);
   private readonly projectsApi = inject(ProjectsClient);
   private readonly podsApi = inject(PodsClient);
-  private readonly usersApi = inject(UsersLookupClient);
   protected readonly auth = inject(AuthStore);
   private readonly lookups = inject(LookupStore);
   private readonly notify = inject(NotificationService);
@@ -865,16 +864,6 @@ export class TaskEditDialog {
       return copy;
     });
   }
-
-  /** Any active user, as in Create Task (`GET /users/lookup`, needs Task.Assign), not just the Pod's members. */
-  protected readonly searchUsers = async (query: string): Promise<PickerOption[]> => {
-    const found = await firstValueFrom(this.usersApi.lookupUsers(query || undefined, 8));
-    return found.map((u) => ({
-      id: u.userId,
-      label: u.displayName,
-      flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
-    }));
-  };
 
   protected onAssignee(option: PickerOption | null): void {
     this.assignee.set(option);

@@ -1,3 +1,4 @@
+import { aLookupItem } from '../../../shared/assignees/assignee-testing';
 import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -6,7 +7,6 @@ import {
   AssetLinkRolesClient,
   FormsClient,
   PodsClient,
-  PodWorkClient,
   PrioritiesClient,
   ProjectsClient,
   StatusLabelsClient,
@@ -293,29 +293,15 @@ export async function mountTaskPage(
       },
       { provide: UsersClient, useValue: { listUsers: () => ok({ items: [] }) } },
       {
-        provide: PodWorkClient,
-        useValue: {
-          getPodWork: vi.fn().mockReturnValue(
-            ok({
-              memberLoads: [
-                {
-                  userId: 9,
-                  displayName: 'Tariq M.',
-                  isActive: true,
-                  isMember: true,
-                  open: 4,
-                  overdue: 0,
-                  onHold: 0,
-                },
-              ],
-            }),
-          ),
-        },
-      },
-      {
         provide: UsersLookupClient,
         useValue: {
-          lookupUsers: vi.fn().mockReturnValue(ok([{ userId: 20, displayName: 'Colleague C.' }])),
+          lookupUsers: vi.fn((_q?: string, _limit?: number, podId?: number) =>
+            ok(
+              podId
+                ? [aLookupItem({ userId: 9, displayName: 'Tariq M.', openTaskCount: 4 })]
+                : [aLookupItem({ userId: 20, displayName: 'Colleague C.', openTaskCount: 1 })],
+            ),
+          ),
         },
       },
     ],

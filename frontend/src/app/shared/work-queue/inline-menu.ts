@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   ElementRef,
   HostListener,
@@ -12,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Dismissable } from '../ui/dismissable';
 
 export interface MenuOption {
@@ -28,6 +30,8 @@ export interface MenuOption {
   /** A warning shown under the label with an icon (for example "Out of office until Oct 20"); the option stays selectable. */
   flag?: string;
   selected?: boolean;
+  /** Heading of the run of options this one belongs to (for example "Suggested"); consecutive options with the same group sit under one heading. */
+  group?: string;
   disabled?: boolean;
   /** Why a disabled option cannot be used; read out with the option. */
   reason?: string;
@@ -45,7 +49,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-inline-menu',
-  imports: [Dismissable],
+  imports: [Dismissable, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -122,56 +126,74 @@ let nextId = 0;
         }
         @if (options().length > 0) {
           <div role="menu" class="im-list" [attr.aria-label]="menuLabel()">
-            @for (o of options(); track o.id) {
-              <button
-                type="button"
-                role="menuitemradio"
-                class="im-item"
-                [class.im-danger]="o.danger"
-                [class.im-sep]="o.separated"
-                [attr.title]="o.tip ?? null"
-                [attr.data-option]="o.id"
-                [attr.aria-checked]="o.selected ? 'true' : 'false'"
-                [attr.aria-disabled]="o.disabled ? 'true' : null"
-                [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
-                (click)="pick(o)"
-              >
-                <i
-                  class="pi"
-                  [class.pi-check]="o.selected"
-                  aria-hidden="true"
-                  style="width: 1rem"
-                ></i>
-                <span class="im-text">
-                  <span>{{ o.label }}</span>
-                  @if (o.flag) {
-                    <span class="im-flag" data-option-flag>
-                      <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ o.flag }}
-                    </span>
+            @for (section of sections(); track $index) {
+              @if (section.label) {
+                <div role="group" class="im-section" [attr.aria-label]="section.label">
+                  <div class="im-group" aria-hidden="true" data-menu-group>{{ section.label }}</div>
+                  @for (o of section.options; track o.id) {
+                    <ng-container
+                      [ngTemplateOutlet]="itemTpl"
+                      [ngTemplateOutletContext]="{ $implicit: o }"
+                    />
                   }
-                </span>
-                @if (o.pending) {
-                  <i
-                    class="pi pi-spin pi-spinner im-spin"
-                    aria-hidden="true"
-                    data-option-pending
-                  ></i>
+                </div>
+              } @else {
+                @for (o of section.options; track o.id) {
+                  <ng-container
+                    [ngTemplateOutlet]="itemTpl"
+                    [ngTemplateOutletContext]="{ $implicit: o }"
+                  />
                 }
-                @if (o.hint) {
-                  <span class="im-hint">{{ o.hint }}</span>
-                }
-              </button>
-              @if (o.reason) {
-                <span class="im-reason" [id]="uid + '-r-' + o.id">{{ o.reason }}</span>
               }
             }
           </div>
         }
+        <ng-template #itemTpl let-o>
+          <button
+            type="button"
+            role="menuitemradio"
+            class="im-item"
+            [class.im-danger]="o.danger"
+            [class.im-sep]="o.separated"
+            [attr.title]="o.tip ?? null"
+            [attr.data-option]="o.id"
+            [attr.aria-checked]="o.selected ? 'true' : 'false'"
+            [attr.aria-disabled]="o.disabled ? 'true' : null"
+            [attr.aria-describedby]="o.reason ? uid + '-r-' + o.id : null"
+            (click)="pick(o)"
+          >
+            <i class="pi" [class.pi-check]="o.selected" aria-hidden="true" style="width: 1rem"></i>
+            <span class="im-text">
+              <span>{{ o.label }}</span>
+              @if (o.flag) {
+                <span class="im-flag" data-option-flag>
+                  <i class="pi pi-calendar-minus" aria-hidden="true"></i> {{ o.flag }}
+                </span>
+              }
+            </span>
+            @if (o.pending) {
+              <i class="pi pi-spin pi-spinner im-spin" aria-hidden="true" data-option-pending></i>
+            }
+            @if (o.hint) {
+              <span class="im-hint">{{ o.hint }}</span>
+            }
+          </button>
+          @if (o.reason) {
+            <span class="im-reason" [id]="uid + '-r-' + o.id">{{ o.reason }}</span>
+          }
+        </ng-template>
         @if (checking()) {
           <p class="im-sr" role="status" data-menu-checking>Checking step inputs</p>
         }
-        @if (footnote(); as note) {
-          <p class="im-foot" data-menu-note>{{ note }}</p>
+        @if (footnote() || footAction()) {
+          <p class="im-foot" data-menu-note>
+            {{ footnote() }}
+            @if (footAction(); as action) {
+              <button type="button" class="im-foot-link" data-foot-action (click)="pickFoot()">
+                {{ action }}
+              </button>
+            }
+          </p>
         }
       </div>
     }
@@ -316,6 +338,24 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .im-group {
+      padding: var(--mf-s1) var(--mf-s2) 0;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .im-foot-link {
+      min-height: var(--mf-target-min, 1.5rem);
+      padding: 0 var(--mf-s1);
+      border: 0;
+      background: transparent;
+      color: var(--mf-link, var(--mf-primary));
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
     .im-spin {
       font-size: 0.875rem;
     }
@@ -357,6 +397,9 @@ export class InlineMenu implements OnDestroy {
   /** A line under the options, for example why the list is limited. */
   readonly footnote = input<string | null>(null);
 
+  /** A link after the footnote (for example "Search all users"); picking it emits `footPicked`. The menu stays open. */
+  readonly footAction = input<string | null>(null);
+
   /** A first choice above the search box and the options (for example "Assign to me"): its visible text and its accessible name. */
   readonly lead = input<{ label: string; ariaLabel: string } | null>(null);
 
@@ -367,6 +410,19 @@ export class InlineMenu implements OnDestroy {
   readonly searched = output<string>();
   readonly picked = output<MenuOption>();
   readonly leadPicked = output<void>();
+  readonly footPicked = output<void>();
+
+  /** The options in runs of the same `group` heading; options without a group form a run with no heading. */
+  protected readonly sections = computed(() => {
+    const runs: { label: string | null; options: MenuOption[] }[] = [];
+    for (const o of this.options()) {
+      const label = o.group ?? null;
+      const last = runs[runs.length - 1];
+      if (last && last.label === label) last.options.push(o);
+      else runs.push({ label, options: [o] });
+    }
+    return runs;
+  });
 
   protected readonly uid = `im-${nextId++}`;
   protected readonly open = signal(false);
@@ -385,6 +441,7 @@ export class InlineMenu implements OnDestroy {
       this.options();
       this.loading();
       this.footnote();
+      this.footAction();
       if (untracked(() => this.open())) setTimeout(() => this.place());
     });
   }
@@ -446,6 +503,11 @@ export class InlineMenu implements OnDestroy {
     }
   }
 
+  /** Puts the focus in the search box (after a link in the list changed what the list shows). */
+  focusSearch(): void {
+    this.host.nativeElement.querySelector<HTMLElement>('.im-search')?.focus();
+  }
+
   focusTrigger(): void {
     this.trigger().nativeElement.focus();
   }
@@ -461,6 +523,10 @@ export class InlineMenu implements OnDestroy {
     if (o.disabled) return;
     this.close(true);
     this.picked.emit(o);
+  }
+
+  protected pickFoot(): void {
+    this.footPicked.emit();
   }
 
   protected pickLead(): void {
@@ -517,7 +583,7 @@ export class InlineMenu implements OnDestroy {
   private focusables(): HTMLElement[] {
     return Array.from(
       this.host.nativeElement.querySelectorAll<HTMLElement>(
-        '.im-lead, .im-search, .im-item:not([aria-disabled="true"])',
+        '.im-lead, .im-search, .im-item:not([aria-disabled="true"]), .im-foot-link',
       ),
     );
   }

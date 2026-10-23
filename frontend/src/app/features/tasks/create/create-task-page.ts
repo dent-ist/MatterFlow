@@ -29,13 +29,11 @@ import {
   TaskTypeView,
   TaskTypesClient,
   TasksClient,
-  UsersLookupClient,
   WorkflowsClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { LookupStore } from '../../../core/lookups/lookup-store';
-import { outOfOfficeText } from '../../../core/availability/availability';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import {
@@ -58,6 +56,7 @@ import { EmailIntake, EmailPrefill } from '../../../shared/ui/email-intake';
 import { RichTextEditor } from '../panels/rich-text-editor';
 import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-text';
 import { whenSummaryText } from '../panels/when-summary';
+import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { RecordHeader } from '../../../shared/ui/record-header';
 import type { Crumb } from '../../../shared/ui/page-header';
@@ -116,6 +115,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
     DateInput,
     EmailIntake,
     EntityPicker,
+    AssigneePicker,
     TextField,
     TitleArea,
     RichTextEditor,
@@ -158,7 +158,6 @@ export class CreateTaskPage implements HasUnsavedChanges {
   private readonly mattersApi = inject(MattersClient);
   private readonly projectsApi = inject(ProjectsClient);
   private readonly formsApi = inject(FormsClient);
-  private readonly usersApi = inject(UsersLookupClient);
   private readonly tasksApi = inject(TasksClient);
   private readonly assetContext = inject(AssetPickerContext);
 
@@ -597,15 +596,6 @@ export class CreateTaskPage implements HasUnsavedChanges {
     );
     for (const m of page.items) this.matterRecords.set(m.matterId, m);
     return page.items.map(matterOption);
-  };
-
-  protected readonly searchUsers = async (query: string): Promise<PickerOption[]> => {
-    const found = await firstValueFrom(this.usersApi.lookupUsers(query || undefined, 8));
-    return found.map((u) => ({
-      id: u.userId,
-      label: u.displayName,
-      flag: outOfOfficeText(u.availability, this.zone) ?? undefined,
-    }));
   };
 
   protected onMatterPicked(option: PickerOption | null): void {

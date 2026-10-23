@@ -276,7 +276,7 @@ describe('Details tab', () => {
     expect(q(document.body, 'label[for=td-due-time]')!.textContent).toMatch(/Time \(.+\)/);
     expect(q(document.body, '#td-pod')).not.toBeNull();
     // The assignee is chosen with the user picker (any active user), not a list of the Pod's members.
-    expect(q(document.body, 'mf-entity-picker')).not.toBeNull();
+    expect(q(document.body, 'mf-assignee-picker')).not.toBeNull();
     // Matter, Task Type and Workflow stay read-only
     expect(q(document.body, '[data-locked-fields]')).not.toBeNull();
     expect(q(document.body, '#td-matter')).toBeNull();
@@ -507,11 +507,22 @@ describe('Details tab', () => {
     );
     await click(fixture, q(el, '[data-action="edit"]'));
     await click(fixture, q(document.body, '[data-chosen] button'));
+    await settle(fixture);
+    const lookup = TestBed.inject(UsersLookupClient).lookupUsers as ReturnType<typeof vi.fn>;
+    // The task is in Pod 2: its members come first, with their open-task count, and the list ends with "Search all users".
+    expect(lookup).toHaveBeenCalledWith(undefined, 50, 2, expect.any(Number), undefined);
+    const members = Array.from(document.body.querySelectorAll('[role=option]'));
+    expect(members[0].textContent).toContain('Tariq M.');
+    expect(members[0].textContent).toContain('4 open');
+    expect(members[members.length - 1].textContent).toContain('Search all users');
+    members[members.length - 1].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await settle(fixture);
+    expect(lookup).toHaveBeenCalledWith(undefined, 6, undefined, expect.any(Number), true);
+
     await type(fixture, document.body, '#td-assignee', 'Coll');
     await new Promise((r) => setTimeout(r, 300));
     await settle(fixture);
-    const lookup = TestBed.inject(UsersLookupClient).lookupUsers as ReturnType<typeof vi.fn>;
-    expect(lookup).toHaveBeenCalledWith('Coll', 8);
+    expect(lookup).toHaveBeenCalledWith('Coll', 25, undefined, expect.any(Number), undefined);
     const option = q(document.body, '[role=option]')!;
     expect(option.textContent).toContain('Colleague C.');
     option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));

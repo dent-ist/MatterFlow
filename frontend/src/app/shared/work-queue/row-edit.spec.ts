@@ -2,13 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Router } from '@angular/router';
 import { NEVER, of, throwError } from 'rxjs';
-import {
-  PodsClient,
-  PodWorkClient,
-  TaskQueueRow,
-  TasksClient,
-  UsersLookupClient,
-} from '../../api/generated/api-client';
+import { TaskQueueRow, TasksClient, UsersLookupClient } from '../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
@@ -18,6 +12,7 @@ import { UndoService } from '../../core/notify/undo.service';
 import { InlineField } from './inline-edit';
 import { InlineStatusFlow } from './inline-status-flow';
 import { RowEdit } from './row-edit';
+import { aLookupItem } from '../assignees/assignee-testing';
 import { aRow, provideLookups } from './work-queue-testing';
 
 const taskOf = (row: TaskQueueRow, patch: Record<string, unknown> = {}) => ({
@@ -53,9 +48,7 @@ describe('RowEdit', () => {
   let stubFlow = false;
   let fixture: ComponentFixture<RowEdit>;
   let tasks: Record<string, ReturnType<typeof vi.fn>>;
-  let pods: { getPod: ReturnType<typeof vi.fn> };
   let users: { lookupUsers: ReturnType<typeof vi.fn> };
-  let podWork: { getPodWork: ReturnType<typeof vi.fn> };
   let notify: {
     success: ReturnType<typeof vi.fn>;
     error: ReturnType<typeof vi.fn>;
@@ -107,33 +100,14 @@ describe('RowEdit', () => {
         }),
       ),
     };
-    pods = {
-      getPod: vi.fn(() =>
-        of({
-          pod: { podId: 5, name: 'Pod A' },
-          members: [
-            { userId: 4, displayName: 'Sam Kim', isActive: true },
-            { userId: 5, displayName: 'Gone Away', isActive: false },
-          ],
-        }),
-      ),
-    };
-    users = { lookupUsers: vi.fn(() => of([{ userId: 8, displayName: 'Any Person' }])) };
-    podWork = {
-      getPodWork: vi.fn(() =>
-        of({
-          memberLoads: [
-            {
-              userId: 4,
-              displayName: 'Sam Kim',
-              isActive: true,
-              isMember: true,
-              open: 3,
-              overdue: 1,
-              onHold: 0,
-            },
-          ],
-        }),
+    // The server decides who is listed and in which order; the spec stands in for it: Sam Kim is the Pod's member, Any Person is everyone else.
+    users = {
+      lookupUsers: vi.fn((_q?: string, _limit?: number, podId?: number) =>
+        of(
+          podId
+            ? [aLookupItem({ userId: 4, displayName: 'Sam Kim', openTaskCount: 3 })]
+            : [aLookupItem({ userId: 8, displayName: 'Any Person', openTaskCount: 1 })],
+        ),
       ),
     };
     notify = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
@@ -142,9 +116,7 @@ describe('RowEdit', () => {
         ...provideLookups(),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: TasksClient, useValue: tasks },
-        { provide: PodsClient, useValue: pods },
         { provide: UsersLookupClient, useValue: users },
-        { provide: PodWorkClient, useValue: podWork },
         { provide: NotificationService, useValue: notify },
       ],
     });
@@ -339,18 +311,18 @@ describe('RowEdit', () => {
     expect(emitted.at(-1)!.rowVersion).toBe('FRESH');
   });
 
-  it('assignee: offers the active members of the Pod and Unassigned, and applies the choice', async () => {
+  it('assignee: offers the members of the Pod from the shared list, with Unassigned and a way to search all users, and applies the choice', async () => {
     await create('assignee', aRow({ status: 'NEW' }));
     await open();
-    expect(pods.getPod).toHaveBeenCalledWith(5);
-    // The Pod list does not use the lookup for its people; it is read once only to mark who is out of office.
+    // One lookup, asked for the Pod's members; the client neither ranks nor reads the Pod itself.
     expect(users.lookupUsers).toHaveBeenCalledTimes(1);
-    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 50);
+    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 50, 5, 2, undefined);
     expect(option('none')).not.toBeNull();
     expect(option('4')).not.toBeNull();
-    expect(option('5')).toBeNull();
-    // Why the list is short (UAT2-13).
+    // Why the list is short (UAT2-13), and the way out.
     expect(el().querySelector('[data-menu-note]')!.textContent).toContain('members of Pod A');
+    expect(el().querySelector('[data-foot-action]')!.textContent).toContain('Search all users');
+    expect(el().querySelector('[data-menu-group]')).toBeNull();
 
     await pick('4');
     expect(tasks['assignTask']).toHaveBeenCalledWith(1042, {
@@ -365,48 +337,76 @@ describe('RowEdit', () => {
     expect(undo.current()?.detail).toBe('Task moved to In Progress.');
   });
 
-  it('assignee: shows the Pod load ("3 open") next to each candidate, read from the Pod Work answer (#306)', async () => {
-    await create('assignee', aRow({ status: 'NEW' }));
-    await open();
-    await new Promise((r) => setTimeout(r));
-    await fixture.whenStable();
-    fixture.detectChanges();
-    // Pod 5, the members view, one row of tasks: only memberLoads is read.
-    const args = podWork.getPodWork.mock.calls[0];
-    expect(args[0]).toBe(5);
-    expect(args[1]).toBe('members');
-    expect(args.length).toBe(33);
-    expect(args[31]).toBe(1);
-    expect(args[32]).toBe(1);
-    expect(option('4')!.querySelector('.im-hint')!.textContent!.trim()).toBe('3 open');
-  });
-
-  it('assignee: a Pod whose load cannot be read still lists its people, without the hint', async () => {
-    await create('assignee', aRow({ status: 'NEW' }));
-    podWork.getPodWork.mockReturnValue(throwError(() => new Error('403')));
-    await open();
-    await new Promise((r) => setTimeout(r));
-    await fixture.whenStable();
-    fixture.detectChanges();
-    expect(option('4')).not.toBeNull();
-    expect(option('4')!.querySelector('.im-hint')).toBeNull();
-  });
-
-  it('assignee without a Pod does not read any Pod load', async () => {
-    await create('assignee', aRow({ assignedPod: undefined }));
-    await open();
-    expect(podWork.getPodWork).not.toHaveBeenCalled();
-  });
-
-  it('assignee: flags a Pod member who is out of office and still lets them be chosen', async () => {
+  it('assignee: shows the open-task count next to each candidate, in the order the server sent', async () => {
     await create('assignee', aRow({ status: 'NEW' }));
     users.lookupUsers.mockReturnValue(
       of([
-        {
+        aLookupItem({ userId: 9, displayName: 'Zed Zane', openTaskCount: 0 }),
+        aLookupItem({ userId: 4, displayName: 'Sam Kim', openTaskCount: 3 }),
+        aLookupItem({ userId: 2, displayName: 'Ann Ames', openTaskCount: 5 }),
+      ]),
+    );
+    await open();
+    const ids = Array.from(el().querySelectorAll('[data-option]')).map((o) =>
+      o.getAttribute('data-option'),
+    );
+    // "Unassigned" first, then the people exactly as sent: not re-sorted by name or count in the client.
+    expect(ids).toEqual(['none', '9', '4', '2']);
+    expect(option('4')!.querySelector('.im-hint')!.textContent!.trim()).toBe('3 open');
+    expect(option('9')!.querySelector('.im-hint')!.textContent!.trim()).toBe('0 open');
+  });
+
+  it('assignee: "Search all users" leaves the Pod and searches everyone', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    await open();
+    el().querySelector<HTMLButtonElement>('[data-foot-action]')!.click();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    // Everyone, as the Suggested list (no Pod): five arguments, the last one asking for suggestions.
+    expect(users.lookupUsers).toHaveBeenLastCalledWith(undefined, 6, undefined, 2, true);
+    expect(option('8')).not.toBeNull();
+    expect(el().querySelector('[data-foot-action]')).toBeNull();
+
+    const input = el().querySelector<HTMLInputElement>('.im-search')!;
+    input.value = 'User 1';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    expect(users.lookupUsers).toHaveBeenLastCalledWith('User 1', 25, undefined, 2, undefined);
+  });
+
+  it('assignee: typing in a Pod list searches the Pod, with the Pod id', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    await open();
+    const input = el().querySelector<HTMLInputElement>('.im-search')!;
+    input.value = 'sam';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    expect(users.lookupUsers).toHaveBeenLastCalledWith('sam', 50, 5, 2, undefined);
+  });
+
+  it('assignee: a Pod without people to offer falls back to the Suggested list', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    users.lookupUsers.mockImplementation((_q?: string, _l?: number, podId?: number) =>
+      of(podId ? [] : [aLookupItem({ userId: 8, displayName: 'Any Person', openTaskCount: 1 })]),
+    );
+    await open();
+    expect(option('8')).not.toBeNull();
+    expect(el().querySelector('[data-menu-group]')!.textContent).toContain('Suggested');
+    expect(el().querySelector('[data-foot-action]')).toBeNull();
+  });
+
+  it('assignee: flags a person who is out of office and still lets them be chosen', async () => {
+    await create('assignee', aRow({ status: 'NEW' }));
+    users.lookupUsers.mockReturnValue(
+      of([
+        aLookupItem({
           userId: 4,
           displayName: 'Sam Kim',
           availability: { state: 'OUT_OF_OFFICE', outUntil: '2099-03-21T04:00:00Z' },
-        },
+        }),
       ]),
     );
     await open();
@@ -497,12 +497,14 @@ describe('RowEdit', () => {
     expect(el().querySelector('[data-assign-link]')).toBeNull();
   });
 
-  it('assignee without a Pod searches all users', async () => {
+  it('assignee without a Pod shows the Suggested list first, with the heading and the counts', async () => {
     await create('assignee', aRow({ assignedPod: undefined, assignedUser: undefined }));
     await open();
-    expect(pods.getPod).not.toHaveBeenCalled();
-    expect(option('8')).not.toBeNull();
+    expect(users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 2, true);
+    expect(el().querySelector('[data-menu-group]')!.textContent).toContain('Suggested');
+    expect(option('8')!.querySelector('.im-hint')!.textContent!.trim()).toBe('1 open');
     expect(option('none')).toBeNull();
+    expect(el().querySelector('[data-foot-action]')).toBeNull();
   });
 
   it('assignee: Unassigned sends no user and keeps the Pod', async () => {

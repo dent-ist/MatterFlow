@@ -466,12 +466,13 @@
                     }
                   </div>
                 }
-                <mf-entity-picker
+                <mf-assignee-picker
                   inputId="ct-user"
                   label="Assignee"
                   placeholder="Search users"
                   help="Assigning a person starts the task (In Progress). Assigning only a Pod doesn't."
-                  [search]="searchUsers"
+                  [podId]="podId()"
+                  [taskTypeId]="typeId()"
                   [error]="fieldError('assignedUserId')"
                   [(selected)]="assignee"
                 />

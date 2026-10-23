@@ -1,3 +1,4 @@
+import { aLookupItem } from '../../../shared/assignees/assignee-testing';
 import { EMAIL_PANEL_STORAGE_KEY } from '../../../shared/ui/email-intake';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -121,7 +122,9 @@ async function create(
     ),
   };
   const users = {
-    lookupUsers: vi.fn().mockReturnValue(ok([{ userId: 9, displayName: 'Tariq M.' }])),
+    lookupUsers: vi
+      .fn()
+      .mockReturnValue(ok([aLookupItem({ userId: 9, displayName: 'Tariq M.', openTaskCount: 2 })])),
   };
   const pods = {
     listPods: vi.fn().mockReturnValue(
@@ -396,6 +399,18 @@ describe('CreateTaskPage', () => {
     expect(h.el.querySelector('[data-summary]')).toBeNull();
   });
 
+  it('the assignee field suggests the least-loaded people when no Pod is chosen, with their open-task counts', async () => {
+    const h = await create({ inputs: { matterId: '7', projectId: '3' } });
+    await fillRequired(h);
+    h.el.querySelector<HTMLInputElement>('#ct-user')!.focus();
+    await settle(h.fixture);
+    expect(h.users.lookupUsers).toHaveBeenCalledWith(undefined, 6, undefined, 1, true);
+    expect(h.el.querySelector('[data-assignee-heading]')!.textContent).toContain('Suggested');
+    expect(h.el.querySelector('#ct-user-opt-0')!.textContent).toContain('Tariq M.');
+    expect(h.el.querySelector('#ct-user-opt-0')!.textContent).toContain('2 open');
+    expect(h.el.querySelector('[data-search-all]')).toBeNull();
+  });
+
   it('creates the task in one call with the form values, due date and assignment, then opens it', async () => {
     const h = await create({ inputs: { matterId: '7', projectId: '3' } });
     await fillRequired(h);
@@ -413,6 +428,8 @@ describe('CreateTaskPage', () => {
     h.el.querySelector<HTMLElement>('#ct-user-opt-0')!.dispatchEvent(new MouseEvent('mousedown'));
     await settle(h.fixture);
 
+    // Pod 4 is chosen: typing searches that Pod's members (the shared list), with the Task Type for the ranking.
+    expect(h.users.lookupUsers).toHaveBeenCalledWith('tar', 50, 4, 1, undefined);
     expect(field(h, '[data-due-help]').textContent).toContain('local time zone (UTC)');
     expect(field(h, '[data-not-in-pod]').textContent).toContain("Tariq M. isn't a member of Pod A");
 
