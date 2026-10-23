@@ -376,3 +376,15 @@ Counts are tests (`--list`) at `6bab2fc`. All run axe at 1366x768, 1920x1080, 76
 | `task-types-tabs-screens` (1), `workflow-tabs-tags-screens` (1) | Screenshot-gated (`E2E_SCREENSHOTS`) |
 
 Notes. The designer has no drag, no Alt+Arrow and no Undo on Remove (#411 not planned, #420); the Alt+Arrow of the version page is exercised in `ty6-version-editor`. `ty8-designer-owners` publishes and retires only on Asset Types; the three Custom Fields forms are singletons shared by every test, so their dialogs are opened and cancelled.
+
+## Notifications (epic #753)
+
+| Spec | Covers |
+|---|---|
+| `notifications-bell` (9) | Assign as one user and see the badge, panel item and live region as the other after one poll, reading clears the badge; the actor is never notified; panel states (empty, phone sheet); axe 0 at four sizes with the panel open and no sideways scroll; a person without `Task.View` has no bell, no request and the 403 page; an overdue task reaches the bell within one scheduler tick, once; the page: filter, paging and Mark all as read restored from the address, axe at four sizes and the empty page; My profile: the eight switches saved at once and honoured for the next notification, axe at four sizes |
+
+Backend: `NotificationScheduler*`, retention and poll tests are Testcontainers integration tests (two overlapping runs, a held lock, a failing job, a restart after ten days, 50,000 rows of retention). The scheduler and the IIS keep-alive are in the runbook, section 6.1.
+
+## Administration pages (epic #518, WP-AD1 to WP-AD9)
+
+Four widths (1366x768, 1920x1080, 768x1024, 375x812), axe 0 including `target-size`, no page-level horizontal scroll, permission variants. Specs: `ad1-designer-states`, `ad1-refused-delete` (states and the inline refused delete); `ad2-kit-grid`, `ad2-kit-lists`, `ad2-kit-lookup`, `ad2-kit-shell`, `ad2-kit-titles` (the list kit); `ad3-labels-shell`, `ad3-priorities-list`, `ad3-priorities-edit`, `ad3-priorities-delete`, `ad3-status-labels` (Labels); `ad4-asset-types-list`, `ad4-asset-type-record` (Asset Types); `ad5-link-roles`; `ad6-custom-fields`; `ad7-audit`; `ad8-focus-rules`, `ad8-tab-stops`, `ad8-axe-reflow` (focus return, Tab stops, reflow); `admin-menu`, `column-filters-admin`. The permission matrix of the area is `ty-permissions-matrix` (Task Types routes, Asset Types, Link Roles, Custom Fields and, in its AD-D block, Labels and Audit with eight roles).

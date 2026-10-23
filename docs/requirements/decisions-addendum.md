@@ -283,6 +283,21 @@ Decisions taken by the project manager (the owner delegated) while closing the e
 5. **Tab-owned filters are never an empty box.** Pod Work's Unassigned tab shows "Unassigned" in the disabled Assignee cell, as the My Work tabs show "Me".
 6. **Keyboard shortcuts are frozen for this phase (owner).** The re-review changed none; shortcut findings are listed as the Phase 2 backlog in the re-review document.
 
+## Y. Administration pages decisions (decided 2026-10-20 and 2026-10-21, epic #518; review `docs/ux/admin-pages-review/`)
+
+Owner approval (2026-10-20): "I like all of your recommendations, so please don't wait for me", with product decisions delegated to the PM; written to the built code in #662. Long form: `docs/ux/admin-pages-review/delivery-plan.md` section 2.
+
+1. **No new or changed keyboard shortcuts (owner, #420).** The three shortcut ideas of the review stay in the Phase 2 backlog. Reordering without a pointer is Move up and Move down in the row menu; no drag handle was added.
+2. **One shared admin list kit (WP-AD2).** `mf-admin-list-shell` (heading, icon, crumbs, one-line description, tabs with counts, Filters, skip link), the 44 px grid stylesheet, `rowActions()`, `AdminListState` and grid-body states, `AdminCardSpec` for phone cards below 640 px, `stripItems`, the control rule, `mf-lookup-dialog`, `dialog-copy` with `impactLine` kinds. The Users, Assets and Search epics reuse it.
+3. **Every `*.Manage` permission reads what it manages (extends AF 11).** `GET /priorities` is `Task.View|Priority.Manage`, `GET /status-labels` is `Task.View|StatusLabel.Manage`; the Labels menu item opens the first allowed tab; counts are `null` without `Task.View` or `Asset.View` (the column is hidden, Delete is not offered, the sentence loses its number: a number the API did not return is never shown); a link exists only when its target opens (audit objects).
+4. **Lifecycle.** Deactivate and Activate everywhere; Delete only for Priorities and Link Roles, only when unused, only in the row menu, always through `dialog-copy` with the impact line. The default priority can be neither deactivated nor deleted and says why. A refused delete (409 `IN_USE`) is one inline sentence, no toast.
+5. **Forms.** Short forms (priority, link role, status label rename) are dialogs (`mf-lookup-dialog`); the asset type is a record page on the form-page pattern (720 px card, validation summary, footer only while dirty, unsaved guard).
+6. **Names.** "Asset Types" in the sidebar and as H1; tabs "Asset Types (n)" and "Link Roles (n)"; crumb `Administration > ...` on every admin page; titles name the record; counts show active records.
+7. **Audit.** Chrome like Task Types (filter row open from 640 px, Filters and Clear in the header, cards below 640, day dividers, quick views), friendly filter options, readable details with a Technical details disclosure, configuration objects named by the API and linked by the viewer's permission. No virtualization.
+8. **Custom Fields.** A list of three objects (Client, Matter, Project); a read endpoint replaces the three POSTs on view; provisioning happens on the first Edit fields; no strip for three rows. The earlier spec text that named four objects was wrong.
+9. **Additive API, no SQL (#519, #599, #627, #639, #643, #649).** Priorities `openTaskCount` and status labels `taskCount`; asset types `fieldCount`, `publishedAtUtc`, `draftVersionNo`, `assetCount`; link roles `linkCount`; `GET /forms/custom-fields`; audit `object.label` for six more object types (`objectType` filter takes a comma list). See `docs/architecture.md`.
+10. **Out of scope.** Shortcuts, drag handles, audit virtualization, per-pod counts, a strip on Custom Fields, tabs for the custom-field objects, exports, saved views, dark theme, real screen-reader and forced-colours testing, the designer layout (AF 8).
+
 ## Z. Users administration (decided 2026-10-20, epic #422; plan `docs/ux/users-review/delivery-plan.md`)
 
 - **Decision X.3 is superseded.** The nine-column Users grid is replaced by the record-list grid: Name over Windows account, Roles, Pods, Availability, (Last seen from 1440 px), Status, one action column; Email and First seen move to the drawer (their filters stay); phone cards below 640 px.
@@ -414,3 +429,20 @@ Owner decisions (2026-10-22) first, PM decisions after. Letter AH was chosen by 
 13. **Scheduler is new infrastructure (PM, #741).** `BackgroundService`, 5-minute tick, `sp_getapplock`, IIS always-running configured in `deploy/`, degraded health when stalled. Catch-up sends current state only.
 14. **No toast, no sound, no tab-title count for new items (PM).** Badge and polite live region only.
 15. **Dependencies and open questions (PM).** Events 4 to 7 wait for the Project Manager role epic (not on dev when written); mentions need a new composer picker (#737, cuttable); thresholds for "a while" are 2 days unassigned and 5 days on hold; see README section 14 for Q1 to Q8.
+
+### AH close-out (2026-10-23, issue #751)
+
+Built: bell, panel, page and profile switches (#745 to #749), API and visibility port (#729 to #734), events 1, 3 (comment), 5, 7 and 8 (#735, #736, #738 to #740), scheduler and events 2, 4 and 6 and retention (#741 to #744). SQL script `29-notifications.sql` (28 was taken by the matter-manager script); the schema also needs the report-access entry for the new table. Initial bundle +3.8 kB (bell and store lazy). Poll p95 53 ms on 100,000 rows; a repeat scheduler run over 10,001 open overdue tasks takes about 1.1 s. The ux-spec section is S25, the runbook section 6.1, the architecture notes 4.2a and section 11.
+
+Answers to the open questions of the review (README section 14):
+
+| Q | Answer |
+|---|---|
+| Q1 mentions | **Deferred** by the owner (#737 stays open): the comment event ships as "commented on your task"; the `TaskMention` event type exists but nothing creates it and the composer has no picker. |
+| Q2 burst coalescing | Not in release 1 (event 8 sends one item per task); measure first. |
+| Q3 "for a while" | Constants: 2 calendar days unassigned, 5 calendar days on hold. |
+| Q4 time zone | The firm time zone (`Firm:TimeZoneId`). |
+| Q5 unread retention | Yes: read items after 90 days, any item after 365 days, same job. |
+| Q6 tab title count | Not now. |
+| Q7 dependency on the Project Manager epic | Resolved: the manager columns of script 28 are on `dev`, events 4 to 7 are built. |
+| Q8 Mark as unread | No (opening an item reads it). |

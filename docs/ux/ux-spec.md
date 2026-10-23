@@ -1169,45 +1169,34 @@ Steps (4) | Used by (2)                         Mode: Ordered v
 
 ---
 
-### S17 Admin: Asset Types
+### S17 Admin: Asset Types and Link Roles
 
-```text
-Asset Types                                               [+ New asset type]
-Relativity Workspace (4 fields) | Harvey Vault | Physical Drive/Media | Collection / Data Set | Production | Third-Party Data Set | Other
-Editor: Name, Description, Active; Fields = the same form designer pattern (S14) using the Asset Type's form with conditional rules; preview.
-```
-- Field changes to an Asset Type apply immediately to future edits; existing values for removed fields are kept but hidden [UX-PROPOSAL, since Asset Types are not versioned in the baseline; flag in Appendix D].
-- Link labels list (Source/Destination/Subject/Result) managed here as "Task link labels" (editable list) [UX-PROPOSAL pending OPEN-14].
-- Needs `AssetType.Manage`.
+> Rewritten to the built code in #662 (Administration pages epic #518, review `docs/ux/admin-pages-review/`, decisions section Y). The inline asset-type form, the Order column and the "Task link labels" list of the first spec are gone.
+
+**Page.** `Administration > Asset Types` (heading and sidebar item "Asset Types"), `AssetType.Manage` (Asset Types and Link Roles tabs). Tabs `Asset Types (n)` and `Link Roles (n)` with active counts (`?tab=link-roles`), Filters and New asset type in the header, a strip (Active, No published fields, Inactive), the grid contract (44 px rows, one name link, one row menu, hidden-count line, cards below 640 px).
+- **Asset Types list.** Name, Fields (`8 fields`), Assets (a plain number, only with `Asset.View`), Status. Row menu: Edit, Edit fields, History (`Audit.View`), Move up and Move down (swap the sort order with the shown neighbour; no drag), Deactivate (impact line) or Activate. Asset types are never deleted.
+- **Asset Type page** (`/admin/asset-types/new`, `/:id`): record header (icon, name, Active badge, Edit, Activity, primary Edit fields, overflow Deactivate), tabs `Overview | Fields (n) | Assets (n)`, the 720 px form card with validation summary, footer only while dirty, unsaved-changes guard with Save and leave. A new type has no Active checkbox. The Fields tab opens the shared form designer (S14; crumb `Administration > Asset Types > <name> > Fields`, Back focuses the row). Field changes apply to future edits; values of removed fields are kept but hidden.
+- **Link Roles tab.** The roles tasks use to link assets: Order, Name (clamped, tooltip), Links, Status and one menu: Rename (a dialog with a 50-character counter and the duplicate-name message), Move up, Move down, Deactivate ("n links keep this role") or Activate, Delete only when the page knows the count is 0 (refused deletes show one inline sentence). The pointer drag stays; no inline rename and no Active checkbox. `?tab=link-roles&edit=<id>|new`.
 
 ---
 
-### S18 Admin: Priorities, Status Labels, Custom Fields
+### S18 Admin: Labels (Priorities, Status labels) and Custom Fields
 
-**Priorities.**
-```text
-Priorities (system-wide)       Drag or use arrows to set order (top = most urgent)
- 1 :: Critical  [color] Active   Default ( )     [Rename]
- 2 :: High      ...
- 3 :: Normal    ...              Default (o)
- 4 :: Low
- [+ Add priority]
-```
-Labels only (no numbers shown to users). Exactly one default. Rename/deactivate allowed; existing tasks keep the label; deactivated priorities are not offered for new/changed tasks but still display. Color picker validates contrast ("Text must be readable: 4.5:1 minimum"). Live preview of the badge. Message: "Enter a label." "A priority named 'X' exists." "Choose a default priority." Needs `Priority.Manage`.
-**Status labels.** Five fixed rows (internal code visible, read-only): `NEW`, `IN_PROGRESS`, `ON_HOLD`, `COMPLETED`, `CANCELLED`; editable display label per row, live badge preview. Helper: "You can rename how statuses appear but not add or remove statuses." Needs `StatusLabel.Manage`.
-**Custom fields (Client, Matter, Project, Asset).** Object selector tabs: Client | Matter | Project | Asset. **There is no Task tab** (global task custom fields dropped; Task-specific fields live in Task Type forms). Field list + the shared field designer pattern (label, key, type, required, default, help, order, validation, active, "Searchable in Advanced Search" toggle for indexed types only) and conditional rules where supported. Asset fields specific to a type are managed in S17. Needs `CustomField.Manage`.
+**Labels** (`Administration > Labels`, one route with a tab segment). Tabs `Priorities (n)` and `Status labels (n)`; a person with only `Priority.Manage` or only `StatusLabel.Manage` sees no tab strip and the menu item opens the allowed tab. Both lists read with their own `*.Manage` permission (`Task.View` is not needed; open-task numbers are then absent and the columns hidden).
+- **Priorities.** Name with its badge, colour, Default, Open tasks (links to the Task Queue filtered by the priority), Status, one menu: Rename and recolour (a dialog with live badge preview and the 4.5:1 contrast check), Make default (one-line confirm), Move up, Move down (the pointer drag stays), Deactivate or Activate, Delete only when unused. The default priority can be neither deactivated nor deleted and says why in a visible sentence. Deactivated priorities still display on existing tasks.
+- **Status labels.** The five fixed statuses (`NEW`, `IN_PROGRESS`, `ON_HOLD`, `COMPLETED`, `CANCELLED`; codes read-only), an editable display label with live badge preview (a rename dialog) and the number of tasks in each. No add or remove.
+
+**Custom Fields** (`Administration > Custom Fields`, `CustomField.Manage`). A list of **three** objects that carry custom fields: Client, Matter, Project (there are no Task or Asset tabs: task fields live in Task Type forms, asset fields in Asset Type forms). Columns: Object (the one link), Fields (`8 fields, 2 required`), Published (`v2 - Oct 12`, publisher as tooltip), Form badge, one menu (Edit fields, History with `Audit.View`); cards below 640 px. Viewing creates nothing; the designer provisions the form on the first Edit fields. The designer is `Administration > Custom Fields > Matter`, titled "Matter custom fields".
 
 ---
 
-### S19 Admin: Audit Log
+### S19 Admin: Audit Logs
 
-```text
-Administration > Audit Log           (needs Audit.View)
-Filters: Date range | Actor | Object type (Task, Step, Client, Matter, Project, Asset, User, Role, Config) | Object id/ref | Event type
-+---------------------+---------------+----------+---------------------+-----------------------+----------------------+
-| Time (firm tz)      | Actor         | Object   | Event               | Field                 | Old -> New           |
-```
-Read-only, append-only, server-paginated; no export (addendum F). Object refs link to the entity. Old/new values display truncated with "Show full". Loading/empty ("No events match") / error states. Read-access logging does not exist and is not shown.
+`Administration > Audit Logs` (`Audit.View`), on the admin list shell: heading, "Every recorded change, newest first. Read only.", Filters with a count and the one Clear in the header (the filter row is open from 640 px), four quick views, the loaded count with the "1,000 loaded" hint, a grid with day dividers (`Today`, `Oct 19`) and the time alone in When (the firm time zone is the When tooltip), cards below 640 px.
+- Columns: When, Who (from the loaded events when the viewer lacks `User.View`), Object, Event (friendly names), Details. Filters: date range, actor, object type (comma list), object, event type.
+- Configuration objects are named by the API (`object.label` for asset types, priorities, status labels, link roles, roles and form definitions; a deleted record keeps its last stored name). Object links exist only when the viewer holds the target's View or Manage permission (asset type record, Labels tabs, Link Roles tab, Roles, Pods, task type, workflow, step, task); otherwise plain text.
+- Row details: a sentence, the Old -> New pair, Show full, a "Technical details" disclosure and "Show only this operation" (focus ends on the chip). Read only, append only, no export (addendum F), no read-access log. No virtualization (measured fine at 3,000 events).
+- `Audit.View` alone opens the page; it does not need `Task.View`.
 
 ---
 
@@ -1262,6 +1251,38 @@ Read-only, append-only, server-paginated; no export (addendum F). Object refs li
 **States.** Each panel loads and fails on its own with Retry. A manager with no matters sees "You are not the project manager of any matter yet." with a link to My Work (and "Show all matters" with `Matter.AssignManagers`), in a calm tone and with no count of unmanaged matters.
 **Phone and tablet.** At 375 px one "Filters (n)" button opens a sheet, the strip is one scrolling chip row, health rows are cards with a 44 px "+ New task", Workload and Recent activity show five lines then "Show all"; at 768 px the lower panels use two columns. No sideways page scroll and axe 0 at 1366x768, 1920x1080, 768x1024 and 375x812.
 **Keyboard.** Existing keys only: Tab order is scope, Client, Role, Dates, the seven counts, panel links, sort buttons, rows; Enter and Space activate; focus returns to the row after Back and to the trigger after menus and dialogs.
+
+---
+
+### S25 Notifications: bell, panel, page and profile switches (epic #753; review `docs/ux/notifications-review/`, decisions section AH)
+
+In-app only: no email, Teams, browser push, sound, toast or tab-title count in this release. Everything needs `Task.View` (the bell is absent without it; `/notifications` shows the 403 page with no request). No keyboard shortcut was added (#420).
+
+**Bell.** In the header next to the user menu (`shared/layout/notification-bell.ts`, loaded lazily after the shell is idle so the initial bundle does not grow). Accessible name "Notifications" or "Notifications, 3 unread"; a badge shows the unread count ("99+" above 99). The client polls `GET /me/notifications/poll?sinceId=` every 30 seconds with jitter (ETag and 304), pauses while the tab is hidden or the shell is offline, and never toasts an error. Items found after the first poll are announced in a polite live region: "New notification: <message>" or "3 new notifications. Latest: <message>".
+
+**Panel.** A non-modal dialog under the bell (a bottom sheet below 640 px): heading "Notifications" (focus goes there on open; Esc and Close return focus to the bell), "Mark all as read" (only when something is unread), the ten newest items (unread dot, bold text and a hidden "Unread:" prefix; message at most two lines; relative time "5 min ago", "1 h ago", "yesterday", "Oct 18" with the absolute time as tooltip), "View all notifications". Choosing an item marks it read and opens the task or the matter, then the panel closes. Empty: "You're all caught up." and "New notifications appear here." Failure: "Couldn't load notifications." with Retry, no toast.
+
+**Page `/notifications`.** Header (icon, H1 "Notifications", the line "Your recent notifications. Read ones are removed after about 90 days.", Mark all as read), a toggle group All and Unread (n) with `aria-pressed`, rows that are links (44 px; cards below 640 px), page size and pager (Previous and Next on a phone). The address holds `?filter=unread&page=2&pageSize=50`. Items about objects the person can no longer view are not listed or counted. Empty: "No notifications yet." or "No unread notifications." with Show all.
+
+**My profile, "Notifications".** One switch per event type, all on by default, grouped Technician, Project manager and Pod Lead; groups for a role the person does not hold are folded under "Other events" so no switch is out of reach. A switch saves at once with a polite "Saved." and reverts with an inline message on failure. Turning a switch off stops future items; existing ones stay; turning it on does not backfill.
+
+**Events and message wording (server-written snapshots, English, at most 200 characters, titles trimmed at 60; the link is built by the client from kind and id).**
+
+| # | Event | Recipient | Message |
+|---|---|---|---|
+| 1 | Task assigned | New assignee | `Ann Lee assigned you T-1042 "Review privilege log" (Acme v. Smith).` |
+| 2a | Due soon | Assignee | `T-1042 "Review privilege log" is due tomorrow (Oct 23).` / `... is due today.` |
+| 2b | Overdue | Assignee | `T-1042 "Review privilege log" is overdue (due Oct 20).` |
+| 3 | Comment | Assignee | `Ann Lee commented on T-1042: "Please re-run the search..."` (80-character excerpt) |
+| 3m | Mention | Mentioned person | Deferred by the owner (#737); the event type exists, nothing creates it |
+| 4 | Matter task overdue | Primary and Secondary manager | `T-1042 "Review privilege log" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).` |
+| 5 | Task created on my matter | Manager | `Ann Lee created T-1051 "Load production volume 3" on Acme v. Smith.` |
+| 6a | Unassigned 2 days | Manager | `T-1042 "Review privilege log" on Acme v. Smith has been unassigned for 2 days.` |
+| 6b | On hold 5 days | Manager | `T-1042 "Review privilege log" on Acme v. Smith has been on hold for 5 days.` |
+| 7 | Set as manager | The person | `Ann Lee made you Primary manager of Acme v. Smith.` (or Secondary) |
+| 8 | Unassigned in my pod | Pod Lead | `T-1042 "Review privilege log" in Demo Processing Pod is unassigned.` |
+
+Rules: never the person who made the change; only people who may view the object now (checked again on read); one notification per person per action (the lower priority number wins, so a manager who is the assignee gets event 1); no scheduled event for a task without a due date, a closed task, or one fixed before the scheduler ran; scheduled events are made by the 5-minute background job (runbook 6.1) and are idempotent by the unique key of `dbo.Notification`; read items are deleted after 90 days and any item after 365 days. Pod Leads are the pod members who hold the active role named "Pod Lead".
 
 ---
 
@@ -1802,22 +1823,27 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S16-11 Permission variants: System Admin; `TaskType.Manage` only; `Workflow.Manage` only; `Task.View` only (403 page on every address of the area); no dead link, toast or refused request.
 
 ### S17 Asset Types
-- [ ] UAT-S17-1 Create type with fields and conditional rules; preview works.
-- [ ] UAT-S17-2 Fields appear in Asset create/edit.
+- [ ] UAT-S17-1 Create an asset type (record page, no Active checkbox), add fields with conditional rules on the Fields tab, preview works, publish.
+- [ ] UAT-S17-2 Fields appear in Asset create and edit.
 - [ ] UAT-S17-3 Removing a field keeps existing values hidden, not deleted.
+- [ ] UAT-S17-4 The list has counted tabs, strip, 44 px rows, one menu (Move up and Move down swap with the shown neighbour; Deactivate names the assets that keep the type); asset types are never deleted.
+- [ ] UAT-S17-5 Link Roles tab: Rename in a dialog (duplicate name explained), Move up and Move down, Deactivate says "n links keep this role", Delete only when unused and a refused delete is one inline sentence.
+- [ ] UAT-S17-6 Requires `AssetType.Manage`; the Assets count appears only with `Asset.View`.
 
-### S18 Priorities, labels, custom fields
-- [ ] UAT-S18-1 Priority add/rename/reorder/deactivate; exactly one default; colour contrast validated.
-- [ ] UAT-S18-2 Changes don't alter existing tasks' labels beyond rename; deactivated priorities still display.
-- [ ] UAT-S18-3 Status labels: five fixed rows, editable labels, codes read-only, no add/remove.
-- [ ] UAT-S18-4 Custom fields tabs only Client, Matter, Project, Asset (no Task tab).
-- [ ] UAT-S18-5 Custom fields render on the relevant create/edit/detail screens.
+### S18 Labels and custom fields
+- [ ] UAT-S18-1 Priority add, rename, recolour, reorder (menu or drag), deactivate; exactly one default which cannot be deactivated or deleted and says why; colour contrast validated.
+- [ ] UAT-S18-2 Changes don't alter existing tasks' labels beyond rename; deactivated priorities still display; Open tasks links to the Task Queue filtered by the priority.
+- [ ] UAT-S18-3 Status labels: five fixed rows, editable labels, codes read-only, no add or remove.
+- [ ] UAT-S18-4 Custom fields lists three objects only: Client, Matter, Project (no Task and no Asset entry); viewing creates nothing; the designer provisions the form on the first Edit fields.
+- [ ] UAT-S18-5 Custom fields render on the relevant create, edit and detail screens.
+- [ ] UAT-S18-6 A person with only `Priority.Manage` or only `StatusLabel.Manage` sees one list without a tab strip; the other tab's address opens the allowed one.
 
 ### S19 Audit
-- [ ] UAT-S19-1 Visible only with `Audit.View`.
-- [ ] UAT-S19-2 Filters by date, actor, object, event; paginated.
-- [ ] UAT-S19-3 Shows events listed in baseline §11.3 and admin/config/user-provision/access-grant events.
-- [ ] UAT-S19-4 Read-only; no export; no read-access log entries.
+- [ ] UAT-S19-1 Visible only with `Audit.View` (which needs no `Task.View`).
+- [ ] UAT-S19-2 Filters by date, actor, object, event; quick views; the loaded count and the 1,000 hint.
+- [ ] UAT-S19-3 Shows the events of baseline 11.3 and admin, configuration, user-provision and access-grant events, with friendly names and readable details (Old -> New, Technical details).
+- [ ] UAT-S19-4 Read only; no export; no read-access log entries.
+- [ ] UAT-S19-5 An object link exists only when the viewer may open its target; otherwise plain text.
 
 ### S21 Access Pending
 - [ ] UAT-S21-1 A user with zero roles lands on Access Pending from any URL; sees only own registration info.
@@ -1852,6 +1878,17 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S24-10 On a matter's Tasks tab, Select mode re-assigns or re-prioritises up to 100 tasks, the dialog states the count and "no undo", a task that cannot change is listed with the reason and the rest change; the controls are hidden without `Task.Assign` / `Task.SetPriority`.
 - [ ] UAT-S24-11 Setting Primary and Secondary on the matter header and in bulk on the Matters list is audited per field; a Secondary without a Primary is allowed; a person who lost the role stays on the matter; an ineligible person is refused (`MANAGER_NOT_ELIGIBLE`).
 - [ ] UAT-S24-12 Keyboard only with the existing keys (no new or changed shortcut), focus visible and returned, axe 0 and no page-level sideways scroll at four sizes with the menus, dialogs and the phone Filters sheet open.
+
+### S25 Notifications
+- [ ] UAT-S25-1 Assigning a task to a technician (by somebody else) shows the badge after one poll (within 30 seconds), the item in the panel with its unread dot, and one polite announcement; the person who made the change gets nothing.
+- [ ] UAT-S25-2 The panel opens on its heading, shows the ten newest items, closes with Esc or Close and returns focus to the bell; choosing an item marks it read, lowers the count and opens the task or matter.
+- [ ] UAT-S25-3 Mark all as read clears the badge in the panel and on `/notifications`; the page filters All and Unread, pages and keeps its state in the address (Back returns to it).
+- [ ] UAT-S25-4 A comment by another person on the technician's task, a task due tomorrow, an overdue task (once, not again on the next scheduler run), a new task on a managed matter, being set as a manager and an unassigned pod task each produce the message of the S25 table for the right person only.
+- [ ] UAT-S25-5 A person who loses the right to view the task no longer sees its notifications (list, count and badge); a person without `Task.View` has no bell and `/notifications` is the 403 page with no request.
+- [ ] UAT-S25-6 My profile > Notifications: eight switches, all on by default, saved at once ("Saved."); switching one off stops the next notification of that type, existing ones stay.
+- [ ] UAT-S25-7 At 375 px the panel is a sheet and the page rows are cards; axe 0 at 1366, 1920, 768 and 375 px with the panel open; no page-level horizontal scroll.
+- [ ] UAT-S25-8 Keyboard only with the existing keys: the bell, panel, page rows, filter toggle, pager and switches are reachable and operable; no new shortcut exists.
+- [ ] UAT-S25-9 No toast, sound or title count appears for a new item.
 
 ---
 
