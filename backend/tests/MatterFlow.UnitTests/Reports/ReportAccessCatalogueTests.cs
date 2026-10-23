@@ -95,6 +95,22 @@ public partial class ReportAccessCatalogueTests
         statements.Select(s => s.Table).Distinct().Except(catalogue.Select(c => c.Name)).ShouldBeEmpty("statements for tables outside the catalogue");
     }
 
+    [GeneratedRegex(@"^\s*CREATE\s+(?:OR\s+ALTER\s+)?FUNCTION\s+(?:\[?dbo\]?\.)?\[?(\w+)\]?", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+    private static partial Regex CreateFunction();
+
+    [Fact]
+    public void Every_function_the_scripts_create_is_denied_to_the_report_login()
+    {
+        // Epic #788: the visibility functions are written for the application (they take the viewer as a parameter). The report login must not use them
+        // as a way around, or to learn the rule. Bracketed names keep these lines out of the table catalogue above.
+        var scripts = ScriptTexts();
+        var functions = scripts.SelectMany(s => CreateFunction().Matches(s)).Select(m => m.Groups[1].Value).Distinct().ToList();
+
+        functions.ShouldContain("fnMatterVisible");
+        foreach (var function in functions)
+            scripts.Any(s => Regex.IsMatch(s, @$"^\s*DENY\s+SELECT\s+ON\s+\[dbo\]\.\[{function}\]\s+TO\s+\[mf_report_reader\]\s*;", RegexOptions.Multiline | RegexOptions.IgnoreCase)).ShouldBeTrue($"{function} has no DENY SELECT for mf_report_reader");
+    }
+
     [Fact]
     public void The_report_role_never_joins_a_broad_role()
     {

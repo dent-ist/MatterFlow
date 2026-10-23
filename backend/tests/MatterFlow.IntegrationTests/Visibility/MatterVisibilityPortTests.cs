@@ -22,7 +22,6 @@ public sealed class MatterVisibilityPortTests(SqlServerFixture sql)
         public long TS1, TS2, TS3, TN1;
         public int PmPrimary, PmSecondary, Assignee, Viewer, Unrelated;
         public HttpClient PmPrimaryClient = null!, PmSecondaryClient = null!, AssigneeClient = null!, ViewerClient = null!, UnrelatedClient = null!, NoPermClient = null!;
-        public int ViewerRole;
     }
 
     private async Task<Universe> BuildAsync(bool enabled)
