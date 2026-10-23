@@ -35,6 +35,8 @@ export const PANEL_LIST_STYLES = `
   .pl__link {
     grid-area: link;
     min-width: 0;
+    min-height: 24px;
+    line-height: 24px;
     overflow: hidden;
     color: var(--mf-link);
     text-overflow: ellipsis;

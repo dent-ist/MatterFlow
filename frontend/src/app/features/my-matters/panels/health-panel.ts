@@ -20,7 +20,9 @@ import {
   RecordCardList,
   phoneCards,
 } from '../../../shared/ui/record-card-list';
-import { dateText } from '../facts';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { calendarDayInZone } from '../../../core/time/time';
+import { shortDate } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
@@ -138,6 +140,12 @@ export function reasonText(code: string, amber: number, hold: number): string {
     .hp__matter {
       min-width: 12rem;
     }
+    .hp__table td a {
+      display: inline-block;
+      min-width: 24px;
+      min-height: 24px;
+      line-height: 24px;
+    }
     .hp__client {
       color: var(--mf-text-muted);
     }
@@ -187,7 +195,13 @@ export function reasonText(code: string, amber: number, hold: number): string {
       }
       .hp__table th,
       .hp__table td {
-        padding-inline: var(--mf-s1);
+        padding-inline: 6px;
+      }
+      .hp__matter {
+        min-width: 7rem;
+      }
+      .hp__new {
+        padding-inline: var(--mf-s2);
       }
       .hp__fold {
         display: block;
@@ -490,6 +504,8 @@ export class HealthPanel {
   private readonly api = inject(MyMattersClient);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
   protected readonly phone = phoneCards();
   protected readonly howOpen = signal(false);
 
@@ -562,7 +578,7 @@ export class HealthPanel {
   }
 
   protected next(r: MyMattersHealthRow): string {
-    return dateText(r.nextDeadline, 'none');
+    return shortDate(r.nextDeadline, calendarDayInZone(this.clock.now(), this.zone).year, 'none');
   }
 
   protected folded(r: MyMattersHealthRow): string {

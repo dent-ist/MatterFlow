@@ -86,6 +86,12 @@ export const PHONE_LINES = 5;
     .wl__sort .pi {
       font-size: 0.75rem;
     }
+    .wl__table a,
+    .wl__name {
+      display: inline-block;
+      min-height: 24px;
+      line-height: 24px;
+    }
     .wl__empty {
       margin: 0;
       color: var(--mf-text-muted);

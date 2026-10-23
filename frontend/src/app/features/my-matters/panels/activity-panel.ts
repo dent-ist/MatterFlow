@@ -91,6 +91,7 @@ export function activityText(e: MyMattersActivityItem): string {
     .ac__text {
       grid-area: text;
       min-width: 0;
+      min-height: 24px;
       overflow-wrap: anywhere;
       color: var(--mf-link);
     }

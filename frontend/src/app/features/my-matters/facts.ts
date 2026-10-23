@@ -86,16 +86,29 @@ export function groupByDay(
   return groups;
 }
 
-/** "Oct 28, 2026" for a `yyyy-MM-dd` string, or the fallback. */
-export function dateText(value: string | undefined, fallback: string): string {
-  const d = value ? parseDateOnly(value) : null;
-  return d ? formatCalendarDay(d) : fallback;
-}
-
 /** "9:42 AM" for today, "Yesterday", else "Oct 21": the time an activity event is shown with (the full stamp is its tooltip). */
 export function activityTime(instant: string, now: Date, zone: string): string {
   const day = calendarDayInZone(instant, zone);
   const gap = dayIndex(calendarDayInZone(now, zone)) - dayIndex(day);
   if (gap <= 0) return formatInstantClock(instant, zone);
   return gap === 1 ? 'Yesterday' : formatMonthDay(day);
+}
+
+const SHORT_DATE = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** "Oct 26" for a `yyyy-MM-dd` date in the current year, "Oct 26, 2027" in another one, or the fallback; `year` is the current year. */
+export function shortDate(
+  value: string | undefined | null,
+  year: number,
+  fallback: string,
+): string {
+  const d = value ? parseDateOnly(value) : null;
+  if (!d) return fallback;
+  return d.year === year
+    ? SHORT_DATE.format(new Date(Date.UTC(d.year, d.month - 1, d.day)))
+    : formatCalendarDay(d);
 }

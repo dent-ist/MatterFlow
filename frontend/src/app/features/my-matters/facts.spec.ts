@@ -1,4 +1,4 @@
-import { activityTime, dayHeading, factText, groupByDay, statusWords } from './facts';
+import { activityTime, dayHeading, factText, groupByDay, shortDate, statusWords } from './facts';
 import { activityText } from './panels/activity-panel';
 import { reasonText } from './panels/health-panel';
 
@@ -61,5 +61,11 @@ describe('My Matters words', () => {
     expect(reasonText('DUE_SOON', 3, 7)).toBe('a task is due within 3 days');
     expect(reasonText('LONG_HOLD', 3, 7)).toBe('a task has been on hold for more than 7 days');
     expect(reasonText('NO_OPEN_TASKS', 3, 7)).toBe('no open tasks');
+  });
+
+  it('writes a next deadline short in the current year and in full in another', () => {
+    expect(shortDate('2026-10-26', 2026, 'none')).toBe('Oct 26');
+    expect(shortDate('2027-01-05', 2026, 'none')).toBe('Jan 5, 2027');
+    expect(shortDate(undefined, 2026, 'none')).toBe('none');
   });
 });

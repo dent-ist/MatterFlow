@@ -117,7 +117,7 @@ test.describe('My Matters on a phone and a tablet', () => {
     const act = page.locator('[data-panel=activity]');
     await expect(act.locator('[data-activity-row]')).toHaveCount(5);
     await act.locator('[data-show-all]').click();
-    expect(await act.locator('[data-activity-row]').count()).toBeGreaterThan(5);
+    await expect.poll(() => act.locator('[data-activity-row]').count()).toBeGreaterThan(5);
     await noHorizontalScroll(page);
   });
 
@@ -143,6 +143,15 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(page.locator('th', { hasText: '% complete' })).toBeHidden();
     await expect(page.locator('[data-fold]').first()).toBeVisible();
     await expect(page.locator('[data-fold]').first()).toContainText('due this week');
+    // The table fits its panel at 768 px: no scroll box of its own.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const box = document.querySelector('.hp__scroll');
+          return box ? box.scrollWidth - box.clientWidth : -1;
+        }),
+      )
+      .toBeLessThanOrEqual(0);
     await shot(page, 'my-matters-tablet');
     await noHorizontalScroll(page);
     // From 1100 px the two columns are columns again.

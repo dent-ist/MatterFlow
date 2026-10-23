@@ -31,6 +31,7 @@ test.describe('The rail: groups and names (#620, #621)', () => {
       const records = nav(page).getByRole('list', { name: 'Records' });
       await expect(work.getByRole('link')).toHaveText([
         /Dashboard/,
+        /My Matters/,
         /My Work/,
         /Task Queue/,
         /Pod Work/,
@@ -121,7 +122,7 @@ test.describe('The rail: groups and names (#620, #621)', () => {
     await page.goto('/clients');
     await nav(page).getByRole('link', { name: 'Clients' }).focus();
     await page.keyboard.press('Tab');
-    await expect(nav(page).getByRole('link', { name: 'Matters' })).toBeFocused();
+    await expect(nav(page).getByRole('link', { name: 'Matters', exact: true })).toBeFocused();
     await nav(page).getByRole('link', { name: 'Asset types', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/admin\/asset-types/);
