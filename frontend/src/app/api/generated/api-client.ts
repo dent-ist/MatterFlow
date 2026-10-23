@@ -12352,8 +12352,16 @@ export interface AdvancedSearchPage {
     [key: string]: any;
 }
 
+export interface AnalyzeListParameter {
+    name: string;
+    valueType: string;
+
+    [key: string]: any;
+}
+
 export interface AnalyzeRequest {
     sql: string | undefined;
+    lists?: AnalyzeListParameter[] | undefined;
 
     [key: string]: any;
 }

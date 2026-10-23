@@ -18,11 +18,13 @@ public sealed record ScanIssue(string Code, string Message, int Position, int Li
 /// <param name="Occurrences">Every token, in text order (used by the rewrite; nothing else decides what is replaced).</param>
 /// <param name="Issues">Problems that make the text unusable (unterminated string, <c>@</c>, bad placeholder).</param>
 /// <param name="DateRangeCandidates">Base names <c>X</c> for which both <c>X_FROM</c> and <c>X_TO</c> appear (proposed as one date range).</param>
+/// <param name="CommentSpans">Where comments are (start inclusive, end exclusive), in text order; used to find the neighbouring code of a token.</param>
 public sealed record SqlScan(
     IReadOnlyList<DetectedPlaceholder> Placeholders,
     IReadOnlyList<PlaceholderOccurrence> Occurrences,
     IReadOnlyList<ScanIssue> Issues,
-    IReadOnlyList<string> DateRangeCandidates)
+    IReadOnlyList<string> DateRangeCandidates,
+    IReadOnlyList<(int Start, int End)> CommentSpans)
 {
     public bool HasIssues => Issues.Count > 0;
 }
@@ -60,6 +62,7 @@ public static class SqlScanner
         ArgumentNullException.ThrowIfNull(sql);
         var occurrences = new List<PlaceholderOccurrence>();
         var issues = new List<ScanIssue>();
+        var comments = new List<(int Start, int End)>();
         var lineStarts = new List<int> { 0 };
         for (var k = 0; k < sql.Length; k++)
         {
@@ -99,10 +102,14 @@ public static class SqlScanner
             switch (c)
             {
                 case '-' when i + 1 < n && sql[i + 1] == '-':
-                    i += 2;
-                    while (i < n && sql[i] != '\n' && sql[i] != '\r')
-                        i++;
-                    break;
+                    {
+                        var start = i;
+                        i += 2;
+                        while (i < n && sql[i] != '\n' && sql[i] != '\r')
+                            i++;
+                        comments.Add((start, i));
+                        break;
+                    }
 
                 case '/' when i + 1 < n && sql[i + 1] == '*':
                     {
@@ -129,6 +136,7 @@ public static class SqlScanner
 
                         if (depth > 0)
                             Issue(ScanIssueCodes.UnterminatedComment, "A /* comment is never closed.", start);
+                        comments.Add((start, i));
                         break;
                     }
 
@@ -183,7 +191,7 @@ public static class SqlScanner
             .Where(b => index.ContainsKey(b + "_TO"))
             .ToList();
 
-        return new SqlScan(distinct, occurrences, issues, candidates);
+        return new SqlScan(distinct, occurrences, issues, candidates, comments);
     }
 
     private static int SkipQuoted(string sql, int start, char close, string code, string message, Action<string, string, int> issue)

@@ -8897,6 +8897,21 @@
           }
         }
       },
+      "AnalyzeListParameter": {
+        "required": [
+          "name",
+          "valueType"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "valueType": {
+            "type": "string"
+          }
+        }
+      },
       "AnalyzeRequest": {
         "required": [
           "sql"
@@ -8908,6 +8923,15 @@
               "null",
               "string"
             ]
+          },
+          "lists": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AnalyzeListParameter"
+            }
           }
         }
       },

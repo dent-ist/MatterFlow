@@ -31,9 +31,15 @@ public sealed record ReportLoginDetailsResponse(string LoginName, bool WritesDen
 /// <param name="Login">Present once the login could be probed.</param>
 public sealed record ReportsStatusResponse(bool Enabled, string State, string Message, ReportLoginDetailsResponse? Login);
 
+/// <summary>A parameter the editor has declared as a list (multi choice or multi lookup), so the analysis reads <c>IN :NAME</c> correctly.</summary>
+/// <param name="Name">Placeholder name (case-insensitive).</param>
+/// <param name="ValueType"><c>int</c> or <c>text</c> (the cast of the engine's sub-select).</param>
+public sealed record AnalyzeListParameter(string Name, string ValueType);
+
 /// <summary>The SQL to analyse (the unsaved editor text).</summary>
 /// <param name="Sql">The report query.</param>
-public sealed record AnalyzeRequest(string? Sql);
+/// <param name="Lists">Parameters declared as lists; optional.</param>
+public sealed record AnalyzeRequest(string? Sql, IReadOnlyList<AnalyzeListParameter>? Lists = null);
 
 /// <summary>A distinct <c>:NAME</c> placeholder found in the SQL.</summary>
 /// <param name="Name">Upper-cased name without the colon.</param>
@@ -110,8 +116,12 @@ public class ReportAdminController(IReportsAvailability availability) : Controll
             return new AnalyzeResponse([], [], [tooLong], [], new SqlValidationResponse(false, [tooLong], Convert.ToHexString(SqlValidator.Hash(text))));
         }
 
-        var scan = SqlScanner.Scan(text);
-        var verdict = SqlValidator.Validate(text, scan, SqlPlaceholderRewriter.RewriteMapped(text, scan.Occurrences, o => SqlPlaceholderRewriter.ParameterName(o.Name)));
+        var lists = new Dictionary<string, Domain.Parameters.ListKind>(StringComparer.Ordinal) { [BuiltInParameters.CurrentPodIds] = Domain.Parameters.ListKind.Int };
+        foreach (var l in (request.Lists ?? []).Take(200).Where(l => !string.IsNullOrWhiteSpace(l.Name)))
+            lists[l.Name.Trim().ToUpperInvariant()] = string.Equals(l.ValueType, "int", StringComparison.OrdinalIgnoreCase) ? Domain.Parameters.ListKind.Int : Domain.Parameters.ListKind.Text;
+        var compiled = ReportSqlCompiler.Compile(text, lists);
+        var scan = compiled.Scan;
+        var verdict = SqlValidator.Validate(text, scan, compiled.Rewritten);
         return new AnalyzeResponse(
             scan.Placeholders.Select(p => new DetectedPlaceholderResponse(p.Name, p.DisplayName, p.Position, p.Line, p.Column, p.Occurrences, p.IsBuiltIn)).ToList(),
             scan.Occurrences.Select(o => new PlaceholderOccurrenceResponse(o.Name, o.Start, o.Length, o.Line, o.Column)).ToList(),
