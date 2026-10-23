@@ -7,13 +7,18 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
+using MatterFlow.SharedKernel.Visibility;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions)
+public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility)
 {
+    /// <summary>The matters the caller may see: matter counts and the "matters with most open tasks" list never include a hidden matter (mode M).</summary>
+    private IQueryable<Matter> MatterSet() =>
+        visibility.WhereMatterRowVisible(db.Set<Matter>(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId);
+
     public static readonly string[] SortFields = ["clientNumber", "name", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
 
     private static readonly Dictionary<string, Func<IQueryable<ClientRow>, bool, bool, IOrderedQueryable<ClientRow>>> Orderings = new()
@@ -72,6 +77,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         // The count sorts need the counts inside the statement (one grouped left join); without Task.View they are constants, so the order falls back to the default.
         var canCount = CanCountTasks;
         var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
+        var visibleMatters = MatterSet();
         var counted = joinCounts
             ? from c in clients
               join g in taskCounts.Grouped(TaskCountScope.Client) on c.Id equals g.Key into joined
@@ -81,7 +87,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         var rows = await OrganizationSupport.ApplySort(counted, OrganizationSupport.WithDefaultTail(sort, new SortField("clientNumber", false)), Orderings, r => r.Client.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
-            .Select(r => new { r.Client, MatterCount = db.Set<Matter>().Count(m => m.ClientId == r.Client.Id), r.Open, r.Overdue })
+            .Select(r => new { r.Client, MatterCount = visibleMatters.Count(m => m.ClientId == r.Client.Id), r.Open, r.Overdue })
             .ToListAsync(ct);
 
         IReadOnlyDictionary<int, TaskCountRow> byClient = canCount && !joinCounts
@@ -100,7 +106,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
     /// <summary>Counts for the Client overview strip (#259): the five Task numbers over all the Client's Matters, the Matter counts and the Matters with the most open Tasks.</summary>
     public async Task<Result<ClientSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
     {
-        var matters = await db.Set<Matter>().AsNoTracking().Where(m => m.ClientId == id)
+        var matters = await MatterSet().AsNoTracking().Where(m => m.ClientId == id)
             .GroupBy(_ => 1).Select(g => new { Total = g.Count(), Active = g.Count(m => m.IsActive) }).FirstOrDefaultAsync(ct);
         if (matters is null && !await db.Set<Client>().AsNoTracking().AnyAsync(c => c.Id == id, ct))
             return OrganizationSupport.NotFound("Client");
@@ -114,7 +120,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         {
             var counts = await taskCounts.TopMattersAsync(id, 5, ct);
             var ids = counts.Select(c => c.MatterId).ToList();
-            var named = await db.Set<Matter>().AsNoTracking().Where(m => ids.Contains(m.Id))
+            var named = await MatterSet().AsNoTracking().Where(m => ids.Contains(m.Id))
                 .Select(m => new { m.Id, m.MatterRef, m.Name, m.IsActive }).ToDictionaryAsync(m => m.Id, ct);
             top = [.. counts.Select(c => new TopMatterResponse(c.MatterId, named[c.MatterId].MatterRef, named[c.MatterId].Name, named[c.MatterId].IsActive, c.Open, c.Overdue))];
         }
@@ -126,9 +132,10 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
 
     private async Task<Result<ClientResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
+        var visibleMatters = MatterSet();
         var row = await db.Set<Client>().AsNoTracking()
             .Where(c => c.Id == id)
-            .Select(c => new { Client = c, MatterCount = db.Set<Matter>().Count(m => m.ClientId == c.Id) })
+            .Select(c => new { Client = c, MatterCount = visibleMatters.Count(m => m.ClientId == c.Id) })
             .SingleOrDefaultAsync(ct);
         if (row is null)
             return OrganizationSupport.NotFound("Client");

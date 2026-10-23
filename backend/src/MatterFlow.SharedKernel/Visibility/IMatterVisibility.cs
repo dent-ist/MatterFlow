@@ -34,6 +34,26 @@ public interface IMatterVisibility
     /// <summary>Keeps the rows whose task the viewer may see (matter rule or assigned to the viewer). A no-op while the rule is off. Mode T.</summary>
     IQueryable<T> WhereTaskVisible<T>(IQueryable<T> source, Expression<Func<T, long>> taskId, Viewer? viewer = null);
 
+    /// <summary>
+    /// Keeps the rows whose matter the viewer may see, for rows that already carry the matter's columns (the Matter entity itself, or a join that has the
+    /// matter): no extra join. A no-op while the rule is off or for a see-all viewer. Mode M.
+    /// </summary>
+    IQueryable<T> WhereMatterRowVisible<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Viewer? viewer = null);
+
+    /// <summary>The same for rows that also carry the task's assignee: the matter rule OR currently assigned to the viewer. Mode T.</summary>
+    IQueryable<T> WhereTaskRowVisible<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Expression<Func<T, int?>> assignedUserId,
+        Viewer? viewer = null);
+
     /// <summary>True when the matter exists and the caller may see it. For single-record gates and for ids that come from a client.</summary>
     Task<bool> CanSeeMatterAsync(int matterId, CancellationToken cancellationToken = default);
 

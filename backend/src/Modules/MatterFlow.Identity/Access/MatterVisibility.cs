@@ -78,6 +78,29 @@ public sealed class MatterVisibility(
             : VisibilityPredicates.WhereIn(source, taskId, VisibleTasks(v).Select(t => t.TaskId));
     }
 
+    public IQueryable<T> WhereMatterRowVisible<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Viewer? viewer = null)
+    {
+        var v = viewer ?? Current;
+        return !Enabled || v.SeeAll ? source : source.Where(VisibilityPredicates.MatterRow(v, isSensitive, primaryManagerId, secondaryManagerId));
+    }
+
+    public IQueryable<T> WhereTaskRowVisible<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Expression<Func<T, int?>> assignedUserId,
+        Viewer? viewer = null)
+    {
+        var v = viewer ?? Current;
+        return !Enabled || v.SeeAll ? source : source.Where(VisibilityPredicates.TaskRow(v, isSensitive, primaryManagerId, secondaryManagerId, assignedUserId));
+    }
+
     public Task<bool> CanSeeMatterAsync(int matterId, CancellationToken cancellationToken = default) =>
         VisibleMatters().AnyAsync(m => m.MatterId == matterId, cancellationToken);
 

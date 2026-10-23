@@ -7,11 +7,12 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.ValueObjects;
+using MatterFlow.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions)
+public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility)
 {
     public static readonly string[] SortFields = ["name", "matterRef", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
 
@@ -106,7 +107,7 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
     /// <summary>Counts for the Project overview strip (#259): the five Task numbers over the Project's Tasks.</summary>
     public async Task<Result<ProjectSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
     {
-        if (!await db.Set<Project>().AsNoTracking().AnyAsync(p => p.Id == id, ct))
+        if (!await ProjectSet().AsNoTracking().AnyAsync(p => p.Id == id, ct))
             return OrganizationSupport.NotFound("Project");
 
         if (!CanCountTasks)
@@ -116,11 +117,12 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
         return new ProjectSummaryResponse(id, strip.Open, strip.Overdue, strip.Asap, strip.OnHold, strip.DueSoon);
     }
 
-    public async Task<Result<ProjectResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
+    public async Task<Result<ProjectResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], true, ct);
 
-    private async Task<Result<ProjectResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
+    /// <summary><paramref name="restricted"/> false is the answer right after a successful write (the actor just changed the project).</summary>
+    private async Task<Result<ProjectResponse>> GetAsync(int id, IReadOnlyList<string> dropped, bool restricted, CancellationToken ct)
     {
-        var row = await Rows().Where(r => r.Project.Id == id).SingleOrDefaultAsync(ct);
+        var row = await Rows(restricted).Where(r => r.Project.Id == id).SingleOrDefaultAsync(ct);
         if (row is null)
             return OrganizationSupport.NotFound("Project");
 
@@ -137,7 +139,7 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
 
     public async Task<Result<ProjectResponse>> CreateAsync(CreateProjectRequest request, CancellationToken ct)
     {
-        if (!await db.Set<Matter>().AnyAsync(m => m.Id == request.MatterId, ct))
+        if (!await MatterSet().AnyAsync(m => m.Id == request.MatterId, ct))
             return Error.Validation("matterId", "NOT_FOUND", "Select a matter.");
 
         var name = request.Name.Trim();
@@ -194,12 +196,12 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
             await transaction.CommitAsync(ct);
         }
 
-        return await GetAsync(project.Id, dropped, ct);
+        return await GetAsync(project.Id, dropped, false, ct);
     }
 
     public async Task<Result<ProjectResponse>> UpdateAsync(int id, UpdateProjectRequest request, CancellationToken ct)
     {
-        var project = await db.Set<Project>().SingleOrDefaultAsync(p => p.Id == id, ct);
+        var project = await ProjectSet().SingleOrDefaultAsync(p => p.Id == id, ct);
         if (project is null)
             return OrganizationSupport.NotFound("Project");
 
@@ -254,13 +256,13 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
             return OrganizationSupport.ConcurrencyError();
         }
 
-        return await GetAsync(id, dropped, ct);
+        return await GetAsync(id, dropped, false, ct);
     }
 
     /// <summary>Archives (inactive) or restores a Project. Existing Tasks keep it; new Tasks cannot select an inactive Project.</summary>
     public async Task<Result<ProjectResponse>> SetActiveAsync(int id, SetActiveRequest request, CancellationToken ct)
     {
-        var project = await db.Set<Project>().SingleOrDefaultAsync(p => p.Id == id, ct);
+        var project = await ProjectSet().SingleOrDefaultAsync(p => p.Id == id, ct);
         if (project is null)
             return OrganizationSupport.NotFound("Project");
 
@@ -275,12 +277,19 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
             await db.SaveChangesAsync(ct);
         }
 
-        return await GetAsync(id, ct);
+        return await GetAsync(id, [], false, ct);
     }
 
-    private IQueryable<ProjectRow> Rows() =>
+    /// <summary>The matters the caller may see (the sensitive-matter rule; everything while it is off); projects follow their matter (mode M).</summary>
+    private IQueryable<Matter> MatterSet() =>
+        visibility.WhereMatterRowVisible(db.Set<Matter>(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId);
+
+    /// <summary>The projects of matters the caller may see.</summary>
+    private IQueryable<Project> ProjectSet() => visibility.WhereMatterVisible(db.Set<Project>(), p => p.MatterId);
+
+    private IQueryable<ProjectRow> Rows(bool restricted = true) =>
         from p in db.Set<Project>().AsNoTracking()
-        join m in db.Set<Matter>().AsNoTracking() on p.MatterId equals m.Id
+        join m in (restricted ? MatterSet() : db.Set<Matter>()).AsNoTracking() on p.MatterId equals m.Id
         join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
         select new ProjectRow { Project = p, ClientNumber = m.ClientNumber, ClientName = c.Name, MatterRef = m.MatterRef, MatterName = m.Name, MatterIsActive = m.IsActive, Open = 0, Overdue = 0 };
 

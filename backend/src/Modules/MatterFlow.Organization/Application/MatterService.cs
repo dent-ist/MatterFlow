@@ -26,7 +26,8 @@ public sealed class MatterService(
     IUserDirectory users,
     IMatterManagerEligibility eligibility,
     INotificationPublisher notifications,
-    IManagedMatterScope managed)
+    IManagedMatterScope managed,
+    IMatterVisibility visibility)
 {
     public const string SortPrimaryManager = "primaryManager";
     public const string SortSecondaryManager = "secondaryManager";
@@ -171,7 +172,7 @@ public sealed class MatterService(
     /// <summary>Counts for the Matter overview strip (#259): the five Task numbers over the Matter's Tasks (project Tasks included), the Project count and the Asset count.</summary>
     public async Task<Result<MatterSummaryResponse>> SummaryAsync(int id, CancellationToken ct)
     {
-        if (!await db.Set<Matter>().AsNoTracking().AnyAsync(m => m.Id == id, ct))
+        if (!await MatterSet().AsNoTracking().AnyAsync(m => m.Id == id, ct))
             return OrganizationSupport.NotFound("Matter");
 
         var projects = await db.Set<Project>().AsNoTracking().CountAsync(p => p.MatterId == id, ct);
@@ -192,11 +193,15 @@ public sealed class MatterService(
         return (counts.GetValueOrDefault(matterId)?.Open ?? 0, counts.GetValueOrDefault(matterId)?.Overdue ?? 0);
     }
 
-    public async Task<Result<MatterResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
+    public async Task<Result<MatterResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], true, ct);
 
-    private async Task<Result<MatterResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
+    /// <summary>
+    /// <paramref name="restricted"/> false is for the answer right after a successful write: the actor just changed the matter (or created it) and gets the
+    /// result once, even if the change (marking it sensitive, removing themselves as manager) ends their own access.
+    /// </summary>
+    private async Task<Result<MatterResponse>> GetAsync(int id, IReadOnlyList<string> dropped, bool restricted, CancellationToken ct)
     {
-        var row = await Rows().Where(r => r.Matter.Id == id).SingleOrDefaultAsync(ct);
+        var row = await Rows(restricted).Where(r => r.Matter.Id == id).SingleOrDefaultAsync(ct);
         if (row is null)
             return OrganizationSupport.NotFound("Matter");
 
@@ -267,7 +272,7 @@ public sealed class MatterService(
 
         var existing = await FindIdAsync(client.Id, number.Value, null, ct);
         if (existing is not null)
-            return DuplicateNumber(client.ClientNumber, number.Value, existing);
+            return DuplicateNumber(client.ClientNumber, number.Value, await ShownAsync(existing, ct));
 
         var plan = await custom.PlanCreateAsync(CustomFieldTarget.Matter, request.FormValues, ct);
         if (plan.IsFailure)
@@ -316,7 +321,7 @@ public sealed class MatterService(
             catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.MatterNumberUnique))
             {
                 db.ChangeTracker.Clear();
-                return DuplicateNumber(client.ClientNumber, number.Value, await FindIdAsync(client.Id, number.Value, null, ct));
+                return DuplicateNumber(client.ClientNumber, number.Value, await ShownAsync(await FindIdAsync(client.Id, number.Value, null, ct), ct));
             }
             catch (DbUpdateException ex) when (OrganizationSupport.IsForeignKeyViolation(ex))
             {
@@ -346,12 +351,12 @@ public sealed class MatterService(
             await transaction.CommitAsync(ct);
         }
 
-        return await GetAsync(matter.Id, dropped, ct);
+        return await GetAsync(matter.Id, dropped, false, ct);
     }
 
     public async Task<Result<MatterResponse>> UpdateAsync(int id, UpdateMatterRequest request, CancellationToken ct)
     {
-        var matter = await db.Set<Matter>().SingleOrDefaultAsync(m => m.Id == id, ct);
+        var matter = await MatterSet().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (matter is null)
             return OrganizationSupport.NotFound("Matter");
 
@@ -411,7 +416,7 @@ public sealed class MatterService(
             return OrganizationSupport.ConcurrencyError();
         }
 
-        return await GetAsync(id, dropped, ct);
+        return await GetAsync(id, dropped, false, ct);
     }
 
     /// <summary>
@@ -420,7 +425,7 @@ public sealed class MatterService(
     /// </summary>
     public async Task<Result<MatterResponse>> SetManagersAsync(int id, SetMatterManagersRequest request, CancellationToken ct)
     {
-        var matter = await db.Set<Matter>().SingleOrDefaultAsync(m => m.Id == id, ct);
+        var matter = await MatterSet().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (matter is null)
             return OrganizationSupport.NotFound("Matter");
 
@@ -434,7 +439,7 @@ public sealed class MatterService(
 
         var newly = NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId);
         if (!await ApplyManagersAsync(matter, request.PrimaryManagerId, request.SecondaryManagerId, ct))
-            return await GetAsync(id, ct);
+            return await GetAsync(id, [], false, ct);
 
         await NotifyManagersSetAsync(matter, newly, ct); // event 7, saved with the change
 
@@ -449,7 +454,7 @@ public sealed class MatterService(
             return OrganizationSupport.ConcurrencyError();
         }
 
-        return await GetAsync(id, ct);
+        return await GetAsync(id, [], false, ct);
     }
 
     /// <summary>Changes the Matter number (needs Matter.EditNumber at the API). Writes MATTER_NUMBER_CHANGED.</summary>
@@ -459,7 +464,7 @@ public sealed class MatterService(
         if (number.IsFailure)
             return number.Error!;
 
-        var matter = await db.Set<Matter>().SingleOrDefaultAsync(m => m.Id == id, ct);
+        var matter = await MatterSet().SingleOrDefaultAsync(m => m.Id == id, ct);
         if (matter is null)
             return OrganizationSupport.NotFound("Matter");
 
@@ -468,11 +473,11 @@ public sealed class MatterService(
             return version.Error!;
 
         if (matter.MatterNumber == number.Value)
-            return await GetAsync(id, ct);
+            return await GetAsync(id, [], false, ct);
 
         var existing = await FindIdAsync(matter.ClientId, number.Value, id, ct);
         if (existing is not null)
-            return DuplicateNumber(matter.ClientNumber, number.Value, existing, "number");
+            return DuplicateNumber(matter.ClientNumber, number.Value, await ShownAsync(existing, ct), "number");
 
         var old = matter.MatterNumber;
         matter.MatterNumber = number.Value;
@@ -496,10 +501,10 @@ public sealed class MatterService(
         catch (DbUpdateException ex) when (OrganizationSupport.IsUniqueViolation(ex, OrganizationSupport.MatterNumberUnique))
         {
             db.ChangeTracker.Clear();
-            return DuplicateNumber(matter.ClientNumber, number.Value, await FindIdAsync(matter.ClientId, number.Value, id, ct), "number");
+            return DuplicateNumber(matter.ClientNumber, number.Value, await ShownAsync(await FindIdAsync(matter.ClientId, number.Value, id, ct), ct), "number");
         }
 
-        return await GetAsync(id, ct);
+        return await GetAsync(id, [], false, ct);
     }
 
     /// <summary>
@@ -510,9 +515,14 @@ public sealed class MatterService(
     {
         await using var transaction = db.Database.CurrentTransaction is null ? await db.Database.BeginTransactionAsync(ct) : null;
 
-        var matter = await db.Set<Matter>()
-            .FromSql($"SELECT * FROM dbo.Matter WITH (UPDLOCK, ROWLOCK) WHERE MatterId = {id}")
-            .SingleOrDefaultAsync(ct);
+        var matter = await MatterSet(restricted: true)
+            .Where(m => m.Id == id)
+            .Select(m => m.Id)
+            .AnyAsync(ct)
+            ? await db.Set<Matter>()
+                .FromSql($"SELECT * FROM dbo.Matter WITH (UPDLOCK, ROWLOCK) WHERE MatterId = {id}")
+                .SingleOrDefaultAsync(ct)
+            : null;
         if (matter is null)
             return OrganizationSupport.NotFound("Matter");
 
@@ -521,7 +531,7 @@ public sealed class MatterService(
             return version.Error!;
 
         if (matter.IsActive == request.IsActive)
-            return await GetAsync(id, ct);
+            return await GetAsync(id, [], false, ct);
 
         if (!request.IsActive)
         {
@@ -541,11 +551,17 @@ public sealed class MatterService(
         if (transaction is not null)
             await transaction.CommitAsync(ct);
 
-        return await GetAsync(id, ct);
+        return await GetAsync(id, [], false, ct);
     }
 
-    private IQueryable<MatterRow> Rows() =>
-        from m in db.Set<Matter>().AsNoTracking()
+    /// <summary>The matters the caller may see (the sensitive-matter rule; everything while it is off), or all of them for the answer to a write.</summary>
+    private IQueryable<Matter> MatterSet(bool restricted = true) =>
+        restricted
+            ? visibility.WhereMatterRowVisible(db.Set<Matter>(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId)
+            : db.Set<Matter>();
+
+    private IQueryable<MatterRow> Rows(bool restricted = true) =>
+        from m in MatterSet(restricted).AsNoTracking()
         join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
         select new MatterRow { Matter = m, ClientName = c.Name, ClientIsActive = c.IsActive, ProjectCount = db.Set<Project>().Count(p => p.MatterId == m.Id), Open = 0, Overdue = 0 };
 
@@ -554,6 +570,13 @@ public sealed class MatterService(
             .Where(m => m.ClientId == clientId && m.MatterNumber == number && (exceptId == null || m.Id != exceptId))
             .Select(m => (int?)m.Id)
             .FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// The id of the matter that already has the number, only when the caller may see it. The conflict itself is always reported (the number is taken), but a
+    /// hidden matter's id never leaves the server: <c>meta.existingId</c> is left out. The text names no matter, so it is the same for hidden and visible ones.
+    /// </summary>
+    private async Task<int?> ShownAsync(int? existingId, CancellationToken ct) =>
+        existingId is { } id && await MatterSet().AsNoTracking().AnyAsync(m => m.Id == id, ct) ? id : null;
 
     private static Error DuplicateNumber(BusinessNumber clientNumber, BusinessNumber number, int? existingId, string field = "matterNumber") =>
         OrganizationSupport.Duplicate(ErrorCodes.DuplicateNumber, field, $"Matter {number} already exists for client {clientNumber}.", existingId);

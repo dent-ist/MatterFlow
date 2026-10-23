@@ -15,55 +15,7 @@ namespace MatterFlow.IntegrationTests.Visibility;
 [Collection(SqlServerCollection.Name)]
 public sealed class MatterVisibilityPortTests(SqlServerFixture sql)
 {
-    private sealed class Universe
-    {
-        public TaskHarness H = null!;
-        public int S1, S2, S3, N1;
-        public long TS1, TS2, TS3, TN1;
-        public int PmPrimary, PmSecondary, Assignee, Viewer, Unrelated;
-        public HttpClient PmPrimaryClient = null!, PmSecondaryClient = null!, AssigneeClient = null!, ViewerClient = null!, UnrelatedClient = null!, NoPermClient = null!;
-    }
-
-    private async Task<Universe> BuildAsync(bool enabled)
-    {
-        var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { ExtraSettings = [("Features:SensitiveMatterAccess", enabled ? "true" : "false")] };
-        var u = new Universe { H = new TaskHarness(factory) };
-        var h = u.H;
-        var w = await h.CreateWorldAsync(); // matter "343-12", used as N1
-        u.N1 = w.MatterId;
-        u.S1 = await h.CreateMatterAsync("343", "21");
-        u.S2 = await h.CreateMatterAsync("343", "22");
-        u.S3 = await h.CreateMatterAsync("343", "23");
-
-        string[] view = ["Task.View", "Matter.View"];
-        u.PmPrimaryClient = await h.UserWithAsync(@"KE\pmprimary", view);
-        u.PmSecondaryClient = await h.UserWithAsync(@"KE\pmsecondary", view);
-        u.AssigneeClient = await h.UserWithAsync(@"KE\assignee", view);
-        u.UnrelatedClient = await h.UserWithAsync(@"KE\unrelated", view);
-        u.ViewerClient = await h.UserWithAsync(@"KE\viewer", [.. view, "Matter.ViewSensitive"]);
-        u.NoPermClient = await h.UserWithAsync(@"KE\noperm", "Client.View");
-        u.PmPrimary = await h.UserIdAsync(@"KE\pmprimary");
-        u.PmSecondary = await h.UserIdAsync(@"KE\pmsecondary");
-        u.Assignee = await h.UserIdAsync(@"KE\assignee");
-        u.Unrelated = await h.UserIdAsync(@"KE\unrelated");
-        u.Viewer = await h.UserIdAsync(@"KE\viewer");
-
-        async Task<long> TaskOn(int matterId, int? assignee = null)
-        {
-            var extra = new Dictionary<string, object?> { ["matterId"] = matterId };
-            if (assignee is { } a)
-                extra["assignedUserId"] = a;
-            return TaskId(await h.CreateTaskAsync(w, false, extra));
-        }
-
-        u.TN1 = await TaskOn(u.N1);
-        u.TS1 = await TaskOn(u.S1);
-        u.TS2 = await TaskOn(u.S2);
-        u.TS3 = await TaskOn(u.S3, u.Assignee);
-        await h.ExecuteAsync($"UPDATE dbo.Matter SET IsSensitive = 1 WHERE MatterId IN ({u.S1}, {u.S2}, {u.S3})");
-        await h.ExecuteAsync($"UPDATE dbo.Matter SET PrimaryManagerId = {u.PmPrimary}, SecondaryManagerId = {u.PmSecondary} WHERE MatterId = {u.S1}");
-        return u;
-    }
+    private Task<SensitiveUniverse> BuildAsync(bool enabled) => SensitiveUniverse.BuildAsync(sql, enabled);
 
     private sealed record Seen(bool Enabled, int? UserId, bool SeeAll, int[] Matters, long[] Tasks, long[] TasksOfVisibleMatters, long[] TasksVisible, bool? CanSeeMatter, bool? CanSeeTask);
 

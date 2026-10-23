@@ -2,6 +2,7 @@ using MatterFlow.Organization.Contracts;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +14,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// the predicates of <see cref="TaskQueueRules"/>, so Open, Overdue, ASAP, On hold and Due soon mean exactly what the Dashboard and the Task Queue
 /// mean, in the viewer's time zone. Inactive Matters and archived Projects are counted (their Tasks are real work). Permissions are the caller's job.
 /// </summary>
-public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTimeZone timeZone) : IOrganizationTaskCounts
+public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTimeZone timeZone, IMatterVisibility visibility) : IOrganizationTaskCounts
 {
     private QueueClock Now() => QueueClock.Create(clock.UtcNow, timeZone);
 
@@ -40,7 +41,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
         var tasks = db.Set<WorkTask>().AsNoTracking();
         tasks = scope switch
         {
-            TaskCountScope.Client => tasks.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.ClientId == key)),
+            // The client's tasks the caller may see (the sensitive-matter task rule: the matter's tasks for a visible matter, otherwise only their own),
+            // so the strip equals the Task Queue list it links to. The set is one client's tasks, so the id subquery of the port is cheap enough.
+            TaskCountScope.Client => visibility.WhereTaskVisible(tasks.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.ClientId == key)), t => t.Id),
             TaskCountScope.Matter => tasks.Where(t => t.MatterId == key),
             _ => tasks.Where(t => t.ProjectId == key),
         };
@@ -61,8 +64,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
     public async Task<IReadOnlyList<MatterTaskCount>> TopMattersAsync(int clientId, int take, CancellationToken cancellationToken = default)
     {
         var overdue = TaskQueueRules.Overdue(Now());
+        // Only matters the caller may see: the answer names each matter, and an assignee of one task on a hidden matter does not get to see its name.
         var rows = await (from t in db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
-                          join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
+                          join m in visibility.WhereMatterRowVisible(db.Set<Matter>(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId).AsNoTracking() on t.MatterId equals m.Id
                           where m.ClientId == clientId
                           select new { Task = t, m.Id, m.MatterRef })
             .GroupBy(x => new { x.Id, x.MatterRef }, x => x.Task)
@@ -82,7 +86,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
             case TaskCountScope.Client:
                 var joined = from t in open
                              join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
-                             select new { Task = t, m.ClientId };
+                             select new { Task = t, m.ClientId, m.IsSensitive, m.PrimaryManagerId, m.SecondaryManagerId, t.AssignedUserId };
+                // The task rule on the matter columns this join already has: the matter's tasks for a visible matter, otherwise only the caller's own.
+                joined = visibility.WhereTaskRowVisible(joined, x => x.IsSensitive, x => x.PrimaryManagerId, x => x.SecondaryManagerId, x => x.AssignedUserId);
                 if (keys is not null)
                     joined = joined.Where(x => keys.Contains(x.ClientId));
                 return joined.GroupBy(x => x.ClientId, x => x.Task);

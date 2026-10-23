@@ -36,6 +36,67 @@ public static class VisibilityPredicates
     }
 
     /// <summary>
+    /// The matter rule over any row that carries the matter's columns itself (the Matter entity, or a join that already has the matter): the selectors name
+    /// <c>IsSensitive</c> and the two manager columns. Same truth table as <see cref="Matter"/>; no extra join or subquery.
+    /// </summary>
+    public static Expression<Func<T, bool>> MatterRow<T>(
+        Viewer viewer,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId)
+    {
+        ArgumentNullException.ThrowIfNull(isSensitive);
+        ArgumentNullException.ThrowIfNull(primaryManagerId);
+        ArgumentNullException.ThrowIfNull(secondaryManagerId);
+        var parameter = isSensitive.Parameters[0];
+        if (viewer.SeeAll)
+            return Expression.Lambda<Func<T, bool>>(Expression.Constant(true), parameter);
+
+        Expression notSensitive = Expression.Not(isSensitive.Body);
+        if (viewer.UserId is not { } user)
+            return Expression.Lambda<Func<T, bool>>(notSensitive, parameter);
+
+        var value = Parameter(user);
+        var primary = Expression.Equal(Rebind(primaryManagerId, parameter), value);
+        var secondary = Expression.Equal(Rebind(secondaryManagerId, parameter), value);
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(notSensitive, Expression.OrElse(primary, secondary)), parameter);
+    }
+
+    /// <summary>The task rule over a row that carries the matter's columns and the task's assignee: the matter rule OR assigned to the viewer.</summary>
+    public static Expression<Func<T, bool>> TaskRow<T>(
+        Viewer viewer,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Expression<Func<T, int?>> assignedUserId)
+    {
+        ArgumentNullException.ThrowIfNull(assignedUserId);
+        var matter = MatterRow(viewer, isSensitive, primaryManagerId, secondaryManagerId);
+        if (viewer.SeeAll || viewer.UserId is not { } user)
+            return matter;
+
+        var parameter = matter.Parameters[0];
+        var assigned = Expression.Equal(Rebind(assignedUserId, parameter), Parameter(user));
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(matter.Body, assigned), parameter);
+    }
+
+    private sealed class Holder
+    {
+        public int? Value { get; init; }
+    }
+
+    /// <summary>A query parameter (not a literal) holding the user id, so the plan is shared between people.</summary>
+    private static MemberExpression Parameter(int user) => Expression.Property(Expression.Constant(new Holder { Value = user }), nameof(Holder.Value));
+
+    private static Expression Rebind<T, TValue>(Expression<Func<T, TValue>> selector, ParameterExpression to) =>
+        new ReplaceParameter(selector.Parameters[0], to).Visit(selector.Body)!;
+
+    private sealed class ReplaceParameter(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : base.VisitParameter(node);
+    }
+
+    /// <summary>
     /// <c>source.Where(x =&gt; ids.Contains(matterId(x)))</c> with <paramref name="ids"/> an <see cref="IQueryable{T}"/> that EF translates to a subquery.
     /// </summary>
     public static IQueryable<T> WhereIn<T, TKey>(IQueryable<T> source, Expression<Func<T, TKey>> key, IQueryable<TKey> ids)

@@ -61,6 +61,45 @@ public class VisibilityRuleTests
         Tasks.AsQueryable().Where(VisibilityPredicates.AssignedToViewer(Viewer.Nobody)).ShouldBeEmpty();
     }
 
+    private sealed record Row(bool Sensitive, int? Primary, int? Secondary, int? Assignee);
+
+    private static readonly Row[] RowCases =
+    [
+        new(false, null, null, null), new(false, 8, 7, null), new(true, 7, null, null), new(true, null, 7, null),
+        new(true, 8, null, null), new(true, null, null, null), new(true, 8, null, 7), new(true, null, null, 7), new(true, 8, null, 8),
+    ];
+
+    private static bool[] Apply(System.Linq.Expressions.Expression<Func<Row, bool>> rule) => [.. RowCases.AsQueryable().Select(rule)];
+
+    [Fact]
+    public void The_row_form_of_the_matter_rule_equals_the_entity_form_for_every_viewer()
+    {
+        foreach (var viewer in new[] { Viewer.Nobody, new Viewer(null, true), new Viewer(Me, false), new Viewer(Me, true), new Viewer(99, false) })
+        {
+            var expected = RowCases
+                .Select(r => new MatterAccessRow { IsSensitive = r.Sensitive, PrimaryManagerId = r.Primary, SecondaryManagerId = r.Secondary })
+                .Select(m => VisibilityPredicates.Matter(viewer).Compile()(m))
+                .ToArray();
+            Apply(VisibilityPredicates.MatterRow<Row>(viewer, r => r.Sensitive, r => r.Primary, r => r.Secondary)).ShouldBe(expected, Label(viewer));
+        }
+    }
+
+    [Fact]
+    public void The_task_row_rule_adds_the_assignee_to_the_matter_rule()
+    {
+        var me = new Viewer(Me, false);
+        var rule = Apply(VisibilityPredicates.TaskRow<Row>(me, r => r.Sensitive, r => r.Primary, r => r.Secondary, r => r.Assignee));
+        // normal, normal, mine (primary), mine (secondary), others', no manager, others' but assigned to me, no manager but assigned to me, others' assigned to others
+        rule.ShouldBe([true, true, true, true, false, false, true, true, false]);
+
+        Apply(VisibilityPredicates.TaskRow<Row>(Viewer.Nobody, r => r.Sensitive, r => r.Primary, r => r.Secondary, r => r.Assignee))
+            .ShouldBe([true, true, false, false, false, false, false, false, false]);
+        Apply(VisibilityPredicates.TaskRow<Row>(new Viewer(99, true), r => r.Sensitive, r => r.Primary, r => r.Secondary, r => r.Assignee))
+            .ShouldAllBe(v => v);
+    }
+
+    private static string Label(Viewer v) => $"user {v.UserId?.ToString() ?? "none"}, seeAll {v.SeeAll}";
+
     private static MatterVisibility Port(bool enabled, Viewer current)
     {
         var user = Substitute.For<ICurrentUser>();
