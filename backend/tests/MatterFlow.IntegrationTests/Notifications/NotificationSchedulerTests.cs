@@ -28,7 +28,9 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         public DateTime UtcNow { get; set; } = now;
     }
 
-    private readonly MovableClock _clock = new(DateTime.UtcNow);
+    // A fixed instant, not the machine clock: 01:30 UTC is still the previous calendar day in the firm zone (America/New_York), so every run
+    // exercises the UTC-date versus firm-date difference instead of only runs that happen at such an hour. The tests move the clock from here.
+    private readonly MovableClock _clock = new(new DateTime(2026, 10, 30, 1, 30, 0, DateTimeKind.Utc));
     private DatabaseApiFactory _factory = null!;
     private TaskHarness _h = null!;
     private World _w = null!;
@@ -84,10 +86,13 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         return await scope.ServiceProvider.GetRequiredService<NotificationScheduler>().RunOnceAsync(default, ignoreIntervals);
     }
 
-    /// <summary>The scheduled notifications (the create-path TaskAssigned rows that making the test tasks produces are left out).</summary>
+    /// <summary>The create-path events that making the test tasks produces (event 1 to the assignee, event 5 to the matter managers): not what these tests are about.</summary>
+    private static readonly string[] CreatePathEvents = ["TaskAssigned", "MatterTaskCreated"];
+
+    /// <summary>The scheduled notifications (the create-path rows that making the test tasks produces are left out).</summary>
     private Task<List<Notification>> RowsAsync(int? recipient = null, string? type = null) =>
         _factory.WithDbAsync(db => db.Set<Notification>().AsNoTracking()
-            .Where(n => n.EventType != "TaskAssigned" && (recipient == null || n.RecipientUserId == recipient) && (type == null || n.EventType == type))
+            .Where(n => !CreatePathEvents.Contains(n.EventType) && (recipient == null || n.RecipientUserId == recipient) && (type == null || n.EventType == type))
             .OrderBy(n => n.Id).ToListAsync());
 
     private Task<List<Notification>> AllRowsAsync() => _factory.WithDbAsync(db => db.Set<Notification>().AsNoTracking().OrderBy(n => n.Id).ToListAsync());
@@ -383,13 +388,14 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
 
     private async Task SeedRowsAsync(int recipient, string state, int ageDays, int count, string prefix)
     {
-        var read = state == "read" ? $"DATEADD(DAY, -{ageDays}, SYSUTCDATETIME())" : "NULL";
+        var now = $"CAST('{_clock.UtcNow:yyyy-MM-ddTHH:mm:ss}' AS datetime2)"; // the test clock, which retention measures from, not the SQL Server clock
+        var read = state == "read" ? $"DATEADD(DAY, -{ageDays}, {now})" : "NULL";
         await _h.ExecuteAsync(
             $"""
             INSERT INTO dbo.Notification (RecipientUserId, EventType, ObjectKind, ObjectId, MatterId, Message, DedupeKey, CreatedUtc, ReadUtc)
             SELECT TOP ({count}) {recipient}, 'TaskAssigned', 'Task', 900000 + ROW_NUMBER() OVER (ORDER BY (SELECT 1)), {_w.MatterId}, N'seed',
                    '{prefix}' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS varchar(12)),
-                   DATEADD(DAY, -{ageDays + 1}, SYSUTCDATETIME()), {read}
+                   DATEADD(DAY, -{ageDays + 1}, {now}), {read}
             FROM sys.all_objects a CROSS JOIN sys.all_objects b
             """);
     }
@@ -401,7 +407,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         await SeedRowsAsync(_annId, "read", 89, 2, "r89-");
         await SeedRowsAsync(_annId, "unread", 100, 4, "u100-"); // created 101 days ago, unread: stays
         await _h.ExecuteAsync("INSERT INTO dbo.Notification (RecipientUserId, EventType, ObjectKind, ObjectId, Message, DedupeKey, CreatedUtc) " +
-                              $"VALUES ({_annId}, 'TaskAssigned', 'Task', 1, N'ancient', 'ancient', DATEADD(DAY, -366, SYSUTCDATETIME()))");
+                              $"VALUES ({_annId}, 'TaskAssigned', 'Task', 1, N'ancient', 'ancient', DATEADD(DAY, -366, CAST('{_clock.UtcNow:yyyy-MM-ddTHH:mm:ss}' AS datetime2)))");
 
         var result = await RunAsync();
 
