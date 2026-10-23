@@ -288,6 +288,22 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(page.locator('tr[data-task]')).toHaveCount(2);
   });
 
+  // QA 2026-10-23: the hover fill of a strip item was `var(--mf-surface-2, var(--mf-border))`, a token that does not exist, so it was always the
+  // border grey and the red Overdue text on it measured 4.16:1. The pointer rested on the item in the cards test above and axe caught it.
+  for (const width of [375, 1366]) {
+    test(`the Overdue item of the strip keeps readable text while the pointer is on it (${width})`, async ({
+      asUser,
+    }) => {
+      const page = await asUser(px.username);
+      await page.setViewportSize({ width, height: 812 });
+      await page.goto(`/pods/work?podId=${px.podId}&q=${px.tag}`);
+      const overdue = page.locator('[data-strip-item="overdue"].alert');
+      await expect(overdue).toBeVisible();
+      await overdue.hover();
+      await axeClean(page, `hovered Overdue item at ${width}`);
+    });
+  }
+
   test('My Work: the sheet has Sort by, Group by and "Open in Task Queue"; grouping and sorting exclude each other', async ({
     asUser,
   }) => {

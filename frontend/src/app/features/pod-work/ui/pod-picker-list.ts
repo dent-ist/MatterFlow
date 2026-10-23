@@ -91,7 +91,7 @@ export function groupPods(pods: readonly PodChoice[]): { label: string; pods: Po
       cursor: pointer;
     }
     .pp__row:hover {
-      background: var(--mf-surface-2, var(--mf-border));
+      background: var(--mf-surface-alt);
     }
     .pp__row:focus-visible {
       outline: 2px solid var(--mf-focus);

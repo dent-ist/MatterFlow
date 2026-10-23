@@ -153,7 +153,7 @@ export interface WorkStripItem {
     }
     button.item:hover,
     a.item:hover {
-      background: var(--mf-surface-2, var(--mf-border));
+      background: var(--mf-surface-alt);
     }
     button.item.on {
       outline: 2px solid var(--mf-focus);

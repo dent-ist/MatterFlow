@@ -448,6 +448,20 @@ describe('RolesPage', () => {
       expect(q('[data-name]')).not.toBeNull();
     });
 
+    it('gives the selected tab a panel to point at: the tab controls an existing tabpanel on both tabs', async () => {
+      await openRole(true);
+      const tabs = () => Array.from(el().querySelectorAll<HTMLElement>('[role=tab]'));
+      for (const index of [0, 1, 0]) {
+        tabs()[index].click();
+        await settle();
+        const selected = tabs()[index];
+        const panel = el().querySelector(`#${selected.getAttribute('aria-controls')}`);
+        expect(panel).not.toBeNull();
+        expect(panel!.getAttribute('role')).toBe('tabpanel');
+        expect(panel!.getAttribute('aria-labelledby')).toBe(selected.id);
+      }
+    });
+
     it('is a second tab of a saved role, loads its reports only when opened, and saves the checked set', async () => {
       await openRole(true);
       expect(
