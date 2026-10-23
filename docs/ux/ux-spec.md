@@ -1092,120 +1092,80 @@ Pod editor: Name (required, unique), Description, Active
 
 ### S14 Admin: Task Types and the Form Designer
 
-**Task Types list** (first tab of the Task Types page, with the Workflows and Workflow Steps tabs; see [task-types-tabs](task-types-tabs/README.md)). Columns: Name, Request form (status and version), **Workflows** (the eligible workflows as chips that open the workflow; the default one starred and marked "default"; three chips then "+n more" and a "Workflows (n)" link that open the Workflows tab filtered to the type; "No workflow" as a warning when none), Status, Open tasks. Actions: New, Edit (creates a draft from the published version if needed), Deactivate. Warning chip "No eligible published workflow: users can't create tasks of this type."
+> Rewritten to the built code in #418 (Task Types epic #352, review `docs/ux/task-types-review/`, decisions section AF of `docs/requirements/decisions-addendum.md`). Where the old text described a feature that was never built (Validate button on the workflow, per-step settings drawer, drag handles, Open tasks on a "Versions" tab, autosave) it is gone; where the code has more than the old text (tabs with counts, health strips, phone cards, row overflow, tag filter, record headers) it is described here.
 
-**Task Type editor (tabs).** `General` (name, description, active, default workflow) | `Form` (designer) | `Workflows` (eligible published Workflow list: picker listing published workflow definitions, "current published version" shown; remove) | `Versions` (history).
+**Pages and permissions.** One Administration menu item, "Task Types", with three route-based tabs: `/admin/task-types` (Task Types, `TaskType.Manage`), `/admin/workflows` (Workflows) and `/admin/steps` (Workflow Steps), the last two with `Workflow.Manage`. Only permitted tabs show; a tab address the person may not open falls back to the first allowed tab, a create, edit, version or form address shows the 403 page (`features/admin/denial.ts`, #416; matrix in `docs/ux/task-types-review/fixes/ty10-permissions/permissions.md`). Each administration permission is enough to read what it manages, `Task.View` is not needed (open-task numbers and links are then absent). Document titles "Task Types", "Task Types - Workflows", "Task Types - Workflow Steps" and, on a record, the record's name.
 
-#### Form designer
+**Page shell (all three tabs).** Breadcrumb `Administration > Task Types`, one-line description, tabs with the count of **active** records (Task Types, Workflows, Workflow Steps), the Filters button in the header (the filter row is open by default from 640 px; below 640 px it is a sheet), a health strip, the grid, the pager. State is in the address (filters, sort, page) and Back or the breadcrumb returns to the same list with focus on the row left (`list-return.ts`, #354). Loading is a skeleton with the table's columns, a failure is one message with Retry (no second New button), an empty result says what filtered it. The Status filter defaults to Active and the pager says "N inactive hidden" with Show all. Rows are 44 px; the name is the only link; one overflow menu per row in the last, sticky column. Below 640 px the rows are cards; optional columns drop by width.
+
+**Task Types tab.** Columns: Name (two lines clamped, tooltip), Default workflow, Workflows (count, "No workflow" muted), Request form (Published, Draft, Retired or No form with its version), **Open tasks** (sortable, links to the Task Queue filtered `type=<id>`; absent without `Task.View`), Status (Active, Inactive, or the neutral badge **Not usable**). Optional columns drop in this order: Open tasks below 1280 px, Workflows below 1100, Request form below 900. Filters: Name, Request form, Can create tasks, Workflow. Strip: Active, Not usable, Form in draft, Inactive (client side). Row menu: Edit form, Deactivate or Activate.
+
+**Task Type page (existing type).** `mf-record-header`: icon and name (H1 clamped, crumb cut at 40 characters), status badge (Active, Inactive or the neutral Not usable), actions Edit, Activity (`Audit.View`), the primary **Edit form**, overflow with Deactivate (confirm names the open tasks that keep the type and the workflows left without an active task type) or Activate. Summary strip: Form, Workflows, Default workflow, Open tasks (link), Status. One neutral status note under the header names each reason the type is not usable (no published workflow, no published form, inactive) with the fix as a link or button. Tabs `Overview | Workflows (n) | Request form` (`?tab=`, replaced not added; **Option A**: editing is inline and every tab saves on its own with the unsaved-changes guard).
+- Overview: name (counter), description (counter), icon; no Active checkbox on an existing type (it is the header menu), the checkbox stays on create.
+- Workflows: a table of the chosen workflows with a **Default** radio and Remove, and an Add workflow combobox that lists published, active workflows (draft-only and inactive ones are disabled with the reason). The first added becomes the default.
+- Request form: the published state and the **Edit form** button.
+- Create (`/admin/task-types/new`): the same card (720 px, one validation summary plus inline messages with focus on the first error); the Request form tab is disabled with "Save the task type first".
+
+#### Form designer (`/admin/task-types/:id/form`, shared with Steps, Asset Types and Custom Fields)
 ```text
-Task Type: Data Processing > Form      Draft v4 (published: v3)      [Preview] [Validate] [Save draft] [Publish...]
-+-- Palette -----+ +-- Canvas (drag or Add) ------------------------+ +-- Properties --------------+
-| Section heading| | [Section] Request details                      | | Selected: OCR language       |
-| Text           | |  ::  Requires OCR?          [Checkbox]  req   | |  Label  [OCR language]       |
-| Multi-line     | |  ::  OCR language           [Dropdown]  cond  | |  Key    ocr_language (locked)|
-| Number         | |  ::  Contains encrypted?    [Checkbox]        | |  Type   Dropdown             |
-| Checkbox       | |  ::  Password instructions  [Text] cond  req  | |  Help   [..........]         |
-| Dropdown       | |  [ + Add field ]                              | |  Required  ( ) Always         |
-| Radio group    | |  (move up/down buttons beside each ::)        | |            (o) Conditional... |
-| Multi-select   | +------------------------------------------------+ |  Options [Eng][Spa][+]       |
-| Date/Datetime  |                                                    |  Default [ ]                  |
-| URL            |   Preview ----------------------------------------| |  Rules (see below)           |
-| Asset reference|   [live form, toggle controls to test rules]       | |  Validation: min/max/regex   |
-| User reference |                                                    | +-----------------------------+
-| Help text      |
-+----------------+
+Administration > Task Types > Data Processing > Request form          Draft v4 (published: v3)
+[Versions (3)]  Unsaved changes                                         [Save draft] [Publish...]
++-- Add a field --+ +-- Fields (12) ----------------------+ +-- Properties | Preview | Validation (2) --+
+| Section heading | | 1 Requires OCR?    Checkbox  [^][v][x] | | Label, Key (locked after save)          |
+| Text ...        | | 2 OCR language     Dropdown  [^][v][x] | | Type, Help, Required, Default, Options  |
+| (13 controls)   | | 3 ...                                  | | Rules (visibility, required)           |
++-----------------+ +----------------------------------------+ +-----------------------------------------+
 ```
-**Controls (no File Upload, per addendum C):** single-line text, multi-line text, number, checkbox, single-select dropdown, radio group, multi-select, date, datetime, URL, Asset reference, User reference, section heading/help text.
-**Field properties.** Stable internal key (auto-slug from label on first save, then locked), label, type, help text, display order (drag handle **and** Move up/down buttons), required (Always / Never / Conditional), default value, type validation (text: min/max length, optional pattern with a plain-language error message; number: min/max/integer; date: min/max; select: options with value+label; option ids are stable, labels editable only in a new version), active/hidden.
-**Conditional rules builder** (structured metadata, no scripting).
-```text
-Rules for "OCR language"
- Visibility:  (o) Always shown   ( ) Show only when...
- Required:    ( ) Never  ( ) Always  (o) Required when...
- Show only when   [ Requires OCR? v ] [ is v ] [ checked v ]            [+ Add condition]  Match [ALL v ANY]
-                  and  [ Language group v ] [ is one of v ] [ A, B ]
- Option set (dropdowns, optional): when [Region = EU] show options [ ... ]
- Plain-language summary: "Show OCR language when Requires OCR? is checked. Required whenever shown."
-```
-- Operators by type: equals, not equals, is one of, is empty, is not empty, checked/unchecked, greater/less than (number/date), contains (text).
-- Two levels max (a group of conditions with ALL/ANY, one nesting level) [UX-PROPOSAL, per baseline "limited nesting"].
-- A hidden field is not required and not submitted. If a field that other rules depend on is itself hidden, the dependent field is treated as "value empty".
-- Referenced field picker only lists fields **above** it in the order or any field, but circular chains are blocked: validation error "These fields depend on each other: A -> B -> A. Remove one rule."
-- Deleting/renaming a field referenced by a rule is blocked with a list of dependents.
-**Preview.** Right/bottom preview renders the form with the same `DynamicForm` component used in Create Task; the author can toggle values to see conditional behavior; a "Test submit" shows the validation messages a user would get (client-side only, labelled "Server re-validates on submission").
-**Validate (pre-publish checks).** Errors (block publish): duplicate keys; dropdown without options; rule referencing missing field; circular dependency; required conditional with no condition; regex invalid. Warnings: no fields; field has no help text on a number with units. Results shown in a panel with click-to-focus.
-**Publish dialog.** Shows a diff vs the published version (fields added/changed/removed) and states "Existing tasks keep form version 3. New tasks will use version 4. Published versions can't be edited." [Publish version 4] [Cancel]. Version note optional. Retire version available in Versions tab (new tasks can't use it).
-**States.** Empty form: "No fields yet. Add your first field from the palette." Unsaved-changes guard; autosave of drafts is off; "Save draft" explicit. Concurrency: two admins editing the same draft -> conflict dialog.
-**Permissions.** `TaskType.Manage` (+ `CustomField.Manage` for core object fields in S18).
+- A fixed-height page (`mf-fixed-page`): the header and the sticky action bar stay; Add a field (13 rem), Fields and the details column each scroll inside themselves and become named, focusable scroll regions only while they overflow. Below 768 x 561 the page scrolls and the bar sticks. No page-level scroll at 1366 and 1920 with 45 long-labelled fields.
+- **Controls (no File Upload, addendum C):** single-line text, multi-line text, number, checkbox, single-select dropdown, radio group, multi-select, date, datetime, URL, Asset reference, User reference, section heading and help text.
+- **Reordering and removal:** Up, Down and Remove buttons on each row. There is no drag and drop, no Alt+Arrow and no Undo on Remove in the designer (#411 was decided not planned: no new or changed shortcuts in this phase, #420). Field keys are an auto-slug of the label until the first save and then locked; option ids are stable.
+- **Properties, Preview and Validation are tabs of the details column** (WAI-ARIA tabs, automatic activation, one Tab stop, Left and Right with wrap, Home and End). "Validation (2)" carries the live error count. Choosing a field opens Properties. All three panels stay in the page, so the Preview keeps its answers.
+- **Rules builder** (structured, no scripting): visibility and required rules with operators by type, ALL or ANY groups, one nesting level, a plain-language summary. Circular chains and references to missing fields are errors; deleting or renaming a field that a rule uses is blocked with the list of dependents.
+- **Preview** renders the same form as Create Task. **Validation** lists errors (block publish: duplicate keys, dropdown without options, missing rule reference, circular dependency, invalid pattern) and click-to-focus. **Publish... never sits disabled without a reason:** with errors it opens the Validation tab, focuses it and says "Fix 2 errors before publishing. They are listed under Validation."; the same happens when the server reports publish problems.
+- **Publish dialog** (`publishCopy`): "Publish v4", the list of changes (its own scroll region when long), the impact line "Tasks already running keep v3. New tasks use v4.", buttons "Publish v4" and "Back to draft". Retire (in the Versions dialog): "Retire v3?", "Keep published".
+- **Versions** is a dialog opened from the bar (version, state, who, when). Published and retired versions are immutable; the edit path is Create new draft, or Open draft vN when one exists.
+- **Read-only versions** show the Fields list and the Preview side by side (no palette, Preview selected, Properties one tab away with disabled controls). The title carries a badge: "Published v3" (green), "Draft v4" (amber), "Retired v2" (neutral), and "(published: v3)" as muted text while a draft exists.
+- **Narrow layout (below 1100 px):** the Fields come first (at 375 px the first field is in the first screen); one Add field button opens the palette as a bottom sheet (a native modal dialog: focus trapped, Escape and Close return focus to the button); choosing a control adds the field and the sheet becomes its properties with the Label focused; Preview and Validation (n) are buttons beside Add field that open the same sheet.
+- Unsaved-changes guard on leaving; autosave is off; "Save draft" is explicit; two admins on one draft get the conflict dialog.
+- **Permissions:** `TaskType.Manage` for a task type's form (Steps: `Workflow.Manage`, Asset Types: `AssetType.Manage`, Custom Fields: `CustomField.Manage`).
 
 ---
 
 ### S15 Admin: Workflow Steps (step library)
 
-The step library is the **third tab ("Workflow Steps") of the Task Types page**; the Administration menu has one "Task Types" item for three tabs (`/admin/task-types` = Task Types, `/admin/workflows` = Workflows, `/admin/steps` = Workflow Steps; route-based like Users/Roles). The model reads left to right: a Task Type has eligible Workflows (one default), a Workflow is built from Steps of this shared library. Task Types needs `TaskType.Manage`, Workflows and Workflow Steps need `Workflow.Manage`; only permitted tabs show, and a person with only `Workflow.Manage` lands on Workflows. Document titles "Task Types", "Task Types - Workflows" and "Task Types - Workflow Steps"; breadcrumb `Administration > Task Types > Workflow Steps`.
+The step library is the third tab of the Task Types page (`/admin/steps`, `Workflow.Manage`). The model reads left to right: a Task Type has eligible Workflows (one default), a Workflow is built from Steps of this shared library.
 
-```text
-Administration > Task Types > Workflow Steps                [+ New step]
-Task Types | Workflows | Workflow Steps
-[ filter row: Title | Description | Tags [Any tag v] + [Match all tags v] | Used in [Any v] | Status [Active v] ]   chips: [Relativity x] [QC x]
-+----------------------+--------------------+-------------------------+--------------------+
-| Title                | Description        | Tags                    | Used in            |
-| Deduplicate          | Remove duplicates  | (Relativity) (QC) +2 more | Used in 3 workflows (link) |
-```
-**Tags.** Each step has free-form tags (examples: Relativity, Processing). The Tags column shows chips (first three, then "+n more", long tags cut with an ellipsis). The **Tags** filter of the filter row (a button under the Tags header) opens a panel of checkboxes of the existing tags with counts ("Relativity (3)"; a find box above eight tags); chosen tags show as removable chips ("Remove tag filter X"); "Match all" (default: a step needs every chosen tag) or "Match any". The state is in the address (`title`, `description`, `tags` repeated, `tagMatch=any`, `used`, `status`, `sort`, `page`); the Match all / Match any select sits under the Tags control and is idle until a tag is chosen. The workflow designer's step picker shows the same chips, searches tag text and has the same Tags filter.
-**Tag input (step editor).** Type and press Enter or comma to make a chip (leaving the box also commits), Backspace on an empty box removes the last chip, every chip has a "Remove tag X" button, existing tags are suggested as you type (a combobox with a listbox; free text is always allowed), a polite live region announces added and removed tags. Rules: trimmed, inner whitespace collapsed, at most 40 characters per tag, at most 20 per step, no control characters, case-insensitive uniqueness per step (the first spelling wins; an existing tag keeps its stored spelling across steps). Tags are library metadata: editing them never changes a published workflow version, and the change is audited (field `Tags`).
-**Step editor.**
-```text
-Title (required) [__________]
-Description [__________]  (short)
-Instructions [ rich text? plain multi-line with line breaks / basic markdown-free ]  (detailed SOP)
-Documentation URL [https://...]  (optional, validated)
-Tags [(Relativity x) (Processing x) type a tag...]  (optional)
-Data inputs (operational values only): same field designer pattern (types as in S14, no file upload) with conditional rules
-   e.g. Items in [number, required]  Items out [number]  QC result [dropdown Pass/Fail, required]
-   Hint: "These are operational values recorded on the task, not staff or billing metrics."
-Default placement settings (overridable per workflow): Skippable [ ]  Skip comment required [ ]  Required inputs...
-[Save] [Deactivate]
-```
-- Banner on edit: **"Editing this step doesn't change workflows that are already published. Workflows pick up changes only when you add the updated step to a new workflow version."** (addendum A). The step usage list shows "Used by: Standard Processing v1, v2 (snapshotted)".
-- Deactivating hides the step from new workflow drafts; it does not touch published versions.
-- Step titles unique among active steps [UX-PROPOSAL]. Needs `Workflow.Manage`.
-- Deletion: not offered if used; "Deactivate" instead.
+**List.** Columns: Title (the spring, two lines clamped), Description (from 1600 px, one clipped line), Tags (two chips then "+n more", from 1180 px), Inputs (none, published, draft; from 1024 px), **Used in** (the number is the link, `aria-label` "Used in 5 workflows", "Not used" when none; sortable), Status. Strip: Active, Not used, Inputs in draft (a plain count, there is no API filter for it), Inactive. Filters: Title, Description, **Tags** (a button under the Tags header opens a panel of the existing tags with counts, a find box above eight tags; chosen tags are removable chips), Tag match (**Match all tags** by default, Match any tag; idle until a tag is chosen), Used in (Any, Used in a workflow, Not used), Status. The address holds `title`, `description`, `tags` (repeated), `tagMatch=any`, `used`, `status`, `sort`, `page`. The Used in link opens the Workflows tab filtered by the step (`?step=:id`, chip "Step: X", line "Filtered by step X"). Row menu: Edit inputs, Deactivate or Activate. Phone cards below 640 px.
+
+**Step page (existing step).** `mf-record-header` kind `step`: the step title is the H1 with an Active or Inactive badge; Edit, Activity (`Audit.View`), the primary **Edit inputs**, overflow with Deactivate (the confirm says how many workflow drafts contain the step and that published versions are not changed) or Activate. Summary strip: Status, Used in workflows (n or "Not used"), Inputs (None, `n inputs`, `Draft, n inputs`, `n inputs, newer draft`), Tags. Tabs `Details | Inputs | Used by (n)` (`?tab=` replaced). Details is the only tab with edits and saves on its own: title (unique among active steps), description, tags, instructions, documentation URL. Inputs shows the field list read-only with its status and the Edit inputs button (the shared designer, S14). Used by lists workflow versions as links. On create, Inputs and Used by are disabled with "Save the step first", and a saved new step opens on Inputs.
+- **Tags.** Free-form. Type and press Enter or comma (leaving the box also commits), Backspace on an empty box removes the last chip, every chip has "Remove tag X", existing tags are suggested (a combobox with a listbox; free text is always allowed), a polite live region announces additions and removals. Trimmed, inner whitespace collapsed, at most 40 characters per tag, at most 20 per step, no control characters, case-insensitive uniqueness per step (the first spelling wins; an existing tag keeps its stored spelling across steps). Editing tags never changes a published workflow version and is audited (field `Tags`).
+- One muted sentence on edit: "Editing this step doesn't change workflows that are already published. Workflows pick up changes only when you add the updated step to a new workflow version." (addendum A.) Inputs are operational values recorded on the task, not staff or billing metrics.
+- Deactivating hides the step from new workflow drafts and changes no published version; a used step is never deleted.
 
 ---
 
-### S16 Admin: Workflow Designer and Publish
+### S16 Admin: Workflows, the Workflow page and the Version editor
 
+**Workflows tab.** Columns: Name, Versions (Published, Draft in progress, Not published; the Draft badge links to the draft, **Not published is neutral**), Steps, Task types (count of active ones, links to the Task Types tab filtered `?workflow=:id`; below 1100 px it drops), Last published (below 1280 it drops), Status. Strip: Published, Draft in progress, Not published, Inactive (API `summary`). Filters: Name, Versions, Task type, Step, Status. Row menu: Open draft vN (when one exists), Deactivate or Activate.
+
+**Workflow page (existing workflow).** `mf-record-header` kind `workflow`: name, Active badge, and on their own line Published vN or Not published and Draft vN in progress (neutral and amber, never red); Edit, Activity, one primary (**Open draft vN** when a draft exists, else **Create new draft** from the published version, never both), overflow with Deactivate (the confirm names the task types that lose the workflow and the open tasks that keep running on it) or Activate. Summary strip: Published, Draft, Steps, Task types, Open tasks of the published version (a Task Queue link only when every open task runs on that version). Tabs `Overview | Versions (n) | Task types (n)`: Versions is a table with Created, By, Tasks (open), a link to the version and a row overflow (Retire); Task types shows which active task types use the workflow.
+
+**Version editor (`/admin/workflows/:id/versions/:versionId`).** A fixed-height page like the form designer: header, tabs `Steps (n) | Used by (n)` (`?tab=used-by`; there is no Versions tab, the list lives on the Workflow page) and a sticky action bar: Publish..., Save draft, Unsaved changes, an inline **execution mode** control (Ordered: steps must be resolved in sequence, Unordered: any order; changing it asks `changeMode`), and an overflow with Discard draft. The version switcher is a text menu button ("v3 Draft") under the title: every version newest first, "(current)" for the published one.
 ```text
-Administration > Task Types > Workflows > Standard Processing           Draft v3 (published: v2)    [Validate] [Save draft] [Publish...]
-Name [Standard Processing]   Description [____]
-Execution mode:  (o) Ordered - steps must be resolved in sequence     ( ) Unordered - any order
-+-- Step library (search) --+   +-- Workflow steps (this version) --------------------------------------+
-| Intake QC          [+ Add]|   | 1 :: Intake QC         Required  Skippable: no                [Settings][^][v][x] |
-| Load to Relativity [+ Add]|   | 2 :: Load to Relativity Required  Skippable: yes, comment required   [Settings] ...  |
-| Deduplicate        [+ Add]|   | 3 :: Deduplicate ...                                                  |
-+---------------------------+   +-----------------------------------------------------------------------+
-Step settings drawer (per placement):
-  Title/description/instructions/docs: inherited from library step "Deduplicate" (snapshot of current library state)  [Override...]
-  Skippable [ ]   Comment required on skip [ ]  (disabled unless skippable)   Required to complete task [x]
-  Input fields: add/override/hide library inputs; per-field required & conditional rules
-  NO assignee, NO approver, NO approval gate controls.
-Eligible Task Types (read-only list here; edited on the Task Type)  Used by 14 open tasks (v2)
+Administration > Task Types > Workflows > Standard Processing > v3            [Publish...] [Save draft] [...]
+Steps (4) | Used by (2)                         Mode: Ordered v
++-- Step library (pane from 1280 px, drawer from "Add step" below) -+  +-- Steps (this version) -----------------+
+| search, tag filter, [+ Add]                                        |  | 1 Intake QC          Required        [...]  |
++--------------------------------------------------------------------+  | 2 Load to Relativity Skippable - comment [...] |
 ```
-- Switching mode Ordered <-> Unordered in a draft: confirm if it changes meaning ("Ordered numbering will be hidden; steps can be done in any order."). Ordering is meaningful only in Ordered mode; in Unordered mode the order is display-only.
-- Reordering by drag handle **and** Up/Down buttons; add from library; remove; duplicate step placement.
-- **Validate** checks: at least one step; no duplicate placements unless allowed; skip comment requires skippable; conditional rules valid; referenced library steps still active (warning if deactivated).
-- **Publish screen/dialog.**
-```text
-Publish Standard Processing v3
-Changes since v2: + Added "OCR"  ~ Changed skip rule on step 2  - Removed none
-Impact: Existing tasks stay on their current version (14 open on v2). New tasks can use v3.
-[ ] Make v3 the version offered for new tasks   (current published only; older versions retired for new tasks)  
-[Publish v3] [Back to draft]
-```
-- Publishing snapshots the step definitions as they are now, so later library edits don't change it. Published versions are immutable; "Create new draft from v3" is the edit path. Retire version available.
-- Version list tab: v1, v2 (retired for new tasks), v3 (current), with counts of tasks using each; read-only view of any version.
-- Needs `Workflow.Manage`.
+- A step is a 44 px row: number, one-line title (two lines cut, tooltip), one rule badge (Required, Skippable, Skippable - comment) and an overflow with Move up, Move down, Skip rules (a popover: Skippable, comment required on skip, disabled unless skippable), Preview inputs and Remove (with the shared Undo toast). Two Tab stops per row. Reordering is by those buttons or by **Alt+Up / Alt+Down** on any control of a row (existing, unchanged, announced in a live region). No drag handle, no assignee, approver or approval controls, **no Validate button and no per-step settings drawer**: the checks run on Save and Publish and the server's messages are shown.
+- The library lists active steps only with their tags, searches title and tag text, has the Tags filter and says "first 50 of N". The drawer stays open for several adds and counts them ("3 added").
+- Steps come first at every width (at 375 and 768 px the first step is in the first screen).
+- **Publish dialog** (`publishCopy`, `impactLine('publishVersion')`): "Publish v3", the changes against the previous published version (added, removed, reordered, skip rules and mode changed; pure position shifts fold into one line such as "13 steps moved"), long step titles wrap, "Tasks already running keep v2 (14 open). New tasks use v3.", buttons "Publish v3" and "Back to draft". The list of changes is a named scroll region.
+- **Read-only versions** (Published, Retired) show one neutral note with the link to the draft and **Open draft vN** (or Create new draft) instead of a disabled button. **Retire** (`retireCopy`): "Retire v2?", impact "A and 3 other task types have no other published workflow. 14 open tasks keep running on v2. New tasks cannot use it.", buttons "Retire v2" and "Keep published". Publishing snapshots the step definitions, so later library edits never change it; published versions are immutable.
+- Leaving a dirty draft offers Save draft and leave. A conflict (the draft changed elsewhere) shows the `conflict` dialog.
+- After publish, retire, deactivate or discard: focus goes to the status badge (the heading when the row is gone), a live region says the result, and a failure stays in the dialog as an alert and keeps focus on its button (`after-action.ts`, #414).
+- Needs `Workflow.Manage`; `GET .../versions/{id}` also accepts `Task.View` for published versions (counts are then null).
 
 ---
 
@@ -1804,34 +1764,42 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 
 ### S14 Task Types and form designer
 - [ ] UAT-S14-1 Palette contains exactly the specified controls; no File Upload.
-- [ ] UAT-S14-2 Add, reorder (drag and Up/Down buttons), edit, remove fields; keys stable after first save.
-- [ ] UAT-S14-3 Conditional show and conditional required rules can be built; plain-language summary shown.
-- [ ] UAT-S14-4 Preview behaves identically to Create Task rendering.
-- [ ] UAT-S14-5 Validation blocks publish for circular rules, missing refs, empty dropdowns, invalid patterns.
-- [ ] UAT-S14-6 Publish dialog shows diff and impact; published version becomes read-only; edit creates a new draft.
+- [ ] UAT-S14-2 Add, reorder (Up and Down buttons; there is no drag and no Alt+Arrow in the designer), edit and remove fields; keys stay stable after the first save.
+- [ ] UAT-S14-3 Conditional show and conditional required rules can be built; the plain-language summary is shown.
+- [ ] UAT-S14-4 Preview behaves like the Create Task form.
+- [ ] UAT-S14-5 Validation lists circular rules, missing references, empty dropdowns and invalid patterns; Publish... with errors opens the Validation tab and says how many errors to fix (it is never disabled without a reason).
+- [ ] UAT-S14-6 The publish dialog shows the changes and the impact ("Tasks already running keep v3. New tasks use v4."); a published version is read-only (Fields and Preview side by side); editing creates a new draft, or Open draft vN when one exists.
 - [ ] UAT-S14-7 Existing tasks keep their form version after a new publish.
-- [ ] UAT-S14-8 Eligible workflows association; type with none is flagged and not usable for new tasks.
-- [ ] UAT-S14-9 Requires `TaskType.Manage`; unsaved-changes guard.
-- [ ] UAT-S14-10 Designer is operable by keyboard alone.
+- [ ] UAT-S14-8 Eligible workflows: a table with a Default radio and Remove; Add workflow lists published, active workflows only; a type with none shows the neutral Not usable badge and one status note naming the reason and the fix.
+- [ ] UAT-S14-9 Requires `TaskType.Manage` (alone, without `Task.View`); a person without it gets the 403 page on create, edit and form addresses; unsaved-changes guard.
+- [ ] UAT-S14-10 The designer is operable by keyboard alone (Tab, the tab widget arrows, Up and Down buttons); focus returns to the button after the sheet or a dialog closes.
+- [ ] UAT-S14-11 Task Types list: 44 px rows, tab counts of active records, strip (Active, Not usable, Form in draft, Inactive), Open tasks column links to the Task Queue filtered by the type, one row menu (Edit form, Deactivate or Activate), cards below 640 px, "N inactive hidden - Show all".
+- [ ] UAT-S14-12 Task Type page: header with status badge, Edit, Activity, primary Edit form and overflow Deactivate whose confirm names the open tasks and the workflows left without a task type; tabs Overview, Workflows (n), Request form; each tab saves alone; on create the Request form tab is disabled ("Save the task type first").
+- [ ] UAT-S14-13 Designer at 1366, 1920, 768 and 375 px: no page-level horizontal scroll; at 375 px the first field is in the first screen and Add field opens the palette sheet.
 
 ### S15 Step Library
-- [ ] UAT-S15-1 Create step with title, description, instructions, doc URL, data inputs.
-- [ ] UAT-S15-2 Editing a step shows the "doesn't change published workflows" notice, and published workflows are unchanged (addendum A).
-- [ ] UAT-S15-3 Used-in list visible; deletion replaced by deactivate when used.
-- [ ] UAT-S15-4 Inputs described as operational values, not staff metrics.
-- [ ] UAT-S15-5 One "Task Types" menu item with the tabs Task Types, Workflows and Workflow Steps; /admin/task-types, /admin/workflows and /admin/steps open their tab; the step pages' breadcrumb is Administration > Task Types > Workflow Steps > step.
-- [ ] UAT-S15-8 The Workflow Steps list has a Used in column ("Used in 3 workflows", "Not used" when none); the link opens the Workflows tab filtered by that step (`?step=:id`, a removable chip "Step: X" and the line "Filtered by step X"). The Task Types tab lists each type's workflows as chips (default starred and marked "default", three then "+n more", "No workflow" as a warning) that open the workflow, and "+n more" / "Workflows (n)" open the Workflows tab filtered by the task type (`?taskType=:id`); the Workflows tab lists the task types per workflow the same way (`?workflow=:id` on the Task Types tab).
-- [ ] UAT-S15-6 Tags: add with Enter or comma, remove with Backspace or the "Remove tag X" button, suggestions from existing tags, limits explained (40 characters, 20 tags).
-- [ ] UAT-S15-7 The Workflow Steps list shows a Tags column and filters by title, description and tags (Match all by default, Match any on request); the designer's step picker shows tags and finds steps by tag.
+- [ ] UAT-S15-1 Create a step with title, description, instructions, documentation URL, tags; add inputs on the Inputs tab (a saved new step opens on it).
+- [ ] UAT-S15-2 Editing a step shows the "doesn't change workflows that are already published" sentence, and published workflows are unchanged (addendum A).
+- [ ] UAT-S15-3 Used in is visible on the list (number as link, "Not used"); a used step is deactivated, never deleted; the deactivate confirm says how many workflow drafts contain it.
+- [ ] UAT-S15-4 Inputs are described as operational values, not staff metrics.
+- [ ] UAT-S15-5 One "Task Types" menu item with the tabs Task Types, Workflows and Workflow Steps (only permitted tabs show; a person with only `Workflow.Manage` lands on Workflows); the breadcrumb of a step is Administration > Task Types > Workflow Steps > step.
+- [ ] UAT-S15-6 Tags: add with Enter or comma, remove with Backspace or "Remove tag X", suggestions from existing tags, limits (40 characters, 20 tags).
+- [ ] UAT-S15-7 The list filters by title, description and tags (Match all by default, Match any on request), Used in and Status; the designer's step library shows tags and finds steps by tag.
+- [ ] UAT-S15-8 The Used in link opens the Workflows tab filtered by the step (chip "Step: X"); the Task Types and Workflows tabs link to each other filtered the same way (`?taskType=`, `?workflow=`).
+- [ ] UAT-S15-9 Step page: the title is the H1 with an Active or Inactive badge, primary Edit inputs, tabs Details, Inputs, Used by (n), summary strip; Details saves alone.
 
 ### S16 Workflow designer
-- [ ] UAT-S16-1 Choose Ordered/Unordered; ordering UI only meaningful for ordered; mode change confirm.
-- [ ] UAT-S16-2 Add/reorder/remove library steps with keyboard and mouse.
-- [ ] UAT-S16-3 Per-step skippable and skip-comment-required settings; comment-required disabled unless skippable.
-- [ ] UAT-S16-4 No assignee/approval settings exist.
-- [ ] UAT-S16-5 Validate and Publish with diff and impact; existing tasks remain on old version (SCN-014).
-- [ ] UAT-S16-6 Published version immutable; new draft required to edit; version list with usage counts.
-- [ ] UAT-S16-7 Only current published version is offered to new tasks.
+- [ ] UAT-S16-1 Choose Ordered or Unordered in the bar; changing it asks to confirm.
+- [ ] UAT-S16-2 Add (library pane from 1280 px, drawer below), reorder (Move up and Move down, or Alt+Up and Alt+Down on a row, existing) and remove (with Undo) steps with keyboard and mouse.
+- [ ] UAT-S16-3 Per-step Skippable and comment-required settings in the Skip rules popover; comment-required is disabled unless skippable.
+- [ ] UAT-S16-4 No assignee, approver or approval settings exist; there is no Validate button (errors come back on Save and Publish).
+- [ ] UAT-S16-5 Publish shows the changes against the previous version and the impact; tasks already running stay on the old version (SCN-014).
+- [ ] UAT-S16-6 A published version is immutable (one neutral note, Open draft vN or Create new draft); the Workflow page's Versions tab lists versions with Created, By and open Tasks; retire asks with the impact ("Retire v2?", "Keep published").
+- [ ] UAT-S16-7 Only the current published version is offered to new tasks.
+- [ ] UAT-S16-8 Workflows list: Versions column (Published, Draft in progress as a link, Not published neutral), Task types count, Last published, strip from the API summary, row menu (Open draft vN, Deactivate or Activate), cards below 640 px.
+- [ ] UAT-S16-9 Workflow page: header badges, one primary (Open draft vN or Create new draft), overflow Deactivate naming the task types that lose the workflow; tabs Overview, Versions (n), Task types (n).
+- [ ] UAT-S16-10 After publish, retire, deactivate or discard focus is on the status badge (heading when the row is gone) and a live region states the result.
+- [ ] UAT-S16-11 Permission variants: System Admin; `TaskType.Manage` only; `Workflow.Manage` only; `Task.View` only (403 page on every address of the area); no dead link, toast or refused request.
 
 ### S17 Asset Types
 - [ ] UAT-S17-1 Create type with fields and conditional rules; preview works.
