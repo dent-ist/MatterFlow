@@ -20,6 +20,7 @@ public static class WorkManagementModule
         services.AddControllers().AddApplicationPart(typeof(WorkManagementModule).Assembly);
 
         services.AddScoped<TaskTransactions>();
+        services.AddScoped<MatterFlow.SharedKernel.Visibility.ITaskAccessSource, TaskAccessSource>();
         services.AddScoped<TaskPresenter>();
         services.AddScoped<TaskNotifier>();
         services.AddScoped<TaskService>();

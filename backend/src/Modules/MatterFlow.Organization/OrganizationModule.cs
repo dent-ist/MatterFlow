@@ -17,6 +17,7 @@ public static class OrganizationModule
         services.AddControllers().AddApplicationPart(typeof(OrganizationModule).Assembly);
 
         services.AddScoped<CustomFieldValues>();
+        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterAccessSource, MatterAccessSource>();
         services.AddScoped<ClientService>();
         services.AddScoped<MatterService>();
         services.AddScoped<ProjectService>();

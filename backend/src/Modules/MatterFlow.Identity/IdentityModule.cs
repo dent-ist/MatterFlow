@@ -66,6 +66,9 @@ public static class IdentityModule
         services.AddScoped<IUserAvailabilityReader>(sp => sp.GetRequiredService<Application.UserAvailabilityService>());
         services.AddScoped<Application.RoleAdministration>();
 
+        services.Configure<MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
+        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterVisibility, MatterVisibility>();
+
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));
         services.AddScoped<IPermissionChecker>(sp => sp.GetRequiredService<CurrentUser>());
