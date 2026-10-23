@@ -89,7 +89,7 @@ Title size and weight at 1366: 22 px / 700 on every one of 25 pages (Dashboard, 
 
 Opened: #809 (Dashboard Users tab silhouette shifts the body 20 px when the data arrives: layout shift 0.0204 against the 0.02 limit, intermittent).
 
-Closed after this pass, each with an evidence comment: #418, #419, #632, #661, #662, #663, #706, #750, #751, #752; epics #352 and #667 (all children closed). Left open: epic #753 (#737, the @mention in a comment, is deferred by the owner); #601 (Profile), #517 (Assets), #484 (Search): their specs are green, but they ask for the review's own seeded data, a before/after table and a `fixes/final` screenshot set that were not produced; the comment on each says exactly that. Pod Work (#577) was closed on 2026-10-22.
+Closed after this pass, each with an evidence comment: #418, #419, #661, #662, #663, #706, #750, #751, #752; epics #352, #518 and #667 (all children closed). #632 (App shell) was closed and then reopened: five shell issues (#606, #623, #624, #625, #630) are still open, so the final pass of that epic is premature; the evidence below stays valid for what is built. Left open: epic #753 (#737, the @mention in a comment, is deferred by the owner); #601 (Profile), #517 (Assets), #484 (Search): their specs are green, but they ask for the review's own seeded data, a before/after table and a `fixes/final` screenshot set that were not produced; the comment on each says exactly that. Pod Work (#577) was closed on 2026-10-22.
 
 ## What was NOT run
 
