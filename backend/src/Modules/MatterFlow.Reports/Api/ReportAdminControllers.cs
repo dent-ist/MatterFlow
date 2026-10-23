@@ -138,6 +138,31 @@ public sealed record SaveVersionRequest(string? Sql, JsonElement? Parameters, st
 /// <param name="Preview">The preview that ran as part of the save, if any.</param>
 public sealed record SaveVersionResponse(int VersionId, int VersionNo, bool IsActive, bool Deactivated, bool Unchanged, string RowVersion, PreviewResponse? Preview);
 
+/// <summary>One run in the run log.</summary>
+/// <param name="RunId">Log id (also the paging cursor).</param>
+/// <param name="Status">Running, Succeeded, Failed, Cancelled, TimedOut, Truncated or Rejected.</param>
+/// <param name="Kind">Run, Preview, Export or ChoiceQuery.</param>
+/// <param name="Parameters">The values as bound, as <c>NAME=value</c> (long values shortened; built-in values are not listed).</param>
+public sealed record ReportRunLogItemResponse(
+    long RunId,
+    int ReportId,
+    string ReportName,
+    int VersionNo,
+    int UserId,
+    string UserName,
+    DateTime StartedAtUtc,
+    DateTime? FinishedAtUtc,
+    string Status,
+    string Kind,
+    int? RowCount,
+    bool Truncated,
+    int? DurationMs,
+    string? ErrorCode,
+    IReadOnlyList<string> Parameters);
+
+/// <summary>A page of the run log, newest first. <paramref name="NextBefore"/> is the cursor for the next (older) page.</summary>
+public sealed record ReportRunLogPageResponse(IReadOnlyList<ReportRunLogItemResponse> Items, long? NextBefore);
+
 /// <summary>Whether a report is active after an activate or deactivate.</summary>
 public sealed record ReportStateResponse(int ReportId, bool IsActive, int? CurrentVersionId, string? RowVersion);
 
@@ -145,7 +170,7 @@ public sealed record ReportStateResponse(int ReportId, bool IsActive, int? Curre
 [ApiController]
 [Route("api/v1/report-admin")]
 [Produces("application/json")]
-public class ReportAdminController(IReportsAvailability availability, ReportAuthoringService authoring) : ControllerBase
+public class ReportAdminController(IReportsAvailability availability, ReportAuthoringService authoring, IReportRunLogReader runLog) : ControllerBase
 {
     /// <summary>Whether reports can run and, if not, why (missing or unsafe report login, failed probe).</summary>
     [HttpGet("status", Name = "GetReportsStatus")]
@@ -222,6 +247,26 @@ public class ReportAdminController(IReportsAvailability availability, ReportAuth
     [Authorize(Policy = ReportPolicies.Manage)]
     [ProducesResponseType<ReportStateResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken) => State(id, await authoring.DeactivateAsync(id, cancellationToken));
+
+    /// <summary>The run log (read-only, newest first): who ran which version of which report with which values, how it ended and how long it took. Filter by report, status, kind or person; page with <c>before</c>.</summary>
+    [HttpGet("runs", Name = "ListReportRuns")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [ProducesResponseType<ReportRunLogPageResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<ReportRunLogPageResponse>> Runs(
+        [FromQuery] int? reportId, [FromQuery] string? status, [FromQuery] string? kind, [FromQuery] int? userId, [FromQuery] long? before, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default) =>
+        MapLog(await runLog.ListAsync(new RunLogQuery(reportId, status, kind, userId, before, pageSize), cancellationToken));
+
+    /// <summary>The run log of one report.</summary>
+    [HttpGet("reports/{id:int}/runs", Name = "ListRunsOfReport")]
+    [Authorize(Policy = ReportPolicies.Manage)]
+    [ProducesResponseType<ReportRunLogPageResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<ReportRunLogPageResponse>> RunsOfReport(
+        int id, [FromQuery] string? status, [FromQuery] string? kind, [FromQuery] int? userId, [FromQuery] long? before, [FromQuery] int pageSize = 50, CancellationToken cancellationToken = default) =>
+        MapLog(await runLog.ListAsync(new RunLogQuery(id, status, kind, userId, before, pageSize), cancellationToken));
+
+    private static ReportRunLogPageResponse MapLog(RunLogPage page) => new(
+        page.Items.Select(i => new ReportRunLogItemResponse(i.RunId, i.ReportId, i.ReportName, i.VersionNo, i.UserId, i.UserName, i.StartedAtUtc, i.FinishedAtUtc, i.Status, i.Kind, i.RowCount, i.Truncated, i.DurationMs, i.ErrorCode, i.Parameters)).ToList(),
+        page.NextBefore);
 
     private static PreviewResponse MapPreview(PreviewResult result) => new(
         result.Success,

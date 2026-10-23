@@ -324,7 +324,13 @@ At startup (and on "Check again", `POST /api/v1/report-admin/status/check`) the 
 | `TooPrivileged` | sysadmin, db_owner, a broad role, can write/execute/create, or can read a denied table | Remove the extra rights (step 3) |
 | `CompatibilityTooLow` | compatibility level below 130 | Raise it, or ask for the table-valued-parameter fallback |
 
-### 11.4 Demo / development
+### 11.4 Run log, audit and retention
+
+Every run, preview and refused run is a row in `dbo.ReportRun` (who, which version, the parameter values as bound, rows, truncated flag, duration, status, error code, correlation id). A run also writes one compact `REPORT_RUN` event to `dbo.AuditEvent` (object type `Report`; the Audit Logs object-type and event-type filters list it), and definition changes write `REPORT_UPDATED`, `REPORT_PARAMETERS_CHANGED`, `REPORT_ACTIVATED`, `REPORT_DEACTIVATED` (more arrive with the admin and assignment APIs). Events hold version numbers and a 16-character hash, **never the SQL text**; the text is in `dbo.ReportVersion`. Administrators read the run log at `GET /api/v1/report-admin/runs`.
+
+**Retention: two years.** The run log is append-only (the application login has no UPDATE or DELETE on it, and a trigger refuses deleting a row younger than two years). A background job deletes runs older than two years once a day through `dbo.usp_ReportRunPurge`; nothing else removes rows. Audit events follow the audit trail's own retention (kept indefinitely). Parameter values can contain personal data only as ids (matters, clients, users) or as the text an administrator allows; text values are stored shortened to 200 characters.
+
+### 11.5 Demo / development
 
 `npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.**
 

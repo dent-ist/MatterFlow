@@ -107,8 +107,17 @@ internal sealed class ReportTestHarness : IAsyncDisposable
         await using var command = connection.CreateCommand();
         command.CommandText = "SELECT ReportRunId, Status, Kind, [RowCount], Truncated, ErrorCode, ParametersJson, UserId, FinishedAt FROM dbo.ReportRun WHERE ReportId = @r ORDER BY ReportRunId FOR JSON PATH";
         command.Parameters.AddWithValue("@r", reportId);
-        var json = (string?)await command.ExecuteScalarAsync() ?? "[]";
-        return JsonDocument.Parse(json).RootElement.Clone();
+        return JsonDocument.Parse(await ReadJsonAsync(command)).RootElement.Clone();
+    }
+
+    /// <summary>FOR JSON output arrives in chunks of about 2,000 characters when read as rows: join them.</summary>
+    public static async Task<string> ReadJsonAsync(SqlCommand command)
+    {
+        var sb = new System.Text.StringBuilder();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            sb.Append(reader.GetString(0));
+        return sb.Length == 0 ? "[]" : sb.ToString();
     }
 
     public async ValueTask DisposeAsync() => await Factory.DisposeAsync();

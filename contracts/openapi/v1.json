@@ -4922,6 +4922,145 @@
         }
       }
     },
+    "/api/v1/report-admin/runs": {
+      "get": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "ListReportRuns",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRunLogPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/report-admin/reports/{id}/runs": {
+      "get": {
+        "tags": [
+          "ReportAdmin"
+        ],
+        "operationId": "ListRunsOfReport",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRunLogPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/report-admin/reports/{id}/versions": {
       "post": {
         "tags": [
@@ -15946,6 +16085,118 @@
           },
           "truncated": {
             "type": "boolean"
+          }
+        }
+      },
+      "ReportRunLogItemResponse": {
+        "required": [
+          "runId",
+          "reportId",
+          "reportName",
+          "versionNo",
+          "userId",
+          "userName",
+          "startedAtUtc",
+          "finishedAtUtc",
+          "status",
+          "kind",
+          "rowCount",
+          "truncated",
+          "durationMs",
+          "errorCode",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reportId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reportName": {
+            "type": "string"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "startedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "rowCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "durationMs": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "errorCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReportRunLogPageResponse": {
+        "required": [
+          "items",
+          "nextBefore"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportRunLogItemResponse"
+            }
+          },
+          "nextBefore": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
           }
         }
       },

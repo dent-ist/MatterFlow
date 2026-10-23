@@ -81,7 +81,7 @@ public sealed class ReportRunService
             return RunResult.Fail(404, ErrorCodes.NotFound, "This report does not exist or is not available to you.");
 
         var correlation = Guid.NewGuid();
-        var start = new RunStart(report.ReportId, report.VersionId, userId, ReportRunKind.Run, null, correlation);
+        var start = new RunStart(report.ReportId, report.VersionId, userId, ReportRunKind.Run, null, correlation, report.Name, report.VersionNo);
 
         // The stored text is checked again on every run: it must be the text that was validated, and it must still pass the validator.
         var definitions = ParameterDefinitionJson.Deserialize(report.ParametersJson);
@@ -109,7 +109,8 @@ public sealed class ReportRunService
         using (lease)
         {
             var parametersJson = LogJson(bind.Parameters);
-            var runId = await _log.StartAsync(start with { ParametersJson = parametersJson }, CancellationToken.None);
+            start = start with { ParametersJson = parametersJson };
+            var runId = await _log.StartAsync(start, CancellationToken.None);
             var maxRows = _options.EffectiveMaxRows(report.MaxRows);
             var sink = _results.CreateSink(maxRows);
             ExecutionOutcome outcome;
@@ -122,11 +123,11 @@ public sealed class ReportRunService
             }
             catch (Exception)
             {
-                await _log.CompleteAsync(runId, new RunCompletion(ReportRunStatus.Failed, null, false, null, "UNEXPECTED", null), CancellationToken.None);
+                await _log.CompleteAsync(runId, start, new RunCompletion(ReportRunStatus.Failed, null, false, null, "UNEXPECTED", null), CancellationToken.None);
                 throw;
             }
 
-            await _log.CompleteAsync(runId, new RunCompletion(outcome.Status, outcome.RowCount, outcome.Truncated, outcome.DurationMs, outcome.ErrorCode, null), CancellationToken.None);
+            await _log.CompleteAsync(runId, start, new RunCompletion(outcome.Status, outcome.RowCount, outcome.Truncated, outcome.DurationMs, outcome.ErrorCode, null), CancellationToken.None);
 
             switch (outcome.Status)
             {

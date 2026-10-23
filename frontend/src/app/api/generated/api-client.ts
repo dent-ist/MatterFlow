@@ -7327,6 +7327,25 @@ export interface IReportAdminClient {
      */
     deactivateReport(id: number): Observable<ReportStateResponse>;
     /**
+     * @param reportId (optional) 
+     * @param status (optional) 
+     * @param kind (optional) 
+     * @param userId (optional) 
+     * @param before (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listReportRuns(reportId?: number | undefined, status?: string | undefined, kind?: string | undefined, userId?: number | undefined, before?: number | undefined, pageSize?: number | undefined): Observable<ReportRunLogPageResponse>;
+    /**
+     * @param status (optional) 
+     * @param kind (optional) 
+     * @param userId (optional) 
+     * @param before (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listRunsOfReport(id: number, status?: string | undefined, kind?: string | undefined, userId?: number | undefined, before?: number | undefined, pageSize?: number | undefined): Observable<ReportRunLogPageResponse>;
+    /**
      * @return OK
      */
     saveReportVersion(id: number, body: SaveVersionRequest): Observable<SaveVersionResponse>;
@@ -7652,6 +7671,164 @@ export class ReportAdminClient implements IReportAdminClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportStateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param reportId (optional) 
+     * @param status (optional) 
+     * @param kind (optional) 
+     * @param userId (optional) 
+     * @param before (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listReportRuns(reportId?: number | undefined, status?: string | undefined, kind?: string | undefined, userId?: number | undefined, before?: number | undefined, pageSize?: number | undefined): Observable<ReportRunLogPageResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/runs?";
+        if (reportId === null)
+            throw new globalThis.Error("The parameter 'reportId' cannot be null.");
+        else if (reportId !== undefined)
+            url_ += "reportId=" + encodeURIComponent("" + reportId) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "status=" + encodeURIComponent("" + status) + "&";
+        if (kind === null)
+            throw new globalThis.Error("The parameter 'kind' cannot be null.");
+        else if (kind !== undefined)
+            url_ += "kind=" + encodeURIComponent("" + kind) + "&";
+        if (userId === null)
+            throw new globalThis.Error("The parameter 'userId' cannot be null.");
+        else if (userId !== undefined)
+            url_ += "userId=" + encodeURIComponent("" + userId) + "&";
+        if (before === null)
+            throw new globalThis.Error("The parameter 'before' cannot be null.");
+        else if (before !== undefined)
+            url_ += "before=" + encodeURIComponent("" + before) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListReportRuns(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListReportRuns(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportRunLogPageResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportRunLogPageResponse>;
+        }));
+    }
+
+    protected processListReportRuns(response: HttpResponseBase): Observable<ReportRunLogPageResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportRunLogPageResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param status (optional) 
+     * @param kind (optional) 
+     * @param userId (optional) 
+     * @param before (optional) 
+     * @param pageSize (optional) 
+     * @return OK
+     */
+    listRunsOfReport(id: number, status?: string | undefined, kind?: string | undefined, userId?: number | undefined, before?: number | undefined, pageSize?: number | undefined): Observable<ReportRunLogPageResponse> {
+        let url_ = this.baseUrl + "/api/v1/report-admin/reports/{id}/runs?";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "status=" + encodeURIComponent("" + status) + "&";
+        if (kind === null)
+            throw new globalThis.Error("The parameter 'kind' cannot be null.");
+        else if (kind !== undefined)
+            url_ += "kind=" + encodeURIComponent("" + kind) + "&";
+        if (userId === null)
+            throw new globalThis.Error("The parameter 'userId' cannot be null.");
+        else if (userId !== undefined)
+            url_ += "userId=" + encodeURIComponent("" + userId) + "&";
+        if (before === null)
+            throw new globalThis.Error("The parameter 'before' cannot be null.");
+        else if (before !== undefined)
+            url_ += "before=" + encodeURIComponent("" + before) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListRunsOfReport(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListRunsOfReport(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ReportRunLogPageResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ReportRunLogPageResponse>;
+        }));
+    }
+
+    protected processListRunsOfReport(response: HttpResponseBase): Observable<ReportRunLogPageResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReportRunLogPageResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -15317,6 +15494,33 @@ export interface ReportRowsResponse {
     page: number;
     pageSize: number;
     truncated: boolean;
+
+    [key: string]: any;
+}
+
+export interface ReportRunLogItemResponse {
+    runId: number;
+    reportId: number;
+    reportName: string;
+    versionNo: number;
+    userId: number;
+    userName: string;
+    startedAtUtc: string;
+    finishedAtUtc: string | undefined;
+    status: string;
+    kind: string;
+    rowCount: number | undefined;
+    truncated: boolean;
+    durationMs: number | undefined;
+    errorCode: string | undefined;
+    parameters: string[];
+
+    [key: string]: any;
+}
+
+export interface ReportRunLogPageResponse {
+    items: ReportRunLogItemResponse[];
+    nextBefore: number | undefined;
 
     [key: string]: any;
 }

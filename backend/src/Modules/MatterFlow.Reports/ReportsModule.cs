@@ -29,6 +29,8 @@ public static class ReportsModule
         services.AddScoped<IReportExecutor, ReportExecutor>();
         services.AddScoped<BuiltInContextFactory>();
         services.AddScoped<IReportDefinitionStore, ReportDefinitionStore>();
+        services.AddScoped<IReportRunLogReader, ReportRunLogReader>();
+        services.AddHostedService<ReportRunRetentionService>();
         services.AddScoped<ReportRunService>();
         services.AddScoped<ReportAuthoringService>();
         return services;

@@ -110,7 +110,7 @@ public sealed class ReportAuthoringService
         }
 
         var correlation = Guid.NewGuid();
-        var start = new RunStart(reportId, report.CurrentVersionId.Value, userId, ReportRunKind.Preview, null, correlation);
+        var start = new RunStart(reportId, report.CurrentVersionId.Value, userId, ReportRunKind.Preview, null, correlation, report.Name, report.CurrentVersionNo ?? 0);
         var (compiled, validation) = ReportSqlCompiler.CompileAndValidate(text, definitions);
         if (!validation.IsValid)
         {
@@ -138,7 +138,8 @@ public sealed class ReportAuthoringService
 
         using (lease)
         {
-            var runId = await _log.StartAsync(start with { ParametersJson = ReportRunService.LogJson(bind.Parameters) }, CancellationToken.None);
+            start = start with { ParametersJson = ReportRunService.LogJson(bind.Parameters) };
+            var runId = await _log.StartAsync(start, CancellationToken.None);
             var maxRows = _options.EffectiveMaxRows(report.MaxRows);
             var builder = new Results.ResultTableBuilder(_options.PreviewRows, (long)_options.ResultMemoryBudgetMegabytes * 1024 * 1024);
             ExecutionOutcome outcome;
@@ -148,11 +149,11 @@ public sealed class ReportAuthoringService
             }
             catch (Exception)
             {
-                await _log.CompleteAsync(runId, new RunCompletion(ReportRunStatus.Failed, null, false, null, "UNEXPECTED", null), CancellationToken.None);
+                await _log.CompleteAsync(runId, start, new RunCompletion(ReportRunStatus.Failed, null, false, null, "UNEXPECTED", null), CancellationToken.None);
                 throw;
             }
 
-            await _log.CompleteAsync(runId, new RunCompletion(outcome.Status, outcome.RowCount, outcome.Truncated, outcome.DurationMs, outcome.ErrorCode, null), CancellationToken.None);
+            await _log.CompleteAsync(runId, start, new RunCompletion(outcome.Status, outcome.RowCount, outcome.Truncated, outcome.DurationMs, outcome.ErrorCode, null), CancellationToken.None);
 
             if (outcome.Status is not (ReportRunStatus.Succeeded or ReportRunStatus.Truncated))
             {

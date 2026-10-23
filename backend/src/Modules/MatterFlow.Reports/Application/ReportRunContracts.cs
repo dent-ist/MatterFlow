@@ -87,7 +87,9 @@ public interface IReportExecutor
     Task<ExecutionOutcome> ExecuteAsync(ExecutionRequest request, IRowSink sink, CancellationToken cancellationToken);
 }
 
-public sealed record RunStart(int ReportId, int VersionId, int UserId, ReportRunKind Kind, string? ParametersJson, Guid CorrelationId);
+/// <param name="ReportName">Name of the report, for the audit summary.</param>
+/// <param name="VersionNo">Number of the version that runs, for the audit summary.</param>
+public sealed record RunStart(int ReportId, int VersionId, int UserId, ReportRunKind Kind, string? ParametersJson, Guid CorrelationId, string ReportName = "", int VersionNo = 0);
 
 public sealed record RunCompletion(ReportRunStatus Status, int? RowCount, bool Truncated, int? DurationMs, string? ErrorCode, int? ExportedRowCount);
 
@@ -100,5 +102,6 @@ public interface IReportRunLog
     /// <summary>Writes a run that never started (refused before SQL), directly with its final status.</summary>
     Task<long> RecordRejectedAsync(RunStart start, string errorCode, CancellationToken cancellationToken);
 
-    Task CompleteAsync(long runId, RunCompletion completion, CancellationToken cancellationToken);
+    /// <summary>Completes the run once and, for a run (not a preview), writes the compact <c>REPORT_RUN</c> audit event in the same transaction.</summary>
+    Task CompleteAsync(long runId, RunStart start, RunCompletion completion, CancellationToken cancellationToken);
 }
