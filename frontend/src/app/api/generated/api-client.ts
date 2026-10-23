@@ -5056,9 +5056,12 @@ export interface IUsersLookupClient {
     /**
      * @param q (optional) 
      * @param limit (optional) 
+     * @param podId (optional) 
+     * @param taskTypeId (optional) 
+     * @param suggest (optional) 
      * @return OK
      */
-    lookupUsers(q?: string | undefined, limit?: number | undefined): Observable<UserLookupItem[]>;
+    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined): Observable<UserLookupItem[]>;
 }
 
 @Injectable({
@@ -5077,9 +5080,12 @@ export class UsersLookupClient implements IUsersLookupClient {
     /**
      * @param q (optional) 
      * @param limit (optional) 
+     * @param podId (optional) 
+     * @param taskTypeId (optional) 
+     * @param suggest (optional) 
      * @return OK
      */
-    lookupUsers(q?: string | undefined, limit?: number | undefined): Observable<UserLookupItem[]> {
+    lookupUsers(q?: string | undefined, limit?: number | undefined, podId?: number | undefined, taskTypeId?: number | undefined, suggest?: boolean | undefined): Observable<UserLookupItem[]> {
         let url_ = this.baseUrl + "/api/v1/users/lookup?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -5089,6 +5095,18 @@ export class UsersLookupClient implements IUsersLookupClient {
             throw new globalThis.Error("The parameter 'limit' cannot be null.");
         else if (limit !== undefined)
             url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        if (podId === null)
+            throw new globalThis.Error("The parameter 'podId' cannot be null.");
+        else if (podId !== undefined)
+            url_ += "podId=" + encodeURIComponent("" + podId) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            url_ += "taskTypeId=" + encodeURIComponent("" + taskTypeId) + "&";
+        if (suggest === null)
+            throw new globalThis.Error("The parameter 'suggest' cannot be null.");
+        else if (suggest !== undefined)
+            url_ += "suggest=" + encodeURIComponent("" + suggest) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -18176,6 +18194,10 @@ export interface UserLookupItem {
     userId: number;
     displayName: string;
     availability: UserAvailabilitySummary;
+    openTaskCount: number;
+    lastAssignedUtc: string | undefined;
+    suggested: boolean;
+    reason: string;
 
     [key: string]: any;
 }

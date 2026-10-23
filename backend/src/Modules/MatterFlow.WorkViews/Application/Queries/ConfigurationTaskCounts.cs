@@ -86,3 +86,31 @@ public sealed class UserTaskCounts(DbContext db) : IUserTaskCounts
         return rows.ToDictionary(r => r.Key, r => r.Count);
     }
 }
+
+/// <summary>The Task load per candidate assignee behind the assignee pickers (#757): open count (same rule as the Task Queue) and the last assignment time; two grouped statements whatever the number of users.</summary>
+public sealed class AssigneeLoadReader(DbContext db) : IAssigneeLoadReader
+{
+    public async Task<IReadOnlyDictionary<int, AssigneeLoad>> ReadAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        if (userIds.Count == 0)
+            return new Dictionary<int, AssigneeLoad>();
+
+        var ids = userIds.Distinct().ToList();
+        var open = await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
+            .Where(t => t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        var last = await db.Set<WorkTask>().AsNoTracking()
+            .Where(t => t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value))
+            .GroupBy(t => t.AssignedUserId!.Value)
+            .Select(g => new { Key = g.Key, Last = g.Max(t => t.AssignedAtUtc) })
+            .ToListAsync(cancellationToken);
+
+        var openByUser = open.ToDictionary(r => r.Key, r => r.Count);
+        return last.Select(r => r.Key).Union(openByUser.Keys).ToDictionary(
+            id => id,
+            id => new AssigneeLoad(openByUser.GetValueOrDefault(id), last.FirstOrDefault(r => r.Key == id)?.Last));
+    }
+}

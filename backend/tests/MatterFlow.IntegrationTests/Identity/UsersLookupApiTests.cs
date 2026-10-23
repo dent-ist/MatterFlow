@@ -32,7 +32,7 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await JsonAsync(await As(account).GetAsync("/api/v1/me"))).GetProperty("userId").GetInt32();
 
     [Fact]
-    public async Task Lookup_returns_active_users_by_name_with_only_id_and_display_name()
+    public async Task Lookup_returns_active_users_by_name_without_account_details()
     {
         await ProvisionAsync(@"KE\tariq");
         var leaver = await ProvisionAsync(@"KE\leaver");
@@ -49,7 +49,7 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
         var found = await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup?q=tariq"));
         var item = found.EnumerateArray().Single();
         item.GetProperty("displayName").GetString().ShouldBe(@"KE\tariq");
-        item.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "displayName", "userId"]);
+        item.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "displayName", "lastAssignedUtc", "openTaskCount", "reason", "suggested", "userId"]); // no email, account name or roles
 
         (await JsonAsync(await As(@"KE\scientist").GetAsync("/api/v1/users/lookup")))
             .EnumerateArray().Select(u => u.GetProperty("userId").GetInt32()).ShouldNotContain(leaver);

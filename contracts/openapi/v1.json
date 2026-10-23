@@ -3307,6 +3307,30 @@
               "format": "int32",
               "default": 25
             }
+          },
+          {
+            "name": "podId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "suggest",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -22093,7 +22117,11 @@
         "required": [
           "userId",
           "displayName",
-          "availability"
+          "availability",
+          "openTaskCount",
+          "lastAssignedUtc",
+          "suggested",
+          "reason"
         ],
         "type": "object",
         "properties": {
@@ -22106,6 +22134,23 @@
           },
           "availability": {
             "$ref": "#/components/schemas/UserAvailabilitySummary"
+          },
+          "openTaskCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastAssignedUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "suggested": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
           }
         }
       },
