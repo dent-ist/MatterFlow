@@ -4,6 +4,7 @@ import {
   OnInit,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { Button } from 'primeng/button';
@@ -18,9 +19,11 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { CharCounter } from '../../../shared/ui/char-counter';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { Tabs } from '../../../shared/ui/tabs';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { AdminTabCounts } from '../admin-tabs';
+import { RoleReportsTab } from '../reports/role-reports-tab';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 
 /** The permission that every other permission of the same group needs (Assign requires View), if the catalog has one. */
@@ -62,7 +65,7 @@ export function roleChanges(
 /** S12 Admin: Roles and permissions. List with member counts, editor with the grouped permission matrix. */
 @Component({
   selector: 'mf-roles-page',
-  imports: [Button, CharCounter, ConfirmDialog, ScrollArea],
+  imports: [Button, CharCounter, ConfirmDialog, RoleReportsTab, ScrollArea, Tabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   templateUrl: './roles-page.html',
@@ -72,6 +75,18 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
   private readonly reportCount = AdminTabCounts.report('roles');
+
+  /**
+   * True for a person who holds `Report.Assign`: a saved role then has a second tab, Reports (which reports the role may run). The host page
+   * passes it, so this page does not read the permissions itself. The Reports tab loads its reports when it is opened.
+   */
+  readonly canAssignReports = input(false);
+  protected readonly roleTab = signal<'permissions' | 'reports'>('permissions');
+  protected readonly roleTabs = [
+    { key: 'permissions', label: 'Permissions' },
+    { key: 'reports', label: 'Reports' },
+  ];
+  protected readonly showRoleTabs = computed(() => this.canAssignReports() && !!this.selected());
 
   /** Below 640 px the list has no header row: the word "permissions" is then on the row itself. */
   protected readonly phone = phoneCards();
@@ -163,6 +178,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   }
 
   protected startNew(): void {
+    this.roleTab.set('permissions');
     this.selected.set(null);
     this.editing.set(true);
     this.draftName.set('');
@@ -181,6 +197,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
 
   protected async edit(role: RoleSummaryDto): Promise<void> {
     this.resetMessages();
+    if (this.selected()?.roleId !== role.roleId) this.roleTab.set('permissions');
     try {
       const detail = await firstValueFrom(this.api.getRole(role.roleId));
       this.selected.set(detail);

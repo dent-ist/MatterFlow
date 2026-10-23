@@ -10,6 +10,7 @@
 #   E2E_SKIP_BUILD=1         reuse artifacts/e2e-publish from an earlier run (skips npm build and dotnet publish)
 #   E2E_KEEP_STACK=1         leave SQL and the API running after the tests (prints how to stop them)
 #   E2E_RID=linux-x64        runtime identifier used for the publish
+#   E2E_AXE_PATH=...         axe.min.js for the accessibility checks (default: the installed axe-core package)
 #   E2E_CHROMIUM_PATH=...    Chromium executable (default: the preinstalled one if present, else Playwright's own browser)
 set -euo pipefail
 
@@ -57,12 +58,16 @@ echo "    SQL Server on 127.0.0.1:$sql_port"
 
 echo "==> API on http://127.0.0.1:$api_port"
 conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_password;TrustServerCertificate=True"
+reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;Password=MatterFlow_Reports1!;TrustServerCertificate=True;Encrypt=True;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly;Connect Timeout=10;Max Pool Size=8"
 (
   cd "$publish_dir"
   export ASPNETCORE_ENVIRONMENT=Development
   export ASPNETCORE_URLS="http://127.0.0.1:$api_port"
   export ConnectionStrings__Default="$conn"
   export ConnectionStrings__MatterFlow="$conn"
+  # The read-only report login (epic #671): every report runs under it, never under the application login. The login itself is created below,
+  # once the API has applied the schema (which creates the database role mf_report_reader); Reports stay "not ready" until it exists.
+  export ConnectionStrings__ReportsReadOnly="$reports_conn"
   export Hosting__ServeSpa=true
   export Auth__Provider=Dev
   export Auth__Dev__DefaultUser='ke\kekim'
@@ -92,6 +97,13 @@ for _ in $(seq 1 120); do
   sleep 2
 done
 [ "${ready:-0}" = "1" ] || { echo "API did not become ready"; tail -n 40 "$root/artifacts/e2e-api.log"; exit 1; }
+
+echo "==> Read-only report login (tools/db/provision-report-login.sql, the same script npm start runs)"
+docker cp "$root/tools/db/provision-report-login.sql" "$sql_name:/tmp/provision-report-login.sql" >/dev/null
+docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$sql_password" -d MatterFlow -b -i /tmp/provision-report-login.sql >/dev/null
+# The API probed the login at its start, before it existed: ask it to probe again (the admin page's "Check again").
+curl -sf -X POST -H 'X-Dev-User: ke\kekim' -H 'X-MatterFlow-Client: web' "http://127.0.0.1:$api_port/api/v1/report-admin/status/check" >/dev/null \
+  || { echo "Reports are not ready"; tail -n 40 "$root/artifacts/e2e-api.log"; exit 1; }
 
 echo "==> Playwright"
 cd "$root/frontend"

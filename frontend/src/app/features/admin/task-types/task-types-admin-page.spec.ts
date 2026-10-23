@@ -95,6 +95,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'Labels',
         'Asset types',
         'Custom Fields',
+        'Reports',
         'Audit Logs',
       ]);
       expect(labels).not.toContain('Workflows');

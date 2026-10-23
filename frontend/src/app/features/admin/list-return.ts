@@ -14,6 +14,7 @@ export const ADMIN_LIST = {
   assetTypes: { id: 'admin-asset-types', path: '/admin/asset-types' },
   customFields: { id: 'admin-custom-fields', path: '/admin/custom-fields' },
   pods: { id: 'admin-pods', path: '/admin/pods' },
+  reports: { id: 'admin-reports', path: '/admin/reports' },
 } as const;
 
 export type AdminList = (typeof ADMIN_LIST)[keyof typeof ADMIN_LIST];

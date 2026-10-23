@@ -77,7 +77,7 @@ export const USERS_TABS: readonly AdminTab[] = [
       @if (current() === 'users') {
         <mf-users-page />
       } @else if (current() === 'roles') {
-        <mf-roles-page #roles />
+        <mf-roles-page #roles [canAssignReports]="canAssignReports()" />
       } @else {
         <mf-pods-page
           #pods
@@ -124,6 +124,9 @@ export class UsersRolesPage implements HasUnsavedChanges {
   );
 
   /** A pod's editor is a record page: the Users header and tabs give way to the record header (Administration > Users > Pods > name). */
+  /** A saved role gets a Reports tab for a person who may assign reports to roles. */
+  protected readonly canAssignReports = computed(() => this.auth.has('Report.Assign'));
+
   protected readonly editingPod = computed(() => this.current() === 'pods' && !!this.pod());
 
   protected readonly current = computed<UsersTab>(

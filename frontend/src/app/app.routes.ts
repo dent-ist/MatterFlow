@@ -124,6 +124,7 @@ export const routes: Routes = [
             'Priority.Manage',
             'StatusLabel.Manage',
             'Audit.View',
+            'Report.Manage',
           ),
         ],
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),

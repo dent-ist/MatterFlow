@@ -47,191 +47,211 @@
 
     @if (editing()) {
       <section class="mf-editor" mfScrollArea="Role editor" data-editor>
-        @if (locked()) {
-          <p class="mf-info" data-locked>
-            System Admin holds every permission and cannot be edited or deleted.
-          </p>
-        }
-        @if (error()) {
-          <p class="mf-error" role="alert" data-error>{{ error() }}</p>
-        }
-
-        <p class="mf-editor-count" data-editor-count>
-          <strong>{{ draftCount() }} of {{ totalPermissions() }}</strong> permissions selected
-        </p>
-
-        @if (changes().length > 0) {
-          <div class="mf-changes" role="group" aria-labelledby="role-changes-h" data-changes>
-            <p class="mf-changes__h" id="role-changes-h">Changed ({{ changes().length }})</p>
-            <ul class="mf-changes__list">
-              @for (c of changes(); track c.code) {
-                <li>
-                  <button
-                    type="button"
-                    class="mf-change"
-                    [class.mf-change--removed]="c.kind === 'removed'"
-                    data-change
-                    [attr.data-change-kind]="c.kind"
-                    [attr.aria-label]="
-                      'Undo: ' + (c.kind === 'added' ? 'added ' : 'removed ') + c.code
-                    "
-                    (click)="undoChange(c)"
-                  >
-                    <span class="mf-change__sign" aria-hidden="true">{{
-                      c.kind === 'added' ? '+' : '-'
-                    }}</span>
-                    {{ c.code }}
-                    <i class="pi pi-undo" aria-hidden="true"></i>
-                  </button>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-
-        <div class="mf-fld">
-          <label for="role-name" class="mf-label"
-            >Name <span class="mf-req">(required)</span></label
-          >
-          <input
-            id="role-name"
-            type="text"
-            class="mf-control"
-            maxlength="100"
-            data-name
-            [disabled]="locked()"
-            [value]="draftName()"
-            [attr.aria-invalid]="nameError() ? 'true' : null"
-            [attr.aria-describedby]="nameError() ? 'role-name-error' : null"
-            (input)="draftName.set($any($event.target).value)"
+        @if (showRoleTabs()) {
+          <mf-tabs
+            label="Role sections"
+            idPrefix="role-ed"
+            [tabs]="roleTabs"
+            [selected]="roleTab()"
+            (tabChange)="roleTab.set($event === 'reports' ? 'reports' : 'permissions')"
           />
-          @if (nameError()) {
-            <p class="mf-form-error" id="role-name-error" role="alert" data-name-error>
-              <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ nameError() }}
+        }
+        @if (showRoleTabs() && roleTab() === 'reports') {
+          <div
+            role="tabpanel"
+            id="role-ed-panel"
+            aria-labelledby="role-ed-tab-reports"
+            data-role-reports-panel
+          >
+            <mf-role-reports-tab [roleId]="selected()!.roleId" [roleName]="selected()!.name" />
+          </div>
+        } @else {
+          @if (locked()) {
+            <p class="mf-info" data-locked>
+              System Admin holds every permission and cannot be edited or deleted.
             </p>
           }
-        </div>
-        <div class="mf-fld">
-          <label for="role-description" class="mf-label">Description</label>
-          <textarea
-            id="role-description"
-            class="mf-control mf-description"
-            rows="2"
-            [attr.maxlength]="descriptionMax"
-            data-description
-            aria-describedby="role-description-count"
-            [disabled]="locked()"
-            [value]="draftDescription()"
-            (input)="draftDescription.set($any($event.target).value)"
-          ></textarea>
-          <mf-char-counter
-            countId="role-description-count"
-            [value]="draftDescription()"
-            [max]="descriptionMax"
-          />
-        </div>
+          @if (error()) {
+            <p class="mf-error" role="alert" data-error>{{ error() }}</p>
+          }
 
-        <div class="mf-tools">
-          <div class="mf-fld">
-            <label for="role-permission-search" class="mf-label">Search permissions</label>
-            <input
-              id="role-permission-search"
-              type="search"
-              class="mf-control"
-              autocomplete="off"
-              placeholder="Permission code or description"
-              data-search
-              [value]="filter()"
-              (input)="filter.set($any($event.target).value)"
-            />
-          </div>
-          @if (!locked()) {
-            <div class="mf-fld">
-              <label for="role-copy" class="mf-label">Copy from role</label>
-              <select
-                id="role-copy"
-                class="mf-control"
-                data-copy
-                (change)="copyFrom($any($event.target).value)"
-              >
-                <option value="">Choose...</option>
-                @for (r of roles(); track r.roleId) {
-                  <option [value]="r.roleId">{{ r.name }}</option>
+          <p class="mf-editor-count" data-editor-count>
+            <strong>{{ draftCount() }} of {{ totalPermissions() }}</strong> permissions selected
+          </p>
+
+          @if (changes().length > 0) {
+            <div class="mf-changes" role="group" aria-labelledby="role-changes-h" data-changes>
+              <p class="mf-changes__h" id="role-changes-h">Changed ({{ changes().length }})</p>
+              <ul class="mf-changes__list">
+                @for (c of changes(); track c.code) {
+                  <li>
+                    <button
+                      type="button"
+                      class="mf-change"
+                      [class.mf-change--removed]="c.kind === 'removed'"
+                      data-change
+                      [attr.data-change-kind]="c.kind"
+                      [attr.aria-label]="
+                        'Undo: ' + (c.kind === 'added' ? 'added ' : 'removed ') + c.code
+                      "
+                      (click)="undoChange(c)"
+                    >
+                      <span class="mf-change__sign" aria-hidden="true">{{
+                        c.kind === 'added' ? '+' : '-'
+                      }}</span>
+                      {{ c.code }}
+                      <i class="pi pi-undo" aria-hidden="true"></i>
+                    </button>
+                  </li>
                 }
-              </select>
+              </ul>
             </div>
           }
-        </div>
 
-        <p class="mf-live" aria-live="polite" data-note>{{ note() }}</p>
-
-        @for (g of visibleGroups(); track g.group) {
-          <fieldset [attr.data-group]="g.group" [disabled]="locked()">
-            <legend>
-              {{ g.group }}
-              <span class="mf-group-count" data-group-count
-                >{{ groupCount(g.group) }}/{{ groupTotal(g.group)
-                }}<span class="mf-sr-only"> selected</span></span
-              >
-            </legend>
-            @if (!locked()) {
-              <div class="mf-group-tools">
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text"
-                  data-select-all
-                  [attr.aria-label]="'Select all ' + g.group + ' permissions'"
-                  (click)="selectGroup(g.group, true)"
-                >
-                  Select all
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text"
-                  data-select-none
-                  [attr.aria-label]="'Clear all ' + g.group + ' permissions'"
-                  (click)="selectGroup(g.group, false)"
-                >
-                  Select none
-                </button>
-              </div>
-            }
-            @for (p of g.permissions; track p.code) {
-              <label class="mf-perm">
-                <input
-                  type="checkbox"
-                  [attr.data-perm]="p.code"
-                  [checked]="locked() || isChecked(p.code)"
-                  (change)="toggle(p.code, $any($event.target).checked)"
-                />
-                <span>
-                  <strong>{{ p.code }}</strong>
-                  <span class="mf-muted">{{ p.description }}</span>
-                </span>
-              </label>
-            }
-          </fieldset>
-        }
-
-        @if (!locked()) {
-          <p class="mf-muted">Changes apply on each user's next request.</p>
-          <div class="mf-actions mf-form-actions--sticky">
-            <p-button
-              data-save
-              [label]="selected() ? 'Save changes' : 'Create role'"
-              [disabled]="saving()"
-              (onClick)="save()"
+          <div class="mf-fld">
+            <label for="role-name" class="mf-label"
+              >Name <span class="mf-req">(required)</span></label
+            >
+            <input
+              id="role-name"
+              type="text"
+              class="mf-control"
+              maxlength="100"
+              data-name
+              [disabled]="locked()"
+              [value]="draftName()"
+              [attr.aria-invalid]="nameError() ? 'true' : null"
+              [attr.aria-describedby]="nameError() ? 'role-name-error' : null"
+              (input)="draftName.set($any($event.target).value)"
             />
-            <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
-            @if (canDelete()) {
-              <p-button
-                class="mf-actions__danger"
-                label="Delete role"
-                severity="danger"
-                (onClick)="confirmingDelete.set(true)"
-              />
+            @if (nameError()) {
+              <p class="mf-form-error" id="role-name-error" role="alert" data-name-error>
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ nameError() }}
+              </p>
             }
           </div>
+          <div class="mf-fld">
+            <label for="role-description" class="mf-label">Description</label>
+            <textarea
+              id="role-description"
+              class="mf-control mf-description"
+              rows="2"
+              [attr.maxlength]="descriptionMax"
+              data-description
+              aria-describedby="role-description-count"
+              [disabled]="locked()"
+              [value]="draftDescription()"
+              (input)="draftDescription.set($any($event.target).value)"
+            ></textarea>
+            <mf-char-counter
+              countId="role-description-count"
+              [value]="draftDescription()"
+              [max]="descriptionMax"
+            />
+          </div>
+
+          <div class="mf-tools">
+            <div class="mf-fld">
+              <label for="role-permission-search" class="mf-label">Search permissions</label>
+              <input
+                id="role-permission-search"
+                type="search"
+                class="mf-control"
+                autocomplete="off"
+                placeholder="Permission code or description"
+                data-search
+                [value]="filter()"
+                (input)="filter.set($any($event.target).value)"
+              />
+            </div>
+            @if (!locked()) {
+              <div class="mf-fld">
+                <label for="role-copy" class="mf-label">Copy from role</label>
+                <select
+                  id="role-copy"
+                  class="mf-control"
+                  data-copy
+                  (change)="copyFrom($any($event.target).value)"
+                >
+                  <option value="">Choose...</option>
+                  @for (r of roles(); track r.roleId) {
+                    <option [value]="r.roleId">{{ r.name }}</option>
+                  }
+                </select>
+              </div>
+            }
+          </div>
+
+          <p class="mf-live" aria-live="polite" data-note>{{ note() }}</p>
+
+          @for (g of visibleGroups(); track g.group) {
+            <fieldset [attr.data-group]="g.group" [disabled]="locked()">
+              <legend>
+                {{ g.group }}
+                <span class="mf-group-count" data-group-count
+                  >{{ groupCount(g.group) }}/{{ groupTotal(g.group)
+                  }}<span class="mf-sr-only"> selected</span></span
+                >
+              </legend>
+              @if (!locked()) {
+                <div class="mf-group-tools">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-select-all
+                    [attr.aria-label]="'Select all ' + g.group + ' permissions'"
+                    (click)="selectGroup(g.group, true)"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-select-none
+                    [attr.aria-label]="'Clear all ' + g.group + ' permissions'"
+                    (click)="selectGroup(g.group, false)"
+                  >
+                    Select none
+                  </button>
+                </div>
+              }
+              @for (p of g.permissions; track p.code) {
+                <label class="mf-perm">
+                  <input
+                    type="checkbox"
+                    [attr.data-perm]="p.code"
+                    [checked]="locked() || isChecked(p.code)"
+                    (change)="toggle(p.code, $any($event.target).checked)"
+                  />
+                  <span>
+                    <strong>{{ p.code }}</strong>
+                    <span class="mf-muted">{{ p.description }}</span>
+                  </span>
+                </label>
+              }
+            </fieldset>
+          }
+
+          @if (!locked()) {
+            <p class="mf-muted">Changes apply on each user's next request.</p>
+            <div class="mf-actions mf-form-actions--sticky">
+              <p-button
+                data-save
+                [label]="selected() ? 'Save changes' : 'Create role'"
+                [disabled]="saving()"
+                (onClick)="save()"
+              />
+              <p-button label="Cancel" severity="secondary" (onClick)="cancel()" />
+              @if (canDelete()) {
+                <p-button
+                  class="mf-actions__danger"
+                  label="Delete role"
+                  severity="danger"
+                  (onClick)="confirmingDelete.set(true)"
+                />
+              }
+            </div>
+          }
         }
       </section>
     }

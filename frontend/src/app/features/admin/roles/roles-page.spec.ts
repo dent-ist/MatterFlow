@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
+import { ReportAssignmentClient } from '../../../api/generated/api-client';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { RolesPage, prerequisiteOf, roleChanges } from './roles-page';
@@ -83,12 +84,44 @@ describe('RolesPage', () => {
     await settle();
   };
 
+  const assignment = {
+    getReportsOfRole: vi.fn(),
+    setReportsOfRole: vi.fn(),
+  };
+
   beforeEach(async () => {
+    assignment.getReportsOfRole.mockReset().mockReturnValue(
+      of([
+        {
+          reportId: 1,
+          name: 'Overdue tasks',
+          categoryId: 1,
+          categoryName: 'Task follow-up',
+          categorySortOrder: 1,
+          sortOrder: 1,
+          description: 'Tasks past due',
+          isActive: true,
+          assigned: true,
+        },
+        {
+          reportId: 2,
+          name: 'Open tasks by client',
+          categoryId: 2,
+          categoryName: 'Finance',
+          categorySortOrder: 2,
+          sortOrder: 1,
+          isActive: false,
+          assigned: false,
+        },
+      ]),
+    );
+    assignment.setReportsOfRole.mockReset();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         InMemoryIdentityAdminApi,
         { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
+        { provide: ReportAssignmentClient, useValue: assignment },
       ],
     });
     api = TestBed.inject(InMemoryIdentityAdminApi);
@@ -399,5 +432,59 @@ describe('RolesPage', () => {
     await settle();
     await confirmDelete();
     expect(api.roles.some((r) => r.roleId === 4)).toBe(false);
+  });
+
+  describe('the Reports tab of a role (#717)', () => {
+    async function openRole(canAssign: boolean): Promise<void> {
+      fixture.componentRef.setInput('canAssignReports', canAssign);
+      await settle();
+      q<HTMLButtonElement>('[data-role="5"]').click();
+      await settle();
+    }
+
+    it('is not offered without Report.Assign: the role editor is the permissions editor alone', async () => {
+      await openRole(false);
+      expect(el().querySelector('[role=tablist]')).toBeNull();
+      expect(q('[data-name]')).not.toBeNull();
+    });
+
+    it('is a second tab of a saved role, loads its reports only when opened, and saves the checked set', async () => {
+      await openRole(true);
+      expect(
+        Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
+      ).toEqual(['Permissions', 'Reports']);
+      expect(assignment.getReportsOfRole).not.toHaveBeenCalled();
+
+      (Array.from(el().querySelectorAll('[role=tab]'))[1] as HTMLElement).click();
+      await settle();
+      expect(assignment.getReportsOfRole).toHaveBeenCalledWith(5);
+      expect(el().querySelector('[data-name]')).toBeNull();
+      expect(q('[data-item="2"] [data-flag]').textContent).toBe('Inactive');
+      expect(q('[data-checklist-count]').textContent).toContain('1 of 2 reports assigned');
+
+      assignment.setReportsOfRole.mockReturnValue(
+        of({
+          added: [{ id: 2, name: 'Open tasks by client' }],
+          removed: [],
+          assignedCount: 2,
+          ownerName: 'Data Scientist',
+        }),
+      );
+      const box = q<HTMLInputElement>('[data-item="2"] input');
+      box.click();
+      await settle();
+      q<HTMLButtonElement>('[data-checklist-save]').click();
+      await settle();
+      expect(assignment.setReportsOfRole).toHaveBeenCalledWith(5, { reportIds: [1, 2] });
+    });
+
+    it('goes back to Permissions when another role is opened', async () => {
+      await openRole(true);
+      (Array.from(el().querySelectorAll('[role=tab]'))[1] as HTMLElement).click();
+      await settle();
+      q<HTMLButtonElement>('[data-role="1"]').click();
+      await settle();
+      expect(q('[data-locked]')).not.toBeNull();
+    });
   });
 });

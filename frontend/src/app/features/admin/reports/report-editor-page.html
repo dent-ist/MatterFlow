@@ -1,0 +1,450 @@
+<mf-page-header
+  [heading]="isNew() ? 'New report' : (report()?.name ?? 'Report')"
+  icon="pi pi-chart-bar"
+  [crumbs]="crumbs()"
+>
+  <ng-container mfActions>
+    @if (state() === 'ready') {
+      @if (!isNew()) {
+        <button
+          type="button"
+          class="mf-btn"
+          (click)="runPreview()"
+          [disabled]="previewBusy()"
+          data-preview
+        >
+          <i class="pi pi-eye" aria-hidden="true"></i> Preview
+        </button>
+        @if (isActive()) {
+          <button
+            type="button"
+            class="mf-btn"
+            (click)="deactivateOpen.set(true)"
+            [disabled]="busy()"
+            data-deactivate
+          >
+            Deactivate
+          </button>
+        } @else if (canActivate()) {
+          <button
+            type="button"
+            class="mf-btn"
+            (click)="activate()"
+            [disabled]="busy()"
+            data-activate
+          >
+            Activate
+          </button>
+        }
+      }
+      <button
+        type="button"
+        class="mf-btn mf-btn--primary"
+        (click)="save()"
+        [disabled]="busy()"
+        data-save
+      >
+        {{ busy() ? 'Saving...' : isNew() ? 'Create report' : 'Save' }}
+      </button>
+    }
+  </ng-container>
+</mf-page-header>
+
+<div class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+
+@switch (state()) {
+  @case ('loading') {
+    <p class="rep__state" role="status" data-loading>Loading the report...</p>
+  }
+  @case ('notFound') {
+    <div class="rep__state" role="alert" data-not-found>
+      <h2>Report not found</h2>
+      <p>
+        There is no report with this address. <a href="/admin/reports">Back to the Reports list</a>.
+      </p>
+    </div>
+  }
+  @case ('error') {
+    <div class="rep__state" role="alert" data-error>
+      <h2>The report could not be loaded</h2>
+      <button type="button" class="mf-btn" (click)="retry()">Try again</button>
+    </div>
+  }
+  @case ('ready') {
+    <div class="rep" data-report-editor>
+      @if (!isNew()) {
+        <p class="rep__status" data-state-line>
+          <span class="rep__chip" [class.rep__chip--on]="isActive()" data-status>{{
+            isActive() ? 'Active' : 'Inactive'
+          }}</span>
+          Version {{ report()?.versionNo }}.
+          @if (activateReason(); as why) {
+            <span data-activate-reason>{{ why }}</span>
+          }
+        </p>
+      }
+      @if (failure()) {
+        <p class="rep__error" role="alert" data-failure>{{ failure() }}</p>
+      }
+      @if (conflict()) {
+        <p class="rep__error" role="alert" data-conflict>
+          Someone else saved this report.
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()" data-reload>
+            Reload the latest version
+          </button>
+          (your unsaved edits are discarded).
+        </p>
+      }
+      <div
+        id="editor-summary"
+        class="rep__summary"
+        tabindex="-1"
+        role="alert"
+        data-summary
+        [hidden]="summary().length === 0"
+      >
+        @if (summary().length > 0) {
+          <p><strong>Not saved. Fix the following:</strong></p>
+          <ul>
+            @for (m of summary(); track m) {
+              <li>{{ m }}</li>
+            }
+          </ul>
+        }
+      </div>
+
+      <mf-tabs
+        label="Report sections"
+        idPrefix="rep"
+        [tabs]="tabs()"
+        [selected]="current()"
+        (tabChange)="selectTab($event)"
+      />
+      <div
+        class="rep__panel"
+        role="tabpanel"
+        id="rep-panel"
+        [attr.aria-labelledby]="'rep-tab-' + current()"
+      >
+        @switch (current()) {
+          @case ('details') {
+            <form
+              class="rep__card"
+              (submit)="$event.preventDefault(); save()"
+              novalidate
+              data-details-tab
+            >
+              <div class="rep__field">
+                <label class="mf-label" for="rep-name"
+                  >Name <span class="mf-req">(required)</span></label
+                >
+                <input
+                  id="rep-name"
+                  class="mf-control mf-control--fill"
+                  type="text"
+                  maxlength="150"
+                  autocomplete="off"
+                  [value]="details().name"
+                  [attr.aria-invalid]="fieldErrors()['name'] ? 'true' : null"
+                  [attr.aria-describedby]="fieldErrors()['name'] ? 'rep-name-error' : null"
+                  (input)="patchDetails({ name: $any($event.target).value })"
+                />
+                @if (fieldErrors()['name']; as e) {
+                  <p class="rep__fielderror" id="rep-name-error">{{ e }}</p>
+                }
+              </div>
+              <div class="rep__field">
+                <label class="mf-label" for="rep-category"
+                  >Category <span class="mf-req">(required)</span></label
+                >
+                <select
+                  id="rep-category"
+                  class="mf-control mf-control--fill"
+                  (change)="patchDetails({ categoryId: +$any($event.target).value || null })"
+                  [attr.aria-invalid]="fieldErrors()['categoryId'] ? 'true' : null"
+                >
+                  @if (details().categoryId === null) {
+                    <option value="" selected>Choose a category</option>
+                  }
+                  @for (c of categories(); track c.categoryId) {
+                    @if (c.isActive || c.categoryId === details().categoryId) {
+                      <option
+                        [value]="c.categoryId"
+                        [selected]="c.categoryId === details().categoryId"
+                      >
+                        {{ c.name }}{{ c.isActive ? '' : ' (inactive)' }}
+                      </option>
+                    }
+                  }
+                </select>
+                @if (categories().length === 0) {
+                  <p class="rep__hint">
+                    There is no category yet. Add one on the Categories tab of the Reports list.
+                  </p>
+                }
+              </div>
+              <div class="rep__field">
+                <label class="mf-label" for="rep-description">Description</label>
+                <input
+                  id="rep-description"
+                  class="mf-control mf-control--fill"
+                  type="text"
+                  maxlength="1000"
+                  autocomplete="off"
+                  [value]="details().description"
+                  (input)="patchDetails({ description: $any($event.target).value })"
+                />
+                <p class="rep__hint">One line that people see in the list of their reports.</p>
+              </div>
+              <div class="rep__field">
+                <label class="mf-label" for="rep-help">Help text</label>
+                <textarea
+                  id="rep-help"
+                  class="mf-control mf-control--fill"
+                  rows="4"
+                  maxlength="20000"
+                  [value]="details().helpText"
+                  (input)="patchDetails({ helpText: $any($event.target).value })"
+                ></textarea>
+                <p class="rep__hint">Shown in the help panel of the report. Plain text.</p>
+              </div>
+              <div class="rep__row">
+                <div class="rep__field">
+                  <label class="mf-label" for="rep-order">Order in its category</label>
+                  <input
+                    id="rep-order"
+                    class="mf-control mf-control--fill"
+                    type="number"
+                    min="0"
+                    [value]="details().sortOrder"
+                    (input)="patchDetails({ sortOrder: $any($event.target).value })"
+                  />
+                </div>
+                <div class="rep__field">
+                  <label class="mf-label" for="rep-timeout">Time limit (seconds)</label>
+                  <input
+                    id="rep-timeout"
+                    class="mf-control mf-control--fill"
+                    type="number"
+                    min="1"
+                    max="300"
+                    placeholder="60"
+                    [value]="details().timeoutSeconds"
+                    [attr.aria-invalid]="fieldErrors()['timeoutSeconds'] ? 'true' : null"
+                    (input)="patchDetails({ timeoutSeconds: $any($event.target).value })"
+                  />
+                </div>
+                <div class="rep__field">
+                  <label class="mf-label" for="rep-rows">Row limit</label>
+                  <input
+                    id="rep-rows"
+                    class="mf-control mf-control--fill"
+                    type="number"
+                    min="1"
+                    max="200000"
+                    placeholder="50000"
+                    [value]="details().maxRows"
+                    [attr.aria-invalid]="fieldErrors()['maxRows'] ? 'true' : null"
+                    (input)="patchDetails({ maxRows: $any($event.target).value })"
+                  />
+                </div>
+              </div>
+              @if (fieldErrors()['timeoutSeconds'] || fieldErrors()['maxRows']) {
+                <p class="rep__fielderror">
+                  {{ fieldErrors()['timeoutSeconds'] || fieldErrors()['maxRows'] }}
+                </p>
+              }
+              <div class="rep__field">
+                <label class="mf-label" for="rep-note">Note about this change</label>
+                <input
+                  id="rep-note"
+                  class="mf-control mf-control--fill"
+                  type="text"
+                  maxlength="300"
+                  autocomplete="off"
+                  [value]="changeNote()"
+                  (input)="changeNote.set($any($event.target).value)"
+                />
+                <p class="rep__hint">
+                  Shown in the version history when the query or parameters change.
+                </p>
+              </div>
+              @if (isActive()) {
+                <label class="rep__check">
+                  <input
+                    type="checkbox"
+                    [checked]="keepActive()"
+                    (change)="keepActive.set($any($event.target).checked)"
+                    data-keep-active
+                  />
+                  Keep the report active when the query changes (the new query is previewed first;
+                  if the preview fails the report is deactivated)
+                </label>
+              }
+            </form>
+          }
+          @case ('query') {
+            <div class="rep__query" data-query-tab>
+              <div class="rep__toolbar">
+                <button
+                  id="schema-toggle"
+                  type="button"
+                  class="mf-btn"
+                  [attr.aria-expanded]="schemaOpen()"
+                  aria-controls="schema-panel"
+                  (click)="schemaOpen() ? closeSchema() : openSchema()"
+                  data-schema-toggle
+                >
+                  <i class="pi pi-table" aria-hidden="true"></i> Schema browser
+                </button>
+                <span class="rep__hint" role="status" aria-live="polite" data-analysis-state>
+                  @if (analyzing()) {
+                    Checking the query...
+                  } @else if (analysis(); as a) {
+                    @if (a.validation.isValid) {
+                      Valid: one SELECT, {{ detected().length }}
+                      {{ detected().length === 1 ? 'parameter' : 'parameters' }}.
+                    } @else {
+                      {{ sqlProblems().length }}
+                      {{ sqlProblems().length === 1 ? 'problem' : 'problems' }} found.
+                    }
+                  }
+                </span>
+              </div>
+              <div class="rep__split" [class.rep__split--schema]="schemaOpen()">
+                <div class="rep__editor" [attr.inert]="schemaOpen() && isPhone() ? '' : null">
+                  <mf-sql-editor
+                    [(value)]="sql"
+                    [marks]="marks()"
+                    inputId="sql-editor"
+                    label="Query"
+                    [invalid]="sqlProblems().length > 0"
+                    describedBy="sql-help sql-problems"
+                  />
+                  <p id="sql-help" class="rep__hint">
+                    Write one SELECT. Put <code>:NAME</code> where a value belongs; it becomes a
+                    parameter. Tab leaves the editor. For several values use
+                    <code>IN (:PODS)</code>; to treat none as all use
+                    <code>NOT EXISTS (SELECT 1 FROM :PODS) OR x IN :PODS</code>.
+                  </p>
+                  <div id="sql-problems" data-sql-problems>
+                    @if (sqlProblems().length > 0) {
+                      <ul class="rep__problems">
+                        @for (p of sqlProblems(); track $index) {
+                          <li>
+                            <button
+                              type="button"
+                              class="mf-btn mf-btn--text"
+                              (click)="goToProblem(p.line, p.column)"
+                            >
+                              Line {{ p.line }}, column {{ p.column }}
+                            </button>
+                            {{ p.message }}
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                  <p class="rep__detected" data-detected>
+                    Detected:
+                    @for (p of detected(); track p.name) {
+                      <code
+                        class="rep__tag"
+                        [class.rep__tag--missing]="missingDefinitions().includes(p.name)"
+                        >:{{ p.displayName }}</code
+                      >
+                      @if (missingDefinitions().includes(p.name)) {
+                        (needs a definition)
+                      }
+                    }
+                    @for (p of builtIns(); track p.name) {
+                      <code class="rep__tag rep__tag--builtin">:{{ p.displayName }}</code>
+                      (built-in)
+                    }
+                    @if (detected().length + builtIns().length === 0) {
+                      no parameters.
+                    }
+                  </p>
+                </div>
+                @if (schemaOpen()) {
+                  <div
+                    id="schema-panel"
+                    class="rep__schema"
+                    role="dialog"
+                    [attr.aria-modal]="isPhone() ? 'true' : null"
+                    aria-label="Schema browser"
+                    (keydown.escape)="closeSchema()"
+                    data-schema-panel
+                  >
+                    <button
+                      type="button"
+                      class="mf-btn rep__schema-close"
+                      (click)="closeSchema()"
+                      data-schema-close
+                    >
+                      <i class="pi pi-times" aria-hidden="true"></i> Close
+                    </button>
+                    <mf-schema-browser (insert)="insert($event)" />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+          @case ('parameters') {
+            <div data-parameters-tab>
+              <mf-parameters-editor
+                [defs]="defs()"
+                [unused]="unused()"
+                [errors]="parameterErrors()"
+                [reportId]="reportId()"
+                (defsChange)="setDefs($event)"
+              />
+            </div>
+          }
+          @case ('roles') {
+            @if (report(); as r) {
+              <mf-report-roles-tab [reportId]="r.reportId" [reportName]="r.name" />
+            }
+          }
+          @case ('history') {
+            @if (report(); as r) {
+              <mf-versions-panel
+                [reportId]="r.reportId"
+                [refreshKey]="versionsKey()"
+                [blockedReason]="restoreBlocked()"
+                [busy]="busy()"
+                (restoreRequested)="restore($event)"
+              />
+            }
+          }
+        }
+      </div>
+
+      @if (previewOpen()) {
+        <mf-preview-panel
+          [defs]="activeDefs()"
+          [result]="preview()"
+          [busy]="previewBusy()"
+          [blocked]="previewBlocked()"
+          (run)="runPreview($event)"
+        />
+      }
+    </div>
+  }
+}
+
+<mf-confirm-dialog
+  title="Deactivate this report?"
+  confirmLabel="Deactivate"
+  cancelLabel="Cancel"
+  [danger]="true"
+  [busy]="busy()"
+  [visible]="deactivateOpen()"
+  (visibleChange)="!$event && deactivateOpen.set(false)"
+  (confirmed)="deactivate()"
+>
+  <p data-deactivate-body>
+    People can no longer see or run {{ report()?.name }}. Its versions, history and role assignments
+    stay, and you can activate it again after a preview.
+  </p>
+</mf-confirm-dialog>

@@ -143,6 +143,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['CustomField.Manage'],
   },
   {
+    // The SQL reports page (#712): reports, categories, run log, assignments and the report login. The people-facing list of reports is a
+    // separate item that arrives with the user screens.
+    label: 'Reports',
+    icon: 'pi pi-chart-bar',
+    path: '/admin/reports',
+    permissions: ['Report.Manage'],
+  },
+  {
     label: 'Audit Logs',
     icon: 'pi pi-history',
     path: '/admin/audit',

@@ -239,6 +239,37 @@ export const ADMIN_ROUTES: Routes = [
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./labels-admin-page').then((m) => m.LabelsAdminPage),
   },
+  {
+    // The Reports page (#712): tabs in `?tab=`. Needs Report.Manage; the 403 page shows without a request for a person without it.
+    ...lazyGuarded('reports', 'Reports', 'Report.Manage', () =>
+      import('./reports/reports-admin-page').then((m) => m.ReportsAdminPage),
+    ),
+    title: (route) => {
+      const tab = route.queryParams['tab'];
+      const names: Record<string, string> = {
+        categories: 'Reports - Categories',
+        runs: 'Reports - Run log',
+        assignments: 'Reports - Assignments',
+        health: 'Reports - Settings',
+      };
+      return names[tab] ?? 'Reports';
+    },
+    runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+  },
+  {
+    path: 'reports/new',
+    title: 'New report',
+    canActivate: [permissionGuard('Report.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./reports/report-editor-page').then((m) => m.ReportEditorPage),
+  },
+  {
+    path: 'reports/:id',
+    title: 'Report',
+    canActivate: [permissionGuard('Report.Manage')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./reports/report-editor-page').then((m) => m.ReportEditorPage),
+  },
   lazy('audit', 'Audit Logs', 'Audit.View', () =>
     import('./audit/audit-page').then((m) => m.AuditPage),
   ),
