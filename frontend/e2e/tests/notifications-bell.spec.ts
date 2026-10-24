@@ -135,7 +135,9 @@ test.describe('Notification bell and panel', () => {
     await bell(page).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#np-title')).toBeFocused();
-    const comment = panel(page).locator('[data-notification-item]', { hasText: 'New comment from' });
+    const comment = panel(page).locator('[data-notification-item]', {
+      hasText: 'New comment from',
+    });
     await expect(comment).toContainText(task.taskNumber);
     // The wording is reason first and names the commenter; the comment text is not repeated in the notification.
     await expect(comment).not.toContainText('Please re-run the search');

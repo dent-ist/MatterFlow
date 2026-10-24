@@ -12,6 +12,9 @@
 #   E2E_RID=linux-x64        runtime identifier used for the publish
 #   E2E_AXE_PATH=...         axe.min.js for the accessibility checks (default: the installed axe-core package)
 #   E2E_CHROMIUM_PATH=...    Chromium executable (default: the preinstalled one if present, else Playwright's own browser)
+#   E2E_SENSITIVE_ACCESS=1   start the API with the go-live switch of the sensitive-matter rule on (Features__SensitiveMatterAccess=true, epic #788).
+#                            It is also turned on by itself when a Playwright argument names a sensitive-*.spec.ts file. Off otherwise, as in
+#                            appsettings.json; the sensitive-* specs skip themselves when the switch is off.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,6 +25,13 @@ publish_dir="$root/artifacts/e2e-publish"
 sql_name="mf-e2e-sql-$$"
 sql_password='MatterFlow_Dev1!'
 api_pid=""
+
+# The go-live switch of the sensitive-matter rule: off for the ordinary suite, on for the sensitive-* specs (named in the arguments or by E2E_SENSITIVE_ACCESS=1).
+sensitive_access="${E2E_SENSITIVE_ACCESS:-0}"
+for arg in "$@"; do
+  case "$arg" in *sensitive-*) sensitive_access=1 ;; esac
+done
+if [ "$sensitive_access" = "1" ]; then sensitive_switch=true; else sensitive_switch=false; fi
 
 cleanup() {
   status=$?
@@ -56,7 +66,7 @@ for _ in $(seq 1 90); do
 done
 echo "    SQL Server on 127.0.0.1:$sql_port"
 
-echo "==> API on http://127.0.0.1:$api_port"
+echo "==> API on http://127.0.0.1:$api_port (sensitive-matter rule: $sensitive_switch)"
 conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_password;TrustServerCertificate=True"
 reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;Password=MatterFlow_Reports1!;TrustServerCertificate=True;Encrypt=True;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly;Connect Timeout=10;Max Pool Size=8"
 (
@@ -73,6 +83,7 @@ reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;
   export Auth__Dev__DefaultUser='ke\kekim'
   export Bootstrap__SystemAdmins__0='ke\kekim'
   export Seed__StarterConfiguration__Enabled=true
+  export Features__SensitiveMatterAccess="$sensitive_switch"
   # The notification scheduler (timer inside the API, epic #753) ticks every minute here instead of every five, so the scheduled-notification
   # specs do not wait five minutes. Production keeps the defaults (first run after 30 s, then every 5 minutes).
   export Notifications__Scheduler__InitialDelaySeconds=2
