@@ -56,7 +56,7 @@ public sealed class TaskNotifier(
                     task.Id,
                     task.MatterId,
                     actorId,
-                    NotificationMessages.MatterTaskCreated(await ActorNameAsync(ct), task.Number, task.Title, found?.Name ?? "a matter"),
+                    NotificationMessages.MatterTaskCreated(task.Number, task.Title, found?.Name ?? "a matter"),
                     "created:" + task.Id.ToString(CultureInfo.InvariantCulture),
                     managers));
             }
@@ -64,7 +64,7 @@ public sealed class TaskNotifier(
 
         if (task.AssignedUserId is { } assignee && assignee != previousUserId && assignee != actorId && task.AssignedAtUtc is { } assignedAt)
         {
-            var message = NotificationMessages.TaskAssigned(await ActorNameAsync(ct), task.Number, task.Title, (await MatterAsync())?.Name ?? "a matter");
+            var message = NotificationMessages.TaskAssigned(task.Number, task.Title, (await MatterAsync())?.Name ?? "a matter", reassigned: previousUserId is not null);
             requests.Add(new NotificationRequest(
                 NotificationEventType.TaskAssigned,
                 NotificationObjectKinds.Task,
@@ -82,7 +82,7 @@ public sealed class TaskNotifier(
             if (leads.Length > 0)
             {
                 var pod = await pods.FindAsync(podId, ct);
-                var message = NotificationMessages.PodTaskUnassigned(task.Number, task.Title, pod?.Name ?? "your pod");
+                var message = NotificationMessages.PodTaskUnassigned(task.Number, task.Title, (await MatterAsync())?.Name ?? "a matter", pod?.Name ?? "your pod");
                 requests.Add(new NotificationRequest(
                     NotificationEventType.PodTaskUnassigned,
                     NotificationObjectKinds.Task,
@@ -99,13 +99,13 @@ public sealed class TaskNotifier(
             await publisher.PublishAsync(requests, ct);
     }
 
-    /// <summary>Event 3 (<c>TaskComment</c>): a comment by someone else on a Task that has an assignee. The excerpt is the Activity timeline's.</summary>
+    /// <summary>Event 3 (<c>TaskComment</c>): a comment by someone else on a Task that has an assignee. The message names the commenter, not the comment text (the Activity timeline has it).</summary>
     public async Task CommentAddedAsync(WorkTask task, TaskComment comment, CancellationToken ct)
     {
         if (task.AssignedUserId is not { } assignee || assignee == comment.AuthorUserId)
             return;
 
-        var excerpt = TaskActivityNarrator.Excerpt(comment.BodyHtml) ?? string.Empty;
+        var matterName = (await matters.FindAsync(task.MatterId, ct))?.Name ?? "a matter";
         await publisher.PublishAsync(
             [
                 new NotificationRequest(
@@ -114,7 +114,7 @@ public sealed class TaskNotifier(
                     task.Id,
                     task.MatterId,
                     comment.AuthorUserId,
-                    NotificationMessages.TaskComment(await ActorNameAsync(ct), task.Number, excerpt),
+                    NotificationMessages.TaskComment(await ActorNameAsync(ct), task.Number, task.Title, matterName),
                     "comment:" + comment.Id.ToString(CultureInfo.InvariantCulture),
                     [assignee]),
             ],

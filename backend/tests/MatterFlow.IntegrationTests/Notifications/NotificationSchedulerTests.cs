@@ -211,22 +211,22 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         ann.DedupeKey.ShouldBe("overdue:" + Iso(due));
         ann.ActorUserId.ShouldBeNull();
         ann.ObjectId.ShouldBe(TaskId(task));
-        ann.Message.ShouldBe($"{number} \"Review privilege log\" is overdue (due {due.ToString("MMM d", CultureInfo.InvariantCulture)}).");
+        var late = Today.DayNumber - due.DayNumber;
+        ann.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12");
 
         foreach (var manager in new[] { _boId, _cyId })
         {
             var row = (await RowsAsync(manager)).ShouldHaveSingleItem();
             row.EventType.ShouldBe("MatterTaskOverdue");
             row.DedupeKey.ShouldBe($"overdue:{TaskId(task)}:{Iso(due)}");
-            row.Message.ShouldBe($"{number} \"Review privilege log\" on Merger Review 12 is overdue (due {due.ToString("MMM d", CultureInfo.InvariantCulture)}, assigned to {await DisplayNameAsync(_annId)}).");
+            row.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12");
         }
 
         (await RunAsync()).Created.Values.Sum().ShouldBe(0);
         (await RowsAsync()).Count.ShouldBe(3);
     }
 
-    private Task<string> DisplayNameAsync(int userId) =>
-        _factory.WithDbAsync(db => db.Database.SqlQuery<string>($"SELECT DisplayName AS Value FROM dbo.AppUser WHERE UserId = {userId}").SingleAsync());
+    private static string TaskNumber(JsonElement task) => task.GetProperty("taskNumber").GetString()!;
 
     [Fact]
     public async Task Due_today_and_tomorrow_say_so_and_later_dates_ASAP_and_closed_tasks_produce_nothing()
@@ -242,8 +242,8 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
 
         var rows = await RowsAsync(_annId, "TaskDue");
         rows.Count.ShouldBe(2);
-        rows.Single(r => r.ObjectId == TaskId(today)).Message.ShouldEndWith("\"Due today\" is due today.");
-        rows.Single(r => r.ObjectId == TaskId(tomorrow)).Message.ShouldEndWith($"\"Due tomorrow\" is due tomorrow ({Today.AddDays(1).ToString("MMM d", CultureInfo.InvariantCulture)}).");
+        rows.Single(r => r.ObjectId == TaskId(today)).Message.ShouldBe($"Due today - {TaskNumber(today)} \"Due today\" on Merger Review 12");
+        rows.Single(r => r.ObjectId == TaskId(tomorrow)).Message.ShouldBe($"Due tomorrow - {TaskNumber(tomorrow)} \"Due tomorrow\" on Merger Review 12");
         rows.ShouldAllBe(r => r.DedupeKey.StartsWith("soon:"));
     }
 
@@ -294,7 +294,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
     }
 
     [Fact]
-    public async Task A_switch_that_is_off_creates_no_row_and_an_unassigned_overdue_task_says_not_assigned()
+    public async Task A_switch_that_is_off_creates_no_row_and_an_unassigned_overdue_task_still_tells_the_manager()
     {
         await ManagersAsync(_boId, null);
         var annClient = _h.As(@"KE\ann");
@@ -309,7 +309,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         (await RowsAsync(_annId)).ShouldBeEmpty();
         var bo = await RowsAsync(_boId);
         bo.Count.ShouldBe(2);
-        bo.ShouldContain(r => r.Message.Contains("not assigned"));
+        bo.ShouldContain(r => r.Message.StartsWith("Overdue by 1 day - ", StringComparison.Ordinal) && r.Message.Contains("\"Nobody\""));
     }
 
     // ---- #743 event 6
@@ -327,7 +327,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         var rows = await RowsAsync(type: "MatterTaskStalled");
         rows.Count.ShouldBe(2);
         rows.ShouldAllBe(r => r.DedupeKey.StartsWith("unassigned:") && r.ObjectId == TaskId(task) && r.ActorUserId == null);
-        rows[0].Message.ShouldEndWith("\"Orphan\" on Merger Review 12 has been unassigned for 3 days.");
+        rows[0].Message.ShouldBe($"Unassigned for 3 days - {TaskNumber(task)} \"Orphan\" on Merger Review 12");
 
         await RunAsync();
         (await RowsAsync(type: "MatterTaskStalled")).Count.ShouldBe(2); // idempotent
@@ -379,7 +379,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         row.RecipientUserId.ShouldBe(_boId);
         row.ObjectId.ShouldBe(TaskId(held));
         row.DedupeKey.ShouldStartWith("hold:");
-        row.Message.ShouldEndWith("\"Held\" on Merger Review 12 has been on hold for 6 days.");
+        row.Message.ShouldBe($"On hold for 6 days - {TaskNumber(held)} \"Held\" on Merger Review 12");
         await RunAsync();
         (await RowsAsync(type: "MatterTaskStalled")).Count.ShouldBe(1);
     }

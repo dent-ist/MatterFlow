@@ -23,7 +23,6 @@ public class NotificationSchedulerPlanTests
         MatterId = 3,
         MatterName = "Acme v. Smith",
         AssigneeId = assignee,
-        AssigneeName = assignee is null ? null : "Bo Chen",
         DueDate = DateOnly.Parse(date, System.Globalization.CultureInfo.InvariantCulture),
         DueAtUtc = at,
         PrimaryManagerId = primary,
@@ -51,9 +50,9 @@ public class NotificationSchedulerPlanTests
     [Fact]
     public void Due_today_and_tomorrow_are_soon_the_day_after_is_nothing()
     {
-        TaskDueJob.Plan([Due("2026-10-22")], Context).Single().Single().Message.ShouldBe("TSK-42 \"Review\" is due today.");
+        TaskDueJob.Plan([Due("2026-10-22")], Context).Single().Single().Message.ShouldBe("Due today - TSK-42 \"Review\" on Acme v. Smith");
         var tomorrow = TaskDueJob.Plan([Due("2026-10-23")], Context).Single().Single();
-        tomorrow.Message.ShouldBe("TSK-42 \"Review\" is due tomorrow (Oct 23).");
+        tomorrow.Message.ShouldBe("Due tomorrow - TSK-42 \"Review\" on Acme v. Smith");
         tomorrow.DedupeKey.ShouldBe("soon:2026-10-23");
         tomorrow.EventType.ShouldBe(NotificationEventType.TaskDue);
         tomorrow.ActorUserId.ShouldBeNull();
@@ -71,7 +70,8 @@ public class NotificationSchedulerPlanTests
         plan[1].EventType.ShouldBe(NotificationEventType.MatterTaskOverdue);
         plan[1].DedupeKey.ShouldBe("overdue:42:2026-10-20");
         plan[1].RecipientUserIds.ShouldBe([1, 2], ignoreOrder: true);
-        plan[1].Message.ShouldBe("TSK-42 \"Review\" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).");
+        plan[0].Message.ShouldBe("Overdue by 2 days - TSK-42 \"Review\" on Acme v. Smith");
+        plan[1].Message.ShouldBe("Overdue by 2 days - TSK-42 \"Review\" on Acme v. Smith");
     }
 
     [Fact]
@@ -90,10 +90,11 @@ public class NotificationSchedulerPlanTests
     }
 
     [Fact]
-    public void An_unassigned_overdue_task_says_not_assigned_and_nobody_is_told_without_recipients()
+    public void An_unassigned_overdue_task_tells_only_its_managers_and_nobody_without_recipients()
     {
         var plan = TaskDueJob.Plan([Due("2026-10-20", assignee: null, primary: 1)], Context).Single().Single();
-        plan.Message.ShouldEndWith("(due Oct 20, not assigned).");
+        plan.Message.ShouldBe("Overdue by 2 days - TSK-42 \"Review\" on Acme v. Smith");
+        plan.RecipientUserIds.ShouldBe([1]);
         TaskDueJob.Plan([Due("2026-10-20", assignee: null)], Context).ShouldBeEmpty();
     }
 
@@ -115,7 +116,7 @@ public class NotificationSchedulerPlanTests
         // Started 20 Oct 23:30 New York (21 Oct 03:30 UTC): two calendar days have passed on the 22nd although only 34 hours have.
         var late = Stalled(new DateTime(2026, 10, 21, 3, 30, 0, DateTimeKind.Utc));
         var message = TaskStalledJob.PlanUnassigned([late], Context).Single().Single();
-        message.Message.ShouldBe("TSK-42 \"Review\" on Acme v. Smith has been unassigned for 2 days.");
+        message.Message.ShouldBe("Unassigned for 2 days - TSK-42 \"Review\" on Acme v. Smith");
         message.DedupeKey.ShouldBe("unassigned:" + DateTime.SpecifyKind(late.SinceUtc, DateTimeKind.Utc).Ticks);
         message.EventType.ShouldBe(NotificationEventType.MatterTaskStalled);
 
@@ -128,7 +129,7 @@ public class NotificationSchedulerPlanTests
     {
         TaskStalledJob.PlanOnHold([Stalled(new DateTime(2026, 10, 18, 15, 0, 0, DateTimeKind.Utc))], Context).ShouldBeEmpty();
         var five = TaskStalledJob.PlanOnHold([Stalled(new DateTime(2026, 10, 17, 15, 0, 0, DateTimeKind.Utc), primary: 1, secondary: 2)], Context).Single().Single();
-        five.Message.ShouldEndWith("has been on hold for 5 days.");
+        five.Message.ShouldBe("On hold for 5 days - TSK-42 \"Review\" on Acme v. Smith");
         five.DedupeKey.ShouldStartWith("hold:");
         five.RecipientUserIds.ShouldBe([1, 2], ignoreOrder: true);
         TaskStalledJob.PlanOnHold([Stalled(new DateTime(2026, 10, 1, 15, 0, 0, DateTimeKind.Utc), primary: null)], Context).ShouldBeEmpty();

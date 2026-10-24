@@ -6,7 +6,8 @@ namespace MatterFlow.Notifications.Contracts;
 /// <summary>
 /// The wording of every notification (README section 3.1), built by the server at creation time as a snapshot: English, at most
 /// <see cref="MaxLength"/> characters, plain text without HTML or line breaks. Titles longer than <see cref="TitleLimit"/> characters are cut with an
-/// ellipsis. The actor of a system event (due, overdue, stalled) is never named. Pure functions, no lookups.
+/// ellipsis. Every message is reason first, <c>reason - TSK-n "title" on matter</c>, with no trailing full stop (owner request: the bell shows the first
+/// words, so the reason is what a person reads first). A person is named only where the reason is about a person (a comment or a mention). Pure functions, no lookups.
 /// </summary>
 public static class NotificationMessages
 {
@@ -16,51 +17,60 @@ public static class NotificationMessages
 
     private const string Ellipsis = "…";
 
-    /// <summary>1. <c>Ann Lee assigned you TSK-1042 "Review privilege log" (Acme v. Smith).</c></summary>
-    public static string TaskAssigned(string actorName, string taskNumber, string title, string matterName) =>
-        Finish($"{Name(actorName)} assigned you {taskNumber} \"{Title(title)}\" ({Name(matterName)}).");
+    /// <summary>1. <c>Assigned to you - TSK-1042 "Review privilege log" on Acme v. Smith</c> (<c>Reassigned to you</c> when the task had another assignee).</summary>
+    public static string TaskAssigned(string taskNumber, string title, string matterName, bool reassigned = false) =>
+        Finish($"{(reassigned ? "Reassigned to you" : "Assigned to you")} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>2 soon. <c>TSK-1042 "Review privilege log" is due tomorrow (Oct 23).</c> or <c>... is due today.</c></summary>
-    public static string TaskDueSoon(string taskNumber, string title, DateOnly dueDate, DateOnly today) =>
-        dueDate <= today
-            ? Finish($"{taskNumber} \"{Title(title)}\" is due today.")
-            : Finish($"{taskNumber} \"{Title(title)}\" is due tomorrow ({ShortDate(dueDate)}).");
+    /// <summary>2 soon. <c>Due tomorrow - TSK-1042 "Review privilege log" on Acme v. Smith</c> or <c>Due today - ...</c></summary>
+    public static string TaskDueSoon(string taskNumber, string title, string matterName, DateOnly dueDate, DateOnly today) =>
+        Finish($"{(dueDate <= today ? "Due today" : "Due tomorrow")} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>2 overdue. <c>TSK-1042 "Review privilege log" is overdue (due Oct 20).</c></summary>
-    public static string TaskOverdue(string taskNumber, string title, DateOnly dueDate) =>
-        Finish($"{taskNumber} \"{Title(title)}\" is overdue (due {ShortDate(dueDate)}).");
+    /// <summary>2 overdue. <c>Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith</c> (<c>Overdue</c> alone when it became overdue today, by its time).</summary>
+    public static string TaskOverdue(string taskNumber, string title, string matterName, DateOnly dueDate, DateOnly today) =>
+        Finish($"{OverdueReason(dueDate, today)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>3 comment. <c>Ann Lee commented on TSK-1042: "Please re-run the search with the new terms..."</c> (excerpt as in the task Activity).</summary>
-    public static string TaskComment(string actorName, string taskNumber, string excerpt) =>
-        Finish($"{Name(actorName)} commented on {taskNumber}: \"{Excerpt(excerpt)}\"");
+    /// <summary>3 comment. <c>New comment from Ann Lee - TSK-1042 "Review privilege log" on Acme v. Smith</c> (the comment text is not repeated; the task Activity has it).</summary>
+    public static string TaskComment(string actorName, string taskNumber, string title, string matterName) =>
+        Finish($"New comment from {Name(actorName)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>3 mention. <c>Ann Lee mentioned you in TSK-1042: "...@Bo Chen can you confirm..."</c></summary>
-    public static string TaskMention(string actorName, string taskNumber, string excerpt) =>
-        Finish($"{Name(actorName)} mentioned you in {taskNumber}: \"{Excerpt(excerpt)}\"");
+    /// <summary>3 mention. <c>Mentioned by Ann Lee - TSK-1042 "Review privilege log" on Acme v. Smith</c></summary>
+    public static string TaskMention(string actorName, string taskNumber, string title, string matterName) =>
+        Finish($"Mentioned by {Name(actorName)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>4. <c>TSK-1042 "Review privilege log" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).</c> (<c>not assigned</c> when none)</summary>
-    public static string MatterTaskOverdue(string taskNumber, string title, string matterName, DateOnly dueDate, string? assigneeName) =>
-        Finish($"{taskNumber} \"{Title(title)}\" on {Name(matterName)} is overdue (due {ShortDate(dueDate)}, {(string.IsNullOrWhiteSpace(assigneeName) ? "not assigned" : "assigned to " + Name(assigneeName))}).");
+    /// <summary>4. <c>Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith</c> (to the matter's managers).</summary>
+    public static string MatterTaskOverdue(string taskNumber, string title, string matterName, DateOnly dueDate, DateOnly today) =>
+        Finish($"{OverdueReason(dueDate, today)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>5. <c>Ann Lee created TSK-1051 "Load production volume 3" on Acme v. Smith.</c></summary>
-    public static string MatterTaskCreated(string actorName, string taskNumber, string title, string matterName) =>
-        Finish($"{Name(actorName)} created {taskNumber} \"{Title(title)}\" on {Name(matterName)}.");
+    /// <summary>5. <c>New task on your matter - TSK-1051 "Load production volume 3" on Acme v. Smith</c></summary>
+    public static string MatterTaskCreated(string taskNumber, string title, string matterName) =>
+        Finish($"New task on your matter - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>6 unassigned. <c>TSK-1042 "Review privilege log" on Acme v. Smith has been unassigned for 2 days.</c></summary>
+    /// <summary>6 unassigned. <c>Unassigned for 2 days - TSK-1042 "Review privilege log" on Acme v. Smith</c></summary>
     public static string MatterTaskUnassigned(string taskNumber, string title, string matterName, int days) =>
-        Finish($"{taskNumber} \"{Title(title)}\" on {Name(matterName)} has been unassigned for {days.ToString(CultureInfo.InvariantCulture)} days.");
+        Finish($"Unassigned for {Days(days)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>6 on hold. <c>TSK-1042 "Review privilege log" on Acme v. Smith has been on hold for 5 days.</c></summary>
+    /// <summary>6 on hold. <c>On hold for 5 days - TSK-1042 "Review privilege log" on Acme v. Smith</c></summary>
     public static string MatterTaskOnHold(string taskNumber, string title, string matterName, int days) =>
-        Finish($"{taskNumber} \"{Title(title)}\" on {Name(matterName)} has been on hold for {days.ToString(CultureInfo.InvariantCulture)} days.");
+        Finish($"On hold for {Days(days)} - {Subject(taskNumber, title, matterName)}");
 
-    /// <summary>7. <c>Ann Lee made you Primary manager of Acme v. Smith.</c> (<c>Secondary manager</c>)</summary>
-    public static string MatterManagerSet(string actorName, bool primary, string matterName) =>
-        Finish($"{Name(actorName)} made you {(primary ? "Primary" : "Secondary")} manager of {Name(matterName)}.");
+    /// <summary>7. <c>You are now Primary manager - Acme v. Smith</c> (<c>Secondary manager</c>); the matter name takes the place of the task.</summary>
+    public static string MatterManagerSet(bool primary, string matterName) =>
+        Finish($"You are now {(primary ? "Primary" : "Secondary")} manager - {Name(matterName)}");
 
-    /// <summary>8. <c>TSK-1042 "Review privilege log" in Demo Processing Pod is unassigned.</c></summary>
-    public static string PodTaskUnassigned(string taskNumber, string title, string podName) =>
-        Finish($"{taskNumber} \"{Title(title)}\" in {Name(podName)} is unassigned.");
+    /// <summary>8. <c>Unassigned in Demo Processing Pod - TSK-1042 "Review privilege log" on Acme v. Smith</c></summary>
+    public static string PodTaskUnassigned(string taskNumber, string title, string matterName, string podName) =>
+        Finish($"Unassigned in {Name(podName)} - {Subject(taskNumber, title, matterName)}");
+
+    /// <summary>The task part every message ends with: <c>TSK-1042 "Review privilege log" on Acme v. Smith</c>.</summary>
+    private static string Subject(string taskNumber, string title, string matterName) => $"{taskNumber} \"{Title(title)}\" on {Name(matterName)}";
+
+    private static string OverdueReason(DateOnly dueDate, DateOnly today)
+    {
+        var late = today.DayNumber - dueDate.DayNumber;
+        return late <= 0 ? "Overdue" : $"Overdue by {Days(late)}";
+    }
+
+    private static string Days(int days) => days == 1 ? "1 day" : $"{days.ToString(CultureInfo.InvariantCulture)} days";
 
     /// <summary>Short date used in the messages: <c>Oct 23</c>.</summary>
     public static string ShortDate(DateOnly date) => date.ToString("MMM d", CultureInfo.InvariantCulture);

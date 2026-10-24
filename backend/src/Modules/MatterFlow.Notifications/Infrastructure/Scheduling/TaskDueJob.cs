@@ -21,8 +21,6 @@ public sealed class DueTaskRow
     /// <summary>The assignee when that person is active; null when unassigned or disabled.</summary>
     public int? AssigneeId { get; set; }
 
-    public string? AssigneeName { get; set; }
-
     public DateOnly DueDate { get; set; }
 
     public DateTime? DueAtUtc { get; set; }
@@ -55,7 +53,7 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
                     $"""
                     SELECT TOP ({NotificationRules.CandidateBatch})
                            t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName,
-                           CASE WHEN au.IsActive = 1 THEN t.AssignedUserId END AS AssigneeId, au.DisplayName AS AssigneeName,
+                           CASE WHEN au.IsActive = 1 THEN t.AssignedUserId END AS AssigneeId,
                            t.DueDate, t.DueAtUtc,
                            CASE WHEN pm.IsActive = 1 THEN m.PrimaryManagerId END AS PrimaryManagerId,
                            CASE WHEN sm.IsActive = 1 THEN m.SecondaryManagerId END AS SecondaryManagerId
@@ -106,8 +104,8 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
                     row.MatterId,
                     null,
                     overdue
-                        ? NotificationMessages.TaskOverdue(row.TaskNumber, row.Title, row.DueDate)
-                        : NotificationMessages.TaskDueSoon(row.TaskNumber, row.Title, row.DueDate, today),
+                        ? NotificationMessages.TaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today)
+                        : NotificationMessages.TaskDueSoon(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today),
                     (overdue ? "overdue:" : "soon:") + day,
                     [assignee]));
             }
@@ -123,7 +121,7 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
                         row.TaskId,
                         row.MatterId,
                         null,
-                        NotificationMessages.MatterTaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, row.AssigneeName),
+                        NotificationMessages.MatterTaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today),
                         $"overdue:{row.TaskId.ToString(CultureInfo.InvariantCulture)}:{day}",
                         managers));
                 }

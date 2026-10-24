@@ -66,7 +66,7 @@ public sealed class NotificationEventsTests(SqlServerFixture sql) : IAsyncLifeti
         row.ActorUserId.ShouldNotBeNull();
         row.DedupeKey.ShouldStartWith("assign:");
         var number = task.GetProperty("taskNumber").GetString();
-        row.Message.ShouldEndWith($" assigned you {number} \"{task.GetProperty("title").GetString()}\" (Merger Review 12).");
+        row.Message.ShouldBe($"Assigned to you - {number} \"{task.GetProperty("title").GetString()}\" on Merger Review 12");
 
         // The recipient sees it through the API; the actor and a bystander do not.
         (await OkAsync(await _ann.GetAsync("/api/v1/me/notifications"))).GetProperty("totalCount").GetInt32().ShouldBe(1);
@@ -151,7 +151,7 @@ public sealed class NotificationEventsTests(SqlServerFixture sql) : IAsyncLifeti
     // ---- event 3: comment on your task
 
     [Fact]
-    public async Task Event3_a_comment_by_someone_else_notifies_the_assignee_with_an_80_character_excerpt()
+    public async Task Event3_a_comment_by_someone_else_notifies_the_assignee_by_name_without_the_comment_text()
     {
         var task = await CreateAsync(new() { ["assignedUserId"] = _annId });
         var longText = string.Join(' ', Enumerable.Repeat("terms", 40));
@@ -161,11 +161,8 @@ public sealed class NotificationEventsTests(SqlServerFixture sql) : IAsyncLifeti
         var row = (await RowsAsync(_annId, "TaskComment")).ShouldHaveSingleItem();
         row.ActorUserId.ShouldBe(_boId);
         row.DedupeKey.ShouldBe("comment:" + comment.GetProperty("commentId").GetInt64());
-        row.Message.ShouldStartWith(@"KE\bo commented on");
-        row.Message.ShouldContain(" commented on " + task.GetProperty("taskNumber").GetString() + ": \"Please re-run the search: terms");
-        row.Message.ShouldEndWith("...\"");
-        var excerpt = row.Message[(row.Message.IndexOf('"') + 1)..^1];
-        excerpt.Length.ShouldBeLessThanOrEqualTo(80);
+        row.Message.ShouldBe($"New comment from KE\\bo - {task.GetProperty("taskNumber").GetString()} \"{task.GetProperty("title").GetString()}\" on Merger Review 12");
+        row.Message.ShouldNotContain("Please re-run");
     }
 
     [Fact]
@@ -231,7 +228,7 @@ public sealed class NotificationEventsTests(SqlServerFixture sql) : IAsyncLifeti
         var rows = await RowsAsync(type: "PodTaskUnassigned");
         rows.Select(r => r.RecipientUserId).ShouldBe([lead1Id, lead2Id], ignoreOrder: true);
         rows.ShouldAllBe(r => r.DedupeKey.StartsWith($"unassigned:{TaskId(task)}:"));
-        rows[0].Message.ShouldBe($"{task.GetProperty("taskNumber").GetString()} \"{task.GetProperty("title").GetString()}\" in Demo Processing Pod is unassigned.");
+        rows[0].Message.ShouldBe($"Unassigned in Demo Processing Pod - {task.GetProperty("taskNumber").GetString()} \"{task.GetProperty("title").GetString()}\" on Merger Review 12");
         (await RowsAsync(memberId)).ShouldBeEmpty();
 
         // A lead who creates the task is the actor and is not told; the other lead is.

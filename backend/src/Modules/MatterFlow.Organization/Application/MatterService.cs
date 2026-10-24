@@ -734,8 +734,7 @@ public sealed class MatterService(
     }
 
     /// <summary>
-    /// Event 7 (<c>MatterManagerSet</c>, epic #753): tells each newly set manager, except the person who set them, "Ann Lee made you Primary manager of
-    /// Acme v. Smith.". The rows join the caller's unit of work and commit with the change.
+    /// Event 7 (<c>MatterManagerSet</c>, epic #753): tells each newly set manager, except the person who set them, "You are now Primary manager - Acme v. Smith". The rows join the caller's unit of work and commit with the change.
     /// </summary>
     private async Task NotifyManagersSetAsync(Matter matter, IReadOnlyList<(int UserId, bool Primary)> newly, CancellationToken ct)
     {
@@ -744,9 +743,6 @@ public sealed class MatterService(
         if (recipients.Count == 0)
             return;
 
-        var actorName = !string.IsNullOrWhiteSpace(currentUser.DisplayName)
-            ? currentUser.DisplayName
-            : actorId is { } id ? (await users.FindAsync(id, ct))?.DisplayName ?? "Someone" : "Someone";
         var stamp = DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture);
         await notifications.PublishAsync(
             [.. recipients.Select(n => new NotificationRequest(
@@ -755,7 +751,7 @@ public sealed class MatterService(
                 matter.Id,
                 matter.Id,
                 actorId,
-                NotificationMessages.MatterManagerSet(actorName, n.Primary, matter.Name),
+                NotificationMessages.MatterManagerSet(n.Primary, matter.Name),
                 $"mgr:{matter.Id.ToString(CultureInfo.InvariantCulture)}:{(n.Primary ? "Primary" : "Secondary")}:{stamp}",
                 [n.UserId]))],
             ct);

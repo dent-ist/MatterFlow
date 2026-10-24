@@ -43,7 +43,7 @@ public sealed class NotificationsPerformanceTests(SqlServerFixture sql, ITestOut
         await _factory.WithDbAsync(db => db.Database.ExecuteSqlAsync($@"
             WITH n AS (SELECT TOP (100000) ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS i FROM sys.all_objects a CROSS JOIN sys.all_objects b)
             INSERT dbo.Notification (RecipientUserId, EventType, ObjectKind, ObjectId, MatterId, Message, DedupeKey, CreatedUtc, ReadUtc)
-            SELECT {annId}, 'TaskAssigned', 'Task', {taskId}, {matterId}, N'Ann Lee assigned you TSK-1 ""x"" (m).', CAST(i AS NVARCHAR(20)),
+            SELECT {annId}, 'TaskAssigned', 'Task', {taskId}, {matterId}, N'Assigned to you - TSK-1 ""x"" on m', CAST(i AS NVARCHAR(20)),
                    DATEADD(SECOND, i, '2026-01-01'), CASE WHEN i % 10 = 0 THEN NULL ELSE DATEADD(SECOND, i + 5, '2026-01-01') END FROM n"));
 
         await OkAsync(await _ann.GetAsync("/api/v1/me/notifications/poll?initial=true"));

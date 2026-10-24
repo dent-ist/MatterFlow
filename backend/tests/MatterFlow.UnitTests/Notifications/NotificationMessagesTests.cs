@@ -7,50 +7,81 @@ namespace MatterFlow.UnitTests.Notifications;
 public class NotificationMessagesTests
 {
     [Fact]
-    public void Event_1_assigned()
+    public void Event_1_assigned_and_reassigned()
     {
-        NotificationMessages.TaskAssigned("Ann Lee", "TSK-1042", "Review privilege log", "Acme v. Smith")
-            .ShouldBe("Ann Lee assigned you TSK-1042 \"Review privilege log\" (Acme v. Smith).");
+        NotificationMessages.TaskAssigned("TSK-1042", "Review privilege log", "Acme v. Smith")
+            .ShouldBe("Assigned to you - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskAssigned("TSK-1042", "Review privilege log", "Acme v. Smith", reassigned: true)
+            .ShouldBe("Reassigned to you - TSK-1042 \"Review privilege log\" on Acme v. Smith");
     }
 
     [Fact]
     public void Event_2_due_soon_today_and_tomorrow_and_overdue()
     {
         var today = new DateOnly(2026, 10, 22);
-        NotificationMessages.TaskDueSoon("TSK-1042", "Review privilege log", new DateOnly(2026, 10, 23), today)
-            .ShouldBe("TSK-1042 \"Review privilege log\" is due tomorrow (Oct 23).");
-        NotificationMessages.TaskDueSoon("TSK-1042", "Review privilege log", today, today)
-            .ShouldBe("TSK-1042 \"Review privilege log\" is due today.");
-        NotificationMessages.TaskOverdue("TSK-1042", "Review privilege log", new DateOnly(2026, 10, 20))
-            .ShouldBe("TSK-1042 \"Review privilege log\" is overdue (due Oct 20).");
+        NotificationMessages.TaskDueSoon("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 23), today)
+            .ShouldBe("Due tomorrow - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskDueSoon("TSK-1042", "Review privilege log", "Acme v. Smith", today, today)
+            .ShouldBe("Due today - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 19), today)
+            .ShouldBe("Overdue by 3 days - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 21), today)
+            .ShouldBe("Overdue by 1 day - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", today, today)
+            .ShouldBe("Overdue - TSK-1042 \"Review privilege log\" on Acme v. Smith");
     }
 
     [Fact]
-    public void Event_3_comment_and_mention()
+    public void Event_3_comment_and_mention_name_the_person_and_not_the_text()
     {
-        NotificationMessages.TaskComment("Ann Lee", "TSK-1042", "Please re-run the search with the new terms...")
-            .ShouldBe("Ann Lee commented on TSK-1042: \"Please re-run the search with the new terms...\"");
-        NotificationMessages.TaskMention("Ann Lee", "TSK-1042", "...@Bo Chen can you confirm...")
-            .ShouldBe("Ann Lee mentioned you in TSK-1042: \"...@Bo Chen can you confirm...\"");
+        NotificationMessages.TaskComment("Ann Lee", "TSK-1042", "Review privilege log", "Acme v. Smith")
+            .ShouldBe("New comment from Ann Lee - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.TaskMention("Ann Lee", "TSK-1042", "Review privilege log", "Acme v. Smith")
+            .ShouldBe("Mentioned by Ann Lee - TSK-1042 \"Review privilege log\" on Acme v. Smith");
     }
 
     [Fact]
     public void Events_4_to_8()
     {
-        NotificationMessages.MatterTaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 20), "Bo Chen")
-            .ShouldBe("TSK-1042 \"Review privilege log\" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).");
-        NotificationMessages.MatterTaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 20), null)
-            .ShouldBe("TSK-1042 \"Review privilege log\" on Acme v. Smith is overdue (due Oct 20, not assigned).");
-        NotificationMessages.MatterTaskCreated("Ann Lee", "TSK-1051", "Load production volume 3", "Acme v. Smith")
-            .ShouldBe("Ann Lee created TSK-1051 \"Load production volume 3\" on Acme v. Smith.");
+        NotificationMessages.MatterTaskOverdue("TSK-1042", "Review privilege log", "Acme v. Smith", new DateOnly(2026, 10, 20), new DateOnly(2026, 10, 22))
+            .ShouldBe("Overdue by 2 days - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.MatterTaskCreated("TSK-1051", "Load production volume 3", "Acme v. Smith")
+            .ShouldBe("New task on your matter - TSK-1051 \"Load production volume 3\" on Acme v. Smith");
         NotificationMessages.MatterTaskUnassigned("TSK-1042", "Review privilege log", "Acme v. Smith", 2)
-            .ShouldBe("TSK-1042 \"Review privilege log\" on Acme v. Smith has been unassigned for 2 days.");
-        NotificationMessages.MatterTaskOnHold("TSK-1042", "Review privilege log", "Acme v. Smith", 5)
-            .ShouldBe("TSK-1042 \"Review privilege log\" on Acme v. Smith has been on hold for 5 days.");
-        NotificationMessages.MatterManagerSet("Ann Lee", true, "Acme v. Smith").ShouldBe("Ann Lee made you Primary manager of Acme v. Smith.");
-        NotificationMessages.MatterManagerSet("Ann Lee", false, "Acme v. Smith").ShouldBe("Ann Lee made you Secondary manager of Acme v. Smith.");
-        NotificationMessages.PodTaskUnassigned("TSK-1042", "Review privilege log", "Demo Processing Pod")
-            .ShouldBe("TSK-1042 \"Review privilege log\" in Demo Processing Pod is unassigned.");
+            .ShouldBe("Unassigned for 2 days - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.MatterTaskOnHold("TSK-1042", "Review privilege log", "Acme v. Smith", 6)
+            .ShouldBe("On hold for 6 days - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.MatterTaskOnHold("TSK-1042", "Review privilege log", "Acme v. Smith", 1)
+            .ShouldBe("On hold for 1 day - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+        NotificationMessages.MatterManagerSet(true, "Acme v. Smith").ShouldBe("You are now Primary manager - Acme v. Smith");
+        NotificationMessages.MatterManagerSet(false, "Acme v. Smith").ShouldBe("You are now Secondary manager - Acme v. Smith");
+        NotificationMessages.PodTaskUnassigned("TSK-1042", "Review privilege log", "Acme v. Smith", "Demo Processing Pod")
+            .ShouldBe("Unassigned in Demo Processing Pod - TSK-1042 \"Review privilege log\" on Acme v. Smith");
+    }
+
+    [Fact]
+    public void No_message_ends_with_a_full_stop_and_the_reason_comes_first()
+    {
+        var today = new DateOnly(2026, 10, 22);
+        string[] all =
+        [
+            NotificationMessages.TaskAssigned("TSK-1", "T", "M"),
+            NotificationMessages.TaskDueSoon("TSK-1", "T", "M", today, today),
+            NotificationMessages.TaskOverdue("TSK-1", "T", "M", today.AddDays(-2), today),
+            NotificationMessages.TaskComment("Ann", "TSK-1", "T", "M"),
+            NotificationMessages.TaskMention("Ann", "TSK-1", "T", "M"),
+            NotificationMessages.MatterTaskOverdue("TSK-1", "T", "M", today.AddDays(-2), today),
+            NotificationMessages.MatterTaskCreated("TSK-1", "T", "M"),
+            NotificationMessages.MatterTaskUnassigned("TSK-1", "T", "M", 2),
+            NotificationMessages.MatterTaskOnHold("TSK-1", "T", "M", 5),
+            NotificationMessages.MatterManagerSet(true, "M"),
+            NotificationMessages.PodTaskUnassigned("TSK-1", "T", "M", "P"),
+        ];
+        foreach (var message in all)
+        {
+            message.ShouldNotEndWith(".");
+            message.IndexOf(" - ", StringComparison.Ordinal).ShouldBeGreaterThan(0, message);
+        }
     }
 
     [Fact]
@@ -75,11 +106,11 @@ public class NotificationMessagesTests
     [Fact]
     public void Text_is_single_line_without_angle_brackets_and_never_longer_than_300()
     {
-        var message = NotificationMessages.TaskAssigned("Ann\nLee", "TSK-1", "<script>alert(1)</script>\r\nTitle", new string('m', 400));
+        var message = NotificationMessages.TaskAssigned("TSK-1", "<script>alert(1)</script>\r\nTitle", new string('m', 400));
         message.ShouldNotContain("<");
         message.ShouldNotContain(">");
         message.ShouldNotContain("\n");
         message.Length.ShouldBeLessThanOrEqualTo(NotificationMessages.MaxLength);
-        message.ShouldStartWith("Ann Lee assigned you TSK-1");
+        message.ShouldStartWith("Assigned to you - TSK-1 \"script");
     }
 }

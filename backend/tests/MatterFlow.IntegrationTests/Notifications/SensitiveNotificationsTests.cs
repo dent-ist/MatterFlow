@@ -103,7 +103,7 @@ public sealed class SensitiveNotificationsTests(SqlServerFixture sql)
             (await UnreadAsync(u.UnrelatedClient)).ShouldBe(1);
             var listed = (await GetAsync(u.UnrelatedClient, List)).GetProperty("items")[0];
             var id = listed.GetProperty("id").GetInt64();
-            listed.GetProperty("message").GetString()!.ShouldContain("assigned you");
+            listed.GetProperty("message").GetString()!.ShouldStartWith("Assigned to you - ");
 
             // The task is reassigned: the next poll, list, unread count, mark-read and read-all show nothing of it.
             await AssignAsync(u, u.TS2, u.Assignee);

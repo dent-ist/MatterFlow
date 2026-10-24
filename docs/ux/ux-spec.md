@@ -1270,17 +1270,17 @@ In-app only: no email, Teams, browser push, sound, toast or tab-title count in t
 
 | # | Event | Recipient | Message |
 |---|---|---|---|
-| 1 | Task assigned | New assignee | `Ann Lee assigned you T-1042 "Review privilege log" (Acme v. Smith).` |
-| 2a | Due soon | Assignee | `T-1042 "Review privilege log" is due tomorrow (Oct 23).` / `... is due today.` |
-| 2b | Overdue | Assignee | `T-1042 "Review privilege log" is overdue (due Oct 20).` |
-| 3 | Comment | Assignee | `Ann Lee commented on T-1042: "Please re-run the search..."` (80-character excerpt) |
+| 1 | Task assigned | New assignee | `Assigned to you - TSK-1042 "Review privilege log" on Acme v. Smith` (`Reassigned to you` when the task had another assignee) |
+| 2a | Due soon | Assignee | `Due tomorrow - TSK-1042 "Review privilege log" on Acme v. Smith` / `Due today - ...` |
+| 2b | Overdue | Assignee | `Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith` (`Overdue by 1 day`; `Overdue` when it became overdue today by its time) |
+| 3 | Comment | Assignee | `New comment from Ann Lee - TSK-1042 "Review privilege log" on Acme v. Smith` (the comment text is not repeated) |
 | 3m | Mention | Mentioned person | Deferred by the owner (#737); the event type exists, nothing creates it |
-| 4 | Matter task overdue | Primary and Secondary manager | `T-1042 "Review privilege log" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).` |
-| 5 | Task created on my matter | Manager | `Ann Lee created T-1051 "Load production volume 3" on Acme v. Smith.` |
-| 6a | Unassigned 2 days | Manager | `T-1042 "Review privilege log" on Acme v. Smith has been unassigned for 2 days.` |
-| 6b | On hold 5 days | Manager | `T-1042 "Review privilege log" on Acme v. Smith has been on hold for 5 days.` |
-| 7 | Set as manager | The person | `Ann Lee made you Primary manager of Acme v. Smith.` (or Secondary) |
-| 8 | Unassigned in my pod | Pod Lead | `T-1042 "Review privilege log" in Demo Processing Pod is unassigned.` |
+| 4 | Matter task overdue | Primary and Secondary manager | `Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 5 | Task created on my matter | Manager | `New task on your matter - TSK-1051 "Load production volume 3" on Acme v. Smith` |
+| 6a | Unassigned 2 days | Manager | `Unassigned for 2 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 6b | On hold 5 days | Manager | `On hold for 5 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 7 | Set as manager | The person | `You are now Primary manager - Acme v. Smith` (or Secondary) |
+| 8 | Unassigned in my pod | Pod Lead | `Unassigned in Demo Processing Pod - TSK-1042 "Review privilege log" on Acme v. Smith` |
 
 Rules: never the person who made the change; only people who may view the object now (checked again on read); one notification per person per action (the lower priority number wins, so a manager who is the assignee gets event 1); no scheduled event for a task without a due date, a closed task, or one fixed before the scheduler ran; scheduled events are made by the 5-minute background job (runbook 6.1) and are idempotent by the unique key of `dbo.Notification`; read items are deleted after 90 days and any item after 365 days. Pod Leads are the pod members who hold the active role named "Pod Lead".
 

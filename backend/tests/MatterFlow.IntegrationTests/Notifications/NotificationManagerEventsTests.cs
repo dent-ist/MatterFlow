@@ -72,7 +72,7 @@ public sealed class NotificationManagerEventsTests(SqlServerFixture sql) : IAsyn
         rows.ShouldAllBe(r => r.ObjectKind == "Task" && r.ObjectId == TaskId(task) && r.MatterId == _w.MatterId);
         rows.ShouldAllBe(r => r.DedupeKey == $"created:{TaskId(task)}");
         var number = task.GetProperty("taskNumber").GetString();
-        rows[0].Message.ShouldEndWith($" created {number} \"Load production volume 3\" on Merger Review 12.");
+        rows[0].Message.ShouldBe($"New task on your matter - {number} \"Load production volume 3\" on Merger Review 12");
         rows[0].ActorUserId.ShouldNotBeNull();
 
         // The managers see it through the API.
@@ -131,10 +131,10 @@ public sealed class NotificationManagerEventsTests(SqlServerFixture sql) : IAsyn
         bo.ObjectId.ShouldBe(_w.MatterId);
         bo.MatterId.ShouldBe(_w.MatterId);
         bo.DedupeKey.ShouldStartWith($"mgr:{_w.MatterId}:Primary:");
-        bo.Message.ShouldEndWith(" made you Primary manager of Merger Review 12.");
+        bo.Message.ShouldBe("You are now Primary manager - Merger Review 12");
         var cy = (await RowsAsync(_cyId, "MatterManagerSet")).ShouldHaveSingleItem();
         cy.DedupeKey.ShouldStartWith($"mgr:{_w.MatterId}:Secondary:");
-        cy.Message.ShouldEndWith(" made you Secondary manager of Merger Review 12.");
+        cy.Message.ShouldBe("You are now Secondary manager - Merger Review 12");
 
         // Matter.View is held, so the recipient sees it; ann has no Matter.View and the actor was not told.
         var list = await OkAsync(await _bo.GetAsync("/api/v1/me/notifications"));
@@ -174,7 +174,7 @@ public sealed class NotificationManagerEventsTests(SqlServerFixture sql) : IAsyn
         var rows = await RowsAsync(type: "MatterManagerSet");
         rows.ShouldAllBe(r => r.ObjectId == matterId);
         rows.Select(r => r.RecipientUserId).ShouldBe([_boId, _cyId], ignoreOrder: true);
-        rows.Single(r => r.RecipientUserId == _boId).Message.ShouldEndWith(" made you Primary manager of Fresh Matter.");
+        rows.Single(r => r.RecipientUserId == _boId).Message.ShouldBe("You are now Primary manager - Fresh Matter");
     }
 
     [Fact]

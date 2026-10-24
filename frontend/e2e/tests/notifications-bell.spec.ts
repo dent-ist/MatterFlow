@@ -65,7 +65,7 @@ test.describe('Notification bell and panel', () => {
     await expect(panel(page)).toBeVisible();
     await expect(page.locator('#np-title')).toBeFocused();
     const row = panel(page).locator('[data-notification-item]').first();
-    await expect(row).toContainText('assigned you');
+    await expect(row).toContainText('Assigned to you');
     await expect(row).toContainText(first);
     await expect(row).toContainText('Unread:');
     await expect(row.locator('time')).toHaveAttribute('datetime', /\d{4}-\d\d-\d\d/);
@@ -135,9 +135,10 @@ test.describe('Notification bell and panel', () => {
     await bell(page).focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#np-title')).toBeFocused();
-    const comment = panel(page).locator('[data-notification-item]', { hasText: 'commented on' });
+    const comment = panel(page).locator('[data-notification-item]', { hasText: 'New comment from' });
     await expect(comment).toContainText(task.taskNumber);
-    await expect(comment).toContainText('Please re-run the search');
+    // The wording is reason first and names the commenter; the comment text is not repeated in the notification.
+    await expect(comment).not.toContainText('Please re-run the search');
     // Tab walks the panel: Mark all as read, the items, View all; Enter on the comment item opens the task and reads it.
     for (let i = 0; i < 6; i++) {
       await page.keyboard.press('Tab');
@@ -259,7 +260,7 @@ test.describe('Scheduled notifications reach the bell', () => {
     await bell(page).click();
     const rows = panel(page).locator('[data-notification-item]');
     await expect(rows).toHaveCount(2);
-    await expect(rows.first()).toContainText('is overdue');
+    await expect(rows.first()).toContainText('Overdue');
     await expect(rows.first()).toContainText(title);
     await page.waitForTimeout(65_000); // another tick: nothing new for the same due date
     await page.reload();

@@ -42,23 +42,23 @@ Suppression rules: a task with no due date (ASAP) never produces events 2 or 4. 
 
 ### 3.1 Message wording
 
-Messages are written by the server at creation time (a snapshot, English, at most 200 characters, no HTML), in plain sentences with the task number, a short title and the matter. The link is built by the client from `ObjectKind` and `ObjectId` (never from stored text).
+Messages are written by the server at creation time (a snapshot, English, at most 200 characters, no HTML), reason first, in the shape `<reason> - <task number> "<short title>" on <matter>` with no trailing full stop (owner request: the bell and the panel show the first words, so the reason is what is read first). The link is built by the client from `ObjectKind` and `ObjectId` (never from stored text).
 
 | Event | Message |
 |---|---|
-| 1 | `Ann Lee assigned you T-1042 "Review privilege log" (Acme v. Smith).` |
-| 2 soon | `T-1042 "Review privilege log" is due tomorrow (Oct 23).` (today: `is due today.`) |
-| 2 overdue | `T-1042 "Review privilege log" is overdue (due Oct 20).` |
-| 3 comment | `Ann Lee commented on T-1042: "Please re-run the search with the new terms..."` (excerpt 80 characters, same rule as Activity) |
-| 3 mention | `Ann Lee mentioned you in T-1042: "...@Bo Chen can you confirm..."` |
-| 4 | `T-1042 "Review privilege log" on Acme v. Smith is overdue (due Oct 20, assigned to Bo Chen).` (`not assigned` when none) |
-| 5 | `Ann Lee created T-1051 "Load production volume 3" on Acme v. Smith.` |
-| 6 unassigned | `T-1042 "Review privilege log" on Acme v. Smith has been unassigned for 2 days.` |
-| 6 on hold | `T-1042 "Review privilege log" on Acme v. Smith has been on hold for 5 days.` |
-| 7 | `Ann Lee made you Primary manager of Acme v. Smith.` (`Secondary manager`) |
-| 8 | `T-1042 "Review privilege log" in Demo Processing Pod is unassigned.` |
+| 1 | `Assigned to you - TSK-1042 "Review privilege log" on Acme v. Smith` (`Reassigned to you` when the task had another assignee) |
+| 2 soon | `Due tomorrow - TSK-1042 "Review privilege log" on Acme v. Smith` (today: `Due today - ...`) |
+| 2 overdue | `Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith` (`Overdue by 1 day`; `Overdue` when it became overdue today by its time) |
+| 3 comment | `New comment from Ann Lee - TSK-1042 "Review privilege log" on Acme v. Smith` (the comment text is not repeated; the Activity timeline has it) |
+| 3 mention | `Mentioned by Ann Lee - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 4 | `Overdue by 3 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 5 | `New task on your matter - TSK-1051 "Load production volume 3" on Acme v. Smith` |
+| 6 unassigned | `Unassigned for 2 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 6 on hold | `On hold for 5 days - TSK-1042 "Review privilege log" on Acme v. Smith` |
+| 7 | `You are now Primary manager - Acme v. Smith` (`Secondary manager`; the matter takes the place of the task) |
+| 8 | `Unassigned in Demo Processing Pod - TSK-1042 "Review privilege log" on Acme v. Smith` |
 
-Rules: person names are display names; titles longer than 60 characters are trimmed with an ellipsis; the actor of a system event (2, 4, 6) is never named; wording avoids "you must" (informational, not instructions).
+Rules: person names are display names; titles longer than 60 characters are trimmed with an ellipsis; a person is named only where the reason is about a person (a comment, a mention); wording avoids "you must" (informational, not instructions).
 
 ## 4. Panel and page (ASCII mock-ups)
 
@@ -77,15 +77,15 @@ The bell is an icon button (24 px glyph, 40 px target) left of the user menu wit
 +--------------------------------------------+
 | Notifications                Mark all as read |
 +--------------------------------------------+
-| (*) Ann Lee assigned you T-1042 "Review     |
-|     privilege log" (Acme v. Smith).         |
+| (*) Assigned to you - TSK-1042 "Review      |
+|     privilege log" on Acme v. Smith         |
 |     5 min ago                               |
 |--------------------------------------------|
-| (*) T-1038 "Load volume 2" is due tomorrow  |
-|     (Oct 23).                       1 h ago |
+| (*) Due tomorrow - TSK-1038 "Load volume 2" |
+|     on Acme v. Smith                1 h ago |
 |--------------------------------------------|
-|     Bo Chen commented on T-1019: "Please... |
-|                                  yesterday  |
+|     New comment from Bo Chen - TSK-1019     |
+|     "..." on Acme v. Smith       yesterday  |
 |--------------------------------------------|
 |     ... 10 most recent ...                  |
 +--------------------------------------------+
@@ -103,8 +103,9 @@ The panel is a full-width sheet under the header (top: header height, bottom: 0)
 | Notifications        [Close x] |
 | Mark all as read               |
 |--------------------------------|
-| (*) Ann Lee assigned you T-1042|
-|     "Review privilege log".    |
+| (*) Assigned to you - TSK-1042 |
+|     "Review privilege log" on  |
+|     Acme v. Smith              |
 |     5 min ago                  |
 |--------------------------------|
 | ...                            |
@@ -119,9 +120,9 @@ Notifications                                          [Mark all as read]
 Your recent notifications. Read ones are removed after about 90 days.
 [ All | Unread (3) ]                               Show 25 per page v
 +------------------------------------------------------------------------+
-| (*) Ann Lee assigned you T-1042 "Review privilege log" ...   5 min ago |
-| (*) T-1038 "Load volume 2" is due tomorrow (Oct 23).          1 h ago |
-|     Bo Chen commented on T-1019: "Please..."              Oct 21 14:02 |
+| (*) Assigned to you - TSK-1042 "Review privilege log" ...    5 min ago |
+| (*) Due tomorrow - TSK-1038 "Load volume 2" on Acme v. Smith  1 h ago |
+|     New comment from Bo Chen - TSK-1019 "..."             Oct 21 14:02 |
 +------------------------------------------------------------------------+
   < Previous   Page 1 of 4   Next >                          (96 total)
 ```
