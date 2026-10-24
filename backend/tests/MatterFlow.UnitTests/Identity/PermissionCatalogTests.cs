@@ -176,14 +176,15 @@ public class PermissionCatalogTests
         P("Data Technician").ShouldContain(Permissions.Project.Archive);
         P("Data Technician").ShouldNotContain(Permissions.Client.Create);
 
-        // Dashboard: Directors see every tab, Pod Leads Summary + Swimlane + Users, Project Managers Summary + Swimlane, technicians the unassigned queue only (ViewUnassigned, not the department counts of ViewSummary).
+        // Dashboard: Directors see every tab, Pod Leads Summary + Swimlane + Users, Project Managers no tab at all (they work from My Matters, epic #758; an administrator can grant tabs back), technicians the unassigned queue only (ViewUnassigned, not the department counts of ViewSummary).
         string[] tabs = [Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewUnassigned, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers];
         foreach (var role in StarterRoles.All)
             role.Permissions.Intersect(tabs).Any().ShouldBe(role.Permissions.Contains(Permissions.Dashboard.View), $"{role.Name}: a tab permission only has effect with Dashboard.View");
         tabs.Except([Permissions.Dashboard.ViewUnassigned]).Append(Permissions.Dashboard.View).ShouldBeSubsetOf(P("Director"));
         P("Director").ShouldNotContain(Permissions.Dashboard.ViewUnassigned, "the unassigned queue is part of Summary for everyone who holds ViewSummary");
         P("Pod Lead").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers], ignoreOrder: true);
-        P("Project Manager").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane], ignoreOrder: true);
+        P("Project Manager").Intersect(tabs).ShouldBeEmpty();
+        P("Project Manager").ShouldNotContain(Permissions.Dashboard.View);
         P("Data Technician").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewUnassigned]);
         P("Data Scientist").Intersect(tabs).ShouldBe([Permissions.Dashboard.ViewUnassigned]);
         foreach (var role in new[] { "Data Technician", "Data Scientist" })

@@ -45,6 +45,8 @@ public sealed class SchemaMigrationRunner(
         var scripts = ScriptCatalog.Load(source);
 
         await using var connection = new SqlConnection(connectionString);
+        // What a script PRINTs (a data script says what it changed or why it left something alone) goes to the log.
+        connection.InfoMessage += (_, e) => logger.LogInformation("Schema script: {Message}", e.Message);
         try
         {
             await connection.OpenAsync(cancellationToken);
