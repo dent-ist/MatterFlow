@@ -16,6 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
 public class DashboardController(DashboardService dashboard, DashboardTrendService trend) : ControllerBase
 {
     /// <summary>Gets the Dashboard for a period (<c>period</c>, default 30 days) that drives the "completed" and "created" counts, for the Tasks of the <c>podScope</c> (<c>all</c> by default).</summary>
@@ -64,6 +65,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
 public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage) : ControllerBase
 {
     /// <summary>

@@ -148,6 +148,7 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         if (!permissions.Has(Permissions.Asset.View))
             return null;
 
+        await access.PrepareAsync(ct);
         return await access.Visible(db.Set<Asset>().AsNoTracking())
             .Where(a => typeIds.Contains(a.AssetTypeId))
             .GroupBy(a => a.AssetTypeId)

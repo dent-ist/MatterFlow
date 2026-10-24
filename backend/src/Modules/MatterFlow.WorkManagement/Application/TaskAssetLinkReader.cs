@@ -24,6 +24,32 @@ internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog ro
             Open = g.Count(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold),
         };
 
+    // The prepared ids (see IAssetTaskLinkReader.PrepareAsync), dropped when the request saves anything.
+    private const int MaxPrepared = 500;
+    private (int User, int[] Ids)? _prepared;
+    private bool _subscribed;
+
+    public async Task PrepareAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        if (_prepared is { } current && current.User == userId)
+            return;
+
+        var ids = await (
+            from l in db.Set<TaskAsset>().AsNoTracking()
+            join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+            where t.AssignedUserId == userId && t.IsMatterSensitive
+            select l.AssetId).Distinct().Take(MaxPrepared + 1).ToArrayAsync(cancellationToken);
+        if (!_subscribed)
+        {
+            db.SavedChanges += (_, _) => _prepared = null;
+            _subscribed = true;
+        }
+
+        _prepared = ids.Length > MaxPrepared ? null : (userId, ids);
+    }
+
+    public IReadOnlyList<int>? PreparedAssetIdsOfTasksAssignedTo(int userId) => _prepared is { } p && p.User == userId ? p.Ids : null;
+
     public IQueryable<int> AssetIdsOfTasksAssignedTo(int userId) =>
         from l in db.Set<TaskAsset>().AsNoTracking()
         join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id

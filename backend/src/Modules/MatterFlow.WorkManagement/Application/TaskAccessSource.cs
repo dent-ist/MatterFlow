@@ -13,5 +13,6 @@ internal sealed class TaskAccessSource(DbContext db) : ITaskAccessSource
             TaskId = t.Id,
             MatterId = t.MatterId,
             AssignedUserId = t.AssignedUserId,
+            IsMatterSensitive = t.IsMatterSensitive,
         });
 }

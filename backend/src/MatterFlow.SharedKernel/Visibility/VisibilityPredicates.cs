@@ -164,6 +164,50 @@ public static class VisibilityPredicates
         return Expression.Lambda<Func<T, bool>>(Expression.OrElse(matter.Body, Rebind(alsoVisible(user), parameter)), parameter);
     }
 
+    private sealed class IdList
+    {
+        public int[] Ids { get; init; } = [];
+    }
+
+    /// <summary>
+    /// The task rule for rows that carry the task's own copy of the matter's sensitivity flag (<c>Task.IsMatterSensitive</c>, script 37, issue #810): <c>NOT sensitive OR assigned to the
+    /// viewer OR the matter is one the viewer manages</c>. Every term is a test on the row's own columns, so a covering index answers it and an ordered page stays an index walk; the
+    /// matters the viewer manages come as a short id list (<paramref name="managedMatterIds"/>, a query parameter) or, when the caller has not loaded it, as a subquery
+    /// (<paramref name="managedMatters"/>). A viewer without a person sees non-sensitive matters only; a see-all viewer is not filtered. Same truth table as <see cref="TaskRow{T}"/>.
+    /// </summary>
+    public static Expression<Func<T, bool>> TaskFlag<T>(
+        Viewer viewer,
+        Expression<Func<T, int>> matterId,
+        Expression<Func<T, bool>> isMatterSensitive,
+        Expression<Func<T, int?>> assignedUserId,
+        IReadOnlyList<int>? managedMatterIds,
+        IQueryable<int> managedMatters)
+    {
+        ArgumentNullException.ThrowIfNull(matterId);
+        ArgumentNullException.ThrowIfNull(isMatterSensitive);
+        ArgumentNullException.ThrowIfNull(assignedUserId);
+        ArgumentNullException.ThrowIfNull(managedMatters);
+        var parameter = isMatterSensitive.Parameters[0];
+        if (viewer.SeeAll)
+            return Expression.Lambda<Func<T, bool>>(Expression.Constant(true), parameter);
+
+        Expression visible = Expression.Not(isMatterSensitive.Body);
+        if (viewer.UserId is not { } user)
+            return Expression.Lambda<Func<T, bool>>(visible, parameter);
+
+        visible = Expression.OrElse(visible, Expression.Equal(Rebind(assignedUserId, parameter), Parameter(user)));
+        var matter = Rebind(matterId, parameter);
+        if (managedMatterIds is null)
+            visible = Expression.OrElse(visible, Expression.Call(typeof(Queryable), nameof(Queryable.Contains), [typeof(int)], managedMatters.Expression, matter));
+        else if (managedMatterIds.Count > 0)
+        {
+            var list = Expression.Property(Expression.Constant(new IdList { Ids = [.. managedMatterIds] }), nameof(IdList.Ids));
+            visible = Expression.OrElse(visible, Expression.Call(typeof(Enumerable), nameof(Enumerable.Contains), [typeof(int)], list, matter));
+        }
+
+        return Expression.Lambda<Func<T, bool>>(visible, parameter);
+    }
+
     /// <summary>The predicate <c>row =&gt; ids.Contains(key(row))</c> with <paramref name="ids"/> translated to a subquery.</summary>
     public static Expression<Func<T, bool>> In<T, TKey>(Expression<Func<T, TKey>> key, IQueryable<TKey> ids)
     {

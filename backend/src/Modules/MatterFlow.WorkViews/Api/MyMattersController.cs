@@ -16,6 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 [Route("api/v1/my-matters")]
 [Authorize(Policy = "Perm:" + Permissions.Task.View)]
 [Authorize(Policy = "Perm:" + Permissions.Matter.BeManager + "|" + Permissions.Matter.AssignManagers)]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
 public partial class MyMattersController : ControllerBase
 {
 }

@@ -58,6 +58,7 @@ public sealed class AssetService(
             return paging.Error!;
 
         var (page, sort) = paging.Value;
+        await access.PrepareAsync(ct);
         var rows = Rows();
         if (query.MatterId is { } matterId)
             rows = rows.Where(r => r.Asset.MatterId == matterId);
@@ -142,6 +143,7 @@ public sealed class AssetService(
     /// <summary>Picker lookup: Assets of one Matter matching a fragment, active ones by default, limited and ordered by name.</summary>
     public async Task<Result<IReadOnlyList<AssetLookupItem>>> LookupAsync(AssetLookupQuery query, CancellationToken ct)
     {
+        await access.PrepareAsync(ct);
         var rows = Rows().Where(r => r.Asset.MatterId == query.MatterId);
         if (!query.IncludeInactive)
             rows = rows.Where(r => r.Asset.IsActive);

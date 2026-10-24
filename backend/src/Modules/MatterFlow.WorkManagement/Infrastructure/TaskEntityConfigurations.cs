@@ -26,8 +26,11 @@ internal sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         {
             t.HasTrigger("TR_Task_Immutable");
             t.HasTrigger("TR_Task_NoDelete");
+            t.HasTrigger("TR_Task_MatterSensitivityInsert");
         });
         b.Property(x => x.Id).HasColumnName("TaskId");
+        // Maintained by the database from the matter (script 37): EF reads it back after an insert and never writes it.
+        b.Property(x => x.IsMatterSensitive).HasDefaultValue(false).ValueGeneratedOnAdd().Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
         b.Property(x => x.Number).HasColumnName("TaskNumber").HasMaxLength(20).IsUnicode(false).IsRequired();
         b.Property(x => x.Title).HasMaxLength(300).IsRequired();
         b.Property(x => x.Description).HasColumnType("nvarchar(max)");

@@ -26,6 +26,8 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
 
         public Viewer Current => inner.Current;
 
+        public Task<string> AccessStampAsync(CancellationToken cancellationToken = default) => inner.AccessStampAsync(cancellationToken);
+
         public Task<Viewer> ForAsync(int userId, CancellationToken cancellationToken = default) => inner.ForAsync(userId, cancellationToken);
 
         public IQueryable<MatterAccessRow> VisibleMatters(Viewer? viewer = null)
@@ -68,6 +70,12 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
         {
             Calls++;
             return inner.WhereTaskVisibleBy(source, matterId, assignedUserId, viewer);
+        }
+
+        public IQueryable<T> WhereTaskFlagVisible<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, bool>> isMatterSensitive, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
+        {
+            Calls++;
+            return inner.WhereTaskFlagVisible(source, matterId, isMatterSensitive, assignedUserId, viewer);
         }
 
         public IQueryable<T> WhereMatterRowVisible<T>(IQueryable<T> source, Expression<Func<T, bool>> isSensitive, Expression<Func<T, int?>> primaryManagerId, Expression<Func<T, int?>> secondaryManagerId, Viewer? viewer = null)

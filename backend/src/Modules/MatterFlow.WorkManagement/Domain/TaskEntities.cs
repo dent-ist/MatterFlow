@@ -16,6 +16,12 @@ public class WorkTask : AuditedEntity<long>
 
     public int MatterId { get; set; }
 
+    /// <summary>
+    /// Copy of the matter's <c>IsSensitive</c>, kept by the database (<c>TR_Matter_SensitivityToTask</c>, <c>TR_Task_MatterSensitivityInsert</c>, script 37): never written by the
+    /// application. It lets the sensitive-matter rule be a test on the task's own columns (issue #810). Read it only in queries; a task tracked before its matter changed may hold the old value.
+    /// </summary>
+    public bool IsMatterSensitive { get; private set; }
+
     public int? ProjectId { get; set; }
 
     public int TaskTypeId { get; set; }

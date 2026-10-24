@@ -139,7 +139,12 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var port = scope.ServiceProvider.GetRequiredService<IMatterVisibility>();
+        var db = scope.ServiceProvider.GetRequiredService<DbContext>();
         port.Enabled.ShouldBeTrue();
+
+        // The task's copy of its matter's flag (script 37) is right for every one of the bulk-inserted tasks.
+        (await ReadLongsAsync("SELECT COUNT(*) FROM dbo.Task t JOIN dbo.Matter m ON m.MatterId = t.MatterId WHERE t.IsMatterSensitive <> m.IsSensitive")).ShouldBe([0L]);
+        (await ReadLongsAsync("SELECT COUNT(*) FROM dbo.Task WHERE IsMatterSensitive = 1")).Single().ShouldBeGreaterThan(1000);
 
         var checkedViewers = 0;
         foreach (var viewer in Viewers())
@@ -158,6 +163,17 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
             var expectedTasks = tasks.Where(t => visibleMatters.Contains(t.MatterId) || assigned(t)).Select(t => t.TaskId).Order().ToList();
             (await ReadLongsAsync("SELECT TaskId FROM dbo.fnTaskVisible(@u, @s) ORDER BY TaskId", args)).ShouldBe(expectedTasks, label);
             (await port.VisibleTasks(viewer).Select(t => t.TaskId).OrderBy(i => i).ToListAsync()).ShouldBe(expectedTasks, "EF: " + label);
+
+            // The flag form (Task.IsMatterSensitive, issue #810) as the readers use it: with the managed matters as a prepared list and as the subquery fallback.
+            var managedQuery = port.VisibleMatters(viewer).Where(m => m.IsSensitive).Select(m => m.MatterId);
+            var managedIds = matters.Where(m => m.IsSensitive && viewer.UserId is { } who && (m.PrimaryManagerId == who || m.SecondaryManagerId == who)).Select(m => m.MatterId).ToList();
+            foreach (var list in new IReadOnlyList<int>?[] { managedIds, null })
+            {
+                var flagged = await db.Set<WorkTask>().AsNoTracking()
+                    .Where(VisibilityPredicates.TaskFlag<WorkTask>(viewer, t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, list, managedQuery))
+                    .Select(t => t.Id).OrderBy(i => i).ToListAsync();
+                flagged.ShouldBe(expectedTasks, $"flag form ({(list is null ? "subquery" : "list")}): {label}");
+            }
 
             var assignedTasks = tasks.Where(assigned).Select(t => t.TaskId).ToHashSet();
             var expectedAssets = assets
@@ -264,6 +280,30 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
             var reads = await LogicalReadsAsync(sqlText, user, 0);
             output.WriteLine($"EF join form, {Label(viewer)}: {plain} reads plain, {reads} reads with the rule");
             reads.ShouldBeLessThanOrEqualTo(Math.Max((long)(plain * 1.15) + 2, plain + 200), Label(viewer));
+        }
+    }
+
+    [Fact]
+    public async Task The_flag_form_the_task_readers_use_costs_what_a_plain_count_costs()
+    {
+        // WhereTaskFlagVisible as EF translates it with the managed matters as a list (what a prepared request runs): no join to the matter table, so the reads stay near the
+        // plain count (issue #810). The join form above is the older shape and stays as the reference.
+        var user = _people[4];
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DbContext>();
+        var visibility = scope.ServiceProvider.GetRequiredService<IMatterVisibility>();
+        var managedQuery = visibility.VisibleMatters(new Viewer(user, false)).Where(m => m.IsSensitive).Select(m => m.MatterId);
+        var managed = await managedQuery.ToListAsync();
+        var plain = await LogicalReadsAsync("SELECT COUNT(*) FROM dbo.Task t WHERE t.StatusCode IN ('NEW', 'IN_PROGRESS', 'ON_HOLD')", user, 0);
+        foreach (var list in new IReadOnlyList<int>?[] { managed, null })
+        {
+            var visible = db.Set<WorkTask>().AsNoTracking()
+                .Where(VisibilityPredicates.TaskFlag<WorkTask>(new Viewer(user, false), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, list, managedQuery))
+                .Where(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold);
+            var reads = await LogicalReadsAsync(visible.GroupBy(_ => 1).Select(g => g.Count()).ToQueryString(), user, 0);
+            output.WriteLine($"EF flag form ({(list is null ? "subquery" : "list")}): {plain} reads plain, {reads} reads with the rule");
+            // The list form is what the readers run; the subquery fallback is only for a request that was not prepared, so it only has to stay far from the 38,000 reads of the old form.
+            reads.ShouldBeLessThanOrEqualTo(list is null ? 5_000 : Math.Max((long)(plain * 1.15) + 2, plain + 100));
         }
     }
 

@@ -56,6 +56,19 @@ public interface IAssetTaskLinkReader
     /// </summary>
     IQueryable<int> AssetIdsOfTasksAssignedTo(int userId);
 
+    /// <summary>
+    /// Loads, once per request, the Assets that reach the person only through their assignment: linked to a Task currently assigned to them on a sensitive matter (the Assets of
+    /// every other matter are visible by the matter rule anyway). A few ids, so a list can write the rule as a parameter list instead of a subquery (issue #810). Safe to call again;
+    /// a write in the same request drops the loaded ids.
+    /// </summary>
+    Task PrepareAsync(int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The ids loaded by <see cref="PrepareAsync"/> for this person, or null when none are loaded (not prepared, a save happened since, another person, or too many to send as a list):
+    /// the caller then uses <see cref="AssetIdsOfTasksAssignedTo"/> as a subquery. Together with the matter rule it gives the same Assets either way.
+    /// </summary>
+    IReadOnlyList<int>? PreparedAssetIdsOfTasksAssignedTo(int userId);
+
     /// <summary>The link counts grouped by Asset, as a query so a list can join it and sort by it (one row per linked Asset; a missing row means 0).</summary>
     IQueryable<AssetTaskCountRow> Grouped();
 }

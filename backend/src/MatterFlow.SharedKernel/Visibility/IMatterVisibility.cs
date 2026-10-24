@@ -41,6 +41,18 @@ public interface IMatterVisibility
     IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null);
 
     /// <summary>
+    /// Mode T for set-wide readers over rows that carry the task's own copy of the matter's sensitivity (<c>Task.IsMatterSensitive</c>): not sensitive, OR assigned to the viewer, OR a matter the
+    /// viewer manages. Every term is a test on the row, so no join to the matter table is needed and a covering index answers it (issue #810); same result as <see cref="WhereTaskVisibleBy{T}"/>.
+    /// A no-op while the rule is off or for a see-all viewer.
+    /// </summary>
+    IQueryable<T> WhereTaskFlagVisible<T>(
+        IQueryable<T> source,
+        Expression<Func<T, int>> matterId,
+        Expression<Func<T, bool>> isMatterSensitive,
+        Expression<Func<T, int?>> assignedUserId,
+        Viewer? viewer = null);
+
+    /// <summary>
     /// The matter rule OR an extra predicate that depends on the viewer's user id (for example "the asset is linked to a task assigned to the viewer", mode A), over rows
     /// that carry only a matter id: the LEFT JOIN form. <paramref name="alsoVisible"/> is only called for a viewer with a person. A no-op while the rule is off or for a see-all viewer.
     /// </summary>
@@ -80,6 +92,13 @@ public interface IMatterVisibility
 
     /// <summary>True when the task exists and the caller may see it.</summary>
     Task<bool> CanSeeTaskAsync(long taskId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A short key that changes whenever what the caller may see changes (a matter marked or un-marked, a manager added or removed, a sensitive-matter task assigned to or away
+    /// from the caller, the see-all permission): <c>off</c> while the rule is off, <c>all</c> for a see-all caller. Part of every cache key that holds viewer-dependent numbers
+    /// (README section 10). One indexed statement, shared with the request's preparation (<see cref="PreparesViewerAttribute"/>).
+    /// </summary>
+    Task<string> AccessStampAsync(CancellationToken cancellationToken = default);
 
     /// <summary>The 404 for a hidden record: identical to the one for a record that does not exist (README section 5).</summary>
     Error NotFound();

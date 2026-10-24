@@ -1,4 +1,5 @@
 using System.Data;
+using System.Linq.Expressions;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
 using MatterFlow.Identity.Contracts;
@@ -133,8 +134,40 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
         SearchTypes.Matter => MatterRanked(term, filter).CountAsync(ct),
         SearchTypes.Project => ProjectRanked(term, filter).CountAsync(ct),
         SearchTypes.Task => TaskRanked(term, filter).CountAsync(ct),
-        _ => AssetRanked(term, filter).CountAsync(ct),
+        _ => AssetCountAsync(term, filter, ct),
     };
+
+    private async Task<int> AssetCountAsync(SearchTerm? term, AdvancedFilter? filter, CancellationToken ct)
+    {
+        await PrepareAssetsAsync(ct);
+        return await AssetRanked(term, filter).CountAsync(ct);
+    }
+
+    /// <summary>Loads, once per request, the assets the caller reaches only through a task assigned to them on a sensitive matter, so the rule is a short list instead of a subquery (issue #810).</summary>
+    private async Task PrepareAssetsAsync(CancellationToken ct)
+    {
+        if (!visibility.Enabled || assetLinks.FirstOrDefault() is not { } reader)
+            return;
+
+        var viewer = visibility.Current;
+        if (!viewer.SeeAll && viewer.UserId is { } user)
+            await reader.PrepareAsync(user, ct);
+    }
+
+    private static Expression<Func<AssetMatter, bool>> AssignedAssets(IAssetTaskLinkReader? reader, int user)
+    {
+        if (reader is null)
+            return x => false;
+
+        if (reader.PreparedAssetIdsOfTasksAssignedTo(user) is not { } ids)
+            return VisibilityPredicates.In<AssetMatter, int>(x => x.Asset.Id, reader.AssetIdsOfTasksAssignedTo(user));
+
+        if (ids.Count == 0)
+            return x => false;
+
+        var list = ids.ToArray();
+        return x => list.Contains(x.Asset.Id);
+    }
 
     // Clients: the number column is a value-converted type that LINQ cannot LIKE, so this one is a parameterized SQL statement (still one query, still composable).
 
@@ -287,14 +320,13 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private IQueryable<Ranked<TaskRow>> TaskRanked(SearchTerm? term, AdvancedFilter? filter)
     {
-        // Mode T over the joined matter columns (no extra join): the matter rule OR assigned to the viewer.
-        var joined = visibility.WhereTaskRowVisible(
+        // Mode T on the task's own columns (not sensitive, assigned to the viewer, or a matter the viewer manages; no extra join, issue #810).
+        var joined = visibility.WhereTaskFlagVisible(
             from t in db.Set<WorkTask>().AsNoTracking()
             join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
             select new TaskMatter { Task = t, Matter = m },
-            x => x.Matter.IsSensitive,
-            x => x.Matter.PrimaryManagerId,
-            x => x.Matter.SecondaryManagerId,
+            x => x.Task.MatterId,
+            x => x.Task.IsMatterSensitive,
             x => x.Task.AssignedUserId);
         var rows =
             from x in joined
@@ -372,9 +404,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
             x => x.Matter.IsSensitive,
             x => x.Matter.PrimaryManagerId,
             x => x.Matter.SecondaryManagerId,
-            user => linkReader is null
-                ? x => false
-                : VisibilityPredicates.In<AssetMatter, int>(x => x.Asset.Id, linkReader.AssetIdsOfTasksAssignedTo(user)));
+            user => AssignedAssets(linkReader, user));
         var rows =
             from x in joined
             let a = x.Asset
@@ -414,6 +444,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private async Task<List<SearchHit>> AssetHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
+        await PrepareAssetsAsync(ct);
         var rows = await AssetRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take).ToListAsync(ct);
         return
         [

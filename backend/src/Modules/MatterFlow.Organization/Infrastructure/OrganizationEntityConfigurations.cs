@@ -19,7 +19,8 @@ internal sealed class MatterConfiguration : IEntityTypeConfiguration<Matter>
 {
     public void Configure(EntityTypeBuilder<Matter> b)
     {
-        b.ToTable("Matter");
+        // The table has a trigger (script 37: the sensitivity flag is copied to the matter's tasks), so EF must not use the OUTPUT clause.
+        b.ToTable("Matter", t => t.HasTrigger("TR_Matter_SensitivityToTask"));
         b.Property(x => x.Name).HasMaxLength(300).IsRequired();
         b.Property(x => x.MatterRef)
             .HasMaxLength(11)

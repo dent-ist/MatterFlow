@@ -61,7 +61,7 @@ Content is random (`NEWID()`), so two runs differ in text and assignment but not
 
 The rule is behind the go-live switch `Features:SensitiveMatterAccess` (default off). The dataset above always holds the sensitive Matters, so one seeded database serves both
 runs. Run the same load with and without the rule and compare p50 and p95 of the heavy reads (Task Queue, Dashboard, My Work, search, audit search). The budget of the design
-(README 12.5 of `docs/ux/sensitive-matters`) is not worse than +15 percent; the first measurement, at 20,000 Tasks, is in `docs/qa/sensitive-matters-performance.md` and does not meet it yet:
+(README 12.5 of `docs/ux/sensitive-matters`) is not worse than +15 percent; the first measurement, at 20,000 Tasks, is in `docs/qa/sensitive-matters-performance.md` (round 1 missed it; the tuning of issue #810 and the second round are recorded there):
 
 ```
 PERF_SCALE=1 PERF_VUS="50" tools/perf/reproduce.sh                      # rule off (today's behaviour)

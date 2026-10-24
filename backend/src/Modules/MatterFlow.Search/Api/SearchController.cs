@@ -15,6 +15,7 @@ namespace MatterFlow.Search.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/search")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
 public class SearchController(SearchService search) : ControllerBase
 {
     /// <summary>Any one of the View permissions opens the search endpoints (the types the caller may not view are left out of the results).</summary>

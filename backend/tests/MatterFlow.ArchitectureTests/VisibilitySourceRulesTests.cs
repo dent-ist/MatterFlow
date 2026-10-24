@@ -30,7 +30,6 @@ public class VisibilitySourceRulesTests
         ["TaskAccessSource.cs"] = "the unfiltered task source behind IMatterVisibility",
         ["TaskAccess.cs"] = "the one place WorkManagement reads tasks through the rule (Visible, CanSeeAsset)",
         ["VisibleTasks.cs"] = "the one place WorkViews reads tasks through the rule",
-        ["VisibilityStamp.cs"] = "cache-key fingerprint of what the viewer may see (reads ids only)",
         ["AssetService.cs"] = "reads go through AssetAccess.Visible, writes through AssetAccess.OfVisibleMatters; Add for create",
         ["AssetTypeService.cs"] = "asset counts through AssetAccess.Visible",
         ["AssetReferenceValidator.cs"] = "through AssetAccess.Visible",

@@ -67,7 +67,8 @@ public static class IdentityModule
         services.AddScoped<Application.RoleAdministration>();
 
         services.Configure<MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
-        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterVisibility, MatterVisibility>();
+        services.AddScoped<MatterVisibility>();
+        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterVisibility>(sp => sp.GetRequiredService<MatterVisibility>());
         services.AddScoped<MatterFlow.SharedKernel.Visibility.IManagedMatterScope, ManagedMatterScope>();
 
         services.AddScoped<CurrentUser>();
@@ -80,7 +81,11 @@ public static class IdentityModule
             .AddPolicy(AccessPolicies.Authenticated, p => p.RequireAuthenticatedUser().AddRequirements(new ActiveUserRequirement()))
             // Fail closed: a controller action without an explicit policy needs an active, non-pending user (see FailClosedConvention).
             .AddPolicy(AccessPolicies.NonPending, p => p.RequireAuthenticatedUser().AddRequirements(new NonPendingRequirement()));
-        services.Configure<MvcOptions>(o => o.Conventions.Add(new FailClosedConvention()));
+        services.Configure<MvcOptions>(o =>
+        {
+            o.Conventions.Add(new FailClosedConvention());
+            o.Filters.Add<ViewerPreparationFilter>();
+        });
 
         return services;
     }

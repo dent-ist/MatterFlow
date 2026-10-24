@@ -98,6 +98,37 @@ public class VisibilityRuleTests
             .ShouldAllBe(v => v);
     }
 
+    private sealed record FlagRow(int MatterId, bool Sensitive, int? Assignee);
+
+    [Fact]
+    public void The_flag_form_of_the_task_rule_gives_the_task_row_rule_with_a_prepared_list_and_with_the_subquery_fallback()
+    {
+        // Rows as a task carries them: its matter, the matter's flag (a copy of IsSensitive) and the assignee. The managed list is what the request prepared for the viewer.
+        FlagRow[] rows =
+        [
+            .. Tasks.Select(t => new FlagRow(t.MatterId, Matters.Single(m => m.MatterId == t.MatterId).IsSensitive, t.AssignedUserId)),
+            new(2, true, null), new(3, true, 99), new(5, true, 7), new(1, false, null),
+        ];
+        var managedQuery = Matters.AsQueryable().Where(m => m.IsSensitive).Select(m => m.MatterId);
+        foreach (var viewer in new[] { Viewer.Nobody, new Viewer(null, true), new Viewer(Me, false), new Viewer(Me, true), new Viewer(99, false), new Viewer(Other, false) })
+        {
+            var managed = Matters.Where(m => m.IsSensitive && viewer.UserId is { } u && (m.PrimaryManagerId == u || m.SecondaryManagerId == u)).Select(m => m.MatterId).ToArray();
+            var viewerQuery = Matters.AsQueryable().Where(m => m.IsSensitive && viewer.UserId != null && (m.PrimaryManagerId == viewer.UserId || m.SecondaryManagerId == viewer.UserId)).Select(m => m.MatterId);
+            var expected = rows.Select(r => VisibilityPredicates.TaskRow<FlagRow>(
+                viewer,
+                x => x.Sensitive,
+                x => Matters.Single(m => m.MatterId == x.MatterId).PrimaryManagerId,
+                x => Matters.Single(m => m.MatterId == x.MatterId).SecondaryManagerId,
+                x => x.Assignee).Compile()(r)).ToArray();
+
+            var withList = rows.AsQueryable().Select(VisibilityPredicates.TaskFlag<FlagRow>(viewer, x => x.MatterId, x => x.Sensitive, x => x.Assignee, managed, managedQuery)).ToArray();
+            var withQuery = rows.AsQueryable().Select(VisibilityPredicates.TaskFlag<FlagRow>(viewer, x => x.MatterId, x => x.Sensitive, x => x.Assignee, null, viewerQuery)).ToArray();
+
+            withList.ShouldBe(expected, "list, " + Label(viewer));
+            withQuery.ShouldBe(expected, "subquery, " + Label(viewer));
+        }
+    }
+
     private static string Label(Viewer v) => $"user {v.UserId?.ToString() ?? "none"}, seeAll {v.SeeAll}";
 
     private static MatterVisibility Port(bool enabled, Viewer current)

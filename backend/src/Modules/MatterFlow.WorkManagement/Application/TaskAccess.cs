@@ -12,7 +12,7 @@ namespace MatterFlow.WorkManagement.Application;
 public sealed class TaskAccess(DbContext db, IMatterVisibility visibility)
 {
     /// <summary>The tasks the caller may see, read-only. Written as the join form of the rule (never <c>EXISTS ... OR assignee</c>).</summary>
-    public IQueryable<WorkTask> Visible() => visibility.WhereTaskVisibleBy(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.AssignedUserId);
+    public IQueryable<WorkTask> Visible() => visibility.WhereTaskFlagVisible(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId);
 
     /// <summary>True when the task exists and the caller may see it.</summary>
     public Task<bool> CanSeeAsync(long taskId, CancellationToken ct) => visibility.CanSeeTaskAsync(taskId, ct);

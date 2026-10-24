@@ -149,6 +149,9 @@ internal sealed class AuditDisplayLookup(
             return null;
 
         var ids = matterIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return [];
+
         return (await visibility.VisibleMatters().Where(m => ids.Contains(m.MatterId)).Select(m => m.MatterId).ToListAsync(cancellationToken)).ToHashSet();
     }
 

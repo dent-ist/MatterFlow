@@ -15,7 +15,7 @@ public sealed class MatterAccessRow
     public int? SecondaryManagerId { get; init; }
 }
 
-/// <summary>The columns of a task the visibility rule needs: its matter and the person it is currently assigned to.</summary>
+/// <summary>The columns of a task the visibility rule needs: its matter, whether that matter is sensitive, and the person it is currently assigned to.</summary>
 public sealed class TaskAccessRow
 {
     public long TaskId { get; init; }
@@ -23,6 +23,9 @@ public sealed class TaskAccessRow
     public int MatterId { get; init; }
 
     public int? AssignedUserId { get; init; }
+
+    /// <summary>The task's copy of its matter's <c>IsSensitive</c> (script 37), for readers that only need to know whether the matter is sensitive.</summary>
+    public bool IsMatterSensitive { get; init; }
 }
 
 /// <summary>Every matter, unfiltered, as <see cref="MatterAccessRow"/>. Implemented by the Organization module; consumed only by the visibility port.</summary>

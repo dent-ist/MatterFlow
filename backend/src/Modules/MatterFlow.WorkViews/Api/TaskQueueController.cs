@@ -15,6 +15,7 @@ namespace MatterFlow.WorkViews.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/task-queue")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
 public class TaskQueueController(TaskQueueService queue) : ControllerBase
 {
     /// <summary>Lists Tasks with server-side filtering, sorting and paging (offset paging: page, pageSize, total).</summary>
@@ -35,6 +36,7 @@ public class TaskQueueController(TaskQueueService queue) : ControllerBase
 /// </summary>
 [ApiController]
 [Route("api/v1/my-work")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
 public class MyWorkController(TaskQueueService queue) : ControllerBase
 {
     /// <summary>Gets one tab of My Work with the counts of every tab.</summary>
@@ -55,6 +57,7 @@ public class MyWorkController(TaskQueueService queue) : ControllerBase
 /// </summary>
 [ApiController]
 [Route("api/v1/pod-work")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
 public class PodWorkController(TaskQueueService queue) : ControllerBase
 {
     /// <summary>Gets one tab of Pod Work with the Pod summary, the selectable Pods and the workload per person.</summary>
