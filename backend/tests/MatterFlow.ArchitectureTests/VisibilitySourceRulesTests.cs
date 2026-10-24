@@ -50,6 +50,7 @@ public class VisibilitySourceRulesTests
         ["MyMattersActivityService.cs"] = "events of the scope's visible matters; stamped history only for managers",
         ["MatterOverviewService.cs"] = "the matter header after the visibility check of that one matter (CanSeeMatterAsync, 404 otherwise); the tasks come from VisibleTasks",
         ["MyMattersAttentionService.cs"] = "rows of the scope's visible matters, loaded by id",
+        ["MyMattersTrendsService.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope); counts and instants only",
         ["MyMattersSinceLastVisitService.cs"] = "names of the scope's matters (visible by construction) for the few items shown",
         ["MyMattersWorkloadService.cs"] = "names of the scope's matters (visible by construction) for the per-person split",
         ["MyMattersScope.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope)",
