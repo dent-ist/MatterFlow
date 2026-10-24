@@ -5,6 +5,7 @@ using MatterFlow.SharedKernel.Availability;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -16,7 +17,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// from <see cref="IUserAvailabilityReader"/>. The counts use <see cref="TaskQueueRules"/>, so they agree with the Task Queue. A fixed number of
 /// grouped reads regardless of the number of Tasks. Operational capacity only: no completion statistics, speed or ranking (addendum).
 /// </summary>
-public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, IOptions<DashboardOptions> options, DashboardScopeResolver scopes)
+public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, IOptions<DashboardOptions> options, DashboardScopeResolver scopes, IMatterVisibility visibility)
 {
     public async Task<Result<WorkloadBoard>> GetAsync(WorkloadQuery query, CancellationToken ct)
     {
@@ -36,6 +37,7 @@ public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone ti
         // Active users who can hold work: at least one role that carries an active permission (Access Pending users are left out).
         var people = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive
             && u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))));
+        var visibleTasks = VisibleTasks.Of(db, visibility);
         var hiddenCount = 0;
         if (!podScope.IsAll)
         {
@@ -48,15 +50,14 @@ public sealed class WorkloadService(DbContext db, IClock clock, IUserTimeZone ti
             // "Can take work" (U4): a member of at least one active Pod, or someone who holds an open Task (never hidden, so an overloaded person outside every Pod stays visible).
             var everyone = await people.CountAsync(ct);
             people = people.Where(u => db.Set<PodMember>().Any(m => m.UserId == u.Id && m.Pod.IsActive)
-                || db.Set<WorkTask>().Where(TaskQueueRules.Open).Any(t => t.AssignedUserId == u.Id));
+                || visibleTasks.Where(TaskQueueRules.Open).Any(t => t.AssignedUserId == u.Id));
             hiddenCount = everyone - await people.CountAsync(ct);
         }
 
         var users = await people.Select(u => new { u.Id, u.DisplayName }).ToListAsync(ct);
         var ids = users.Select(u => u.Id).ToList();
 
-        var tasks = db.Set<WorkTask>().AsNoTracking();
-        var open = tasks.Where(TaskQueueRules.Open);
+        var open = visibleTasks.Where(TaskQueueRules.Open);
         var mine = open.Where(t => t.AssignedUserId != null && ids.Contains(t.AssignedUserId.Value));
 
         var byPriority = await mine.GroupBy(t => new { UserId = t.AssignedUserId!.Value, t.PriorityId })

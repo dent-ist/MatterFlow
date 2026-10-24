@@ -6,6 +6,7 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,9 +16,9 @@ namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
 /// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, and one for aging; the Trends tab has its own endpoint, <see cref="DashboardTrendService"/>), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands
-/// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Phase 1 has no per-record visibility (addendum E).
+/// on, and each number carries the Task Queue query that lists exactly the counted Tasks. Without the sensitive-matter rule (epic #788) there is no per-record visibility (addendum E); with it, every number is computed from the tasks the caller may see.
 /// </summary>
-public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache, DashboardScopeResolver scopes)
+public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, IPermissionChecker permissions, DashboardCache cache, DashboardScopeResolver scopes, IMatterVisibility visibility, VisibilityStamp stamp)
 {
     public async Task<Result<DashboardSummary>> GetAsync(DashboardQuery query, CancellationToken ct)
     {
@@ -45,7 +46,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         if (resolved.IsFailure)
             return resolved.Error!;
         var period = resolved.Value;
-        var cacheKey = $"{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}|{scope.Key}";
+        // The visibility stamp partitions the cache by what the viewer may see (sensitive-matter rule): see-all viewers share "all", everybody else has their own key that changes the moment their access does.
+        var cacheKey = $"{me}|{await stamp.KeyAsync(ct)}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{sections}|{scope.Key}";
         if (!query.Fresh && cache.TryGet(cacheKey, out var cached))
             return cached;
 
@@ -64,7 +66,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         var lastDay = today.AddDays(-1);
 
         // Every number below is about the Tasks of the scope (all Tasks, or the Tasks whose Pod field is one of the scope's Pods) and its query carries the same Pod filter.
-        var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
+        var tasks = scope.Apply(VisibleTasks.Of(db, visibility));
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
         var openDueSoon = tasks.Where(TaskQueueRules.DueSoonExcludingOverdue(queueClock));
@@ -177,7 +179,7 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
 
         // Under a Pod scope, the unassigned Tasks that belong to no Pod are in no scope: the Summary says how many, so they cannot be lost.
         var unassignedNoPod = !scope.IsAll && showUnassigned
-            ? await db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open).CountAsync(t => t.AssignedUserId == null && t.AssignedPodId == null, ct)
+            ? await VisibleTasks.Of(db, visibility).Where(TaskQueueRules.Open).CountAsync(t => t.AssignedUserId == null && t.AssignedPodId == null, ct)
             : 0;
 
         head ??= new { Open = 0, Unassigned = 0, Overdue = 0, OverdueCritical = 0, OverdueHigh = 0, OnHold = 0, DueSoon = 0, AsapOpen = 0, Completed = 0, Created = 0, OpenYesterday = 0, OverdueYesterday = 0, CompletedPrevious = 0, CreatedPrevious = 0, HadYesterday = false, HadBeforePrevious = false };

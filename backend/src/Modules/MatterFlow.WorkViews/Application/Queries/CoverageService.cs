@@ -4,6 +4,7 @@ using MatterFlow.Identity.Domain;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// the completed Task: the Task keeps no separate "completed by" (reassignment after completion is not possible), so this is the person who held
 /// it when it was completed. Cancelled Tasks never count. For training and cross-coverage planning only (addendum Q): no ranking or score.
 /// </summary>
-public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, DashboardScopeResolver scopes)
+public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone timeZone, IUserAvailabilityReader availability, DashboardScopeResolver scopes, IMatterVisibility visibility)
 {
     public async Task<Result<CoverageBoard>> GetAsync(CoverageQuery query, CancellationToken ct)
     {
@@ -40,7 +41,7 @@ public sealed class CoverageService(DbContext db, IClock clock, IUserTimeZone ti
         var fromUtc = queueClock.StartOfDayUtc(from);
         var toUtc = queueClock.EndOfDayUtc(to);
 
-        var grouped = await db.Set<WorkTask>().AsNoTracking()
+        var grouped = await VisibleTasks.Of(db, visibility)
             .Where(t => t.Status == TaskStatusCode.Completed && t.AssignedUserId != null && t.CompletedAtUtc >= fromUtc && t.CompletedAtUtc < toUtc)
             .GroupBy(t => new { UserId = t.AssignedUserId!.Value, t.TaskTypeId })
             .Select(g => new { g.Key.UserId, g.Key.TaskTypeId, Completed = g.Count() })

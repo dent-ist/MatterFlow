@@ -3,6 +3,7 @@ using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Time;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +15,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// Task Type catalogue and one read per metric group (created, completed, tasks with a due date) of (Task Type, instants) rows, bucketed into the viewer's local days in memory (the viewer's day edges
 /// are not UTC days, so SQL cannot group by day). The rules are those of the summary trend, so the <c>all</c> series equals it.
 /// </summary>
-public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, DashboardCache cache, DashboardScopeResolver scopes)
+public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZone timeZone, ICurrentUser currentUser, DashboardCache cache, DashboardScopeResolver scopes, IMatterVisibility visibility, VisibilityStamp stamp)
 {
     public async Task<Result<DashboardTrend>> GetAsync(DashboardTrendQuery query, CancellationToken ct)
     {
@@ -42,7 +43,7 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         if (resolved.IsFailure)
             return resolved.Error!;
         var period = resolved.Value;
-        var cacheKey = $"trend|{me}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{DashboardRules.TrendGranularity(period.Days)}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}|{scope.Key}";
+        var cacheKey = $"trend|{me}|{await stamp.KeyAsync(ct)}|{period.Key}|{period.From:yyyy-MM-dd}|{period.To:yyyy-MM-dd}|{DashboardRules.TrendGranularity(period.Days)}|{queueClock.ZoneId}|{today:yyyy-MM-dd}|{metric}|{string.Join(',', wanted.Order())}|{scope.Key}";
         if (!query.Fresh && cache.TryGet<DashboardTrend>(cacheKey, out var cached))
             return cached;
 
@@ -56,7 +57,7 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         var fromUtc = queueClock.StartOfDayUtc(from);
         var toUtc = queueClock.EndOfDayUtc(to);
         DateOnly? endsBeforeToday = to < today ? to : null;
-        var tasks = scope.Apply(db.Set<WorkTask>().AsNoTracking());
+        var tasks = scope.Apply(VisibleTasks.Of(db, visibility));
 
         var needCreated = metric is null or "created";
         var needCompleted = metric is null or "completed";
