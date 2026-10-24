@@ -129,6 +129,25 @@ describe('Projects pages', () => {
     const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
       el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
 
+    it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
+      const calls = () =>
+        projects.listProjects.mock.calls.filter((c) => c[8] !== 1).map((c) => c[5]);
+      let fixture = await create(['Project.View']);
+      expect(fixture.nativeElement.querySelector('[data-scope-switch]')).toBeNull();
+      expect(calls()).toEqual([undefined]);
+      TestBed.resetTestingModule();
+      fixture = await create(['Project.View', 'Matter.BeManager', 'Matter.AssignManagers']);
+      expect(calls()).toEqual([true]);
+      expect(fixture.nativeElement.querySelector('[data-scope-line]')?.textContent).toContain(
+        'Projects of matters you manage',
+      );
+      TestBed.resetTestingModule();
+      await create(['Project.View', 'Matter.BeManager', 'Matter.AssignManagers'], {
+        matterId: '7',
+      });
+      expect(calls()).toEqual([undefined]);
+    });
+
     it('lists projects with their matter reference and archived state', async () => {
       const fixture = await create(['Project.View', 'Project.Create']);
       const rows = fixture.nativeElement.querySelectorAll('tbody tr');

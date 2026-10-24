@@ -436,18 +436,82 @@ describe('MattersListPage', () => {
       ]);
     });
 
-    it('offers Mine only to people who can be a project manager, and it toggles the address', async () => {
-      const without = await create(['Matter.View']);
-      expect(without.nativeElement.querySelector('[data-mine]')).toBeNull();
-      TestBed.resetTestingModule();
+    describe('My matters / All', () => {
+      const managedByMe = (call: unknown[]) => call[10];
 
-      const fixture = await create(['Matter.View', 'Matter.BeManager']);
-      const mine: HTMLButtonElement = fixture.nativeElement.querySelector('[data-mine]')!;
-      expect(mine.getAttribute('aria-pressed')).toBe('false');
-      mine.click();
-      expect(navigate).toHaveBeenLastCalledWith([], {
-        queryParams: { mine: 'true', page: null },
-        queryParamsHandling: 'merge',
+      it('does not exist for people who cannot be a project manager', async () => {
+        const fixture = await create(['Matter.View', 'Matter.AssignManagers']);
+        expect(fixture.nativeElement.querySelector('[data-scope-switch]')).toBeNull();
+        expect(fixture.nativeElement.querySelector('[data-scope-line]')).toBeNull();
+        expect(managedByMe(api.listMatters.mock.calls.at(-1)!)).toBeUndefined();
+      });
+
+      it('opens a plain link on the matters the person manages, says so, and counts "of" all', async () => {
+        const fixture = await create(['Matter.View', 'Matter.BeManager', 'Matter.AssignManagers']);
+        const el: HTMLElement = fixture.nativeElement;
+        const calls = api.listMatters.mock.calls;
+        expect(calls.some((c) => managedByMe(c) === true)).toBe(true);
+        expect(el.querySelector('[data-scope="mine"]')?.getAttribute('aria-pressed')).toBe('true');
+        expect(el.querySelector('[data-scope="all"]')?.getAttribute('aria-pressed')).toBe('false');
+        expect(el.querySelector('[data-scope-line]')?.textContent).toContain('Matters you manage');
+        // The same list without the scope, one row, gives the "of".
+        expect(calls.some((c) => managedByMe(c) === undefined && c[15] === 1)).toBe(true);
+        // The address names the scope in force.
+        expect(navigate).toHaveBeenCalledWith(
+          [],
+          expect.objectContaining({ queryParams: { scope: 'mine' }, replaceUrl: true }),
+        );
+      });
+
+      it('is not added to a link that carries filters of the list (the address wins)', async () => {
+        await create(['Matter.View', 'Matter.BeManager', 'Matter.AssignManagers'], {
+          clientId: '1',
+        });
+        expect(api.listMatters.mock.calls.every((c) => managedByMe(c) === undefined)).toBe(true);
+      });
+
+      it('follows ?scope=all for a holder of Matter.AssignManagers and remembers a choice', async () => {
+        const fixture = await create(['Matter.View', 'Matter.BeManager', 'Matter.AssignManagers'], {
+          scope: 'all',
+        });
+        const el: HTMLElement = fixture.nativeElement;
+        expect(api.listMatters.mock.calls.every((c) => managedByMe(c) === undefined)).toBe(true);
+        expect(el.querySelector('[data-scope="all"]')?.getAttribute('aria-pressed')).toBe('true');
+        el.querySelector<HTMLButtonElement>('[data-scope="mine"]')!.click();
+        expect(navigate).toHaveBeenLastCalledWith(
+          [],
+          expect.objectContaining({
+            queryParams: { scope: 'mine', page: null },
+            queryParamsHandling: 'merge',
+          }),
+        );
+        expect(localStorage.getItem('mf.scope.matters.1')).toBe('mine');
+      });
+
+      it('keeps a project manager without Matter.AssignManagers on mine: no switch, ?scope=all is ignored', async () => {
+        const fixture = await create(['Matter.View', 'Matter.BeManager'], { scope: 'all' });
+        expect(fixture.nativeElement.querySelector('[data-scope-switch]')).toBeNull();
+        expect(api.listMatters.mock.calls.filter((c) => c[15] !== 1).map(managedByMe)).toEqual([
+          true,
+        ]);
+        expect(fixture.nativeElement.querySelector('[data-scope-line]')?.textContent).toContain(
+          'Matters you manage',
+        );
+      });
+
+      it('explains an empty scope and offers Show all matters with the permission', async () => {
+        const fixture = await create(
+          ['Matter.View', 'Matter.BeManager', 'Matter.AssignManagers'],
+          {},
+          [],
+        );
+        const el: HTMLElement = fixture.nativeElement;
+        expect(el.textContent).toContain('You do not manage any matter yet.');
+        el.querySelector<HTMLButtonElement>('[data-show-all-matters]')!.click();
+        expect(navigate).toHaveBeenLastCalledWith(
+          [],
+          expect.objectContaining({ queryParams: { scope: 'all', page: null } }),
+        );
       });
     });
 

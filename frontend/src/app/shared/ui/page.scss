@@ -367,3 +367,10 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The count line of a scoped list ("Assets of matters you manage (63 of 1,204)") is one line in the header; on a phone it wraps. */
+@media (max-width: 639.98px) {
+  .sl-line {
+    white-space: normal;
+  }
+}

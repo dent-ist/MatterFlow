@@ -392,4 +392,38 @@ describe('ClientsListPage', () => {
       expect(row.querySelector('td.pg-mono a')).toBeNull();
     });
   });
+
+  describe('My matters / All (epic #758)', () => {
+    const PM: Permission[] = ['Client.View', 'Matter.BeManager', 'Matter.AssignManagers'];
+    const scoped = () => api.listClients.mock.calls.filter((c) => c[7] !== 1).map((c) => c[4]);
+
+    it('is not there for people who cannot be a project manager', async () => {
+      const fixture = await create(['Client.View', 'Matter.AssignManagers']);
+      expect(
+        fixture.nativeElement.querySelector('[data-scope-switch], [data-scope-line]'),
+      ).toBeNull();
+      expect(scoped()).toEqual([undefined]);
+    });
+
+    it('opens on the clients with a matter the person manages, says so, and counts "of"', async () => {
+      const fixture = await create(PM);
+      const el: HTMLElement = fixture.nativeElement;
+      expect(scoped()).toEqual([true]);
+      expect(el.querySelector('[data-scope-line]')?.textContent).toContain(
+        'Clients with a matter you manage',
+      );
+      // The unscoped total (page size 1) is the "of".
+      expect(api.listClients.mock.calls.some((c) => c[4] === undefined && c[7] === 1)).toBe(true);
+      expect(el.querySelector('[data-scope="mine"]')?.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('does not scope a link that carries filters, and All is remembered per page', async () => {
+      await create(PM, { name: 'acme' });
+      expect(scoped()).toEqual([undefined]);
+      TestBed.resetTestingModule();
+      const fixture = await create(PM);
+      fixture.nativeElement.querySelector('[data-scope="all"]').click();
+      expect(localStorage.getItem('mf.scope.clients.1')).toBe('all');
+    });
+  });
 });

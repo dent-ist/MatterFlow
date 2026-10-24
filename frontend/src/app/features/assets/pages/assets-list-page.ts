@@ -41,6 +41,9 @@ import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { matterLinkOf } from '../../../shared/ui/matter-link';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PageScope } from '../../../shared/scope/page-scope';
+import { scopeLine } from '../../../shared/scope/scope-line';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
 import { AssetDetails } from './asset-details';
 
@@ -72,6 +75,7 @@ export function parseSelected(value: string | null | undefined): number | null {
     FixedPage,
     ScrollArea,
     PageHeader,
+    ScopeSwitch,
     Badge,
     Button,
     CopyButton,
@@ -160,6 +164,17 @@ export function parseSelected(value: string | null | undefined): number | null {
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Assets">
+        <mf-scope-switch
+          mfActions
+          [scope]="scope.value()"
+          [canAll]="scope.canAll()"
+          announceMine="Showing assets of matters you manage"
+          announceAll="Showing all assets"
+          (scopeChange)="scope.set($event)"
+        />
+        @if (scopeText()) {
+          <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
+        }
         <p-button
           mfActions
           *mfHasPermission="'Asset.Create'"
@@ -223,7 +238,6 @@ export function parseSelected(value: string | null | undefined): number | null {
                 noun="assets"
                 [columnSpec]="columnSpec"
                 [filters]="filters"
-                emptyText="No assets yet."
                 [state]="state()"
                 [empty]="rows().length === 0"
                 [filtered]="filters.activeCount() > 0"
@@ -231,8 +245,20 @@ export function parseSelected(value: string | null | undefined): number | null {
                 hiddenLabel="inactive"
                 (retry)="load()"
                 (clear)="clear()"
+                [emptyText]="emptyText()"
                 (showAll)="showAll()"
               >
+                @if (scope.mine() && scope.canAll()) {
+                  <button
+                    mfEmptyAction
+                    type="button"
+                    class="mf-btn"
+                    data-show-all-matters
+                    (click)="scope.set('all')"
+                  >
+                    Show all matters
+                  </button>
+                }
                 @for (a of rows(); track a.assetId) {
                   <tr
                     [attr.data-asset-id]="a.assetId"
@@ -335,6 +361,22 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly defaultSort = 'displayName';
+
+  /** "My matters / All" (epic #758): people who can be a project manager open the list on the matters they manage, with a remembered switch. */
+  protected readonly scope = new PageScope('assets', () => !this.filters.isDeepLink());
+  /** "Assets of matters you manage (63 of 1,204)" / "1,204 assets". */
+  protected readonly scopeText = computed(() =>
+    scopeLine({
+      scope: this.scope.value(),
+      noun: 'assets',
+      phrase: 'Assets of matters you manage',
+      shown: this.state() === 'ready' ? this.total() : null,
+      all: this.unscopedTotal(),
+    }),
+  );
+  protected readonly emptyText = computed(() =>
+    this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
+  );
   /** The External reference column leaves below 1280 px (the kit's column-drop rule); the filter row follows. */
   protected readonly drop = columnDropOrder(['externalReference']);
   protected readonly columnSpec: AdminColumn[] = [
@@ -472,6 +514,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         void this.router.navigate([], {
           queryParams: {
             matter: asset.matterRef,
+            // A link to an asset outside the scope shows it with its matter, whoever opens it (the scope is a default view, not a limit).
+            ...(this.scope.canAll() ? { scope: 'all' } : {}),
             matterId: null,
             name: null,
             extref: null,
@@ -519,11 +563,24 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       : null;
   }
 
+  protected override watch(): void {
+    super.watch();
+    this.scope.value();
+  }
+
+  /** The same list without the scope: the "of 1,204". */
+  protected override fetchUnscoped() {
+    return this.scope.mine()
+      ? this.list(isActiveParam(parseStatus(this.filters.text('status'))), 1, 1, undefined, false)
+      : null;
+  }
+
   private list(
     isActive: boolean | undefined,
     page: number,
     size: number,
     sort: string | undefined,
+    scoped = true,
   ) {
     const matterId = Number(this.filters.text('matterId'));
     const typeIds = this.filters
@@ -539,7 +596,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
         this.filters.text('matter') || undefined,
-        undefined,
+        scoped && this.scope.mine() ? true : undefined,
         undefined,
         page,
         size,

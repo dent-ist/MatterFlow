@@ -23,10 +23,14 @@ import { FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import {
+  QUEUE_FILTER_PARAMS,
   createdByMeLink,
   filtersToValues,
   queueFilterDefs,
 } from '../../../shared/filters/queue-defs';
+import { PageScope } from '../../../shared/scope/page-scope';
+import { scopeLine } from '../../../shared/scope/scope-line';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { PlainLink } from '../../../shared/filters/filter-def';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
@@ -78,12 +82,25 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
     WorkList,
     WorkViewControls,
     SortNote,
+    ScopeSwitch,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Task Queue"> </mf-page-header>
+      <mf-page-header heading="Task Queue">
+        <mf-scope-switch
+          mfActions
+          [scope]="scope.value()"
+          [canAll]="scope.canAll()"
+          announceMine="Showing tasks on matters you manage"
+          announceAll="Showing all tasks"
+          (scopeChange)="scope.set($event)"
+        />
+        @if (scopeText()) {
+          <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
+        }
+      </mf-page-header>
 
       @if (columnsNotice()) {
         <mf-columns-notice
@@ -188,6 +205,28 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   private readonly api = inject(TaskQueueClient);
   private readonly podsApi = inject(PodsClient);
   private readonly navigator = inject(Router);
+
+  /** A plain link opens on the tasks of the matters the person manages ("My matters / All", epic #758); a link with filters means what it says. */
+  protected readonly scope = new PageScope(
+    'task-queue',
+    () => {
+      const params = this.params();
+      return (
+        !QUEUE_FILTER_PARAMS.some((p) => params.has(p)) || createdByMeLink(this.userId())(params)
+      );
+    },
+    () => this.pendingRestore,
+  );
+  /** "Tasks on matters you manage (41)" / "212 tasks"; the total of the unscoped queue is not read, so there is no "of". */
+  protected readonly scopeText = computed(() =>
+    scopeLine({
+      scope: this.scope.value(),
+      noun: 'tasks',
+      phrase: 'Tasks on matters you manage',
+      shown: this.loadState() === 'ready' ? this.total() : null,
+      all: null,
+    }),
+  );
 
   protected readonly pods = signal<PodOption[]>([]);
   private readonly primary = signal<number | null>(null);
@@ -314,7 +353,21 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   }
 
   protected override fetch(state: QueueState): Observable<TaskQueueData> {
-    return this.api.getTaskQueue(...taskQueueArgs(state, state.sort === 'due' ? 'due' : undefined));
+    const scoped = this.scope.mine()
+      ? { ...state, filters: { ...state.filters, managedByMe: true } }
+      : state;
+    return this.api.getTaskQueue(
+      ...taskQueueArgs(scoped, state.sort === 'due' ? 'due' : undefined),
+    );
+  }
+
+  protected override scopeKey(): string {
+    return this.scope.value() ?? '';
+  }
+
+  protected override extraQueryParams(): Record<string, string | null> {
+    const scope = this.scope.param();
+    return scope ? { scope } : {};
   }
 
   protected override countsFollowEdits(): boolean {

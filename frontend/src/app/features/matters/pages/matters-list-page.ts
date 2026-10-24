@@ -43,6 +43,9 @@ import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PageScope } from '../../../shared/scope/page-scope';
+import { scopeLine } from '../../../shared/scope/scope-line';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
@@ -108,6 +111,7 @@ const BONES: Record<string, string> = {
     CopyButton,
     RowLink,
     MatterManagersDialog,
+    ScopeSwitch,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -136,26 +140,21 @@ const BONES: Record<string, string> = {
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Matters">
+        @if (scopeText()) {
+          <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
+        }
         <mf-list-filters-button
           mfActions
           [filters]="filters"
           controls="matter-filter-row"
           [clearAlso]="['q']"
         />
-        @if (canBeManager()) {
-          <button
-            mfActions
-            type="button"
-            class="mf-btn ml-mine"
-            [attr.aria-pressed]="mine()"
-            title="Only matters I manage"
-            data-mine
-            (click)="toggleMine()"
-          >
-            <i class="pi pi-user" aria-hidden="true"></i>
-            Mine
-          </button>
-        }
+        <mf-scope-switch
+          mfActions
+          [scope]="scope.value()"
+          [canAll]="scope.canAll()"
+          (scopeChange)="scope.set($event)"
+        />
         @if (canAssign() && !phone()) {
           <button
             mfActions
@@ -227,10 +226,22 @@ const BONES: Record<string, string> = {
             [filtered]="filters.activeCount() > 0"
             (retry)="load()"
             (clear)="clear()"
+            [emptyText]="emptyText()"
             [hidden]="hiddenCount()"
             hiddenLabel="inactive"
             (showAll)="showAll()"
           >
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show all matters
+              </button>
+            }
             <p-button
               mfEmptyAction
               *mfHasPermission="'Matter.Create'"
@@ -407,12 +418,24 @@ const BONES: Record<string, string> = {
                   [filtered]="filters.activeCount() > 0"
                   [columns]="columns().length"
                   [skeleton]="skeleton()"
+                  [emptyText]="emptyText()"
                   (retry)="load()"
                   (clear)="clear()"
                   [hidden]="hiddenCount()"
                   hiddenLabel="inactive"
                   (showAll)="showAll()"
                 >
+                  @if (scope.mine() && scope.canAll()) {
+                    <button
+                      mfEmptyAction
+                      type="button"
+                      class="mf-btn"
+                      data-show-all-matters
+                      (click)="scope.set('all')"
+                    >
+                      Show all matters
+                    </button>
+                  }
                   <p-button
                     mfEmptyAction
                     *mfHasPermission="'Matter.Create'"
@@ -558,9 +581,26 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       typeof history !== 'undefined' &&
       history.state?.['selectManagers'] === true,
   );
-  /** The "Mine" quick filter is for people who can be a project manager. */
-  protected readonly canBeManager = computed(() => this.auth.has('Matter.BeManager'));
+  /**
+   * "My matters / All" (epic #758): people who can be a project manager open the list on the matters they manage, with a remembered switch.
+   * A link with filters of the list (a client's matters, a strip cell) and no `scope` means what it says and is not scoped.
+   */
+  protected readonly scope = new PageScope('matters', () => !this.filters.isDeepLink());
+  /** `?mine=true`, the older link-only form of the same filter (a removable chip). */
   protected readonly mine = computed(() => this.filters.text('mine') === 'true');
+  /** "Matters you manage (14 of 212)" / "212 matters". */
+  protected readonly scopeText = computed(() =>
+    scopeLine({
+      scope: this.scope.value(),
+      noun: 'matters',
+      phrase: 'Matters you manage',
+      shown: this.state() === 'ready' ? this.total() : null,
+      all: this.unscopedTotal(),
+    }),
+  );
+  protected readonly emptyText = computed(() =>
+    this.scope.mine() ? 'You do not manage any matter yet.' : '',
+  );
   protected readonly showPrimary = computed(() => this.wideForPrimary());
   protected readonly showSecondary = computed(() => this.wideForSecondary());
   protected readonly allSelected = computed(
@@ -748,10 +788,6 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     return names.length > 0 ? `PM: ${names.join(' / ')}` : '';
   }
 
-  protected toggleMine(): void {
-    this.filters.set('mine', this.mine() ? '' : 'true');
-  }
-
   protected endSelecting(): void {
     this.selecting.set(false);
     this.selected.set(this.emptySelection);
@@ -781,12 +817,24 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     );
   }
 
+  protected override watch(): void {
+    super.watch();
+    this.scope.value();
+  }
+
+  /** The same list without the scope: the "212" of "14 of 212 matters". */
+  protected override fetchUnscoped() {
+    return this.scope.mine()
+      ? this.list(isActiveParam(parseStatus(this.filters.text('status'))), 1, 1, false)
+      : null;
+  }
+
   /** The inactive matters the default Active hides, under the same other filters (#271). */
   protected override fetchHidden() {
     return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
   }
 
-  private list(isActive: boolean | undefined, page: number, size: number) {
+  private list(isActive: boolean | undefined, page: number, size: number, scoped = true) {
     const clientId = Number(this.filters.text('clientId'));
     const sensitive = this.filters.text('isSensitive');
     const primary = this.filters.text('primaryManager');
@@ -803,7 +851,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
         managerId(primary),
         managerId(secondary),
         managerId(this.filters.text('managerId')),
-        this.mine() ? true : undefined,
+        (scoped && this.scope.mine()) || this.mine() ? true : undefined,
         undefined,
         primary === NO_MANAGER ? false : undefined,
         secondary === NO_MANAGER ? false : undefined,

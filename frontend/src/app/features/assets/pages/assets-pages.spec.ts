@@ -245,6 +245,25 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     }
 
+    it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
+      const calls = () =>
+        (assets.listAssets as ReturnType<typeof vi.fn>).mock.calls
+          .filter((c) => c[10] !== 1)
+          .map((c) => c[7]);
+      await create(['Asset.View']);
+      expect(el().querySelector('[data-scope-switch]')).toBeNull();
+      expect(calls()).toEqual([undefined]);
+      TestBed.resetTestingModule();
+      await create(['Asset.View', 'Matter.BeManager', 'Matter.AssignManagers']);
+      expect(calls()).toEqual([true]);
+      expect(el().querySelector('[data-scope-line]')?.textContent).toContain(
+        'Assets of matters you manage',
+      );
+      TestBed.resetTestingModule();
+      await create(['Asset.View', 'Matter.BeManager', 'Matter.AssignManagers'], { matterId: '7' });
+      expect(calls()).toEqual([undefined]);
+    });
+
     it('lists assets with type, matter reference, external reference and status; the name is a link', async () => {
       await create(['Asset.View', 'Asset.Create', 'Matter.View']);
       const rows = el().querySelectorAll('tbody tr');

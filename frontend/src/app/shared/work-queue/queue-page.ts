@@ -274,10 +274,30 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     effect(() => {
       const state = this.state();
       const params = this.params();
+      // An address that changes only in `scope` (written by the scope helper to name the scope in force) does not reload the list.
+      const signature = JSON.stringify([
+        state,
+        this.scopeKey(),
+        params.keys.filter((k) => k !== 'scope').map((k) => [k, params.getAll(k)]),
+      ]);
       untracked(() => {
-        if (this.shouldLoad(params)) void this.load(state);
+        if (!this.shouldLoad(params) || signature === this.loadedSignature) return;
+        this.loadedSignature = signature;
+        void this.load(state);
       });
     });
+  }
+
+  private loadedSignature: string | null = null;
+
+  /** A part of the request that is not in the state but changes the rows (the Task Queue's "My matters / All" scope); a change reloads the list. */
+  protected scopeKey(): string {
+    return '';
+  }
+
+  /** Parameters every address built by this page carries besides the state (the Task Queue keeps its `scope` when it restores a view). */
+  protected extraQueryParams(): Record<string, string | null> {
+    return {};
   }
 
   /** The columns shown for the user's own set: a view's overlay applies here, never to the stored set (Task Queue quick views, #219). */
@@ -560,10 +580,13 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     if (byUser) this.userActed();
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: toQueryParams(next, {
-        explicitStatus: this.defaultStatus().length > 0,
-        defaultSize: this.rememberedSize(),
-      }),
+      queryParams: {
+        ...toQueryParams(next, {
+          explicitStatus: this.defaultStatus().length > 0,
+          defaultSize: this.rememberedSize(),
+        }),
+        ...this.extraQueryParams(),
+      },
       queryParamsHandling: 'merge',
       replaceUrl,
     });

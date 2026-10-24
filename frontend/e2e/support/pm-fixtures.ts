@@ -22,11 +22,27 @@ import { Seeder, World, uid } from './seed';
  *   tasks), `m.hold` (a task on hold for ten days; needs the SQL container of run-local.sh), `m.solo` (pmB primary, no Secondary),
  *   `m.secondaryOnly` (Secondary without Primary), `m.none1`, `m.none2` and `m.none3` (no manager: normal; the bulk test changes the first two), `m.clean` (pmA, no tasks).
  *
+ * Scope fixtures (epic #758, "My matters / All"): `pmNoAssign` (BeManager without Matter.AssignManagers; manages `m.noAssign`), `technician`
+ * (Data Technician: no manager permission), a second client `otherClient` whose only matter `m.otherClient` has no manager (so the Clients list
+ * has a client nobody manages), an asset and a project on a matter `pmA` manages (`assetMine`, `projectMine`) and on one nobody she manages
+ * (`assetOther`, `projectOther`; `m.solo` belongs to pmB). The names carry the token.
+ *
  * Idempotent per worker. The performance set (200 matters, 20,000 open tasks) belongs to #686 and is not built here.
  */
 export interface PmMatter {
   matterId: number;
   matterRef: string;
+  name: string;
+}
+
+export interface PmClient {
+  clientId: number;
+  clientNumber: string;
+  name: string;
+}
+
+export interface PmRecord {
+  id: number;
   name: string;
 }
 
@@ -41,6 +57,13 @@ export interface PmFixtures {
   observer: Persona;
   editor: Persona;
   away: Persona;
+  pmNoAssign: Persona;
+  technician: Persona;
+  otherClient: PmClient;
+  assetMine: PmRecord;
+  assetOther: PmRecord;
+  projectMine: PmRecord;
+  projectOther: PmRecord;
   m: Record<
     | 'primary'
     | 'secondary'
@@ -53,7 +76,9 @@ export interface PmFixtures {
     | 'none1'
     | 'none2'
     | 'none3'
-    | 'clean',
+    | 'clean'
+    | 'noAssign'
+    | 'otherClient',
     PmMatter
   >;
 }
@@ -95,6 +120,19 @@ async function build(seed: Seeder, personas: Personas): Promise<PmFixtures> {
     permissions: ['Client.View', 'Matter.View', 'Matter.Create', 'Matter.Edit', 'Task.View'],
   });
   const away = await personas.create({ label: 'pm-away', roles: ['Data Technician'] });
+  const pmNoAssign = await personas.create({
+    label: 'pm-noassign',
+    displayName: `PM NoAssign ${token}`,
+    permissions: [
+      'Client.View',
+      'Matter.View',
+      'Matter.BeManager',
+      'Project.View',
+      'Task.View',
+      'Asset.View',
+    ],
+  });
+  const technician = await personas.create({ label: 'pm-tech', roles: ['Data Technician'] });
   await seed.outOfOffice(away.userId, { note: 'Annual leave' });
 
   const client = world.client;
@@ -145,7 +183,39 @@ async function build(seed: Seeder, personas: Personas): Promise<PmFixtures> {
     none2: await matter('No manager two', null, null),
     none3: await matter('No manager three', null, null),
     clean: await matter('Alpha clean', pmA, null),
+    noAssign: await matter('NoAssign own', pmNoAssign, null),
+    otherClient: null as unknown as PmMatter,
   };
+
+  // A client whose only matter nobody manages: the Clients list in "My matters" must not show it.
+  const other = await seed.client({ name: `Other Client ${token}` });
+  const otherMatter = await seed.matter({
+    client: other,
+    number: '00001',
+    name: `Other client one ${token}`,
+  });
+  m.otherClient = {
+    matterId: otherMatter.matterId,
+    matterRef: otherMatter.matterRef,
+    name: otherMatter.name,
+  };
+  const otherClient: PmClient = {
+    clientId: other.clientId,
+    clientNumber: other.clientNumber,
+    name: other.name,
+  };
+  const record = (r: { name?: string; displayName?: string }, id: number): PmRecord => ({
+    id,
+    name: (r.displayName ?? r.name) as string,
+  });
+  const assetMineRow = await seed.asset(m.primary, `Scope asset mine ${token}`);
+  const assetOtherRow = await seed.asset(m.solo, `Scope asset other ${token}`);
+  const projectMineRow = await seed.project(m.primary, `Scope project mine ${token}`);
+  const projectOtherRow = await seed.project(m.solo, `Scope project other ${token}`);
+  const assetMine = record(assetMineRow, assetMineRow.assetId);
+  const assetOther = record(assetOtherRow, assetOtherRow.assetId);
+  const projectMine = record(projectMineRow, projectMineRow.projectId);
+  const projectOther = record(projectOtherRow, projectOtherRow.projectId);
 
   await tasks(m.primary, 1, { dueDate: '2099-01-01' });
   await tasks(m.overdue, 1, { dueDate: '2000-01-01' });
@@ -163,5 +233,24 @@ async function build(seed: Seeder, personas: Personas): Promise<PmFixtures> {
     );
   }
 
-  return { token, world, pmA, pmB, pmNone, pmNoTask, director, observer, editor, away, m };
+  return {
+    token,
+    world,
+    pmA,
+    pmB,
+    pmNone,
+    pmNoTask,
+    director,
+    observer,
+    editor,
+    away,
+    pmNoAssign,
+    technician,
+    otherClient,
+    assetMine,
+    assetOther,
+    projectMine,
+    projectOther,
+    m,
+  };
 }

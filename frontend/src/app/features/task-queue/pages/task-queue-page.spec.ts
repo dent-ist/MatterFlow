@@ -813,4 +813,64 @@ describe('TaskQueuePage', () => {
     expect(document.activeElement).toBe(other);
     other.remove();
   });
+
+  describe('My matters / All (epic #758)', () => {
+    const PM: Permission[] = ['Task.View', 'Matter.BeManager', 'Matter.AssignManagers'];
+
+    it('is not there for people who cannot be a project manager', async () => {
+      const el = await open('/tasks', { permissions: ['Task.View', 'Matter.AssignManagers'] });
+      expect(el.querySelector('[data-scope-switch]')).toBeNull();
+      expect(lastArgs()[ARG.managedByMe]).toBeUndefined();
+      expect(query()['scope']).toBeUndefined();
+    });
+
+    it('opens a plain link on the tasks of the matters the person manages and names it in the address', async () => {
+      const el = await open('/tasks', { permissions: PM });
+      expect(lastArgs()[ARG.managedByMe]).toBe(true);
+      expect(query()['scope']).toBe('mine');
+      expect(el.querySelector('[data-scope="mine"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(el.querySelector('[data-scope-line]')?.textContent).toContain(
+        'Tasks on matters you manage',
+      );
+      // The scope in the address is no new request.
+      expect(getTaskQueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves a link with filters alone: no remembered scope is added, the address stays as it is', async () => {
+      await open('/tasks?overdue=true&status=NEW', { permissions: PM });
+      expect(lastArgs()[ARG.managedByMe]).toBeUndefined();
+      expect(query()['scope']).toBeUndefined();
+    });
+
+    it('All removes the filter, is remembered, and Back restores the choice', async () => {
+      const el = await open('/tasks', { permissions: PM });
+      el.querySelector<HTMLButtonElement>('[data-scope="all"]')!.click();
+      await settle();
+      expect(query()['scope']).toBe('all');
+      expect(lastArgs()[ARG.managedByMe]).toBeUndefined();
+      expect(localStorage.getItem('mf.scope.task-queue.1')).toBe('all');
+      await TestBed.inject(Router).navigateByUrl('/tasks');
+      await settle();
+      // The remembered choice opens the plain link on All.
+      expect(query()['scope']).toBe('all');
+    });
+
+    it('keeps an explicit managerId link as it is and a restored view keeps the scope', async () => {
+      localStorage.setItem(
+        'mf.work-view.v1.queue.1',
+        JSON.stringify({ status: OPEN, priority: '2' }),
+      );
+      await open('/tasks', { permissions: PM });
+      await vi.waitFor(() => expect(query()['priority']).toBe('2'));
+      expect(query()['scope']).toBe('mine');
+      expect(lastArgs()[ARG.managedByMe]).toBe(true);
+    });
+
+    it('keeps a project manager without Matter.AssignManagers on mine even for ?scope=all', async () => {
+      const el = await open('/tasks?scope=all', { permissions: ['Task.View', 'Matter.BeManager'] });
+      expect(lastArgs()[ARG.managedByMe]).toBe(true);
+      expect(el.querySelector('[data-scope-switch]')).toBeNull();
+      expect(query()['scope']).toBe('mine');
+    });
+  });
 });

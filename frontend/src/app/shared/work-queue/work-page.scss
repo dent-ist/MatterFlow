@@ -72,3 +72,10 @@
     display: none;
   }
 }
+
+/* The count line of the scoped Task Queue is one line in the header; on a phone it wraps. */
+@media (max-width: 639.98px) {
+  .sl-line {
+    white-space: normal;
+  }
+}

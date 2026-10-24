@@ -36,6 +36,9 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { PageScope } from '../../../shared/scope/page-scope';
+import { scopeLine } from '../../../shared/scope/scope-line';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
@@ -66,6 +69,7 @@ const BONES: Record<string, string> = {
     FixedPage,
     ScrollArea,
     PageHeader,
+    ScopeSwitch,
     ActiveBadge,
     RouterLink,
     Button,
@@ -89,6 +93,17 @@ const BONES: Record<string, string> = {
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Projects">
+        <mf-scope-switch
+          mfActions
+          [scope]="scope.value()"
+          [canAll]="scope.canAll()"
+          announceMine="Showing projects of matters you manage"
+          announceAll="Showing all projects"
+          (scopeChange)="scope.set($event)"
+        />
+        @if (scopeText()) {
+          <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
+        }
         <mf-list-filters-button
           mfActions
           [filters]="filters"
@@ -127,8 +142,20 @@ const BONES: Record<string, string> = {
             (clear)="clear()"
             [hidden]="hiddenCount()"
             hiddenLabel="archived"
+            [emptyText]="emptyText()"
             (showAll)="showAll()"
           >
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show all matters
+              </button>
+            }
             <ng-template [mfRecordCard]="rows()" let-p>
               <mf-record-card
                 [name]="p.name"
@@ -252,8 +279,20 @@ const BONES: Record<string, string> = {
                   (clear)="clear()"
                   [hidden]="hiddenCount()"
                   hiddenLabel="archived"
+                  [emptyText]="emptyText()"
                   (showAll)="showAll()"
                 >
+                  @if (scope.mine() && scope.canAll()) {
+                    <button
+                      mfEmptyAction
+                      type="button"
+                      class="mf-btn"
+                      data-show-all-matters
+                      (click)="scope.set('all')"
+                    >
+                      Show all matters
+                    </button>
+                  }
                   @for (p of rows(); track p.projectId) {
                     <tr>
                       <td>
@@ -345,6 +384,22 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
       : []),
   ]);
 
+  /** "My matters / All" (epic #758): people who can be a project manager open the list on the matters they manage, with a remembered switch. */
+  protected readonly scope = new PageScope('projects', () => !this.filters.isDeepLink());
+  /** "Projects of matters you manage (63 of 1,204)" / "1,204 projects". */
+  protected readonly scopeText = computed(() =>
+    scopeLine({
+      scope: this.scope.value(),
+      noun: 'projects',
+      phrase: 'Projects of matters you manage',
+      shown: this.state() === 'ready' ? this.total() : null,
+      all: this.unscopedTotal(),
+    }),
+  );
+  protected readonly emptyText = computed(() =>
+    this.scope.mine() ? 'You do not manage any matter yet.' : '',
+  );
+
   protected readonly defaultSort = 'name';
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
@@ -435,7 +490,19 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
     return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
   }
 
-  private list(isActive: boolean | undefined, page: number, size: number) {
+  protected override watch(): void {
+    super.watch();
+    this.scope.value();
+  }
+
+  /** The same list without the scope: the "of 1,204". */
+  protected override fetchUnscoped() {
+    return this.scope.mine()
+      ? this.list(isActiveParam(parseStatus(this.filters.text('status'))), 1, 1, false)
+      : null;
+  }
+
+  private list(isActive: boolean | undefined, page: number, size: number, scoped = true) {
     const matterId = Number(this.filters.text('matterId'));
     return firstValueFrom(
       this.api.listProjects(
@@ -444,7 +511,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
         isActive,
         this.filters.text('name') || undefined,
         this.filters.text('matter') || undefined,
-        undefined,
+        scoped && this.scope.mine() ? true : undefined,
         undefined,
         page,
         size,

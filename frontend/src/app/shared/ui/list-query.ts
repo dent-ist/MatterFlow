@@ -127,6 +127,8 @@ export abstract class ServerListPage<T> extends ListQueryPage {
   protected readonly total = signal(0);
   /** Records the default Status hides ("3 inactive hidden"); 0 when none, when the default is not applied or when the count failed. */
   protected readonly hiddenCount = signal(0);
+  /** The total without the "My matters" scope (the "212" of "14 of 212 matters"); null when the list is not scoped or the count failed. */
+  protected readonly unscopedTotal = signal<number | null>(null);
 
   /** True for a list whose body is `mfGridBody`: its filtered-empty state has a Clear filters button, so the filters bar shows none then. */
   protected readonly emptyOffersClear: boolean = false;
@@ -150,6 +152,14 @@ export abstract class ServerListPage<T> extends ListQueryPage {
    * the default returns null unless it is applied now. A failure is ignored: the list just shows no hint.
    */
   protected fetchHidden(): Promise<{ total: number }> | null {
+    return null;
+  }
+
+  /**
+   * The same list without the "My matters" scope, one row (`pageSize=1`): its total is the "of 212" in "14 of 212 matters". A list that is not
+   * scoped now returns null. A failure is ignored: the line then shows the count alone.
+   */
+  protected fetchUnscoped(): Promise<{ total: number }> | null {
     return null;
   }
 
@@ -185,16 +195,29 @@ export abstract class ServerListPage<T> extends ListQueryPage {
     const id = ++this.requestId;
     if (this.state() === 'error' || this.state() === 'forbidden') this.state.set('loading');
     try {
-      const [result, hidden] = await Promise.all([this.fetch(), this.hiddenTotal()]);
+      const [result, hidden, unscoped] = await Promise.all([
+        this.fetch(),
+        this.hiddenTotal(),
+        this.unscopedCount(),
+      ]);
       if (id !== this.requestId) return;
       this.rows.set(result.items);
       this.total.set(result.total);
       this.hiddenCount.set(hidden);
+      this.unscopedTotal.set(unscoped);
       this.state.set('ready');
       this.listFilters()?.reportResults(result.total);
     } catch (error) {
       if (id === this.requestId)
         this.state.set(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
+    }
+  }
+
+  private async unscopedCount(): Promise<number | null> {
+    try {
+      return (await this.fetchUnscoped())?.total ?? null;
+    } catch {
+      return null;
     }
   }
 

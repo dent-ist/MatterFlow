@@ -35,7 +35,7 @@ test.describe('Matters list: project managers', () => {
     const page = await asUser(fx.pmA.username);
     await page.goto(`/matters?name=${fx.token}`);
 
-    await expect(page.locator('tbody tr')).toHaveCount(12);
+    await expect(page.locator('tbody tr')).toHaveCount(14); // the twelve of epic #667, the NoAssign matter and the other client's matter
     await expect(rowOf(page, 'Alpha primary').locator('[data-primary-manager]')).toContainText(
       'PM Alpha',
     );
@@ -49,7 +49,7 @@ test.describe('Matters list: project managers', () => {
     ).toHaveCount(0);
   });
 
-  test('Mine, the column filters (a person, None) and the sort', async ({
+  test('My matters, the column filters (a person, None) and the sort', async ({
     seed,
     personas,
     asUser,
@@ -58,13 +58,13 @@ test.describe('Matters list: project managers', () => {
     const page = await asUser(fx.pmA.username);
     await page.goto(`/matters?name=${fx.token}`);
 
-    await page.locator('[data-mine]').click();
-    await expect(page).toHaveURL(/mine=true/);
+    await page.locator('[data-scope="mine"]').click();
+    await expect(page).toHaveURL(/scope=mine/);
     await expect(page.locator('tbody tr')).toHaveCount(7); // primary, secondary, both, overdue, unassigned, hold, clean
     await expect(rowOf(page, 'Bravo solo')).toHaveCount(0);
 
     await page.goto(`/matters?name=${fx.token}&primaryManager=none`);
-    await expect(page.locator('tbody tr')).toHaveCount(4); // secondary only and the three without a manager
+    await expect(page.locator('tbody tr')).toHaveCount(5); // secondary only, the three without a manager and the other client's matter
     await page.goto(`/matters?name=${fx.token}&secondaryManager=${fx.pmB.userId}`);
     await expect(page.locator('tbody tr')).toHaveCount(2);
     await page.goto(`/matters?name=${fx.token}&primaryManager=${fx.pmB.userId}`);
@@ -104,13 +104,19 @@ test.describe('Matters list: project managers', () => {
     ['Read-Only Observer', 'observer'],
     ['Matter.Edit without Matter.AssignManagers', 'editor'],
   ] as const) {
-    test(`${label}: no tick boxes, no bulk action, no Mine`, async ({ seed, personas, asUser }) => {
+    test(`${label}: no tick boxes, no bulk action, no scope switch`, async ({
+      seed,
+      personas,
+      asUser,
+    }) => {
       const fx = await pmFixtures(seed, personas);
       const page = await asUser(fx[key].username);
       await page.goto(`/matters?name=${fx.token}`);
       await expect(page.locator('tbody tr').first()).toBeVisible();
       await expect(
-        page.locator('[data-select-mode], [data-select-row], [data-select-all], [data-mine]'),
+        page.locator(
+          '[data-select-mode], [data-select-row], [data-select-all], [data-scope-switch]',
+        ),
       ).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Set project managers' })).toHaveCount(0);
     });

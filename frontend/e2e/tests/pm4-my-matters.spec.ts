@@ -420,7 +420,8 @@ test.describe('My Matters: Matter health', () => {
       await page.goto(`/tasks/new?returnTo=${encodeURIComponent(bad)}`);
       await page.getByRole('radio', { name: new RegExp(w.world.taskType.name) }).click();
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-      await expect(page, bad).toHaveURL(/\/tasks$/);
+      // The Task Queue names the project manager's scope in its address (epic #758).
+      await expect(page, bad).toHaveURL(/\/tasks(\?scope=mine)?$/);
     }
   });
 });
