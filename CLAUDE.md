@@ -27,6 +27,7 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 - **API changes** must keep the OpenAPI contract in `contracts/openapi` and the generated frontend client (nswag) in sync; CI fails on drift.
 - **Permissions** come from `contracts/permissions.json`; keep backend and frontend in step.
 - **Shortcuts**: add new keyboard shortcuts in `frontend/src/app/shared/layout/shortcut-registry.ts` together with the handler. No new or changed shortcuts in the current phase (owner decision; Phase 2 backlog, issue #420).
+- **Status (owner, 2026-10-24)**: MatterFlow has not been deployed and nobody is using it. All data is demo/test data. That is why a data backfill for old rows is rarely needed, but numbered SQL scripts stay immutable once merged (fix forward) so the first real deployment starts from a clean, replayable history. The repo will later be made private and moved to the corporate network.
 - **Auth**: `Dev` provider is for Development/Test only; production uses Windows auth. Never weaken that guard.
 - CI treats warnings as errors and checks formatting (`.editorconfig`, Prettier); run the checks before committing.
 - Main integration branch is `dev`.
