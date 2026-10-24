@@ -15,6 +15,7 @@ public static class AuditModule
         services.AddAuditServices();
         services.TryAddScoped<IAuditReader, AuditReader>();
         services.TryAddScoped<IAuditDisplayLookup, NullAuditDisplayLookup>();
+        services.TryAddScoped<AuditVisibility>();
         services.TryAddScoped<AuditSearchService>();
         services.AddControllers().AddApplicationPart(typeof(AuditModule).Assembly);
         return services;

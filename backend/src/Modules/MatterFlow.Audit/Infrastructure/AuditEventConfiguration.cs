@@ -16,5 +16,6 @@ public sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEven
         b.Property(e => e.ObjectId).HasMaxLength(40).IsUnicode(false).IsRequired();
         b.Property(e => e.FieldKey).HasMaxLength(100).IsUnicode(false);
         b.Property(e => e.Summary).HasMaxLength(500);
+        b.Property(e => e.IsSensitiveScope).HasDefaultValue(false);
     }
 }

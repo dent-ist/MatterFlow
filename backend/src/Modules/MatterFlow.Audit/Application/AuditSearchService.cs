@@ -71,11 +71,11 @@ public sealed record AuditSearchItem(
 /// <param name="TimeZone">IANA zone the date filters were interpreted in.</param>
 public sealed record AuditSearchPage(IReadOnlyList<AuditSearchItem> Items, long? NextCursor, int PageSize, string TimeZone);
 
-/// <summary>Object types and event types that occur in the audit trail, to fill the browser's filter lists.</summary>
+/// <summary>Object types and event types that occur in the audit trail the caller may see, to fill the browser's filter lists.</summary>
 public sealed record AuditFacets(IReadOnlyList<string> ObjectTypes, IReadOnlyList<string> EventTypes);
 
 /// <summary>Searches the append-only audit trail for the admin audit browser (read only; the trail is never written here).</summary>
-public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display, IUserTimeZone timeZone)
+public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display, IUserTimeZone timeZone, AuditVisibility visibility)
 {
     public const int DefaultPageSize = 50;
     public const int MaxPageSize = 200;
@@ -85,7 +85,8 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
     public async Task<AuditSearchPage> SearchAsync(AuditSearchFilter filter, CancellationToken cancellationToken)
     {
         var size = Math.Clamp(filter.PageSize <= 0 ? DefaultPageSize : filter.PageSize, 1, MaxPageSize);
-        var query = db.Set<AuditEvent>().AsNoTracking().AsQueryable();
+        // The sensitive-matter rule applies first (epic #788): hidden events are not rows, totals, facets or labels for this caller.
+        var query = visibility.Apply(db.Set<AuditEvent>().AsNoTracking());
 
         if (!string.IsNullOrWhiteSpace(filter.ObjectType))
         {
@@ -163,8 +164,9 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
     {
         // DISTINCT over the whole trail reads every index entry (half a million and growing). A skip scan jumps from one value to the next with an
         // index seek instead (IX_Audit_Object and IX_Audit_EventType both lead with the column): a few dozen seeks however many events there are.
-        var objectTypes = await DistinctBySkipScanAsync("ObjectType", cancellationToken);
-        var eventTypes = await DistinctBySkipScanAsync("EventType", cancellationToken);
+        var filter = await visibility.FacetFilterAsync(cancellationToken);
+        var objectTypes = await DistinctBySkipScanAsync("ObjectType", filter, cancellationToken);
+        var eventTypes = await DistinctBySkipScanAsync("EventType", filter, cancellationToken);
         return new AuditFacets(objectTypes, eventTypes);
     }
 
@@ -172,16 +174,17 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
     /// The distinct values of an indexed leading column in order, by skip scan: one batch that repeatedly asks for the next value above the last one
     /// (an index seek each). Only called with constant column names. A plain command on the context's connection, because EF cannot compose a batch.
     /// </summary>
-    private async Task<IReadOnlyList<string>> DistinctBySkipScanAsync(string column, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<string>> DistinctBySkipScanAsync(string column, (string Declarations, string Predicate) filter, CancellationToken cancellationToken)
     {
         var sql = $"""
             SET NOCOUNT ON;
+            {filter.Declarations}
             DECLARE @r TABLE (Value VARCHAR(100) PRIMARY KEY);
-            DECLARE @v VARCHAR(100) = (SELECT MIN({column}) FROM dbo.AuditEvent);
+            DECLARE @v VARCHAR(100) = (SELECT MIN(a.{column}) FROM dbo.AuditEvent a WHERE 1 = 1{filter.Predicate});
             WHILE @v IS NOT NULL
             BEGIN
                 INSERT @r (Value) VALUES (@v);
-                SET @v = (SELECT MIN(a.{column}) FROM dbo.AuditEvent a WHERE a.{column} > @v);
+                SET @v = (SELECT MIN(a.{column}) FROM dbo.AuditEvent a WHERE a.{column} > @v{filter.Predicate});
             END;
             SELECT Value FROM @r ORDER BY Value;
             """;
@@ -234,8 +237,7 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
         await AddStoredNamesAsync(refs, labels, cancellationToken);
 
         var correlationIds = rows.Select(r => r.CorrelationId).Distinct().ToList();
-        var counts = await db.Set<AuditEvent>()
-            .AsNoTracking()
+        var counts = await visibility.Apply(db.Set<AuditEvent>().AsNoTracking())
             .Where(e => correlationIds.Contains(e.CorrelationId))
             .GroupBy(e => e.CorrelationId)
             .Select(g => new { Id = g.Key, Count = g.Count() })

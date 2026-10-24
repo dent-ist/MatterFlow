@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Audit.Infrastructure;
 
 /// <summary>Implements <see cref="IAuditReader"/> over the append-only <c>AuditEvent</c> table (index <c>IX_Audit_Task</c>).</summary>
-internal sealed class AuditReader(DbContext db) : IAuditReader
+internal sealed class AuditReader(DbContext db, AuditVisibility visibility) : IAuditReader
 {
     private const int MaxLimit = 200;
 
@@ -19,7 +19,7 @@ internal sealed class AuditReader(DbContext db) : IAuditReader
         CancellationToken cancellationToken = default)
     {
         var size = Math.Clamp(limit, 1, MaxLimit);
-        var query = db.Set<AuditEvent>().AsNoTracking().Where(e => e.TaskId == taskId);
+        var query = visibility.Apply(db.Set<AuditEvent>().AsNoTracking()).Where(e => e.TaskId == taskId);
         if (beforeId is { } before)
             query = query.Where(e => e.Id < before);
         if (excludedEventTypes is { Count: > 0 })
@@ -36,7 +36,7 @@ internal sealed class AuditReader(DbContext db) : IAuditReader
 
     public async Task<AuditRecord?> LatestForTaskAsync(long taskId, string eventType, CancellationToken cancellationToken = default)
     {
-        var row = await db.Set<AuditEvent>().AsNoTracking()
+        var row = await visibility.Apply(db.Set<AuditEvent>().AsNoTracking())
             .Where(e => e.TaskId == taskId && e.EventType == eventType)
             .OrderByDescending(e => e.Id)
             .FirstOrDefaultAsync(cancellationToken);

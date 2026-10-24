@@ -14,7 +14,7 @@ namespace MatterFlow.Audit.Api;
 [ApiController]
 [Route("api/v1/audit")]
 [Authorize(Policy = PolicyNames.AuditView)]
-public class AuditEventsController(DbContext db) : ControllerBase
+public class AuditEventsController(DbContext db, AuditVisibility visibility) : ControllerBase
 {
     private const int DefaultPageSize = 50;
     private const int MaxPageSize = 100;
@@ -35,8 +35,7 @@ public class AuditEventsController(DbContext db) : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var after = afterId ?? 0;
-        var rows = await db.Set<AuditEvent>()
-            .AsNoTracking()
+        var rows = await visibility.Apply(db.Set<AuditEvent>().AsNoTracking())
             .Where(e => e.ObjectType == objectType && e.ObjectId == objectId && e.Id > after)
             .OrderBy(e => e.Id)
             .Take(pageSize + 1)

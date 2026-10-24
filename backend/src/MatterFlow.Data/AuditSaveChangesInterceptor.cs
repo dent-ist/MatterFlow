@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using MatterFlow.Audit.Contracts;
 using MatterFlow.Audit.Domain;
 using MatterFlow.Audit.Infrastructure;
+using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Audit;
 using MatterFlow.SharedKernel.Entities;
 using MatterFlow.SharedKernel.Identity;
@@ -67,7 +68,9 @@ public sealed class AuditSaveChangesInterceptor(
         {
             try
             {
-                context.AddRange(Materialize(pending));
+                var created = Materialize(pending);
+                StampSensitiveScope(context, created);
+                context.AddRange(created);
                 _flushing = true;
                 context.SaveChanges();
                 pending.Transaction?.Commit();
@@ -96,7 +99,9 @@ public sealed class AuditSaveChangesInterceptor(
         {
             try
             {
-                context.AddRange(Materialize(pending));
+                var created = Materialize(pending);
+                await StampSensitiveScopeAsync(context, created, cancellationToken);
+                context.AddRange(created);
                 _flushing = true;
                 await context.SaveChangesAsync(cancellationToken);
                 if (pending.Transaction is not null)
@@ -288,7 +293,8 @@ public sealed class AuditSaveChangesInterceptor(
                 EventType = entry.EventType,
                 ObjectType = entry.ObjectType,
                 ObjectId = entry.ObjectIdFactory?.Invoke() ?? entry.ObjectId!,
-                MatterId = entry.MatterId,
+                // An event about a matter itself always carries the matter as its scope (a matter created in this save only has its id now).
+                MatterId = entry.MatterId ?? (entry.ObjectType == nameof(Matter) && int.TryParse(entry.ObjectIdFactory?.Invoke() ?? entry.ObjectId, out var matterObjectId) ? matterObjectId : null),
                 TaskId = entry.TaskId,
                 FieldKey = entry.FieldKey,
                 OldValue = entry.OldValue,
@@ -304,6 +310,62 @@ public sealed class AuditSaveChangesInterceptor(
 
         pending.Created.AddRange(events);
         return events;
+    }
+
+    // ---- sensitive-matter stamp (epic #788, script 36)
+
+    /// <summary>The dedicated event of marking or un-marking a matter; always stamped, so the history that says "this matter was sensitive" is restricted too.</summary>
+    private const string SensitivityChangedEvent = "MATTER_SENSITIVITY_CHANGED";
+
+    /// <summary>
+    /// Stamps the events written while their matter is sensitive: the matter's state after the audited change was saved (this runs inside the transaction,
+    /// right after it) or the sensitivity change itself. Always on, whatever the go-live switch says, so history written before go-live is already marked.
+    /// One small primary-key lookup per save that has matter-scoped events; plain ADO on the context's connection and transaction because the context is busy.
+    /// </summary>
+    private static string? SensitiveLookupSql(List<AuditEvent> events)
+    {
+        var ids = events.Where(e => e.MatterId is not null).Select(e => e.MatterId!.Value).Distinct().ToList();
+        return ids.Count == 0 ? null : $"SELECT MatterId FROM dbo.Matter WHERE IsSensitive = 1 AND MatterId IN ({string.Join(',', ids)})";
+    }
+
+    private static void Stamp(List<AuditEvent> events, HashSet<int> sensitive)
+    {
+        foreach (var e in events)
+            e.IsSensitiveScope = e.EventType == SensitivityChangedEvent || (e.MatterId is { } id && sensitive.Contains(id));
+    }
+
+    private static void StampSensitiveScope(DbContext context, List<AuditEvent> events)
+    {
+        var sql = SensitiveLookupSql(events);
+        var sensitive = new HashSet<int>();
+        if (sql is not null)
+        {
+            using var command = context.Database.GetDbConnection().CreateCommand();
+            command.CommandText = sql;
+            command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                sensitive.Add(reader.GetInt32(0));
+        }
+
+        Stamp(events, sensitive);
+    }
+
+    private static async Task StampSensitiveScopeAsync(DbContext context, List<AuditEvent> events, CancellationToken cancellationToken)
+    {
+        var sql = SensitiveLookupSql(events);
+        var sensitive = new HashSet<int>();
+        if (sql is not null)
+        {
+            await using var command = context.Database.GetDbConnection().CreateCommand();
+            command.CommandText = sql;
+            command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+                sensitive.Add(reader.GetInt32(0));
+        }
+
+        Stamp(events, sensitive);
     }
 
     /// <summary>Rolls back the transaction this interceptor opened, detaches any audit rows already tracked, and re-queues the explicit entries.</summary>

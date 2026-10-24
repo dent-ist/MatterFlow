@@ -2,6 +2,7 @@ using System.Text.Json;
 using MatterFlow.Identity.Domain;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// The marker is a per-person audit event id in <c>dbo.UserMatterActivitySeen</c>: the first read creates it at the newest event (nothing is unread on the first visit), only
 /// <see cref="MarkSeenAsync"/> moves it, and only forward. A person's own actions are never unread.
 /// </summary>
-public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbContext db)
+public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbContext db, IMatterVisibility visibility, IManagedMatterScope managed)
 {
     public const int WindowDays = 7;
     private const int MaxLookBackDays = 90;
@@ -55,13 +56,20 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         var me = scope.Me;
         var from0 = firstId.Value;
         var events = db.Database.SqlQuery<AuditRow>($"""
-            SELECT AuditEventId, OccurredAtUtc, ActorUserId, EventType, MatterId, TaskId, FieldKey, OldValue, NewValue
+            SELECT AuditEventId, OccurredAtUtc, ActorUserId, EventType, MatterId, TaskId, FieldKey, OldValue, NewValue, IsSensitiveScope
             FROM dbo.AuditEvent
             """)
             .Where(e => e.AuditEventId >= from0 && e.OccurredAtUtc >= since && e.MatterId != null && ids.Contains(e.MatterId.Value))
             .Where(e => Kinds.Contains(e.EventType) && (e.EventType != CommentEvent || e.NewValue == NormalComment));
         if (until is { } end)
             events = events.Where(e => e.OccurredAtUtc < end);
+
+        // History written while a matter was sensitive stays restricted after un-marking: only for the matter's managers and see-all viewers (sensitive-matter rule).
+        if (visibility.Enabled && !visibility.Current.SeeAll)
+        {
+            var managedIds = managed.ManagedMatterIds(me);
+            events = events.Where(e => !e.IsSensitiveScope || managedIds.Contains(e.MatterId!.Value));
+        }
 
         var unreadCount = await events.CountAsync(e => e.AuditEventId > seen && e.ActorUserId != me, ct);
         var page = await events.OrderByDescending(e => e.AuditEventId).Take(query.Take + 1).ToListAsync(ct);
@@ -215,6 +223,8 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         public string? OldValue { get; set; }
 
         public string? NewValue { get; set; }
+
+        public bool IsSensitiveScope { get; set; }
     }
 
     private sealed class SeenRow

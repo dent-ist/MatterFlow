@@ -34,6 +34,13 @@ public sealed class AuditEvent : Entity<long>
 
     public Guid CorrelationId { get; set; }
 
+    /// <summary>
+    /// True when the event was written while its matter was sensitive (script 36, epic #788). Such history stays restricted to the matter's managers and the
+    /// holders of <c>Matter.ViewSensitive</c> (and the assignee, for the events of their own task) even after the matter is un-marked. Set once, when the
+    /// event is written; the audit table is append-only, so it never changes.
+    /// </summary>
+    public bool IsSensitiveScope { get; set; }
+
     /// <summary>Column widths of <c>dbo.AuditEvent</c> (03-audit.sql); text longer than these would fail the save with SQL error 2628.</summary>
     public const int MaxEventTypeLength = 64;
 

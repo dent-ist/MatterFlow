@@ -5,7 +5,9 @@ using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Api.Http;
 
@@ -20,8 +22,12 @@ internal sealed class AuditDisplayLookup(
     IMatterDirectory matters,
     IProjectDirectory projects,
     IPodDirectory pods,
-    IConfigurationNameDirectory configuration) : IAuditDisplayLookup
+    IConfigurationNameDirectory configuration,
+    IMatterVisibility visibility) : IAuditDisplayLookup
 {
+    /// <summary>The label of a record the caller may not see (sensitive-matter rule, epic #788): no number, name or client.</summary>
+    public const string RestrictedLabel = "Restricted record";
+
     public async Task<IReadOnlyDictionary<int, string>> UserNamesAsync(IReadOnlyCollection<int> userIds, CancellationToken cancellationToken = default)
     {
         if (userIds.Count == 0)
@@ -52,30 +58,38 @@ internal sealed class AuditDisplayLookup(
         var taskIds = IdsOf(objects, "Task").Select(id => (long)id).ToList();
         if (taskIds.Count > 0)
         {
+            var seeTasks = visibility.Enabled ? (await visibility.VisibleTasks().Where(t => taskIds.Contains(t.TaskId)).Select(t => t.TaskId).ToListAsync(cancellationToken)).ToHashSet() : null;
             foreach (var t in await tasks.FindManyAsync(taskIds, cancellationToken))
-                labels[new("Task", Text(t.TaskId))] = $"{t.TaskNumber} {t.Title}";
+                labels[new("Task", Text(t.TaskId))] = seeTasks is null || seeTasks.Contains(t.TaskId) ? $"{t.TaskNumber} {t.Title}" : RestrictedLabel;
         }
 
         var assetIds = IdsOf(objects, "Asset");
         if (assetIds.Count > 0)
         {
-            foreach (var a in await assets.FindManyAsync(assetIds, cancellationToken))
-                labels[new("Asset", Text(a.AssetId))] = a.DisplayName;
+            var found = await assets.FindManyAsync(assetIds, cancellationToken);
+            var seeMatters = await VisibleMattersAsync(found.Select(a => a.MatterId), cancellationToken);
+            foreach (var a in found)
+                labels[new("Asset", Text(a.AssetId))] = seeMatters is null || seeMatters.Contains(a.MatterId) ? a.DisplayName : RestrictedLabel;
         }
 
         foreach (var (id, name) in await UserNamesAsync(IdsOf(objects, "User"), cancellationToken))
             labels[new("User", Text(id))] = name;
 
-        foreach (var id in IdsOf(objects, "Matter"))
+        var matterIds = IdsOf(objects, "Matter");
+        var seen = await VisibleMattersAsync(matterIds, cancellationToken);
+        foreach (var id in matterIds)
         {
             if (await matters.FindAsync(id, cancellationToken) is { } m)
-                labels[new("Matter", Text(id))] = $"{m.MatterRef} {m.Name}";
+                labels[new("Matter", Text(id))] = seen is null || seen.Contains(id) ? $"{m.MatterRef} {m.Name}" : RestrictedLabel;
         }
 
         foreach (var id in IdsOf(objects, "Project"))
         {
             if (await projects.FindAsync(id, cancellationToken) is { } p)
-                labels[new("Project", Text(id))] = p.Name;
+            {
+                var seeProject = await VisibleMattersAsync([p.MatterId], cancellationToken);
+                labels[new("Project", Text(id))] = seeProject is null || seeProject.Contains(p.MatterId) ? p.Name : RestrictedLabel;
+            }
         }
 
         await AddAdministrationLabelsAsync(objects, labels, cancellationToken);
@@ -127,6 +141,16 @@ internal sealed class AuditDisplayLookup(
         FormOwnerKind.TaskType => owner.OwnerName is { } n ? $"{n} request form" : null,
         _ => null,
     };
+
+    /// <summary>Of these matters, the ones the caller may see (null while the rule is off: everything is visible).</summary>
+    private async Task<HashSet<int>?> VisibleMattersAsync(IEnumerable<int> matterIds, CancellationToken cancellationToken)
+    {
+        if (!visibility.Enabled)
+            return null;
+
+        var ids = matterIds.Distinct().ToList();
+        return (await visibility.VisibleMatters().Where(m => ids.Contains(m.MatterId)).Select(m => m.MatterId).ToListAsync(cancellationToken)).ToHashSet();
+    }
 
     private static List<int> IdsOf(IReadOnlyCollection<AuditObjectRef> objects, string type) =>
         objects
