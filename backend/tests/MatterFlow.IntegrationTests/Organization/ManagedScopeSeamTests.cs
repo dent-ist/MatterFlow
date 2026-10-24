@@ -52,6 +52,18 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
             return inner.WhereTaskVisible(source, taskId, viewer);
         }
 
+        public IQueryable<T> WhereMatterVisibleOr<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Func<int, Expression<Func<T, bool>>> alsoVisible, Viewer? viewer = null)
+        {
+            Calls++;
+            return inner.WhereMatterVisibleOr(source, matterId, alsoVisible, viewer);
+        }
+
+        public IQueryable<T> WhereMatterRowVisibleOr<T>(IQueryable<T> source, Expression<Func<T, bool>> isSensitive, Expression<Func<T, int?>> primaryManagerId, Expression<Func<T, int?>> secondaryManagerId, Func<int, Expression<Func<T, bool>>> alsoVisible, Viewer? viewer = null)
+        {
+            Calls++;
+            return inner.WhereMatterRowVisibleOr(source, isSensitive, primaryManagerId, secondaryManagerId, alsoVisible, viewer);
+        }
+
         public IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
         {
             Calls++;

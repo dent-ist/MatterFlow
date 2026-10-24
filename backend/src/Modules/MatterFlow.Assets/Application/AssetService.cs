@@ -26,7 +26,8 @@ public sealed class AssetService(
     IFormSubmissionValidator validator,
     IFormValueStore valueStore,
     IPermissionChecker permissions,
-    IEnumerable<IAssetTaskLinkReader> taskLinks)
+    IEnumerable<IAssetTaskLinkReader> taskLinks,
+    AssetAccess access)
 {
     /// <summary>Sort fields: <c>matter</c> is the Matter reference (then the name), <c>linkedTaskCount</c> the number of linked Tasks (constant without <c>Task.View</c>).</summary>
     public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount"];
@@ -157,6 +158,9 @@ public sealed class AssetService(
 
     public async Task<Result<AssetResponse>> GetAsync(int id, CancellationToken ct) => await GetAsync(id, [], ct);
 
+    /// <summary>True when the caller may see the asset (mode A); the linked-tasks endpoint gates on it.</summary>
+    public Task<bool> CanSeeAsync(int id, CancellationToken ct) => access.Visible(db.Set<Asset>().AsNoTracking()).AnyAsync(a => a.Id == id, ct);
+
     /// <summary>
     /// Creates an Asset. A SQL Server deadlock victim (error 1205: the transaction was rolled back as a whole) is repeated once from a clean
     /// change tracker; a second loss is a retryable 409 CONCURRENCY_CONFLICT, never a 500 (BUG-6).
@@ -166,7 +170,8 @@ public sealed class AssetService(
 
     private async Task<Result<AssetResponse>> CreateOnceAsync(CreateAssetRequest request, CancellationToken ct)
     {
-        var matter = await matters.FindAsync(request.MatterId, ct);
+        // A matter the caller may not see (sensitive-matter rule, mode M) is "not found" in the body, like one that does not exist.
+        var matter = await access.CanSeeMatterAsync(request.MatterId, ct) ? await matters.FindAsync(request.MatterId, ct) : null;
         if (matter is null)
             return Error.Validation("matterId", "NOT_FOUND", "Select a matter.");
         if (!matter.IsActive)
@@ -225,7 +230,7 @@ public sealed class AssetService(
 
     private async Task<Result<AssetResponse>> UpdateOnceAsync(int id, UpdateAssetRequest request, CancellationToken ct)
     {
-        var asset = await db.Set<Asset>().SingleOrDefaultAsync(a => a.Id == id, ct);
+        var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == id, ct);
         if (asset is null)
             return AssetSupport.NotFound("Asset");
 
@@ -308,7 +313,7 @@ public sealed class AssetService(
 
     private async Task<Result<AssetResponse>> SetActiveOnceAsync(int id, SetAssetActiveRequest request, CancellationToken ct)
     {
-        var asset = await db.Set<Asset>().SingleOrDefaultAsync(a => a.Id == id, ct);
+        var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == id, ct);
         if (asset is null)
             return AssetSupport.NotFound("Asset");
 
@@ -530,7 +535,7 @@ public sealed class AssetService(
     }
 
     private IQueryable<AssetRow> Rows() =>
-        from a in db.Set<Asset>().AsNoTracking()
+        from a in access.Visible(db.Set<Asset>().AsNoTracking())
         join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
         select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive, MatterRef = string.Empty, Linked = 0, Open = 0 };
 

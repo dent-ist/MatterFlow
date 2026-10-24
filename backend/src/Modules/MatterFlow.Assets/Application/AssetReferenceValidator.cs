@@ -9,14 +9,15 @@ namespace MatterFlow.Assets.Application;
 /// ASSET_REF values (SEC2-04): the Asset must exist and be active, and belong to the same Matter as the Task or object that holds the value.
 /// The ids of other Matters' Assets are reported exactly like missing ones when they are inactive; a cross-Matter id gets its own code.
 /// </summary>
-internal sealed class AssetReferenceValidator(DbContext db) : IFormReferenceValidator
+internal sealed class AssetReferenceValidator(DbContext db, AssetAccess access) : IFormReferenceValidator
 {
     public FormReferenceKind Kind => FormReferenceKind.Asset;
 
     public async Task<IReadOnlyList<FormSubmissionError>> ValidateAsync(IReadOnlyList<FormReferenceValue> references, FormReferenceContext context, CancellationToken cancellationToken = default)
     {
         var ids = references.Where(r => r.Id <= int.MaxValue).Select(r => (int)r.Id).Distinct().ToList();
-        var found = await db.Set<Asset>().AsNoTracking()
+        // An asset the caller may not see (sensitive-matter rule, mode A) is reported exactly like a missing one.
+        var found = await access.Visible(db.Set<Asset>().AsNoTracking())
             .Where(a => ids.Contains(a.Id))
             .Select(a => new { a.Id, a.MatterId, a.IsActive })
             .ToDictionaryAsync(a => a.Id, cancellationToken);

@@ -41,6 +41,21 @@ public interface IMatterVisibility
     IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null);
 
     /// <summary>
+    /// The matter rule OR an extra predicate that depends on the viewer's user id (for example "the asset is linked to a task assigned to the viewer", mode A), over rows
+    /// that carry only a matter id: the LEFT JOIN form. <paramref name="alsoVisible"/> is only called for a viewer with a person. A no-op while the rule is off or for a see-all viewer.
+    /// </summary>
+    IQueryable<T> WhereMatterVisibleOr<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Func<int, Expression<Func<T, bool>>> alsoVisible, Viewer? viewer = null);
+
+    /// <summary>The same for rows that already carry the matter's columns (no extra join): the matter rule OR the extra predicate. A no-op while the rule is off or for a see-all viewer.</summary>
+    IQueryable<T> WhereMatterRowVisibleOr<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Func<int, Expression<Func<T, bool>>> alsoVisible,
+        Viewer? viewer = null);
+
+    /// <summary>
     /// Keeps the rows whose matter the viewer may see, for rows that already carry the matter's columns (the Matter entity itself, or a join that has the
     /// matter): no extra join. A no-op while the rule is off or for a see-all viewer. Mode M.
     /// </summary>

@@ -15,6 +15,7 @@ public static class AssetsModule
     {
         services.AddControllers().AddApplicationPart(typeof(AssetsModule).Assembly);
 
+        services.AddScoped<AssetAccess>();
         services.AddScoped<AssetTypeService>();
         services.AddScoped<AssetService>();
         services.AddScoped<IAssetDirectory, AssetDirectory>();

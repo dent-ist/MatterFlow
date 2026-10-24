@@ -41,14 +41,20 @@ public sealed class AssetTaskCountRow
 /// </summary>
 public interface IAssetTaskLinkReader
 {
-    /// <summary>The Tasks the Asset is linked to, newest link first.</summary>
+    /// <summary>The Tasks the Asset is linked to, newest link first. Only the Tasks the caller may see (sensitive-matter rule, mode T).</summary>
     Task<IReadOnlyList<AssetTaskLink>> ListForAssetAsync(int assetId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// The link counts of the given Assets (a page of ids) in ONE grouped statement, whatever the number of ids; Assets with no link are absent.
-    /// Never applies a permission: the caller checks <c>Task.View</c> first.
+    /// Counts only the Tasks the caller may see (sensitive-matter rule, mode T). Never applies a permission: the caller checks <c>Task.View</c> first.
     /// </summary>
     Task<IReadOnlyDictionary<int, AssetTaskCounts>> CountForAssetsAsync(IReadOnlyCollection<int> assetIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The ids of the Assets linked to a Task that is currently assigned to the person: the part of the asset rule (mode A, epic #788) that lets an assignee
+    /// open the assets of their own task. A query, so a list can use it as a subquery.
+    /// </summary>
+    IQueryable<int> AssetIdsOfTasksAssignedTo(int userId);
 
     /// <summary>The link counts grouped by Asset, as a query so a list can join it and sort by it (one row per linked Asset; a missing row means 0).</summary>
     IQueryable<AssetTaskCountRow> Grouped();

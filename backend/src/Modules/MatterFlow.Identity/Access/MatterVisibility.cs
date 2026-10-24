@@ -86,6 +86,26 @@ public sealed class MatterVisibility(
             : VisibilityPredicates.WhereMatterOrAssigned(source, matterId, assignedUserId, VisibleMatters(v).Select(m => m.MatterId), v);
     }
 
+    public IQueryable<T> WhereMatterVisibleOr<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Func<int, Expression<Func<T, bool>>> alsoVisible, Viewer? viewer = null)
+    {
+        var v = viewer ?? Current;
+        return !Enabled || v.SeeAll
+            ? source
+            : VisibilityPredicates.WhereMatterOr(source, matterId, alsoVisible, VisibleMatters(v).Select(m => m.MatterId), v);
+    }
+
+    public IQueryable<T> WhereMatterRowVisibleOr<T>(
+        IQueryable<T> source,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Func<int, Expression<Func<T, bool>>> alsoVisible,
+        Viewer? viewer = null)
+    {
+        var v = viewer ?? Current;
+        return !Enabled || v.SeeAll ? source : source.Where(VisibilityPredicates.MatterRowOr(v, isSensitive, primaryManagerId, secondaryManagerId, alsoVisible));
+    }
+
     public IQueryable<T> WhereMatterRowVisible<T>(
         IQueryable<T> source,
         Expression<Func<T, bool>> isSensitive,

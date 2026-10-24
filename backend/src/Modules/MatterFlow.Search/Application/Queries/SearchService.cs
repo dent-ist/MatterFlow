@@ -1,4 +1,5 @@
 using System.Data;
+using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Domain;
@@ -7,6 +8,7 @@ using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.ValueObjects;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,7 @@ namespace MatterFlow.Search.Application.Queries;
 /// searched only when the caller holds its View permission. Matching is number-aware (padded or unpadded) and every row carries the relevance tier it
 /// matched at (<see cref="SearchRanking"/>); hits sort by tier, then a stable per-type key. User text only ever reaches SQL as an escaped LIKE parameter.
 /// </summary>
-public sealed class SearchService(DbContext db, IPermissionChecker permissions)
+public sealed class SearchService(DbContext db, IPermissionChecker permissions, IMatterVisibility visibility, IEnumerable<IAssetTaskLinkReader> assetLinks)
 {
     private static readonly IReadOnlyDictionary<string, string> ViewPermission = new Dictionary<string, string>
     {
@@ -188,7 +190,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
     private IQueryable<Ranked<MatterRow>> MatterRanked(SearchTerm? term, AdvancedFilter? filter)
     {
         var rows =
-            from m in db.Set<Matter>().AsNoTracking()
+            from m in VisibleMatters()
             join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
             select new MatterRow
             {
@@ -244,7 +246,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
     {
         var rows =
             from p in db.Set<Project>().AsNoTracking()
-            join m in db.Set<Matter>().AsNoTracking() on p.MatterId equals m.Id
+            join m in VisibleMatters() on p.MatterId equals m.Id
             select new ProjectRow
             {
                 Id = p.Id,
@@ -285,9 +287,19 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
 
     private IQueryable<Ranked<TaskRow>> TaskRanked(SearchTerm? term, AdvancedFilter? filter)
     {
-        var rows =
+        // Mode T over the joined matter columns (no extra join): the matter rule OR assigned to the viewer.
+        var joined = visibility.WhereTaskRowVisible(
             from t in db.Set<WorkTask>().AsNoTracking()
             join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
+            select new TaskMatter { Task = t, Matter = m },
+            x => x.Matter.IsSensitive,
+            x => x.Matter.PrimaryManagerId,
+            x => x.Matter.SecondaryManagerId,
+            x => x.Task.AssignedUserId);
+        var rows =
+            from x in joined
+            let t = x.Task
+            let m = x.Matter
             select new TaskRow
             {
                 Id = t.Id,
@@ -351,9 +363,22 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
 
     private IQueryable<Ranked<AssetRow>> AssetRanked(SearchTerm? term, AdvancedFilter? filter)
     {
-        var rows =
+        // Mode A over the joined matter columns: the matter rule OR linked to a task assigned to the viewer.
+        var linkReader = assetLinks.FirstOrDefault();
+        var joined = visibility.WhereMatterRowVisibleOr(
             from a in db.Set<Asset>().AsNoTracking()
             join m in db.Set<Matter>().AsNoTracking() on a.MatterId equals m.Id
+            select new AssetMatter { Asset = a, Matter = m },
+            x => x.Matter.IsSensitive,
+            x => x.Matter.PrimaryManagerId,
+            x => x.Matter.SecondaryManagerId,
+            user => linkReader is null
+                ? x => false
+                : VisibilityPredicates.In<AssetMatter, int>(x => x.Asset.Id, linkReader.AssetIdsOfTasksAssignedTo(user)));
+        var rows =
+            from x in joined
+            let a = x.Asset
+            let m = x.Matter
             join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
             select new AssetRow
             {
@@ -398,6 +423,10 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
         ];
     }
 
+    /// <summary>The matters the caller may see as a whole (sensitive-matter rule, mode M; every matter while the go-live switch is off).</summary>
+    private IQueryable<Matter> VisibleMatters() =>
+        visibility.WhereMatterRowVisible(db.Set<Matter>().AsNoTracking(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId);
+
     /// <summary>Matter reference and name travel with Project, Task and Asset hits only for callers who may view Matters (SEC2-11).</summary>
     private bool ShowMatter => permissions.Has(Permissions.Matter.View);
 
@@ -411,6 +440,20 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions)
     }
 
     // ---- rows
+
+    private sealed class TaskMatter
+    {
+        public WorkTask Task { get; init; } = null!;
+
+        public Matter Matter { get; init; } = null!;
+    }
+
+    private sealed class AssetMatter
+    {
+        public Asset Asset { get; init; } = null!;
+
+        public Matter Matter { get; init; } = null!;
+    }
 
     private sealed class ClientRow
     {

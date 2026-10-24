@@ -95,20 +95,21 @@ public static class VisibilityPredicates
     }
 
     /// <summary>
-    /// The task rule for a set-wide reader over rows that carry only a matter id and an assignee id: <c>LEFT JOIN visible matters ... WHERE (matched OR assigned to the viewer)</c>.
-    /// This is the join form the performance work of #791 measured (84 to 236 reads at 24,000 tasks); the same rule written as <c>EXISTS (...) OR assignee = @u</c> probes the
-    /// matter table once per task (38,500 reads) and must not be used. A viewer without a person gets the matter-only form (no OR).
+    /// The matter rule OR an extra row predicate, for a set-wide reader over rows that carry only a matter id: <c>LEFT JOIN visible matters ... WHERE (matched OR extra)</c>.
+    /// This is the join form the performance work of #791 measured (84 to 236 reads at 24,000 tasks); the same rule written as <c>EXISTS (...) OR extra</c> probes the
+    /// matter table once per row (38,500 reads) and must not be used. <paramref name="alsoVisible"/> gets the viewer's user id; a viewer without a person gets the
+    /// matter-only form (no OR).
     /// </summary>
-    public static IQueryable<T> WhereMatterOrAssigned<T>(
+    public static IQueryable<T> WhereMatterOr<T>(
         IQueryable<T> source,
         Expression<Func<T, int>> matterId,
-        Expression<Func<T, int?>> assignedUserId,
+        Func<int, Expression<Func<T, bool>>> alsoVisible,
         IQueryable<int> visibleMatterIds,
         Viewer viewer)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(matterId);
-        ArgumentNullException.ThrowIfNull(assignedUserId);
+        ArgumentNullException.ThrowIfNull(alsoVisible);
         ArgumentNullException.ThrowIfNull(visibleMatterIds);
         if (viewer.UserId is not { } user)
             return WhereIn(source, matterId, visibleMatterIds);
@@ -120,9 +121,56 @@ public static class VisibilityPredicates
         var f = Expression.Parameter(typeof(Flat<T>), "f");
         var row = Expression.Property(f, nameof(Flat<T>.Row));
         var matched = Expression.NotEqual(Expression.Property(f, nameof(Flat<T>.VisibleMatterId)), Expression.Constant(null, typeof(int?)));
-        var assigned = Expression.Equal(Rebind(assignedUserId, row), Parameter(user));
-        var predicate = Expression.Lambda<Func<Flat<T>, bool>>(Expression.OrElse(matched, assigned), f);
+        var extra = Rebind(alsoVisible(user), row);
+        var predicate = Expression.Lambda<Func<Flat<T>, bool>>(Expression.OrElse(matched, extra), f);
         return flat.Where(predicate).Select(x => x.Row);
+    }
+
+    /// <summary>The task rule for a set-wide reader over rows with a matter id and the task's assignee: the matter rule OR assigned to the viewer (join form, see <see cref="WhereMatterOr{T}"/>).</summary>
+    public static IQueryable<T> WhereMatterOrAssigned<T>(
+        IQueryable<T> source,
+        Expression<Func<T, int>> matterId,
+        Expression<Func<T, int?>> assignedUserId,
+        IQueryable<int> visibleMatterIds,
+        Viewer viewer)
+    {
+        ArgumentNullException.ThrowIfNull(assignedUserId);
+        return WhereMatterOr(
+            source,
+            matterId,
+            user =>
+            {
+                var parameter = Expression.Parameter(typeof(T), "r");
+                return Expression.Lambda<Func<T, bool>>(Expression.Equal(Rebind(assignedUserId, parameter), Parameter(user)), parameter);
+            },
+            visibleMatterIds,
+            viewer);
+    }
+
+    /// <summary>The matter rule over rows that carry the matter's columns, OR an extra predicate for the viewer (for example "the asset is linked to a task assigned to the viewer"). No extra join.</summary>
+    public static Expression<Func<T, bool>> MatterRowOr<T>(
+        Viewer viewer,
+        Expression<Func<T, bool>> isSensitive,
+        Expression<Func<T, int?>> primaryManagerId,
+        Expression<Func<T, int?>> secondaryManagerId,
+        Func<int, Expression<Func<T, bool>>> alsoVisible)
+    {
+        ArgumentNullException.ThrowIfNull(alsoVisible);
+        var matter = MatterRow(viewer, isSensitive, primaryManagerId, secondaryManagerId);
+        if (viewer.SeeAll || viewer.UserId is not { } user)
+            return matter;
+
+        var parameter = matter.Parameters[0];
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(matter.Body, Rebind(alsoVisible(user), parameter)), parameter);
+    }
+
+    /// <summary>The predicate <c>row =&gt; ids.Contains(key(row))</c> with <paramref name="ids"/> translated to a subquery.</summary>
+    public static Expression<Func<T, bool>> In<T, TKey>(Expression<Func<T, TKey>> key, IQueryable<TKey> ids)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(ids);
+        var contains = Expression.Call(typeof(Queryable), nameof(Queryable.Contains), [typeof(TKey)], ids.Expression, key.Body);
+        return Expression.Lambda<Func<T, bool>>(contains, key.Parameters);
     }
 
     private sealed class Holder

@@ -10,12 +10,12 @@ namespace MatterFlow.WorkManagement.Application;
 /// The Task side of Task-Asset links for other modules: the Tasks an Asset is linked to (<see cref="IAssetTaskLinkReader"/>, shown as "Linked Tasks"
 /// on the Asset detail) and whether a link role is in use, so it can only be deactivated, not deleted (<see cref="IAssetLinkRoleUsage"/>).
 /// </summary>
-internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog roles) : IAssetTaskLinkReader
+internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog roles, TaskAccess access) : IAssetTaskLinkReader
 {
     /// <summary>The one definition of the link counts: all linked Tasks and the open ones (New, In Progress, On Hold), grouped by Asset.</summary>
     public IQueryable<AssetTaskCountRow> Grouped() =>
         from l in db.Set<TaskAsset>().AsNoTracking()
-        join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+        join t in access.Visible() on l.TaskId equals t.Id
         group t by l.AssetId into g
         select new AssetTaskCountRow
         {
@@ -23,6 +23,12 @@ internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog ro
             Linked = g.Count(),
             Open = g.Count(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold),
         };
+
+    public IQueryable<int> AssetIdsOfTasksAssignedTo(int userId) =>
+        from l in db.Set<TaskAsset>().AsNoTracking()
+        join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+        where t.AssignedUserId == userId
+        select l.AssetId;
 
     public async Task<IReadOnlyDictionary<int, AssetTaskCounts>> CountForAssetsAsync(IReadOnlyCollection<int> assetIds, CancellationToken cancellationToken = default)
     {
@@ -39,7 +45,7 @@ internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog ro
     {
         var rows = await (
             from l in db.Set<TaskAsset>().AsNoTracking()
-            join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+            join t in access.Visible() on l.TaskId equals t.Id
             where l.AssetId == assetId
             orderby l.CreatedAtUtc descending, t.Id descending
             select new { l.TaskId, t.Number, t.Title, t.Status, l.AssetLinkRoleId, l.CreatedAtUtc })

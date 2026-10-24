@@ -77,7 +77,7 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
 /// <summary>Assets: Matter-owned records Tasks work on. Never deleted; deactivate instead.</summary>
 [ApiController]
 [Route("api/v1/assets")]
-public class AssetsController(AssetService assets, IAssetDirectory directory, IEnumerable<IAssetTaskLinkReader> taskLinks) : ControllerBase
+public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkReader> taskLinks) : ControllerBase
 {
     /// <summary>The Tasks this Asset is linked to ("Linked Tasks" on the Asset detail), with the relationship of the link.</summary>
     [HttpGet("{assetId:int}/linked-tasks", Name = "ListAssetLinkedTasks")]
@@ -85,7 +85,7 @@ public class AssetsController(AssetService assets, IAssetDirectory directory, IE
     [ProducesResponseType<AssetLinkedTasksResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> LinkedTasks(int assetId, CancellationToken cancellationToken)
     {
-        if (await directory.FindAsync(assetId, cancellationToken) is null)
+        if (!await assets.CanSeeAsync(assetId, cancellationToken))
             return this.Problem(AssetSupport.NotFound("Asset"));
 
         var reader = taskLinks.FirstOrDefault();

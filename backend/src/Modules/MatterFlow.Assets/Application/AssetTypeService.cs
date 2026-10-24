@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Assets.Application;
 
 /// <summary>Asset Type administration. Creating a type also creates its (empty, unpublished) field form definition.</summary>
-public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms, IPermissionChecker permissions)
+public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms, IPermissionChecker permissions, AssetAccess access)
 {
     public static readonly string[] SortFields = ["sortOrder", "name", "createdAt"];
 
@@ -148,7 +148,7 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         if (!permissions.Has(Permissions.Asset.View))
             return null;
 
-        return await db.Set<Asset>().AsNoTracking()
+        return await access.Visible(db.Set<Asset>().AsNoTracking())
             .Where(a => typeIds.Contains(a.AssetTypeId))
             .GroupBy(a => a.AssetTypeId)
             .Select(g => new { g.Key, Count = g.Count() })
