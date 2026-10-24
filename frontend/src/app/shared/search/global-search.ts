@@ -157,7 +157,11 @@ interface DisplayGroup {
                               <mf-badge>Inactive</mf-badge>
                             }
                           </span>
-                          @if (lines.lock || lines.context.length > 0) {
+                          @if (
+                            lines.lock ||
+                            lines.context.length > 0 ||
+                            option.hit!.inMyMatters === false
+                          ) {
                             <span class="mf-gs__sub">
                               @if (lines.lock) {
                                 <i
@@ -168,6 +172,12 @@ interface DisplayGroup {
                                 ></i>
                               }
                               <span class="mf-gs__sub-text">{{ lines.context.join(' · ') }}</span>
+                              @if (option.hit!.inMyMatters === false) {
+                                <!-- Search stays global; a result outside the project manager's matters says so in words (epic #758, PX-16). -->
+                                <span class="mf-gs__other" data-other-matter
+                                  ><span class="mf-sr-only">, </span>Other matter</span
+                                >
+                              }
                             </span>
                           }
                         </li>
@@ -314,6 +324,13 @@ interface DisplayGroup {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    /* "Other matter": small, muted, text first; it keeps its place at the end of the second line when the context is cut. */
+    .mf-gs__other {
+      flex: none;
+      margin-left: auto;
+      padding-left: var(--mf-s2);
+      font-size: var(--mf-fs-xs);
     }
     .mf-gs__lock {
       flex: none;

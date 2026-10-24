@@ -492,4 +492,27 @@ describe('mf-global-search (header typeahead)', () => {
     fixture.componentInstance.focus();
     expect(document.activeElement).toBe(box());
   });
+
+  describe("results outside the project manager's matters (epic #758, PX-16)", () => {
+    const response = () =>
+      aResponse([
+        aGroup('matter', [
+          aHit({ id: 1, label: 'Mine Matter', inMyMatters: true }),
+          aHit({ id: 2, label: 'Other Matter One', inMyMatters: false }),
+          aHit({ id: 3, label: 'Plain Matter' }),
+        ]),
+      ]);
+
+    it('labels only the hits with inMyMatters=false, in words, inside the option itself', async () => {
+      await create(ALL, response());
+      await type('acme');
+      const labels = options().map((o) => o.querySelector('[data-other-matter]')?.textContent);
+      expect(labels).toEqual([undefined, ', Other matter', undefined, undefined]);
+      const other = options()[1];
+      expect(other.textContent).toContain('Other Matter One');
+      expect(other.textContent).toContain('Other matter');
+      // Search stays global: the order of the hits is the server's.
+      expect(options().map((o) => o.textContent?.includes('Mine Matter'))[0]).toBe(true);
+    });
+  });
 });

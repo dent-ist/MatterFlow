@@ -216,4 +216,16 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
     expect(result.passes.length).toBeGreaterThan(0); // axe really ran
     expect(result.violations.map((v) => v.id)).toEqual([]);
   });
+
+  it('says "Other matter" in words on a hit outside the project manager\'s matters, and only then', () => {
+    const f = create([
+      aHit({ id: 1, label: 'Inside', inMyMatters: true }),
+      aHit({ id: 2, label: 'Outside', inMyMatters: false }),
+      aHit({ id: 3, label: 'Unknown' }),
+    ]);
+    const labels = cards(f).map(
+      (c) => c.querySelector('[data-other-matter]')?.textContent?.trim() ?? null,
+    );
+    expect(labels).toEqual([null, ', Other matter', null]);
+  });
 });

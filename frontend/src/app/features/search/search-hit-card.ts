@@ -40,6 +40,13 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
       align-self: center;
       font-size: var(--mf-fs-xs);
     }
+    .hc-other {
+      flex: none;
+      margin-left: auto;
+      padding-left: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
     .hc-context {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -63,7 +70,12 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
       @if (!hit().status) {
         <mf-active-badge mfCardBadges [active]="hit().isActive" />
       }
-      @if (lines().reference || lines().context.length > 0 || lines().lock) {
+      @if (
+        lines().reference ||
+        lines().context.length > 0 ||
+        lines().lock ||
+        hit().inMyMatters === false
+      ) {
         <p mfCardMeta class="rc-line" data-card-meta [attr.title]="lines().tooltip">
           @if (lines().lock) {
             <i
@@ -83,6 +95,11 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
             <span class="rc-text hc-context" data-card-context>{{
               lines().context.join(' · ')
             }}</span>
+          }
+          @if (hit().inMyMatters === false) {
+            <span class="hc-other" data-other-matter
+              ><span class="mf-sr-only">, </span>Other matter</span
+            >
           }
         </p>
       }

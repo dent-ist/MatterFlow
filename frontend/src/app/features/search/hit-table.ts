@@ -27,6 +27,12 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
       font-weight: 700;
       text-decoration: underline;
     }
+    .hit-other {
+      margin-left: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      white-space: nowrap;
+    }
     .hit-matter mf-sensitive-badge {
       margin-left: 0;
     }
@@ -102,6 +108,11 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
                 </a>
                 @if (hit.type === 'matter' && hit.isSensitive) {
                   <mf-sensitive-badge />
+                }
+                @if (hit.inMyMatters === false) {
+                  <span class="hit-other" data-other-matter
+                    ><span class="mf-sr-only">, </span>Other matter</span
+                  >
                 }
               </td>
               @if (has('details')) {
