@@ -145,6 +145,7 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
                 ("assets matterManagedByMe", pm, "/api/v1/assets?matterManagedByMe=true"),
                 ("clients matterManagedByMe", pm, "/api/v1/clients?matterManagedByMe=true"),
                 ("projects matterManagedByMe", pm, "/api/v1/projects?matterManagedByMe=true"),
+                ("search inMyMatters", pm, "/api/v1/search?q=PX"),
             };
 
             foreach (var (name, client, url) in calls)

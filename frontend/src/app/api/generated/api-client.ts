@@ -17260,6 +17260,7 @@ export interface SearchHit {
     matterName: string | undefined;
     isActive: boolean;
     status: string | undefined;
+    inMyMatters?: boolean | undefined;
 
     [key: string]: any;
 }

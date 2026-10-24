@@ -18509,6 +18509,12 @@
               "null",
               "string"
             ]
+          },
+          "inMyMatters": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

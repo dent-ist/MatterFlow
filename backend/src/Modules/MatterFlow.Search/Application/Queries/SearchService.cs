@@ -21,7 +21,7 @@ namespace MatterFlow.Search.Application.Queries;
 /// searched only when the caller holds its View permission. Matching is number-aware (padded or unpadded) and every row carries the relevance tier it
 /// matched at (<see cref="SearchRanking"/>); hits sort by tier, then a stable per-type key. User text only ever reaches SQL as an escaped LIKE parameter.
 /// </summary>
-public sealed class SearchService(DbContext db, IPermissionChecker permissions, IMatterVisibility visibility, IEnumerable<IAssetTaskLinkReader> assetLinks)
+public sealed class SearchService(DbContext db, IPermissionChecker permissions, IMatterVisibility visibility, IEnumerable<IAssetTaskLinkReader> assetLinks, IManagedMatterScope managed)
 {
     private static readonly IReadOnlyDictionary<string, string> ViewPermission = new Dictionary<string, string>
     {
@@ -214,9 +214,14 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private async Task<List<SearchHit>> ClientHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
-        var rows = await ClientRows(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Name).ThenBy(r => r.Id).Skip(skip).Take(take).ToListAsync(ct);
-        return [.. rows.Select(r => new SearchHit(SearchTypes.Client, r.Id, r.Number, r.Name, null, $"/clients/{r.Id}", false, null, null, r.IsActive, null))];
+        var page = ClientRows(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Name).ThenBy(r => r.Id).Skip(skip).Take(take);
+        // A client is "mine" when one of its matters is.
+        var rows = await PageWithLabelAsync(page, _ => r => ManagedClientMatters().Any(m => m.ClientId == r.Id), ct);
+        return [.. rows.Select(x => new SearchHit(SearchTypes.Client, x.Item.Id, x.Item.Number, x.Item.Name, null, $"/clients/{x.Item.Id}", false, null, null, x.Item.IsActive, null, x.Mine))];
     }
+
+    private IQueryable<Matter> ManagedClientMatters() =>
+        managed.WhereManagedBy(db.Set<Matter>().AsNoTracking(), m => m.PrimaryManagerId, m => m.SecondaryManagerId, m => m.Id, managed.CurrentUserId ?? 0, ManagerPlace.Either);
 
     // Matters
 
@@ -264,12 +269,13 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private async Task<List<SearchHit>> MatterHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
-        var rows = await MatterRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Ref).ThenBy(r => r.Item.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = MatterRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Ref).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
+        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<MatterRow>, int>(r => r.Item.Id, mine), ct);
         return
         [
-            .. rows.Select(r => new SearchHit(
-                SearchTypes.Matter, r.Item.Id, r.Item.Ref, r.Item.Name, r.Item.ClientName, $"/matters/{r.Item.Id}",
-                r.Item.IsSensitive, r.Item.Ref, r.Item.Name, r.Item.IsActive, null)),
+            .. rows.Select(x => new SearchHit(
+                SearchTypes.Matter, x.Item.Item.Id, x.Item.Item.Ref, x.Item.Item.Name, x.Item.Item.ClientName, $"/matters/{x.Item.Item.Id}",
+                x.Item.Item.IsSensitive, x.Item.Item.Ref, x.Item.Item.Name, x.Item.Item.IsActive, null, x.Mine)),
         ];
     }
 
@@ -307,12 +313,13 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private async Task<List<SearchHit>> ProjectHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
-        var rows = await ProjectRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = ProjectRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
+        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<ProjectRow>, int>(r => r.Item.MatterId, mine), ct);
         return
         [
-            .. rows.Select(r => new SearchHit(
-                SearchTypes.Project, r.Item.Id, null, r.Item.Name, ShowMatter ? $"{r.Item.MatterRef} {r.Item.MatterName}" : null, $"/projects/{r.Item.Id}",
-                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, r.Item.IsActive, null)),
+            .. rows.Select(x => new SearchHit(
+                SearchTypes.Project, x.Item.Item.Id, null, x.Item.Item.Name, ShowMatter ? $"{x.Item.Item.MatterRef} {x.Item.Item.MatterName}" : null, $"/projects/{x.Item.Item.Id}",
+                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, x.Item.Item.IsActive, null, x.Mine)),
         ];
     }
 
@@ -382,12 +389,13 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     private async Task<List<SearchHit>> TaskHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
-        var rows = await TaskRanked(term, filter).OrderBy(r => r.Rank).ThenByDescending(r => r.Item.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = TaskRanked(term, filter).OrderBy(r => r.Rank).ThenByDescending(r => r.Item.Id).Skip(skip).Take(take);
+        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<TaskRow>, int>(r => r.Item.MatterId, mine), ct);
         return
         [
-            .. rows.Select(r => new SearchHit(
-                SearchTypes.Task, r.Item.Id, r.Item.Number, r.Item.Title, r.Item.Requestor, $"/tasks/{r.Item.Id}",
-                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, true, r.Item.Status.ToCode())),
+            .. rows.Select(x => new SearchHit(
+                SearchTypes.Task, x.Item.Item.Id, x.Item.Item.Number, x.Item.Item.Title, x.Item.Item.Requestor, $"/tasks/{x.Item.Item.Id}",
+                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, true, x.Item.Item.Status.ToCode(), x.Mine)),
         ];
     }
 
@@ -445,12 +453,13 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     private async Task<List<SearchHit>> AssetHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
         await PrepareAssetsAsync(ct);
-        var rows = await AssetRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take).ToListAsync(ct);
+        var page = AssetRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
+        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<AssetRow>, int>(r => r.Item.MatterId, mine), ct);
         return
         [
-            .. rows.Select(r => new SearchHit(
-                SearchTypes.Asset, r.Item.Id, r.Item.ExternalReference, r.Item.Name, r.Item.TypeName, $"/assets/{r.Item.Id}",
-                r.Item.IsSensitive, ShowMatter ? r.Item.MatterRef : null, ShowMatter ? r.Item.MatterName : null, r.Item.IsActive, null)),
+            .. rows.Select(x => new SearchHit(
+                SearchTypes.Asset, x.Item.Item.Id, x.Item.Item.ExternalReference, x.Item.Item.Name, x.Item.Item.TypeName, $"/assets/{x.Item.Item.Id}",
+                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, x.Item.Item.IsActive, null, x.Mine)),
         ];
     }
 
@@ -468,6 +477,44 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
             yield return tier;
         foreach (var tier in RankedQuery.AnyLike(SearchRanking.StartsWith, matterRef, term.PairPrefixes))
             yield return tier;
+    }
+
+    // ---- "in my matters" label (epic #758, PX-05)
+
+    /// <summary>A hit row with the "matter is managed by the caller" test the same statement computed for it.</summary>
+    private sealed class Flagged<T>
+    {
+        public T Item { get; init; } = default!;
+
+        public bool Mine { get; init; }
+    }
+
+    /// <summary>The matters the caller manages (Primary or Secondary), as a subquery; null for a caller who holds no <c>Matter.BeManager</c> (no label then).</summary>
+    private IQueryable<int>? MyMatterIds() =>
+        permissions.Has(Permissions.Matter.BeManager) && managed.CurrentUserId is { } me ? managed.ManagedMatterIds(me) : null;
+
+    private static Expression<Func<T, Flagged<T>>> Flag<T>(Expression<Func<T, bool>> test)
+    {
+        var parameter = test.Parameters[0];
+        var init = Expression.MemberInit(
+            Expression.New(typeof(Flagged<T>)),
+            Expression.Bind(typeof(Flagged<T>).GetProperty(nameof(Flagged<T>.Item))!, parameter),
+            Expression.Bind(typeof(Flagged<T>).GetProperty(nameof(Flagged<T>.Mine))!, test.Body));
+        return Expression.Lambda<Func<T, Flagged<T>>>(init, parameter);
+    }
+
+    /// <summary>
+    /// The page of hits with the label computed in the same statement: the test is part of the projection over the paged rows (an <c>IN</c> on the managed matter ids), so
+    /// it costs a probe per returned row and no extra round trip. <c>InMine</c> is null for a caller without <c>Matter.BeManager</c>.
+    /// </summary>
+    private async Task<List<(T Item, bool? Mine)>> PageWithLabelAsync<T>(IQueryable<T> page, Func<IQueryable<int>, Expression<Func<T, bool>>> mineTest, CancellationToken ct)
+    {
+        var mine = MyMatterIds();
+        if (mine is null)
+            return [.. (await page.ToListAsync(ct)).Select(i => (i, (bool?)null))];
+
+        var rows = await page.Select(Flag(mineTest(mine))).ToListAsync(ct);
+        return [.. rows.Select(r => (r.Item, (bool?)r.Mine))];
     }
 
     // ---- rows

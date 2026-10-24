@@ -18,7 +18,9 @@ public static class SearchTypes
 /// <summary>
 /// One search result. <c>Reference</c> is the business number (Client <c>00343</c>, Matter <c>00343-00012</c>, Task <c>TSK-1042</c>, Asset external
 /// reference), <c>Label</c> the name or title, <c>Secondary</c> a short context line. <c>Path</c> is the app route to open it. Projects, Tasks and
-/// Assets carry their Matter's reference, name and sensitivity (addendum O: sensitive Matters are badged, never hidden).
+/// Assets carry their Matter's reference, name and sensitivity (addendum O: sensitive Matters are badged, never hidden). <c>InMyMatters</c> (epic #758): true when the
+/// Matter (for a Client: one of its Matters) is managed by the caller as Primary or Secondary, false when not, null for a caller who holds no <c>Matter.BeManager</c>. It
+/// only labels a result: search stays global and no result is left out or moved because of it.
 /// </summary>
 public sealed record SearchHit(
     [property: Required] string Type,
@@ -31,7 +33,8 @@ public sealed record SearchHit(
     string? MatterRef,
     string? MatterName,
     [property: Required] bool IsActive,
-    string? Status);
+    string? Status,
+    bool? InMyMatters = null);
 
 /// <summary>
 /// The hits of one type, best first and capped; <c>HasMore</c> says the cap cut off further matches. <c>Total</c> is how many records of the type match

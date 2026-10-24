@@ -469,7 +469,7 @@ Owner decisions of 2026-10-23, recorded as given. Extends section AG (epic #667)
 
 **Proposed by the review (answer in `docs/ux/pm-experience/README.md` section 12):** Q1 AG-14 gave the starter PM role `Matter.AssignManagers`, so the All switch shows for every starter PM; Q2 trends derived from existing columns with the limitation stated; Q3 "More" group; Q4 "Add a comment" posts to a task of the matter, no matter-level notes; Q5 Since-your-last-visit moves only on Mark as read.
 
-**Status (2026-10-24): in build.** 29 issues #759 to #787, about 117 agent-hours (`docs/ux/pm-experience/delivery-plan.md`). Built: #759 fixtures, #760 scope seam, #764 starter-role change (script 38, item 7 above; the starter Project Manager role no longer holds the Dashboard permissions, a customised role is left alone).
+**Status (2026-10-24): in build.** 29 issues #759 to #787, about 117 agent-hours (`docs/ux/pm-experience/delivery-plan.md`). Built: #759 fixtures, #760 scope seam, #761 to #763 list filters and the search label (`docs/ux/pm-experience/README.md` section 10c), #764 starter-role change (script 38, item 7 above; the starter Project Manager role no longer holds the Dashboard permissions, a customised role is left alone).
 
 ## AJ. Sensitive matter access control (decided 2026-10-23, epic #788, phase-20; design `docs/ux/sensitive-matters/README.md`, plan `docs/ux/sensitive-matters/delivery-plan.md`)
 
