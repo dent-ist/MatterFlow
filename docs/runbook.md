@@ -45,6 +45,8 @@ password in any setting.
 | `Dashboard:CacheSeconds` | Default `15`. The dashboard answer is kept this long per user, period, time zone, date and Dashboard tab rights (Summary, Breakdowns, Trends), so repeated refreshes and a morning rush cost one computation per user per 15 s. `0` switches the cache off. Per process: each node of a farm keeps its own. |
 | `Dashboard:Workload:LightMax`, `Dashboard:Workload:NormalMax` | Defaults `3` and `8`. Load levels of the Dashboard Users tab by number of open Tasks per person: `IDLE` (0), `LIGHT` (up to LightMax), `NORMAL` (up to NormalMax), `HEAVY` above. A capacity hint for leads, not a performance rating; no restart-free change (per process configuration). |
 | `Queries:ReadCommandTimeoutSeconds` | Default `15`. SQL command timeout of the Task queue, My Work, Pod Work, search, audit browser and dashboard reads (all other calls keep 30 s). A query over the limit is cancelled and answered with 503 `QUERY_TIMEOUT` ("narrow the filters"), so one pathological filter cannot hold a connection. `0` keeps the 30 s default. |
+| `Features:SensitiveMatterAccess` | Default `false`. The go-live switch of the sensitive-matter access rule (epic #788, section 12): off, a matter flagged Sensitive is visible to everybody who may view matters, exactly as before; on, only its project managers, holders of `Matter.ViewSensitive` and people assigned a task on it see it. Read once at start: change it, then recycle the app pool. Read the report of section 12.2 first. |
+| `Authorization:CacheSeconds` | Default `60`. How long a person's effective permissions are kept per process. A change made on this node is effective at once; on another node of a farm it can take up to this long (section 12.5). `0` closes that gap at the price of one permission read per request. |
 | `Hosting:ServeSpa` | Unset (default): the Angular build in `wwwroot` is served when `wwwroot/index.html` exists and the environment is not Development. `true` forces it on, `false` runs the API alone. |
 | `Notifications:Scheduler:Enabled` | Default `true`. The background timer that makes the scheduled notifications and removes old ones (section 6.1). Further keys `IntervalMinutes`, `InitialDelaySeconds`, `DegradedAfterMinutes`, `RetentionBatchPauseMilliseconds`. |
 | `ASPNETCORE_ENVIRONMENT` | `Production` (set in `web.config`). |
@@ -334,3 +336,49 @@ Every run, preview and refused run is a row in `dbo.ReportRun` (who, which versi
 
 `npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.**
 
+## 12. Sensitive matters: switching on the access rule (epic #788)
+
+Design and decisions: `docs/ux/sensitive-matters/README.md`, `docs/requirements/decisions-addendum.md` section AJ. This section is what an operator does at go-live.
+
+### 12.1 What changes for people
+
+Until the switch is on, the Sensitive flag of a matter is a warning only. Once it is on, a matter flagged Sensitive is visible only to
+
+- its **Primary and Secondary project manager** (the whole matter),
+- the holders of the permission **`Matter.ViewSensitive`** (all sensitive matters; by default the roles **Director** and **System Administrator**, assignable to any role on the Roles screen, which carries a warning for it),
+- the people to whom a **task of the matter is currently assigned** (only those tasks, and the matter header needed to open them; no link to the matter page).
+
+Everyone else sees nothing: not in lists, counts, search and suggestions, the Dashboard, My Matters, notifications, Activity, the Audit browser, pickers or exports; a direct address answers "not found", identical to an id that does not exist. A sensitive matter without a manager is visible to the second and third group only. Access ends on the person's next request when a manager is removed, a task is reassigned or the permission is taken away. Marking and un-marking a matter is audited (`MATTER_SENSITIVITY_CHANGED`); someone who would lose sight of a matter by marking it is asked first. **Reports are not covered** (decision open, issue #808): until the owner decides, reports behave as before and a report can show sensitive matters to anyone who may run it (addendum AI item 6, option A).
+
+### 12.2 Before go-live: the report
+
+The rule hides every matter that is **already** flagged Sensitive the moment the switch is on, and a sensitive matter with no manager is then visible to the `Matter.ViewSensitive` holders and its assignees only. Run the read-only report first and give it to the owner:
+
+```powershell
+sqlcmd -S SQLHOST -d MatterFlow -E -C -W -w 300 -s "|" -i tools\db\sensitive-matters-report.sql
+```
+
+`tools/db/sensitive-matters-report.sql` only reads (no write, no object created). Its five result sets: (1) one row per sensitive matter with its managers, open and all tasks, how many people are assigned a task, and an **Attention** column (`NO MANAGER`, `MANAGER INACTIVE`); (2) the totals; (3) who sees all sensitive matters; (4) who will see only their own assigned tasks; (5) how many active people with `Matter.View` will no longer see any sensitive matter. Run it as the DBA or the application login: the report login is denied on these tables by design.
+
+The owner decides, matter by matter, who becomes the project manager of the ones flagged `NO MANAGER` (Matters list, matter page, Managers), who besides the Director and System Administrator roles gets `Matter.ViewSensitive` (Roles screen), and which matters should not be flagged at all. Open tasks assigned to people stay reachable through My Work after the switch.
+
+### 12.3 Switching on
+
+1. Take the backup of section 7.2 step 1 (the switch changes no data; the backup is the usual rollback point of the upgrade that delivers it).
+2. In `appsettings.Production.json` add `"Features": { "SensitiveMatterAccess": true }` (or set `Features__SensitiveMatterAccess=true` for the app pool) and recycle the app pool (`Restart-WebAppPool MatterFlow`). The switch is read once at start.
+3. Verify with three accounts (an account of the owner's choice for each): a **project manager** of a sensitive matter sees it in Matters, My Matters and search; an **unrelated person** sees neither the matter, nor its tasks in the Task Queue, nor a notification about it, and `https://<host>/matters/<its id>` shows "We couldn't find that matter."; a person **assigned a task** on it sees that task (header only, the matter reference is not a link). The System Administrator and Director see everything. `GET /health/ready` stays `ready`.
+4. Send the release note below.
+
+Release note (for the users): "Matters flagged **Sensitive** are now restricted. Only the project managers of such a matter, people assigned one of its tasks (for that task only) and people who may see all sensitive matters can see it, its tasks, assets and history. If a matter you worked on disappears from your lists, ask its project manager or your Director. Reports are not affected yet."
+
+### 12.4 Rollback
+
+Set the switch to `false` (or remove it) and recycle the app pool. No data was changed by the switch, so the behaviour is exactly the one before; audit events written under the rule keep their sensitivity stamp (`AuditEvent.IsSensitiveScope`, script 36), which only matters when the switch is on again. The permission `Matter.ViewSensitive` and any managers set in the meantime stay.
+
+### 12.5 The role cache: up to `Authorization:CacheSeconds` across nodes
+
+Whether a person holds `Matter.ViewSensitive` comes from their roles, which the application keeps per process for `Authorization:CacheSeconds` (default 60 s). On **one** node a change of roles, grants or user status empties that person's entry at once, so access ends and starts on the next request. With **more than one node** behind a load balancer, a change made on node A reaches node B after at most the cache time. Manager and assignment changes are never cached and take effect at once everywhere, and so do the Dashboard and My Matters caches (their keys include what a person may see). If the deployment ever has more than one node and a minute is too long, set `Authorization:CacheSeconds` to `0`.
+
+### 12.6 Performance
+
+Measured at 20,000 tasks (`docs/qa/sensitive-matters-performance.md`, `tools/perf`, 90 sensitive matters carrying 3,368 tasks): task detail, the task page, step work and task create stay within about 15 percent, but the heaviest reads (Task Queue +60 to +70 percent at p50, Pod Work +53, audit search +84, text search +47, Dashboard summary from about 10 to about 70 ms) cost tens of milliseconds more per request with the rule on, so the epic's budget of +15 percent is **not met yet**; a follow-up issue tracks the tuning. The switch is off by default and rolls back at once (12.4). To repeat the measurement on the same machine: `PERF_SCALE=0.8 PERF_VUS=30 PERF_DURATION=90 tools/perf/reproduce.sh`, then the same with `PERF_SENSITIVE=1` (`tools/perf/README.md`).
