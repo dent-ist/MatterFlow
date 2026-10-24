@@ -300,6 +300,7 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
     );
     expect(api['getMyMattersHealth']).toHaveBeenCalledWith(
       undefined,
@@ -382,6 +383,7 @@ describe('MyMattersPage', () => {
     expect(TestBed.inject(Router).url).toBe('/my-matters?range=2w');
     expect(api['getMyMattersDeadlines']).toHaveBeenLastCalledWith(
       14,
+      undefined,
       undefined,
       undefined,
       undefined,

@@ -8439,6 +8439,15 @@
             }
           },
           {
+            "name": "groupBy",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -15175,6 +15184,90 @@
           }
         }
       },
+      "MyMattersDeadlineDay": {
+        "required": [
+          "date",
+          "isWeekend",
+          "isToday",
+          "count",
+          "query",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "isWeekend": {
+            "type": "boolean"
+          },
+          "isToday": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersTaskItem"
+            }
+          }
+        }
+      },
+      "MyMattersDeadlineMatter": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "matterName",
+          "clientName",
+          "total",
+          "nextDueDate",
+          "query",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextDueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "query": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersTaskItem"
+            }
+          }
+        }
+      },
       "MyMattersDeadlines": {
         "required": [
           "timeZone",
@@ -15219,6 +15312,37 @@
             "items": {
               "$ref": "#/components/schemas/MyMattersTaskItem"
             }
+          },
+          "groupBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "byDay": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MyMattersDeadlineDay"
+            }
+          },
+          "byMatter": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MyMattersDeadlineMatter"
+            }
+          },
+          "matterTotal": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

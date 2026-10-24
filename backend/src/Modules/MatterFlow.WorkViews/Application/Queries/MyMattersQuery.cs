@@ -72,11 +72,18 @@ public sealed class MyMattersHealthQuery : MyMattersQuery
 /// <summary>Upcoming deadlines: the common parameters plus the window.</summary>
 public sealed class MyMattersDeadlinesQuery : MyMattersQuery
 {
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "days"];
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "days", "groupBy"];
 
     /// <summary><c>14</c> (default) or <c>28</c>: how many days ahead, today included.</summary>
     [FromQuery(Name = "days")]
     public int? Days { get; init; }
+
+    /// <summary>
+    /// Absent: the flat list of today (25 rows). <c>day</c>: every day of the window with its count and first five tasks (the calendar). <c>matter</c>: the matters with deadlines in the window,
+    /// soonest first, each with its total and next five tasks. Counts equal the Task Queue query each bucket carries.
+    /// </summary>
+    [FromQuery(Name = "groupBy"), StringLength(10)]
+    public string? GroupBy { get; init; }
 }
 
 /// <summary>Recent activity: the common parameters plus the size.</summary>

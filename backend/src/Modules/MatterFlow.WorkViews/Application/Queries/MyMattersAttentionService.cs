@@ -16,6 +16,12 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
 {
     public const int GroupSize = 10;
     public const int DeadlineSize = 25;
+
+    /// <summary>Tasks listed per calendar day and per matter in the grouped deadlines.</summary>
+    public const int BucketSize = 5;
+
+    /// <summary>Most matters the matter grouping lists (the rest are counted in <c>MatterTotal</c>).</summary>
+    public const int MatterGroupSize = 50;
     public static readonly IReadOnlyList<int> DeadlineWindows = [14, 28];
 
     public async Task<Result<MyMattersAttention>> GetAsync(MyMattersQuery query, CancellationToken ct)
@@ -97,6 +103,16 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
 
         // Open, an explicit due date today or within the window, not overdue (overdue is in "Needs my attention"). The date range, if any, narrows it further.
         var window = scope.OpenTasks().Where(TaskQueueRules.DueWithin(clock, days));
+        var grouping = query.GroupBy?.Trim().ToLowerInvariant();
+        if (!string.IsNullOrEmpty(grouping) && grouping is not ("day" or "matter"))
+            return Error.Validation("groupBy", "UNKNOWN_GROUP_BY", "groupBy must be day or matter.");
+
+        var windowQuery = scope.QueueOpen("asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(last), "sort=due");
+        if (grouping == "day")
+            return await ByDayAsync(scope, window, days, windowQuery, ct);
+        if (grouping == "matter")
+            return await ByMatterAsync(scope, window, days, windowQuery, ct);
+
         var total = await window.CountAsync(ct);
         var ids = await TopIdsAsync(window, q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id), DeadlineSize, ct);
         var details = await DetailsAsync(ids, ct);
@@ -110,9 +126,120 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             today,
             last,
             total,
-            scope.QueueOpen("asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(last), "sort=due"),
+            windowQuery,
             [.. rows.Select(r => ToItem(r, names, DueFactOf(r, today)))]);
     }
+
+    /// <summary>
+    /// The calendar: every day of the window with its count (one grouped statement) and its first five tasks (one statement, a <c>CROSS APPLY</c> of a <c>TOP 5</c> per distinct due date),
+    /// then the task columns and the names for all of them at once. The statements do not depend on the number of matters. The day is the task's calendar due date (the viewer's day).
+    /// </summary>
+    private async Task<Result<MyMattersDeadlines>> ByDayAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, CancellationToken ct)
+    {
+        var clock = scope.Clock;
+        var today = clock.Today;
+        var last = today.AddDays(days);
+
+        var counts = (await window.GroupBy(t => t.DueDate).Select(g => new { Date = g.Key, Count = g.Count() }).ToListAsync(ct))
+            .Where(c => c.Date != null).ToDictionary(c => c.Date!.Value, c => c.Count);
+        var dates = window.Select(t => t.DueDate).Distinct();
+        var topIds = counts.Count == 0
+            ? []
+            : await (from d in dates
+                     from t in window.Where(x => x.DueDate == d).OrderBy(x => x.DueSortKey).ThenBy(x => x.Id).Take(BucketSize)
+                     select new { Date = d, t.Id }).ToListAsync(ct);
+        var details = await DetailsAsync([.. topIds.Select(t => t.Id)], ct);
+        var names = await NamesAsync(details.Values, ct);
+
+        var byDay = new List<MyMattersDeadlineDay>();
+        for (var date = today; date <= last; date = date.AddDays(1))
+        {
+            var items = topIds.Where(t => t.Date == date).Select(t => details[t.Id]).OrderBy(r => r.DueAtUtc ?? r.DueDate!.Value.ToDateTime(TimeOnly.MaxValue)).ThenBy(r => r.Id).ToList();
+            byDay.Add(new MyMattersDeadlineDay(
+                date,
+                date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday,
+                date == today,
+                counts.GetValueOrDefault(date),
+                scope.QueueOpenInWindow("asap=false", "overdue=false", "dueFrom=" + DashboardRules.Date(date), "dueTo=" + DashboardRules.Date(date), "sort=due"),
+                [.. items.Select(r => ToItem(r, names, DueFactOf(r, today)))]));
+        }
+
+        return new MyMattersDeadlines(
+            clock.ZoneId,
+            DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
+            days,
+            today,
+            last,
+            counts.Values.Sum(),
+            windowQuery,
+            [],
+            "day",
+            byDay);
+    }
+
+    /// <summary>
+    /// The matters with deadlines in the window, soonest first (one grouped statement), and the first five tasks of the first <see cref="MatterGroupSize"/> of them (one statement, a
+    /// <c>CROSS APPLY</c> of a <c>TOP 5</c> per matter that seeks <c>IX_Task_Matter</c>), then task columns and names at once.
+    /// </summary>
+    private async Task<Result<MyMattersDeadlines>> ByMatterAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, CancellationToken ct)
+    {
+        var clock = scope.Clock;
+        var today = clock.Today;
+        var last = today.AddDays(days);
+
+        var groups = await window.GroupBy(t => t.MatterId)
+            .Select(g => new { MatterId = g.Key, Count = g.Count(), Next = g.Min(t => t.DueSortKey), NextDate = g.Min(t => t.DueDate) })
+            .OrderBy(g => g.Next).ThenBy(g => g.MatterId)
+            .Take(MatterGroupSize)
+            .ToListAsync(ct);
+        var matterTotal = await window.Select(t => t.MatterId).Distinct().CountAsync(ct);
+        var total = await window.CountAsync(ct);
+        var shown = groups.Select(g => g.MatterId).ToList();
+        var topIds = shown.Count == 0
+            ? []
+            : await (from m in scope.Matters.Where(m => shown.Contains(m.Id))
+                     from t in window.Where(x => x.MatterId == m.Id).OrderBy(x => x.DueSortKey).ThenBy(x => x.Id).Take(BucketSize)
+                     select new { MatterId = m.Id, t.Id }).ToListAsync(ct);
+        var details = await DetailsAsync([.. topIds.Select(t => t.Id)], ct);
+        var names = await NamesAsync(details.Values, ct);
+        var matterNames = shown.Count == 0 ? new Dictionary<int, MatterNameRow>() : names.Matters.ToDictionary(kv => kv.Key, kv => kv.Value);
+        if (shown.Any(id => !matterNames.ContainsKey(id)))
+            matterNames = await MatterNamesAsync(shown, ct);
+
+        var byMatter = groups.Select(g =>
+        {
+            var name = matterNames[g.MatterId];
+            var items = topIds.Where(t => t.MatterId == g.MatterId).Select(t => details[t.Id]).OrderBy(r => r.DueAtUtc ?? r.DueDate!.Value.ToDateTime(TimeOnly.MaxValue)).ThenBy(r => r.Id).ToList();
+            return new MyMattersDeadlineMatter(
+                g.MatterId,
+                name.MatterRef,
+                name.MatterName,
+                name.ClientName,
+                g.Count,
+                g.NextDate,
+                scope.QueueOpen("asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(last), "matter=" + g.MatterId.ToString(System.Globalization.CultureInfo.InvariantCulture), "sort=due"),
+                [.. items.Select(r => ToItem(r, names, DueFactOf(r, today)))]);
+        }).ToList();
+
+        return new MyMattersDeadlines(
+            clock.ZoneId,
+            DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
+            days,
+            today,
+            last,
+            total,
+            windowQuery,
+            [],
+            "matter",
+            null,
+            byMatter,
+            matterTotal);
+    }
+
+    private async Task<Dictionary<int, MatterNameRow>> MatterNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        await (from m in db.Set<Matter>().AsNoTracking().Where(m => ids.Contains(m.Id))
+               join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
+               select new { m.Id, m.MatterRef, MatterName = m.Name, ClientName = c.Name }).ToDictionaryAsync(m => m.Id, m => new MatterNameRow(m.MatterRef, m.MatterName, m.ClientName), ct);
 
     private static (string, int?) DueFactOf(TaskRow r, DateOnly today)
     {

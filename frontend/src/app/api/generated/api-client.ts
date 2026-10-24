@@ -12271,6 +12271,7 @@ export interface IMyMattersClient {
     getMyMattersAttention(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention>;
     /**
      * @param days (optional) 
+     * @param groupBy (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12280,7 +12281,7 @@ export interface IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
     /**
      * @param sort (optional) 
      * @param dir (optional) 
@@ -12564,6 +12565,7 @@ export class MyMattersClient implements IMyMattersClient {
 
     /**
      * @param days (optional) 
+     * @param groupBy (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12573,12 +12575,16 @@ export class MyMattersClient implements IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
         let url_ = this.baseUrl + "/api/v1/my-matters/deadlines?";
         if (days === null)
             throw new globalThis.Error("The parameter 'days' cannot be null.");
         else if (days !== undefined)
             url_ += "days=" + encodeURIComponent("" + days) + "&";
+        if (groupBy === null)
+            throw new globalThis.Error("The parameter 'groupBy' cannot be null.");
+        else if (groupBy !== undefined)
+            url_ += "groupBy=" + encodeURIComponent("" + groupBy) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -16320,6 +16326,30 @@ export interface MyMattersAttentionGroup {
     [key: string]: any;
 }
 
+export interface MyMattersDeadlineDay {
+    date: string;
+    isWeekend: boolean;
+    isToday: boolean;
+    count: number;
+    query: string;
+    items: MyMattersTaskItem[];
+
+    [key: string]: any;
+}
+
+export interface MyMattersDeadlineMatter {
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    clientName: string;
+    total: number;
+    nextDueDate: string | undefined;
+    query: string;
+    items: MyMattersTaskItem[];
+
+    [key: string]: any;
+}
+
 export interface MyMattersDeadlines {
     timeZone: string;
     asOfUtc: string;
@@ -16329,6 +16359,10 @@ export interface MyMattersDeadlines {
     total: number;
     query: string;
     items: MyMattersTaskItem[];
+    groupBy?: string | undefined;
+    byDay?: MyMattersDeadlineDay[] | undefined;
+    byMatter?: MyMattersDeadlineMatter[] | undefined;
+    matterTotal?: number | undefined;
 
     [key: string]: any;
 }

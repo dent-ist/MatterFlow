@@ -115,7 +115,14 @@ public sealed record MyMattersAttention(
     [property: Required] int StuckOnHoldDays,
     [property: Required] IReadOnlyList<MyMattersAttentionGroup> Groups);
 
-/// <summary>Upcoming deadlines (6.5): open, not overdue, due from today to the last day of the window, soonest first, capped at 25.</summary>
+/// <summary>
+/// Upcoming deadlines (6.5): open, not overdue, due from today to the last day of the window, soonest first, capped at 25. With <c>groupBy=day</c> or <c>groupBy=matter</c>
+/// (epic #758) the flat list is empty and <c>ByDay</c> (every day of the window, for the calendar) or <c>ByMatter</c> (the matters with the soonest deadlines) is filled.
+/// </summary>
+/// <param name="GroupBy">The grouping asked for (<c>day</c>, <c>matter</c>); null for the flat list.</param>
+/// <param name="ByDay">One entry per calendar day from today to the last day (days without a deadline have a count of 0), only with <c>groupBy=day</c>.</param>
+/// <param name="ByMatter">The matters that have a deadline in the window, soonest first, at most <see cref="MyMattersAttentionService.MatterGroupSize"/>, only with <c>groupBy=matter</c>.</param>
+/// <param name="MatterTotal">How many matters have a deadline in the window (more than <c>ByMatter</c> holds when it was cut), only with <c>groupBy=matter</c>.</param>
 public sealed record MyMattersDeadlines(
     [property: Required] string TimeZone,
     [property: Required] DateTime AsOfUtc,
@@ -123,6 +130,34 @@ public sealed record MyMattersDeadlines(
     [property: Required] DateOnly FromDate,
     [property: Required] DateOnly ToDate,
     [property: Required] int Total,
+    [property: Required] string Query,
+    [property: Required] IReadOnlyList<MyMattersTaskItem> Items,
+    string? GroupBy = null,
+    IReadOnlyList<MyMattersDeadlineDay>? ByDay = null,
+    IReadOnlyList<MyMattersDeadlineMatter>? ByMatter = null,
+    int? MatterTotal = null);
+
+/// <summary>One calendar day of the deadlines window: its tasks (first five) and the Task Queue query that lists exactly the counted tasks.</summary>
+/// <param name="Count">Open, not overdue tasks due on this day; equals the list the <c>Query</c> opens.</param>
+/// <param name="IsWeekend">Saturday or Sunday (muted in the calendar; weekends are included).</param>
+public sealed record MyMattersDeadlineDay(
+    [property: Required] DateOnly Date,
+    [property: Required] bool IsWeekend,
+    [property: Required] bool IsToday,
+    [property: Required] int Count,
+    [property: Required] string Query,
+    [property: Required] IReadOnlyList<MyMattersTaskItem> Items);
+
+/// <summary>One matter with deadlines in the window: how many, the soonest date and its next five tasks.</summary>
+/// <param name="Total">All open, not overdue tasks of the matter due inside the window (the rows are capped at 5).</param>
+/// <param name="NextDueDate">The soonest due date among them.</param>
+public sealed record MyMattersDeadlineMatter(
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] string ClientName,
+    [property: Required] int Total,
+    DateOnly? NextDueDate,
     [property: Required] string Query,
     [property: Required] IReadOnlyList<MyMattersTaskItem> Items);
 

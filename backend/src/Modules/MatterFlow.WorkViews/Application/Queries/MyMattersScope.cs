@@ -118,7 +118,10 @@ public sealed class MyMattersScope
         return parts;
     }
 
-    private List<string> ScopeParts()
+    /// <summary>The open tasks of the scope without the scope's own date range (a bucket that names its own <c>dueFrom</c> / <c>dueTo</c> must not repeat the key).</summary>
+    public string QueueOpenInWindow(params string[] extra) => DashboardRules.Open([.. ScopeParts(withRange: false), .. extra]);
+
+    private List<string> ScopeParts(bool withRange = true)
     {
         var parts = new List<string>();
         if (!All)
@@ -129,7 +132,8 @@ public sealed class MyMattersScope
             parts.Add("role=" + Role);
         if (ClientId is { } client)
             parts.Add("client=" + client.ToString(CultureInfo.InvariantCulture));
-        parts.AddRange(RangeParts());
+        if (withRange)
+            parts.AddRange(RangeParts());
         return parts;
     }
 }
