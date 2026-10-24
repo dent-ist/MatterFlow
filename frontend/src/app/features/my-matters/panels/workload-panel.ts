@@ -288,6 +288,7 @@ export class WorkloadPanel {
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersWorkload(
+        undefined,
         a.scope,
         a.role,
         a.clientId,

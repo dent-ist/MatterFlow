@@ -49,6 +49,7 @@ public class VisibilitySourceRulesTests
         ["DashboardService.cs"] = "tasks through VisibleTasks; the caller's own tasks are always visible",
         ["MyMattersActivityService.cs"] = "events of the scope's visible matters; stamped history only for managers",
         ["MyMattersAttentionService.cs"] = "rows of the scope's visible matters, loaded by id",
+        ["MyMattersWorkloadService.cs"] = "names of the scope's matters (visible by construction) for the per-person split",
         ["MyMattersScope.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope)",
         ["OrganizationTaskCounts.cs"] = "counts through WhereTaskRowVisible / visible matters",
         ["SwimlaneService.cs"] = "cards are loaded by the ids of the visible set",

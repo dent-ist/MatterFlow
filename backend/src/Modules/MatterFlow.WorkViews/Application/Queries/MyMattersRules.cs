@@ -16,6 +16,9 @@ public static class MyMattersRules
     /// <summary>The Amber window: an open task due within this many days (today included).</summary>
     public const int AmberDueDays = 3;
 
+    /// <summary>The "due this week" window of the workload view: an open, not overdue task due within this many days (the strip's "due in 7 days").</summary>
+    public const int DueWeekDays = 7;
+
     public const string FlagRed = "RED";
     public const string FlagAmber = "AMBER";
     public const string FlagGreen = "GREEN";

@@ -12309,6 +12309,7 @@ export interface IMyMattersClient {
      */
     getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary>;
     /**
+     * @param include (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12318,7 +12319,7 @@ export interface IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersWorkload(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload>;
+    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload>;
 }
 
 @Injectable({
@@ -12849,6 +12850,7 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
+     * @param include (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12858,8 +12860,12 @@ export class MyMattersClient implements IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersWorkload(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload> {
+    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload> {
         let url_ = this.baseUrl + "/api/v1/my-matters/workload?";
+        if (include === null)
+            throw new globalThis.Error("The parameter 'include' cannot be null.");
+        else if (include !== undefined)
+            url_ += "include=" + encodeURIComponent("" + include) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -16326,6 +16332,14 @@ export interface MyMattersAttentionGroup {
     [key: string]: any;
 }
 
+export interface MyMattersAwayWindow {
+    from: string | undefined;
+    to: string | undefined;
+    reasonCode: string;
+
+    [key: string]: any;
+}
+
 export interface MyMattersDeadlineDay {
     date: string;
     isWeekend: boolean;
@@ -16446,6 +16460,25 @@ export interface MyMattersWorkload {
     [key: string]: any;
 }
 
+export interface MyMattersWorkloadMatter {
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    open: number;
+    overdue: number;
+    query: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersWorkloadMatters {
+    top: MyMattersWorkloadMatter[];
+    otherMatters: number;
+    otherOpen: number;
+
+    [key: string]: any;
+}
+
 export interface MyMattersWorkloadPerson {
     userId: number | undefined;
     displayName: string | undefined;
@@ -16455,6 +16488,9 @@ export interface MyMattersWorkloadPerson {
     onHold: number;
     availability: UserAvailabilitySummary | undefined;
     query: string;
+    dueThisWeek: number;
+    away?: MyMattersAwayWindow | undefined;
+    matters?: MyMattersWorkloadMatters | undefined;
 
     [key: string]: any;
 }

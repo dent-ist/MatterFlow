@@ -8723,6 +8723,15 @@
         "operationId": "GetMyMattersWorkload",
         "parameters": [
           {
+            "name": "include",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -15184,6 +15193,33 @@
           }
         }
       },
+      "MyMattersAwayWindow": {
+        "required": [
+          "from",
+          "to",
+          "reasonCode"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reasonCode": {
+            "type": "string"
+          }
+        }
+      },
       "MyMattersDeadlineDay": {
         "required": [
           "date",
@@ -15657,6 +15693,64 @@
           }
         }
       },
+      "MyMattersWorkloadMatter": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "matterName",
+          "open",
+          "overdue",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "MyMattersWorkloadMatters": {
+        "required": [
+          "top",
+          "otherMatters",
+          "otherOpen"
+        ],
+        "type": "object",
+        "properties": {
+          "top": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersWorkloadMatter"
+            }
+          },
+          "otherMatters": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "otherOpen": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "MyMattersWorkloadPerson": {
         "required": [
           "userId",
@@ -15666,7 +15760,8 @@
           "overdue",
           "onHold",
           "availability",
-          "query"
+          "query",
+          "dueThisWeek"
         ],
         "type": "object",
         "properties": {
@@ -15710,6 +15805,30 @@
           },
           "query": {
             "type": "string"
+          },
+          "dueThisWeek": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "away": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersAwayWindow"
+              }
+            ]
+          },
+          "matters": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersWorkloadMatters"
+              }
+            ]
           }
         }
       },

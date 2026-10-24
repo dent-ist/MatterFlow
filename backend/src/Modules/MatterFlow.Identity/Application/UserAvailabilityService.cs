@@ -155,6 +155,22 @@ public sealed class UserAvailabilityService(
         return result;
     }
 
+    public async Task<IReadOnlyDictionary<int, AwayWindow>> AwayWindowsAsync(IReadOnlyCollection<int> userIds, DateOnly from, DateOnly to, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        if (userIds.Count == 0)
+            return new Dictionary<int, AwayWindow>();
+
+        var ids = userIds.Distinct().ToList();
+        var rows = await db.Set<UserAvailability>().AsNoTracking()
+            .Where(a => ids.Contains(a.UserId) && a.Status == AvailabilityStatuses.OutOfOffice
+                && (a.OutOfOfficeFromDate == null || a.OutOfOfficeFromDate <= to)
+                && (a.OutOfOfficeUntilDate == null || a.OutOfOfficeUntilDate >= from))
+            .Select(a => new { a.UserId, a.OutOfOfficeFromDate, a.OutOfOfficeUntilDate })
+            .ToListAsync(ct);
+        return rows.ToDictionary(r => r.UserId, r => new AwayWindow(r.OutOfOfficeFromDate, r.OutOfOfficeUntilDate));
+    }
+
     private Task<List<UserWorkHour>> LoadHoursAsync(int userId, bool tracking, CancellationToken ct)
     {
         var query = db.Set<UserWorkHour>().Where(h => h.UserId == userId);

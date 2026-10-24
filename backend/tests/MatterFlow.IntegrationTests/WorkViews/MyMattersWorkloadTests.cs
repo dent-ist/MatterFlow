@@ -47,7 +47,7 @@ public sealed class MyMattersWorkloadTests(SqlServerFixture sql) : MyMattersTest
         }
 
         podX.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["onHold", "open", "overdue", "people", "podId", "podName", "query"]);
-        tech.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "displayName", "isActive", "onHold", "open", "overdue", "query", "userId"]);
+        tech.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["availability", "away", "displayName", "dueThisWeek", "isActive", "matters", "onHold", "open", "overdue", "query", "userId"]);
     }
 
     [Fact]

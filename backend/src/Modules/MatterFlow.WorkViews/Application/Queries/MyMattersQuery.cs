@@ -69,6 +69,16 @@ public sealed class MyMattersHealthQuery : MyMattersQuery
     public int PageSize { get; init; } = DefaultPageSize;
 }
 
+/// <summary>Workload: the common parameters plus the optional split by matter.</summary>
+public sealed class MyMattersWorkloadQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "include"];
+
+    /// <summary>Absent: people with their counts. <c>matters</c>: each person also carries their five matters with most open tasks and the rest as one count.</summary>
+    [FromQuery(Name = "include"), StringLength(20)]
+    public string? Include { get; init; }
+}
+
 /// <summary>Upcoming deadlines: the common parameters plus the window.</summary>
 public sealed class MyMattersDeadlinesQuery : MyMattersQuery
 {

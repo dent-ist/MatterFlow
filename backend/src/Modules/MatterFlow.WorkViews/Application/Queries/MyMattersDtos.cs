@@ -161,9 +161,37 @@ public sealed record MyMattersDeadlineMatter(
     [property: Required] string Query,
     [property: Required] IReadOnlyList<MyMattersTaskItem> Items);
 
-/// <summary>One person (or the "not assigned to a person" row, <c>UserId</c> null) inside a pod group.</summary>
+/// <summary>An out-of-office period that overlaps the next four weeks (epic #758): whole calendar days, never the free-text note.</summary>
+/// <param name="From">First day away; null when it began before the window started being tracked (open start).</param>
+/// <param name="To">Last day away; null when open-ended.</param>
+/// <param name="ReasonCode">A code, never free text: <c>OUT_OF_OFFICE</c> (the only reason the availability profile records).</param>
+public sealed record MyMattersAwayWindow(DateOnly? From, DateOnly? To, [property: Required] string ReasonCode);
+
+/// <summary>One matter inside a person's row: how many of their open tasks sit on it.</summary>
+public sealed record MyMattersWorkloadMatter(
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] string Query);
+
+/// <summary>A person's open work split by matter (<c>include=matters</c>): the five matters with most open tasks and the rest as one count.</summary>
+/// <param name="OtherMatters">How many more matters the person has open tasks on.</param>
+/// <param name="OtherOpen">Open tasks on those other matters.</param>
+public sealed record MyMattersWorkloadMatters(
+    [property: Required] IReadOnlyList<MyMattersWorkloadMatter> Top,
+    [property: Required] int OtherMatters,
+    [property: Required] int OtherOpen);
+
+/// <summary>
+/// One person (or the "not assigned to a person" row, <c>UserId</c> null) inside a pod group. <c>Overdue</c> and <c>Away</c> are two facts side by side; nothing here judges the combination.
+/// </summary>
 /// <param name="Availability">Only while the person is out of office; null otherwise.</param>
 /// <param name="Query">The Task Queue query for these tasks (open, this person or unassigned, this pod).</param>
+/// <param name="DueThisWeek">Open, not overdue tasks due today or within 7 days (the "due in 7 days" figure of the strip).</param>
+/// <param name="Away">The out-of-office period that overlaps today and the next 28 days; null for a person who is not away in that range.</param>
+/// <param name="Matters">The split by matter; only with <c>include=matters</c>.</param>
 public sealed record MyMattersWorkloadPerson(
     int? UserId,
     string? DisplayName,
@@ -172,7 +200,10 @@ public sealed record MyMattersWorkloadPerson(
     [property: Required] int Overdue,
     [property: Required] int OnHold,
     UserAvailabilitySummary? Availability,
-    [property: Required] string Query);
+    [property: Required] string Query,
+    [property: Required] int DueThisWeek,
+    MyMattersAwayWindow? Away = null,
+    MyMattersWorkloadMatters? Matters = null);
 
 /// <summary>One pod group (<c>PodId</c> null: tasks with no pod). Never ranked, no thresholds: alphabetical.</summary>
 public sealed record MyMattersWorkloadPod(
