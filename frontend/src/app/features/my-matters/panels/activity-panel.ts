@@ -236,6 +236,10 @@ export class ActivityPanel {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersActivity(
         this.take(),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
         a.scope,
         a.role,
         a.clientId,

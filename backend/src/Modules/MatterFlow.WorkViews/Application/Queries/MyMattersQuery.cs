@@ -96,16 +96,41 @@ public sealed class MyMattersDeadlinesQuery : MyMattersQuery
     public string? GroupBy { get; init; }
 }
 
-/// <summary>Recent activity: the common parameters plus the size.</summary>
+/// <summary>Recent activity: the common parameters plus the size, the filters and the cursor.</summary>
 public sealed class MyMattersActivityQuery : MyMattersQuery
 {
     public const int DefaultTake = 30;
 
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take"];
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take", "matterId", "kind", "unread", "cursor"];
 
     /// <summary>How many events (default 30, max 100), newest first.</summary>
     [FromQuery(Name = "take"), Range(1, 100)]
     public int Take { get; init; } = DefaultTake;
+
+    /// <summary>Only the events of this matter (it must be one of the scope's matters; any other id gives an empty list).</summary>
+    [FromQuery(Name = "matterId"), Range(1, int.MaxValue)]
+    public int? MatterId { get; init; }
+
+    /// <summary>
+    /// Only these kinds (repeatable): <c>TASK_CREATED</c>, <c>STATUS_CHANGED</c> (every status change), <c>COMPLETED</c> and <c>ON_HOLD</c> (the status changes to that status), <c>REASSIGNED</c>,
+    /// <c>COMMENTED</c>, <c>MANAGER_CHANGED</c>. Several kinds are an OR.
+    /// </summary>
+    [FromQuery(Name = "kind")]
+    public string[]? Kind { get; init; }
+
+    /// <summary>True: only the events newer than the person's marker that they did not do themselves (what <c>isUnread</c> says).</summary>
+    [FromQuery(Name = "unread")]
+    public bool? Unread { get; init; }
+
+    /// <summary>Paging: the <c>nextCursor</c> of the previous page. Returns the events older than that event id, still newest first.</summary>
+    [FromQuery(Name = "cursor"), Range(1, long.MaxValue)]
+    public long? Cursor { get; init; }
+}
+
+/// <summary>Summary since the person's last visit: the common parameters only.</summary>
+public sealed class MyMattersSinceQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys];
 }
 
 /// <summary>Body of <c>POST /my-matters/activity/seen</c>.</summary>

@@ -8233,6 +8233,43 @@
             }
           },
           {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "maximum": 9223372036854776000,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -8297,6 +8334,85 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyMattersActivity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/my-matters/since-last-visit": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersSinceLastVisit",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersSinceLastVisit"
                 }
               }
             }
@@ -15018,6 +15134,13 @@
             "items": {
               "$ref": "#/components/schemas/MyMattersActivityItem"
             }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -15514,6 +15637,131 @@
           },
           "query": {
             "type": "string"
+          }
+        }
+      },
+      "MyMattersSinceCount": {
+        "required": [
+          "count",
+          "query",
+          "target"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "MyMattersSinceCounts": {
+        "required": [
+          "newTasks",
+          "completed",
+          "becameOverdue",
+          "reassigned",
+          "putOnHold",
+          "comments"
+        ],
+        "type": "object",
+        "properties": {
+          "newTasks": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "completed": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "becameOverdue": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "reassigned": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "putOnHold": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "comments": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          }
+        }
+      },
+      "MyMattersSinceItem": {
+        "required": [
+          "kind",
+          "task",
+          "event"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "task": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersTaskItem"
+              }
+            ]
+          },
+          "event": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersActivityItem"
+              }
+            ]
+          }
+        }
+      },
+      "MyMattersSinceLastVisit": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "sinceUtc",
+          "hasMarker",
+          "seenEventId",
+          "counts",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sinceUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasMarker": {
+            "type": "boolean"
+          },
+          "seenEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MyMattersSinceCounts"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersSinceItem"
+            }
           }
         }
       },

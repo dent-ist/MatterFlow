@@ -287,5 +287,13 @@ public sealed class TaskHarness
             return rows.Single();
         });
 
+    /// <summary>A single bigint (the column must be named <c>Value</c>).</summary>
+    public Task<long> ScalarLongAsync(string sql) =>
+        Factory.WithDbAsync(async db =>
+        {
+            var rows = await db.Database.SqlQueryRaw<long>(sql).ToListAsync();
+            return rows.Single();
+        });
+
     public Task ExecuteAsync(string sql) => Factory.WithDbAsync(db => db.Database.ExecuteSqlRawAsync(sql));
 }

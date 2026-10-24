@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Text.Json;
 using MatterFlow.Identity.Domain;
 using MatterFlow.Organization.Domain;
@@ -19,21 +20,30 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// </summary>
 public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbContext db, IMatterVisibility visibility, IManagedMatterScope managed)
 {
-    public const int WindowDays = 7;
-    private const int MaxLookBackDays = 90;
+    /// <summary>The default window of the activity list (epic #758: 30 days; it was 7 in epic #667). A date range replaces it, at most <see cref="MaxLookBackDays"/> back.</summary>
+    public const int WindowDays = 30;
+    internal const int MaxLookBackDays = 90;
 
-    private const string TaskCreatedEvent = "TASK_CREATED";
-    private const string StatusEvent = "TASK_STATUS_CHANGED";
-    private const string AssignedEvent = "TASK_ASSIGNED";
-    private const string CommentEvent = "COMMENT_ADDED";
-    private const string ManagerEvent = "MATTER_MANAGER_CHANGED";
-    private const string NormalComment = "NORMAL";
+    internal const string TaskCreatedEvent = "TASK_CREATED";
+    internal const string StatusEvent = "TASK_STATUS_CHANGED";
+    internal const string AssignedEvent = "TASK_ASSIGNED";
+    internal const string CommentEvent = "COMMENT_ADDED";
+    internal const string ManagerEvent = "MATTER_MANAGER_CHANGED";
+    internal const string NormalComment = "NORMAL";
+
+    /// <summary>The values of the <c>kind</c> filter: the five kinds of an item, plus <c>COMPLETED</c> and <c>ON_HOLD</c> (the status changes to that status).</summary>
+    public static readonly IReadOnlyList<string> KindFilters = [ActivityKinds.TaskCreated, ActivityKinds.StatusChanged, "COMPLETED", "ON_HOLD", ActivityKinds.Reassigned, ActivityKinds.Commented, ActivityKinds.ManagerChanged];
 
     private static readonly string[] Kinds = [TaskCreatedEvent, StatusEvent, AssignedEvent, CommentEvent, ManagerEvent];
 
     public async Task<Result<MyMattersActivity>> GetAsync(MyMattersActivityQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
+        var kinds = (query.Kind ?? []).SelectMany(k => (k ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).Select(k => k.ToUpperInvariant()).Distinct().ToList();
+        var unknown = kinds.FirstOrDefault(k => !KindFilters.Contains(k));
+        if (unknown is not null)
+            return Error.Validation("kind", "UNKNOWN_KIND", $"Unknown kind '{unknown}'. Allowed: {string.Join(", ", KindFilters)}.");
+
         var resolved = await scopes.ResolveAsync(query, ct);
         if (resolved.IsFailure)
             return resolved.Error!;
@@ -48,34 +58,94 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         DateTime? until = scope.To is { } to ? clock.EndOfDayUtc(to) : null;
 
         var seen = await EnsureSeenAsync(scope.Me, ct);
-        var firstId = await db.Database.SqlQuery<long?>($"SELECT MIN(AuditEventId) AS [Value] FROM dbo.AuditEvent WHERE OccurredAtUtc >= {since}").FirstOrDefaultAsync(ct);
+        var firstId = await FirstIdSinceAsync(since, ct);
         if (firstId is null)
             return new MyMattersActivity(clock.ZoneId, now, since, seen, 0, 0, false, []);
 
-        var ids = scope.Matters.Select(m => m.Id);
         var me = scope.Me;
-        var from0 = firstId.Value;
+        var events = ScopedEvents(scope, firstId.Value, since, until);
+
+        // The unread badge counts the whole window, whatever the matter / kind filter on the list says.
+        var unreadCount = await events.CountAsync(e => e.AuditEventId > seen && e.ActorUserId != me, ct);
+
+        var listed = events;
+        if (query.MatterId is { } onlyMatter)
+            listed = listed.Where(e => e.MatterId == onlyMatter);
+        if (kinds.Count > 0)
+            listed = listed.Where(KindPredicate(kinds));
+        if (query.Unread == true)
+            listed = listed.Where(e => e.AuditEventId > seen && e.ActorUserId != me);
+        if (query.Cursor is { } cursor)
+            listed = listed.Where(e => e.AuditEventId < cursor);
+
+        var page = await listed.OrderByDescending(e => e.AuditEventId).Take(query.Take + 1).ToListAsync(ct);
+        var hasMore = page.Count > query.Take;
+        page = [.. page.Take(query.Take)];
+        var items = await ToItemsAsync(page, seen, me, ct);
+        return new MyMattersActivity(clock.ZoneId, now, since, seen, page.Count == 0 ? 0 : page[0].AuditEventId, unreadCount, hasMore, items, hasMore ? page[^1].AuditEventId : null);
+    }
+
+    /// <summary>The smallest audit event id written at or after <paramref name="since"/> (a seek of the time index), or null when there is none; it bounds every read of the log.</summary>
+    internal Task<long?> FirstIdSinceAsync(DateTime since, CancellationToken ct) =>
+        db.Database.SqlQuery<long?>($"SELECT MIN(AuditEventId) AS [Value] FROM dbo.AuditEvent WHERE OccurredAtUtc >= {since}").FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// The audit events of the scope's matters from event id <paramref name="fromId"/> on, of the five kinds (ordinary comments only), with the sensitive-matter rule applied: history
+    /// written while a matter was sensitive stays restricted after un-marking, only for the matter's managers and see-all viewers.
+    /// </summary>
+    internal IQueryable<AuditRow> ScopedEvents(MyMattersScope scope, long fromId, DateTime since, DateTime? until)
+    {
+        var ids = scope.Matters.Select(m => m.Id);
         var events = db.Database.SqlQuery<AuditRow>($"""
             SELECT AuditEventId, OccurredAtUtc, ActorUserId, EventType, MatterId, TaskId, FieldKey, OldValue, NewValue, IsSensitiveScope
             FROM dbo.AuditEvent
             """)
-            .Where(e => e.AuditEventId >= from0 && e.OccurredAtUtc >= since && e.MatterId != null && ids.Contains(e.MatterId.Value))
+            .Where(e => e.AuditEventId >= fromId && e.OccurredAtUtc >= since && e.MatterId != null && ids.Contains(e.MatterId.Value))
             .Where(e => Kinds.Contains(e.EventType) && (e.EventType != CommentEvent || e.NewValue == NormalComment));
         if (until is { } end)
             events = events.Where(e => e.OccurredAtUtc < end);
 
-        // History written while a matter was sensitive stays restricted after un-marking: only for the matter's managers and see-all viewers (sensitive-matter rule).
         if (visibility.Enabled && !visibility.Current.SeeAll)
         {
-            var managedIds = managed.ManagedMatterIds(me);
+            var managedIds = managed.ManagedMatterIds(scope.Me);
             events = events.Where(e => !e.IsSensitiveScope || managedIds.Contains(e.MatterId!.Value));
         }
 
-        var unreadCount = await events.CountAsync(e => e.AuditEventId > seen && e.ActorUserId != me, ct);
-        var page = await events.OrderByDescending(e => e.AuditEventId).Take(query.Take + 1).ToListAsync(ct);
-        var hasMore = page.Count > query.Take;
-        page = [.. page.Take(query.Take)];
+        return events;
+    }
 
+    /// <summary>The predicate of a list of <c>kind</c> filter values, ORed.</summary>
+    internal static Expression<Func<AuditRow, bool>> KindPredicate(IReadOnlyCollection<string> kinds)
+    {
+        var parameter = Expression.Parameter(typeof(AuditRow), "e");
+        Expression? body = null;
+        foreach (var kind in kinds)
+        {
+            Expression<Func<AuditRow, bool>> test = kind switch
+            {
+                ActivityKinds.TaskCreated => e => e.EventType == TaskCreatedEvent,
+                ActivityKinds.StatusChanged => e => e.EventType == StatusEvent,
+                "COMPLETED" => e => e.EventType == StatusEvent && e.NewValue == "COMPLETED",
+                "ON_HOLD" => e => e.EventType == StatusEvent && e.NewValue == "ON_HOLD",
+                ActivityKinds.Reassigned => e => e.EventType == AssignedEvent,
+                ActivityKinds.Commented => e => e.EventType == CommentEvent && e.NewValue == NormalComment,
+                _ => e => e.EventType == ManagerEvent,
+            };
+            var rewritten = new ReplaceParameter(test.Parameters[0], parameter).Visit(test.Body)!;
+            body = body is null ? rewritten : Expression.OrElse(body, rewritten);
+        }
+
+        return Expression.Lambda<Func<AuditRow, bool>>(body ?? Expression.Constant(true), parameter);
+    }
+
+    private sealed class ReplaceParameter(ParameterExpression from, Expression to) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : base.VisitParameter(node);
+    }
+
+    /// <summary>Names the page: matters and clients, tasks, people and pods, one statement each (none when the page does not need them), and builds the structured items.</summary>
+    internal async Task<List<MyMattersActivityItem>> ToItemsAsync(List<AuditRow> page, long seen, int me, CancellationToken ct)
+    {
         var matterIds = page.Select(e => e.MatterId!.Value).Distinct().ToList();
         var taskIds = page.Where(e => e.TaskId != null).Select(e => e.TaskId!.Value).Distinct().ToList();
         var assigned = page.Where(e => e.EventType == AssignedEvent).Select(e => (Old: ParseAssignment(e.OldValue), New: ParseAssignment(e.NewValue))).ToList();
@@ -97,7 +167,7 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         string? Who((int? PodId, int? UserId) a) =>
             a.UserId is { } u ? users.GetValueOrDefault(u) ?? $"User {u}" : a.PodId is { } p ? pods.GetValueOrDefault(p) ?? $"Pod {p}" : null;
 
-        var items = page.Select(e =>
+        return page.Select(e =>
         {
             var matter = matters[e.MatterId!.Value];
             var task = e.TaskId is { } tid && tasks.TryGetValue(tid, out var t) ? t : null;
@@ -144,8 +214,6 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
                 place,
                 e.AuditEventId > seen && e.ActorUserId != me);
         }).ToList();
-
-        return new MyMattersActivity(clock.ZoneId, now, since, seen, page.Count == 0 ? 0 : page[0].AuditEventId, unreadCount, hasMore, items);
     }
 
     /// <summary>"Mark all as read" (or opening one item): moves the person's marker forward to <paramref name="upToEventId"/>, or to the newest audit event.</summary>
@@ -170,7 +238,7 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
     }
 
     /// <summary>The person's marker; the first call creates it at the newest audit event so nothing is unread on the first visit.</summary>
-    private async Task<long> EnsureSeenAsync(int me, CancellationToken ct)
+    internal async Task<long> EnsureSeenAsync(int me, CancellationToken ct)
     {
         try
         {
@@ -204,7 +272,7 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         }
     }
 
-    private sealed class AuditRow
+    internal sealed class AuditRow
     {
         public long AuditEventId { get; set; }
 

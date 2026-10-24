@@ -12244,6 +12244,10 @@ export class DashboardBoardClient implements IDashboardBoardClient {
 export interface IMyMattersClient {
     /**
      * @param take (optional) 
+     * @param matterId (optional) 
+     * @param kind (optional) 
+     * @param unread (optional) 
+     * @param cursor (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12253,7 +12257,18 @@ export interface IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity>;
+    getMyMattersActivity(take?: number | undefined, matterId?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity>;
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSinceLastVisit>;
     /**
      * @return OK
      */
@@ -12337,6 +12352,10 @@ export class MyMattersClient implements IMyMattersClient {
 
     /**
      * @param take (optional) 
+     * @param matterId (optional) 
+     * @param kind (optional) 
+     * @param unread (optional) 
+     * @param cursor (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12346,12 +12365,28 @@ export class MyMattersClient implements IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity> {
+    getMyMattersActivity(take?: number | undefined, matterId?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity> {
         let url_ = this.baseUrl + "/api/v1/my-matters/activity?";
         if (take === null)
             throw new globalThis.Error("The parameter 'take' cannot be null.");
         else if (take !== undefined)
             url_ += "take=" + encodeURIComponent("" + take) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
+        if (kind === null)
+            throw new globalThis.Error("The parameter 'kind' cannot be null.");
+        else if (kind !== undefined)
+            kind && kind.forEach(item => { url_ += "kind=" + encodeURIComponent("" + item) + "&"; });
+        if (unread === null)
+            throw new globalThis.Error("The parameter 'unread' cannot be null.");
+        else if (unread !== undefined)
+            url_ += "unread=" + encodeURIComponent("" + unread) + "&";
+        if (cursor === null)
+            throw new globalThis.Error("The parameter 'cursor' cannot be null.");
+        else if (cursor !== undefined)
+            url_ += "cursor=" + encodeURIComponent("" + cursor) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -12415,6 +12450,91 @@ export class MyMattersClient implements IMyMattersClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersActivity;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSinceLastVisit> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/since-last-visit?";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersSinceLastVisit(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersSinceLastVisit(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersSinceLastVisit>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersSinceLastVisit>;
+        }));
+    }
+
+    protected processGetMyMattersSinceLastVisit(response: HttpResponseBase): Observable<MyMattersSinceLastVisit> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersSinceLastVisit;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -16282,6 +16402,7 @@ export interface MyMattersActivity {
     unreadCount: number;
     hasMore: boolean;
     items: MyMattersActivityItem[];
+    nextCursor?: number | undefined;
 
     [key: string]: any;
 }
@@ -16411,6 +16532,45 @@ export interface MyMattersHealthRow {
     flag: string;
     flagReasons: string[];
     query: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersSinceCount {
+    count: number;
+    query: string;
+    target: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersSinceCounts {
+    newTasks: MyMattersSinceCount;
+    completed: MyMattersSinceCount;
+    becameOverdue: MyMattersSinceCount;
+    reassigned: MyMattersSinceCount;
+    putOnHold: MyMattersSinceCount;
+    comments: MyMattersSinceCount;
+
+    [key: string]: any;
+}
+
+export interface MyMattersSinceItem {
+    kind: string;
+    task: MyMattersTaskItem | undefined;
+    event: MyMattersActivityItem | undefined;
+
+    [key: string]: any;
+}
+
+export interface MyMattersSinceLastVisit {
+    timeZone: string;
+    asOfUtc: string;
+    sinceUtc: string;
+    hasMarker: boolean;
+    seenEventId: number;
+    counts: MyMattersSinceCounts;
+    items: MyMattersSinceItem[];
 
     [key: string]: any;
 }

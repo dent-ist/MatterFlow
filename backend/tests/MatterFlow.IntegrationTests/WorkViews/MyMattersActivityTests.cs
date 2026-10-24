@@ -7,7 +7,7 @@ using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 
 namespace MatterFlow.IntegrationTests.WorkViews;
 
-/// <summary>GET /my-matters/activity and POST /my-matters/activity/seen (epic #667, issue #683): event kinds, matter scoping, the 7-day cut-off, the unread marker and privilege.</summary>
+/// <summary>GET /my-matters/activity and POST /my-matters/activity/seen (epic #667, issue #683): event kinds, matter scoping, the 30-day window (7 days before epic #758), the unread marker and privilege.</summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class MyMattersActivityTests(SqlServerFixture sql) : MyMattersTestBase(sql)
 {
@@ -98,8 +98,8 @@ public sealed class MyMattersActivityTests(SqlServerFixture sql) : MyMattersTest
         await Mine("activity");
         await H.ExecuteAsync($"""
             INSERT dbo.AuditEvent (OccurredAtUtc, ActorUserId, EventType, ObjectType, ObjectId, MatterId, TaskId, FieldKey, NewValue, CorrelationId)
-            VALUES (DATEADD(day, -8, SYSUTCDATETIME()), NULL, 'TASK_CREATED', 'Task', '{Ids["m1-soon"]}', {M1}, {Ids["m1-soon"]}, NULL, NULL, NEWID()),
-                   (DATEADD(day, -6, SYSUTCDATETIME()), NULL, 'TASK_CREATED', 'Task', '{Ids["m1-soon"]}', {M1}, {Ids["m1-soon"]}, NULL, NULL, NEWID()),
+            VALUES (DATEADD(day, -35, SYSUTCDATETIME()), NULL, 'TASK_CREATED', 'Task', '{Ids["m1-soon"]}', {M1}, {Ids["m1-soon"]}, NULL, NULL, NEWID()),
+                   (DATEADD(day, -26, SYSUTCDATETIME()), NULL, 'TASK_CREATED', 'Task', '{Ids["m1-soon"]}', {M1}, {Ids["m1-soon"]}, NULL, NULL, NEWID()),
                    (SYSUTCDATETIME(), NULL, 'TASK_CREATED', 'Task', '{Ids["m3-overdue"]}', {M3}, {Ids["m3-overdue"]}, NULL, NULL, NEWID()),
                    (SYSUTCDATETIME(), NULL, 'FORM_VALUES_DROPPED', 'Task', '{Ids["m1-soon"]}', {M1}, {Ids["m1-soon"]}, NULL, NULL, NEWID()),
                    (SYSUTCDATETIME(), NULL, 'COMMENT_ADDED', 'TaskComment', '1', {M1}, {Ids["m1-soon"]}, 'purpose', 'ON_HOLD', NEWID());
@@ -108,15 +108,15 @@ public sealed class MyMattersActivityTests(SqlServerFixture sql) : MyMattersTest
         var a = await Mine("activity?take=100");
         var all = Items(a).Select(i => (i.GetProperty("matterId").GetInt32(), i.GetProperty("occurredAtUtc").GetDateTime())).ToList();
         all.ShouldAllBe(x => x.Item1 == M1 || x.Item1 == M2 || x.Item1 == M4 || x.Item1 == M6); // never the unmanaged matter M3, never the inactive M5
-        all.ShouldAllBe(x => x.Item2 > DateTime.UtcNow.AddDays(-7)); // the 8-day-old event is outside the window; the 6-day-old one is inside
-        Items(a).Count(i => i.GetProperty("kind").GetString() == "TASK_CREATED" && i.GetProperty("occurredAtUtc").GetDateTime() < DateTime.UtcNow.AddDays(-5)).ShouldBe(1);
+        all.ShouldAllBe(x => x.Item2 > DateTime.UtcNow.AddDays(-30)); // the 35-day-old event is outside the window; the 26-day-old one is inside
+        Items(a).Count(i => i.GetProperty("kind").GetString() == "TASK_CREATED" && i.GetProperty("occurredAtUtc").GetDateTime() < DateTime.UtcNow.AddDays(-25)).ShouldBe(1);
         Kinds(a).ShouldAllBe(k => k == "TASK_CREATED" || k == "STATUS_CHANGED" || k == "COMMENTED" || k == "REASSIGNED" || k == "MANAGER_CHANGED");
         Kinds(a).ShouldNotContain("COMMENTED"); // only ordinary comments count; the hold / cancel reasons are status changes already
 
-        // The All scope sees the unmanaged matter too; a date range replaces the 7 days.
+        // The All scope sees the unmanaged matter too; a date range replaces the 30 days.
         Items(await Mine("activity?scope=all&take=100", Director)).ShouldContain(i => i.GetProperty("matterId").GetInt32() == M3);
-        var wide = await Mine($"activity?take=100&from={DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-10):yyyy-MM-dd}");
-        Items(wide).Count(i => i.GetProperty("occurredAtUtc").GetDateTime() < DateTime.UtcNow.AddDays(-7)).ShouldBe(1);
+        var wide = await Mine($"activity?take=100&from={DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-40):yyyy-MM-dd}");
+        Items(wide).Count(i => i.GetProperty("occurredAtUtc").GetDateTime() < DateTime.UtcNow.AddDays(-30)).ShouldBe(1);
     }
 
     [Fact]

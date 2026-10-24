@@ -260,11 +260,12 @@ public sealed record MyMattersActivityItem(
     string? ManagerPlace,
     [property: Required] bool IsUnread);
 
-/// <summary>Recent activity of the last 7 days (or the date range), newest first.</summary>
+/// <summary>Recent activity of the last 30 days (or the date range), newest first, filtered by matter and kind, paged by cursor.</summary>
 /// <param name="SeenEventId">The person's marker: events up to this id are read.</param>
 /// <param name="LatestEventId">The newest event of the answer (0 if none).</param>
-/// <param name="UnreadCount">Unread events in the window (not only in the rows returned).</param>
+/// <param name="UnreadCount">Unread events in the window (not only in the rows returned, and whatever the matter / kind filter says: the badge is for all of them).</param>
 /// <param name="HasMore">More events exist than <c>take</c>.</param>
+/// <param name="NextCursor">When <c>HasMore</c>: pass it as <c>cursor</c> to get the next, older page; null otherwise.</param>
 public sealed record MyMattersActivity(
     [property: Required] string TimeZone,
     [property: Required] DateTime AsOfUtc,
@@ -273,7 +274,49 @@ public sealed record MyMattersActivity(
     [property: Required] long LatestEventId,
     [property: Required] int UnreadCount,
     [property: Required] bool HasMore,
-    [property: Required] IReadOnlyList<MyMattersActivityItem> Items);
+    [property: Required] IReadOnlyList<MyMattersActivityItem> Items,
+    long? NextCursor = null);
+
+/// <summary>One figure of "Since your last visit": the number and the query that opens the list behind it.</summary>
+/// <param name="Count">How many.</param>
+/// <param name="Query">Where to look: a Task Queue query string, or (<c>Target</c> = <c>activity</c>) the query string of <c>GET /my-matters/activity</c> (<c>kind=...&amp;unread=true</c>).</param>
+/// <param name="Target"><c>taskQueue</c> or <c>activity</c>.</param>
+public sealed record MyMattersSinceCount(
+    [property: Required] int Count,
+    [property: Required] string Query,
+    [property: Required] string Target);
+
+/// <summary>The six figures of the summary.</summary>
+public sealed record MyMattersSinceCounts(
+    [property: Required] MyMattersSinceCount NewTasks,
+    [property: Required] MyMattersSinceCount Completed,
+    [property: Required] MyMattersSinceCount BecameOverdue,
+    [property: Required] MyMattersSinceCount Reassigned,
+    [property: Required] MyMattersSinceCount PutOnHold,
+    [property: Required] MyMattersSinceCount Comments);
+
+/// <summary>One of the (at most five) most important items: a task that became overdue, then holds and reassignments, newest first. Exactly one of <c>Task</c> and <c>Event</c> is set.</summary>
+/// <param name="Kind"><c>BECAME_OVERDUE</c>, <c>ON_HOLD</c> or <c>REASSIGNED</c>.</param>
+public sealed record MyMattersSinceItem(
+    [property: Required] string Kind,
+    MyMattersTaskItem? Task,
+    MyMattersActivityItem? Event);
+
+/// <summary>
+/// "Since your last visit" (epic #758): what changed on my matters since the person's marker (the last "Mark as read"), or in the last 7 days when they have no marker yet. Opening the page does not
+/// move the marker; only <c>POST /my-matters/activity/seen</c> does. The person's own actions are not counted once they have a marker. Comment text is never returned.
+/// </summary>
+/// <param name="SinceUtc">The start of the period: the time of the last mark as read, or 7 days ago without a marker.</param>
+/// <param name="HasMarker">False when the person never marked anything and the last 7 days are used.</param>
+/// <param name="SeenEventId">The marker (0 without one).</param>
+public sealed record MyMattersSinceLastVisit(
+    [property: Required] string TimeZone,
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] DateTime SinceUtc,
+    [property: Required] bool HasMarker,
+    [property: Required] long SeenEventId,
+    [property: Required] MyMattersSinceCounts Counts,
+    [property: Required] IReadOnlyList<MyMattersSinceItem> Items);
 
 /// <summary>The marker after <c>POST /my-matters/activity/seen</c>.</summary>
 public sealed record MyMattersActivitySeen(

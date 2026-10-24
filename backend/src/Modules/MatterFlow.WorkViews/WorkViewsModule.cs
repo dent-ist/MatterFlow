@@ -23,6 +23,7 @@ public static class WorkViewsModule
         services.AddScoped<WorkloadService>();
         services.AddScoped<CoverageService>();
         services.AddScoped<MyMattersActivityService>();
+        services.AddScoped<MyMattersSinceLastVisitService>();
         services.AddScoped<MyMattersWorkloadService>();
         services.AddScoped<MyMattersAttentionService>();
         services.AddScoped<MyMattersHealthService>();
