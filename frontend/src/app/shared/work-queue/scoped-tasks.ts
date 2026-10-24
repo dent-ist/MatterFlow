@@ -274,6 +274,8 @@ export class ScopedTasks {
   readonly projectCount = input<number | null>(null);
   /** False while the grid is kept mounted but hidden (the Project's Details tab): it then offers no "Skip to task list". */
   readonly skipLink = input(true);
+  /** Counts up each time the page asks for selection mode (the matter's "Bulk re-assign / re-prioritise" while this tab is already open). */
+  readonly startSelecting = input(0);
   /** The record's open-task count, each time the summary strip has it (Open, whatever the grid shows). */
   readonly opened = output<number>();
   /** Each time a load succeeds: how many tasks match, and whether the person (not just the default open-status view) narrowed the list. */
@@ -481,6 +483,13 @@ export class ScopedTasks {
   private requestId = 0;
 
   constructor() {
+    // Selection mode on request: from another page's quick action (router state, never the address) and from the page this tab is on.
+    if (typeof history !== 'undefined' && history.state?.['selectTasks'] === true) {
+      untracked(() => this.selecting.set(this.canBulk()));
+    }
+    effect(() => {
+      if (this.startSelecting() > 0) untracked(() => this.selecting.set(this.canBulk()));
+    });
     // When the bulk dialog closes, focus goes to the grid (the list of tasks), not back to a button that may now be disabled.
     effect(() => {
       const open = this.bulkOpen();

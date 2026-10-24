@@ -8,20 +8,12 @@ import {
 } from '../../../api/generated/api-client';
 import { Clock } from '../../../core/time/clock';
 import { phoneCards } from '../../../shared/ui/record-card-list';
-import { shortDate } from '../facts';
+import { awayText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
+
+export { awayText };
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from '../panels/panel-box';
-
-/** The words of an away window: "Away Oct 26 to Oct 30", "Away until Oct 30", "Away from Oct 26" (whole days, never a reason in free text). */
-export function awayText(away: MyMattersAwayWindow, year: number): string {
-  const from = away.from ? shortDate(away.from, year, '') : '';
-  const to = away.to ? shortDate(away.to, year, '') : '';
-  if (from && to) return from === to ? `Away ${from}` : `Away ${from} to ${to}`;
-  if (to) return `Away until ${to}`;
-  if (from) return `Away from ${from}, no end date`;
-  return 'Away, no end date';
-}
 
 /**
  * Inside a pod: people who are away and hold overdue tasks first, then the order the server gave (a sort, never a verdict: no colour and no

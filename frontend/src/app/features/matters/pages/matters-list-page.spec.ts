@@ -305,6 +305,7 @@ describe('MattersListPage', () => {
         'Open tasks',
         'Overdue',
         'Status',
+        'Actions', // the row's quick actions (epic #758), for people who can see tasks
       ]);
       const row = el.querySelector('tbody tr')!;
       expect(row.querySelector('[data-count=open] a')?.getAttribute('href')).toBe(

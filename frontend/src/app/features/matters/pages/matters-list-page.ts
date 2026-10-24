@@ -43,6 +43,9 @@ import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
+import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
+import { ActionMenu } from '../../../shared/ui/action-menu';
 import { PageScope } from '../../../shared/scope/page-scope';
 import { scopeLine } from '../../../shared/scope/scope-line';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
@@ -77,6 +80,7 @@ const BONES: Record<string, string> = {
   openTasks: '3rem',
   overdue: '3rem',
   status: '5rem',
+  actions: '2rem',
 };
 
 /**
@@ -112,6 +116,8 @@ const BONES: Record<string, string> = {
     RowLink,
     MatterManagersDialog,
     ScopeSwitch,
+    ActionMenu,
+    AddCommentDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -135,6 +141,10 @@ const BONES: Record<string, string> = {
     }
     .ml-pm {
       overflow-wrap: anywhere;
+    }
+    .ml-actions {
+      width: 3.25rem;
+      text-align: right;
     }
   `,
   template: `
@@ -265,6 +275,14 @@ const BONES: Record<string, string> = {
                   label="matter number"
                   [rowStop]="true"
                 />
+                @if (hasActions()) {
+                  <mf-action-menu
+                    mfCardAside
+                    [floating]="true"
+                    [label]="menus().get(m.matterId)!.label"
+                    [items]="menus().get(m.matterId)!.items"
+                  />
+                }
                 <p mfCardMeta class="rc-line" data-card-meta>
                   <span class="rc-ref">{{ m.matterRef }}</span>
                   <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
@@ -400,6 +418,9 @@ const BONES: Record<string, string> = {
                       </th>
                     }
                     <th scope="col">Status</th>
+                    @if (hasActions()) {
+                      <th scope="col" class="ml-actions"><span class="pg-sr">Actions</span></th>
+                    }
                   </tr>
                   @if (filters.rowVisible()) {
                     <tr
@@ -524,6 +545,15 @@ const BONES: Record<string, string> = {
                       <td>
                         <mf-active-badge [active]="m.isActive" />
                       </td>
+                      @if (hasActions()) {
+                        <td class="ml-actions" data-row-actions>
+                          <mf-action-menu
+                            [floating]="true"
+                            [label]="menus().get(m.matterId)!.label"
+                            [items]="menus().get(m.matterId)!.items"
+                          />
+                        </td>
+                      }
                     </tr>
                   }
                 </tbody>
@@ -545,6 +575,13 @@ const BONES: Record<string, string> = {
           />
         }
       </div>
+      @if (commentRow(); as row) {
+        <mf-add-comment-dialog
+          [matterId]="row.matterId"
+          [matterLabel]="row.matterRef + ' ' + row.name"
+          [(visible)]="commentOpen"
+        />
+      }
       @if (canAssign()) {
         <mf-matter-managers-dialog
           [targets]="bulkTargets()"
@@ -618,6 +655,15 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       })),
   );
 
+  /** The quick actions of a row (epic #758, PX-25): the menu exists for people who can see tasks (Open the matter's tasks is always among them). */
+  protected readonly hasActions = computed(() => this.auth.has('Task.View'));
+  protected readonly commentRow = signal<MatterResponse | null>(null);
+  protected readonly commentOpen = signal(false);
+  /** Built once per page of rows, not on every change detection. */
+  protected readonly menus = computed(
+    () => new Map(this.rows().map((m) => [m.matterId, this.buildMenu(m)] as const)),
+  );
+
   /** Below 640 px the list is cards, not a table (WP12). */
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
@@ -650,6 +696,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     ...(this.showSecondary() ? ['secondaryManager'] : []),
     ...(this.counts() ? ['openTasks', 'overdue'] : []),
     'status',
+    ...(this.hasActions() ? ['actions'] : []),
   ]);
   protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
 
@@ -786,6 +833,28 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       (n): n is string => !!n,
     );
     return names.length > 0 ? `PM: ${names.join(' / ')}` : '';
+  }
+
+  private buildMenu(m: MatterResponse) {
+    return matterActionMenu(
+      { matterId: m.matterId, matterRef: m.matterRef, name: m.name, isActive: m.isActive },
+      (p) => this.auth.has(p),
+      {
+        newTask: () =>
+          void this.router.navigate(['/tasks/new'], { queryParams: { matterId: m.matterId } }),
+        bulk: () =>
+          void this.router.navigate(['/matters', m.matterId], {
+            queryParams: { tab: 'tasks' },
+            state: { selectTasks: true },
+          }),
+        addComment: () => {
+          this.commentRow.set(m);
+          this.commentOpen.set(true);
+        },
+        openTasks: () =>
+          void this.router.navigate(['/tasks'], { queryParams: { matter: m.matterId } }),
+      },
+    );
   }
 
   protected endSelecting(): void {

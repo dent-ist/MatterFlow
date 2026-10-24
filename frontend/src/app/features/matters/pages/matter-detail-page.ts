@@ -38,6 +38,8 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterHealthStrip } from '../ui/matter-health-strip';
+import { MatterOverviewSections } from '../ui/matter-overview';
+import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
 import { MatterProjects } from './matter-projects';
 
@@ -76,6 +78,8 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     SummaryStrip,
     MatterProjects,
     MatterHealthStrip,
+    MatterOverviewSections,
+    AddCommentDialog,
     MatterManagersDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -198,6 +202,13 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                         [id]="m.matterId"
                         [path]="'/matters/' + m.matterId"
                       />
+                      <mf-matter-overview
+                        [matterId]="m.matterId"
+                        [reload]="healthReload()"
+                        [canOpenActivity]="canSeeActivity()"
+                        (openAssets)="select('assets')"
+                        (openActivity)="setActivityOpen(true)"
+                      />
                       <dl class="pg-dl">
                         <dt>Client</dt>
                         <dd data-client-value>
@@ -241,6 +252,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                     [showCreate]="false"
                     [projectOptions]="projectOptions()"
                     [projectCount]="m.projectCount"
+                    [startSelecting]="selectTick()"
                   />
                 }
                 @case ('projects') {
@@ -268,6 +280,14 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                 }
               }
             </div>
+
+            @if (commentUsed()) {
+              <mf-add-comment-dialog
+                [matterId]="m.matterId"
+                [matterLabel]="m.matterRef + ' ' + m.name"
+                [(visible)]="commentOpen"
+              />
+            }
 
             @if (canSeeActivity()) {
               <mf-activity-drawer
@@ -397,6 +417,12 @@ export class MatterDetailPage {
   protected readonly toggleOpen = signal(false);
   protected readonly managersOpen = signal(false);
   protected readonly healthReload = signal(0);
+  /** The quick action "Add comment" (epic #758): the dialog that posts to one of the matter's open tasks. */
+  protected readonly commentOpen = signal(false);
+  /** The dialog exists from the first use on (a closed dialog is no markup on the page). */
+  protected readonly commentUsed = signal(false);
+  /** Counts the requests for selection mode on the Tasks tab ("Bulk re-assign / re-prioritise"). */
+  protected readonly selectTick = signal(0);
   protected readonly canAssign = computed(() => this.auth.has('Matter.AssignManagers'));
   protected readonly blockedOpen = signal(false);
   protected readonly blockedCount = signal(0);
@@ -461,6 +487,36 @@ export class MatterDetailPage {
         label: 'New asset',
         icon: 'pi-plus',
         run: () => this.go('/assets/new?matterId=' + m.matterId),
+      });
+    }
+    if (this.auth.has('Task.View')) {
+      if (this.auth.has('Task.Assign') || this.auth.has('Task.SetPriority')) {
+        list.push({
+          id: 'bulk-tasks',
+          role: 'secondary',
+          label: 'Bulk re-assign / re-prioritise',
+          icon: 'pi-check-square',
+          run: () => this.bulk(m.matterId),
+        });
+      }
+      if (this.auth.has('Task.Comment')) {
+        list.push({
+          id: 'add-comment',
+          role: 'secondary',
+          label: 'Add comment',
+          icon: 'pi-comment',
+          run: () => {
+            this.commentUsed.set(true);
+            this.commentOpen.set(true);
+          },
+        });
+      }
+      list.push({
+        id: 'open-tasks',
+        role: 'secondary',
+        label: "Open the matter's tasks",
+        icon: 'pi-list',
+        run: () => this.go('/tasks?matter=' + m.matterId),
       });
     }
     if (this.auth.has('Matter.SetActive')) {
@@ -610,5 +666,17 @@ export class MatterDetailPage {
 
   protected go(path: string): void {
     void this.router.navigateByUrl(path);
+  }
+
+  /** The Tasks tab in selection mode: asked of the open tab, or carried in the router state to the tab about to open. */
+  private bulk(matterId: number): void {
+    if (this.current() === 'tasks') {
+      this.selectTick.update((n) => n + 1);
+      return;
+    }
+    void this.router.navigate(['/matters', matterId], {
+      queryParams: { tab: 'tasks' },
+      state: { selectTasks: true },
+    });
   }
 }

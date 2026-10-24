@@ -1,4 +1,4 @@
-import { MyMattersTaskItem } from '../../api/generated/api-client';
+import { MyMattersAwayWindow, MyMattersTaskItem } from '../../api/generated/api-client';
 import {
   CalendarDay,
   calendarDayInZone,
@@ -111,4 +111,32 @@ export function shortDate(
   return d.year === year
     ? SHORT_DATE.format(new Date(Date.UTC(d.year, d.month - 1, d.day)))
     : formatCalendarDay(d);
+}
+
+/** The reasons behind a flag in plain words; `amber` and `hold` are the thresholds the API echoes. */
+export function reasonText(code: string, amber: number, hold: number): string {
+  switch (code) {
+    case 'OVERDUE':
+      return 'a task is overdue';
+    case 'UNASSIGNED':
+      return 'a task has nobody assigned';
+    case 'DUE_SOON':
+      return `a task is due within ${amber} days`;
+    case 'LONG_HOLD':
+      return `a task has been on hold for more than ${hold} days`;
+    case 'NO_OPEN_TASKS':
+      return 'no open tasks';
+    default:
+      return code;
+  }
+}
+
+/** The words of an away window: "Away Oct 26 to Oct 30", "Away until Oct 30", "Away from Oct 26" (whole days, never a reason in free text). */
+export function awayText(away: MyMattersAwayWindow, year: number): string {
+  const from = away.from ? shortDate(away.from, year, '') : '';
+  const to = away.to ? shortDate(away.to, year, '') : '';
+  if (from && to) return from === to ? `Away ${from}` : `Away ${from} to ${to}`;
+  if (to) return `Away until ${to}`;
+  if (from) return `Away from ${from}, no end date`;
+  return 'Away, no end date';
 }

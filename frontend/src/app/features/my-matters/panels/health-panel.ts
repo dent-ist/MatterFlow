@@ -11,6 +11,9 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { MyMattersClient, MyMattersHealthRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
+import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
 import { Badge, BadgeTone } from '../../../shared/ui/badge';
 import { Pager } from '../../../shared/ui/pager';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
@@ -22,7 +25,7 @@ import {
 } from '../../../shared/ui/record-card-list';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
-import { shortDate } from '../facts';
+import { reasonText, shortDate } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
@@ -38,23 +41,7 @@ const FLAGS: Record<string, { label: string; tone: BadgeTone; icon: string }> = 
   GREEN: { label: 'Green', tone: 'success', icon: 'pi-check-circle' },
 };
 
-/** The reasons behind a flag in plain words; `amber` and `hold` are the thresholds the API echoes. */
-export function reasonText(code: string, amber: number, hold: number): string {
-  switch (code) {
-    case 'OVERDUE':
-      return 'a task is overdue';
-    case 'UNASSIGNED':
-      return 'a task has nobody assigned';
-    case 'DUE_SOON':
-      return `a task is due within ${amber} days`;
-    case 'LONG_HOLD':
-      return `a task has been on hold for more than ${hold} days`;
-    case 'NO_OPEN_TASKS':
-      return 'no open tasks';
-    default:
-      return code;
-  }
-}
+export { reasonText };
 
 /**
  * Matter health (README 6.3): one row per matter in scope, the viewer sorts (nothing is ranked and the flag is not a default sort), server
@@ -65,6 +52,8 @@ export function reasonText(code: string, amber: number, hold: number): string {
 @Component({
   selector: 'mf-mm-health',
   imports: [
+    ActionMenu,
+    AddCommentDialog,
     Badge,
     NgTemplateOutlet,
     PanelBox,
@@ -182,6 +171,15 @@ export function reasonText(code: string, amber: number, hold: number): string {
     }
     .hp__new {
       white-space: nowrap;
+    }
+    .hp__actions {
+      white-space: nowrap;
+    }
+    .hp__actions > * {
+      vertical-align: middle;
+    }
+    .hp__card-more {
+      flex: 0 0 auto;
     }
     .hp__why {
       color: var(--mf-text-muted);
@@ -326,6 +324,13 @@ export function reasonText(code: string, amber: number, hold: number): string {
                           <i class="pi pi-plus" aria-hidden="true"></i> New task
                         </button>
                       }
+                      <span class="hp__card-more" data-row-actions>
+                        <mf-action-menu
+                          [floating]="true"
+                          [label]="menus().get(r.matterId)!.label"
+                          [items]="menus().get(r.matterId)!.items"
+                        />
+                      </span>
                     </ng-container>
                   </mf-record-card>
                 </ng-template>
@@ -400,9 +405,7 @@ export function reasonText(code: string, amber: number, hold: number): string {
                         *ngTemplateOutlet="head; context: { key: 'flag', label: 'Flag' }"
                       />
                     </th>
-                    @if (canCreate()) {
-                      <th scope="col"><span class="mf-sr-only">Actions</span></th>
-                    }
+                    <th scope="col"><span class="mf-sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -442,8 +445,8 @@ export function reasonText(code: string, amber: number, hold: number): string {
                           <span class="mf-sr-only"> ({{ why(r) }})</span>
                         </span>
                       </td>
-                      @if (canCreate()) {
-                        <td>
+                      <td class="hp__actions">
+                        @if (canCreate()) {
                           <button
                             type="button"
                             class="mf-btn hp__new"
@@ -453,8 +456,15 @@ export function reasonText(code: string, amber: number, hold: number): string {
                           >
                             <i class="pi pi-plus" aria-hidden="true"></i> New task
                           </button>
-                        </td>
-                      }
+                        }
+                        <span data-row-actions>
+                          <mf-action-menu
+                            [floating]="true"
+                            [label]="menus().get(r.matterId)!.label"
+                            [items]="menus().get(r.matterId)!.items"
+                          />
+                        </span>
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -473,6 +483,13 @@ export function reasonText(code: string, amber: number, hold: number): string {
         }
       }
     </mf-mm-panel>
+    @if (commentRow(); as row) {
+      <mf-add-comment-dialog
+        [matterId]="row.matterId"
+        [matterLabel]="row.matterRef + ' ' + row.matterName"
+        [(visible)]="commentOpen"
+      />
+    }
 
     <ng-template #head let-key="key" let-label="label">
       <button type="button" class="hp__sort" [attr.data-sort]="key" (click)="sortBy(key)">
@@ -535,6 +552,9 @@ export class HealthPanel {
 
   protected readonly page = computed(() => this.loader.data());
   protected readonly canCreate = computed(() => this.auth.has('Task.Create'));
+  /** The row whose "Add comment" is open (the dialog posts to one of that matter's open tasks). */
+  protected readonly commentRow = signal<MyMattersHealthRow | null>(null);
+  protected readonly commentOpen = signal(false);
   protected readonly canShowAll = computed(() => this.auth.has('Matter.AssignManagers'));
   protected readonly canMyWork = computed(() => this.auth.has('Task.View'));
   /** The column the table is sorted by (the API's default is the next deadline). */
@@ -587,6 +607,34 @@ export class HealthPanel {
 
   protected numbers(r: MyMattersHealthRow): string {
     return `${r.overdue} overdue . ${r.dueThisWeek} this week . ${r.unassigned} unassigned`;
+  }
+
+  /** The row's quick actions besides + New task, which keeps its button (epic #758, PX-25). */
+  /** Built once per page of rows, not on every change detection. */
+  protected readonly menus = computed(
+    () => new Map((this.page()?.items ?? []).map((r) => [r.matterId, this.buildMenu(r)] as const)),
+  );
+
+  private buildMenu(r: MyMattersHealthRow) {
+    return matterActionMenu(
+      { matterId: r.matterId, matterRef: r.matterRef, name: r.matterName, isActive: true },
+      (p) => this.auth.has(p),
+      {
+        newTask: () => this.newTask(r),
+        bulk: () =>
+          void this.router.navigate(['/matters', r.matterId], {
+            queryParams: { tab: 'tasks' },
+            state: { selectTasks: true },
+          }),
+        addComment: () => {
+          this.commentRow.set(r);
+          this.commentOpen.set(true);
+        },
+        openTasks: () =>
+          void this.router.navigate(['/tasks'], { queryParams: { matter: r.matterId } }),
+      },
+      ['newTask'],
+    );
   }
 
   /** Create task with the matter fixed; the page returns here (with the filters) when the task is created or the form is left. */

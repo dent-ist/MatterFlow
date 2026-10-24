@@ -37,4 +37,18 @@ describe('notification text', () => {
     expect(notificationLink({ objectKind: 'Task', objectId: 7 })).toEqual(['/tasks', 7]);
     expect(notificationLink({ objectKind: 'Matter', objectId: 3 })).toEqual(['/matters', 3]);
   });
+
+  it('puts the matter one click away for every project manager event of epic #753 (PX-25)', () => {
+    // What the API sends per event (objectKind): the matter itself for MatterManagerSet, the task for the other three. The task page carries the
+    // matter in its crumb (Tasks > matter > TSK-n) and in its context line, so the matter is one click from the link.
+    const events: Record<string, { kind: string; opens: string }> = {
+      MatterTaskOverdue: { kind: 'Task', opens: '/tasks' },
+      MatterTaskCreated: { kind: 'Task', opens: '/tasks' },
+      MatterTaskStalled: { kind: 'Task', opens: '/tasks' },
+      MatterManagerSet: { kind: 'Matter', opens: '/matters' },
+    };
+    for (const [event, { kind, opens }] of Object.entries(events)) {
+      expect(notificationLink({ objectKind: kind, objectId: 11 }), event).toEqual([opens, 11]);
+    }
+  });
 });
