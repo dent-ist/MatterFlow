@@ -283,6 +283,18 @@
   color: var(--mf-text-muted);
 }
 
+/* A permission that widens what a role can see beyond its other permissions (Matter.ViewSensitive): a plain warning under its description. */
+.mf-perm-warning {
+  display: block;
+  margin-top: var(--mf-s1);
+  padding: var(--mf-s1) var(--mf-s2);
+  border: 1px solid var(--mf-warning);
+  border-radius: var(--mf-radius);
+  background: var(--mf-warning-bg);
+  color: var(--mf-warning);
+  font-weight: 600;
+}
+
 /* Announces what a dependency or a copy changed; takes no room while empty. */
 .mf-live {
   margin: 0;

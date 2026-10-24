@@ -10,6 +10,8 @@ export interface MatterCellRow {
   matterIsActive: boolean;
   clientName: string;
   matterIsSensitive?: boolean | null;
+  /** False when the server shows this matter as a header only (a sensitive matter seen through an assigned task): never a link. */
+  matterCanOpen?: boolean | null;
 }
 
 /**
@@ -28,7 +30,7 @@ export interface MatterCellRow {
       <div class="mc-ref">
         <mf-matter-ref
           [value]="row().matterRef"
-          [link]="link() ? ['/matters', row().matterId] : null"
+          [link]="linked() ? ['/matters', row().matterId] : null"
           [copy]="false"
         />
         @if (row().matterIsSensitive) {
@@ -96,6 +98,7 @@ export class MatterCell {
   readonly nameLine = input(true);
 
   protected readonly tip = computed(() => `${this.row().clientName} · ${this.row().matterName}`);
+  protected readonly linked = computed(() => this.link() && this.row().matterCanOpen !== false);
 }
 
 /**
@@ -107,7 +110,7 @@ export class MatterCell {
   imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (link()) {
+    @if (link() && row().matterCanOpen !== false) {
       <a class="mn" [routerLink]="['/matters', row().matterId]" [attr.title]="text()">{{
         text()
       }}</a>
@@ -141,7 +144,9 @@ export class MatterCell {
 })
 export class MatterNameCell {
   readonly row =
-    input.required<Pick<MatterCellRow, 'matterId' | 'matterName' | 'matterIsActive'>>();
+    input.required<
+      Pick<MatterCellRow, 'matterId' | 'matterName' | 'matterIsActive' | 'matterCanOpen'>
+    >();
   readonly link = input(false);
 
   protected readonly text = computed(

@@ -58,7 +58,7 @@ import { DESCRIPTION_MAX_TEXT, htmlToText, isBlankHtml } from '../panels/rich-te
 import { whenSummaryText } from '../panels/when-summary';
 import { AssigneePicker } from '../../../shared/assignees/assignee-picker';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
-import { RecordHeader } from '../../../shared/ui/record-header';
+import { RecordHeader, SENSITIVE_ACCESS_TEXT } from '../../../shared/ui/record-header';
 import type { Crumb } from '../../../shared/ui/page-header';
 import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
@@ -327,6 +327,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
     return m ? (this.matterRecords.get(m.id) ?? null) : null;
   });
   protected readonly isSensitive = computed(() => this.matterRecord()?.isSensitive === true);
+  protected readonly sensitiveAccessText = SENSITIVE_ACCESS_TEXT;
   protected readonly existing = computed(() => ({
     title: this.title(),
     description: this.description(),

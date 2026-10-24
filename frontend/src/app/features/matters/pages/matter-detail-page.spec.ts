@@ -145,11 +145,12 @@ describe('MatterDetailPage', () => {
     expect(writeText).toHaveBeenCalledWith('00343-00012');
   });
 
-  it('shows the sensitivity note in the header only for sensitive matters (display only), with a badge that points to it', async () => {
+  it('shows the sensitivity note in the header only for sensitive matters (access rule in the note), with a badge that points to it', async () => {
     await create(['Matter.View'], aMatter({ isSensitive: true }));
     const banner = el().querySelector('[data-record-header] [data-sensitive-banner]');
     expect(banner?.textContent).toContain('Sensitive matter');
-    expect(banner?.textContent).toContain('does not restrict');
+    expect(banner?.textContent).toContain('Only its project managers');
+    expect(banner?.textContent).not.toContain('does not restrict');
     expect(banner?.getAttribute('role')).toBe('note');
     expect(el().querySelector('h1 mf-sensitive-badge span')?.getAttribute('aria-describedby')).toBe(
       banner?.id,

@@ -127,6 +127,7 @@ export function aTask(all: Partial<TaskResponse> = {}): TaskResponse {
       name: 'Merger Review',
       isActive: true,
       isSensitive: false,
+      canOpen: true,
     },
     project: undefined,
     taskType: { taskTypeId: 5, name: 'Data Processing', iconKey: 'cpu-2' },

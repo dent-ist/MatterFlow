@@ -168,7 +168,8 @@ describe('mf-record-header', () => {
     await create((h) => h.sensitive.set(true));
     const note = q('[role=note]')!;
     expect(note.textContent).toContain('Sensitive matter.');
-    expect(note.textContent).toContain('does not restrict');
+    expect(note.textContent).toContain('Only its project managers');
+    expect(note.textContent).not.toContain('does not restrict');
     expect(note.hasAttribute('aria-live')).toBe(false);
     const badge = q('mf-sensitive-badge span[aria-describedby]')!;
     expect(badge.getAttribute('aria-describedby')).toBe(note.id);

@@ -76,6 +76,13 @@ describe('MatterFormPage', () => {
     await settle(fixture);
   }
 
+  /** The "you will no longer see this matter" dialog (the page has two dialogs; each renders its own p-dialog). */
+  function lossDialog(): HTMLElement {
+    return Array.from(document.body.querySelectorAll<HTMLElement>('p-dialog')).find((d) =>
+      d.querySelector('[data-loss-warning]'),
+    )!;
+  }
+
   async function pickClient(): Promise<void> {
     type('#matter-client', 'acme');
     await new Promise((r) => setTimeout(r, 300));
@@ -160,6 +167,36 @@ describe('MatterFormPage', () => {
       expect(el().querySelector('[data-summary] a')?.getAttribute('href')).toBe('/matters/5');
     });
 
+    it('shows the "needs a project manager" refusal next to the Sensitive checkbox', async () => {
+      matters.createMatter.mockReturnValue(
+        apiError(400, {
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          errors: {
+            isSensitive: [
+              {
+                code: 'SENSITIVE_NEEDS_MANAGER',
+                message:
+                  'A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.',
+              },
+            ],
+          },
+        }),
+      );
+      await pickClient();
+      type('#matter-number', '12', true);
+      type('#matter-name', 'Secret');
+      el().querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
+      await submit();
+
+      const box = el().querySelector<HTMLInputElement>('input[type=checkbox]')!;
+      const error = el().querySelector('#matter-sensitive-error');
+      expect(error?.textContent).toContain('needs a project manager');
+      expect(box.getAttribute('aria-describedby')).toBe('matter-sensitive-error');
+      expect(box.getAttribute('aria-invalid')).toBe('true');
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
     it('shows the inactive-client conflict on the client field', async () => {
       matters.createMatter.mockReturnValue(
         apiError(409, {
@@ -209,6 +246,60 @@ describe('MatterFormPage', () => {
         isSensitive: true,
         rowVersion: 'BBBB',
       });
+    });
+
+    it('asks "You will no longer see this matter" when marking would end the editor\'s own access, then repeats the save confirmed', async () => {
+      await create({ matterId: '7' }, ['Matter.View', 'Matter.Edit']);
+      matters.updateMatter
+        .mockReturnValueOnce(
+          apiError(409, {
+            status: 409,
+            code: 'SENSITIVE_CONFIRMATION_REQUIRED',
+            meta: { willLoseAccess: true },
+          }),
+        )
+        .mockReturnValueOnce(ok(aMatter({ isSensitive: true })));
+
+      el().querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
+      await submit();
+
+      // No error text and no summary: the dialog is the answer, and nothing was saved yet.
+      expect(el().querySelector('[data-summary]')).toBeNull();
+      expect(navigate).not.toHaveBeenCalled();
+      const dialog = lossDialog();
+      expect(dialog.textContent).toContain('You will no longer see this matter');
+      expect(dialog.querySelector('[data-loss-warning]')?.textContent).toContain(
+        'only its project managers',
+      );
+
+      buttonByLabel(dialog, 'Mark sensitive')!.click();
+      await settle(fixture);
+
+      expect(matters.updateMatter).toHaveBeenCalledTimes(2);
+      expect(matters.updateMatter).toHaveBeenLastCalledWith(7, {
+        name: 'Merger Review',
+        isSensitive: true,
+        confirmLossOfAccess: true,
+        rowVersion: 'BBBB',
+      });
+      // The matter page would answer "not found" now: the editor goes to the list.
+      expect(navigate).toHaveBeenCalledWith(['/matters']);
+    });
+
+    it('does not repeat the save when the person keeps the matter as it is', async () => {
+      await create({ matterId: '7' }, ['Matter.View', 'Matter.Edit']);
+      matters.updateMatter.mockReturnValueOnce(
+        apiError(409, { status: 409, code: 'SENSITIVE_CONFIRMATION_REQUIRED' }),
+      );
+
+      el().querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
+      await submit();
+      const dialog = lossDialog();
+      buttonByLabel(dialog, 'Keep it as it is')!.click();
+      await settle(fixture);
+
+      expect(matters.updateMatter).toHaveBeenCalledTimes(1);
+      expect(navigate).not.toHaveBeenCalled();
     });
 
     it('changes the number behind a confirmation when permitted', async () => {

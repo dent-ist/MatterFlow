@@ -116,7 +116,8 @@ public sealed record SwimlaneCard(
     [property: Required] int StepsTotal,
     [property: Required] DateTime CreatedAtUtc,
     DateTime? CompletedAtUtc,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    [property: Required] bool MatterCanOpen = true);
 
 /// <summary>A lane: <c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c> or <c>COMPLETED</c> (Completed holds completed and cancelled Tasks of the window).</summary>
 /// <param name="Count">All Tasks that belong in the lane, also those beyond the cap.</param>

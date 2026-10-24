@@ -72,7 +72,9 @@ function blockedText(action: string, reason: string | undefined): string {
               >Matter
               <mf-matter-ref
                 [value]="t.matter.matterRef"
-                [link]="auth.canLink('matter') ? ['/matters', t.matter.matterId] : null"
+                [link]="
+                  auth.canOpenMatter(t.matter.canOpen) ? ['/matters', t.matter.matterId] : null
+                "
                 [copy]="false"
               />
               {{ t.matter.name }}</span
@@ -182,7 +184,7 @@ export class TaskHeader {
     });
     switch (from) {
       case 'matter': {
-        if (!this.auth.canLink('matter')) return null;
+        if (!this.auth.canOpenMatter(t.matter.canOpen)) return null;
         const base = `/matters/${t.matter.matterId}`;
         return at([base], `${base}?tab=tasks`, `Matter ${t.matter.matterRef}`, true);
       }
@@ -229,7 +231,7 @@ export class TaskHeader {
       state: source ? { ...RETURN_STATE } : undefined,
     };
     if (source?.hidesMatter) return [list];
-    return this.auth.canLink('matter')
+    return this.auth.canOpenMatter(t.matter.canOpen)
       ? [
           list,
           {

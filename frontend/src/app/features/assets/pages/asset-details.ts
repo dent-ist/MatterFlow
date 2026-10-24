@@ -173,7 +173,10 @@ let nextId = 0;
                 <div class="ad__f" data-matter>
                   <dt>Matter</dt>
                   <dd>
-                    <mf-matter-ref [value]="a.matterRef" [link]="['/matters', a.matterId]" />
+                    <mf-matter-ref
+                      [value]="a.matterRef"
+                      [link]="a.matterCanOpen === false ? null : ['/matters', a.matterId]"
+                    />
                     {{ a.matterName }}
                   </dd>
                 </div>

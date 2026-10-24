@@ -56,6 +56,20 @@ describe('Task header (#296 to #299): shared record header, context line, sensit
     expect(crumb.querySelector('.mf-sr-only')!.textContent).toBe(`00343-00012 ${LONG_MATTER}`);
   });
 
+  it('shows the matter header of a sensitive matter the person may not open as plain text: no link in the context line, none in the crumb (epic #788)', async () => {
+    const task = aTask();
+    const { el } = await mountTaskPage(
+      { ...task, matter: { ...task.matter, isSensitive: true, canOpen: false } },
+      [...PERMS, 'Matter.View', 'Client.View'],
+    );
+    const ctx = q(el, '[data-context]')!;
+    expect(ctx.textContent).toContain('00343-00012');
+    expect(ctx.textContent).toContain('Merger Review');
+    expect(ctx.querySelector('a[href*="/matters/"]')).toBeNull();
+    expect(q(el, 'nav[aria-label="Breadcrumb"] a[href*="/matters/"]')).toBeNull();
+    expect(el.querySelector('a[href^="/matters/"]')).toBeNull();
+  });
+
   it('puts Matter, Client, Task type and Workflow in ONE muted context line, each once, links only with the view permissions', async () => {
     const full = await mountTaskPage(aTask(), [...PERMS, 'Matter.View', 'Client.View']);
     const ctx = q(full.el, '[data-record-context]')!;

@@ -390,7 +390,9 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               <dd>
                 <mf-matter-ref
                   [value]="t.matter.matterRef"
-                  [link]="auth.canLink('matter') ? ['/matters', t.matter.matterId] : null"
+                  [link]="
+                    auth.canOpenMatter(t.matter.canOpen) ? ['/matters', t.matter.matterId] : null
+                  "
                 />
                 {{ t.matter.name }}
               </dd>

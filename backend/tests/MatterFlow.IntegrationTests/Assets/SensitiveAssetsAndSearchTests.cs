@@ -127,6 +127,9 @@ public sealed class SensitiveAssetsAndSearchTests(SqlServerFixture sql)
             // Linked tasks and counts: the assignee sees the linked asset with the one task they may see; the viewer sees both.
             var own = await GetAsync(u.AssigneeClient, $"/api/v1/assets/{d.A3}");
             own.GetProperty("linkedTaskCount").GetInt32().ShouldBe(1);
+            // The assignee reads the asset but may not open its matter: the screen shows the reference as plain text (mode H).
+            own.GetProperty("matterCanOpen").GetBoolean().ShouldBeFalse();
+            (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}")).GetProperty("matterCanOpen").GetBoolean().ShouldBeTrue();
             (await GetAsync(u.AssigneeClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("taskId").GetInt64()).ShouldBe([u.TS3]);
             (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}")).GetProperty("linkedTaskCount").GetInt32().ShouldBe(2);
             (await GetAsync(u.ViewerClient, $"/api/v1/assets/{d.A3}/linked-tasks")).GetProperty("items").GetArrayLength().ShouldBe(2);

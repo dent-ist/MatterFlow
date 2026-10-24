@@ -20,10 +20,16 @@ import { RETURN_STATE } from './row-nav';
 
 export { CRUMB_MAX, truncateCrumb } from './page-header';
 
-/** The text of the sentence in the Sensitive note (wording from the Sensitive banner, unchanged). */
+/**
+ * Who can see a sensitive matter (decision AJ, epic #788): the one sentence every screen uses, so the wording cannot drift. It says what the rule is;
+ * the server enforces it and the screens only reflect it.
+ */
+export const SENSITIVE_ACCESS_TEXT =
+  'Only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it.';
+
+/** The text of the sentence in the Sensitive note. */
 export const SENSITIVE_LEAD = 'Sensitive matter.';
-export const SENSITIVE_TEXT =
-  'Handle its tasks and assets with extra care. This flag is a warning only and does not restrict who can see them.';
+export const SENSITIVE_TEXT = SENSITIVE_ACCESS_TEXT;
 
 /** The queries the header follows: phone is below 640 px (as the work-list cards), desktop is 1024 px and up (H2, #254). */
 const PHONE_QUERY = '(max-width: 639.98px)';

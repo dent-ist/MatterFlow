@@ -11216,7 +11216,8 @@
           "droppedFields",
           "rowVersion",
           "createdAtUtc",
-          "modifiedAtUtc"
+          "modifiedAtUtc",
+          "matterCanOpen"
         ],
         "type": "object",
         "properties": {
@@ -11312,6 +11313,10 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "matterCanOpen": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -19209,7 +19214,8 @@
           "stepsTotal",
           "createdAtUtc",
           "completedAtUtc",
-          "rowVersion"
+          "rowVersion",
+          "matterCanOpen"
         ],
         "type": "object",
         "properties": {
@@ -19326,6 +19332,10 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "matterCanOpen": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -20021,7 +20031,8 @@
           "matterRef",
           "name",
           "isActive",
-          "isSensitive"
+          "isSensitive",
+          "canOpen"
         ],
         "type": "object",
         "properties": {
@@ -20050,6 +20061,10 @@
           },
           "isSensitive": {
             "type": "boolean"
+          },
+          "canOpen": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -20245,7 +20260,8 @@
           "closedAtUtc",
           "workflow",
           "rowVersion",
-          "holdReasonTruncated"
+          "holdReasonTruncated",
+          "matterCanOpen"
         ],
         "type": "object",
         "properties": {
@@ -20425,6 +20441,10 @@
           "holdReasonTruncated": {
             "type": "boolean",
             "default": false
+          },
+          "matterCanOpen": {
+            "type": "boolean",
+            "default": true
           }
         }
       },

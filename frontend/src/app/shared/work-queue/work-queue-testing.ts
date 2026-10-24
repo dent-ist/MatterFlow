@@ -53,6 +53,7 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     rowVersion: 'AAAA',
     holdReason: undefined,
     holdReasonTruncated: false,
+    matterCanOpen: true,
     ...overrides,
   };
 }

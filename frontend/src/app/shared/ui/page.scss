@@ -353,6 +353,12 @@
   font-size: var(--mf-fs-sm);
 }
 
+/* A server refusal that belongs to the option above it (the Sensitive checkbox): read next to the control, not as a toast. */
+.pg-reason--error {
+  color: var(--mf-danger);
+  font-weight: 600;
+}
+
 .pg-sr {
   position: absolute;
   width: 1px;

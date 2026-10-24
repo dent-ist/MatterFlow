@@ -117,10 +117,11 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
         var rows = await LoadCardsAsync(allIds, queueClock, ct);
         var states = await availability.EvaluateAsync(rows.Values.Where(r => r.AssigneeId != null).Select(r => r.AssigneeId!.Value).Distinct().ToList(), queueClock.NowUtc, ct);
 
+        var openableMatterIds = await queue.OpenableMatterIdsAsync(rows.Values.Where(c => c.Row.MatterIsSensitive).Select(c => c.Row.MatterId), ct);
         var lanes = Lanes.Select(l =>
         {
             var code = l.Status.ToCode();
-            var cards = idsByLane[l.Status].Where(rows.ContainsKey).Select(id => ToCard(rows[id], states)).ToList();
+            var cards = idsByLane[l.Status].Where(rows.ContainsKey).Select(id => ToCard(rows[id], states, openableMatterIds)).ToList();
             var count = counts[l.Status];
             return new SwimlaneLane(code, l.Label, count, count > cards.Count, count, cards);
         }).ToList();
@@ -310,7 +311,7 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
         public int? AssigneeId => Row.AssigneeId;
     }
 
-    private static SwimlaneCard ToCard(Card card, IReadOnlyDictionary<int, MatterFlow.SharedKernel.Availability.AvailabilityEvaluation> states)
+    private static SwimlaneCard ToCard(Card card, IReadOnlyDictionary<int, MatterFlow.SharedKernel.Availability.AvailabilityEvaluation> states, IReadOnlySet<int> openableMatterIds)
     {
         var r = card.Row;
         return new SwimlaneCard(
@@ -340,7 +341,8 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
             card.StepsTotal,
             DateTime.SpecifyKind(r.CreatedAtUtc, DateTimeKind.Utc),
             r.CompletedAtUtc is { } done ? DateTime.SpecifyKind(done, DateTimeKind.Utc) : null,
-            Convert.ToBase64String(r.RowVersion));
+            Convert.ToBase64String(r.RowVersion),
+            !r.MatterIsSensitive || openableMatterIds.Contains(r.MatterId));
     }
 
     // ---- group metadata (exact counts over every matching Task, not only the capped cards)

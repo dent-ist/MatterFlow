@@ -59,7 +59,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(panel.getByText('Matter reference')).toHaveCount(0);
     await expect(panel.locator('dl')).not.toContainText(world.matter.name);
     await expect(panel).toContainText('Sensitive');
-    await expect(panel).toContainText('Warning only');
+    await expect(panel).toContainText('Restricted access');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toHaveAttribute(
       'href',
       `/clients/${world.client.clientId}`,

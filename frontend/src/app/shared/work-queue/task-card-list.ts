@@ -175,7 +175,11 @@ export function initialsOf(name: string): string {
                     <span aria-hidden="true"> · </span><span class="mf-sr-only">, </span>
                     <mf-matter-ref
                       [value]="row.matterRef"
-                      [link]="matterLink() ? ['/matters', row.matterId] : null"
+                      [link]="
+                        matterLink() && row.matterCanOpen !== false
+                          ? ['/matters', row.matterId]
+                          : null
+                      "
                       [copy]="false"
                     />
                     @if (row.matterIsSensitive) {

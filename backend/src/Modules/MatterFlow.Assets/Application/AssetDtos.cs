@@ -206,6 +206,7 @@ public sealed record AssetListItem(
 /// <param name="ModifiedAtUtc">When the Asset was last changed (UTC), if ever.</param>
 /// <param name="LinkedTaskCount">Every Task linked to the Asset. Null, not 0, when the viewer lacks <c>Task.View</c>; a 0 is a real 0.</param>
 /// <param name="OpenLinkedTaskCount">Of those, the Tasks that are New, In Progress or On Hold (the Task Queue's open states). Null without <c>Task.View</c>.</param>
+/// <param name="MatterCanOpen">False when the caller sees this Asset only through a task assigned to them and may not open its (sensitive) Matter: the screen shows the Matter as plain text with no link.</param>
 public sealed record AssetResponse(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -226,7 +227,8 @@ public sealed record AssetResponse(
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc,
     int? LinkedTaskCount = null,
-    int? OpenLinkedTaskCount = null);
+    int? OpenLinkedTaskCount = null,
+    [property: Required] bool MatterCanOpen = true);
 
 /// <summary>An Asset offered by a picker.</summary>
 /// <param name="AssetId">Internal id.</param>

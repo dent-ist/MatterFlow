@@ -66,6 +66,7 @@ describe('audit formatting', () => {
   it('words the event and object types of the Audit filters; the code stays the value (#650)', () => {
     expect(eventTypeLabel('COMMENT_ADDED')).toBe('Comment added');
     expect(eventTypeLabel('TASK_TYPE_WORKFLOWS_CHANGED')).toBe('Task type workflows changed');
+    expect(eventTypeLabel('MATTER_SENSITIVITY_CHANGED')).toBe('Matter sensitivity changed');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');
     expect(eventTypeLabel('SOMETHING_NEW_HAPPENED')).toBe('Something new happened');
     expect(objectTypeLabel('AssetLinkRole')).toBe('Asset link role');

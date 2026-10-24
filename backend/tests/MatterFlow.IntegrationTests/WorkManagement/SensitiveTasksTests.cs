@@ -194,7 +194,15 @@ public sealed class SensitiveTasksTests(SqlServerFixture sql)
             var matter = task.GetProperty("matter");
             matter.GetProperty("matterId").GetInt32().ShouldBe(u.S3);
             matter.GetProperty("isSensitive").GetBoolean().ShouldBeTrue();
-            matter.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["clientId", "clientNumber", "isActive", "isSensitive", "matterId", "matterNumber", "matterRef", "name"]);
+            matter.EnumerateObject().Select(p => p.Name).Order().ShouldBe(["canOpen", "clientId", "clientNumber", "isActive", "isSensitive", "matterId", "matterNumber", "matterRef", "name"]);
+
+            // The screen is told not to link to a matter page that would answer 404 (mode H); a person who sees the whole matter is not.
+            matter.GetProperty("canOpen").GetBoolean().ShouldBeFalse();
+            (await GetAsync(u.ViewerClient, $"/api/v1/tasks/{u.TS3}")).GetProperty("matter").GetProperty("canOpen").GetBoolean().ShouldBeTrue();
+            (await GetAsync(u.AssigneeClient, $"/api/v1/task-queue?pageSize=100")).GetProperty("items").EnumerateArray()
+                .Single(r => r.GetProperty("taskId").GetInt64() == u.TS3).GetProperty("matterCanOpen").GetBoolean().ShouldBeFalse();
+            (await GetAsync(u.ViewerClient, $"/api/v1/task-queue?pageSize=100")).GetProperty("items").EnumerateArray()
+                .Single(r => r.GetProperty("taskId").GetInt64() == u.TS3).GetProperty("matterCanOpen").GetBoolean().ShouldBeTrue();
 
             // The matter itself stays a 404 for them, and so do the other tasks of that matter.
             (await u.AssigneeClient.GetAsync($"/api/v1/matters/{u.S3}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);

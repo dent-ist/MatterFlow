@@ -94,7 +94,7 @@ public sealed class TaskPresenter(
         return new TaskResponse(
             t.Id,
             t.Number,
-            MatterRef(matter, t.MatterId),
+            MatterRef(matter, t.MatterId, matter is null || !matter.IsSensitive || await access.CanSeeMatterAsync(t.MatterId, ct)),
             project is null ? null : new TaskProjectRef(project.ProjectId, project.Name, project.IsActive),
             new TaskTypeRef(t.TaskTypeId, type?.Name ?? string.Empty, type?.IconKey ?? TaskTypeIcons.DefaultKey),
             t.Title,
@@ -265,10 +265,10 @@ public sealed class TaskPresenter(
     private string? DueTimeText(DateTime? dueAtUtc) =>
         dueAtUtc is { } at ? timeZone.ToLocal(at).ToString("HH:mm", CultureInfo.InvariantCulture) : null;
 
-    private static TaskMatterRef MatterRef(MatterSummary? m, int matterId) =>
+    private static TaskMatterRef MatterRef(MatterSummary? m, int matterId, bool canOpen) =>
         m is null
             ? new TaskMatterRef(matterId, 0, string.Empty, string.Empty, string.Empty, string.Empty, true, false)
-            : new TaskMatterRef(m.MatterId, m.ClientId, m.ClientNumber, m.MatterNumber, m.MatterRef, m.Name, m.IsActive, m.IsSensitive);
+            : new TaskMatterRef(m.MatterId, m.ClientId, m.ClientNumber, m.MatterNumber, m.MatterRef, m.Name, m.IsActive, m.IsSensitive, canOpen);
 
     private static TaskPriorityRef PriorityRef(PriorityInfo? p, int priorityId) =>
         p is null ? new TaskPriorityRef(priorityId, string.Empty, "neutral", 0) : new TaskPriorityRef(p.Id, p.Label, p.Color, p.SortOrder);

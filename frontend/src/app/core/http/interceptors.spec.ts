@@ -343,6 +343,26 @@ describe('toastFor', () => {
     expect(toastFor(make(409, { code: 'IN_USE', detail: 'Tasks use this priority.' }))).toBeNull();
   });
 
+  it('suppresses the sensitive-matter confirmation request: the matter form asks in a dialog (epic #788)', () => {
+    expect(
+      toastFor(
+        make(409, {
+          code: 'SENSITIVE_CONFIRMATION_REQUIRED',
+          detail:
+            'You will no longer see this matter after it is marked sensitive. Confirm to continue.',
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it('answers a hidden record with the plain not-found toast that names nothing (epic #788)', () => {
+    expect(
+      toastFor(make(404, { code: 'NOT_FOUND', detail: 'The resource was not found.' })),
+    ).toEqual({
+      summary: "We couldn't find that.",
+    });
+  });
+
   it('suppresses the last System Admin refusal: the user drawer shows it inline (#444)', () => {
     expect(
       toastFor(

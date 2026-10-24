@@ -7,6 +7,7 @@ import {
   StatusLabelsClient,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../auth/auth.store';
+import { SessionReset } from '../session/session-reset';
 
 export type StatusCode = 'NEW' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 
@@ -36,6 +37,16 @@ export class LookupStore {
   private readonly _statusLabels = signal<StatusLabelView[]>([]);
   private readonly _state = signal<LookupLoadState>('idle');
   private inflight: Promise<void> | null = null;
+
+  constructor() {
+    // The lists are the same for everybody, but what a person may read is not: another person starts from an empty store.
+    inject(SessionReset).register(() => {
+      this._priorities.set([]);
+      this._statusLabels.set([]);
+      this._state.set('idle');
+      this.inflight = null;
+    });
+  }
 
   readonly state = this._state.asReadonly();
   /** All priorities, most urgent first, including inactive. */

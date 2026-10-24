@@ -215,7 +215,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                         <dt>Sensitive</dt>
                         <dd data-sensitive-value>
                           @if (m.isSensitive) {
-                            <mf-sensitive-badge /> <span class="pg-muted">Warning only</span>
+                            <mf-sensitive-badge /> <span class="pg-muted">Restricted access</span>
                           } @else {
                             No
                           }

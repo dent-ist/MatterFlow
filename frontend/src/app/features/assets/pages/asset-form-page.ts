@@ -316,7 +316,7 @@ export class AssetFormPage implements HasUnsavedChanges {
   protected readonly recordUrl = computed(() => '/assets/' + this.assetId());
   /** The matter is a link only for a person who may open matters (decision V). */
   protected readonly matterLink = computed(() =>
-    matterLinkOf(this.auth, this.original()?.matterId),
+    matterLinkOf(this.auth, this.original()?.matterId, this.original()?.matterCanOpen),
   );
   /** The form schema is requested only when the endpoint would answer it (Task.View or a form management permission). */
   protected readonly canReadSchema = computed(() => this.auth.hasAny(FORM_SCHEMA_READ_PERMISSIONS));

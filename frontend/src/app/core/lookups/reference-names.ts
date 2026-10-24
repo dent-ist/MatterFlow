@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { AssetResponse, AssetsClient, UsersLookupClient } from '../../api/generated/api-client';
 import { AuthStore } from '../auth/auth.store';
 import { QuietRequests } from '../http/interceptors';
+import { SessionReset } from '../session/session-reset';
 
 /** How long a resolved asset is reused; short, so a rename shows up soon. */
 const CACHE_MS = 30_000;
@@ -35,6 +36,10 @@ export class ReferenceNames {
   private readonly injector = inject(Injector);
   private readonly assets = new Map<number, { at: number; found: Promise<AssetSummary | null> }>();
   private users: Promise<Map<number, string>> | null = null;
+
+  constructor() {
+    inject(SessionReset).register(() => this.reset());
+  }
 
   /**
    * The asset behind an id, or null when it cannot be shown. A person without Asset.View never causes a request (the API would answer 403

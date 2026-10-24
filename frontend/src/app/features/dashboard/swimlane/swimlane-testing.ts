@@ -18,6 +18,7 @@ export function aCard(overrides: Partial<SwimlaneCard> = {}): SwimlaneCard {
     matterRef: '00010-00001',
     matterName: 'Merger',
     matterIsSensitive: false,
+    matterCanOpen: true,
     taskTypeId: 3,
     taskTypeName: 'Data Processing',
     taskTypeIconKey: 'cpu-2',

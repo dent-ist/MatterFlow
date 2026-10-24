@@ -159,7 +159,9 @@ export class AssetDetailsTab {
   protected readonly values = computed<Record<string, unknown>>(() => ({
     ...(this.asset().formValues ?? {}),
   }));
-  protected readonly matterLink = computed(() => matterLinkOf(this.auth, this.asset().matterId));
+  protected readonly matterLink = computed(() =>
+    matterLinkOf(this.auth, this.asset().matterId, this.asset().matterCanOpen),
+  );
   /** The form schema is requested only when the endpoint would answer (Task.View or a form-owner management permission). */
   protected readonly canReadSchema = computed(() => this.auth.hasAny(FORM_SCHEMA_READ_PERMISSIONS));
   protected readonly hasForm = computed(() => {

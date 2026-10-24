@@ -91,9 +91,14 @@ export const PEEK_COMMENTS = 3;
           <h2 class="title">{{ task()?.title ?? c.title }}</h2>
           <p class="where">
             {{ c.clientName }} /
-            <a class="mf-ref" [routerLink]="['/matters', c.matterId]" data-peek-matter>{{
-              c.matterRef
-            }}</a>
+            @if (c.matterCanOpen) {
+              <a class="mf-ref" [routerLink]="['/matters', c.matterId]" data-peek-matter>{{
+                c.matterRef
+              }}</a>
+            } @else {
+              <!-- A sensitive matter seen only through an assigned task (epic #788): the reference is plain text. -->
+              <span class="mf-ref" data-peek-matter>{{ c.matterRef }}</span>
+            }
             {{ c.matterName }}
             <mf-copy-button [text]="c.ref" label="task number" />
           </p>

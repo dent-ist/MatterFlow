@@ -56,6 +56,7 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   TASK_TYPE_WORKFLOWS_CHANGED: 'Task type workflows changed',
   FORM_PUBLISHED: 'Form published',
   FORM_RETIRED: 'Form retired',
+  MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',
 };
 
 /** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */

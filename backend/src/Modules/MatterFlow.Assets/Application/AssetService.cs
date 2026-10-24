@@ -403,7 +403,8 @@ public sealed class AssetService(
             AssetSupport.Utc(row.Asset.CreatedAtUtc),
             AssetSupport.Utc(row.Asset.ModifiedAtUtc),
             CanCountTasks ? counts?.Linked ?? 0 : null,
-            CanCountTasks ? counts?.Open ?? 0 : null);
+            CanCountTasks ? counts?.Open ?? 0 : null,
+            matter is null || !matter.IsSensitive || await access.CanSeeMatterAsync(row.Asset.MatterId, ct));
     }
 
     /// <summary>The Matter sort is "Matter reference, then display name": the name is the last tie-break before the id unless the person asked for it elsewhere.</summary>

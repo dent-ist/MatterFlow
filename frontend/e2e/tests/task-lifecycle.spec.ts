@@ -187,12 +187,13 @@ test.describe('Sensitive matter banner', () => {
     await expect(create.sensitiveBanner).toHaveCount(0);
     await create.pickMatter(world.matter.matterRef, world.matter.matterRef);
     await expect(create.sensitiveBanner).toContainText('Sensitive matter.');
-    await expect(create.sensitiveBanner).toContainText('warning only');
+    await expect(create.sensitiveBanner).toContainText('Handle this task with extra care');
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await expect(page.locator('[data-sensitive-banner]')).toContainText(
-      'does not restrict who can see them',
+    await expect(page.locator('[data-sensitive-banner]')).toHaveAttribute(
+      'title',
+      /Only its project managers/,
     );
 
     await page.goto(`/matters/${world.matter.matterId}`);

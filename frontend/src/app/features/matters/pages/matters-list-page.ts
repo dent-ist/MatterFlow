@@ -270,7 +270,9 @@ const BONES: Record<string, string> = {
                   }
                 </p>
                 @if (managersLine(m); as line) {
-                  <p mfCardMeta class="rc-line" data-card-managers>{{ line }}</p>
+                  <p mfCardMeta class="rc-line" data-card-managers>
+                    <span class="rc-text" [attr.title]="line">{{ line }}</span>
+                  </p>
                 }
                 @if (counts()) {
                   <mf-task-count

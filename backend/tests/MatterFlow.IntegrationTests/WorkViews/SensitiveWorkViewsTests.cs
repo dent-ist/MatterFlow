@@ -190,6 +190,14 @@ public sealed class SensitiveWorkViewsTests(SqlServerFixture sql)
                 cards.Where(c => c.GetProperty("matterIsSensitive").GetBoolean()).Select(c => c.GetProperty("taskId").GetInt64())
                     .ShouldAllBe(id => expected.Contains(id), name);
 
+                // A card of a sensitive matter the person sees only through an assignment carries the header and no link to the matter page (mode H).
+                foreach (var card in cards.Where(c => c.GetProperty("matterIsSensitive").GetBoolean()))
+                {
+                    var matterId = card.GetProperty("matterId").GetInt32();
+                    var mayOpen = name.StartsWith("P4", StringComparison.Ordinal) || name == "Administrator" || (matterId == u.S1 && (name.StartsWith("P1", StringComparison.Ordinal) || name.StartsWith("P2", StringComparison.Ordinal)));
+                    card.GetProperty("matterCanOpen").GetBoolean().ShouldBe(mayOpen, $"{name}: matter {matterId}");
+                }
+
                 // The client > matter tree counts only the visible tasks and names only matters of visible tasks.
                 var groups = board.GetProperty("groups").EnumerateArray().ToArray();
                 groups.Sum(g => g.GetProperty("count").GetInt32()).ShouldBe(expected.Length, name + ": group counts");

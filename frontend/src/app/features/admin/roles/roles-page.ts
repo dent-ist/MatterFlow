@@ -33,6 +33,15 @@ export function prerequisiteOf(code: string, all: ReadonlySet<string>): string |
   return action !== 'View' && all.has(view) ? view : undefined;
 }
 
+/**
+ * Permissions that carry a warning on the Roles screen. Matter.ViewSensitive is not a marker: a role that holds it sees EVERY sensitive matter, with all
+ * its tasks and assets, whoever manages it (epic #788). The screen only warns; the catalog and the server decide what the permission does.
+ */
+export const PERMISSION_WARNINGS: Readonly<Record<string, string>> = {
+  'Matter.ViewSensitive':
+    'Warning: people with this permission see ALL sensitive matters, with all their tasks and assets, whether or not they manage them.',
+};
+
 /** The most characters a role description may have (the API's limit). */
 export const ROLE_DESCRIPTION_MAX = 500;
 
@@ -209,6 +218,10 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     } catch {
       this.error.set('We could not load this role. Try again.');
     }
+  }
+
+  protected warningOf(code: string): string | null {
+    return PERMISSION_WARNINGS[code] ?? null;
   }
 
   /** "Task 6/9": ticked and total permissions of one group, over the whole catalog (the search filter does not change them). */

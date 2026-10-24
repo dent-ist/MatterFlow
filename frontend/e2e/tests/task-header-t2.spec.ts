@@ -409,7 +409,7 @@ test.describe('Task header T2: Sensitive note on one line (#299)', () => {
     await expect(note).toHaveAttribute('role', 'note');
     await expect(note).toHaveAttribute(
       'title',
-      /Sensitive matter\..*does not restrict who can see them/,
+      /Sensitive matter\. Only its project managers.*can see it\./,
     );
     await expect(note).toContainText('Sensitive matter.');
     await atEverySize(page, 'sensitive-note', async () => {

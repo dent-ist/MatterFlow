@@ -170,8 +170,8 @@
             @if (isSensitive()) {
               <div class="pg-banner" role="note" data-sensitive-banner>
                 <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                <strong> Sensitive matter.</strong> Handle this task with extra care. The flag is a
-                warning only and does not restrict who can see it.
+                <strong> Sensitive matter.</strong> Handle this task with extra care.
+                {{ sensitiveAccessText }}
               </div>
             }
             <mf-title-area

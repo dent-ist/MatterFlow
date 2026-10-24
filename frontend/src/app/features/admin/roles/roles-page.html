@@ -232,6 +232,12 @@
                     <span>
                       <strong>{{ p.code }}</strong>
                       <span class="mf-muted">{{ p.description }}</span>
+                      @if (warningOf(p.code); as warning) {
+                        <span class="mf-perm-warning" data-perm-warning [attr.data-for]="p.code"
+                          ><i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                          {{ warning }}</span
+                        >
+                      }
                     </span>
                   </label>
                 }

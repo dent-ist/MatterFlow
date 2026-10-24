@@ -15210,6 +15210,7 @@ export interface AssetResponse {
     modifiedAtUtc: string | undefined;
     linkedTaskCount?: number | undefined;
     openLinkedTaskCount?: number | undefined;
+    matterCanOpen: boolean;
 
     [key: string]: any;
 }
@@ -17483,6 +17484,7 @@ export interface SwimlaneCard {
     createdAtUtc: string;
     completedAtUtc: string | undefined;
     rowVersion: string;
+    matterCanOpen: boolean;
 
     [key: string]: any;
 }
@@ -17677,6 +17679,7 @@ export interface TaskMatterRef {
     name: string;
     isActive: boolean;
     isSensitive: boolean;
+    canOpen: boolean;
 
     [key: string]: any;
 }
@@ -17769,6 +17772,7 @@ export interface TaskQueueRow {
     rowVersion: string;
     holdReason?: string | undefined;
     holdReasonTruncated: boolean;
+    matterCanOpen: boolean;
 
     [key: string]: any;
 }

@@ -1002,6 +1002,33 @@ describe('DashSwimlaneTab', () => {
       expect(document.querySelector('.mf-swl-drawer')).not.toBeNull();
     });
 
+    it('links the matter reference in the peek, and shows it as plain text for a sensitive matter the person may not open (epic #788)', async () => {
+      await open();
+      opener().click();
+      await settle();
+      await settle();
+      expect(document.querySelector('a[data-peek-matter]')?.getAttribute('href')).toBe(
+        '/matters/100',
+      );
+    });
+
+    it('shows the matter reference of a card the server says cannot be opened as plain text, with no link', async () => {
+      const plain = board();
+      plain.lanes[1].cards[0] = {
+        ...plain.lanes[1].cards[0],
+        matterIsSensitive: true,
+        matterCanOpen: false,
+      };
+      await open(of(plain));
+      opener().click();
+      await settle();
+      await settle();
+      const ref = document.querySelector('[data-peek-matter]')!;
+      expect(ref.tagName).toBe('SPAN');
+      expect(ref.textContent).toContain(plain.lanes[1].cards[0].matterRef);
+      expect(document.querySelector('a[data-peek-matter]')).toBeNull();
+    });
+
     it('closes with its close button and returns focus to the card that opened it', async () => {
       await open();
       opener().focus();

@@ -20,6 +20,7 @@ import {
   MatterResponse,
   MattersClient,
 } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
@@ -160,14 +161,26 @@ function clientOption(c: ClientResponse): PickerOption {
             type="checkbox"
             name="matter-sensitive"
             [checked]="isSensitive()"
+            [attr.aria-invalid]="fieldError('isSensitive') ? 'true' : null"
+            [attr.aria-describedby]="fieldError('isSensitive') ? 'matter-sensitive-error' : null"
             (change)="isSensitive.set($any($event.target).checked)"
           />
           <span>
             Sensitive matter
             <span class="pg-reason" style="display: block"
-              >Shows a warning banner on this matter's tasks, assets and search results. It does not
-              restrict who can see them.</span
+              >Restricts this matter, with its tasks and assets, to its project managers, people
+              assigned one of its tasks and people who may see all sensitive matters. Everyone else
+              does not see it at all. Also shows a warning banner.</span
             >
+            @if (fieldError('isSensitive'); as problem) {
+              <span
+                class="pg-reason pg-reason--error"
+                style="display: block"
+                id="matter-sensitive-error"
+                data-sensitive-error
+                >{{ problem }}</span
+              >
+            }
           </span>
         </label>
 
@@ -210,6 +223,22 @@ function clientOption(c: ClientResponse): PickerOption {
         [(value)]="newNumber"
       />
     </mf-confirm-dialog>
+
+    <mf-confirm-dialog
+      title="You will no longer see this matter"
+      confirmLabel="Mark sensitive"
+      cancelLabel="Keep it as it is"
+      [danger]="true"
+      [busy]="busy()"
+      [(visible)]="lossOpen"
+      (confirmed)="save(true)"
+    >
+      <p data-loss-warning>
+        Once this matter is marked sensitive, only its project managers, people assigned one of its
+        tasks and people who may see all sensitive matters can see it. You are none of these, so you
+        will no longer see this matter or its tasks and assets after you save.
+      </p>
+    </mf-confirm-dialog>
   `,
 })
 export class MatterFormPage implements HasUnsavedChanges {
@@ -242,6 +271,8 @@ export class MatterFormPage implements HasUnsavedChanges {
   protected readonly conflict = signal(false);
   protected readonly existingId = signal<number | null>(null);
   protected readonly changeNumberOpen = signal(false);
+  /** The "you will no longer see this matter" dialog (409 SENSITIVE_CONFIRMATION_REQUIRED): shown instead of an error, confirmed with a repeat of the save. */
+  protected readonly lossOpen = signal(false);
   protected readonly newNumber = signal('');
   protected readonly numberSubmitted = signal(false);
   private saved = false;
@@ -350,7 +381,8 @@ export class MatterFormPage implements HasUnsavedChanges {
     }
   }
 
-  protected async save(): Promise<void> {
+  protected async save(confirmLoss = false): Promise<void> {
+    this.lossOpen.set(false);
     this.submitted.set(true);
     this.serverErrors.set({});
     this.summary.set([]);
@@ -379,6 +411,7 @@ export class MatterFormPage implements HasUnsavedChanges {
             this.api.updateMatter(Number(this.matterId()), {
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
+              confirmLossOfAccess: confirmLoss || undefined,
               formValues: custom?.values,
               rowVersion: this.original()!.rowVersion,
             }),
@@ -396,9 +429,21 @@ export class MatterFormPage implements HasUnsavedChanges {
       if (saved.droppedFields.length > 0) {
         this.notify.info(`Hidden custom values were not saved: ${saved.droppedFields.join(', ')}.`);
       }
+      if (confirmLoss) {
+        // The person confirmed that they lose sight of the matter: its page would now answer "not found", so they go to the list instead.
+        this.notify.success(
+          `Matter ${saved.matterRef} saved. It is sensitive now and you no longer see it.`,
+        );
+        await this.router.navigate(['/matters']);
+        return;
+      }
       this.notify.success(`Matter ${saved.matterRef} saved`);
       await this.router.navigate(['/matters', saved.matterId]);
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'SENSITIVE_CONFIRMATION_REQUIRED') {
+        this.lossOpen.set(true);
+        return;
+      }
       const errors = serverFormErrors(err);
       const split = splitFormErrors(errors.fields);
       this.serverErrors.set(split.base);

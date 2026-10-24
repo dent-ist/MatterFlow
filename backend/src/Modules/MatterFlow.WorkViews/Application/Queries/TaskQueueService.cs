@@ -744,6 +744,9 @@ public sealed class TaskQueueService(
                     current?.Id);
             });
 
+        // Mode H: a Task of a sensitive Matter the caller does not see as a whole (an assignee) carries the Matter header only; the screen must not link to it.
+        var openableMatterIds = await OpenableMatterIdsAsync(details.Where(d => d.MatterIsSensitive).Select(d => d.MatterId), ct);
+
         var byId = details.ToDictionary(d => d.Id);
         var result = new List<TaskQueueRow>(ids.Count);
         foreach (var id in ids)
@@ -792,10 +795,23 @@ public sealed class TaskQueueService(
                 progress.GetValueOrDefault(t.WorkflowInstanceId, new WorkflowProgress(0, 0, null, null)),
                 Convert.ToBase64String(t.RowVersion),
                 holdReason,
-                holdTruncated));
+                holdTruncated,
+                !d.MatterIsSensitive || openableMatterIds.Contains(d.MatterId)));
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Of these sensitive matters, the ones the caller may open as a whole (mode M). The rows of a Task the caller sees only through an assignment carry the matter
+    /// header and no link to the matter page (<c>MatterCanOpen</c>, epic #788 mode H). Nothing is asked for an empty list.
+    /// </summary>
+    internal async Task<HashSet<int>> OpenableMatterIdsAsync(IEnumerable<int> sensitiveMatterIds, CancellationToken ct)
+    {
+        var ids = sensitiveMatterIds.Distinct().ToList();
+        return ids.Count == 0
+            ? []
+            : (await visibility.VisibleMatters().Where(m => ids.Contains(m.MatterId)).Select(m => m.MatterId).ToListAsync(ct)).ToHashSet();
     }
 
     /// <summary>Plain text of a hold comment (markup stripped, whitespace collapsed), at most <see cref="HoldReasonMaxLength"/> characters.</summary>

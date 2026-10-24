@@ -192,7 +192,9 @@ export class AssetRecordPage {
 
   protected readonly canTasks = computed(() => this.auth.has('Task.View'));
   protected readonly canHistory = computed(() => this.auth.has('Audit.View'));
-  protected readonly matterLink = computed(() => matterLinkOf(this.auth, this.asset()?.matterId));
+  protected readonly matterLink = computed(() =>
+    matterLinkOf(this.auth, this.asset()?.matterId, this.asset()?.matterCanOpen),
+  );
 
   protected readonly tabs = computed<MfTab[]>(() => {
     // The number of linked tasks (all) comes with the asset (#496): absent without Task.View, where the API sends null.

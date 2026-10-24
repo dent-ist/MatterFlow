@@ -12,8 +12,14 @@ export function canOpenMatter(auth: Pick<AuthStore, 'has'>): boolean {
 export function matterLinkOf(
   auth: Pick<AuthStore, 'has'>,
   matterId: number | null | undefined,
+  serverCanOpen?: boolean | null,
 ): ['/matters', number] | null {
-  return matterId !== null && matterId !== undefined && canOpenMatter(auth)
+  // `serverCanOpen` is the server's `canOpen` / `matterCanOpen` answer on a record: false means the viewer sees the record through an assigned task
+  // and may not open the (sensitive) matter, so the reference stays plain text (epic #788). Absent means "as before".
+  return matterId !== null &&
+    matterId !== undefined &&
+    serverCanOpen !== false &&
+    canOpenMatter(auth)
     ? ['/matters', matterId]
     : null;
 }

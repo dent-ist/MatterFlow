@@ -168,6 +168,18 @@ describe('RolesPage', () => {
     expect(q('[data-editor-count]').textContent).toContain('2 of');
   });
 
+  it('warns that Matter.ViewSensitive lets holders see ALL sensitive matters, and only on that permission (epic #788)', async () => {
+    await press('New role');
+    const warnings = el().querySelectorAll('[data-perm-warning]');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].getAttribute('data-for')).toBe('Matter.ViewSensitive');
+    expect(warnings[0].textContent).toContain('see ALL sensitive matters');
+    // The warning sits inside the permission's own label, so a screen reader reads it with the checkbox.
+    expect(
+      warnings[0].closest('label')?.querySelector('[data-perm="Matter.ViewSensitive"]'),
+    ).not.toBeNull();
+  });
+
   it('keeps the full role name as a tooltip for the two-line clamp (#447)', async () => {
     const name = q('[data-role="5"] .mf-name');
     expect(name.getAttribute('title')).toBe(name.textContent!.trim());

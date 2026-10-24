@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { NotificationItem, NotificationsClient } from '../../api/generated/api-client';
 import { ApiError } from '../../core/http/api-error';
 import { Connectivity } from '../../core/http/connectivity';
+import { SessionReset } from '../../core/session/session-reset';
 import { QuietRequests } from '../../core/http/interceptors';
 import { announcementText } from './notification-text';
 
@@ -61,6 +62,7 @@ export class NotificationStore {
   };
 
   constructor() {
+    inject(SessionReset).register(() => this.reset());
     effect(() => {
       const offline = this.connectivity.offline();
       untracked(() => {
@@ -82,6 +84,20 @@ export class NotificationStore {
     this.running = true;
     this.doc.addEventListener('visibilitychange', this.onVisibility);
     void this.pollNow();
+  }
+
+  /** Forgets everything shown for the earlier person (the session changed): the badge, the panel items, the cursor. A running loop starts over as a first poll. */
+  reset(): void {
+    const wasRunning = this.running;
+    if (wasRunning) this.stop();
+    this._unread.set(0);
+    this._recent.set([]);
+    this._recentState.set('idle');
+    this._announcement.set('');
+    this.latestId = 0;
+    this.initialDone = false;
+    this.failures = 0;
+    if (wasRunning) this.start();
   }
 
   stop(): void {

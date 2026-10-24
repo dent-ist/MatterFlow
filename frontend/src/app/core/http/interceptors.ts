@@ -177,6 +177,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.code === 'ROLE_IN_USE') return null; // the Roles page explains it inline
   if (err.code === 'LAST_ADMIN') return null; // the user drawer says it inline (#441, #444): one message, not two
   if (err.code === 'IN_USE') return null; // Priorities and Link roles name the row inline (#537)
+  if (err.code === 'SENSITIVE_CONFIRMATION_REQUIRED') return null; // the matter form asks "You will no longer see this matter" in a dialog (epic #788)
   const reference = err.traceId ? `Reference: ${err.traceId}` : undefined;
   if (err.isNetworkError || err.status >= 500) {
     return { summary: 'Something went wrong. Try again.', detail: reference };

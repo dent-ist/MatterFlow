@@ -623,9 +623,7 @@ test.describe('WP3: Sensitive note (#256)', () => {
       await expect(note).toHaveAttribute('role', 'note');
       await expect(note).not.toHaveAttribute('aria-live', /.+/);
       await expect(note).toContainText('Sensitive matter.');
-      await expect(note).toContainText(
-        'This flag is a warning only and does not restrict who can see them.',
-      );
+      await expect(note).toHaveAttribute('title', /Only its project managers.*can see it\.$/);
       const noteBox = (await note.boundingBox())!;
       expect(noteBox.height).toBeLessThanOrEqual(w < 400 ? 48 : 32.5);
       // The badge beside the title is described by the note, which a screen reader hears once.
@@ -635,7 +633,7 @@ test.describe('WP3: Sensitive note (#256)', () => {
         noteId!,
       );
       // The Details tab keeps its own row.
-      await expect(page.locator('[data-sensitive-value]')).toContainText('Warning only');
+      await expect(page.locator('[data-sensitive-value]')).toContainText('Restricted access');
       await noSidewaysScroll(page);
       await axeClean(page, `sensitive matter at ${w}x${h}`);
       await shot(page, 'sensitive-matter');

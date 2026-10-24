@@ -6,7 +6,10 @@ namespace MatterFlow.WorkManagement.Application;
 
 // ---- references
 
-/// <summary>The Matter of a Task, with both number parts and the combined reference.</summary>
+/// <summary>
+/// The Matter of a Task, with both number parts and the combined reference. <c>CanOpen</c> is false when the caller sees the Task but not the Matter itself
+/// (a sensitive Matter and an assignee, epic #788 mode H): the screen then shows this header as plain text with no link to the Matter page.
+/// </summary>
 public sealed record TaskMatterRef(
     [property: Required] int MatterId,
     [property: Required] int ClientId,
@@ -15,7 +18,8 @@ public sealed record TaskMatterRef(
     [property: Required] string MatterRef,
     [property: Required] string Name,
     [property: Required] bool IsActive,
-    [property: Required] bool IsSensitive);
+    [property: Required] bool IsSensitive,
+    [property: Required] bool CanOpen = true);
 
 /// <summary>The Project of a Task.</summary>
 public sealed record TaskProjectRef([property: Required] int ProjectId, [property: Required] string Name, [property: Required] bool IsActive);

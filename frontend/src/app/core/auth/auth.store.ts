@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../http/api-error';
+import { SessionReset } from '../session/session-reset';
 import { Clock } from '../time/clock';
 import { MeApi } from './me-api';
 import { MeProfile } from './me.models';
@@ -25,6 +26,7 @@ const LINK_PERMISSION = {
 export class AuthStore {
   private readonly api = inject(MeApi);
   private readonly clock = inject(Clock);
+  private readonly sessionReset = inject(SessionReset);
 
   private readonly _profile = signal<MeProfile | null>(null);
   private readonly _state = signal<AuthLoadState>('idle');
@@ -63,6 +65,15 @@ export class AuthStore {
    */
   canLink(entity: 'matter' | 'client' | 'project'): boolean {
     return this.has(LINK_PERMISSION[entity]);
+  }
+
+  /**
+   * Whether a link to a matter's screen is offered for a record that carries the server's `canOpen` answer (a task, a queue row, an asset): the
+   * person needs Matter.View, and the server must not have said it shows only the matter header (a sensitive matter seen through an assigned task,
+   * epic #788). Then the reference stays plain text; an absent answer (older response, other record) counts as "may open".
+   */
+  canOpenMatter(canOpen: boolean | null | undefined): boolean {
+    return canOpen !== false && this.canLink('matter');
   }
 
   /** True when the user holds at least one of the codes (empty list = no requirement). */
@@ -110,14 +121,19 @@ export class AuthStore {
     this._state.set('loading');
     this.inflight = firstValueFrom(this.api.getMe())
       .then((profile) => {
+        // Another person behind the same page: nothing cached for the earlier one (names, notifications, lookups) may stay on screen.
+        const earlier = this._profile();
+        if (earlier && earlier.userId !== profile.userId) this.sessionReset.run();
         this._profile.set(profile);
         this._state.set('ready');
       })
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.code === 'ACCOUNT_DISABLED') {
+          if (this._profile()) this.sessionReset.run();
           this._profile.set(this.restrictedProfile('DISABLED'));
           this._state.set('ready');
         } else if (err instanceof ApiError && err.code === 'ACCESS_PENDING') {
+          if (this._profile()) this.sessionReset.run();
           this._profile.set(this.restrictedProfile('ACCESS_PENDING'));
           this._state.set('ready');
         } else {

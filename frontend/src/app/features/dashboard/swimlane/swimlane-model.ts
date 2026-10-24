@@ -379,6 +379,7 @@ export function cardToRow(card: SwimlaneCard): TaskQueueRow {
     matterRef: card.matterRef,
     matterName: card.matterName,
     matterIsSensitive: card.matterIsSensitive,
+    matterCanOpen: card.matterCanOpen,
     // The board only lists tasks of Matters the viewer can reach; the server re-checks Reopen on an inactive Matter.
     matterIsActive: true,
     clientId: card.clientId,
