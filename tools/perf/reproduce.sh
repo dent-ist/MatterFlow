@@ -13,6 +13,8 @@
 #   PERF_THINK=400-1600     think time range between a user's requests in ms (0-0 with PERF_NO_LIMITS=1 is the saturation test)
 #   PERF_NO_LIMITS=1        lift the per-user API rate limits (for the saturation test)
 #   PERF_SQL_MEMORY_MB=3072 memory the SQL Server container may use (MSSQL_MEMORY_LIMIT_MB)
+#   PERF_SENSITIVE=1        start the API with the sensitive-matter rule on (Features__SensitiveMatterAccess=true, epic #788). The dataset always holds the sensitive
+#                           matters, their managers and assignees; run once without and once with this switch and compare (budget: p95 not worse than +15 percent)
 #   PERF_API_DIR=...        use an already published API folder instead of publishing (artifacts/perf-publish)
 #   PERF_KEEP=1             leave SQL and the API running afterwards (prints how to stop them)
 #   PERF_RESTORE_BETWEEN=1  restore the freshly seeded database before each run (default; 0 keeps the data the previous run changed)
@@ -82,6 +84,7 @@ start_api() {
     export Seed__StarterConfiguration__Enabled=true Security__AllowPrivilegedDatabaseIdentity=true Hosting__ServeSpa=false
     export Dev__Users__0__Username=perf.admin Dev__Users__0__DisplayName="Perf Admin" Dev__Users__0__Roles__0="System Admin"
     export Logging__LogLevel__Default=Warning
+    if [ "${PERF_SENSITIVE:-0}" = "1" ]; then export Features__SensitiveMatterAccess=true; fi
     if [ "${PERF_NO_LIMITS:-0}" = "1" ]; then
       for budget in ApiPerMinute CommentWritesPerMinute TaskWritesPerMinute SearchPerMinute AdvancedSearchPerMinute AuditPerMinute DashboardPerMinute; do
         export "RateLimits__$budget=1000000"

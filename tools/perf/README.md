@@ -9,7 +9,7 @@ against it. Results of the first round: `docs/qa/performance-round-1.md`.
 | `loadtest.mjs` | N concurrent virtual users (Dev auth, persona mix, think time) for D seconds; per scenario count, errors, requests per second, p50/p95/p99/max. Node 22, no packages. |
 | `top-queries.sql` | The costliest statements (plan cache) and missing-index suggestions after a run. |
 | `frontend-timings.mjs` | Chromium timings of the published web app (cold/warm load, queue with 25 and 100 rows, long comment thread); needs `npm ci` in `frontend/`. |
-| `reproduce.sh` | Does all of the above on a throwaway stack: SQL container on a random loopback port, publish, seed, run, collect, clean up. |
+| `reproduce.sh` | Does all of the above (`PERF_SENSITIVE=1` starts the API with the sensitive-matter rule on) on a throwaway stack: SQL container on a random loopback port, publish, seed, run, collect, clean up. |
 
 ## One command
 
@@ -44,6 +44,11 @@ process are removed again unless `PERF_KEEP=1`. The full list of variables is at
   (15% of those with a time); open Tasks created in the last 60 days, closed ones up to 180 days ago; 40% of the Tasks sit in the 50 "big" Matters; 60% have a
   Project; about 60% belong to a Pod, in progress Tasks have an assignee (a technician or scientist in that person's Pod); the 15 starter Task Types and 8
   starter workflows (2 to 7 steps, 4.6 on average), step status consistent with the Task status, request and step form values from the published forms.
+- Sensitive matters (epic #788): 10 percent of the Matters are sensitive (`SensitivePercent` in the `#cfg` table at the top of the seed), plus every fourth "big" Matter, so about 11 percent of the Matters and 17 percent of the Tasks (at Scale 0.8: 90 Matters, 3,368 Tasks). 80 percent of those have a Primary
+  project manager among users 6 to 15 (every other one also a Secondary), 20 percent have no manager, so only the Directors (users 1 to 5, who hold `Matter.ViewSensitive`)
+  and the people assigned a task on them see them. Tasks are assigned across the technicians and scientists whatever the Matter, so most sensitive Matters have several people
+  who see only their own task. Their audit events are stamped (`IsSensitiveScope`). The seed prints the counts (`SensitiveMatters`, `SensitiveMattersWithManager`,
+  `TasksOnSensitiveMatters`, `AssigneesOnSensitiveMatters`, `SensitiveAuditEvents`).
 - Comments are skewed on purpose: Task 1 gets about 350, Task 2 about 160, so the long-thread paths (`skip`/`take`, Load more) are exercised.
 - Task-Asset links point to Assets of the Task's own Matter (the table enforces it).
 - Audit events follow the real event shapes (`TASK_CREATED`, `TASK_STATUS_CHANGED`, `STEP_STARTED`/`STEP_COMPLETED`, `COMMENT_ADDED`, `TASK_ASSET_LINKED`,
@@ -51,6 +56,20 @@ process are removed again unless `PERF_KEEP=1`. The full list of variables is at
 - Not seeded: custom field index rows (`CustomFieldIndex`), Asset form values, comment revisions, email intake.
 
 Content is random (`NEWID()`), so two runs differ in text and assignment but not in volume or distribution.
+
+## Measuring the sensitive-matter rule
+
+The rule is behind the go-live switch `Features:SensitiveMatterAccess` (default off). The dataset above always holds the sensitive Matters, so one seeded database serves both
+runs. Run the same load with and without the rule and compare p50 and p95 of the heavy reads (Task Queue, Dashboard, My Work, search, audit search). The budget of the design
+(README 12.5 of `docs/ux/sensitive-matters`) is not worse than +15 percent; the first measurement, at 20,000 Tasks, is in `docs/qa/sensitive-matters-performance.md` and does not meet it yet:
+
+```
+PERF_SCALE=1 PERF_VUS="50" tools/perf/reproduce.sh                      # rule off (today's behaviour)
+PERF_SCALE=1 PERF_VUS="50" PERF_SENSITIVE=1 tools/perf/reproduce.sh     # rule on
+```
+
+The personas fit the rule: managers (users 1 to 15) are the Directors, who see everything, and the Project Managers, who see what they manage; technicians and scientists
+see non-sensitive Matters plus their own tasks on sensitive ones.
 
 ## The load test
 

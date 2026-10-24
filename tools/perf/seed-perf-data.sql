@@ -22,7 +22,8 @@ INSERT #cfg VALUES
   ('Tasks', CAST(25000 * @s AS INT)),
   ('Comments', CAST(60000 * @s AS INT)),
   ('SpreadAssets', CAST(40000 * @s AS INT)),
-  ('AuditFieldChangesPerTask', 4);
+  ('AuditFieldChangesPerTask', 4),
+  ('SensitivePercent', 10);
 INSERT #cfg VALUES ('Matters', (SELECT Val * 5 FROM #cfg WHERE Name = 'Clients'));
 GO
 
@@ -109,10 +110,21 @@ SELECT c.ClientId, c.ClientNumber, RIGHT('00000' + CAST(k.value AS VARCHAR(5)), 
   CASE (c.ClientId + k.value) % 5 WHEN 0 THEN N'Investigation ' WHEN 1 THEN N'Litigation ' WHEN 2 THEN N'Merger Review ' WHEN 3 THEN N'Regulatory Inquiry ' ELSE N'Arbitration ' END
     + w.v + N' ' + CAST(c.ClientId * 10 + k.value AS NVARCHAR(10)),
   CASE WHEN (c.ClientId * 5 + k.value) % 20 = 3 THEN 0 ELSE 1 END,
-  CASE WHEN (c.ClientId * 5 + k.value) % 50 = 7 THEN 1 ELSE 0 END,
+  CASE WHEN ((c.ClientId * 5 + k.value) * 7) % 100 < (SELECT Val FROM #cfg WHERE Name = 'SensitivePercent')
+         OR ((c.ClientId - @cBase - 1) * 5 + k.value) % 80 = 0 THEN 1 ELSE 0 END,
   DATEADD(DAY, -(200 + (c.ClientId + k.value) % 40), @now), @creator
 FROM dbo.Client c CROSS JOIN GENERATE_SERIES(1, 5) k JOIN #word w ON w.i = (c.ClientId * 3 + k.value) % 30
 WHERE c.ClientId > @cBase ORDER BY c.ClientId, k.value;
+
+-- Sensitive matters (epic #788, README 12.5: 10 percent of the matters, plus every fourth "big" Matter so that a good share of the Tasks sits on sensitive matters): 80 percent have a Primary project manager (users 6 to 15, the Project Managers), every other of
+-- those also a Secondary; 20 percent have no manager at all, so only the Directors (Matter.ViewSensitive) and the people assigned a task on them see those. The Tasks below
+-- are assigned across the technicians and scientists whatever the matter, so most sensitive matters have several people who see only their own tasks.
+UPDATE m SET PrimaryManagerId = pm.UserId,
+  SecondaryManagerId = CASE WHEN m.MatterId % 2 = 0 THEN pm2.UserId END
+FROM dbo.Matter m
+JOIN #U pm ON pm.i = 6 + (m.MatterId % 10)
+JOIN #U pm2 ON pm2.i = 6 + ((m.MatterId + 3) % 10)
+WHERE m.MatterId > @mBase AND m.IsSensitive = 1 AND m.MatterId % 5 <> 0;
 
 -- mi = running index of the dataset's Matters; every 20th is a "big" Matter (250 Assets, a large share of the Tasks)
 CREATE TABLE #M (mi INT NOT NULL PRIMARY KEY, MatterId INT NOT NULL, IsBig BIT NOT NULL);
@@ -441,6 +453,11 @@ SELECT CONVERT(VARCHAR(30), SYSDATETIME(), 121) + ' audit done: ' + CAST((SELECT
 GO
 
 -- ---------------------------------------------------------------- statistics, marker, summary
+-- The application stamps every audit event written while its matter is sensitive (script 36, IsSensitiveScope); events written before go-live are stamped by
+-- the same rule here. AuditEvent is append-only behind a trigger: it is switched off for this one statement (the seed runs as the database owner).
+DISABLE TRIGGER dbo.TR_AuditEvent_AppendOnly ON dbo.AuditEvent;
+UPDATE a SET IsSensitiveScope = 1 FROM dbo.AuditEvent a JOIN dbo.Matter m ON m.MatterId = a.MatterId WHERE m.IsSensitive = 1;
+ENABLE TRIGGER dbo.TR_AuditEvent_AppendOnly ON dbo.AuditEvent;
 UPDATE STATISTICS dbo.Task WITH FULLSCAN;
 UPDATE STATISTICS dbo.StepInstance WITH FULLSCAN;
 UPDATE STATISTICS dbo.TaskComment WITH FULLSCAN;
@@ -453,5 +470,10 @@ GO
 SELECT 'Users' AS [Table], COUNT(*) AS [Rows] FROM dbo.AppUser UNION ALL SELECT 'Pods', COUNT(*) FROM dbo.Pod UNION ALL SELECT 'Clients', COUNT(*) FROM dbo.Client
 UNION ALL SELECT 'Matters', COUNT(*) FROM dbo.Matter UNION ALL SELECT 'Projects', COUNT(*) FROM dbo.Project UNION ALL SELECT 'Assets', COUNT(*) FROM dbo.Asset
 UNION ALL SELECT 'Tasks', COUNT(*) FROM dbo.Task UNION ALL SELECT 'StepInstances', COUNT(*) FROM dbo.StepInstance UNION ALL SELECT 'FormValueSets', COUNT(*) FROM dbo.FormValueSet
-UNION ALL SELECT 'Comments', COUNT(*) FROM dbo.TaskComment UNION ALL SELECT 'TaskAssets', COUNT(*) FROM dbo.TaskAsset UNION ALL SELECT 'AuditEvents', COUNT(*) FROM dbo.AuditEvent;
+UNION ALL SELECT 'Comments', COUNT(*) FROM dbo.TaskComment UNION ALL SELECT 'TaskAssets', COUNT(*) FROM dbo.TaskAsset UNION ALL SELECT 'AuditEvents', COUNT(*) FROM dbo.AuditEvent
+UNION ALL SELECT 'SensitiveMatters', COUNT(*) FROM dbo.Matter WHERE IsSensitive = 1
+UNION ALL SELECT 'SensitiveMattersWithManager', COUNT(*) FROM dbo.Matter WHERE IsSensitive = 1 AND (PrimaryManagerId IS NOT NULL OR SecondaryManagerId IS NOT NULL)
+UNION ALL SELECT 'TasksOnSensitiveMatters', COUNT(*) FROM dbo.Task t JOIN dbo.Matter m ON m.MatterId = t.MatterId WHERE m.IsSensitive = 1
+UNION ALL SELECT 'AssigneesOnSensitiveMatters', COUNT(DISTINCT t.AssignedUserId) FROM dbo.Task t JOIN dbo.Matter m ON m.MatterId = t.MatterId WHERE m.IsSensitive = 1
+UNION ALL SELECT 'SensitiveAuditEvents', COUNT(*) FROM dbo.AuditEvent WHERE IsSensitiveScope = 1;
 GO

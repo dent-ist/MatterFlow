@@ -27,6 +27,9 @@ import {
 const FIRM_ZONE = 'America/New_York';
 const DEMO_CLIENT_BASE = 90001; // Demo clients are numbered 90001..90005
 const DEMO_MATTER_BASE = 80001; // Demo matters 80001..80012 (five digits, unique within their client)
+// Sensitive Demo matters (epic #788): by position in MATTER_NAMES. Index 5 gets two managers (the plan in ensureManagers), index 9 gets none, so the demo
+// shows both cases: a sensitive matter people manage and one that only holders of Matter.ViewSensitive and the people assigned a task on it can see.
+const SENSITIVE_MATTER_INDEXES = new Set([5, 9]);
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Options
@@ -207,6 +210,8 @@ async function discover(admin) {
 // Users
 
 function roleNameFor(i) {
+  // Test User 02 is a Director: by default the Director role holds Matter.ViewSensitive, so this person sees every sensitive Demo matter (epic #788).
+  if (i === 2) return 'Director';
   if (i % 12 === 6) return 'Pod Lead';
   if (i % 16 === 3) return 'Project Manager';
   if (i % 5 === 2 || i % 9 === 0) return 'Data Scientist';
@@ -394,7 +399,7 @@ async function ensureOrganization(admin, ctx, opts, summary) {
               clientId: client.clientId,
               matterNumber: number,
               name,
-              isSensitive: m === 5,
+              isSensitive: SENSITIVE_MATTER_INDEXES.has(m),
             }),
         );
       } else {
@@ -403,6 +408,7 @@ async function ensureOrganization(admin, ctx, opts, summary) {
           matterRef: `${client.clientNumber}-${number}`,
           name,
           isActive: true,
+          isSensitive: SENSITIVE_MATTER_INDEXES.has(m),
         };
       }
     }
@@ -560,6 +566,10 @@ function planTasks(total, ctx, opts, rng) {
   order.slice(-Math.max(1, Math.round(userCount * 0.1))).forEach((k) => (weights[k] *= 2.5));
   // The admin (the person running the app) gets a share too, so My Work shows active, due soon and completed tasks.
   weights[ctx.assignees.length - 1] = 9;
+  // The Director only oversees (and sees every sensitive matter): no tasks, so the demo has one person who sees all and works nothing.
+  ctx.assignees.forEach((a, j) => {
+    if (a.roleName === 'Director') weights[j] = 0;
+  });
 
   const priorityWeights = ctx.priorities.map((p) =>
     p.isDefault
@@ -698,6 +708,50 @@ async function ensureManagers(admin, ctx, opts, summary) {
   log(`Project managers: ${summary.managersSet} matters ${opts.dryRun ? 'to get' : 'got'} managers.`);
 }
 
+/**
+ * What the demo shows about sensitive matters (epic #788): which Demo matters are sensitive, who manages them, who holds a task on them and
+ * which test accounts to sign in as to see each case. Read-only. The rule itself is switched on with Features__SensitiveMatterAccess=true.
+ */
+async function reportSensitive(admin, ctx) {
+  const sensitive = ctx.matters.filter((m) => m.matterId !== null && m.isSensitive === true);
+  if (sensitive.length === 0) {
+    log('No sensitive Demo matter exists (the Demo matters were created before the demo marked two of them).');
+    return;
+  }
+  const byId = new Map(ctx.users.map((u) => [u.userId, u]));
+  const managers = new Set();
+  const assignees = new Set();
+  for (const matter of sensitive) {
+    const detail = await admin.get(`/api/v1/matters/${matter.matterId}`);
+    const tasks = await admin.getAll(`/api/v1/tasks?matterId=${matter.matterId}&pageSize=100`);
+    const person = (m) => (m ? m.displayName : 'none');
+    for (const m of [detail.primaryManager, detail.secondaryManager]) if (m) managers.add(m.userId);
+    const who = new Set();
+    for (const t of tasks) if (t.assignedUser) who.add(t.assignedUser.userId);
+    for (const id of who) assignees.add(id);
+    const names = [...who].map((id) => byId.get(id)?.displayName ?? 'admin').sort();
+    log(
+      `  ${detail.matterRef} ${detail.name}: Primary ${person(detail.primaryManager)}, Secondary ${person(detail.secondaryManager)}; ` +
+        `${tasks.length} tasks, assigned to ${names.length} people${names.length > 0 ? ` (${names.slice(0, 4).join(', ')}${names.length > 4 ? ', ...' : ''})` : ''}`,
+    );
+  }
+  const account = (u) => u?.account ?? '-';
+  const director = ctx.users.find((u) => u.roleName === 'Director');
+  const manager = ctx.users.find((u) => managers.has(u.userId));
+  const assignee = ctx.users.find((u) => assignees.has(u.userId) && !managers.has(u.userId));
+  const unrelated = ctx.users.find(
+    (u) => !assignees.has(u.userId) && !managers.has(u.userId) && u.roleName !== 'Director',
+  );
+  log('With Features__SensitiveMatterAccess=true, sign in as (X-Dev-User) to see each case:');
+  log(`  sees all sensitive matters (Director, Matter.ViewSensitive)   ${account(director)}`);
+  log(`  sees the sensitive matters they manage                        ${account(manager)}`);
+  log(`  sees only the tasks assigned to them and the matter header    ${account(assignee)}`);
+  log(`  sees none of them                                             ${account(unrelated)}`);
+  log(
+    'The admin sees everything. With the switch off (the default) every matter is visible to everybody who may view matters.',
+  );
+}
+
 async function pool(items, width, job) {
   let next = 0;
   const workers = Array.from({ length: Math.min(width, items.length) }, async () => {
@@ -713,9 +767,12 @@ async function runTask(plan, env, partial) {
   const { admin, ctx, filler, offsets, opts } = env;
   const matter = ctx.matters[plan.matterIndex];
   const assignee = plan.assigneeIndex === null ? null : ctx.assignees[plan.assigneeIndex];
-  const creator = plan.creatorIndex === null ? null : ctx.users[plan.creatorIndex];
+  // A sensitive matter is invisible to most test users (epic #788): its tasks are created and worked by the admin, who sees every matter. The planned
+  // assignee still gets the task, so that person sees exactly that task (and the matter header) and nothing else of the matter.
+  const sensitive = matter.isSensitive === true;
+  const creator = plan.creatorIndex === null || sensitive ? null : ctx.users[plan.creatorIndex];
   const creatorApi = creator ? admin.as(creator.account) : admin;
-  const actorApi = assignee ? admin.as(assignee.account) : admin;
+  const actorApi = assignee && !sensitive ? admin.as(assignee.account) : admin;
   const type = plan.type;
 
   const workflowIds = type.eligibleWorkflowIds;
@@ -1103,6 +1160,10 @@ async function main() {
     if (found.total !== created.length + leftovers.length) process.exitCode = 1;
     if (failures.length > 0) process.exitCode = 1;
   }
+
+  step('Sensitive matters');
+  if (opts.dryRun) log('Dry run: not read.');
+  else await reportSensitive(admin, ctx);
 
   step('Done');
   log(
