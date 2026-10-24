@@ -184,21 +184,23 @@ const clientOption = (c: {
             </select>
           </div>
         }
-        <div class="fb__field">
-          <label for="mm-range">Dates</label>
-          <select
-            id="mm-range"
-            class="mf-control mf-control--compact fb__select"
-            data-filter="range"
-            [value]="filters().range"
-            (change)="rangePicked($any($event.target).value)"
-          >
-            @for (r of ranges; track r) {
-              <option [value]="r" [selected]="r === filters().range">{{ rangeLabels[r] }}</option>
-            }
-          </select>
-        </div>
-        @if (filters().range === 'custom') {
+        @if (dates()) {
+          <div class="fb__field">
+            <label for="mm-range">Dates</label>
+            <select
+              id="mm-range"
+              class="mf-control mf-control--compact fb__select"
+              data-filter="range"
+              [value]="filters().range"
+              (change)="rangePicked($any($event.target).value)"
+            >
+              @for (r of ranges; track r) {
+                <option [value]="r" [selected]="r === filters().range">{{ rangeLabels[r] }}</option>
+              }
+            </select>
+          </div>
+        }
+        @if (dates() && filters().range === 'custom') {
           <div class="fb__field">
             <label for="mm-from">From</label>
             <input
@@ -237,9 +239,9 @@ const clientOption = (c: {
             Clear filters
           </button>
         }
-        <p class="fb__hint">
-          The dates apply to Upcoming deadlines. The other panels show all open work.
-        </p>
+        @if (dates()) {
+          <p class="fb__hint">{{ hint() }}</p>
+        }
       </div>
     </ng-template>
   `,
@@ -248,6 +250,12 @@ export class MyMattersFilterBar {
   readonly filters = input.required<MmFilters>();
   /** How many filters differ from the default (Clear filters shows from 1). */
   readonly active = input(0);
+  /** The Dates control: Overview and Deadlines only (the other tabs show all open work, or their own weeks). */
+  readonly dates = input(true);
+  /** The line under the controls that says what the dates apply to. */
+  readonly hint = input(
+    'The dates apply to Upcoming deadlines. The other panels show all open work.',
+  );
   readonly filterChange = output<Partial<MmFilters>>();
   readonly clear = output<void>();
   /** The name of the chosen client / manager, reported so the strip can name the filters. */

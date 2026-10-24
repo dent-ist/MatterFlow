@@ -8,9 +8,14 @@ export type PanelState = 'loading' | 'ready' | 'error';
 /**
  * One panel's own request (README 6.9): it loads when `trigger` changes, shows a skeleton the first time and the previous numbers
  * (dimmed, `busy`) afterwards, and reports its failure inline with Retry; one slow or failing panel never holds the others. Failures
- * are quiet (no toast: the panel says it). The connection coming back retries a failed panel once. Call in an injection context.
+ * are quiet (no toast: the panel says it). The connection coming back retries a failed panel once. `options.enabled` holds the first load
+ * back until it returns true. Call in an injection context.
  */
-export function panelLoader<T>(trigger: () => unknown, fetch: () => Observable<T>) {
+export function panelLoader<T>(
+  trigger: () => unknown,
+  fetch: () => Observable<T>,
+  options: { enabled?: () => boolean } = {},
+) {
   const quiet = inject(QuietRequests);
   const state = signal<PanelState>('loading');
   const data = signal<T | null>(null);
@@ -36,6 +41,8 @@ export function panelLoader<T>(trigger: () => unknown, fetch: () => Observable<T
 
   effect(() => {
     trigger();
+    // A panel that must wait for another (Recent activity waits for "Since your last visit" on a first visit) is held, then loads once released.
+    if (options.enabled && !options.enabled()) return;
     untracked(() => void load());
   });
   retryWhenBackOnline(

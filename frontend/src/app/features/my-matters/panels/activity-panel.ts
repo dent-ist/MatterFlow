@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MyMattersActivityItem, MyMattersClient } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
@@ -220,6 +228,15 @@ export function activityText(e: MyMattersActivityItem): string {
 })
 export class ActivityPanel {
   readonly filters = input.required<MmFilters>();
+  /** Changes whenever the marker moved elsewhere on the page ("Since your last visit" > Mark as read): the events read again. */
+  readonly marker = input(0);
+  /**
+   * Holds the first read back. Reading the activity creates the person's marker at the newest event (nothing is unread on a first visit), so on a
+   * first visit "Since your last visit" must have been read before this panel asks.
+   */
+  readonly hold = input(false);
+  /** The marker moved here (Mark all as read, or an event was opened). */
+  readonly marked = output<void>();
   protected readonly origin = inject(TaskOriginLinks);
   private readonly api = inject(MyMattersClient);
   private readonly clock = inject(Clock);
@@ -229,9 +246,13 @@ export class ActivityPanel {
   protected readonly expanded = signal(false);
   protected readonly marking = signal(false);
   protected readonly announcement = signal('');
+  /** The marks made here: the page counts them in `marker` too, and they must not make the panel read again what it just updated itself. */
+  private readonly own = signal(0);
+  /** The marker moves made elsewhere: a computed, so a move made here (counted in both) changes nothing. */
+  private readonly moves = computed(() => this.marker() - this.own());
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.take()],
+    () => [this.filters(), this.take(), this.moves()],
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersActivity(
@@ -248,6 +269,7 @@ export class ActivityPanel {
         a.managerId,
       );
     },
+    { enabled: () => !this.hold() },
   );
 
   constructor() {
@@ -297,6 +319,8 @@ export class ActivityPanel {
         items: data.items.map((i) => ({ ...i, isUnread: false })),
       });
       this.announcement.set('All activity marked as read.');
+      this.own.update((n) => n + 1);
+      this.marked.emit();
     } catch {
       // The error toast says it; the panel keeps showing the events as unread.
     } finally {

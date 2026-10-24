@@ -2,6 +2,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -11,6 +13,8 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
+import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
 import {
   DEFAULT_FILTERS,
@@ -25,6 +29,11 @@ import { ActivityPanel } from '../panels/activity-panel';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
 import { HealthPanel, HealthSort } from '../panels/health-panel';
+import { SincePanel } from '../panels/since-panel';
+import { ActivityTab } from '../tabs/activity-tab';
+import { DeadlinesTab } from '../tabs/deadlines-tab';
+import { TrendsTab } from '../tabs/trends-tab';
+import { WorkloadTab } from '../tabs/workload-tab';
 import { WorkloadPanel } from '../panels/workload-panel';
 
 const SORTS: readonly HealthSort[] = [
@@ -37,6 +46,17 @@ const SORTS: readonly HealthSort[] = [
   'unassigned',
   'flag',
 ];
+
+/** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
+export const MM_TABS = ['overview', 'deadlines', 'workload', 'trends', 'activity'] as const;
+export type MmTab = (typeof MM_TABS)[number];
+const TAB_LABELS: Record<MmTab, string> = {
+  overview: 'Overview',
+  deadlines: 'Deadlines',
+  workload: 'Workload',
+  trends: 'Trends',
+  activity: 'Activity',
+};
 
 const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
 
@@ -78,20 +98,19 @@ function storage(): Storage | null {
     MyMattersFilterBar,
     MyMattersStrip,
     PageHeader,
+    ScopeSwitch,
+    SincePanel,
+    Tabs,
     WorkloadPanel,
+    ActivityTab,
+    DeadlinesTab,
+    TrendsTab,
+    WorkloadTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
       display: block;
-    }
-    .mm__scope {
-      display: inline-flex;
-    }
-    .mm__scope .mf-btn[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
     }
     .mm__grid {
       display: grid;
@@ -121,6 +140,13 @@ function storage(): Storage | null {
     .mm__grid > * {
       min-width: 0;
     }
+    .mm__since {
+      margin-bottom: var(--mf-s3);
+    }
+    .mm__loading {
+      margin: 0;
+      color: var(--mf-text-muted);
+    }
     /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, workload, activity. */
     @media (max-width: 639.98px) {
       .mm__grid {
@@ -132,40 +158,26 @@ function storage(): Storage | null {
           'workload'
           'activity';
       }
-      .mm__scope .mf-btn {
-        min-height: 44px;
-      }
     }
   `,
   template: `
     <mf-page-header heading="My Matters" [description]="description()">
-      @if (canAll()) {
-        <div mfActions class="mm__scope" role="group" aria-label="Scope" data-ph-selector>
-          <button
-            type="button"
-            class="mf-btn"
-            data-scope="mine"
-            [attr.aria-pressed]="filters().scope === 'mine'"
-            (click)="update({ scope: 'mine', managerId: null })"
-          >
-            My matters
-          </button>
-          <button
-            type="button"
-            class="mf-btn"
-            data-scope="all"
-            [attr.aria-pressed]="filters().scope === 'all'"
-            (click)="update({ scope: 'all' })"
-          >
-            All matters
-          </button>
-        </div>
-      }
+      <mf-scope-switch
+        mfActions
+        [scope]="filters().scope"
+        [canAll]="canAll()"
+        allLabel="All matters"
+        (scopeChange)="
+          update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
+        "
+      />
     </mf-page-header>
 
     <mf-mm-filter-bar
       [filters]="filters()"
       [active]="active()"
+      [dates]="datesApply()"
+      [hint]="datesHint()"
       (filterChange)="update($event)"
       (clear)="clear()"
       (clientName)="clientName.set($event)"
@@ -174,27 +186,88 @@ function storage(): Storage | null {
 
     <mf-mm-strip [filters]="filters()" [clientName]="clientName()" [managerName]="managerName()" />
 
-    <div class="mm__grid">
-      <mf-mm-attention class="mm__attention" [filters]="filters()" />
-      <mf-mm-deadlines
-        class="mm__deadlines"
-        [filters]="filters()"
-        (rangeChange)="setRange($event)"
-      />
-      <mf-mm-health
-        class="mm__health"
-        [filters]="filters()"
-        [sort]="sort()"
-        [dir]="dir()"
-        [pageNumber]="page()"
-        [filtered]="active() > 0"
-        (sortChange)="setSort($event.sort, $event.dir)"
-        (pageChange)="setPage($event)"
-        (clearFilters)="clear()"
-        (showAll)="update({ scope: 'all' })"
-      />
-      <mf-mm-workload class="mm__workload" [filters]="filters()" />
-      <mf-mm-activity class="mm__activity" [filters]="filters()" />
+    <mf-tabs
+      class="mm__tabs"
+      label="My Matters sections"
+      idPrefix="mm"
+      [tabs]="tabList"
+      [selected]="tab()"
+      (tabChange)="selectTab($event)"
+    />
+    <div
+      class="mm__panel"
+      role="tabpanel"
+      id="mm-panel"
+      [attr.aria-labelledby]="'mm-tab-' + tab()"
+      data-mm-tabpanel
+    >
+      @switch (tab()) {
+        @case ('deadlines') {
+          @defer (on immediate) {
+            <mf-mm-deadlines-tab [filters]="filters()" (rangeChange)="setRange($event)" />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading deadlines</p>
+          }
+        }
+        @case ('workload') {
+          @defer (on immediate) {
+            <mf-mm-workload-tab [filters]="filters()" />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading workload</p>
+          }
+        }
+        @case ('trends') {
+          @defer (on immediate) {
+            <mf-mm-trends-tab [filters]="filters()" />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading trends</p>
+          }
+        }
+        @case ('activity') {
+          @defer (on immediate) {
+            <mf-mm-activity-tab [filters]="filters()" (marked)="markerMoved()" />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading activity</p>
+          }
+        }
+        @default {
+          <mf-mm-since
+            class="mm__since"
+            [filters]="filters()"
+            [marker]="marker()"
+            (marked)="markerMoved()"
+            (settled)="sinceSettled.set(true)"
+          />
+          <div class="mm__grid">
+            <mf-mm-attention class="mm__attention" [filters]="filters()" />
+            <mf-mm-deadlines
+              class="mm__deadlines"
+              [filters]="filters()"
+              (rangeChange)="setRange($event)"
+            />
+            <mf-mm-health
+              class="mm__health"
+              [filters]="filters()"
+              [sort]="sort()"
+              [dir]="dir()"
+              [pageNumber]="page()"
+              [filtered]="active() > 0"
+              (sortChange)="setSort($event.sort, $event.dir)"
+              (pageChange)="setPage($event)"
+              (clearFilters)="clear()"
+              (showAll)="update({ scope: 'all' })"
+            />
+            <mf-mm-workload class="mm__workload" [filters]="filters()" />
+            <mf-mm-activity
+              class="mm__activity"
+              [filters]="filters()"
+              [marker]="marker()"
+              [hold]="!sinceSettled()"
+              (marked)="markerMoved()"
+            />
+          </div>
+        }
+      }
     </div>
   `,
 })
@@ -212,6 +285,25 @@ export class MyMattersPage {
     equal: same,
   });
   protected readonly active = computed(() => activeFilterCount(this.filters()));
+  /** The tab in the address (`?tab=`); Overview when absent or unknown. */
+  protected readonly tab = computed<MmTab>(() => {
+    const t = this.params().get('tab');
+    return MM_TABS.includes(t as MmTab) ? (t as MmTab) : 'overview';
+  });
+  protected readonly tabList: MfTab[] = MM_TABS.map((key) => ({ key, label: TAB_LABELS[key] }));
+  /** The Dates control belongs to the two tabs that list deadlines. */
+  protected readonly datesApply = computed(
+    () => this.tab() === 'overview' || this.tab() === 'deadlines',
+  );
+  protected readonly datesHint = computed(() =>
+    this.tab() === 'deadlines'
+      ? 'The dates choose the weeks of the Deadlines tab.'
+      : 'The dates apply to Upcoming deadlines. The other panels show all open work.',
+  );
+  /** Counts the moves of the "seen" marker, so the panels that show it read again. */
+  protected readonly marker = signal(0);
+  /** "Since your last visit" has been read once: Recent activity may ask now (its first read creates the marker, see the panel). */
+  protected readonly sinceSettled = signal(false);
   protected readonly sort = computed<HealthSort | null>(() => {
     const s = this.params().get('sort');
     return SORTS.includes(s as HealthSort) ? (s as HealthSort) : null;
@@ -232,8 +324,30 @@ export class MyMattersPage {
       : 'The matters you manage as primary or secondary project manager. This is your default view, not a limit on what you can open.',
   );
 
+  private readonly injector = inject(Injector);
+  /** The tab changed by the person's own click or key (focus is already on it); a change from the address (Back) puts focus on the tab. */
+  private chose = false;
+  private shown: MmTab | null = null;
+
   constructor() {
     this.restoreRemembered();
+    effect(() => {
+      const tab = this.tab();
+      untracked(() => {
+        const first = this.shown === null;
+        const changed = tab !== this.shown;
+        this.shown = tab;
+        if (first || !changed) return;
+        if (this.chose) {
+          this.chose = false;
+          return;
+        }
+        afterNextRender(
+          () => document.getElementById(`mm-tab-${tab}`)?.focus({ preventScroll: true }),
+          { injector: this.injector },
+        );
+      });
+    });
     // Remember the filters per person, as a convenience only (the address stays the source of truth).
     effect(() => {
       const f = this.filters();
@@ -293,6 +407,16 @@ export class MyMattersPage {
     const next: MmFilters = { ...this.filters(), ...patch };
     if (patch.scope === 'mine') next.managerId = null;
     this.go({ ...filtersToParams(next), page: null });
+  }
+
+  protected markerMoved(): void {
+    this.marker.update((n) => n + 1);
+  }
+
+  /** A tab was chosen: the address changes (Overview leaves it), the health table goes back to its first page, the filters stay. */
+  protected selectTab(tab: string): void {
+    this.chose = true;
+    this.go({ tab: tab === 'overview' ? null : tab, page: null });
   }
 
   protected setRange(range: MmRange): void {

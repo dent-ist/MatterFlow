@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { NEVER, of, throwError } from 'rxjs';
+import { NEVER, Subject, of, throwError } from 'rxjs';
 import {
   ClientsClient,
   MatterManagersClient,
@@ -121,6 +121,68 @@ function activity(unread = 2) {
   };
 }
 
+function since(empty = false) {
+  const c = (n: number, query: string, target = 'activity') => ({
+    count: empty ? 0 : n,
+    query,
+    target,
+  });
+  return {
+    timeZone: 'America/New_York',
+    asOfUtc: '2026-10-23T12:00:00Z',
+    sinceUtc: '2026-10-19T13:12:00Z',
+    hasMarker: true,
+    seenEventId: 10,
+    counts: {
+      newTasks: c(0, 'kind=TASK_CREATED&unread=true'),
+      completed: c(7, 'kind=COMPLETED&unread=true'),
+      becameOverdue: c(4, 'managedByMe=true&overdue=true&dueFrom=2026-10-19&sort=due', 'taskQueue'),
+      reassigned: c(2, 'kind=REASSIGNED&unread=true'),
+      putOnHold: c(1, 'kind=ON_HOLD&unread=true'),
+      comments: c(3, 'kind=COMMENTED&unread=true'),
+    },
+    items: empty
+      ? []
+      : [
+          { kind: 'BECAME_OVERDUE', task: task(1) },
+          {
+            kind: 'ON_HOLD',
+            event: { ...activity().items[0], isUnread: true },
+          },
+        ],
+  };
+}
+
+function trends() {
+  const week = (i: number) => ({
+    weekStart: `2026-09-${String(7 + i * 7).padStart(2, '0')}`,
+    weekEnd: `2026-09-${String(13 + i * 7).padStart(2, '0')}`,
+    isCurrent: i === 3,
+    created: 4 + i,
+    closed: 3 + i,
+    overdueAtWeekEnd: 2 + i,
+    createdQuery: 'managedByMe=true&createdFrom=2026-09-07',
+    closedQuery: 'managedByMe=true&status=COMPLETED',
+  });
+  return {
+    timeZone: 'America/New_York',
+    asOfUtc: '2026-10-23T12:00:00Z',
+    weeks: 12,
+    approximate: true,
+    limitations: ['CURRENT_DUE_DATES', 'CURRENT_STATUS'],
+    points: [0, 1, 2, 3].map(week),
+    now: {
+      open: 212,
+      averageAgeDays: 9.4,
+      onHold: 3,
+      oldestOnHoldDays: 12,
+      openQuery: 'managedByMe=true&status=NEW',
+      onHoldQuery: 'managedByMe=true&status=ON_HOLD',
+      overdueQuery: 'managedByMe=true&overdue=true',
+    },
+  };
+}
+
 describe('MyMattersPage', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
 
@@ -133,6 +195,7 @@ describe('MyMattersPage', () => {
       'Task.Create',
       'Client.View',
     ],
+    configure?: (api: Record<string, ReturnType<typeof vi.fn>>) => void,
   ) {
     api = {
       getMyMattersSummary: vi.fn().mockReturnValue(of(summary())),
@@ -216,9 +279,12 @@ describe('MyMattersPage', () => {
           ],
         }),
       ),
+      getMyMattersSinceLastVisit: vi.fn().mockReturnValue(of(since())),
+      getMyMattersTrends: vi.fn().mockReturnValue(of(trends())),
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
       markMyMattersActivitySeen: vi.fn().mockReturnValue(of({ seenEventId: 12, seenAtUtc: 'x' })),
     };
+    configure?.(api);
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
@@ -571,5 +637,136 @@ describe('MyMattersPage', () => {
     h.detectChanges();
     expect(el(h).querySelector('[data-panel=attention] [data-loading]')).toBeNull(); // keeps the previous numbers
     expect(el(h).querySelector('[data-panel=activity] [data-activity-list]')).not.toBeNull();
+  });
+
+  describe('tabs (epic #758, PX-18)', () => {
+    const tabs = (h: { fixture: { nativeElement: unknown } }) =>
+      Array.from(el(h).querySelectorAll<HTMLElement>('[role=tab]')).map((t) =>
+        t.textContent!.trim(),
+      );
+
+    it('has the five tabs, Overview selected, and the page as it was under it', async () => {
+      const h = await open('/my-matters');
+      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Workload', 'Trends', 'Activity']);
+      expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+        'Overview',
+      );
+      const panel = el(h).querySelector('[role=tabpanel]')!;
+      expect(panel.getAttribute('aria-labelledby')).toBe('mm-tab-overview');
+      expect(panel.querySelector('[data-panel=since]')).not.toBeNull();
+      expect(panel.querySelector('[data-panel=health]')).not.toBeNull();
+      expect(el(h).querySelector('[data-panel=deadlines-tab]')).toBeNull();
+    });
+
+    it('opens a tab from the address, loads only that tab and keeps the filters', async () => {
+      const h = await open('/my-matters?tab=trends&role=primary');
+      expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+        'Trends',
+      );
+      expect(el(h).querySelector('[data-panel=trends]')).not.toBeNull();
+      expect(el(h).querySelector('[data-panel=health]')).toBeNull();
+      expect(api['getMyMattersTrends']).toHaveBeenCalled();
+      expect(api['getMyMattersTrends'].mock.calls[0][2]).toBe('primary'); // weeks, scope, role
+      expect(api['getMyMattersHealth']).not.toHaveBeenCalled();
+      // The date control belongs to Overview and Deadlines only.
+      expect(el(h).querySelector('[data-filter=range]')).toBeNull();
+      expect(el(h).querySelector('[data-filter=role]')).not.toBeNull();
+    });
+
+    it('an unknown tab is Overview; choosing a tab changes the address and keeps the filters, Overview leaves the address', async () => {
+      const h = await open('/my-matters?tab=nonsense&clientId=4');
+      expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+        'Overview',
+      );
+      el(h).querySelector<HTMLElement>('[data-tab=activity]')!.click();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      const router = TestBed.inject(Router);
+      expect(router.parseUrl(router.url).queryParams).toMatchObject({
+        tab: 'activity',
+        clientId: '4',
+      });
+      el(h).querySelector<HTMLElement>('[data-tab=overview]')!.click();
+      await h.fixture.whenStable();
+      expect(router.parseUrl(router.url).queryParams['tab']).toBeUndefined();
+      expect(router.parseUrl(router.url).queryParams['clientId']).toBe('4');
+    });
+
+    it('the Trends tab shows the limitation on the screen, a summary, a table on request and the figures', async () => {
+      const h = await open('/my-matters?tab=trends');
+      const root = el(h).querySelector('[data-panel=trends]')!;
+      expect(root.querySelector('[data-approximate]')!.textContent).toContain('Approximate');
+      expect(root.querySelector('[data-limitations]')!.textContent).toContain('re-dated');
+      expect(root.querySelectorAll('svg[role=img]')).toHaveLength(2);
+      expect(root.querySelector('[data-chart=overdue] [data-summary]')!.textContent).toContain(
+        'Overdue tasks at the end of the week',
+      );
+      expect(root.querySelector('[data-age]')!.textContent).toContain('9.4 days');
+      expect(root.querySelector('[data-hold]')!.textContent).toContain('3');
+      expect(root.querySelector('[data-table=overdue]')).toBeNull();
+      root.querySelector<HTMLButtonElement>('[data-chart=overdue] [data-show-table]')!.click();
+      h.detectChanges();
+      expect(root.querySelectorAll('[data-table=overdue] tbody tr')).toHaveLength(4);
+      expect(root.querySelector('[data-how]')).not.toBeNull();
+    });
+  });
+
+  describe('Since your last visit (epic #758, PX-19)', () => {
+    it('is one sentence of counts that are links, the top items and Mark as read', async () => {
+      const h = await open('/my-matters');
+      const card = el(h).querySelector('[data-panel=since]')!;
+      const figures = Array.from(card.querySelectorAll('[data-since-figures] a')).map((a) =>
+        a.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(figures).toEqual([
+        '4 tasks became overdue',
+        '2 reassigned',
+        '7 completed',
+        '1 put on hold',
+        '3 comments',
+      ]);
+      expect(card.querySelector('[data-figure=becameOverdue]')!.getAttribute('href')).toContain(
+        '/tasks?',
+      );
+      expect(card.querySelector('[data-figure=reassigned]')!.getAttribute('href')).toContain(
+        'tab=activity',
+      );
+      expect(card.querySelectorAll('[data-since-item]')).toHaveLength(2);
+      expect(card.querySelector('[data-since-period]')!.textContent).toContain('Since Oct 19');
+      // Opening the page never moves the marker.
+      expect(api['markMyMattersActivitySeen']).not.toHaveBeenCalled();
+    });
+
+    it('Mark as read moves the marker once, says so, and the other panels read again', async () => {
+      const h = await open('/my-matters');
+      const before = api['getMyMattersSinceLastVisit'].mock.calls.length;
+      api['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
+      el(h).querySelector<HTMLButtonElement>('[data-mark-read]')!.click();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      expect(api['markMyMattersActivitySeen']).toHaveBeenCalledTimes(1);
+      expect(api['markMyMattersActivitySeen']).toHaveBeenCalledWith({});
+      expect(api['getMyMattersSinceLastVisit'].mock.calls.length).toBe(before + 1);
+      expect(el(h).querySelector('[data-since-empty]')!.textContent).toContain(
+        'Nothing has changed since your last visit.',
+      );
+      expect(el(h).querySelector('[data-mark-read]')).toBeNull();
+    });
+
+    it('waits for the summary before Recent activity asks (that read creates the marker on a first visit)', async () => {
+      const gate = new Subject<unknown>();
+      const h = await open('/my-matters', undefined, (a) => {
+        a['getMyMattersSinceLastVisit'].mockReturnValue(gate);
+      });
+      expect(api['getMyMattersActivity']).not.toHaveBeenCalled();
+      gate.next(since());
+      gate.complete();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      expect(api['getMyMattersActivity']).toHaveBeenCalled();
+    });
   });
 });
