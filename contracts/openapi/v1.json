@@ -8882,6 +8882,93 @@
         }
       }
     },
+    "/api/v1/my-matters/trends": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersTrends",
+        "parameters": [
+          {
+            "name": "weeks",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersTrends"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/workload": {
       "get": {
         "tags": [
@@ -16417,6 +16504,138 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "MyMattersTrendNow": {
+        "required": [
+          "open",
+          "averageAgeDays",
+          "onHold",
+          "oldestOnHoldDays",
+          "openQuery",
+          "onHoldQuery",
+          "overdueQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "averageAgeDays": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldestOnHoldDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "openQuery": {
+            "type": "string"
+          },
+          "onHoldQuery": {
+            "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
+      "MyMattersTrends": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "weeks",
+          "approximate",
+          "limitations",
+          "points",
+          "now"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weeks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "approximate": {
+            "type": "boolean"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersTrendWeek"
+            }
+          },
+          "now": {
+            "$ref": "#/components/schemas/MyMattersTrendNow"
+          }
+        }
+      },
+      "MyMattersTrendWeek": {
+        "required": [
+          "weekStart",
+          "weekEnd",
+          "isCurrent",
+          "created",
+          "closed",
+          "overdueAtWeekEnd",
+          "createdQuery",
+          "closedQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "weekEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "closed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdueAtWeekEnd": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdQuery": {
+            "type": "string"
+          },
+          "closedQuery": {
+            "type": "string"
           }
         }
       },

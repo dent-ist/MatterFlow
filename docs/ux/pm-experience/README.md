@@ -244,6 +244,10 @@ Matters without a manager: `none1`, `none2` (normal, nothing flagged) and `sensi
 - **`inMyMatters`** on every search hit (`GET /search`, `GET /search/advanced`): true when the hit's matter (for a client: one of its matters) is managed by the caller, false when not, **null for a caller without `Matter.BeManager`**. The test is part of the projection over the paged rows of the same statement (an `IN` on the managed matter ids), so there is no extra round trip and no per-row query; search stays global and no hit is left out or moved.
 - **Starter role** (`38-project-manager-no-dashboard.sql`, `StarterRoles`): the Project Manager role no longer holds `Dashboard.View`, `ViewSummary`, `ViewSwimlane`. The script removes them from a role named "Project Manager" only while its grants equal the old starter definition exactly (a customised, renamed or extended role is left alone), says what it did (the migration runner logs what a script `PRINT`s) and replaces the old description only while it is unchanged. An administrator can grant any tab back; nothing keys on the role name.
 
+## 10d. Backend monitoring endpoints (PX-07 to PX-11, #765 to #769, built)
+
+Deadlines `groupBy=day|matter`, workload with away windows and the matter split, activity with 30 days, filters, cursor paging and `GET /my-matters/since-last-visit`, `GET /my-matters/trends` and `GET /matters/{id}/overview` are specified in `docs/ux/pm-review/my-matters-api.md` ("Epic #758 additions"). Decisions made while building them: trends are derived from existing columns and answer with `approximate: true` and the list of `limitations` (no snapshot table); the overview returns `null` for a section the caller may not use and has no manager-warning field; the unread marker is moved only by `POST /my-matters/activity/seen`, never by a read.
+
 ## 11. Out of scope
 
 Sensitive-matter design (separate epic), status report, Gantt, time or budget, email, scheduled reports, matter-level comments or notes (Q4), keyboard shortcuts (#420), new notification events (epic #753 owns them).

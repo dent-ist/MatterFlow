@@ -96,6 +96,16 @@ public sealed class MyMattersDeadlinesQuery : MyMattersQuery
     public string? GroupBy { get; init; }
 }
 
+/// <summary>Trends: the common parameters plus the number of weeks. The date range (<c>from</c>, <c>to</c>) is accepted and ignored: the weeks are the range.</summary>
+public sealed class MyMattersTrendsQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "weeks"];
+
+    /// <summary><c>8</c> (default), <c>12</c> or <c>26</c>: how many weeks, the current week included.</summary>
+    [FromQuery(Name = "weeks")]
+    public int? Weeks { get; init; }
+}
+
 /// <summary>Recent activity: the common parameters plus the size, the filters and the cursor.</summary>
 public sealed class MyMattersActivityQuery : MyMattersQuery
 {

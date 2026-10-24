@@ -104,6 +104,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/my-matters/deadlines"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/deadlines?scope=all"]),
         ["GET api/v1/my-matters/health"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/health?scope=all&pageSize=100"]),
         ["GET api/v1/my-matters/since-last-visit"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/since-last-visit?scope=all"]),
+        ["GET api/v1/my-matters/trends"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/trends?scope=all"]),
         ["GET api/v1/my-matters/summary"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/summary?scope=all"]),
         ["GET api/v1/my-matters/workload"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/workload?scope=all"]),
         ["GET api/v1/my-work"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/my-work?pageSize=100"]),

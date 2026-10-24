@@ -322,3 +322,51 @@ public sealed record MyMattersSinceLastVisit(
 public sealed record MyMattersActivitySeen(
     [property: Required] long SeenEventId,
     [property: Required] DateTime SeenAtUtc);
+
+/// <summary>One week (Monday to Sunday in the viewer's zone) of the trends.</summary>
+/// <param name="WeekStart">The Monday.</param>
+/// <param name="WeekEnd">The Sunday.</param>
+/// <param name="IsCurrent">The week that contains today: it is not over, "at week end" means now.</param>
+/// <param name="Created">Tasks created in the week (<c>CreatedAt</c>).</param>
+/// <param name="Closed">Tasks completed in the week (the moment of the completion).</param>
+/// <param name="OverdueAtWeekEnd">Tasks that were open at the end of the week (now, for the current week) with a due moment before it. Derived, see <see cref="MyMattersTrends.Limitations"/>.</param>
+/// <param name="CreatedQuery">The Task Queue query that lists the created tasks.</param>
+/// <param name="ClosedQuery">The Task Queue query that lists the completed tasks.</param>
+public sealed record MyMattersTrendWeek(
+    [property: Required] DateOnly WeekStart,
+    [property: Required] DateOnly WeekEnd,
+    [property: Required] bool IsCurrent,
+    [property: Required] int Created,
+    [property: Required] int Closed,
+    [property: Required] int OverdueAtWeekEnd,
+    [property: Required] string CreatedQuery,
+    [property: Required] string ClosedQuery);
+
+/// <summary>The figures of today next to the weekly series.</summary>
+/// <param name="Open">Open tasks now.</param>
+/// <param name="AverageAgeDays">Average age of the open tasks (now minus <c>CreatedAt</c>), one decimal; null with no open task.</param>
+/// <param name="OnHold">Tasks on hold now.</param>
+/// <param name="OldestOnHoldDays">Whole days the longest-waiting task has been on hold; null when none is.</param>
+public sealed record MyMattersTrendNow(
+    [property: Required] int Open,
+    double? AverageAgeDays,
+    [property: Required] int OnHold,
+    int? OldestOnHoldDays,
+    [property: Required] string OpenQuery,
+    [property: Required] string OnHoldQuery,
+    [property: Required] string OverdueQuery);
+
+/// <summary>
+/// Trends of the matters in scope, week by week (epic #758, PX-09). Approximate on purpose: the schema keeps no history of due dates or statuses, so the series are derived from the current columns.
+/// </summary>
+/// <param name="Weeks">8, 12 or 26.</param>
+/// <param name="Approximate">Always true: the figures are derived, not recorded. Show <c>Limitations</c> next to them.</param>
+/// <param name="Limitations">Codes of what makes the figures approximate: <c>CURRENT_DUE_DATES</c> (a task that was re-dated is counted by its current due date), <c>CURRENT_STATUS</c> (a task that was re-opened is counted by its current status and last status change), <c>CURRENT_MATTER_SET</c> (the matters are those in scope now, with their tasks of all times).</param>
+public sealed record MyMattersTrends(
+    [property: Required] string TimeZone,
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] int Weeks,
+    [property: Required] bool Approximate,
+    [property: Required] IReadOnlyList<string> Limitations,
+    [property: Required] IReadOnlyList<MyMattersTrendWeek> Points,
+    [property: Required] MyMattersTrendNow Now);
