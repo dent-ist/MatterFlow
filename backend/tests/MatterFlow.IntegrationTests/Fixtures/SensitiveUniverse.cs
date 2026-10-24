@@ -94,7 +94,8 @@ public sealed class SensitiveUniverse
         string[] broad =
         [
             "Task.View", "Task.Create", "Task.Edit", "Task.Assign", "Task.Comment", "Matter.View", "Matter.Create", "Matter.Edit", "Matter.EditNumber", "Matter.SetActive",
-            "Matter.AssignManagers", "Matter.BeManager", "Project.View", "Project.Create", "Project.Edit", "Client.View", "Asset.View",
+            "Matter.AssignManagers", "Matter.BeManager", "Project.View", "Project.Create", "Project.Edit", "Client.View", "Asset.View", "Asset.Link", "Task.SetPriority", "Task.ChangeStatus", "Task.Complete", "Task.Cancel",
+            "Task.Reopen", "Workflow.Execute", "Workflow.StepReopen",
         ];
         PmPrimaryClient = await h.UserWithAsync(@"KE\pmprimary", broad);
         PmSecondaryClient = await h.UserWithAsync(@"KE\pmsecondary", broad);

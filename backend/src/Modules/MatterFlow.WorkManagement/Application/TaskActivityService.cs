@@ -19,7 +19,8 @@ public sealed class TaskActivityService(
     IUserDirectory users,
     IPodDirectory pods,
     IStatusLabelCatalog labels,
-    IPermissionChecker permissions)
+    IPermissionChecker permissions,
+    TaskAccess access)
 {
     public const int DefaultPageSize = 25;
     public const int MaxPageSize = 100;
@@ -42,7 +43,7 @@ public sealed class TaskActivityService(
         if (size is < 1 or > MaxPageSize)
             return Error.Validation("pageSize", "RANGE", $"pageSize must be between 1 and {MaxPageSize}.");
 
-        if (!await db.Set<WorkTask>().AnyAsync(t => t.Id == taskId, ct))
+        if (!await access.CanSeeAsync(taskId, ct))
             return TaskSupport.NotFound();
 
         var page = await reader.ListForTaskAsync(taskId, before, size, Hidden, ct);

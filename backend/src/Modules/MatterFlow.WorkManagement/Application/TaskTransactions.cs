@@ -1,4 +1,5 @@
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,7 @@ namespace MatterFlow.WorkManagement.Application;
 /// SaveChanges calls (which join it behind a savepoint), the Task update, the comment and the audit rows commit or roll back together.
 /// A failed result or any exception rolls everything back and clears the change tracker; no partial result is possible.
 /// </summary>
-public sealed class TaskTransactions(DbContext db)
+public sealed class TaskTransactions(DbContext db, IMatterVisibility visibility)
 {
     public async Task<Result<T>> RunAsync<T>(Func<CancellationToken, Task<Result<T>>> body, CancellationToken ct)
     {
@@ -40,11 +41,19 @@ public sealed class TaskTransactions(DbContext db)
         }
     }
 
-    /// <summary>Loads the Task tracked under an update lock (per-Task serialization, architecture 10.2). Null when it does not exist.</summary>
-    public Task<WorkTask?> LockTaskAsync(long taskId, CancellationToken ct) =>
-        db.Set<WorkTask>()
+    /// <summary>
+    /// Loads the Task tracked under an update lock (per-Task serialization, architecture 10.2). Null when it does not exist or the caller may not see it
+    /// (sensitive-matter rule, mode T): a hidden Task is "not found" exactly like a missing one, before any other check of the command.
+    /// </summary>
+    public async Task<WorkTask?> LockTaskAsync(long taskId, CancellationToken ct)
+    {
+        if (visibility.Enabled && !await visibility.CanSeeTaskAsync(taskId, ct))
+            return null;
+
+        return await db.Set<WorkTask>()
             .FromSql($"SELECT * FROM dbo.Task WITH (UPDLOCK, ROWLOCK) WHERE TaskId = {taskId}")
             .SingleOrDefaultAsync(ct);
+    }
 
     /// <summary>
     /// Takes the Matter row lock shared with Matter deactivation, so a Task cannot be created or reopened while the Matter is being made inactive

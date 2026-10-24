@@ -48,6 +48,7 @@ public sealed class TaskService
     private readonly IFormSubmissionValidator _validator;
     private readonly IFormValueStore _valueStore;
     private readonly TaskNotifier _notifier;
+    private readonly TaskAccess _access;
 
     public TaskService(
         DbContext db,
@@ -69,7 +70,8 @@ public sealed class TaskService
         IFormDefinitionResolver forms,
         IFormSubmissionValidator validator,
         IFormValueStore valueStore,
-        TaskNotifier notifier)
+        TaskNotifier notifier,
+        TaskAccess access)
     {
         _db = db;
         _tx = tx;
@@ -91,6 +93,7 @@ public sealed class TaskService
         _validator = validator;
         _valueStore = valueStore;
         _notifier = notifier;
+        _access = access;
     }
 
     // ---- read
@@ -99,7 +102,7 @@ public sealed class TaskService
 
     public async Task<Result<TaskWorkflowResponse>> GetWorkflowAsync(long taskId, CancellationToken ct)
     {
-        var instanceId = await _db.Set<WorkTask>().AsNoTracking().Where(t => t.Id == taskId).Select(t => (long?)t.WorkflowInstanceId).SingleOrDefaultAsync(ct);
+        var instanceId = await _access.Visible().Where(t => t.Id == taskId).Select(t => (long?)t.WorkflowInstanceId).SingleOrDefaultAsync(ct);
         return instanceId is null ? TaskSupport.NotFound() : await _presenter.WorkflowAsync(instanceId.Value, ct);
     }
 
@@ -117,7 +120,7 @@ public sealed class TaskService
         if (statuses.IsFailure)
             return statuses.Error!;
 
-        var rows = _db.Set<WorkTask>().AsNoTracking();
+        var rows = _access.Visible();
         if (query.MatterId is { } matterId)
             rows = rows.Where(t => t.MatterId == matterId);
         if (query.ProjectId is { } projectId)
@@ -237,12 +240,17 @@ public sealed class TaskService
             return due.Error!;
 
         var created = await _tx.RunAsync(token => CreateCoreAsync(request, description.Html, defaultPriority, due.Value, token), ct);
-        return created.IsFailure ? created.Error! : await _presenter.GetAsync(created.Value.TaskId, created.Value.Notes, ct);
+        return created.IsFailure ? created.Error! : await _presenter.GetAsync(created.Value.TaskId, created.Value.Notes, ct, afterWrite: true);
     }
 
     private async Task<Result<Created>> CreateCoreAsync(CreateTaskRequest request, string? descriptionHtml, PriorityInfo defaultPriority, TaskDue due, CancellationToken ct)
     {
         // The Matter row lock makes "create a Task" and "deactivate the Matter" mutually exclusive (architecture 10.3).
+        // A matter the caller may not see (sensitive-matter rule, mode M) is "not found" in the body, like a matter that does not exist; an assignee of one
+        // task cannot add sibling tasks.
+        if (!await _access.CanSeeMatterAsync(request.MatterId, ct))
+            return Error.Validation("matterId", "NOT_FOUND", "Select a matter.");
+
         await _tx.LockMatterAsync(request.MatterId, ct);
         var matter = await _matters.FindAsync(request.MatterId, ct);
         if (matter is null)
@@ -391,7 +399,7 @@ public sealed class TaskService
             return due.Error!;
 
         var updated = await _tx.RunAsync(token => UpdateCoreAsync(taskId, request, description.Html, due.Value, token), ct);
-        return updated.IsFailure ? updated.Error! : await _presenter.GetAsync(taskId, updated.Value, ct);
+        return updated.IsFailure ? updated.Error! : await _presenter.GetAsync(taskId, updated.Value, ct, afterWrite: true);
     }
 
     private async Task<Result<CommandNotes>> UpdateCoreAsync(long taskId, UpdateTaskRequest request, string? descriptionHtml, TaskDue due, CancellationToken ct)
@@ -626,7 +634,7 @@ public sealed class TaskService
     public async Task<Result<TaskResponse>> AssignAsync(long taskId, AssignTaskRequest request, CancellationToken ct)
     {
         var assigned = await _tx.RunAsync(token => AssignCoreAsync(taskId, request, token), ct);
-        return assigned.IsFailure ? assigned.Error! : await _presenter.GetAsync(taskId, assigned.Value, ct);
+        return assigned.IsFailure ? assigned.Error! : await _presenter.GetAsync(taskId, assigned.Value, ct, afterWrite: true);
     }
 
     /// <summary>
@@ -707,7 +715,7 @@ public sealed class TaskService
     public async Task<Result<TaskResponse>> SetPriorityAsync(long taskId, SetTaskPriorityRequest request, CancellationToken ct)
     {
         var done = await _tx.RunAsync(token => SetPriorityCoreAsync(taskId, request, token), ct);
-        return done.IsFailure ? done.Error! : await _presenter.GetAsync(taskId, null, ct);
+        return done.IsFailure ? done.Error! : await _presenter.GetAsync(taskId, null, ct, afterWrite: true);
     }
 
     internal async Task<Result<bool>> SetPriorityCoreAsync(long taskId, SetTaskPriorityRequest request, CancellationToken ct)
@@ -770,7 +778,7 @@ public sealed class TaskService
     private async Task<Result<ProjectSummary>> CheckProjectAsync(int projectId, int matterId, CancellationToken ct)
     {
         var project = await _projects.FindAsync(projectId, ct);
-        if (project is null)
+        if (project is null || (project.MatterId != matterId && !await _access.CanSeeMatterAsync(project.MatterId, ct)))
             return Error.Validation("projectId", "NOT_FOUND", "Select a project.");
         if (project.MatterId != matterId)
             return Error.Conflict(ErrorCodes.CrossMatterReference, "The project belongs to a different matter than the task.");

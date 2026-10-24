@@ -22,7 +22,8 @@ public sealed class TaskCommentService(
     ICurrentUser currentUser,
     IClock clock,
     IUserDirectory users,
-    TaskNotifier notifier)
+    TaskNotifier notifier,
+    TaskAccess access)
 {
     /// <summary>Stable validation code for comment markup beyond the structural caps (SEC2-01).</summary>
     public const string TooComplexCode = "TOO_COMPLEX";
@@ -45,7 +46,7 @@ public sealed class TaskCommentService(
         if (take is < 1 or > MaxPageSize)
             return Error.Validation("take", "RANGE", $"take must be between 1 and {MaxPageSize}.");
 
-        if (!await db.Set<WorkTask>().AnyAsync(t => t.Id == taskId, ct))
+        if (!await access.CanSeeAsync(taskId, ct))
             return TaskSupport.NotFound();
 
         var query = db.Set<TaskComment>().AsNoTracking().Where(c => c.TaskId == taskId && !c.IsDeleted);
@@ -60,7 +61,7 @@ public sealed class TaskCommentService(
 
     public async Task<Result<TaskCommentRevisionListResponse>> ListRevisionsAsync(long taskId, long commentId, CancellationToken ct)
     {
-        var comment = await FindVisibleAsync(taskId, commentId, ct);
+        var comment = await access.CanSeeAsync(taskId, ct) ? await FindVisibleAsync(taskId, commentId, ct) : null;
         if (comment is null)
             return CommentNotFound();
 
@@ -88,7 +89,7 @@ public sealed class TaskCommentService(
         var created = await tx.RunAsync<long>(
             async token =>
             {
-                var task = await db.Set<WorkTask>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == taskId, token);
+                var task = await access.Visible().SingleOrDefaultAsync(t => t.Id == taskId, token);
                 if (task is null)
                     return TaskSupport.NotFound();
 
@@ -120,7 +121,7 @@ public sealed class TaskCommentService(
         var done = await tx.RunAsync<long>(
             async token =>
             {
-                var task = await db.Set<WorkTask>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == taskId, token);
+                var task = await access.Visible().SingleOrDefaultAsync(t => t.Id == taskId, token);
                 var comment = task is null ? null : await db.Set<TaskComment>().SingleOrDefaultAsync(c => c.Id == commentId && c.TaskId == taskId && !c.IsDeleted, token);
                 if (task is null || comment is null)
                     return CommentNotFound();
@@ -168,7 +169,7 @@ public sealed class TaskCommentService(
         var done = await tx.RunAsync<bool>(
             async token =>
             {
-                var task = await db.Set<WorkTask>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == taskId, token);
+                var task = await access.Visible().SingleOrDefaultAsync(t => t.Id == taskId, token);
                 var comment = task is null ? null : await db.Set<TaskComment>().SingleOrDefaultAsync(c => c.Id == commentId && c.TaskId == taskId && !c.IsDeleted, token);
                 if (task is null || comment is null)
                     return CommentNotFound();

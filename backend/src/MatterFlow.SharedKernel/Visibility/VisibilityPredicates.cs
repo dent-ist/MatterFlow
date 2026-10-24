@@ -80,6 +80,51 @@ public static class VisibilityPredicates
         return Expression.Lambda<Func<T, bool>>(Expression.OrElse(matter.Body, assigned), parameter);
     }
 
+    private sealed class Joined<T>
+    {
+        public T Row { get; init; } = default!;
+
+        public IEnumerable<int?> Matches { get; init; } = [];
+    }
+
+    private sealed class Flat<T>
+    {
+        public T Row { get; init; } = default!;
+
+        public int? VisibleMatterId { get; init; }
+    }
+
+    /// <summary>
+    /// The task rule for a set-wide reader over rows that carry only a matter id and an assignee id: <c>LEFT JOIN visible matters ... WHERE (matched OR assigned to the viewer)</c>.
+    /// This is the join form the performance work of #791 measured (84 to 236 reads at 24,000 tasks); the same rule written as <c>EXISTS (...) OR assignee = @u</c> probes the
+    /// matter table once per task (38,500 reads) and must not be used. A viewer without a person gets the matter-only form (no OR).
+    /// </summary>
+    public static IQueryable<T> WhereMatterOrAssigned<T>(
+        IQueryable<T> source,
+        Expression<Func<T, int>> matterId,
+        Expression<Func<T, int?>> assignedUserId,
+        IQueryable<int> visibleMatterIds,
+        Viewer viewer)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(matterId);
+        ArgumentNullException.ThrowIfNull(assignedUserId);
+        ArgumentNullException.ThrowIfNull(visibleMatterIds);
+        if (viewer.UserId is not { } user)
+            return WhereIn(source, matterId, visibleMatterIds);
+
+        var flat = source
+            .GroupJoin(visibleMatterIds, matterId, id => id, (t, g) => new Joined<T> { Row = t, Matches = g.Select(i => (int?)i) })
+            .SelectMany(x => x.Matches.DefaultIfEmpty(), (x, m) => new Flat<T> { Row = x.Row, VisibleMatterId = m });
+
+        var f = Expression.Parameter(typeof(Flat<T>), "f");
+        var row = Expression.Property(f, nameof(Flat<T>.Row));
+        var matched = Expression.NotEqual(Expression.Property(f, nameof(Flat<T>.VisibleMatterId)), Expression.Constant(null, typeof(int?)));
+        var assigned = Expression.Equal(Rebind(assignedUserId, row), Parameter(user));
+        var predicate = Expression.Lambda<Func<Flat<T>, bool>>(Expression.OrElse(matched, assigned), f);
+        return flat.Where(predicate).Select(x => x.Row);
+    }
+
     private sealed class Holder
     {
         public int? Value { get; init; }
@@ -88,10 +133,10 @@ public static class VisibilityPredicates
     /// <summary>A query parameter (not a literal) holding the user id, so the plan is shared between people.</summary>
     private static MemberExpression Parameter(int user) => Expression.Property(Expression.Constant(new Holder { Value = user }), nameof(Holder.Value));
 
-    private static Expression Rebind<T, TValue>(Expression<Func<T, TValue>> selector, ParameterExpression to) =>
+    private static Expression Rebind<T, TValue>(Expression<Func<T, TValue>> selector, Expression to) =>
         new ReplaceParameter(selector.Parameters[0], to).Visit(selector.Body)!;
 
-    private sealed class ReplaceParameter(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
+    private sealed class ReplaceParameter(ParameterExpression from, Expression to) : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : base.VisitParameter(node);
     }

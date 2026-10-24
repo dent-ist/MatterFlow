@@ -24,7 +24,8 @@ public sealed class TaskBulkService(
     IPriorityCatalog priorities,
     IPodDirectory pods,
     IUserDirectory users,
-    IAuditCorrelation correlation)
+    IAuditCorrelation correlation,
+    TaskAccess access)
 {
     public async Task<Result<BulkTasksResponse>> ChangeAsync(int matterId, BulkTasksRequest request, CancellationToken ct)
     {
@@ -39,7 +40,8 @@ public sealed class TaskBulkService(
         if (reassign is not null && reassign.UserId is null && reassign.PodId is null)
             return Error.Validation("reassignTo", "NOTHING_TO_CHANGE", "Choose a person, a pod, or both.");
 
-        if (await matters.FindAsync(matterId, ct) is null)
+        // A matter the caller may not see as a whole (sensitive-matter rule, mode M) answers exactly like one that does not exist.
+        if (!await access.CanSeeMatterAsync(matterId, ct) || await matters.FindAsync(matterId, ct) is null)
             return Error.NotFound("The matter does not exist.");
 
         if (reassign is not null)
@@ -77,7 +79,7 @@ public sealed class TaskBulkService(
         }
 
         var ids = request.TaskIds;
-        var known = await db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.Id))
+        var known = await access.Visible().Where(t => ids.Contains(t.Id))
             .Select(t => new { t.Id, t.MatterId, t.AssignedPodId, t.RowVersion })
             .ToDictionaryAsync(t => t.Id, ct);
 

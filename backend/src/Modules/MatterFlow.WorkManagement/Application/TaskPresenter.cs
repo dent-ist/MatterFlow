@@ -38,13 +38,20 @@ public sealed class TaskPresenter(
     IPermissionChecker permissions,
     IUserTimeZone timeZone,
     IClock clock,
-    IAuditReader auditReader)
+    IAuditReader auditReader,
+    TaskAccess access)
 {
     private static readonly IReadOnlyDictionary<string, JsonElement> NoValues = new Dictionary<string, JsonElement>();
 
-    public async Task<Result<TaskResponse>> GetAsync(long taskId, CommandNotes? notes, CancellationToken ct)
+    /// <summary>
+    /// The Task as the caller may see it; a hidden Task is "not found". <paramref name="afterWrite"/> is the answer to a command that has just succeeded: the
+    /// caller changed the Task (an assignee who reassigns their own task ends their own access), so it is read once without the rule, as the Organization
+    /// module does for matters.
+    /// </summary>
+    public async Task<Result<TaskResponse>> GetAsync(long taskId, CommandNotes? notes, CancellationToken ct, bool afterWrite = false)
     {
-        var task = await db.Set<WorkTask>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == taskId, ct);
+        var rows = afterWrite ? db.Set<WorkTask>().AsNoTracking() : access.Visible();
+        var task = await rows.SingleOrDefaultAsync(t => t.Id == taskId, ct);
         return task is null ? TaskSupport.NotFound() : await BuildAsync(task, notes ?? CommandNotes.None, ct);
     }
 

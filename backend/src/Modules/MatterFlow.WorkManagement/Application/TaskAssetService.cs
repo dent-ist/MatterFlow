@@ -21,11 +21,12 @@ public sealed class TaskAssetService(
     IPermissionChecker permissions,
     IAssetDirectory assets,
     IAssetLinkRoleCatalog roles,
-    IUserDirectory users)
+    IUserDirectory users,
+    TaskAccess access)
 {
     public async Task<Result<TaskAssetLinkListResponse>> ListAsync(long taskId, CancellationToken ct)
     {
-        var task = await db.Set<WorkTask>().AsNoTracking().Where(t => t.Id == taskId).Select(t => new { t.Status }).SingleOrDefaultAsync(ct);
+        var task = await access.Visible().Where(t => t.Id == taskId).Select(t => new { t.Status }).SingleOrDefaultAsync(ct);
         if (task is null)
             return TaskSupport.NotFound();
 
@@ -51,8 +52,9 @@ public sealed class TaskAssetService(
                 if (TaskEditability.Check(task.Status, TaskOperation.LinkAssets) is { } notEditable)
                     return TaskService.NotEditable(task.Status, notEditable);
 
+                // An asset the caller may not see (mode A: its matter is visible, or it is linked to a task assigned to the caller) is "not found" in the body.
                 var asset = await assets.FindAsync(request.AssetId, token);
-                if (asset is null)
+                if (asset is null || !await access.CanSeeAssetAsync(asset.AssetId, asset.MatterId, token))
                     return Error.Validation("assetId", "NOT_FOUND", "Select an asset to link.");
                 if (asset.MatterId != task.MatterId)
                     return Error.Conflict(ErrorCodes.CrossMatterReference, "That asset belongs to a different matter than the task. Link an asset of the task's matter.");

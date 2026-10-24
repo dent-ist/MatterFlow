@@ -78,6 +78,14 @@ public sealed class MatterVisibility(
             : VisibilityPredicates.WhereIn(source, taskId, VisibleTasks(v).Select(t => t.TaskId));
     }
 
+    public IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
+    {
+        var v = viewer ?? Current;
+        return !Enabled || v.SeeAll
+            ? source
+            : VisibilityPredicates.WhereMatterOrAssigned(source, matterId, assignedUserId, VisibleMatters(v).Select(m => m.MatterId), v);
+    }
+
     public IQueryable<T> WhereMatterRowVisible<T>(
         IQueryable<T> source,
         Expression<Func<T, bool>> isSensitive,

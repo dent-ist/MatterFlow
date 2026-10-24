@@ -25,12 +25,13 @@ public sealed class TaskLifecycleService(
     ICurrentUser currentUser,
     IClock clock,
     IMatterDirectory matters,
-    IWorkflowInstanceService workflows)
+    IWorkflowInstanceService workflows,
+    TaskAccess access)
 {
     /// <summary>The Task's completion check: what is unresolved and what a bulk completion would do. Read-only.</summary>
     public async Task<Result<TaskCompletionCheck>> CheckCompletionAsync(long taskId, CancellationToken ct)
     {
-        var instanceId = await db.Set<WorkTask>().AsNoTracking().Where(t => t.Id == taskId).Select(t => (long?)t.WorkflowInstanceId).SingleOrDefaultAsync(ct);
+        var instanceId = await access.Visible().Where(t => t.Id == taskId).Select(t => (long?)t.WorkflowInstanceId).SingleOrDefaultAsync(ct);
         if (instanceId is null)
             return TaskSupport.NotFound();
 
@@ -59,7 +60,7 @@ public sealed class TaskLifecycleService(
         string? workflowRowVersion = null)
     {
         var done = await tx.RunAsync(token => ChangeCoreAsync(taskId, target, comment, completeUnresolvedSteps, rowVersion, onlyFrom, workflowRowVersion, token), ct);
-        return done.IsFailure ? done.Error! : await presenter.GetAsync(taskId, done.Value, ct);
+        return done.IsFailure ? done.Error! : await presenter.GetAsync(taskId, done.Value, ct, afterWrite: true);
     }
 
     private async Task<Result<CommandNotes>> ChangeCoreAsync(

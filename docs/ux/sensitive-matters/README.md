@@ -93,6 +93,8 @@ Decision (proposed, to be proven in the first work package): **explicit scoped s
 
 **Built in SM-05 (#793):** `IsSensitive` is now `[AuditExplicit]` and every change (and a matter created marked) writes the dedicated event `MATTER_SENSITIVITY_CHANGED` (field key `IsSensitive`, old and new value `Sensitive` / `Not sensitive`, matter id set, actor and time from the audit writer); there is no generic field change row for the flag any more. The guard rails apply only while the go-live switch is on (with it off the only change is the new event): (1) un-marking needs no separate check, because with the rule on only managers and `Matter.ViewSensitive` holders can load a sensitive matter to edit it at all, everybody else gets 404 (open question Q3 is thereby answered by construction; tested for assignee, unrelated editor, manager, viewer); (2) marking a matter that would end the caller's own access (they neither hold `Matter.ViewSensitive` nor are a manager afterwards, counting managers set in the same request) answers `409 SENSITIVE_CONFIRMATION_REQUIRED` with `meta.willLoseAccess = true`, and the caller repeats the request with the new optional property `confirmLossOfAccess: true` (the screen shows the "You will no longer see this matter" dialog in between; the response reveals nothing the caller does not see already); (3) creating a sensitive matter without `Matter.ViewSensitive` and without naming a manager is `400` with field code `SENSITIVE_NEEDS_MANAGER`; with a manager named the creator gets the created matter once, then 404 like everybody else outside the rule. Frontend labels for the new event code and the confirmation dialog are SM-14 (#802).
 
+**Built in SM-06 (#794):** rows R14 to R23 are implemented. Every task read and write in WorkManagement goes through `TaskAccess` (mode T): `Visible()` for lists and single reads, `TaskTransactions.LockTaskAsync` for every command (a hidden task is loaded as "not found" before any other check, so `PUT`, `/assignment`, `/priority`, `/status`, `/complete`, `/cancel`, `/reopen`, the workflow steps, comments and asset links answer byte for byte like a missing id; `SensitiveTasksTests` compares them). The set-wide form is a new port method `IMatterVisibility.WhereTaskVisibleBy(source, matterId, assignedUserId)`: the LEFT JOIN form of section 4 (visible matters left-joined, `matched OR assigned`), never `EXISTS ... OR assignee`; WorkViews (SM-08/09) uses it too. The answer to a successful command is read once without the rule (an assignee who reassigns their own task ends their own access; `TaskPresenter.GetAsync(..., afterWrite: true)`). Ids in bodies: `POST /tasks` with a hidden `matterId` is the same `matterId NOT_FOUND` validation as a missing one (an assignee cannot add sibling tasks), a `projectId` of a hidden matter is `NOT_FOUND` instead of the cross-matter conflict, a task-asset link with an asset the caller may not see (mode A: matter visible, or linked to a task assigned to the caller) is `assetId NOT_FOUND`. `assign-batch` and the matter bulk answer per item with the same code and text for hidden and missing tasks; the matter bulk on a hidden matter is the 404 of a missing matter. Mode H needs no new shape: the task DTO's matter block (`matterId, clientId, clientNumber, matterNumber, matterRef, name, isActive, isSensitive`) never carried managers, counts, custom fields or links, and it is only reachable after the task passed the gate; the "no link to the matter page" part is the frontend (SM-14, #802). Task activity reads events with that `TaskId` only, so an assignee never sees matter-level events. `ITaskDirectory`/`IUserWorkSource` stay internal unfiltered lookups (integrity checks, audit display; the neutral label is SM-13). `TaskObjectVisibility` (notifications) is SM-12.
+
 Parity: the C# predicate and the SQL functions are tested against the same fixture matrix (section 12.3) so they cannot drift.
 
 ## 5. 404 semantics
@@ -241,29 +243,29 @@ Modes: **M** matter rule, **T** task rule, **A** asset rule, **H** header only, 
 
 | ID | Endpoint / query | Current filter | How the rule applies | Test |
 |---|---|---|---|---|
-| R01 | `GET /clients` (list, any matter count field) | `Client.View` | client rows unchanged; matter counts via M | W,C |
-| R02 | `GET /clients/{id}` | `Client.View` | unchanged (no matter data) | W |
-| R03 | `GET /clients/{id}/summary` (matters, open tasks, "matters with most open tasks", strip) | `Client.View` | all matter/task aggregates through M/T sources | W,C |
+| R01 | `GET /clients` (list, any matter count field) | `Client.View` | client rows unchanged; matter counts via M | W,C (done #792) |
+| R02 | `GET /clients/{id}` | `Client.View` | unchanged (no matter data) | W (done #792) |
+| R03 | `GET /clients/{id}/summary` (matters, open tasks, "matters with most open tasks", strip) | `Client.View` | all matter/task aggregates through M/T sources | W,C (done #792) |
 | R04 | `GET /clients/custom-fields`, `/matters/custom-fields`, `/projects/custom-fields` | view perm | form definitions only | N |
-| R05 | `POST/PUT /clients`, `PUT /clients/{id}/number` | edit perms | client-level; "has matters" integrity check uses unfiltered truth, response generic | W |
-| R06 | `GET /matters` (list, filters, sort, paging, `isSensitive` filter, manager columns) | `Matter.View` | M on the base query | W,C |
-| R07 | `GET /matters/lookup` (pickers) | `Matter.View` | M | W |
-| R08 | `GET /matters/{id}`, `/matters/{id}/summary` | `Matter.View` | M, else 404 | W |
-| R09 | `POST /matters` | `Matter.Create` | creator rule (section 9); number-conflict text generic | W,X |
-| R10 | `PUT /matters/{id}`, `/number`, `/active`, `/managers` | edit perms | load through M, 404; sensitivity change audited, un-mark rule | W,X |
-| R11 | `GET /projects`, `/projects/{id}`, `/summary` | `Project.View` | M via matter | W,C |
-| R12 | `POST/PUT /projects`, `/projects/{id}/active` | project perms | M on the matter id (body and path) | W |
+| R05 | `POST/PUT /clients`, `PUT /clients/{id}/number` | edit perms | client-level; "has matters" integrity check uses unfiltered truth, response generic | W (done #792) |
+| R06 | `GET /matters` (list, filters, sort, paging, `isSensitive` filter, manager columns) | `Matter.View` | M on the base query | W,C (done #792) |
+| R07 | `GET /matters/lookup` (pickers) | `Matter.View` | M | W (done #792) |
+| R08 | `GET /matters/{id}`, `/matters/{id}/summary` | `Matter.View` | M, else 404 | W (done #792) |
+| R09 | `POST /matters` | `Matter.Create` | creator rule (section 9); number-conflict text generic | W,X (done #792) |
+| R10 | `PUT /matters/{id}`, `/number`, `/active`, `/managers` | edit perms | load through M, 404; sensitivity change audited, un-mark rule | W,X (done #792) |
+| R11 | `GET /projects`, `/projects/{id}`, `/summary` | `Project.View` | M via matter | W,C (done #792) |
+| R12 | `POST/PUT /projects`, `/projects/{id}/active` | project perms | M on the matter id (body and path) | W (done #792) |
 | R13 | `IMatterDirectory`, `IProjectDirectory` (Organization.Contracts, used by Audit display, Tasks, Assets) | none | the port's sources; callers decide mode; display lookups return neutral label if hidden | X |
-| R14 | `GET /tasks` (list, filters, counts) | `Task.View` | T | W,C |
-| R15 | `GET /tasks/{id}`, `/completion`, `/workflow` | `Task.View` | T; matter header mode H when matter hidden | W |
-| R16 | `POST /tasks` | `Task.Create` | M on `matterId` (an assignee-only user cannot create siblings) | W |
-| R17 | `PUT /tasks/{id}`, `/assignment`, `/priority`, `/status`, `/complete`, `/cancel`, `/reopen` | per-action perms | load via T, 404 if hidden; assignee may act on own task | W,X |
-| R18 | `POST /tasks/assign-batch` | `Task.Assign` | per-item T, generic `NOT_FOUND` result | W,X |
-| R19 | `POST /matters/{id}/tasks/bulk` (bulk reassign / re-prioritise) | `Task.Assign\|Task.SetPriority` | M on matter, then per-task result; hidden tasks "not found" | W,X |
-| R20 | `POST /tasks/{id}/workflow/steps/*` (start, values, complete, skip, reopen) | `Workflow.Execute` / `StepReopen` | T | W |
-| R21 | `GET/POST/PUT/DELETE /tasks/{id}/comments`, `/revisions` | `Task.View`, `Task.Comment` | T on parent | W |
-| R22 | `GET/POST/PUT/DELETE /tasks/{id}/assets` | `Task.View`, `Asset.Link` | T on task; asset id in body checked with A | W |
-| R23 | `GET /tasks/{id}/activity` | `Task.View` | T; assignee-only sees events with that `TaskId` only | W,X |
+| R14 | `GET /tasks` (list, filters, counts) | `Task.View` | T | W,C (done #794) |
+| R15 | `GET /tasks/{id}`, `/completion`, `/workflow` | `Task.View` | T; matter header mode H when matter hidden | W (done #794) |
+| R16 | `POST /tasks` | `Task.Create` | M on `matterId` (an assignee-only user cannot create siblings) | W (done #794) |
+| R17 | `PUT /tasks/{id}`, `/assignment`, `/priority`, `/status`, `/complete`, `/cancel`, `/reopen` | per-action perms | load via T, 404 if hidden; assignee may act on own task | W,X (done #794) |
+| R18 | `POST /tasks/assign-batch` | `Task.Assign` | per-item T, generic `NOT_FOUND` result | W,X (done #794) |
+| R19 | `POST /matters/{id}/tasks/bulk` (bulk reassign / re-prioritise) | `Task.Assign\|Task.SetPriority` | M on matter, then per-task result; hidden tasks "not found" | W,X (done #794) |
+| R20 | `POST /tasks/{id}/workflow/steps/*` (start, values, complete, skip, reopen) | `Workflow.Execute` / `StepReopen` | T | W (done #794) |
+| R21 | `GET/POST/PUT/DELETE /tasks/{id}/comments`, `/revisions` | `Task.View`, `Task.Comment` | T on parent | W (done #794) |
+| R22 | `GET/POST/PUT/DELETE /tasks/{id}/assets` | `Task.View`, `Asset.Link` | T on task; asset id in body checked with A | W (done #794) |
+| R23 | `GET /tasks/{id}/activity` | `Task.View` | T; assignee-only sees events with that `TaskId` only | W,X (done #794) |
 | R24 | `GET /assets` (list), `/assets/lookup` | `Asset.View` | A | W,C |
 | R25 | `GET /assets/{id}`, `/assets/{id}/linked-tasks` | `Asset.View` | A; linked tasks through T | W |
 | R26 | `POST/PUT /assets`, `/assets/{id}/active` | asset perms | M on matter (assignee cannot create assets) | W |

@@ -35,6 +35,12 @@ public interface IMatterVisibility
     IQueryable<T> WhereTaskVisible<T>(IQueryable<T> source, Expression<Func<T, long>> taskId, Viewer? viewer = null);
 
     /// <summary>
+    /// Mode T for set-wide readers over rows that carry a matter id and the task's assignee: the matter rule OR assigned to the viewer, written as the LEFT JOIN form
+    /// (never <c>EXISTS ... OR assignee</c>, which costs about 38,500 reads at 24,000 tasks). A no-op while the rule is off or for a see-all viewer.
+    /// </summary>
+    IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null);
+
+    /// <summary>
     /// Keeps the rows whose matter the viewer may see, for rows that already carry the matter's columns (the Matter entity itself, or a join that has the
     /// matter): no extra join. A no-op while the rule is off or for a see-all viewer. Mode M.
     /// </summary>

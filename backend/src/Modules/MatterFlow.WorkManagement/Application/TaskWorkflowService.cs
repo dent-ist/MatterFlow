@@ -50,7 +50,7 @@ public sealed class TaskWorkflowService(
         if (done.IsFailure)
             return done.Error!;
 
-        var task = await presenter.GetAsync(taskId, new CommandNotes([], done.Value.Dropped, []), ct);
+        var task = await presenter.GetAsync(taskId, new CommandNotes([], done.Value.Dropped, []), ct, afterWrite: true);
         return task.IsFailure
             ? task.Error!
             : new StepActionResponse(task.Value, done.Value.Affected, done.Value.Dropped, done.Value.TaskMoved);
