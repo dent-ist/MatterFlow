@@ -44,3 +44,51 @@ The activity read takes the lowest audit event id of the window from `IX_Audit_T
 ## Scope cap
 
 The All matters scope refuses more than 5,000 matters with 400 `SCOPE_TOO_LARGE` (narrow by client or project manager). The health table sorts the matters of the scope in memory (at most the cap) and reads the step counts for the 50 rows of the page only.
+
+## Epic #758 additions (PX-12, #770)
+
+`MyMattersPerformanceTests` was extended, on the same data (200 matters, 24,000 tasks, about 100,000 audit events) plus **100,000 assets** on those matters, **300 more clients** (one matter and one project each, managed by one more project manager) and **three projects per matter**. Budget: p95 under 300 ms warm and 800 ms cold per endpoint (the test fails at twice that on a shared machine), a fixed number of statements, no scan of `Task` for a person with few matters, search with the new flag not slower than without it by more than 10 percent. Measured on the build machine, 15 warm runs; cold = first call. No new index script was needed and no snapshot table.
+
+| Endpoint | pm50 cold / p95 (statements) | heavy (145 matters) cold / p95 | All matters cold / p95 (statements) |
+|---|---|---|---|
+| deadlines 14 days, by day | 66 / 20 ms (5) | 44 / 40 ms | 67 / 28 ms (6) |
+| deadlines 28 days, by day | 64 / 22 ms (5) | 62 / 51 ms | 69 / 48 ms (6) |
+| deadlines 14 days, by matter | 77 / 98 ms (7) | 79 / 55 ms | 81 / 47 ms (8) |
+| workload with `include=matters` | 41 / 26 ms (7) | 72 / 54 ms | 62 / 62 ms (8) |
+| activity, filtered (`kind=STATUS_CHANGED`) | 56 / 42 ms (8) | 56 / 63 ms | 38 / 16 ms (9) |
+| since your last visit | 133 / 82 ms (5) | 63 / 88 ms | 109 / 83 ms (6) |
+| trends, 8 weeks | 88 / 53 ms (4) | 58 / 139 ms | 112 / 133 ms (5) |
+| trends, 26 weeks | 53 / 48 ms (4) | 64 / 212 ms | 83 / 197 ms (5) |
+
+The statement count is the same for 5, 50 and 145 matters for every endpoint (checked by `The_number_of_statements_does_not_depend_on_the_number_of_matters`, which now covers the new calls), and with a few matters (pm5) every read of `Task` by the new calls is a seek, not a scan (`A_person_with_a_few_matters_reads_the_task_table_only_by_seeks`).
+
+**Trends need no snapshot table.** They read the creation and completion instants of the scope's tasks and the open tasks with a due date, and bucket them into weeks in memory. The slowest case is 26 weeks for the worst-case person (145 matters, about 17,000 tasks): median 73 ms, p95 about 212 ms (All matters, 26 weeks: p95 about 197 ms). That is inside the 300 ms budget and far below the 500 ms at which the plan would have added `dbo.MatterDailyStats`, so the derivation stays; its approximation (re-dated or re-opened tasks are judged by their current values) is stated in the answer.
+
+### Scoped lists at 100,000 assets
+
+| List (`matterManagedByMe=true`) | pm5 (2,500 assets) | pm50 (25,000) | heavy (72,500) | pmclients (300 clients) |
+|---|---|---|---|---|
+| assets, page of 50 | 25 ms median, p95 49 | 47, p95 63 | 105, p95 135 | not applicable |
+| assets, `role=primary` | 24, p95 38 | 45, p95 64 | 96, p95 132 | not applicable |
+| clients | 14, p95 15 | 14, p95 17 | 18, p95 25 | 11, p95 12 |
+| projects | 5, p95 5 | 6, p95 7 | 9, p95 11 | 11, p95 12 |
+
+Every one of them is a semi-join on the managed matter ids (`IX_Matter_PrimaryManager` / `IX_Matter_SecondaryManager`), 3 to 4 statements, p95 far under 300 ms, and cold under 150 ms.
+
+**Finding fixed on the way: one statement per matter on a page of assets.** The assets list looked up the matter of each row one by one, so a page of 50 assets spread over 50 matters cost 45 to 51 statements (any list, filtered or not; a scoped list sorted by name spreads over many matters). `IMatterDirectory.FindManyAsync` (new, Organization.Contracts) names all the matters of the page in one statement: the list is now 4 statements and about three times faster (unfiltered page, 25,000 assets: 50 ms median before, 15 ms after).
+
+### Search with the `inMyMatters` flag
+
+The first version computed the flag inside the ranked statement (an `IN` on the managed matter ids in the projection). On a broad search that matches everything (`q=Perf`: 100,000 assets and 24,000 tasks) the optimizer evaluated it for every candidate row before taking the top N: median **404 ms against 248 ms** without the flag, 60 percent slower, which the test caught. The flag is now computed after the page is read, by one more small statement per type that returned rows (a probe of the manager indexes for at most a page of matter ids or client ids), and the ranked statement is exactly what it was. Measured with 25 alternating calls on each side:
+
+| Search | pm50 with flag / without (median) | heavy with flag / without (median) |
+|---|---|---|
+| global, `q=Perf` (matches everything) | 266 / 269 ms | 274 / 252 ms |
+| global, `q=asset 77` | 153 / 160 ms | 158 / 160 ms |
+| advanced, assets, `q=Perf asset 9` | 158 / 153 ms | 159 / 155 ms |
+
+Within the 10 percent allowance in all three. Note for the owner: a global search for a word that appears in every record (`Perf` here) takes about 250 ms with or without the flag, because the text search is a plain `LIKE` over 100,000 assets and 24,000 tasks; that is not caused by this epic and stays inside the 300 ms budget only just (p95 about 400 ms for this extreme term, which the test allows at 600 ms). A real search term narrows quickly (150 ms for the two other terms).
+
+### Matter overview
+
+`GET /matters/{id}/overview`: 9 statements for a matter with nothing in it, 14 to 16 for a matter with 120 tasks, assets and 500 audit events, the same for a project manager and for an observer; cold 31 to 41 ms, p95 29 to 105 ms. The count does not depend on the number of tasks, people or events: the only variation is the optional name lookups that are skipped when there is nothing to name (the test allows a difference of two between matters, and fewer than 20 in all).

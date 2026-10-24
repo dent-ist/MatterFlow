@@ -35,6 +35,8 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
     private HttpClient _pm50 = null!;
     private HttpClient _heavy = null!;
     private HttpClient _director = null!;
+    private HttpClient _clients = null!;
+    private HttpClient _observer = null!;
 
     public async Task InitializeAsync()
     {
@@ -42,19 +44,22 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
         _h = new TaskHarness(_factory);
         var world = await _h.CreateWorldAsync();
         var admin = await _h.UserIdAsync(DatabaseApiFactory.AdminAccount);
-        string[] perms = ["Task.View", "Matter.View", "Matter.BeManager"];
+        string[] perms = ["Task.View", "Matter.View", "Matter.BeManager", "Client.View", "Project.View", "Asset.View"];
         await _h.UserWithAsync(@"KE\pm5", perms);
         await _h.UserWithAsync(@"KE\pm50", perms);
         await _h.UserWithAsync(@"KE\heavy", perms);
         await _h.UserWithAsync(@"KE\perfdirector", "Task.View", "Matter.View", "Matter.AssignManagers");
+        await _h.UserWithAsync(@"KE\pmclients", perms);
+        await _h.UserWithAsync(@"KE\perfobserver", "Task.View", "Matter.View", "Client.View", "Project.View", "Asset.View");
         var pm5 = await _h.UserIdAsync(@"KE\pm5");
         var pm50 = await _h.UserIdAsync(@"KE\pm50");
         var heavy = await _h.UserIdAsync(@"KE\heavy");
+        var clientsPm = await _h.UserIdAsync(@"KE\pmclients");
         var pods = new List<int>();
         for (var i = 0; i < 4; i++)
             pods.Add(await _h.CreatePodAsync("Perf pod " + i));
 
-        await _h.ExecuteAsync(SeedSql(world, admin, pm5, pm50, heavy, pods));
+        await _h.ExecuteAsync(SeedSql(world, admin, pm5, pm50, heavy, clientsPm, pods));
         (await _h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.Task WHERE StatusCode <> 'COMPLETED' AND Title LIKE N'Seeded %'")).ShouldBe(OpenTasks);
         (await _h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.Matter WHERE Name LIKE N'Perf matter %'")).ShouldBe(MatterCount);
         _factory.InvalidateAll();
@@ -68,6 +73,8 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
         _pm50 = Client(@"KE\pm50");
         _heavy = Client(@"KE\heavy");
         _director = Client(@"KE\perfdirector");
+        _clients = Client(@"KE\pmclients");
+        _observer = Client(@"KE\perfobserver");
     }
 
     public async Task DisposeAsync()
@@ -86,7 +93,7 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
 
     // Matters 1-5: pm5. 6-55: pm50 (50 matters, a normal share). 56-200: heavy (145 matters, the worst case for "mine"); 6-15 also list heavy as Secondary.
     // Tasks: 24,000 over the 200 matters; every 6th is Completed, one in twelve open ones On Hold since 0-20 days, two in three have no assignee, one in six has no due date.
-    private static string SeedSql(TaskHarness.World w, int adminUserId, int pm5, int pm50, int heavy, IReadOnlyList<int> pods) => $"""
+    private static string SeedSql(TaskHarness.World w, int adminUserId, int pm5, int pm50, int heavy, int clientsPm, IReadOnlyList<int> pods) => $"""
         SET NOCOUNT ON;
         DECLARE @clientId INT = (SELECT TOP 1 ClientId FROM dbo.Client);
         DECLARE @clientNumber CHAR(5) = (SELECT TOP 1 ClientNumber FROM dbo.Client);
@@ -141,6 +148,22 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
         JOIN @podTable pod ON pod.idx = i.rn % {pods.Count}
         JOIN @people u ON u.idx = i.rn % 20;
 
+        -- Epic #758 (#770): 300 more clients with one matter each (managed by one more project manager), three projects on every matter, and 100,000 assets on the 200 matters.
+        ;WITH nums AS (SELECT TOP (300) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n FROM sys.all_objects)
+        INSERT dbo.Client (ClientNumber, Name) SELECT CAST(70000 + n AS CHAR(5)), N'Perf client ' + CAST(n AS NVARCHAR(5)) FROM nums;
+        INSERT dbo.Matter (ClientId, ClientNumber, MatterNumber, Name, PrimaryManagerId)
+        SELECT c.ClientId, c.ClientNumber, '00101', N'Perf extra matter ' + SUBSTRING(c.Name, 13, 10), {clientsPm} FROM dbo.Client c WHERE c.Name LIKE N'Perf client %';
+        INSERT dbo.Project (MatterId, Name)
+        SELECT m.MatterId, N'Perf project ' + CAST(v.k AS NVARCHAR(2)) FROM @matters m CROSS JOIN (VALUES (1), (2), (3)) v(k)
+        UNION ALL SELECT m.MatterId, N'Perf project 1' FROM dbo.Matter m WHERE m.Name LIKE N'Perf extra matter %';
+        DECLARE @assetTypes TABLE (idx INT NOT NULL, AssetTypeId INT NOT NULL);
+        INSERT dbo.AssetType (Name) VALUES (N'Perf laptop'), (N'Perf phone'), (N'Perf drive'), (N'Perf mailbox'), (N'Perf share');
+        INSERT @assetTypes SELECT ROW_NUMBER() OVER (ORDER BY AssetTypeId) - 1, AssetTypeId FROM dbo.AssetType WHERE Name LIKE N'Perf %';
+        ;WITH nums AS (SELECT TOP (100000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n FROM sys.all_objects a CROSS JOIN sys.all_objects b)
+        INSERT dbo.Asset (MatterId, AssetTypeId, DisplayName, CreatedByUserId)
+        SELECT m.MatterId, t.AssetTypeId, N'Perf asset ' + CAST(nums.n AS NVARCHAR(10)), {adminUserId}
+        FROM nums JOIN @matters m ON m.idx = nums.n % {MatterCount} JOIN @assetTypes t ON t.idx = nums.n % 5;
+
         -- About 100,000 audit events in time order: each task is created, plus three events of kinds the panel does not show, and the on-hold ones a status change.
         INSERT dbo.AuditEvent (OccurredAtUtc, ActorUserId, EventType, ObjectType, ObjectId, MatterId, TaskId, FieldKey, OldValue, NewValue, CorrelationId)
         SELECT e.At, {adminUserId}, e.Kind, 'Task', CAST(e.TaskId AS VARCHAR(20)), e.MatterId, e.TaskId, e.Field, e.OldV, e.NewV, NEWID()
@@ -192,6 +215,15 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
         ("deadlines (14 days)", "/api/v1/my-matters/deadlines"),
         ("deadlines (28 days)", "/api/v1/my-matters/deadlines?days=28"),
         ("activity (30)", "/api/v1/my-matters/activity"),
+        // Epic #758 (#770): the additions of the monitoring views.
+        ("deadlines (14 days, by day)", "/api/v1/my-matters/deadlines?groupBy=day"),
+        ("deadlines (28 days, by day)", "/api/v1/my-matters/deadlines?days=28&groupBy=day"),
+        ("deadlines (14 days, by matter)", "/api/v1/my-matters/deadlines?groupBy=matter"),
+        ("workload (with matters)", "/api/v1/my-matters/workload?include=matters"),
+        ("activity (filtered: status changes)", "/api/v1/my-matters/activity?kind=STATUS_CHANGED&take=50"),
+        ("since your last visit", "/api/v1/my-matters/since-last-visit"),
+        ("trends (8 weeks)", "/api/v1/my-matters/trends"),
+        ("trends (26 weeks)", "/api/v1/my-matters/trends?weeks=26"),
     ];
 
     [Fact]
@@ -216,6 +248,102 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
         }
 
         failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    private const int ListBudgetMs = 600;
+
+    [Fact]
+    public async Task The_scoped_lists_of_assets_clients_and_projects_stay_within_the_budget()
+    {
+        // 100,000 assets over the 200 matters; 300 more clients with a matter and a project each, managed by one person.
+        (await _h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.Asset")).ShouldBe(100_000);
+        var failures = new List<string>();
+        foreach (var (who, client, lists) in new[]
+        {
+            ("pm5 (5 matters, 2,500 assets)", _pm5, new[] { "assets", "clients", "projects" }),
+            ("pm50 (50 matters, 25,000 assets)", _pm50, new[] { "assets", "clients", "projects" }),
+            ("heavy (145 matters, 72,500 assets)", _heavy, new[] { "assets", "clients", "projects" }),
+            ("pmclients (300 clients)", _clients, new[] { "clients", "projects" }),
+        })
+        {
+            output.WriteLine($"--- {who}");
+            foreach (var list in lists)
+            {
+                foreach (var (name, url) in new[]
+                {
+                    ($"{list} unfiltered", $"/api/v1/{list}?pageSize=50"),
+                    ($"{list} matterManagedByMe", $"/api/v1/{list}?pageSize=50&matterManagedByMe=true"),
+                    ($"{list} matterManagedByMe, primary", $"/api/v1/{list}?pageSize=50&matterManagedByMe=true&role=primary"),
+                })
+                {
+                    var m = await MeasureAsync(client, name, url);
+                    if (m.Warm95 > ListBudgetMs || m.Cold > 2 * ListBudgetMs)
+                        failures.Add($"{who}: {name} cold {m.Cold} ms, warm p95 {m.Warm95} ms");
+                }
+            }
+        }
+
+        failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    [Fact]
+    public async Task Search_with_the_in_my_matters_flag_is_not_slower_than_search_without_it_by_more_than_ten_percent()
+    {
+        // A project manager gets the flag (an IN on the managed matter ids inside the same statement); an observer (no Matter.BeManager) gets null and no extra work.
+        foreach (var client in new[] { _pm50, _heavy, _observer })
+            await OkAsync(await client.GetAsync("/api/v1/search?q=Perf"));
+
+        foreach (var (name, url) in new[] { ("global search 'Perf'", "/api/v1/search?q=Perf"), ("global search 'asset 77'", "/api/v1/search?q=asset%2077"), ("advanced asset search 'Perf asset 9'", "/api/v1/search/advanced?type=asset&q=Perf%20asset%209") })
+        {
+            foreach (var (who, flagged) in new[] { ("pm50", _pm50), ("heavy", _heavy) })
+            {
+                var with = new List<long>();
+                var without = new List<long>();
+                for (var i = 0; i < 25; i++)
+                {
+                    // Alternate, so a busy moment of the machine hits both sides alike.
+                    with.Add(await TimeAsync(flagged, url));
+                    without.Add(await TimeAsync(_observer, url));
+                }
+
+                with.Sort();
+                without.Sort();
+                long Pct(List<long> v, double p) => v[(int)Math.Ceiling(v.Count * p) - 1];
+                output.WriteLine($"{name,-40} {who,-6} with flag: median {with[with.Count / 2]} ms p95 {Pct(with, 0.95)} ms | without: median {without[without.Count / 2]} ms p95 {Pct(without, 0.95)} ms");
+                // Ten percent, plus 10 ms for the timer on a shared machine.
+                with[with.Count / 2].ShouldBeLessThanOrEqualTo((long)(without[without.Count / 2] * 1.10) + 10, $"{name} as {who}: median");
+                Pct(with, 0.95).ShouldBeLessThanOrEqualTo(ListBudgetMs, $"{name} as {who}: p95");
+            }
+        }
+    }
+
+    private static async Task<long> TimeAsync(HttpClient http, string url)
+    {
+        var watch = Stopwatch.StartNew();
+        await OkAsync(await http.GetAsync(url));
+        return watch.ElapsedMilliseconds;
+    }
+
+    [Fact]
+    public async Task The_matter_overview_is_one_call_with_a_constant_number_of_statements_within_the_budget()
+    {
+        var small = await _h.ScalarAsync("SELECT MatterId AS [Value] FROM dbo.Matter WHERE Name = N'Perf matter 3'");
+        var big = await _h.ScalarAsync("SELECT MatterId AS [Value] FROM dbo.Matter WHERE Name = N'Perf matter 150'");
+        var empty = await _h.ScalarAsync("SELECT MatterId AS [Value] FROM dbo.Matter WHERE Name LIKE N'Perf extra matter 1%' ORDER BY MatterId OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY");
+        foreach (var client in new[] { _pm5, _heavy })
+            await OkAsync(await client.GetAsync($"/api/v1/matters/{small}/overview"));
+
+        var a = await MeasureAsync(_pm5, "overview (pm5's matter)", $"/api/v1/matters/{small}/overview");
+        var b = await MeasureAsync(_heavy, "overview (heavy's matter)", $"/api/v1/matters/{big}/overview");
+        var c = await MeasureAsync(_clients, "overview (matter with no tasks or assets)", $"/api/v1/matters/{empty}/overview");
+        var d = await MeasureAsync(_observer, "overview (observer, no manager role)", $"/api/v1/matters/{big}/overview");
+        // A fixed set of reads; only the optional name lookups (people, matters, tasks of the activity page) are skipped when a matter has nothing to name.
+        Math.Abs(a.Statements - b.Statements).ShouldBeLessThanOrEqualTo(2);
+        b.Statements.ShouldBe(d.Statements);
+        b.Statements.ShouldBeLessThan(20);
+        c.Statements.ShouldBeLessThanOrEqualTo(b.Statements);
+        foreach (var m in new[] { a, b, c, d })
+            m.Warm95.ShouldBeLessThanOrEqualTo(ListBudgetMs, m.Name);
     }
 
     [Fact]

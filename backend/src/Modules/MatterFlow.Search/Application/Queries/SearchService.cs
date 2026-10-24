@@ -216,7 +216,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     {
         var page = ClientRows(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Name).ThenBy(r => r.Id).Skip(skip).Take(take);
         // A client is "mine" when one of its matters is.
-        var rows = await PageWithLabelAsync(page, _ => r => ManagedClientMatters().Any(m => m.ClientId == r.Id), ct);
+        var rows = await PageWithLabelAsync(page, r => r.Id, clientKey: true, ct);
         return [.. rows.Select(x => new SearchHit(SearchTypes.Client, x.Item.Id, x.Item.Number, x.Item.Name, null, $"/clients/{x.Item.Id}", false, null, null, x.Item.IsActive, null, x.Mine))];
     }
 
@@ -270,7 +270,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     private async Task<List<SearchHit>> MatterHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
         var page = MatterRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Ref).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
-        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<MatterRow>, int>(r => r.Item.Id, mine), ct);
+        var rows = await PageWithLabelAsync(page, r => r.Item.Id, clientKey: false, ct);
         return
         [
             .. rows.Select(x => new SearchHit(
@@ -314,7 +314,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     private async Task<List<SearchHit>> ProjectHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
         var page = ProjectRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
-        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<ProjectRow>, int>(r => r.Item.MatterId, mine), ct);
+        var rows = await PageWithLabelAsync(page, r => r.Item.MatterId, clientKey: false, ct);
         return
         [
             .. rows.Select(x => new SearchHit(
@@ -390,7 +390,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     private async Task<List<SearchHit>> TaskHitsAsync(SearchTerm? term, AdvancedFilter? filter, int skip, int take, CancellationToken ct)
     {
         var page = TaskRanked(term, filter).OrderBy(r => r.Rank).ThenByDescending(r => r.Item.Id).Skip(skip).Take(take);
-        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<TaskRow>, int>(r => r.Item.MatterId, mine), ct);
+        var rows = await PageWithLabelAsync(page, r => r.Item.MatterId, clientKey: false, ct);
         return
         [
             .. rows.Select(x => new SearchHit(
@@ -454,7 +454,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     {
         await PrepareAssetsAsync(ct);
         var page = AssetRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
-        var rows = await PageWithLabelAsync(page, mine => VisibilityPredicates.In<Ranked<AssetRow>, int>(r => r.Item.MatterId, mine), ct);
+        var rows = await PageWithLabelAsync(page, r => r.Item.MatterId, clientKey: false, ct);
         return
         [
             .. rows.Select(x => new SearchHit(
@@ -481,40 +481,29 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
 
     // ---- "in my matters" label (epic #758, PX-05)
 
-    /// <summary>A hit row with the "matter is managed by the caller" test the same statement computed for it.</summary>
-    private sealed class Flagged<T>
-    {
-        public T Item { get; init; } = default!;
-
-        public bool Mine { get; init; }
-    }
-
     /// <summary>The matters the caller manages (Primary or Secondary), as a subquery; null for a caller who holds no <c>Matter.BeManager</c> (no label then).</summary>
     private IQueryable<int>? MyMatterIds() =>
         permissions.Has(Permissions.Matter.BeManager) && managed.CurrentUserId is { } me ? managed.ManagedMatterIds(me) : null;
 
-    private static Expression<Func<T, Flagged<T>>> Flag<T>(Expression<Func<T, bool>> test)
-    {
-        var parameter = test.Parameters[0];
-        var init = Expression.MemberInit(
-            Expression.New(typeof(Flagged<T>)),
-            Expression.Bind(typeof(Flagged<T>).GetProperty(nameof(Flagged<T>.Item))!, parameter),
-            Expression.Bind(typeof(Flagged<T>).GetProperty(nameof(Flagged<T>.Mine))!, test.Body));
-        return Expression.Lambda<Func<T, Flagged<T>>>(init, parameter);
-    }
-
     /// <summary>
-    /// The page of hits with the label computed in the same statement: the test is part of the projection over the paged rows (an <c>IN</c> on the managed matter ids), so
-    /// it costs a probe per returned row and no extra round trip. <c>InMine</c> is null for a caller without <c>Matter.BeManager</c>.
+    /// The page of hits with the label. The page is read exactly as before (the ranking and the paging are untouched); then ONE small statement per type that returned rows tells which of the
+    /// (at most a page of) matter ids, or client ids, are managed by the caller: a probe of the two filtered manager indexes per returned row. The test is deliberately not part of the
+    /// ranked statement: there the optimizer evaluated it for every candidate row before the top N (measured: +60 percent on a broad search over 100,000 assets, issue #770). The label is
+    /// null for a caller without <c>Matter.BeManager</c>.
     /// </summary>
-    private async Task<List<(T Item, bool? Mine)>> PageWithLabelAsync<T>(IQueryable<T> page, Func<IQueryable<int>, Expression<Func<T, bool>>> mineTest, CancellationToken ct)
+    private async Task<List<(T Item, bool? Mine)>> PageWithLabelAsync<T>(IQueryable<T> page, Func<T, int> keyOf, bool clientKey, CancellationToken ct)
     {
+        var items = await page.ToListAsync(ct);
         var mine = MyMatterIds();
-        if (mine is null)
-            return [.. (await page.ToListAsync(ct)).Select(i => (i, (bool?)null))];
+        if (mine is null || items.Count == 0)
+            return [.. items.Select(i => (i, (bool?)null))];
 
-        var rows = await page.Select(Flag(mineTest(mine))).ToListAsync(ct);
-        return [.. rows.Select(r => (r.Item, (bool?)r.Mine))];
+        var keys = items.Select(keyOf).Distinct().ToList();
+        var managedKeys = clientKey
+            ? await ManagedClientMatters().Where(m => keys.Contains(m.ClientId)).Select(m => m.ClientId).Distinct().ToListAsync(ct)
+            : await mine.Where(id => keys.Contains(id)).ToListAsync(ct);
+        var set = managedKeys.ToHashSet();
+        return [.. items.Select(i => (i, (bool?)set.Contains(keyOf(i))))];
     }
 
     // ---- rows

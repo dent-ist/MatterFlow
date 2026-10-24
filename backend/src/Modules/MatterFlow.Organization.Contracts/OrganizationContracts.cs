@@ -47,6 +47,23 @@ public interface IMatterDirectory
     /// <summary>The Matter with the given id, or null.</summary>
     Task<MatterSummary?> FindAsync(int matterId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The Matters with the given ids that exist, keyed by id, in ONE statement whatever the number of ids (a list page names its matters with it instead of one lookup per row).
+    /// The default asks one by one; the Organization module overrides it.
+    /// </summary>
+    async Task<IReadOnlyDictionary<int, MatterSummary>> FindManyAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(matterIds);
+        var found = new Dictionary<int, MatterSummary>();
+        foreach (var id in matterIds.Distinct())
+        {
+            if (await FindAsync(id, cancellationToken) is { } matter)
+                found[id] = matter;
+        }
+
+        return found;
+    }
+
     /// <summary>Resolves <c>343-12</c> or <c>00343-00012</c> (padded or unpadded) to a Matter, or null when the text is not a pair or no Matter has it.</summary>
     Task<MatterSummary?> ResolveReferenceAsync(string reference, CancellationToken cancellationToken = default);
 

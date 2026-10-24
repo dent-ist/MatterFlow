@@ -122,11 +122,12 @@ public sealed class AssetService(
                 ? items.ToDictionary(r => r.Asset.Id, r => new AssetTaskCounts(r.Linked, r.Open))
                 : await LinkReader!.CountForAssetsAsync([.. items.Select(r => r.Asset.Id)], ct);
 
-        var matterCache = new Dictionary<int, MatterSummary?>();
+        // The matters of the page in one statement (a page can span as many matters as it has rows).
+        var pageMatters = await matters.FindManyAsync([.. items.Select(r => r.Asset.MatterId).Distinct()], ct);
         var list = new List<AssetListItem>(items.Count);
         foreach (var row in items)
         {
-            var matter = await MatterAsync(matterCache, row.Asset.MatterId, ct);
+            var matter = pageMatters.GetValueOrDefault(row.Asset.MatterId);
             list.Add(new AssetListItem(
                 row.Asset.Id,
                 row.Asset.MatterId,
@@ -549,17 +550,6 @@ public sealed class AssetService(
         from a in access.Visible(db.Set<Asset>().AsNoTracking())
         join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
         select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive, MatterRef = string.Empty, Linked = 0, Open = 0 };
-
-    private async Task<MatterSummary?> MatterAsync(Dictionary<int, MatterSummary?> cache, int matterId, CancellationToken ct)
-    {
-        if (!cache.TryGetValue(matterId, out var matter))
-        {
-            matter = await matters.FindAsync(matterId, ct);
-            cache[matterId] = matter;
-        }
-
-        return matter;
-    }
 
     private sealed record FormPlan(FormVersionRef Version, FormSubmissionResult Validated);
 

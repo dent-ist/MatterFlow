@@ -27,7 +27,7 @@ Method: code and docs read against `origin/dev`; no build, no running product (a
 | Matter record tabs Overview / Tasks / Projects / Assets, `mf-summary-strip`, header `mf-matter-health-strip` | `matter-detail-page.ts` | Overview is a thin details list: enrich (#782) |
 | Starter role "Project Manager" holds `Dashboard.View`, `ViewSummary`, `ViewSwimlane`, `Matter.BeManager`, `Matter.AssignManagers` | `StarterRoles.cs` | Remove Dashboard codes (#764) |
 | Matter-level comments do not exist; task comments do | schema, `TaskLifecycleService` | "Add a comment" posts to a task of the matter (Q4) |
-| Performance harness and indexes for My Matters (script 33) | `docs/ux/pm-review/performance.md` | New reads reuse them; #770 extends the budget |
+| Performance harness and indexes for My Matters (script 33) | `docs/ux/pm-review/performance.md` | New reads reuse them; #770 extended the budget (section "Epic #758 additions") |
 
 ## 2. The PM's day, and what is missing today
 
