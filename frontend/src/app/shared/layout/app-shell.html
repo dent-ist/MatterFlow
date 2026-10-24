@@ -87,7 +87,13 @@
     </button>
     @for (group of navGroups(); track group.key) {
       <div class="mf-nav-group" [attr.data-nav-group]="group.key">
-        <p class="mf-nav-heading" [id]="'mf-nav-' + group.key + '-heading'">{{ group.label }}</p>
+        <p
+          class="mf-nav-heading"
+          [class.mf-sr-only]="group.srOnly"
+          [id]="'mf-nav-' + group.key + '-heading'"
+        >
+          {{ group.label }}
+        </p>
         <ul [attr.aria-labelledby]="'mf-nav-' + group.key + '-heading'">
           @for (item of group.items; track item.path) {
             <li>
@@ -103,6 +109,47 @@
             </li>
           }
         </ul>
+      </div>
+    }
+    @if (moreItems().length > 0) {
+      <div class="mf-nav-group mf-nav-more" data-nav-more>
+        <button
+          type="button"
+          class="mf-nav-morebtn"
+          data-nav-more-toggle
+          aria-controls="mf-nav-more-list"
+          [attr.aria-expanded]="moreOpen()"
+          title="More"
+          (click)="toggleMore()"
+        >
+          <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+          <span class="mf-nav-label"
+            >More
+            <i
+              class="pi"
+              [class.pi-chevron-up]="moreOpen()"
+              [class.pi-chevron-down]="!moreOpen()"
+              aria-hidden="true"
+            ></i
+          ></span>
+        </button>
+        @if (moreOpen()) {
+          <ul id="mf-nav-more-list" aria-label="More" data-nav-more-list>
+            @for (item of moreItems(); track item.path) {
+              <li>
+                <a
+                  [routerLink]="item.path"
+                  [class.mf-active]="isActive(item)"
+                  [attr.aria-current]="isActive(item) ? 'page' : null"
+                  [title]="item.label"
+                >
+                  <i [class]="item.icon" aria-hidden="true"></i>
+                  <span class="mf-nav-label">{{ item.label }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
       </div>
     }
     @if (adminItems().length > 0) {
