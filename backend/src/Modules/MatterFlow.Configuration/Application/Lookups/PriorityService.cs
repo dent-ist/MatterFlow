@@ -20,8 +20,8 @@ namespace MatterFlow.Configuration.Application.Lookups;
 /// <param name="IsDefault">True for exactly one priority: the one pre-selected for new tasks.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
 /// <param name="OpenTaskCount">
-/// Tasks of this priority that are open (New, In Progress or On Hold, the Task Queue definition), over every pod, Matter and Project:
-/// configuration data, not trimmed to what the viewer may open. Null (not 0) when the viewer lacks <c>Task.View</c>. The list and every
+/// Tasks of this priority that are open (New, In Progress or On Hold, the Task Queue definition), over every pod, Matter and Project,
+/// counting only the Tasks the viewer may see (sensitive-matter rule; the "in use" guard of a delete is not affected and shows no number). Null (not 0) when the viewer lacks <c>Task.View</c>. The list and every
 /// create, update, default and reorder response carry it.
 /// </param>
 public sealed record PriorityView(

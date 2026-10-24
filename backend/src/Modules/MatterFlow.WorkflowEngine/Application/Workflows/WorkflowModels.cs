@@ -89,7 +89,7 @@ public sealed record WorkflowListPage(
 /// <param name="RowVersion">Concurrency token (base64) to send back when saving, publishing or retiring.</param>
 /// <param name="OpenTaskCount">
 /// Tasks running on this version that are open (New, In Progress or On Hold, the Task Queue definition); completed and cancelled Tasks are not
-/// counted. A draft has none (0). Counted over every pod (configuration data); null, not 0, when the viewer lacks <c>Task.View</c>.
+/// counted. A draft has none (0). Counted over every pod, only the Tasks the viewer may see (sensitive-matter rule); null, not 0, when the viewer lacks <c>Task.View</c>.
 /// </param>
 /// <param name="CreatedByUserId">Who created the version.</param>
 /// <param name="CreatedByName">Display name of the creator, when known.</param>

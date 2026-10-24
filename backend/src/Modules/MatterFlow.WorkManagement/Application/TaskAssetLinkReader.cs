@@ -70,7 +70,7 @@ internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog ro
 }
 
 /// <summary>Whether an Asset Link Role is used by a link. A separate class: the role catalog itself depends on the usage probes.</summary>
-internal sealed class TaskAssetLinkRoleUsage(DbContext db) : IAssetLinkRoleUsage
+internal sealed class TaskAssetLinkRoleUsage(DbContext db, TaskAccess access) : IAssetLinkRoleUsage
 {
     public Task<bool> IsInUseAsync(int assetLinkRoleId, CancellationToken cancellationToken = default) =>
         db.Set<TaskAsset>().AnyAsync(l => l.AssetLinkRoleId == assetLinkRoleId, cancellationToken);
@@ -82,8 +82,11 @@ internal sealed class TaskAssetLinkRoleUsage(DbContext db) : IAssetLinkRoleUsage
             return new Dictionary<int, int>();
 
         var ids = assetLinkRoleIds.Distinct().Select(id => (int?)id).ToList();
-        var rows = await db.Set<TaskAsset>().AsNoTracking()
-            .Where(l => ids.Contains(l.AssetLinkRoleId))
+        // Only the links of tasks the caller may see (sensitive-matter rule); IsInUseAsync above stays unfiltered so a role used only by hidden tasks still cannot be deleted.
+        var rows = await (from l in db.Set<TaskAsset>().AsNoTracking()
+                          join t in access.Visible() on l.TaskId equals t.Id
+                          where ids.Contains(l.AssetLinkRoleId)
+                          select l)
             .GroupBy(l => l.AssetLinkRoleId)
             .Select(g => new { Key = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

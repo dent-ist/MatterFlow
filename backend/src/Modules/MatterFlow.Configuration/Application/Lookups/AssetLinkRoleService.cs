@@ -15,7 +15,7 @@ namespace MatterFlow.Configuration.Application.Lookups;
 /// <param name="IsActive">False = not offered for new links; existing links still show it.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
 /// <param name="LinkCount">
-/// Task-asset links that use this role (#639), whichever Task and Asset: configuration data, not trimmed to what the viewer may open. Null (not 0)
+/// Task-asset links that use this role (#639), whichever Asset, counting only the links of Tasks the viewer may see (sensitive-matter rule). Null (not 0)
 /// when the viewer lacks <c>Task.View</c> or <c>Asset.View</c>. The list and every create, update and reorder response carry it.
 /// </param>
 public sealed record AssetLinkRoleView(

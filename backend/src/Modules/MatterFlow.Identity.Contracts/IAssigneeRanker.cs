@@ -7,7 +7,18 @@ namespace MatterFlow.Identity.Contracts;
 /// <param name="LastAssignedUtc">When a Task was last assigned to the person; null when never.</param>
 /// <param name="IsAvailable">False while out of office (work hours and time zone are not considered).</param>
 /// <param name="AvailableAgainUtc">While out of office: when it ends (UTC); null when open-ended or available.</param>
-public sealed record AssigneeCandidate(int UserId, string DisplayName, int OpenTaskCount, DateTime? LastAssignedUtc, bool IsAvailable, DateTime? AvailableAgainUtc);
+/// <param name="Display">What may be SHOWN about the load (open tasks and last assignment over the tasks the viewer may see, sensitive-matter rule); null: the true values. The ranking orders by the true values.</param>
+public sealed record AssigneeCandidate(int UserId, string DisplayName, int OpenTaskCount, DateTime? LastAssignedUtc, bool IsAvailable, DateTime? AvailableAgainUtc, AssigneeCandidateDisplay? Display = null)
+{
+    /// <summary>Open tasks to show.</summary>
+    public int ShownOpenTaskCount => Display?.OpenTaskCount ?? OpenTaskCount;
+
+    /// <summary>Last assignment time to show.</summary>
+    public DateTime? ShownLastAssignedUtc => Display is null ? LastAssignedUtc : Display.LastAssignedUtc;
+}
+
+/// <summary>The load a viewer may see: open tasks and last assignment over the tasks that viewer can see.</summary>
+public sealed record AssigneeCandidateDisplay(int OpenTaskCount, DateTime? LastAssignedUtc);
 
 /// <summary>What to rank: who, for which Pod and Task Type (both optional, for smarter rules), and the instant "now".</summary>
 /// <param name="Candidates">The eligible people (active, holding a role), already narrowed to the Pod's members when the Task is in a Pod.</param>

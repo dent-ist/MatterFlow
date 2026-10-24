@@ -82,7 +82,8 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
         {
             var l = load.GetValueOrDefault(r.Id);
             var state = states[r.Id];
-            return new AssigneeCandidate(r.Id, r.DisplayName, l?.OpenTaskCount ?? 0, l?.LastAssignedUtc, state.State != AvailabilityStates.OutOfOffice, state.OutUntilUtc);
+            return new AssigneeCandidate(r.Id, r.DisplayName, l?.OpenTaskCount ?? 0, l?.LastAssignedUtc, state.State != AvailabilityStates.OutOfOffice, state.OutUntilUtc,
+                l?.Visible is { } shown ? new AssigneeCandidateDisplay(shown.OpenTaskCount, shown.LastAssignedUtc) : null);
         }).ToArray();
 
         if (!ranked)
@@ -99,5 +100,5 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
     }
 
     private static UserLookupItem Item(AssigneeCandidate c, AvailabilityEvaluation state, bool suggested, string reason) =>
-        new(c.UserId, c.DisplayName, UserAvailabilitySummary.From(state), c.OpenTaskCount, c.LastAssignedUtc, suggested, reason);
+        new(c.UserId, c.DisplayName, UserAvailabilitySummary.From(state), c.ShownOpenTaskCount, c.ShownLastAssignedUtc, suggested, reason);
 }

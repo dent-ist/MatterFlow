@@ -4,7 +4,7 @@ using MatterFlow.Identity.Contracts;
 namespace MatterFlow.Identity.Application;
 
 /// <summary>
-/// The default assignee ranking (owner decision, #757): fewest open Tasks first, then the person who was assigned a Task least recently
+/// The default assignee ranking (owner decision, #757): fewest open Tasks first (the true load, whatever the viewer may see of it), then the person who was assigned a Task least recently
 /// (never assigned comes before anybody), then display name. Out of office people keep their place in the order but are not
 /// <see cref="RankedAssignee.Suggestable"/>. Pod and Task Type are accepted and ignored: this rule treats every Pod and type alike.
 /// </summary>
@@ -24,8 +24,9 @@ public sealed class LoadBalancedAssigneeRanker : IAssigneeRanker
 
     private static string Reason(AssigneeCandidate c, DateTime nowUtc)
     {
-        var open = c.OpenTaskCount == 1 ? "1 open task" : string.Create(CultureInfo.InvariantCulture, $"{c.OpenTaskCount} open tasks");
-        var last = c.LastAssignedUtc is { } at ? $"last assigned {Ago(nowUtc - at)}" : "never assigned";
+        // The order uses the true load; the sentence shows only what the viewer may see (sensitive-matter rule, owner decision Q5).
+        var open = c.ShownOpenTaskCount == 1 ? "1 open task" : string.Create(CultureInfo.InvariantCulture, $"{c.ShownOpenTaskCount} open tasks");
+        var last = c.ShownLastAssignedUtc is { } at ? $"last assigned {Ago(nowUtc - at)}" : "never assigned";
         return c.IsAvailable ? $"{open}, {last}" : $"{open}, {last}, out of office";
     }
 

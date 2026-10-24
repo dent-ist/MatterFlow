@@ -15,7 +15,7 @@ namespace MatterFlow.Configuration.Application.Lookups;
 /// <param name="SortOrder">Lifecycle order.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
 /// <param name="TaskCount">
-/// Tasks in this status, open or closed, over every pod, Matter and Project: configuration data, not trimmed to what the viewer may open.
+/// Tasks in this status, open or closed, over every pod, Matter and Project, counting only the Tasks the viewer may see (sensitive-matter rule).
 /// Null (not 0) when the viewer lacks <c>Task.View</c>. The list and the update response carry it.
 /// </param>
 public sealed record StatusLabelView(

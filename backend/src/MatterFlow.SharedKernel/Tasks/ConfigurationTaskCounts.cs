@@ -3,8 +3,8 @@ namespace MatterFlow.SharedKernel.Tasks;
 /// <summary>
 /// Open Task counts for the Task Type, Workflow and Workflow Version administration screens (#372, #391). The Task table belongs to the Work
 /// Management module, which the Configuration and Workflow Engine modules may not reference, so the WorkViews module implements this with the
-/// predicate of the Task Queue (<c>TaskQueueRules.Open</c>: New, In Progress, On Hold). Counts are configuration data: they cover every Task in
-/// every pod and are never trimmed to what the viewer may open. Callers apply the <c>Task.View</c> rule themselves (null without it).
+/// predicate of the Task Queue (<c>TaskQueueRules.Open</c>: New, In Progress, On Hold). Counts cover every pod but only the Tasks the viewer may see
+/// (sensitive-matter rule, epic #788); the "in use" guards of deletes use their own unfiltered probes and show no number. Callers apply the <c>Task.View</c> rule themselves (null without it).
 /// </summary>
 public interface IConfigurationTaskCounts
 {

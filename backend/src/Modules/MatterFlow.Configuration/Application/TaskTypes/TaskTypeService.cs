@@ -34,8 +34,8 @@ namespace MatterFlow.Configuration.Application.TaskTypes;
 /// <param name="UsabilityIssues">Why the type is not usable: INACTIVE, FORM_NOT_PUBLISHED, NO_ELIGIBLE_WORKFLOW. Empty when usable.</param>
 /// <param name="RowVersion">Optimistic-concurrency token (base64); send it back on update.</param>
 /// <param name="OpenTaskCount">
-/// Tasks of this type that are open (New, In Progress or On Hold, the Task Queue definition), over every pod and Matter: configuration data, not
-/// trimmed to what the viewer may open. Null (not 0) when the viewer lacks <c>Task.View</c>. The list, the detail and the create and
+/// Tasks of this type that are open (New, In Progress or On Hold, the Task Queue definition), over every pod and Matter, counting only the Tasks the viewer may see
+/// (sensitive-matter rule). Null (not 0) when the viewer lacks <c>Task.View</c>. The list, the detail and the create and
 /// update responses all carry it.
 /// </param>
 public sealed record TaskTypeView(

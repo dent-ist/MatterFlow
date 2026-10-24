@@ -99,6 +99,12 @@ Decision (proposed, to be proven in the first work package): **explicit scoped s
 
 **Built in SM-08 (#796):** rows R30, R31, R32 and R36 are implemented. `TaskQueueService.Tasks()` (and `VisibleTasks.Of` for the other WorkViews readers) is the base of every list, count and badge: the join form of mode T through `IMatterVisibility.WhereTaskVisibleBy`. Task Queue totals, pagers, bucket counts and the nine quick-view counts, the My Work tabs (Created by me included: a task created on a matter the creator can no longer see is gone), Pod Work header, tab counts, pod selector numbers (open, unassigned, overdue per pod) and member loads, and the Swimlane cards, lane counts and group trees (priority, assignee, client > matter) are all computed from that set, never by subtraction. The needs-attention strip of My Work reads the caller's own assigned tasks, which are always visible (mode T). A queue row of an assignee's task on a hidden matter carries only the header data (reference, name, client, `matterIsSensitive`). A new test measures the SQL EF generates for the set-wide form at 200 matters / 24,000 tasks: 236 reads against 84 for the plain count, the same as the hand-written join of SM-03 (`VisibilityFunctionsTests`). The Dashboard summary, scopes, trend, workload and coverage (R33 to R35, R37, R38) are SM-09 (#797).
 
+**Built in SM-09 (#797):** rows R33 to R35, R37 and R38 are implemented (R36, the Swimlane, was SM-08). `DashboardService`, `DashboardTrendService`, `WorkloadService` and `CoverageService` read the task set `VisibleTasks.Of` (mode T, join form): the headline counts and tiles, status, priority and task-type breakdowns, aging bands, "unassigned outside every pod", the trend series, the Users board (open, overdue, due soon, on hold, next due, the "unassigned queue" figure, and which people are listed when "can take work" is chosen) and the coverage matrix all count visible tasks only; each tile equals the Task Queue list its query opens. The server cache (`DashboardCache`) is partitioned by a **visibility stamp** (`VisibilityStamp`) that is part of the key of the summary and the trend: `off` while the switch is off, `all` for see-all viewers, otherwise a short hash of the sensitive matters that exist, the ones the person manages and the sensitive-matter tasks assigned to them. A manager removed, a task reassigned, a matter marked or un-marked, or the permission taken away changes the key at once, so there is no cache lag (tested within the 15-second cache time); two people share a key only when they see the same things. `GET /dashboard/scopes` carries pod names only (verified, no matter data).
+
+**Built in SM-10 (#798):** rows R39 and R40 were already protected by their base set and are now proven and cached correctly. The My Matters scope (`MyMattersScopeResolver`) builds its matters through `IManagedMatterScope` (SM-04/#760, which applies the matter rule to a named manager and to scope all), so every task, deadline, health row, attention item, workload cell and activity event is read from matters the caller may see; a task assigned to the caller on a hidden matter does not make the matter appear (the caller is not a manager of it). The summary cache key carries the `VisibilityStamp` of SM-09, so a manager removed or a matter marked shows on the next request. The activity feed reads audit events of the scope's matters only, so unread counts and rows are visible-only. Residual (accepted, same family as T6): the per-person "seen" marker is an audit event id, so it can move past ids of events the person cannot see and the number reveals the overall size of the audit log, not any matter; it never selects which events are shown.
+
+**Built in SM-11 (#799):** rows R41 to R45, R63 and R66 are implemented. Task numbers on screens: the open-task counts of users (list, detail), task types, priorities, status labels, workflow versions and the asset-link-role counts (`IConfigurationTaskCounts`, `IUserTaskCounts`, `IAssetLinkRoleUsage.CountLinksAsync`) count only tasks the caller may see. The integrity guards stay on the unfiltered probes (`IPriorityUsage`, `IMatterTaskGuard`, `IUserWorkSource`, `IsInUseAsync`) and their messages carry no number ("Tasks use this priority, so it cannot be deleted"), so a priority used only by a hidden task still cannot be deleted and the refusal tells nothing more. Assignee ranker (owner decision Q5): `IAssigneeLoadReader` returns the true load and, with the rule on, the load over visible tasks (`AssigneeLoad.Visible`); `UsersLookupController` hands the ranker the TRUE load (so the order is by real load and a person holding a hidden task is never ranked as idle) but the shown count, the shown last-assigned time and the reason sentence ("2 open tasks, last assigned 3 days ago") are the visible ones. The order itself is the known residual of that decision (T2/Q5). Pods, `/me/pods`, matter managers and the user list carry no matter data (swept in the tests).
+
 Parity: the C# predicate and the SQL functions are tested against the same fixture matrix (section 12.3) so they cannot drift.
 
 ## 5. 404 semantics
@@ -279,19 +285,19 @@ Modes: **M** matter rule, **T** task rule, **A** asset rule, **H** header only, 
 | R30 | `GET /task-queue` | `Task.View` | T | W,C (done #796) |
 | R31 | `GET /my-work` | `Task.View` | T (own tasks always T) | W,C (done #796) |
 | R32 | `GET /pod-work` | `Task.View`+`Pod.View` | T; pod member load excludes hidden | W,C (done #796) |
-| R33 | `GET /dashboard` (summary, KPIs, breakdowns, unassigned) | `Dashboard.*` | T/M sources; cache key by viewer class | W,C,X |
-| R34 | `GET /dashboard/scopes` | `Dashboard.*` | counts per scope via visible sources | W,C |
-| R35 | `GET /dashboard/trend` | `Dashboard.ViewTrends` | T; cached | W,C |
+| R33 | `GET /dashboard` (summary, KPIs, breakdowns, unassigned) | `Dashboard.*` | T/M sources; cache key by viewer class | W,C,X (done #797) |
+| R34 | `GET /dashboard/scopes` | `Dashboard.*` | counts per scope via visible sources | W,C (done #797) |
+| R35 | `GET /dashboard/trend` | `Dashboard.ViewTrends` | T; cached | W,C (done #797) |
 | R36 | `GET /dashboard/swimlane` | `Dashboard.ViewSwimlane` | T/M (`MatterIsSensitive` only on visible) | W,C (done #796) |
-| R37 | `GET /dashboard/workload` | `Dashboard.ViewUsers` | per-user load over visible tasks | W,C |
-| R38 | `GET /dashboard/coverage` | `Dashboard.ViewCoverage` | T | W,C |
-| R39 | `GET /my-matters/summary`, `/health`, `/attention`, `/deadlines`, `/workload` | `Task.View` + `Matter.BeManager\|AssignManagers` | base set = visible matters (scope all = M, not "all rows") | W,C |
-| R40 | `GET /my-matters/activity`, `POST /activity/seen` (`MyMattersActivityService`) | same | M on `AuditEvent.MatterId`, seen marker only for visible | W,X |
-| R41 | `GET /users/lookup` (assignee ranker, open counts, suggestion reasons) | lookup perms | open-task counts computed over visible tasks of the viewer; ranker internals see true load (Q5) | W,C,X |
-| R42 | `GET /users`, `/users/counts`, `/users/{id}` (open task counts, if any) | `User.View` | counts via T | W,C |
-| R43 | `GET /users/matter-managers` | `Matter.AssignManagers`/Create/Edit | user list only (N); no matter data; verify | N |
-| R44 | `GET /pods`, `/pods/{id}`, `/me/pods`, `/users/{id}/pods`, `member-candidates` | pod perms | member lists; any task/load number via T | W |
-| R45 | `IAssigneeLoadReader`, `IUserWorkSource`, `IAssigneeRanker` (Identity.Contracts, implemented over tasks) | internal | called with Viewer; counts filtered; ranking policy Q5 | X |
+| R37 | `GET /dashboard/workload` | `Dashboard.ViewUsers` | per-user load over visible tasks | W,C (done #797) |
+| R38 | `GET /dashboard/coverage` | `Dashboard.ViewCoverage` | T | W,C (done #797) |
+| R39 | `GET /my-matters/summary`, `/health`, `/attention`, `/deadlines`, `/workload` | `Task.View` + `Matter.BeManager\|AssignManagers` | base set = visible matters (scope all = M, not "all rows") | W,C (done #798) |
+| R40 | `GET /my-matters/activity`, `POST /activity/seen` (`MyMattersActivityService`) | same | M on `AuditEvent.MatterId`, seen marker only for visible | W,X (done #798) |
+| R41 | `GET /users/lookup` (assignee ranker, open counts, suggestion reasons) | lookup perms | open-task counts computed over visible tasks of the viewer; ranker internals see true load (Q5) | W,C,X (done #799) |
+| R42 | `GET /users`, `/users/counts`, `/users/{id}` (open task counts, if any) | `User.View` | counts via T | W,C (done #799) |
+| R43 | `GET /users/matter-managers` | `Matter.AssignManagers`/Create/Edit | user list only (N); no matter data; verify | N (done #799) |
+| R44 | `GET /pods`, `/pods/{id}`, `/me/pods`, `/users/{id}/pods`, `member-candidates` | pod perms | member lists; any task/load number via T | W (done #799) |
+| R45 | `IAssigneeLoadReader`, `IUserWorkSource`, `IAssigneeRanker` (Identity.Contracts, implemented over tasks) | internal | called with Viewer; counts filtered; ranking policy Q5 | X (done #799) |
 | R46 | `GET /me`, `/me/availability`, `/users/{id}/availability` | auth | N (availability has no matter data) | N |
 | R47 | `GET /me/notifications`, `/poll`, unread count | `Notification.View` | filter `MatterId/TaskId` by current visibility | W,X |
 | R48 | `POST /me/notifications/{id}/read`, `/read-all` | same | hidden rows are not touched; count of changed rows from visible only | W,X |
@@ -309,10 +315,10 @@ Modes: **M** matter rule, **T** task rule, **A** asset rule, **H** header only, 
 | R60 | Reports admin CRUD (`report-admin/*`), role assignment | Report.Manage / Assign | N (definitions) except preview, run history parameters | open |
 | R61 | `POST /intake/parse-email*` | intake perm | confirm no matter lookup or suggestion (N) | N |
 | R62 | `SystemController` (version, health) | none | N | N |
-| R63 | Configuration reads with "in use" counts (task types, priorities, status labels, forms; `ConfigurationTaskCounts`) | admin perms | display via visible counts; integrity guard unfiltered, text generic | W,C |
+| R63 | Configuration reads with "in use" counts (task types, priorities, status labels, forms; `ConfigurationTaskCounts`) | admin perms | display via visible counts; integrity guard unfiltered, text generic | W,C (done #799) |
 | R64 | Roles/Permissions `GET /roles`, `/permissions` | `Role.Manage` | `Matter.ViewSensitive` listed; role user counts N | W |
 | R65 | `DashboardCache`, My Matters cache | in-memory | key partition by viewer class | X |
-| R66 | Workflow engine API (`WorkflowControllers`) | `Workflow.Manage` | definitions only; any "tasks using" counts via T | N,C |
+| R66 | Workflow engine API (`WorkflowControllers`) | `Workflow.Manage` | definitions only; any "tasks using" counts via T | N,C (done #799) |
 | R67 | Frontend: lookup-store, recent items/searches, route titles, breadcrumbs, exports | client | section 11 checklist | e2e |
 | R68 | `tools/seed-demo`, `tools/perf` | dev tools | create sensitive sample data and personas | N |
 
