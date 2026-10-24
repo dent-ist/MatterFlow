@@ -17,6 +17,11 @@ public sealed record AssetSummary(
     string? ExternalReference,
     bool IsActive);
 
+/// <summary>A Matter's active Assets in short: how many there are and the first few by name (the matter overview, epic #758).</summary>
+/// <param name="Total">All active Assets of the Matter.</param>
+/// <param name="First">The first Assets by display name.</param>
+public sealed record MatterAssetSnapshot(int Total, IReadOnlyList<AssetSummary> First);
+
 /// <summary>Read-only lookups of Assets for other modules (Tasks, Search, WorkViews).</summary>
 public interface IAssetDirectory
 {
@@ -28,6 +33,16 @@ public interface IAssetDirectory
 
     /// <summary>The Matter's Assets ordered by display name (a Matter holds a few hundred at most). Inactive ones only when asked.</summary>
     Task<IReadOnlyList<AssetSummary>> ListForMatterAsync(int matterId, bool includeInactive = false, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The count of the Matter's active Assets and the first <paramref name="take"/> by display name: two statements whatever the number of Assets. The caller has already
+    /// checked that the Matter is visible. The default reads the whole list.
+    /// </summary>
+    async Task<MatterAssetSnapshot> SnapshotForMatterAsync(int matterId, int take, CancellationToken cancellationToken = default)
+    {
+        var all = await ListForMatterAsync(matterId, false, cancellationToken);
+        return new MatterAssetSnapshot(all.Count, [.. all.Take(take)]);
+    }
 
     /// <summary>Names of the Asset Types that exist (inactive ones too: history keeps their names), keyed by Asset Type id. The default resolves nothing.</summary>
     Task<IReadOnlyDictionary<int, string>> AssetTypeNamesAsync(IReadOnlyCollection<int> assetTypeIds, CancellationToken cancellationToken = default) =>

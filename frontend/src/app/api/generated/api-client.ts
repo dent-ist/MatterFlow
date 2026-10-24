@@ -12241,6 +12241,86 @@ export class DashboardBoardClient implements IDashboardBoardClient {
     }
 }
 
+export interface IMatterOverviewClient {
+    /**
+     * @return OK
+     */
+    getMatterOverview(matterId: number): Observable<MatterOverview>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterOverviewClient implements IMatterOverviewClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getMatterOverview(matterId: number): Observable<MatterOverview> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/overview";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMatterOverview(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMatterOverview(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterOverview>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterOverview>;
+        }));
+    }
+
+    protected processGetMatterOverview(response: HttpResponseBase): Observable<MatterOverview> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterOverview;
+            return _observableOf(result200);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IMyMattersClient {
     /**
      * @param take (optional) 
@@ -16335,6 +16415,130 @@ export interface MatterManagerResponse {
     [key: string]: any;
 }
 
+export interface MatterOverview {
+    timeZone: string;
+    asOfUtc: string;
+    matter: MatterOverviewHeader;
+    taskCounts: MatterOverviewTaskCounts | undefined;
+    deadlines: MatterOverviewDeadlines | undefined;
+    people: MatterOverviewPeople | undefined;
+    assets: MatterOverviewAssets | undefined;
+    activity: MyMattersActivityItem[] | undefined;
+    health: MatterOverviewHealth | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewAsset {
+    assetId: number;
+    displayName: string;
+    assetTypeName: string;
+    externalReference: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewAssets {
+    total: number;
+    items: MatterOverviewAsset[];
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewDeadline {
+    taskId: number;
+    taskNumber: string;
+    title: string;
+    dueDate: string | undefined;
+    dueAtUtc: string | undefined;
+    assigneeId: number | undefined;
+    assigneeName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewDeadlines {
+    total: number;
+    query: string;
+    items: MatterOverviewDeadline[];
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewHeader {
+    matterId: number;
+    matterRef: string;
+    name: string;
+    clientId: number;
+    clientName: string;
+    isActive: boolean;
+    isSensitive: boolean;
+    primaryManager: MatterOverviewManager | undefined;
+    secondaryManager: MatterOverviewManager | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewHealth {
+    flag: string;
+    reasons: MatterOverviewReason[];
+    amberDueDays: number;
+    stuckOnHoldDays: number;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewManager {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewPeople {
+    total: number;
+    unassignedOpen: number;
+    items: MatterOverviewPerson[];
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewPerson {
+    userId: number;
+    displayName: string;
+    isActive: boolean;
+    open: number;
+    overdue: number;
+    away: MyMattersAwayWindow | undefined;
+    query: string;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewReason {
+    code: string;
+    count: number;
+    query: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterOverviewTaskCounts {
+    new: number;
+    inProgress: number;
+    onHold: number;
+    completed: number;
+    open: number;
+    newQuery: string;
+    inProgressQuery: string;
+    onHoldQuery: string;
+    completedQuery: string;
+    openQuery: string;
+
+    [key: string]: any;
+}
+
 export interface MatterResponse {
     matterId: number;
     clientId: number;
@@ -17043,6 +17247,16 @@ export interface PriorityView {
     isDefault: boolean;
     rowVersion: string;
     openTaskCount?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProblemDetails {
+    type?: string | undefined;
+    title?: string | undefined;
+    status?: number | undefined;
+    detail?: string | undefined;
+    instance?: string | undefined;
 
     [key: string]: any;
 }

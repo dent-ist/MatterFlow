@@ -92,6 +92,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/matters/lookup"] = new(AccessKind.Gated, IdKind.Matter, "resolves one matter by reference: hidden = 404 like a missing reference", ["api/v1/matters/lookup?ref={matterref}"]),
         ["GET api/v1/matters/{matterId:int}"] = new(AccessKind.Gated, IdKind.Matter, "resource by id: hidden = 404 like a missing id", ["api/v1/matters/{matter}"]),
         ["GET api/v1/matters/{matterId:int}/summary"] = new(AccessKind.Gated, IdKind.Matter, "resource by id: hidden = 404 like a missing id", ["api/v1/matters/{matter}/summary"]),
+        ["GET api/v1/matters/{matterId:int}/overview"] = new(AccessKind.Gated, IdKind.Matter, "resource by id: hidden = 404 like a missing id", ["api/v1/matters/{matter}/overview"]),
         ["GET api/v1/me"] = new(AccessKind.Neutral, IdKind.None, "people, pods and availability: no matter data (swept)", ["api/v1/me"]),
         ["GET api/v1/me/availability"] = new(AccessKind.Neutral, IdKind.None, "people, pods and availability: no matter data (swept)", ["api/v1/me/availability"]),
         ["GET api/v1/me/notification-preferences"] = new(AccessKind.Neutral, IdKind.None, "people, pods and availability: no matter data (swept)", ["api/v1/me/notification-preferences"]),

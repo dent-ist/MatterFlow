@@ -8215,6 +8215,57 @@
         }
       }
     },
+    "/api/v1/matters/{matterId}/overview": {
+      "get": {
+        "tags": [
+          "MatterOverview"
+        ],
+        "operationId": "GetMatterOverview",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterOverview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/activity": {
       "get": {
         "tags": [
@@ -14809,6 +14860,462 @@
           }
         }
       },
+      "MatterOverview": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "matter",
+          "taskCounts",
+          "deadlines",
+          "people",
+          "assets",
+          "activity",
+          "health"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "matter": {
+            "$ref": "#/components/schemas/MatterOverviewHeader"
+          },
+          "taskCounts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewTaskCounts"
+              }
+            ]
+          },
+          "deadlines": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewDeadlines"
+              }
+            ]
+          },
+          "people": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewPeople"
+              }
+            ]
+          },
+          "assets": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewAssets"
+              }
+            ]
+          },
+          "activity": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MyMattersActivityItem"
+            }
+          },
+          "health": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewHealth"
+              }
+            ]
+          }
+        }
+      },
+      "MatterOverviewAsset": {
+        "required": [
+          "assetId",
+          "displayName",
+          "assetTypeName",
+          "externalReference"
+        ],
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "assetTypeName": {
+            "type": "string"
+          },
+          "externalReference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatterOverviewAssets": {
+        "required": [
+          "total",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewAsset"
+            }
+          }
+        }
+      },
+      "MatterOverviewDeadline": {
+        "required": [
+          "taskId",
+          "taskNumber",
+          "title",
+          "dueDate",
+          "dueAtUtc",
+          "assigneeId",
+          "assigneeName"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "taskNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "assigneeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assigneeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatterOverviewDeadlines": {
+        "required": [
+          "total",
+          "query",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewDeadline"
+            }
+          }
+        }
+      },
+      "MatterOverviewHeader": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "name",
+          "clientId",
+          "clientName",
+          "isActive",
+          "isSensitive",
+          "primaryManager",
+          "secondaryManager"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isSensitive": {
+            "type": "boolean"
+          },
+          "primaryManager": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewManager"
+              }
+            ]
+          },
+          "secondaryManager": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterOverviewManager"
+              }
+            ]
+          }
+        }
+      },
+      "MatterOverviewHealth": {
+        "required": [
+          "flag",
+          "reasons",
+          "amberDueDays",
+          "stuckOnHoldDays"
+        ],
+        "type": "object",
+        "properties": {
+          "flag": {
+            "type": "string"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewReason"
+            }
+          },
+          "amberDueDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stuckOnHoldDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MatterOverviewManager": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MatterOverviewPeople": {
+        "required": [
+          "total",
+          "unassignedOpen",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unassignedOpen": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewPerson"
+            }
+          }
+        }
+      },
+      "MatterOverviewPerson": {
+        "required": [
+          "userId",
+          "displayName",
+          "isActive",
+          "open",
+          "overdue",
+          "away",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "away": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersAwayWindow"
+              }
+            ]
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "MatterOverviewReason": {
+        "required": [
+          "code",
+          "count",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatterOverviewTaskCounts": {
+        "required": [
+          "new",
+          "inProgress",
+          "onHold",
+          "completed",
+          "open",
+          "newQuery",
+          "inProgressQuery",
+          "onHoldQuery",
+          "completedQuery",
+          "openQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "new": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inProgress": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "completed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "newQuery": {
+            "type": "string"
+          },
+          "inProgressQuery": {
+            "type": "string"
+          },
+          "onHoldQuery": {
+            "type": "string"
+          },
+          "completedQuery": {
+            "type": "string"
+          },
+          "openQuery": {
+            "type": "string"
+          }
+        }
+      },
       "MatterResponse": {
         "required": [
           "matterId",
@@ -17394,6 +17901,42 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -23902,6 +24445,9 @@
     },
     {
       "name": "DashboardBoard"
+    },
+    {
+      "name": "MatterOverview"
     },
     {
       "name": "MyMatters"

@@ -35,6 +35,21 @@ internal sealed class AssetDirectory(DbContext db) : IAssetDirectory
         return [.. rows.Select(ToSummary)];
     }
 
+    public async Task<MatterAssetSnapshot> SnapshotForMatterAsync(int matterId, int take, CancellationToken cancellationToken = default)
+    {
+        var total = await db.Set<Asset>().AsNoTracking().CountAsync(a => a.MatterId == matterId && a.IsActive, cancellationToken);
+        if (total == 0 || take <= 0)
+            return new MatterAssetSnapshot(total, []);
+
+        var rows = await Rows()
+            .Where(r => r.Asset.MatterId == matterId && r.Asset.IsActive)
+            .OrderBy(r => r.Asset.DisplayName)
+            .ThenBy(r => r.Asset.Id)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+        return new MatterAssetSnapshot(total, [.. rows.Select(ToSummary)]);
+    }
+
     public async Task<IReadOnlyDictionary<int, string>> AssetTypeNamesAsync(IReadOnlyCollection<int> assetTypeIds, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(assetTypeIds);
