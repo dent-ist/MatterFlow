@@ -10,7 +10,7 @@ Helper file: `docs/ux/tokens.css` (design tokens as CSS custom properties).
 3. Design principles
 4. Design tokens, badges, accessibility (WCAG 2.1 AA)
 5. Global patterns (app shell, tables, forms, dialogs, errors, permissions, numbers, record pages)
-6. Screen specifications S01 to S24
+6. Screen specifications S01 to S26
 7. Component inventory (Angular)
 8. Copy deck
 9. User-acceptance checklists per screen
@@ -312,7 +312,7 @@ The three detail pages share one anatomy; what differs is data (tabs, actions, s
 Matters > 00343-00012 > Custodian Processing       crumb: the last step is the current page (cut at 40 characters, full text in the tooltip)
 [icon] 00343-00012 [copy]  Name, at most two lines  (Active) [lock]    [Edit] [Activity] [+ Create task] [...]     record header (mf-record-header)
 Client 00343 Acme Corp                              context line, muted, one line; a link only with the parent's View permission
-[lock] Sensitive matter. Handle ...                 Sensitive note, one 32 px line, only for a Sensitive matter
+[lock] Sensitive matter. Only its project managers ...   Sensitive note, one 32 px line, only for a Sensitive matter
 [ Overview ] [ Tasks (7) ] [ Projects (3) ] [ Assets (5) ]   tabs (mf-tabs)
 [Open 7] [Overdue 2] [Due soon 1] [ASAP 0] [On hold 1]       summary strip (28 px + 8 px margin)
 ... the tab's panel scrolls; header, banners and tab list stay put ...
@@ -670,10 +670,10 @@ Live combined-reference preview updates as the user types. Messages: "Select a c
 Matters > 00343-00012 Merger Review
 [icon] 00343-00012 [copy]  Merger Review  (Active) [lock Sensitive]    [Edit] [Activity] [+ Create task] [...]
 Client 00343 Acme Corp                                                  ... = New project, New asset, Set inactive
-[lock] Sensitive matter. Handle its tasks and assets with extra care. This flag is a warning only ...   (only when Sensitive)
+[lock] Sensitive matter. Only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it.   (only when Sensitive)
 [ Overview ] [ Tasks (7) ] [ Projects (3) ] [ Assets (5) ]       (Activity: header button, opens a right-side drawer)
 Overview (default): [Open 7] [Overdue 2] [Due soon 1] [ASAP 0] [On hold 1]  (links to ?tab=tasks&view=...)
-                    Client (link) | Status | Sensitive (Warning only) | Created | Last changed | custom fields
+                    Client (link) | Status | Sensitive (Restricted access) | Created | Last changed | custom fields
 Tasks tab (?tab=tasks): the summary strip as toggles (view=), then the scoped Task Queue grid (Project column and filter when the matter has projects).
 Projects tab (?tab=projects): Name (link; description as a muted second line), Open tasks, Overdue, Status; Active first, then "Archived (7)".
 Assets tab (?tab=assets): the matter's assets (en dash for an empty external reference); New asset in the empty state and the header overflow.
@@ -884,7 +884,7 @@ Details as a closed disclosure:  > Details   Requestor Dana W-M . 14 request fie
 - **Title:** `TSK-n  title` is the one `h1`, 22 px (18 px on a phone), one line, two at most, the full title as a tooltip; the task type icon sits in front of it. No Active badge.
 - **Context line:** one muted line `Matter 00343-00012 Merger Review . Client 00343 . Data Processing . Standard Processing v2 (ordered)`; the matter reference links with `Matter.View`, the client number with `Client.View`, otherwise plain text; the whole sentence is the tooltip. Matter, Task type and Workflow are immutable (the lock explanation, "Can't be changed after creation. To correct it, cancel this task and create a new one.", is in the Edit dialog's locked block).
 - **Actions** (data, `RecordAction`, permission-gated), in this order: **Edit** (`Task.Edit`), **Activity**, the primary **Complete task** (**Reopen task** on a closed task; no primary on an On hold task, whose Resume is in the overflow), and the "..." overflow with **Put on hold** or **Resume**, **Copy link**, a divider and **Cancel task** (danger, last). Complete is **never disabled for missing information**: while steps need information it keeps the `n steps need information` hint (tooltip and `aria-describedby`; the dialog then offers "Go to first step"). A status action the Matter blocks is shown disabled with its reason; one the person has no permission for is absent. On a phone the primary and the overflow share one row of 44 px targets and Edit and Activity move into the overflow. There is one Edit control on the page (the Details panel has no pencil).
-- **Sensitive note:** one line under the title (`data-sensitive-banner`), a warning only.
+- **Sensitive note:** one line under the title (`data-sensitive-banner`): "Sensitive matter." and who can see it (`SENSITIVE_ACCESS_TEXT`); the full sentence is the tooltip. The matter header of the context line is plain text, not a link, when the server says the matter cannot be opened (`matter.canOpen` false: the person sees the task through an assignment, mode H of epic #788).
 - **View only line:** a person who can change nothing on the task (no edit, assign, priority, status, workflow permission) sees "View only: you don't have permission to edit tasks." once, under the header; commenting alone does not count as editing.
 
 **Facts strip (`mf-task-facts`).** Exactly **six tiles**, each fact once: **Status** (menu), **Priority** (menu), **Due** (`mf-due-cell`, inline; a closed task with a due date reads `Was due Oct 14`; for a person with `Task.Edit` on an open task it is a menu button like the other three, see **Inline Due date** below), **Assignee** (menu), **Pod** (an en dash and "No pod" for readers when empty) and **Workflow** `2 of 3 resolved` ("No steps" without steps). The three menus are the same `mf-row-edit` menus as the work lists, with the same names and words (a person without the permission sees the plain badge or text); they are plain while the Edit dialog is open. **Status menu:** one label per item (the target status only as a tooltip), a divider, Cancel task last in the danger style; a closed task offers only Reopen. **Assignee menu:** **Assign to me** is the first item; each Pod member shows `n open` (read from the Pod Work loads, quiet and best effort; needs `Pod.View`, otherwise the hint is simply absent). The look is the global `_facts-strip.scss` (the work-strip tile tokens, no new token). Below 640 px the strip is 2 x 3.
@@ -1284,6 +1284,19 @@ In-app only: no email, Teams, browser push, sound, toast or tab-title count in t
 
 Rules: never the person who made the change; only people who may view the object now (checked again on read); one notification per person per action (the lower priority number wins, so a manager who is the assignee gets event 1); no scheduled event for a task without a due date, a closed task, or one fixed before the scheduler ran; scheduled events are made by the 5-minute background job (runbook 6.1) and are idempotent by the unique key of `dbo.Notification`; read items are deleted after 90 days and any item after 365 days. Pod Leads are the pod members who hold the active role named "Pod Lead".
 
+### S26 Sensitive matters on the screens (epic #788; design `docs/ux/sensitive-matters/README.md`, decisions section AJ)
+
+The server decides who sees a sensitive matter (managers, holders of `Matter.ViewSensitive`, assignees of a task of it, for that task only); the screens only reflect it. Nothing here adds or changes a keyboard shortcut (#420).
+
+- **A hidden record is the normal "not found".** `/matters/<id>`, `/projects/<id>`, `/tasks/<id>` and `/assets/<id>` of a record the person may not see show the state of a missing id: "We couldn't find that matter." with the link back to the list, the tab title "Matter not found", the plain toast "We couldn't find that." for a failed lookup. There is no "request access" prompt and no name from the address, a cache or an earlier page.
+- **The assignee's task page.** The person sees the task and the matter header (reference, name, client) as **plain text**: no link in the context line, the crumb, the Edit task dialog, the queue rows, My Work or the linked asset's page (the server's `canOpen` / `matterCanOpen` is false). There are no matter-level tabs and no "other tasks in this matter".
+- **Marking and un-marking** (Matter form, `Matter.Create` / `Matter.Edit`). The Sensitive checkbox says what it does: "Restricts this matter, with its tasks and assets, to its project managers, people assigned one of its tasks and people who may see all sensitive matters. Everyone else does not see it at all. Also shows a warning banner." Marking a matter that would end the editor's own access (the server answers 409 `SENSITIVE_CONFIRMATION_REQUIRED`) opens the dialog **"You will no longer see this matter"** ("Once this matter is marked sensitive, only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it. You are none of these, so you will no longer see this matter or its tasks and assets after you save."), buttons **Keep it as it is** (secondary, left) and **Mark sensitive** (danger, right); confirming repeats the save with `confirmLossOfAccess`, shows "Matter 00343-00012 saved. It is sensitive now and you no longer see it." and opens the Matters list (the matter page would answer "not found"). Creating a sensitive matter without a manager by someone without `Matter.ViewSensitive` is refused (400 `SENSITIVE_NEEDS_MANAGER`) with the server's sentence beside the checkbox (`aria-invalid`, `aria-describedby`), not as a toast.
+- **Sensitive marker for people who may see it.** Unchanged: the lock badge in the matter header and the Matters list, the Sensitive filter, the lock on queue rows and Swimlane cards, and the header note under the title; the lists only ever contain matters the person may see. Matter Overview shows "Sensitive" with the muted "Restricted access".
+- **Roles screen.** The permission `Matter.ViewSensitive` carries a warning in its row: "Warning: people with this permission see ALL sensitive matters, with all their tasks and assets, whether or not they manage them." (`data-perm-warning`, warning colours with an icon, read with the checkbox).
+- **Audit.** The event `MATTER_SENSITIVITY_CHANGED` reads "Matter sensitivity changed" (old and new value "Not sensitive" / "Sensitive"); events about a record the person may not see name nothing ("Restricted record").
+- **Caches.** Anything a screen keeps about the signed-in person (lookups, referenced names, the bell's items) is emptied when `/me` returns another person or a restricted account (`SessionReset`); nothing about a matter is written to the browser's storage.
+- **Verified by** the Playwright specs `sensitive-leak-scan` (six personas walk the screens; the page, its storage and every API answer are searched for the text of records the person may not see) and `sensitive-ui` (marking flow, Roles warning, header without link, access ending on the next request, axe at 1366x768, 1920x1080, 768x1024 and 375x812); see `docs/qa/e2e.md`.
+
 ---
 
 ## 7. Component inventory (reusable Angular components)
@@ -1418,7 +1431,7 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 | Create task, inactive matter / archived project | "This matter is inactive. New tasks can't be created." / "This project is archived. New tasks can't select it." |
 | Set inactive, open tasks | "This matter has 3 tasks that aren't Completed or Cancelled. Finish or cancel them first." (shown under the disabled menu item) |
 | Client Overview | Section "Matters with the most open tasks" ("Matters" without `Task.View`); "View all 4 matters" (singular "View all 1 matter"); "No matters yet."; "No matter has open tasks."; muted "Created Oct 3, 2026 - Last changed Oct 9, 2026"; "Couldn't load the task numbers." |
-| Matter Overview | Sensitive value "Sensitive" badge with the muted "Warning only"; Sensitive note "Sensitive matter. Handle its tasks and assets with extra care. This flag is a warning only and does not restrict who can see them." |
+| Matter Overview | Sensitive value "Sensitive" badge with the muted "Restricted access"; Sensitive note "Sensitive matter. Only its project managers, people assigned one of its tasks and people who may see all sensitive matters can see it." |
 | Strip item tooltips | Open "Tasks that are New, In Progress or On Hold"; Overdue "Open tasks whose due date or time has passed"; Due soon "Open tasks due today, tomorrow or in 2 days; not overdue, not ASAP"; ASAP "Open tasks marked ASAP"; On hold "Tasks that are on hold" (the Task Queue's words) |
 | Count cell | Accessible name and tooltip "14 open tasks in Acme Corp", "3 overdue tasks in Acme Corp"; a zero Overdue is an en dash with the hidden words "0 overdue tasks in ..." |
 | Tasks grid, pressed view | Status (and Due for Due soon) disabled: "Set by the Overdue view above."; empty: "No overdue tasks.", "Nothing is due in the next 2 days.", "No open ASAP tasks.", "No tasks on hold." |
@@ -1889,6 +1902,14 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S25-7 At 375 px the panel is a sheet and the page rows are cards; axe 0 at 1366, 1920, 768 and 375 px with the panel open; no page-level horizontal scroll.
 - [ ] UAT-S25-8 Keyboard only with the existing keys: the bell, panel, page rows, filter toggle, pager and switches are reachable and operable; no new shortcut exists.
 - [ ] UAT-S25-9 No toast, sound or title count appears for a new item.
+
+### S26 Sensitive matters (epic #788; needs `Features:SensitiveMatterAccess` on)
+- [ ] UAT-S26-1 An unrelated person does not see a sensitive matter, its tasks, projects or assets anywhere (lists, counts, search and suggestions, Dashboard, My Matters, notifications, Audit); its address shows "We couldn't find that matter." exactly as a mistyped id does, the tab title says "Matter not found".
+- [ ] UAT-S26-2 A person assigned a task on a sensitive matter sees that task and the matter reference and name as plain text (no link in the header, the crumb, the Edit dialog, the queue, My Work or the linked asset); the matter page, its other tasks and its project answer "not found".
+- [ ] UAT-S26-3 Marking a matter sensitive as someone who is not its manager and cannot see all sensitive matters asks "You will no longer see this matter" first; Keep it as it is changes nothing; Mark sensitive saves, opens the Matters list and the matter is gone for that person.
+- [ ] UAT-S26-4 Creating a sensitive matter without a project manager (and without `Matter.ViewSensitive`) shows the server's sentence beside the checkbox, not a toast.
+- [ ] UAT-S26-5 The Roles screen shows the warning on `Matter.ViewSensitive`; a manager who is removed, or an assignee whose task is reassigned, loses the matter on the next request (also the bell).
+- [ ] UAT-S26-6 axe 0 at 1366, 1920, 768 and 375 px on the dialog, the matter form with the refusal, the Roles editor, the assignee's task page and the Matters list; no new shortcut.
 
 ---
 

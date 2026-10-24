@@ -382,7 +382,7 @@ Notes. The designer has no drag, no Alt+Arrow and no Undo on Remove (#411 not pl
 
 | Spec | Covers |
 |---|---|
-| `notifications-bell` (9) | Assign as one user and see the badge, panel item and live region as the other after one poll, reading clears the badge; the actor is never notified; panel states (empty, phone sheet); axe 0 at four sizes with the panel open and no sideways scroll; a person without `Task.View` has no bell, no request and the 403 page; an overdue task reaches the bell within one scheduler tick, once; the page: filter, paging and Mark all as read restored from the address, axe at four sizes and the empty page; My profile: the eight switches saved at once and honoured for the next notification, axe at four sizes |
+| `notifications-bell` (11) | Assign as one user and see the badge, panel item and live region as the other after one poll, reading clears the badge; the actor is never notified; panel states (empty, phone sheet); axe 0 at four sizes with the panel open and no sideways scroll; a person without `Task.View` has no bell, no request and the 403 page; an overdue task reaches the bell within one scheduler tick, once; the page: filter, paging and Mark all as read restored from the address, axe at four sizes and the empty page; My profile: the eight switches saved at once and honoured for the next notification, axe at four sizes |
 
 Backend: `NotificationScheduler*`, retention and poll tests are Testcontainers integration tests (two overlapping runs, a held lock, a failing job, a restart after ten days, 50,000 rows of retention). The scheduler and the IIS keep-alive are in the runbook, section 6.1.
 

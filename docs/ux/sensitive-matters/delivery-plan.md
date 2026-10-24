@@ -1,5 +1,7 @@
 # Sensitive matter access control: delivery plan
 
+**Status (2026-10-24):** SM-01 to SM-19 are done (frontend SM-14 #802, e2e SM-17 #805, migration and runbook SM-18 #806, contract and docs sync SM-19 #807); SM-20 (Reports decision, #808) stays open on purpose. The go-live switch `Features:SensitiveMatterAccess` is off by default; the operator steps are in `docs/runbook.md` section 12. Final verification: #811; performance tuning: #810.
+
 Design: `README.md` (same folder). Decisions: addendum section AJ. Label `phase-20`. Estimates are agent-hours including tests. Nothing here claims a SQL script number: "next free number at implementation time" (28 to 33 are used on `dev`).
 
 ## Work packages
