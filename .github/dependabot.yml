@@ -1,31 +1,41 @@
 version: 2
+# Dependency updates are grouped and monthly. Major versions are ignored on purpose: the owner decided (2026-10-24) to consider them
+# only after development is finished, one at a time with the full test suites. Minor and patch updates arrive as one pull request
+# per ecosystem per month.
 updates:
   - package-ecosystem: nuget
     directory: /backend
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       nuget-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
     ignore:
       # Angular is pinned to v21 (see README); major upgrades are manual.
-      - dependency-name: "@angular/*"
+      - dependency-name: "*"
         update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directories: [/, /.github/actions/setup-dotnet]
     schedule:
-      interval: weekly
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       actions-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
