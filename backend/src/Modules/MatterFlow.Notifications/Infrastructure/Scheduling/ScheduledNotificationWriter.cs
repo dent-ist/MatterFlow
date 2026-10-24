@@ -10,7 +10,7 @@ namespace MatterFlow.Notifications.Infrastructure.Scheduling;
 /// winning. Unlike the publisher it is idempotent: a row whose key (recipient, event type, object, dedupe key) exists is not written again, so a
 /// repeated, overlapping or restarted run creates nothing new. Saves itself, in batches.
 /// </summary>
-public sealed class ScheduledNotificationWriter(DbContext db, MatterFlow.SharedKernel.Time.IClock clock)
+public sealed class ScheduledNotificationWriter(DbContext db, MatterFlow.SharedKernel.Time.IClock clock, MatterFlow.Notifications.Application.RecipientVisibility recipientVisibility)
 {
     /// <param name="actions">The rule hits, grouped by action (one group per task and stage).</param>
     /// <returns>The number of notification rows created.</returns>
@@ -36,6 +36,13 @@ public sealed class ScheduledNotificationWriter(DbContext db, MatterFlow.SharedK
         {
             foreach (var p in RecipientRules.Plan(action, (user, type) => off.Contains((user, type.Code()))))
                 planned.Add((p.RecipientUserId, p.Request));
+        }
+
+        if (planned.Count > 0 && recipientVisibility.Enabled)
+        {
+            // Sensitive-matter rule: the candidate scan above reads as the system, but each recipient is checked as themselves (their own grants, never "see all").
+            var seen = await recipientVisibility.VisibleAsync([.. planned.Select(p => (p.Recipient, p.Request.ObjectKind, p.Request.ObjectId))], cancellationToken);
+            planned = [.. planned.Where(p => seen.Contains((p.Recipient, p.Request.ObjectKind, p.Request.ObjectId)))];
         }
 
         if (planned.Count == 0)

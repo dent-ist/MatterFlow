@@ -15,6 +15,7 @@ public static class NotificationsModule
     {
         services.AddControllers().AddApplicationPart(typeof(NotificationsModule).Assembly);
 
+        services.AddScoped<RecipientVisibility>();
         services.AddScoped<INotificationPublisher, NotificationPublisher>();
         services.AddScoped<NotificationVisibility>();
         services.AddScoped<NotificationService>();
