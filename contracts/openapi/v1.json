@@ -3681,6 +3681,22 @@
             }
           },
           {
+            "name": "MatterManagedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "Page",
             "in": "query",
             "schema": {
@@ -4501,6 +4517,22 @@
             "in": "query",
             "schema": {
               "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "MatterManagedByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
               "minLength": 0,
               "type": "string"
             }

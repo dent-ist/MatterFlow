@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility)
+public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility, IManagedMatterScope managed)
 {
     public static readonly string[] SortFields = ["name", "matterRef", "createdAt", OrganizationSupport.SortOpenTasks, OrganizationSupport.SortOverdue];
 
@@ -34,7 +34,13 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
             return paging.Error!;
 
         var (page, sort) = paging.Value;
+        var managedBy = managed.ResolveFilter(query.MatterManagedByMe, query.Role);
+        if (managedBy.IsFailure)
+            return managedBy.Error!;
+
         var rows = Rows();
+        if (managedBy.Value is { } mine)
+            rows = managed.WhereMatterManagedBy(rows, r => r.Project.MatterId, mine.Manager, mine.Place);
         if (query.MatterId is { } matterId)
             rows = rows.Where(r => r.Project.MatterId == matterId);
         if (query.IsActive is { } active)

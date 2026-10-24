@@ -273,7 +273,17 @@ export class MyMattersFilterBar {
 
   protected readonly searchClients = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
-      this.clients.listClients(query, undefined, undefined, undefined, 1, 8, undefined),
+      this.clients.listClients(
+        query,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        1,
+        8,
+        undefined,
+      ),
     );
     return page.items.map(clientOption);
   };

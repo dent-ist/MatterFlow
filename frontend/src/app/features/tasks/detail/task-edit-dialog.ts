@@ -821,6 +821,8 @@ export class TaskEditDialog {
             undefined,
             undefined,
             undefined,
+            undefined,
+            undefined,
             1,
             100,
             'name',

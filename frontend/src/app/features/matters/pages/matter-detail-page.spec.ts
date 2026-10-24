@@ -203,6 +203,8 @@ describe('MatterDetailPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
       1,
       100,
       'name',

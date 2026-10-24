@@ -143,6 +143,8 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
                 ("my matters all", director, "/api/v1/my-matters/summary?fresh=true&scope=all"),
                 ("my matters all, named manager", director, $"/api/v1/my-matters/summary?fresh=true&scope=all&managerId={fx.PmManyId}"),
                 ("assets matterManagedByMe", pm, "/api/v1/assets?matterManagedByMe=true"),
+                ("clients matterManagedByMe", pm, "/api/v1/clients?matterManagedByMe=true"),
+                ("projects matterManagedByMe", pm, "/api/v1/projects?matterManagedByMe=true"),
             };
 
             foreach (var (name, client, url) in calls)

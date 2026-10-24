@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Organization.Application;
 
-public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility)
+public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility, IManagedMatterScope managed)
 {
     /// <summary>The matters the caller may see: matter counts and the "matters with most open tasks" list never include a hidden matter (mode M).</summary>
     private IQueryable<Matter> MatterSet() =>
@@ -39,7 +39,18 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
             return paging.Error!;
 
         var (page, sort) = paging.Value;
+        var managedBy = managed.ResolveFilter(query.MatterManagedByMe, query.Role);
+        if (managedBy.IsFailure)
+            return managedBy.Error!;
+
         var clients = db.Set<Client>().AsNoTracking();
+        if (managedBy.Value is { } mine)
+        {
+            // A client is "mine" when at least one of its matters is (an EXISTS, so a client with several of my matters is one row and the total is right).
+            var mineMatters = managed.WhereManagedBy(db.Set<Matter>().AsNoTracking(), m => m.PrimaryManagerId, m => m.SecondaryManagerId, m => m.Id, mine.Manager, mine.Place);
+            clients = clients.Where(c => mineMatters.Any(m => m.ClientId == c.Id));
+        }
+
         if (query.IsActive is { } active)
             clients = clients.Where(c => c.IsActive == active);
 

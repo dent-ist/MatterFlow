@@ -5706,12 +5706,14 @@ export interface IClientsClient {
      * @param isActive (optional) 
      * @param clientNumber (optional) 
      * @param name (optional) 
+     * @param matterManagedByMe (optional) 
+     * @param role (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse>;
+    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse>;
     /**
      * @return Created
      */
@@ -5756,12 +5758,14 @@ export class ClientsClient implements IClientsClient {
      * @param isActive (optional) 
      * @param clientNumber (optional) 
      * @param name (optional) 
+     * @param matterManagedByMe (optional) 
+     * @param role (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse> {
+    listClients(q?: string | undefined, isActive?: boolean | undefined, clientNumber?: string | undefined, name?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfClientResponse> {
         let url_ = this.baseUrl + "/api/v1/clients?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -5779,6 +5783,14 @@ export class ClientsClient implements IClientsClient {
             throw new globalThis.Error("The parameter 'name' cannot be null.");
         else if (name !== undefined)
             url_ += "Name=" + encodeURIComponent("" + name) + "&";
+        if (matterManagedByMe === null)
+            throw new globalThis.Error("The parameter 'matterManagedByMe' cannot be null.");
+        else if (matterManagedByMe !== undefined)
+            url_ += "MatterManagedByMe=" + encodeURIComponent("" + matterManagedByMe) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "Role=" + encodeURIComponent("" + role) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -6871,12 +6883,14 @@ export interface IProjectsClient {
      * @param isActive (optional) 
      * @param name (optional) 
      * @param matter (optional) 
+     * @param matterManagedByMe (optional) 
+     * @param role (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse>;
+    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse>;
     /**
      * @return Created
      */
@@ -6922,12 +6936,14 @@ export class ProjectsClient implements IProjectsClient {
      * @param isActive (optional) 
      * @param name (optional) 
      * @param matter (optional) 
+     * @param matterManagedByMe (optional) 
+     * @param role (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse> {
+    listProjects(q?: string | undefined, matterId?: number | undefined, isActive?: boolean | undefined, name?: string | undefined, matter?: string | undefined, matterManagedByMe?: boolean | undefined, role?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProjectResponse> {
         let url_ = this.baseUrl + "/api/v1/projects?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
@@ -6949,6 +6965,14 @@ export class ProjectsClient implements IProjectsClient {
             throw new globalThis.Error("The parameter 'matter' cannot be null.");
         else if (matter !== undefined)
             url_ += "Matter=" + encodeURIComponent("" + matter) + "&";
+        if (matterManagedByMe === null)
+            throw new globalThis.Error("The parameter 'matterManagedByMe' cannot be null.");
+        else if (matterManagedByMe !== undefined)
+            url_ += "MatterManagedByMe=" + encodeURIComponent("" + matterManagedByMe) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "Role=" + encodeURIComponent("" + role) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)

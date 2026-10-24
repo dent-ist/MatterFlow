@@ -565,6 +565,8 @@ export class MatterDetailPage {
                   undefined,
                   undefined,
                   undefined,
+                  undefined,
+                  undefined,
                   1,
                   PROJECTS_PAGE_MAX,
                   'name',

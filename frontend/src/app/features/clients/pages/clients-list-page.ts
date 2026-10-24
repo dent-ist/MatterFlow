@@ -391,6 +391,8 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
         isActive,
         this.filters.text('clientNumber') || undefined,
         this.filters.text('name') || undefined,
+        undefined,
+        undefined,
         page,
         size,
         this.sort() || undefined,

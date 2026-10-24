@@ -444,6 +444,8 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
         isActive,
         this.filters.text('name') || undefined,
         this.filters.text('matter') || undefined,
+        undefined,
+        undefined,
         page,
         size,
         this.sort() || undefined,

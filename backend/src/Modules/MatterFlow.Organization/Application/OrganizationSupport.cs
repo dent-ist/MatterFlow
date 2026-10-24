@@ -42,7 +42,18 @@ public sealed class ClientListQuery : OrgListQuery
     [StringLength(200)]
     public string? Name { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "isActive", "clientNumber", "name"];
+
+    /// <summary>
+    /// True: only the clients that have at least one matter (active or inactive) of matters the caller manages (as Primary or Secondary, see <c>role</c>). False is the same as leaving it out. A matter without a manager is never matched; the
+    /// sensitive-matter rule applies on top (epic #758).
+    /// </summary>
+    public bool? MatterManagedByMe { get; init; }
+
+    /// <summary><c>primary</c>, <c>secondary</c> or <c>both</c> (default): which place of the matter the caller holds. Only with <c>matterManagedByMe=true</c> (400 otherwise).</summary>
+    [StringLength(10)]
+    public string? Role { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "isActive", "clientNumber", "name", "matterManagedByMe", "role"];
 }
 
 /// <summary>Matter list filters.</summary>
@@ -122,7 +133,18 @@ public sealed class ProjectListQuery : OrgListQuery
     [StringLength(200)]
     public string? Matter { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "matterId", "isActive", "name", "matter"];
+
+    /// <summary>
+    /// True: only the projects of matters the caller manages (as Primary or Secondary, see <c>role</c>). False is the same as leaving it out. A matter without a manager is never matched; the
+    /// sensitive-matter rule applies on top (epic #758).
+    /// </summary>
+    public bool? MatterManagedByMe { get; init; }
+
+    /// <summary><c>primary</c>, <c>secondary</c> or <c>both</c> (default): which place of the matter the caller holds. Only with <c>matterManagedByMe=true</c> (400 otherwise).</summary>
+    [StringLength(10)]
+    public string? Role { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "q", "matterId", "isActive", "name", "matter", "matterManagedByMe", "role"];
 }
 
 /// <summary>Audit event type codes written by the Organization module.</summary>
