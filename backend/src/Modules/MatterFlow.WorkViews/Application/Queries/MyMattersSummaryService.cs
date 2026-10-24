@@ -9,7 +9,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// tasks of those matters through <c>IX_Task_Matter</c>). Every number uses the <see cref="TaskQueueRules"/> predicates in the viewer's time zone and
 /// carries the Task Queue query that lists exactly the counted tasks. Cached for a short time per person and filters, like the Dashboard.
 /// </summary>
-public sealed class MyMattersSummaryService(MyMattersScopeResolver scopes, DashboardCache cache)
+public sealed class MyMattersSummaryService(MyMattersScopeResolver scopes, DashboardCache cache, VisibilityStamp stamp)
 {
     public async Task<Result<MyMattersSummary>> GetAsync(MyMattersQuery query, CancellationToken ct)
     {
@@ -19,7 +19,8 @@ public sealed class MyMattersSummaryService(MyMattersScopeResolver scopes, Dashb
         var scope = resolved.Value;
         var clock = scope.Clock;
 
-        var cacheKey = $"mm-summary|{scope.Me}|{clock.ZoneId}|{clock.Today:yyyy-MM-dd}|{scope.Key}";
+        // The visibility stamp keeps the cache partitioned by what the person may see (sensitive-matter rule, epic #788): it changes the moment their access does.
+        var cacheKey = $"mm-summary|{scope.Me}|{await stamp.KeyAsync(ct)}|{clock.ZoneId}|{clock.Today:yyyy-MM-dd}|{scope.Key}";
         if (query.Fresh != true && cache.TryGet<MyMattersSummary>(cacheKey, out var cached))
             return cached;
 
