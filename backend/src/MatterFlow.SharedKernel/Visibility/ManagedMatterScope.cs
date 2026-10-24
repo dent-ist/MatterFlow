@@ -11,6 +11,11 @@ public enum ManagerPlace
     Secondary,
 }
 
+/// <summary>The resolved "linked to matters managed by me" filter of a list: whose matters and which place they hold.</summary>
+/// <param name="Manager">The person whose matters are meant (always the caller for the <c>matterManagedByMe</c> filters).</param>
+/// <param name="Place">Primary, Secondary or either.</param>
+public sealed record ManagedFilter(int Manager, ManagerPlace Place);
+
 /// <summary>
 /// "Matters managed by X", resolved in one place (epic #758, PX-02, issue #760). Before this seam the rule existed three times (Matters list, Task Queue,
 /// My Matters); every list, count and filter that means "my matters" now asks here, so the new Assets, Clients, Projects, search and tab endpoints cannot
@@ -42,6 +47,12 @@ public interface IManagedMatterScope
 
     /// <summary>Keeps the rows whose matter the person manages (and the caller may see): tasks, assets, projects, clients through their matter.</summary>
     IQueryable<T> WhereMatterManagedBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, int manager, ManagerPlace place = ManagerPlace.Either);
+
+    /// <summary>
+    /// The shared query parameters <c>matterManagedByMe</c> and <c>role</c> (<c>primary</c>, <c>secondary</c>, <c>both</c>) of the Assets, Clients, Projects and search lists (epic #758): null when
+    /// the filter is not asked for, the caller's filter when <c>matterManagedByMe=true</c>. <c>role</c> without <c>matterManagedByMe=true</c> or with an unknown value is a 400, never ignored.
+    /// </summary>
+    Result<ManagedFilter?> ResolveFilter(bool? matterManagedByMe, string? role);
 
     /// <summary>The ids of the matters the person manages that the caller may see, as a subquery.</summary>
     IQueryable<int> ManagedMatterIds(int manager, ManagerPlace place = ManagerPlace.Either);

@@ -539,6 +539,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
         this.filters.text('matter') || undefined,
+        undefined,
+        undefined,
         page,
         size,
         sort,

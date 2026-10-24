@@ -128,7 +128,17 @@ public sealed class AssetListQuery : AssetListQueryBase
     [StringLength(200)]
     public string? Matter { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q", "name", "externalReference", "matter"];
+    /// <summary>
+    /// True: only Assets of Matters the caller manages (as Primary or Secondary, see <c>role</c>); the semi-join of the "My matters" scope (epic #758). False is the same as leaving it out. A Matter
+    /// without a manager is never matched. It combines with every other filter and sort; the sensitive-matter rule applies on top.
+    /// </summary>
+    public bool? MatterManagedByMe { get; init; }
+
+    /// <summary><c>primary</c>, <c>secondary</c> or <c>both</c> (default): which place of the Matter the caller holds. Only with <c>matterManagedByMe=true</c> (400 otherwise).</summary>
+    [StringLength(10)]
+    public string? Role { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q", "name", "externalReference", "matter", "matterManagedByMe", "role"];
 }
 
 /// <summary>Asset picker lookup filters (always inside one Matter).</summary>

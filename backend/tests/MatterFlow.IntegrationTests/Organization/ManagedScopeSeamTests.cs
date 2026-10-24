@@ -142,6 +142,7 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
                 ("my matters mine", pm, "/api/v1/my-matters/summary?fresh=true"),
                 ("my matters all", director, "/api/v1/my-matters/summary?fresh=true&scope=all"),
                 ("my matters all, named manager", director, $"/api/v1/my-matters/summary?fresh=true&scope=all&managerId={fx.PmManyId}"),
+                ("assets matterManagedByMe", pm, "/api/v1/assets?matterManagedByMe=true"),
             };
 
             foreach (var (name, client, url) in calls)
@@ -181,6 +182,11 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
             (await Ids(fx.Director, $"primaryManagerId={fx.PmOtherId}")).ShouldNotContain(fx.Matters["sensitiveManaged"]);
             // The administrator holds every permission: all of them.
             (await Ids(fx.Admin, $"managerId={fx.PmOtherId}")).ShouldBe(fx.IdsOf(other));
+
+            // The assets filter follows the same rule: PmOther manages a sensitive matter and sees its assets; a person who does not manage it never gets them through the filter.
+            var otherAssets = (await OkAsync(await fx.PmOther.GetAsync("/api/v1/assets?pageSize=100&matterManagedByMe=true"))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("assetId").GetInt32()).ToList();
+            otherAssets.ShouldContain(fx.Assets["sensitiveManaged"][0]);
+            (await OkAsync(await fx.PmFew.GetAsync("/api/v1/assets?pageSize=100"))).GetProperty("items").EnumerateArray().Select(i => i.GetProperty("assetId").GetInt32()).ShouldNotContain(fx.Assets["sensitiveManaged"][0]);
 
             // The task queue and My Matters follow the same rule through the same seam.
             var queue = await OkAsync(await fx.Director.GetAsync($"/api/v1/task-queue?pageSize=100&managerId={fx.PmOtherId}"));

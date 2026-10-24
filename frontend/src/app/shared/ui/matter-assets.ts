@@ -259,6 +259,8 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
         undefined,
+        undefined,
+        undefined,
         page,
         size,
         this.sort() || undefined,

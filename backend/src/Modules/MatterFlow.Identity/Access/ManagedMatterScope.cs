@@ -30,6 +30,40 @@ public sealed class ManagedMatterScope(IMatterVisibility visibility, IMatterAcce
     public IQueryable<T> WhereMatterManagedBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, int manager, ManagerPlace place = ManagerPlace.Either) =>
         VisibilityPredicates.WhereIn(source, matterId, ManagedMatterIds(manager, place));
 
+    public Result<ManagedFilter?> ResolveFilter(bool? matterManagedByMe, string? role)
+    {
+        var place = ManagerPlace.Either;
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            switch (role.Trim().ToLowerInvariant())
+            {
+                case "primary":
+                    place = ManagerPlace.Primary;
+                    break;
+                case "secondary":
+                    place = ManagerPlace.Secondary;
+                    break;
+                case "both":
+                    break;
+                default:
+                    return Error.Validation("role", "UNKNOWN_ROLE", $"Unknown role '{role}'. Allowed: primary, secondary, both.");
+            }
+        }
+
+        if (matterManagedByMe != true)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+                return Result<ManagedFilter?>.Success(null);
+
+            return Error.Validation("role", "ROLE_NEEDS_MATTER_MANAGED_BY_ME", "role needs matterManagedByMe=true.");
+        }
+
+        if (currentUser.UserId is not { } me)
+            return Error.Validation("matterManagedByMe", "NO_USER", "matterManagedByMe needs a signed-in user.");
+
+        return Result<ManagedFilter?>.Success(new ManagedFilter(me, place));
+    }
+
     public IQueryable<int> ManagedMatterIds(int manager, ManagerPlace place = ManagerPlace.Either) =>
         visibility.WhereMatterVisible(
                 matters.Rows().Where(ManagedMatterRule.Predicate<MatterAccessRow>(r => r.PrimaryManagerId, r => r.SecondaryManagerId, manager, place)),

@@ -9,6 +9,7 @@ using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Assets.Application;
@@ -27,7 +28,8 @@ public sealed class AssetService(
     IFormValueStore valueStore,
     IPermissionChecker permissions,
     IEnumerable<IAssetTaskLinkReader> taskLinks,
-    AssetAccess access)
+    AssetAccess access,
+    IManagedMatterScope managed)
 {
     /// <summary>Sort fields: <c>matter</c> is the Matter reference (then the name), <c>linkedTaskCount</c> the number of linked Tasks (constant without <c>Task.View</c>).</summary>
     public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount"];
@@ -58,8 +60,14 @@ public sealed class AssetService(
             return paging.Error!;
 
         var (page, sort) = paging.Value;
+        var managedBy = managed.ResolveFilter(query.MatterManagedByMe, query.Role);
+        if (managedBy.IsFailure)
+            return managedBy.Error!;
+
         await access.PrepareAsync(ct);
         var rows = Rows();
+        if (managedBy.Value is { } mine)
+            rows = managed.WhereMatterManagedBy(rows, r => r.Asset.MatterId, mine.Manager, mine.Place);
         if (query.MatterId is { } matterId)
             rows = rows.Where(r => r.Asset.MatterId == matterId);
         if (query.AssetTypeId is { Length: > 0 } typeIds)
