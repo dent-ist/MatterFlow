@@ -27,7 +27,8 @@ public sealed class TaskQueueService(
     ICurrentUser currentUser,
     IPodDirectory podDirectory,
     IUserAvailabilityReader availability,
-    IManagedMatterScope managed)
+    IManagedMatterScope managed,
+    IMatterVisibility visibility)
 {
     public const string ViewActive = "active";
     public const string ViewDueSoon = "dueSoon";
@@ -40,6 +41,9 @@ public sealed class TaskQueueService(
 
     private static readonly string[] MyWorkViews = [ViewActive, ViewDueSoon, ViewCompleted, ViewCreatedByMe];
     private static readonly string[] PodViews = [PodViewQueue, PodViewMembers, PodViewAttention, PodViewAll];
+
+    /// <summary>The tasks the caller may see (sensitive-matter rule, mode T): the base of every list, count and badge in this service.</summary>
+    internal IQueryable<WorkTask> Tasks() => VisibleTasks.Of(db, visibility);
 
     // ---- Task Queue
 
@@ -54,7 +58,7 @@ public sealed class TaskQueueService(
             return Error.Validation("group", "UNKNOWN_GROUP", $"Unknown group '{query.Group}'. Allowed: none, {GroupDue}.");
 
         var (filter, page, sort, descending, queueClock) = request.Value;
-        var rows = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter, queueClock);
+        var rows = ApplyFilter(Tasks(), filter, queueClock);
         var groupByDue = string.Equals(groupText, GroupDue, StringComparison.OrdinalIgnoreCase) && sort == TaskQueueRules.SortDue;
         var (items, total) = await PageAsync(rows, page, sort, descending, queueClock, ct, queueGroups: groupByDue);
         var bucketCounts = groupByDue ? await QueueBucketCountsAsync(rows, queueClock, ct) : null;
@@ -66,7 +70,7 @@ public sealed class TaskQueueService(
 
     /// <summary>
     /// The quick-view counts: one statement with a scalar subquery per number, over all Tasks (no request filters), each from the predicate the
-    /// Dashboard and the grid use. Nobody is narrowed by record: Task.View sees every Task (addendum E).
+    /// Dashboard and the grid use. Without the sensitive-matter rule (epic #788) nobody is narrowed by record: Task.View sees every Task (addendum E); with it, every number is computed from the tasks the caller may see.
     /// </summary>
     private async Task<TaskQueueViewCounts> ViewCountsAsync(QueueClock queueClock, CancellationToken ct)
     {
@@ -75,7 +79,7 @@ public sealed class TaskQueueService(
         if (me is { } userId)
             primaryPod = (await podDirectory.GetUserPodsAsync(userId, includeInactive: false, ct)).FirstOrDefault(p => p.IsPrimary)?.Pod.PodId;
 
-        var tasks = db.Set<WorkTask>().AsNoTracking();
+        var tasks = Tasks();
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
         var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(queueClock);
@@ -150,8 +154,8 @@ public sealed class TaskQueueService(
         // uses the window the request names (the last 90 days by default, all time with closedWindow=all), so it reads the same on every tab.
         var noRange = filter.CompletedFrom is null && filter.CompletedTo is null;
         var closedFrom = filter.CompletedFrom ?? (noRange && closedWindow == ClosedWindowDefault ? queueClock.Today.AddDays(-ClosedWindowDays) : null);
-        var filtered = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = null, CompletedTo = null }, queueClock);
-        var closedRows = ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter with { CompletedFrom = closedFrom }, queueClock);
+        var filtered = ApplyFilter(Tasks(), filter with { CompletedFrom = null, CompletedTo = null }, queueClock);
+        var closedRows = ApplyFilter(Tasks(), filter with { CompletedFrom = closedFrom }, queueClock);
         var assignedFrom = query.AssignedFrom?.UtcDateTime;
         if (assignedFrom is { } since)
         {
@@ -259,7 +263,7 @@ public sealed class TaskQueueService(
             return new PodWorkPage([], 0, page.Page, page.PageSize, queueClock.ZoneId, view, null, choices, new PodWorkSummary(0, 0, 0, 0, 0, 0), new PodWorkCounts(0, 0, 0, 0, 0), [], 0);
         }
 
-        var tasks = db.Set<WorkTask>().AsNoTracking();
+        var tasks = Tasks();
         var podOpen = tasks.Where(t => t.AssignedPodId == pod.PodId).Where(TaskQueueRules.Open);
         var summary = new PodWorkSummary(
             await podOpen.CountAsync(t => t.AssignedUserId == null, ct),
@@ -312,7 +316,7 @@ public sealed class TaskQueueService(
             .GroupBy(m => m.PodId)
             .Select(g => new { PodId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.PodId, g => g.Count, ct);
-        var open = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedPodId != null && ids.Contains(t.AssignedPodId.Value)).Where(TaskQueueRules.Open);
+        var open = Tasks().Where(t => t.AssignedPodId != null && ids.Contains(t.AssignedPodId.Value)).Where(TaskQueueRules.Open);
         var openCounts = await open
             .GroupBy(t => t.AssignedPodId!.Value)
             .Select(g => new { PodId = g.Key, Open = g.Count(), Unassigned = g.Count(t => t.AssignedUserId == null) })

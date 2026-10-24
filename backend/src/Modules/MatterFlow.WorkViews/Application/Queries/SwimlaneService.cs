@@ -86,7 +86,7 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
             null,
             null,
             null);
-        var filtered = queue.ApplyFilter(db.Set<WorkTask>().AsNoTracking(), filter, queueClock);
+        var filtered = queue.ApplyFilter(queue.Tasks(), filter, queueClock);
         if (query.Mine == true)
             filtered = filtered.Where(t => t.AssignedUserId == me);
 

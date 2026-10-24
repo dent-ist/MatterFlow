@@ -97,6 +97,8 @@ Decision (proposed, to be proven in the first work package): **explicit scoped s
 
 **Built in SM-07 (#795):** rows R24 to R29 are implemented. Mode A lives in `AssetAccess` (Assets module): `Visible()` is the matter rule OR "linked to a task currently assigned to the viewer", written as the LEFT JOIN form through the new port method `IMatterVisibility.WhereMatterVisibleOr` (the extra predicate is `asset id IN IAssetTaskLinkReader.AssetIdsOfTasksAssignedTo(user)`, a small subquery); `OfVisibleMatters()` is the matter rule alone. Lists, lookups, `GET /assets/{id}`, `linked-tasks`, the asset-type counts (`assetCount` equals the rows of the list) and the ASSET_REF form validator use `Visible()`; creating, changing and de-activating an asset load through the matter rule only (README 16 R26: an assignee reads the assets of their task but cannot create or change assets of a matter they do not see), a hidden `matterId` in `POST /assets` is the same `matterId NOT_FOUND` as a missing one. The linked-tasks list and the link counts (`Grouped()`, `CountForAssetsAsync`) count only tasks the caller may see (mode T), so an assignee sees "1 linked task" on an asset that two tasks use. Search: matters and projects through `WhereMatterRowVisible` on the matter set before the join, tasks through `WhereTaskRowVisible` on the joined matter columns (no extra join, no probe), assets through the new row form `WhereMatterRowVisibleOr`; clients are unchanged; hits, totals and the advanced search (including the Sensitive filter) come from the same queries, so counts equal the rows; `IsSensitive` is only ever true on a visible hit. `IAssetDirectory` stays an unfiltered internal lookup (R13).
 
+**Built in SM-08 (#796):** rows R30, R31, R32 and R36 are implemented. `TaskQueueService.Tasks()` (and `VisibleTasks.Of` for the other WorkViews readers) is the base of every list, count and badge: the join form of mode T through `IMatterVisibility.WhereTaskVisibleBy`. Task Queue totals, pagers, bucket counts and the nine quick-view counts, the My Work tabs (Created by me included: a task created on a matter the creator can no longer see is gone), Pod Work header, tab counts, pod selector numbers (open, unassigned, overdue per pod) and member loads, and the Swimlane cards, lane counts and group trees (priority, assignee, client > matter) are all computed from that set, never by subtraction. The needs-attention strip of My Work reads the caller's own assigned tasks, which are always visible (mode T). A queue row of an assignee's task on a hidden matter carries only the header data (reference, name, client, `matterIsSensitive`). A new test measures the SQL EF generates for the set-wide form at 200 matters / 24,000 tasks: 236 reads against 84 for the plain count, the same as the hand-written join of SM-03 (`VisibilityFunctionsTests`). The Dashboard summary, scopes, trend, workload and coverage (R33 to R35, R37, R38) are SM-09 (#797).
+
 Parity: the C# predicate and the SQL functions are tested against the same fixture matrix (section 12.3) so they cannot drift.
 
 ## 5. 404 semantics
@@ -274,13 +276,13 @@ Modes: **M** matter rule, **T** task rule, **A** asset rule, **H** header only, 
 | R27 | `GET /asset-types`, `/asset-types/{id}` and similar config reads with "in use" counts | view perm | counts via A/T; guard text per section 6 | W,C (done #795) |
 | R28 | `GET /search` (5 types, suggestions) | any view perm | per type M/M/T/A, clients unchanged | W,C (done #795) |
 | R29 | `GET /search/advanced` (+ sensitive filter, counts, paging) | any view perm | same service | W,C (done #795) |
-| R30 | `GET /task-queue` | `Task.View` | T | W,C |
-| R31 | `GET /my-work` | `Task.View` | T (own tasks always T) | W,C |
-| R32 | `GET /pod-work` | `Task.View`+`Pod.View` | T; pod member load excludes hidden | W,C |
+| R30 | `GET /task-queue` | `Task.View` | T | W,C (done #796) |
+| R31 | `GET /my-work` | `Task.View` | T (own tasks always T) | W,C (done #796) |
+| R32 | `GET /pod-work` | `Task.View`+`Pod.View` | T; pod member load excludes hidden | W,C (done #796) |
 | R33 | `GET /dashboard` (summary, KPIs, breakdowns, unassigned) | `Dashboard.*` | T/M sources; cache key by viewer class | W,C,X |
 | R34 | `GET /dashboard/scopes` | `Dashboard.*` | counts per scope via visible sources | W,C |
 | R35 | `GET /dashboard/trend` | `Dashboard.ViewTrends` | T; cached | W,C |
-| R36 | `GET /dashboard/swimlane` | `Dashboard.ViewSwimlane` | T/M (`MatterIsSensitive` only on visible) | W,C |
+| R36 | `GET /dashboard/swimlane` | `Dashboard.ViewSwimlane` | T/M (`MatterIsSensitive` only on visible) | W,C (done #796) |
 | R37 | `GET /dashboard/workload` | `Dashboard.ViewUsers` | per-user load over visible tasks | W,C |
 | R38 | `GET /dashboard/coverage` | `Dashboard.ViewCoverage` | T | W,C |
 | R39 | `GET /my-matters/summary`, `/health`, `/attention`, `/deadlines`, `/workload` | `Task.View` + `Matter.BeManager\|AssignManagers` | base set = visible matters (scope all = M, not "all rows") | W,C |

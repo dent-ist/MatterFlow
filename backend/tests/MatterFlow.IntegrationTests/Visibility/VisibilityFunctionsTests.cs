@@ -1,7 +1,9 @@
 using System.Text.RegularExpressions;
 using MatterFlow.IntegrationTests.Fixtures;
 using MatterFlow.IntegrationTests.Tasks;
+using MatterFlow.SharedKernel.Tasks;
 using MatterFlow.SharedKernel.Visibility;
+using MatterFlow.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -240,6 +242,28 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
                 // +15%, or at most 200 pages more for a query that reads only a few dozen pages without the rule (about a millisecond).
                 withRule.ShouldBeLessThanOrEqualTo(Math.Max((long)(baseline * 1.15) + 2, baseline + 200), $"{name}, seeAll {seeAll}");
             }
+        }
+    }
+
+    [Fact]
+    public async Task The_join_form_the_EF_services_use_for_a_whole_task_set_costs_what_the_SQL_join_form_costs()
+    {
+        // The set-wide form of IMatterVisibility.WhereTaskVisibleBy as EF translates it (what the Task Queue, Dashboard and WorkViews counts run): it must stay near the
+        // plain count and far from the 38,000 reads of the "EXISTS ... OR assignee" form (epic #788, SM-03 measurement).
+        var user = _people[4];
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DbContext>();
+        var visibility = scope.ServiceProvider.GetRequiredService<IMatterVisibility>();
+        visibility.Enabled.ShouldBeTrue();
+        var plain = await LogicalReadsAsync("SELECT COUNT(*) FROM dbo.Task t WHERE t.StatusCode IN ('NEW', 'IN_PROGRESS', 'ON_HOLD')", user, 0);
+        foreach (var viewer in new[] { new Viewer(user, false), new Viewer(null, false) })
+        {
+            var visible = visibility.WhereTaskVisibleBy(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.AssignedUserId, viewer)
+                .Where(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold);
+            var sqlText = visible.GroupBy(_ => 1).Select(g => g.Count()).ToQueryString();
+            var reads = await LogicalReadsAsync(sqlText, user, 0);
+            output.WriteLine($"EF join form, {Label(viewer)}: {plain} reads plain, {reads} reads with the rule");
+            reads.ShouldBeLessThanOrEqualTo(Math.Max((long)(plain * 1.15) + 2, plain + 200), Label(viewer));
         }
     }
 
