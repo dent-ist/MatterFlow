@@ -156,6 +156,19 @@ function storage(): Storage | null {
         bottom: 0;
       }
     }
+    /* A phone: the scope switch beside the title already says which matters these are, and the one-line description would only be cut off
+       ("The matters you manage as primary or secondary pro..."): it stays for screen readers and gives its line to the first screen (#818). */
+    @media (max-width: 639.98px) {
+      :host ::ng-deep [data-page-description] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    }
     /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, workload, activity. */
     @media (max-width: 639.98px) {
       .mm__grid {

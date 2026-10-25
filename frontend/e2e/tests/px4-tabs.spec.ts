@@ -405,6 +405,56 @@ test.describe('My Matters: Activity', () => {
   });
 });
 
+test.describe('My Matters: the first screen on a phone', () => {
+  test('375x812: Since shows its counts line and a "Show events" expander, and Needs my attention starts in the first screen (#818)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'phone1');
+    const m = await w.matter('Alpha');
+    await w.task(m, { dueDate: inDays(-2), title: 'Fell due two days ago' });
+    await w.task(m, { title: 'Nobody has this' });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/my-matters');
+    const card = panel(page, 'since');
+    await expect(card.locator('[data-since-figures]')).toBeVisible();
+    // The Overdue count is in the first screen, whole.
+    const overdue = (await page.locator('[data-strip-item=overdue]').boundingBox())!;
+    expect(overdue.x + overdue.width).toBeLessThanOrEqual(375);
+    expect(overdue.y + overdue.height).toBeLessThanOrEqual(812);
+    // Needs my attention starts in the first screen.
+    const attention = (await panel(page, 'attention').locator('h2').boundingBox())!;
+    expect(attention.y + attention.height).toBeLessThanOrEqual(812);
+
+    // The events are behind a button; focus stays on it and aria-expanded says which way it is.
+    const toggle = card.locator('[data-since-toggle]');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toContainText('Show events');
+    await expect(card.locator('[data-since-items]')).toBeHidden();
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(toggle).toBeFocused();
+    await expect(toggle).toContainText('Hide events');
+    await expect(card.locator('[data-since-item]').first()).toBeVisible();
+    await expect(card.locator('[data-since-item]').first()).toContainText('Fell due two days ago');
+    await toggle.press('Enter');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(card.locator('[data-since-items]')).toBeHidden();
+    expect(await axeViolations(page), 'collapsed').toEqual([]);
+    await toggle.click();
+    expect(await axeViolations(page), 'expanded').toEqual([]);
+    await noHorizontalScroll(page);
+
+    // From 640 px there is no button and the events always show.
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await expect(toggle).toBeHidden();
+    await expect(card.locator('[data-since-item]').first()).toBeVisible();
+  });
+});
+
 test.describe('My Matters tabs: four sizes', () => {
   for (const size of SIZES) {
     test(`every tab at ${size.width}x${size.height}: axe 0, no sideways scroll, the tab strip scrolls inside itself`, async ({

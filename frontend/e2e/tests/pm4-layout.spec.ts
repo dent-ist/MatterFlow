@@ -5,8 +5,8 @@ import { expect, test } from '../support/fixtures';
 import { SIZES, shot } from '../support/screens';
 
 /**
- * Phone and tablet layout of My Matters (epic #667, #700): at 375 px the filters are one "Filters (n)" button with a sheet, the strip is one
- * scrolling chip row, the panels follow the reading order of the plan, the health table is cards with a 44 px "+ New task", Workload and
+ * Phone and tablet layout of My Matters (epic #667, #700; #818): at 375 px the filters are one "Filters (n)" button with a sheet, the strip is a
+ * two-column grid with every count (Overdue included) in the first screen, the panels follow the reading order of the plan, the health table is cards with a 44 px "+ New task", Workload and
  * Recent activity show five lines with "Show all", and the first screen shows the strip and the first panel. From 640 to 1099 px the lower
  * panels are two columns and the health table folds Due this week and % complete into the row.
  */
@@ -50,14 +50,26 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(filtersButton).toHaveText(/Filters/);
     await expect(page.locator('[data-filter=role]')).toHaveCount(0);
     expect((await filtersButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    // The strip is one row of chips that scrolls inside itself.
+    // The strip is a two-column grid: every cell, Overdue included, is inside the page width and on the first screen (#818).
     const strip = page.locator('[data-strip]');
     const box = (await strip.boundingBox())!;
-    expect(box.height).toBeLessThan(80);
-    // The first screen (375x812) shows the whole strip and the heading of the first panel.
+    expect(box.height).toBeLessThan(260);
+    expect(box.x + box.width).toBeLessThanOrEqual(375);
+    for (const key of ['matters', 'open', 'overdue', 'due3', 'due7', 'unassigned', 'onHold']) {
+      const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
+      expect(cell.x, `${key} starts inside the page`).toBeGreaterThanOrEqual(0);
+      expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
+      expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
+      expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(44);
+    }
+    // The first screen (375x812) shows the whole strip and the heading of the first panel; Needs my attention starts in it.
     const attention = (await page.locator('[data-panel=attention] h2').boundingBox())!;
     expect(attention.y + attention.height).toBeLessThanOrEqual(812);
     expect(box.y + box.height).toBeLessThanOrEqual(812);
+    // The one-line description would only be cut off: it is kept for screen readers and takes no room.
+    const description = (await page.locator('[data-page-description]').boundingBox())!;
+    expect(description.height).toBeLessThanOrEqual(1);
+    await expect(page.locator('[data-page-description]')).toContainText('The matters you manage');
     // Reading order: attention, health, deadlines, workload, activity.
     const order = await Promise.all(
       ['attention', 'health', 'deadlines', 'workload', 'activity'].map((p) =>
@@ -67,8 +79,8 @@ test.describe('My Matters on a phone and a tablet', () => {
     expect(order).toEqual([...order].sort((p, q) => p - q));
     // Cards, each with a full-width 44 px "+ New task".
     const card = page.locator('[data-panel=health] [data-record-card]').first();
-    const newTask = card.getByRole('button', { name: /^New task for/ });
-    const nb = (await newTask.boundingBox())!;
+    const rowNewTask = card.getByRole('button', { name: /^New task for/ });
+    const nb = (await rowNewTask.boundingBox())!;
     expect(nb.height).toBeGreaterThanOrEqual(44);
     await expect(card).toContainText('overdue');
     await expect(page.locator('[data-health-table]')).toHaveCount(0);

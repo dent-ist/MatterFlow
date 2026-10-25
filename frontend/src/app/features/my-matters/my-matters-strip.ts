@@ -52,7 +52,6 @@ import { panelLoader } from './panel-loader';
     <mf-work-strip
       [label]="label()"
       [items]="items()"
-      [chipRow]="true"
       [attr.aria-busy]="loader.busy() ? 'true' : null"
       data-mm-strip
     />

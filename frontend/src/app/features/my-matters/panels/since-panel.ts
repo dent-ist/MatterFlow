@@ -121,7 +121,22 @@ function plural(n: number, one: string, many: string): string {
       margin: 0;
       color: var(--mf-text-muted);
     }
+    /* Below 640 px the events sit behind a "Show events" button so the counts line and the next panel share the first screen (#818). */
+    .sv__toggle {
+      display: none;
+    }
     @media (max-width: 639.98px) {
+      .sv__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--mf-s2);
+        min-height: 44px;
+        padding: 0 var(--mf-s3);
+        margin: 0 0 var(--mf-s1);
+      }
+      .sv__items--shut {
+        display: none;
+      }
       .sv__fig a,
       .sv__link {
         min-height: 44px;
@@ -175,7 +190,28 @@ function plural(n: number, one: string, many: string): string {
           }
         </ul>
         @if (items().length > 0) {
-          <ul class="sv__items" data-since-items>
+          <button
+            type="button"
+            class="mf-btn sv__toggle"
+            data-since-toggle
+            aria-controls="mm-since-events"
+            [attr.aria-expanded]="eventsOpen()"
+            (click)="eventsOpen.set(!eventsOpen())"
+          >
+            <i
+              class="pi"
+              [class.pi-chevron-down]="!eventsOpen()"
+              [class.pi-chevron-up]="eventsOpen()"
+              aria-hidden="true"
+            ></i>
+            {{ eventsOpen() ? 'Hide events' : 'Show events (' + items().length + ')' }}
+          </button>
+          <ul
+            class="sv__items"
+            id="mm-since-events"
+            data-since-items
+            [class.sv__items--shut]="!eventsOpen()"
+          >
             @for (it of items(); track $index) {
               <li class="sv__item" data-since-item>
                 @if (it.task; as t) {
@@ -224,6 +260,8 @@ export class SincePanel {
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
   protected readonly marking = signal(false);
+  /** Phone: the events below the counts are shown (a button toggles them; from 640 px they always show). */
+  protected readonly eventsOpen = signal(false);
   protected readonly announcement = signal('');
   /** The marks made here (the page counts them in `marker` too): the card reads again by itself, once. */
   private readonly own = signal(0);
