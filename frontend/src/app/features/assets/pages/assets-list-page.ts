@@ -30,10 +30,14 @@ import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
+import { AdminCardList, AdminCardSpec } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn } from '../../../shared/ui/admin-list-state';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { GridBody } from '../../../shared/ui/grid-body';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { phoneCards } from '../../../shared/ui/record-card-list';
+import { RecordSort } from '../../../shared/ui/record-sort';
+import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -89,6 +93,8 @@ export function parseSelected(value: string | null | undefined): number | null {
     FiltersBar,
     ListFiltersButton,
     ColumnFilterRow,
+    AdminCardList,
+    RecordSort,
     AssetDetails,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,6 +114,12 @@ export function parseSelected(value: string | null | undefined): number | null {
     .as-matter {
       width: 1%;
       white-space: nowrap;
+    }
+    /* A narrow window gives the Type less room, so the grid does not scroll sideways at 640 to 768 px (#502). */
+    @media (max-width: 767.98px) {
+      td.as-type {
+        max-width: 7rem;
+      }
     }
     .as-type {
       max-width: 12rem;
@@ -195,173 +207,218 @@ export function parseSelected(value: string | null | undefined): number | null {
       </mf-page-header>
 
       <!-- The Filters button and Clear filters are in the page header; this draws the sheet they open below 640 px and the chips. -->
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+        <mf-record-sort
+          mfSheetSort
+          [options]="sortOptions()"
+          [sort]="sort()"
+          defaultSort="displayName"
+          (sorted)="pickSort($event)"
+        />
+      </mf-filters-bar>
 
       <div class="mf-fill as-grid">
-        <div
-          class="mf-table-wrap"
-          mfScrollArea="Assets list"
-          [keepOn]="['selected']"
-          [style.scroll-padding-top]="filters.rowVisible() ? '5.5rem' : null"
-          #scroll
-        >
-          <div class="mf-scroll">
-            <table class="mf-grid" id="assets-table" data-assets>
-              <caption class="mf-sr-only">
-                Assets
-              </caption>
-              <thead>
-                <tr>
-                  <th
-                    class="mf-cell-name"
-                    mfSort="displayName"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Name
-                  </th>
-                  <th
-                    mfSort="assetType"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Type
-                  </th>
-                  <th
-                    class="as-matter"
-                    mfSort="matter"
-                    [sort]="sort()"
-                    [defaultSort]="defaultSort"
-                    (sorted)="setSort($event)"
-                  >
-                    Matter number
-                  </th>
-                  @if (tasksShown()) {
+        @if (phone()) {
+          <!-- Below 640 px the list is cards (#502): the name is the one link, the whole card is its target. -->
+          <mf-admin-card-list
+            noun="assets"
+            label="Assets"
+            listId="assets"
+            [items]="rows()"
+            [spec]="cardOf"
+            [filters]="filters"
+            [state]="state()"
+            [empty]="rows().length === 0"
+            [filtered]="filters.activeCount() > 0"
+            [hidden]="hiddenCount()"
+            hiddenLabel="inactive"
+            [emptyText]="emptyText()"
+            (retry)="load()"
+            (clear)="clear()"
+            (showAll)="showAll()"
+          >
+            @if (scope.mine() && scope.canAll()) {
+              <button
+                mfEmptyAction
+                type="button"
+                class="mf-btn"
+                data-show-all-matters
+                (click)="scope.set('all')"
+              >
+                Show all matters
+              </button>
+            }
+          </mf-admin-card-list>
+        } @else {
+          <div
+            class="mf-table-wrap"
+            mfScrollArea="Assets list"
+            [keepOn]="['selected']"
+            [style.scroll-padding-top]="filters.rowVisible() ? '5.5rem' : null"
+            #scroll
+          >
+            <div class="mf-scroll">
+              <table class="mf-grid" id="assets-table" data-assets>
+                <caption class="mf-sr-only">
+                  Assets
+                </caption>
+                <thead>
+                  <tr>
                     <th
-                      class="mf-cell-num"
-                      mfSort="linkedTaskCount"
-                      [firstDesc]="true"
+                      class="mf-cell-name"
+                      mfSort="displayName"
                       [sort]="sort()"
                       [defaultSort]="defaultSort"
-                      [attr.data-drop]="drop.linkedTasks"
                       (sorted)="setSort($event)"
                     >
-                      Linked tasks
+                      Name
                     </th>
-                  }
-                  <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
-                    External reference
-                  </th>
-                  <th class="mf-cell-badge" scope="col">Status</th>
-                </tr>
-                @if (filters.rowVisible()) {
-                  <tr
-                    mfColumnFilterRow
-                    id="asset-filter-row"
-                    [filters]="filters"
-                    [columns]="visibleColumns()"
-                  ></tr>
-                }
-              </thead>
-              <tbody
-                mfGridBody
-                noun="assets"
-                [columnSpec]="columnSpec()"
-                [filters]="filters"
-                [state]="state()"
-                [empty]="rows().length === 0"
-                [filtered]="filters.activeCount() > 0"
-                [hidden]="hiddenCount()"
-                hiddenLabel="inactive"
-                (retry)="load()"
-                (clear)="clear()"
-                [emptyText]="emptyText()"
-                (showAll)="showAll()"
-              >
-                @if (scope.mine() && scope.canAll()) {
-                  <button
-                    mfEmptyAction
-                    type="button"
-                    class="mf-btn"
-                    data-show-all-matters
-                    (click)="scope.set('all')"
-                  >
-                    Show all matters
-                  </button>
-                }
-                @for (a of rows(); track a.assetId) {
-                  <tr
-                    [attr.data-asset-id]="a.assetId"
-                    [attr.data-selected]="a.assetId === selectedId() ? '' : null"
-                    [attr.aria-current]="a.assetId === selectedId() ? 'true' : null"
-                  >
-                    <td class="mf-cell-name">
-                      <a
-                        class="mf-name"
-                        [routerLink]="['/assets', a.assetId]"
-                        mfRowLink="assets"
-                        [rowKey]="a.assetId"
-                        [attr.title]="a.displayName"
-                        [attr.data-asset-name]="a.assetId"
-                        >{{ a.displayName }}</a
-                      >
-                    </td>
-                    <td class="as-type" [attr.title]="a.assetTypeName">{{ a.assetTypeName }}</td>
-                    <td class="as-matter" [attr.title]="a.matterName" data-matter>
-                      <mf-matter-ref
-                        [value]="a.matterRef"
-                        [link]="matterLink(a.matterId)"
-                        [copy]="false"
-                      />
-                    </td>
+                    <th
+                      mfSort="assetType"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Type
+                    </th>
+                    <th
+                      class="as-matter"
+                      mfSort="matter"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Matter number
+                    </th>
                     @if (tasksShown()) {
-                      <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
-                        <!-- The open count is the number; the total is the tooltip (the words are for a screen reader). -->
-                        <span
-                          [attr.title]="(a.linkedTaskCount ?? 0) + ' linked in total'"
-                          [class.as-zero]="!a.openLinkedTaskCount"
-                          aria-hidden="true"
-                          >{{ a.openLinkedTaskCount ?? 0 }}</span
-                        >
-                        <span class="mf-sr-only"
-                          >{{ a.openLinkedTaskCount ?? 0 }} open of
-                          {{ a.linkedTaskCount ?? 0 }} linked tasks</span
+                      <th
+                        class="mf-cell-num"
+                        mfSort="linkedTaskCount"
+                        [firstDesc]="true"
+                        [sort]="sort()"
+                        [defaultSort]="defaultSort"
+                        [attr.data-drop]="drop.linkedTasks"
+                        (sorted)="setSort($event)"
+                      >
+                        Linked tasks
+                      </th>
+                    }
+                    <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
+                      External reference
+                    </th>
+                    <th class="mf-cell-badge" scope="col">Status</th>
+                  </tr>
+                  @if (filters.rowVisible()) {
+                    <tr
+                      mfColumnFilterRow
+                      id="asset-filter-row"
+                      [filters]="filters"
+                      [columns]="visibleColumns()"
+                    ></tr>
+                  }
+                </thead>
+                <tbody
+                  mfGridBody
+                  noun="assets"
+                  [columnSpec]="columnSpec()"
+                  [filters]="filters"
+                  [state]="state()"
+                  [empty]="rows().length === 0"
+                  [filtered]="filters.activeCount() > 0"
+                  [hidden]="hiddenCount()"
+                  hiddenLabel="inactive"
+                  (retry)="load()"
+                  (clear)="clear()"
+                  [emptyText]="emptyText()"
+                  (showAll)="showAll()"
+                >
+                  @if (scope.mine() && scope.canAll()) {
+                    <button
+                      mfEmptyAction
+                      type="button"
+                      class="mf-btn"
+                      data-show-all-matters
+                      (click)="scope.set('all')"
+                    >
+                      Show all matters
+                    </button>
+                  }
+                  @for (a of rows(); track a.assetId) {
+                    <tr
+                      [attr.data-asset-id]="a.assetId"
+                      [attr.data-selected]="a.assetId === selectedId() ? '' : null"
+                      [attr.aria-current]="a.assetId === selectedId() ? 'true' : null"
+                    >
+                      <td class="mf-cell-name">
+                        <a
+                          class="mf-name"
+                          [routerLink]="['/assets', a.assetId]"
+                          mfRowLink="assets"
+                          [rowKey]="a.assetId"
+                          [attr.title]="a.displayName"
+                          [attr.data-asset-name]="a.assetId"
+                          >{{ a.displayName }}</a
                         >
                       </td>
-                    }
-                    <td class="as-refcell" [attr.data-drop]="drop.externalReference" data-reference>
-                      @if (a.externalReference) {
-                        <div class="as-ref">
-                          <span class="as-ref__text" [attr.title]="a.externalReference">{{
-                            a.externalReference
-                          }}</span>
-                          <mf-copy-button
-                            [text]="a.externalReference"
-                            label="external reference"
-                            [rowStop]="true"
-                          />
-                        </div>
-                      } @else {
-                        <span class="as-ref__none" aria-hidden="true">&ndash;</span>
-                        <span class="mf-sr-only">No external reference</span>
+                      <td class="as-type" [attr.title]="a.assetTypeName">{{ a.assetTypeName }}</td>
+                      <td class="as-matter" [attr.title]="a.matterName" data-matter>
+                        <mf-matter-ref
+                          [value]="a.matterRef"
+                          [link]="matterLink(a.matterId)"
+                          [copy]="false"
+                        />
+                      </td>
+                      @if (tasksShown()) {
+                        <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
+                          <!-- The open count is the number; the total is the tooltip (the words are for a screen reader). -->
+                          <span
+                            [attr.title]="(a.linkedTaskCount ?? 0) + ' linked in total'"
+                            [class.as-zero]="!a.openLinkedTaskCount"
+                            aria-hidden="true"
+                            >{{ a.openLinkedTaskCount ?? 0 }}</span
+                          >
+                          <span class="mf-sr-only"
+                            >{{ a.openLinkedTaskCount ?? 0 }} open of
+                            {{ a.linkedTaskCount ?? 0 }} linked tasks</span
+                          >
+                        </td>
                       }
-                    </td>
-                    <td class="mf-cell-badge" data-status>
-                      @if (a.isActive) {
-                        <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
-                        <span class="mf-sr-only">Active</span>
-                      } @else {
-                        <mf-badge tone="neutral">Inactive</mf-badge>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+                      <td
+                        class="as-refcell"
+                        [attr.data-drop]="drop.externalReference"
+                        data-reference
+                      >
+                        @if (a.externalReference) {
+                          <div class="as-ref">
+                            <span class="as-ref__text" [attr.title]="a.externalReference">{{
+                              a.externalReference
+                            }}</span>
+                            <mf-copy-button
+                              [text]="a.externalReference"
+                              label="external reference"
+                              [rowStop]="true"
+                            />
+                          </div>
+                        } @else {
+                          <span class="as-ref__none" aria-hidden="true">&ndash;</span>
+                          <span class="mf-sr-only">No external reference</span>
+                        }
+                      </td>
+                      <td class="mf-cell-badge" data-status>
+                        @if (a.isActive) {
+                          <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
+                          <span class="mf-sr-only">Active</span>
+                        } @else {
+                          <mf-badge tone="neutral">Inactive</mf-badge>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        }
         @if (state() === 'ready' && total() > 0) {
           <mf-pager
             [page]="pageNumber()"
@@ -447,6 +504,37 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         !(c === 'linkedTasks' && (!this.tasksShown() || this.viewport() < this.drop.linkedTasks)),
     ),
   );
+  /** Below 640 px the list is cards, not a table (#502). */
+  protected readonly phone = phoneCards();
+  /** The phone's Sort by select: the sortable columns, the same `sort` values as the headers. */
+  protected readonly sortOptions = computed((): SortOption[] => [
+    { value: 'displayName', label: 'Name' },
+    { value: 'assetType', label: 'Type' },
+    { value: 'matter', label: 'Matter number' },
+    ...(this.tasksShown()
+      ? [{ value: 'linkedTaskCount', label: 'Linked tasks', descFirst: true }]
+      : []),
+  ]);
+  /**
+   * The card of one asset: the name (the one link), the type, the matter number (plain text; the card is the link) and, with Task.View, the
+   * open linked tasks; the Inactive badge only for an inactive asset, as in the table.
+   */
+  protected readonly cardOf = (a: AssetListItem): AdminCardSpec => {
+    const open = a.openLinkedTaskCount;
+    return {
+      title: a.displayName,
+      link: ['/assets', a.assetId],
+      rowKey: a.assetId,
+      badges: a.isActive ? [] : [{ text: 'Inactive', tone: 'neutral', icon: 'pi-minus-circle' }],
+      subtitle: a.assetTypeName,
+      meta: [
+        `Matter ${a.matterRef}`,
+        ...(this.tasksShown() && open !== undefined && open !== null
+          ? [`${open} open ${open === 1 ? 'task' : 'tasks'}`]
+          : []),
+      ],
+    };
+  };
   protected readonly types = signal<AssetTypeResponse[]>([]);
   protected readonly selectedId = computed(() => parseSelected(this.selected()));
   /** The asset the panel has loaded (its Matter and state are only known once it is there). */
@@ -510,7 +598,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     screen: 'assets',
     noun: 'assets',
     defs: this.defs,
-    visibleColumns: this.visibleColumns,
+    visibleColumns: computed(() => (this.phone() ? null : this.visibleColumns())),
     // Open from 640 px (a sheet below), like Clients, Matters and Projects (#499).
     openByDefault: true,
     sheetBelow: 640,
@@ -525,11 +613,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     super();
     // Back from a record page: focus goes to the name link of the row the person left (#494).
     restoreRowFocus('assets', () => this.state() === 'ready');
+    // "Skip to table" is the first Tab stop of the page (#503); it lands on the first row's name, or on the first card on a phone.
+    registerTableSkip();
     void this.loadTypes();
 
     // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
+    effect(() => {
+      const area = this.scroll()?.nativeElement;
+      if (area) untracked(() => this.filters.watchOverflow(area));
     });
 
     // The selected row is brought into view (a link from a task, a search result, the matter's Assets tab). Where the page scrolls as a

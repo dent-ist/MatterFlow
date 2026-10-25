@@ -37,6 +37,7 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
+import { SkipTarget } from '../../../shared/layout/skip-target';
 import { provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { ASSETS_ROUTES } from '../assets.routes';
 import { AssetDetails } from './asset-details';
@@ -402,6 +403,79 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       });
       expect(header('Type').querySelector('button')).not.toBeNull();
       expect(assets.listAssets.mock.calls.some((c) => c[11] === 'matter')).toBe(true);
+    });
+
+    it('offers Skip to table as the first stop of the page and it lands on the first name link (A9, #503)', async () => {
+      await create(['Asset.View']);
+      const target = TestBed.inject(SkipTarget).target()!;
+      expect(target.label).toBe('Skip to table');
+      document.body.appendChild(el());
+      target.focus();
+      expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
+      el().remove();
+      // One Tab stop in a row without Matter.View: the name link and nothing else (the reference copy button is not a stop).
+      expect(
+        rowOf(9)!.querySelectorAll('a[href], button:not([tabindex="-1"]), [tabindex="0"]'),
+      ).toHaveLength(1);
+    });
+
+    describe('on a phone', () => {
+      const original = window.matchMedia;
+      afterEach(() => {
+        window.matchMedia = original;
+      });
+      function phone(): void {
+        window.matchMedia = ((query: string) => ({
+          matches: /max-width/.test(query),
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        })) as never;
+      }
+
+      it('shows one card per asset instead of the table: the name is the link, type, matter number, open tasks and an Inactive badge (A4, #502)', async () => {
+        phone();
+        await create(['Asset.View', 'Task.View']);
+        assets.listAssets.mockReturnValue(
+          ok(
+            pageOfAssets(
+              anAssetListItem({ assetId: 9, linkedTaskCount: 19, openLinkedTaskCount: 4 }),
+              anAssetListItem({
+                assetId: 10,
+                displayName: 'Old room',
+                isActive: false,
+                linkedTaskCount: 1,
+                openLinkedTaskCount: 1,
+              }),
+            ),
+          ),
+        );
+        await setInputs({ sort: 'assetType' });
+
+        expect(el().querySelector('table')).toBeNull();
+        const cards = el().querySelectorAll('li.rc');
+        expect(cards).toHaveLength(2);
+        const first = cards[0];
+        expect(first.querySelector('a')?.getAttribute('href')).toBe('/assets/9');
+        expect(first.textContent).toContain('Contract bundle');
+        expect(first.textContent).toContain('Document Set');
+        expect(first.textContent).toContain('Matter 00343-00012');
+        expect(first.textContent).toContain('4 open tasks');
+        expect(first.textContent).not.toContain('Inactive');
+        expect(cards[1].textContent).toContain('Inactive');
+        expect(cards[1].textContent).toContain('1 open task');
+        // The matter number is text on a card, whatever the permissions (the card is the link).
+        expect(el().querySelectorAll('a[href^="/matters"]')).toHaveLength(0);
+        // The filter row lives in the sheet below 640 px: no filter row in the page.
+        expect(filterRow()).toBeNull();
+      });
+
+      it('leaves the tasks line out without Task.View', async () => {
+        phone();
+        await create(['Asset.View']);
+        expect(el().querySelectorAll('li.rc')).toHaveLength(2);
+        expect(el().textContent).not.toContain('open task');
+      });
     });
 
     it('leaves the Linked tasks column out without Task.View', async () => {

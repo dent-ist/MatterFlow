@@ -55,9 +55,15 @@ test.describe('Assets list defects (WP-AS1)', () => {
     ]) {
       await plain.setViewportSize(size);
       await plain.goto(`/assets?name=${token}`);
-      await expect(plain.locator('tbody tr[data-asset-id]')).toHaveCount(3);
+      // Below 640 px the list is cards (#502): the matter number is text on a card.
+      if (size.width < 640) {
+        await expect(plain.locator('li.rc')).toHaveCount(3);
+        await expect(plain.locator('li.rc').first()).toContainText(rows.matter.matterRef);
+      } else {
+        await expect(plain.locator('tbody tr[data-asset-id]')).toHaveCount(3);
+        await expect(plain.locator('tbody .mf-ref').first()).toHaveText(rows.matter.matterRef);
+      }
       await expect(plain.locator('a[href^="/matters"]')).toHaveCount(0);
-      await expect(plain.locator('tbody .mf-ref').first()).toHaveText(rows.matter.matterRef);
       await shot(plain, 'bug1-no-matter-view');
     }
 
@@ -207,7 +213,11 @@ test.describe('Assets list defects (WP-AS1)', () => {
       await expect(page.getByRole('columnheader', { name: 'External reference' })).toHaveCount(
         size.width >= 1280 ? 1 : 0,
       );
-      await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+      await expect(
+        size.width < 640
+          ? page.locator('li.rc').first()
+          : page.locator('tbody tr[data-asset-id]').first(),
+      ).toBeVisible();
     });
     await page.setViewportSize({ width: 1366, height: 768 });
     await noHorizontalScroll(page);

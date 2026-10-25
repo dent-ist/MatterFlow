@@ -19,7 +19,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(filter(page, 'Name')).toBeVisible();
   }
 
-  test('the Filters button above the grid shows the filter row right under the headers, aligned to the columns, and is remembered', async ({
+  test('the Filters button in the page header shows the filter row, open on arrival, right under the headers, aligned to the columns, and is remembered', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -27,28 +27,28 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(page.getByRole('heading', { name: 'Assets', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: 'New asset' })).toBeVisible();
 
-    // No standalone filter boxes any more; the toggle sits at the right end of a bar above the grid.
+    // No standalone filter boxes; the Filters button is in the page header (#499) and the row is open from 640 px.
     await expect(page.getByLabel('Name, type or external reference')).toHaveCount(0);
-    await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'false');
-    await expect(filter(page, 'Name')).toHaveCount(0);
+    await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'true');
+    await expect(filtersToggle(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(filter(page, 'Name')).toBeVisible();
     const grid = page.getByRole('region', { name: 'Assets list, scrollable' });
     const toggleBox = (await filtersToggle(page).boundingBox())!;
     const gridBox = (await grid.boundingBox())!;
     expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(gridBox.y + 1);
-    expect(toggleBox.x + toggleBox.width).toBeGreaterThan(gridBox.x + gridBox.width - 40);
-
-    await filtersToggle(page).click();
-    await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'true');
-    await expect(filtersToggle(page)).toHaveAttribute('aria-expanded', 'true');
 
     const columns = ['Name', 'Type', 'Matter', 'External reference', 'Status'];
     const headers = grid.locator('thead tr:first-child th');
-    await expect(headers).toHaveCount(5);
+    // The admin sees Linked tasks (no filter of its own): the cell under it is empty, the other five columns have a control.
+    await expect(headers).toHaveCount(6);
+    const position = [0, 1, 2, 4, 5];
     const headerBottom = (await headers.first().boundingBox())!;
     for (let i = 0; i < columns.length; i++) {
-      const th = (await headers.nth(i).boundingBox())!;
+      const th = (await headers.nth(position[i]).boundingBox())!;
       const control = (await grid
-        .locator(`thead tr.mf-filter-row td:nth-child(${i + 1}) :is(input, select, button)`)
+        .locator(
+          `thead tr.mf-filter-row td:nth-child(${position[i] + 1}) :is(input, select, button)`,
+        )
         .first()
         .boundingBox())!;
       // Directly under its column, inside the column width, 32 px high.
@@ -61,12 +61,12 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(page.getByRole('combobox', { name: 'Filter by Status' })).toHaveValue('active');
 
     // The choice is remembered per user, also after a reload.
-    await page.reload();
-    await expect(filter(page, 'Name')).toBeVisible();
     await filtersToggle(page).click();
     await expect(filter(page, 'Name')).toHaveCount(0);
     await page.reload();
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'false');
+    await filtersToggle(page).click();
+    await expect(filter(page, 'Name')).toBeVisible();
   });
 
   test('every column filters on the server, lands in the URL and is cleared from the bar; the empty state keeps headers and filters', async ({
@@ -155,6 +155,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     const matter = await seed.matter();
     const asset = await seed.asset(matter, `Linked filter ${uid()}`);
     await page.goto('/assets');
+    await filtersToggle(page).click(); // open on arrival (#499); close it so the choice is remembered as closed
     await expect(filtersToggle(page)).toHaveAttribute('aria-pressed', 'false');
     await page.goto(`/assets?name=${encodeURIComponent(asset.displayName)}`);
     await expect(filter(page, 'Name')).toHaveValue(asset.displayName);
@@ -292,7 +293,7 @@ test.describe('Assets list: column filters and the record page link', () => {
       );
     }
     await page.goto(`/assets?name=${token}`);
-    await expect(page.locator('tbody tr[data-asset-id] a.mf-name').first()).toBeVisible();
+    await expect(page.locator('li.rc a').first()).toBeVisible(); // cards below 640 px (#502)
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
