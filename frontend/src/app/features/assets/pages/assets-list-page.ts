@@ -229,7 +229,15 @@ export function parseSelected(value: string | null | undefined): number | null {
                   >
                     Type
                   </th>
-                  <th class="as-matter" scope="col">Matter number</th>
+                  <th
+                    class="as-matter"
+                    mfSort="matter"
+                    [sort]="sort()"
+                    [defaultSort]="defaultSort"
+                    (sorted)="setSort($event)"
+                  >
+                    Matter number
+                  </th>
                   @if (tasksShown()) {
                     <th
                       class="mf-cell-num"

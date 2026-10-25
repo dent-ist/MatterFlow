@@ -381,6 +381,29 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       });
     });
 
+    it('sorts by Matter number, then Name, and keeps Name and Type sortable (A11)', async () => {
+      await create(['Asset.View']);
+      const header = (text: string) =>
+        Array.from(el().querySelectorAll<HTMLElement>('thead tr:first-child th')).find((t) =>
+          t.textContent?.includes(text),
+        )!;
+      header('Matter number').querySelector('button')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { sort: 'matter', page: null },
+        queryParamsHandling: 'merge',
+      });
+      await setInputs({ sort: 'matter' });
+      expect(header('Matter number').getAttribute('aria-sort')).toBe('ascending');
+      expect(header('Name').getAttribute('aria-sort')).toBe('none');
+      header('Matter number').querySelector('button')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { sort: '-matter', page: null },
+        queryParamsHandling: 'merge',
+      });
+      expect(header('Type').querySelector('button')).not.toBeNull();
+      expect(assets.listAssets.mock.calls.some((c) => c[11] === 'matter')).toBe(true);
+    });
+
     it('leaves the Linked tasks column out without Task.View', async () => {
       await create(['Asset.View']);
       expect(el().querySelector('td[data-linked]')).toBeNull();
