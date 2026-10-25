@@ -1,4 +1,5 @@
 import {
+  OLDEST_FIRST,
   activityTime,
   dayHeading,
   factText,
@@ -27,6 +28,10 @@ describe('My Matters words', () => {
     expect(holdHint(12, 0)).toBe('');
     expect(holdHint(null, 4)).toBe('');
     expect(holdHint(undefined, undefined)).toBe('');
+  });
+
+  it('opens overdue links oldest first (#817)', () => {
+    expect(OLDEST_FIRST).toEqual({ sort: 'due', dir: 'asc' });
   });
 
   it('writes status codes as people read them', () => {

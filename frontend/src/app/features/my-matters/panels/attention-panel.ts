@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Params, RouterLink } from '@angular/router';
 import { MyMattersClient } from '../../../api/generated/api-client';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
-import { factText } from '../facts';
+import { OLDEST_FIRST, factText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
@@ -68,7 +68,7 @@ const GROUP_TITLES: Record<string, string> = {
               class="pl__all"
               data-view-all
               routerLink="/tasks"
-              [queryParams]="params(g.query)"
+              [queryParams]="allParams(g)"
               [attr.aria-label]="'View all ' + title(g.kind).toLowerCase() + ' tasks'"
               >View all</a
             >
@@ -108,6 +108,13 @@ export class AttentionPanel {
   );
   protected readonly fact = factText;
   protected readonly params = queryToParams;
+
+  /** "View all": the group's list; overdue opens oldest first (issue #817). */
+  protected allParams(g: { kind: string; query: string }): Params {
+    return g.kind === 'overdue'
+      ? { ...queryToParams(g.query), ...OLDEST_FIRST }
+      : queryToParams(g.query);
+  }
 
   protected title(kind: string): string {
     if (kind === 'stuckOnHold') {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { Params } from '@angular/router';
 import { DashboardCount, MyMattersClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ErrorReference } from '../../shared/ui/error-reference';
@@ -10,7 +11,7 @@ import {
   mattersListParams,
   queryToParams,
 } from './my-matters-filters';
-import { holdHint } from './facts';
+import { OLDEST_FIRST, holdHint } from './facts';
 import { panelLoader } from './panel-loader';
 
 /**
@@ -93,6 +94,7 @@ export class MyMattersStrip {
       c: DashboardCount | undefined,
       path: string,
       extra: Partial<WorkStripItem> = {},
+      order: Params = {},
     ): WorkStripItem => ({
       key,
       label,
@@ -104,7 +106,7 @@ export class MyMattersStrip {
             queryParams:
               path === '/matters'
                 ? mattersListParams(this.filters(), this.auth.profile()?.userId ?? 0)
-                : queryToParams(c.query),
+                : { ...queryToParams(c.query), ...order },
           }
         : undefined,
       ...extra,
@@ -113,7 +115,8 @@ export class MyMattersStrip {
     return [
       cell('matters', all ? 'Matters' : 'Matters I manage', s?.matters, '/matters'),
       cell('open', 'Open tasks', s?.openTasks, '/tasks'),
-      cell('overdue', 'Overdue', s?.overdue, '/tasks', { alert: true }),
+      // Opens oldest overdue first: a person who handles overdue work starts with the longest wait (issue #817); Priority is one click on the header.
+      cell('overdue', 'Overdue', s?.overdue, '/tasks', { alert: true }, OLDEST_FIRST),
       cell('due3', 'Due in 3 days', s?.dueIn3Days, '/tasks'),
       cell('due7', 'Due in 7 days', s?.dueIn7Days, '/tasks'),
       cell('unassigned', 'Unassigned', s?.unassigned, '/tasks'),

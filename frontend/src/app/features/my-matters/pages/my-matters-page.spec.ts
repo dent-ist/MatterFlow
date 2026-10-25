@@ -339,7 +339,9 @@ describe('MyMattersPage', () => {
       'onHold',
     ]);
     expect(cells[0].getAttribute('href')).toBe('/matters?mine=true');
-    expect(cells[2].getAttribute('href')).toBe('/tasks?managedByMe=true&overdue=true');
+    expect(cells[2].getAttribute('href')).toBe(
+      '/tasks?managedByMe=true&overdue=true&sort=due&dir=asc',
+    );
     expect(cells[1].getAttribute('href')).toContain('status=NEW&status=IN_PROGRESS&status=ON_HOLD');
     // The label says what it counts; the age of the oldest hold is the tooltip, never before the count (#821).
     expect(cells[6].textContent?.replace(/\s+/g, ' ').trim()).toBe('On hold 3');
@@ -423,7 +425,7 @@ describe('MyMattersPage', () => {
       el(h)
         .querySelector<HTMLAnchorElement>('[data-group=overdue] [data-view-all]')!
         .getAttribute('href'),
-    ).toBe('/tasks?managedByMe=true&overdue=true');
+    ).toBe('/tasks?managedByMe=true&overdue=true&sort=due&dir=asc');
   });
 
   it('says so when nothing needs attention, with no manager-related item', async () => {

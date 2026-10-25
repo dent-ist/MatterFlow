@@ -28,6 +28,9 @@ export function factText(t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'>): s
   }
 }
 
+/** The Task Queue order of a link that means "overdue": the oldest due date first (the Due column header shows it; Priority is one click away). */
+export const OLDEST_FIRST = { sort: 'due', dir: 'asc' } as const;
+
 /** The second line of the strip's On hold cell: "oldest 12 days", "oldest 1 day"; nothing without a hold (the label never carries the age). */
 export function holdHint(
   oldestDays: number | null | undefined,
