@@ -1,5 +1,7 @@
 # Search: independent UX review
 
+> **Status (2026-10-25):** the recommendations of this review are built (epic #421). This document describes the state before the work; the current behaviour is `docs/ux/ux-spec.md` S11 and the decisions are `docs/requirements/decisions-addendum.md` section AB. Screenshots of the result are in `fixes/`.
+
 Scope: the **global search box** in the app header (suggestions, groups, states, phone), the **results page** `/search?q=` and **Advanced search** `/search/advanced`. Reviewed at `origin/dev` `48aa4aa` as a System Administrator would see it, with seeded data (1,205 assets, 170 tasks, 12 matters, 5 clients, 4 projects): production build, published API with Dev auth, SQL Server, Playwright Chromium. **No application code was changed and no issues were created.**
 
 In flight and not reviewed: Task Types epic, column-filters re-review (#75), keyboard audit. **No keyboard-shortcut recommendations** (owner decision); `Ctrl+K` already exists and is untouched.

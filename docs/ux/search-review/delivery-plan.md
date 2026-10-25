@@ -150,13 +150,15 @@ Contract e2e over the seeded data of the review at four sizes (axe 0 including `
 - Owner decision (2026-10-20): no new or changed keyboard shortcuts in this phase (Phase 2 backlog #420); Ctrl+K on the header box is unchanged.
 - Planning (2026-10-20): epic #421 and issues #455, #456, #458, #459, #461, #462, #463, #464, #465, #466, #467, #468, #469, #470, #471, #472, #473, #474, #475, #476, #477, #478, #479, #480, #481, #482, #483, #484 created and linked as sub-issues; PM requirements review comments posted on every issue; no issue is blocked on the owner; SQL script 28 is free and none is planned (an index only if #462's profile proves it).
 - Coordination (2026-10-20): Admin pages epic #518 owns the list kit (#543, #544, #545, #575, #579, #554); App-shell epic #585 owns the header and the box placement (#587, #604 touch Search); Users #422 and Assets #485 regenerate OpenAPI too.
-- First release (#455, #456, #458, #459, #461): not started.
+- First release (#455, #456, #458, #459, #461): done (see WP-SR1 lines).
 - WP-SR1 lane B (2026-10-21): #461 done (no dead link found; table in `fixes/sr1-bugs/link-permissions.md`, e2e `sr1-link-permissions`, server test `GlobalSearchLinkPermissionsTests`); WP-SR1 complete.
 - WP-SR1 lane A (2026-10-20): #455, #456, #458, #459 done (header suggestion panel: named single scroller, asset lines without the URL, one named lock and no requestor, sticky footer as a combobox option); #461 open (lane B); unit and e2e green, axe 0 at four sizes with the panel open; bundle unchanged; screenshots `fixes/sr1-bugs/`; known limit: the footer shows no count until #463.
 - WP-SR2 Suggestion panel (2026-10-21, lane B): #462 done (additive `Total`, `TotalCapped` per group and `SearchedTypes`, cap 1,000, no SQL, script 28 still free; profile in `fixes/sr2-panel/profile.md`); #463 to #465 open; backend integration tests green (85 search tests), OpenAPI and client regenerated.
 - WP-SR3 Results tabs (2026-10-21, lane C): #466 done (fixed-height page on the admin list shell, counted tabs from the totals, `type`, `page`, `pageSize` in the URL, All = 5 per type, type tab = paged Advanced endpoint with the old hit table); #467 to #471 open (`Show more` and the cap of 50 are gone; the sections still use the old table until #468); e2e `sr3-results-tabs` green twice, axe 0 at four widths; screenshots `fixes/sr3-results/`.
 - WP-SR4 Phone cards (2026-10-21, lane C): #472 done (`search-hit-card.ts`, stand-alone, unit-tested for five types and axe on the unit DOM; not wired into the page, so no e2e or screenshots until #473); #473 open.
-- WP-SR5 Advanced search into results: not started.
-- WP-SR6 Keyboard, focus and a11y: not started.
-- WP-SR7 Permissions: not started.
-- WP-SR8 Docs and final verification: not started.
+- WP-SR2 Suggestion panel (2026-10-25, b763b78): #463, #464, #465 done (3 hits per group with true counts and See all, footer total, searched types, phone sheet); e2e `sr2-panel`; screenshots `fixes/sr2-panel/`; bundle 626 kB; known limit: no 320 px minimum height.
+- WP-SR3/SR4 Results grids and cards (2026-10-25, 14add21, ac2a76e): #467 to #471, #473 done (`search-grid.ts` replaces the hit table; cards below 640 px; grid-body states; Searched in line); e2e `sr3-grids`; screenshots `fixes/sr3-results/`.
+- WP-SR5 Advanced search into results (2026-10-25, a75de9a): #474 to #477 done (`search-filters.ts`, `search-filter-defs.ts`, redirect, old page removed); e2e `sr5-filters`; screenshots `fixes/sr5-filters/`; known limits: inline panel at every width, no Project filter on tasks.
+- WP-SR6 Keyboard, focus and a11y (2026-10-25, 60c3d0b): #478, #480, #481 done, #479 partly (row focus on browser Back for every type; no "Back to search results" crumb on the record pages); e2e `sr6-a11y`; evidence `fixes/sr6-a11y/tab-stops.md`.
+- WP-SR7 Permissions (2026-10-25): #482 done (e2e `sr7-permissions`).
+- WP-SR8 Docs and final verification (2026-10-25): #483 done (ux-spec S11, addendum AB, UAT rows, e2e catalogue); #484: see its comment.

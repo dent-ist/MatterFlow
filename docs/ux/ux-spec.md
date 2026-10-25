@@ -1013,26 +1013,39 @@ Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comment
 
 ---
 
-### S11 Global Search results and Advanced Search
+### S11 Global Search results (rewritten to the code, Search UX epic #421; decisions: addendum AB)
 
-**Typeahead (S20 in header).**
+**Header box and suggestion panel (S20).**
 ```text
-[ 343-12                                  ]
- Matters
-   00343-00012  Merger Review  (Acme Corp)
- Clients
+[ Search clients, matters, tasks, assets... (Ctrl+K) ]
+ MATTERS (12)                                  See all 12
+   00343-00012  Merger Review  [Sensitive]
+   Acme Corp
+ CLIENTS (1)
    00343  Acme Corp
- Tasks
-   TSK-1042  Process Smith custodians
- Projects / Assets ...
- [View all results for "343-12"]
+ TASKS (1,000+)                                See all 1,000+
+   TSK-1042  Process custodian data
+   00343-00012 · Merger Review · New
+ [View all 1,013+ results for "343"]
+ Searched in: Matters, Clients and Tasks        (only when fewer than five types are searched)
 ```
-- ARIA 1.2 combobox; Up/Down to move, Enter to open, Esc to close; `Ctrl+K` or `/` focuses. Debounce 250 ms, min 2 characters (numbers: min 1 digit), max 5 suggestions per group, groups ordered Matters, Clients, Tasks, Projects, Assets.
-- Number-aware: `343`, `00343`, `343-12`, `00343-00012` all resolve; exact number matches are ranked first; the search echo shows the normalized form: `Showing results for 00343-00012`.
-- Server-side authorization filtering only returns records the user may view (Phase 1: any `Task.View` holder sees all tasks).
-- States: no match -> "No results for 'x'. Try a client or matter number, a task title, or an asset name." Error -> "Search is unavailable. Try again." Loading spinner with live announcement "Searching".
-**Results page `/search?q=`.** Tabs by object (All, Clients, Matters, Projects, Tasks, Assets) with counts, paginated tables with the same columns as the lists, match highlight. "Advanced search" link.
-**Advanced Search (lower priority).** Object selector (Matter, Client, Task, Project, Asset) then object-specific filters (same as list filters; custom fields only if admin flagged "Searchable" on the field definition) and paginated results; export not offered. Only SQL-backed matching: no attachment content, no natural language (Phase 2).
+- ARIA 1.2 combobox; Up/Down move, Enter opens, Esc closes; `Ctrl+K` focuses (unchanged, no shortcut added in this epic, #420). Debounce 250 ms, minimum 2 characters (a number: 1 digit), **3 hits per group** (the heading carries the true count, `1,000+` when the API stopped counting at its cap, and "See all N" when hits are left out), groups ordered Matters, Clients, Tasks, Projects, Assets, zero-hit types omitted.
+- "See all N" (first option of its group) opens `/search?q=&type=`; the sticky footer "View all N results for ..." (sum of the totals) is the last option; the single scroller is a named region; the panel is at most `min(70vh, 640px)`.
+- Placeholder and accessible name list only the types the person may search (`Search tasks... (Ctrl+K)` for Task.View only; unchanged for everyone who can search all). The footer says `Searched in: Tasks` when fewer than five types were searched.
+- Below 640 px the open panel is a fixed sheet under the box fitted to the visible viewport (it follows `visualViewport`, so the footer stays above the on-screen keyboard); the page behind does not scroll.
+- Asset options show the name, then Type and Matter number (never the URL, which is the tooltip); a sensitive matter shows the Sensitive badge on its own option, other types a lock named "Sensitive matter"; no requestor in task options; hits outside a Project Manager's matters say "Other matter".
+- Live region: `140 results in 5 groups. Use the up and down arrow keys...`, once per settled query.
+- States: no match "No results for 'x'. Try a client or matter number, a task title, or an asset name."; error "Search is unavailable. Try again." with Try again; "Searching..." while loading.
+
+**Results page `/search?q=`** (a fixed-height page on the admin list shell). H1 "Search results", the echo line (`Showing results for 00343-00012 (you typed "343-12")`), `Searched in: ...` (what was searched, never what was left out), counted tabs `All | Matters | Clients | Tasks | Projects | Assets` (only the types the person may view; a zero tab stays; counts from `GET /search` totals), "Skip to results" as the first Tab stop, the Filters button on a type tab.
+- **All:** each type with hits as a section (`h2` "Tasks (112)", 5 rows, link "See all 112" that opens the tab and focuses its grid heading); no "Show more" anywhere.
+- **Type tab:** a paged grid on `GET /search/advanced` (25/50/100 per page; `type`, `page`, `pageSize` in the address), 44 px rows, the name is the only link, relevance order, no column sort. Columns: Matters (Number, Name, Client, Status), Clients (Number, Name, Status), Tasks (Ref, Title, Matter, Status), Projects (Name, Matter, Status), Assets (Name, Type, Matter number, Status). States use the grid body: five skeleton rows, the error with its reference and Retry, the empty text.
+- **Below 640 px** the same hits are cards (`mf-search-hit-card` on `mf-record-card-list`); from 640 px the table.
+- **Filters (S6):** a Filters button (with the count) opens a panel with the filters of the type: Clients (Status); Matters (Client, Status, Sensitive matter); Projects (Matter, Status); Tasks (Client, Matter, Task status, Requestor); Assets (Matter, Asset type, Status). They apply live, show as removable chips with one Clear filters (focus returns to the Filters button) and live in the address (`filters=open`, `client`, `matter`, `assetType`, `active`, `sensitive`, `status`, `requestor`). Status defaults to **Any** (not Active): a closed record must be found; inactive hits carry the Inactive badge. Record pickers are offered only to a person who may view those records.
+- **`/search/advanced`** is only a redirect to `/search` with the same keys and `filters=open` (no type opens All); the old page is gone.
+- Live region: `Tasks, 24 results, page 2 of 3`, `Filters applied, 12 results`.
+- Document title `Search results: Tasks - MatterFlow`.
+- Back from any hit returns to the same tab, page and filters with focus on the link that was left (the record pages keep their own crumbs; a "Back to search results" crumb for matters, clients, projects and assets is not built).
 
 ---
 
@@ -1815,13 +1828,16 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 
 ### S11 and S20 Search
 - [ ] UAT-S11-1 Header search visible on every page except Access Pending.
-- [ ] UAT-S11-2 Typeahead groups Matters, Clients, Tasks, Projects, Assets, max 5 each, debounced.
+- [ ] UAT-S11-2 Typeahead groups Matters, Clients, Tasks, Projects, Assets, 3 hits each with the true count in the heading and "See all N", debounced; the footer total equals the sum.
 - [ ] UAT-S11-3 `00002-00001`, `2-1`, `00002-1` resolve to matter 00002-00001 (SCN-020).
 - [ ] UAT-S11-4 Results contain only records the user may view.
-- [ ] UAT-S11-5 View all leads to paginated, tabbed results page.
+- [ ] UAT-S11-5 View all leads to the results page with counted tabs; All shows 5 per type with "See all N"; a type tab is a paged grid.
 - [ ] UAT-S11-6 Keyboard: Ctrl+K/`/`, arrows, Enter, Esc; combobox semantics.
 - [ ] UAT-S11-7 Empty/error messages per copy deck.
-- [ ] UAT-S11-8 Advanced search filters per object; custom fields only if flagged searchable.
+- [ ] UAT-S11-8 The Filters panel of each type tab applies live, shows chips and one Clear filters; Status defaults to Any; /search/advanced redirects to the results page.
+- [ ] UAT-S11-9 Placeholder, "Searched in" and tabs name only the types the person may search; every result opens (no 403).
+- [ ] UAT-S11-10 At 375 px the panel fits the visible viewport with the footer in view, and results are cards; axe 0 and no sideways scroll at 375, 768, 1366 and 1920 px.
+- [ ] UAT-S11-11 Skip to results is the first Tab stop; Back from a hit of every type focuses the link that was left.
 
 ### S12 Users, roles
 - [ ] UAT-S12-1 First login of unknown Windows user appears in Pending access with zero roles; repeated login creates no duplicate.
