@@ -274,4 +274,50 @@ describe('AssetRecordPage', () => {
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     expect(el().querySelector('[data-record-live]')?.textContent).toBe('Loaded');
   });
+
+  describe('summary strip (#506)', () => {
+    const items = (): { key: string; text: string; link: string | null }[] =>
+      Array.from(
+        el().querySelectorAll<HTMLElement>(
+          '[data-asset-strip] [data-strip-item], [data-asset-strip] li',
+        ),
+      ).map((e) => ({
+        key: e.getAttribute('data-strip-item') ?? '',
+        text: e.textContent!.replace(/\s+/g, ' ').trim(),
+        link: e.getAttribute('href'),
+      }));
+
+    it('shows Open and Linked from the counts, Created, no Overdue until the Linked tasks tab has loaded, and links Open to that tab', async () => {
+      await create(['Asset.View', 'Task.View']);
+      const text = el().querySelector('[data-asset-strip]')!.textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Open');
+      expect(text).toContain('Linked');
+      expect(text).toContain('Created');
+      expect(text).not.toContain('Overdue');
+      expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled(); // no extra request
+      const open = el().querySelector<HTMLAnchorElement>('[data-strip-item="open"]')!;
+      expect(open.getAttribute('href')).toBe('/assets/9?tab=tasks');
+      expect(items().length).toBeGreaterThan(0);
+
+      assets.listAssetLinkedTasks.mockReturnValue(
+        ok({
+          items: [
+            { ...LINK, isOpen: true, isOverdue: true },
+            { ...LINK, taskId: 7, isOpen: true },
+          ],
+        }),
+      );
+      await openTab('tasks');
+      const overdue = el().querySelector<HTMLAnchorElement>('[data-strip-item="overdue"]')!;
+      expect(overdue.textContent).toContain('1');
+      expect(overdue.getAttribute('href')).toBe('/assets/9?tab=tasks');
+    });
+
+    it('has only Created (and Modified) without Task.View', async () => {
+      await create(['Asset.View']);
+      const text = el().querySelector('[data-asset-strip]')!.textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Created');
+      for (const word of ['Open', 'Overdue', 'Linked']) expect(text).not.toContain(word);
+    });
+  });
 });

@@ -12,6 +12,9 @@ import {
   untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { mfDate } from '../../../core/time/time';
+import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { firstValueFrom } from 'rxjs';
 import { AssetResponse, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -29,7 +32,7 @@ import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/r
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { AssetDetailsTab } from './asset-details-tab';
-import { AssetLinkedTasks } from './asset-linked-tasks';
+import { AssetLinkedTasks, LinkedTaskTotals } from './asset-linked-tasks';
 
 type Tab = 'details' | 'tasks' | 'history';
 
@@ -55,6 +58,7 @@ type Tab = 'details' | 'tasks' | 'history';
     EntityActivity,
     AssetDetailsTab,
     AssetLinkedTasks,
+    WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -104,6 +108,8 @@ type Tab = 'details' | 'tasks' | 'history';
               </div>
             }
 
+            <mf-work-strip label="Asset summary" [items]="strip()" data-asset-strip />
+
             <mf-tabs
               label="Asset sections"
               idPrefix="asset"
@@ -126,7 +132,7 @@ type Tab = 'details' | 'tasks' | 'history';
                 @case ('tasks') {
                   <div class="mf-scroll-area" mfScrollArea="Linked tasks" data-tasks-tab>
                     <h2 class="pg-sr">Linked tasks</h2>
-                    <mf-asset-linked-tasks [assetId]="a.assetId" />
+                    <mf-asset-linked-tasks [assetId]="a.assetId" (loaded)="totals.set($event)" />
                   </div>
                 }
                 @case ('history') {
@@ -195,6 +201,64 @@ export class AssetRecordPage {
   protected readonly matterLink = computed(() =>
     matterLinkOf(this.auth, this.asset()?.matterId, this.asset()?.matterCanOpen),
   );
+
+  /** What the Linked tasks tab learned (Overdue needs its list): null until the tab has been opened for this asset. */
+  protected readonly totals = signal<LinkedTaskTotals | null>(null);
+  private readonly zone = inject(USER_TIME_ZONE);
+
+  /**
+   * The summary strip (#506): Open and Linked from the counts that come with the asset (no extra request), Overdue only once the Linked tasks
+   * tab has loaded (omitted rather than guessed), Created and Modified. The task items are absent without `Task.View`. Open and Overdue link
+   * to the Linked tasks tab; Linked and the dates are plain text (nothing opens from them).
+   */
+  protected readonly strip = computed<WorkStripItem[]>(() => {
+    const a = this.asset();
+    if (!a) return [];
+    const items: WorkStripItem[] = [];
+    if (this.canTasks()) {
+      const tasksTab = { path: '/assets/' + a.assetId, queryParams: { tab: 'tasks' } };
+      const open = a.openLinkedTaskCount ?? null;
+      items.push({
+        key: 'open',
+        label: 'Open',
+        count: open,
+        hint: 'Linked tasks that are New, In Progress or On Hold',
+        ...(open ? { link: tasksTab } : {}),
+      });
+      const overdue = this.totals()?.overdue;
+      if (overdue !== undefined) {
+        items.push({
+          key: 'overdue',
+          label: 'Overdue',
+          count: overdue,
+          alert: true,
+          hint: 'Open linked tasks past their due date',
+          ...(overdue > 0 ? { link: tasksTab } : {}),
+        });
+      }
+      items.push({
+        key: 'linked',
+        label: 'Linked',
+        count: a.linkedTaskCount ?? null,
+        hint: 'All tasks linked to this asset',
+      });
+    }
+    items.push({
+      key: 'created',
+      label: 'Created',
+      count: null,
+      value: mfDate(a.createdAtUtc, this.zone, 'date'),
+    });
+    if (a.modifiedAtUtc) {
+      items.push({
+        key: 'modified',
+        label: 'Modified',
+        count: null,
+        value: mfDate(a.modifiedAtUtc, this.zone, 'date'),
+      });
+    }
+    return items;
+  });
 
   protected readonly tabs = computed<MfTab[]>(() => {
     // The number of linked tasks (all) comes with the asset (#496): absent without Task.View, where the API sends null.
@@ -287,6 +351,7 @@ export class AssetRecordPage {
   async load(): Promise<void> {
     const id = Number(this.assetId());
     this.focused = false;
+    this.totals.set(null);
     await this.flow.run(
       () => firstValueFrom(this.api.getAsset(id)),
       (asset) => {
