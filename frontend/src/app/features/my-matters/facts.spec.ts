@@ -1,4 +1,12 @@
-import { activityTime, dayHeading, factText, groupByDay, shortDate, statusWords } from './facts';
+import {
+  activityTime,
+  dayHeading,
+  factText,
+  groupByDay,
+  holdHint,
+  shortDate,
+  statusWords,
+} from './facts';
 import { activityText } from './panels/activity-panel';
 import { reasonText } from './panels/health-panel';
 
@@ -10,6 +18,15 @@ describe('My Matters words', () => {
     expect(factText({ factCode: 'DUE_IN_DAYS', factDays: 4 })).toBe('due in 4 d');
     expect(factText({ factCode: 'NO_ASSIGNEE', factDays: undefined })).toBe('no assignee');
     expect(factText({ factCode: 'ON_HOLD_DAYS', factDays: 12 })).toBe('on hold 12 d');
+  });
+
+  it('words the age of the oldest hold apart from the count (#821)', () => {
+    expect(holdHint(0, 10)).toBe('oldest 0 days');
+    expect(holdHint(1, 3)).toBe('oldest 1 day');
+    expect(holdHint(12, 3)).toBe('oldest 12 days');
+    expect(holdHint(12, 0)).toBe('');
+    expect(holdHint(null, 4)).toBe('');
+    expect(holdHint(undefined, undefined)).toBe('');
   });
 
   it('writes status codes as people read them', () => {

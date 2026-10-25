@@ -28,6 +28,15 @@ export function factText(t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'>): s
   }
 }
 
+/** The second line of the strip's On hold cell: "oldest 12 days", "oldest 1 day"; nothing without a hold (the label never carries the age). */
+export function holdHint(
+  oldestDays: number | null | undefined,
+  onHold: number | undefined,
+): string {
+  if (oldestDays == null || !onHold || onHold <= 0) return '';
+  return `oldest ${oldestDays} ${oldestDays === 1 ? 'day' : 'days'}`;
+}
+
 const STATUS_WORDS: Record<string, string> = {
   NEW: 'New',
   IN_PROGRESS: 'In Progress',

@@ -52,7 +52,9 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await expect(cell(page, 'due7').locator('strong')).toHaveText('2');
     await expect(cell(page, 'unassigned').locator('strong')).toHaveText('4');
     await expect(cell(page, 'onHold').locator('strong')).toHaveText('1');
-    await expect(cell(page, 'onHold')).toContainText('oldest 0 d');
+    // The label names what it counts and never carries the age before the count (#821); the age is the tooltip.
+    await expect(cell(page, 'onHold')).toHaveText(/^\s*On hold\s+1\s*$/);
+    await expect(cell(page, 'onHold')).toHaveAttribute('title', 'oldest 0 days');
 
     const label = await page.locator('[data-strip]').getAttribute('aria-label');
     expect(label).toContain('your matters');
@@ -263,7 +265,7 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     const group = page.locator('[data-panel=attention] [data-group=stuckOnHold]');
     await expect(group.locator('[data-fact]')).toContainText('on hold 10 d');
     await expect(group).toContainText('On hold more than 7 days');
-    await expect(cell(page, 'onHold')).toContainText('oldest 10 d');
+    await expect(cell(page, 'onHold')).toHaveAttribute('title', 'oldest 10 days');
   });
 });
 

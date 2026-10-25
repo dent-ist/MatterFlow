@@ -341,7 +341,9 @@ describe('MyMattersPage', () => {
     expect(cells[0].getAttribute('href')).toBe('/matters?mine=true');
     expect(cells[2].getAttribute('href')).toBe('/tasks?managedByMe=true&overdue=true');
     expect(cells[1].getAttribute('href')).toContain('status=NEW&status=IN_PROGRESS&status=ON_HOLD');
-    expect(cells[6].textContent).toContain('On hold, oldest 12 d');
+    // The label says what it counts; the age of the oldest hold is the tooltip, never before the count (#821).
+    expect(cells[6].textContent?.replace(/\s+/g, ' ').trim()).toBe('On hold 3');
+    expect(cells[6].getAttribute('title')).toBe('oldest 12 days');
     expect(cells[3].textContent).toContain('17');
     expect(el(h).querySelector('[data-strip]')!.getAttribute('aria-label')).toContain(
       'your matters',

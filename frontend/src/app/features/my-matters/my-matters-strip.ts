@@ -10,6 +10,7 @@ import {
   mattersListParams,
   queryToParams,
 } from './my-matters-filters';
+import { holdHint } from './facts';
 import { panelLoader } from './panel-loader';
 
 /**
@@ -108,10 +109,7 @@ export class MyMattersStrip {
         : undefined,
       ...extra,
     });
-    const hold =
-      s?.oldestHoldDays != null && s.onHold.count > 0
-        ? `On hold, oldest ${s.oldestHoldDays} d`
-        : 'On hold';
+    const hold = holdHint(s?.oldestHoldDays, s?.onHold.count);
     return [
       cell('matters', all ? 'Matters' : 'Matters I manage', s?.matters, '/matters'),
       cell('open', 'Open tasks', s?.openTasks, '/tasks'),
@@ -119,7 +117,7 @@ export class MyMattersStrip {
       cell('due3', 'Due in 3 days', s?.dueIn3Days, '/tasks'),
       cell('due7', 'Due in 7 days', s?.dueIn7Days, '/tasks'),
       cell('unassigned', 'Unassigned', s?.unassigned, '/tasks'),
-      cell('onHold', hold, s?.onHold, '/tasks'),
+      cell('onHold', 'On hold', s?.onHold, '/tasks', hold ? { hint: hold } : {}),
     ];
   });
 }
