@@ -216,6 +216,7 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
       );
     },
     () => this.pendingRestore,
+    ['managedByMe'],
   );
   /** "Tasks on matters you manage (41)" / "212 tasks"; the total of the unscoped queue is not read, so there is no "of". */
   protected readonly scopeText = computed(() =>

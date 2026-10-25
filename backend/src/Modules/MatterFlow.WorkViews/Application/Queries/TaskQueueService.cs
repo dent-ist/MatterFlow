@@ -62,7 +62,7 @@ public sealed class TaskQueueService(
         var groupByDue = string.Equals(groupText, GroupDue, StringComparison.OrdinalIgnoreCase) && sort == TaskQueueRules.SortDue;
         var (items, total) = await PageAsync(rows, page, sort, descending, queueClock, ct, queueGroups: groupByDue);
         var bucketCounts = groupByDue ? await QueueBucketCountsAsync(rows, queueClock, ct) : null;
-        return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId, await ViewCountsAsync(queueClock, ct), bucketCounts);
+        return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId, await ViewCountsAsync(filter, queueClock, ct), bucketCounts);
     }
 
     /// <summary>Days of the "Recently completed" window, today included (the Dashboard Completed tile's 30 days; the client sends the same first day as <c>completedFrom</c>).</summary>
@@ -71,8 +71,10 @@ public sealed class TaskQueueService(
     /// <summary>
     /// The quick-view counts: one statement with a scalar subquery per number, over all Tasks (no request filters), each from the predicate the
     /// Dashboard and the grid use. Without the sensitive-matter rule (epic #788) nobody is narrowed by record: Task.View sees every Task (addendum E); with it, every number is computed from the tasks the caller may see.
+    /// The only request filter the counts follow is the scope of the matters' managers (<c>managedByMe</c> / <c>managerId</c> / <c>role</c>), so the chips beside a "My matters" list count the same
+    /// tasks as the list (issue #813); every other filter narrows the rows and never the chips.
     /// </summary>
-    private async Task<TaskQueueViewCounts> ViewCountsAsync(QueueClock queueClock, CancellationToken ct)
+    private async Task<TaskQueueViewCounts> ViewCountsAsync(TaskQueueFilter filter, QueueClock queueClock, CancellationToken ct)
     {
         var me = currentUser.UserId;
         int? primaryPod = null;
@@ -80,6 +82,8 @@ public sealed class TaskQueueService(
             primaryPod = (await podDirectory.GetUserPodsAsync(userId, includeInactive: false, ct)).FirstOrDefault(p => p.IsPrimary)?.Pod.PodId;
 
         var tasks = Tasks();
+        if (filter.ManagerId is { } managerId)
+            tasks = managed.WhereMatterManagedBy(tasks, t => t.MatterId, managerId, PlaceOf(filter));
         var open = tasks.Where(TaskQueueRules.Open);
         var overdue = TaskQueueRules.Overdue(queueClock);
         var dueSoon = TaskQueueRules.DueSoonExcludingOverdue(queueClock);
@@ -441,18 +445,19 @@ public sealed class TaskQueueService(
         return filter;
     }
 
+    private static ManagerPlace PlaceOf(TaskQueueFilter f) => f.ManagerRole switch
+    {
+        TaskQueueFilter.RolePrimary => ManagerPlace.Primary,
+        TaskQueueFilter.RoleSecondary => ManagerPlace.Secondary,
+        _ => ManagerPlace.Either,
+    };
+
     internal IQueryable<WorkTask> ApplyFilter(IQueryable<WorkTask> rows, TaskQueueFilter f, QueueClock c)
     {
         if (f.ManagerId is { } managerId)
         {
             // The Matter's Primary and/or Secondary project manager (a Matter without one never matches), through the shared scope rule.
-            var place = f.ManagerRole switch
-            {
-                TaskQueueFilter.RolePrimary => ManagerPlace.Primary,
-                TaskQueueFilter.RoleSecondary => ManagerPlace.Secondary,
-                _ => ManagerPlace.Either,
-            };
-            rows = managed.WhereMatterManagedBy(rows, t => t.MatterId, managerId, place);
+            rows = managed.WhereMatterManagedBy(rows, t => t.MatterId, managerId, PlaceOf(f));
         }
 
         if (f.DueWithinDays is { } dueWithin)

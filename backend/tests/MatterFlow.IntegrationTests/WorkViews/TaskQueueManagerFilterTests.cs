@@ -97,6 +97,28 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
     }
 
     [Fact]
+    public async Task The_quick_view_counts_follow_the_manager_scope_and_no_other_filter()
+    {
+        async Task<JsonElement> ViewsAsync(HttpClient client, string query) =>
+            (await OkAsync(await client.GetAsync("/api/v1/task-queue?pageSize=100&" + query))).GetProperty("views");
+
+        // Everything: the open tasks of all four matters, every hold, the overdue one.
+        var all = await ViewsAsync(_pmAClient, string.Empty);
+        // On the matters A manages (m1 and m2): the chips count what the list shows (issue #813).
+        var mine = await ViewsAsync(_pmAClient, "managedByMe=true&overdue=true&status=NEW");
+        mine.GetProperty("open").GetInt32().ShouldBe(7);
+        mine.GetProperty("overdue").GetInt32().ShouldBe(1);
+        mine.GetProperty("onHold").GetInt32().ShouldBe(2);
+        mine.GetProperty("dueSoon").GetInt32().ShouldBe(1); // m1-soon (m2-in-5 is outside the window)
+        all.GetProperty("open").GetInt32().ShouldBeGreaterThan(7);
+        // Other filters narrow the rows, never the chips.
+        (await ViewsAsync(_pmAClient, "managedByMe=true&overdue=true")).GetProperty("open").GetInt32().ShouldBe(7);
+        // A named manager and the role place count the same tasks as the list of that manager.
+        var secondary = await ViewsAsync(_assigner, $"managerId={_pmA}&role=secondary");
+        secondary.GetProperty("open").GetInt32().ShouldBe((await QueueAsync(_assigner, $"managerId={_pmA}&role=secondary&status=NEW&status=IN_PROGRESS&status=ON_HOLD")).Count);
+    }
+
+    [Fact]
     public async Task Another_persons_matters_need_AssignManagers_and_a_mismatch_is_refused()
     {
         var denied = await ProblemAsync(await _pmAClient.GetAsync($"/api/v1/task-queue?managerId={_pmB}"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");

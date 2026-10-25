@@ -1,6 +1,9 @@
 import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
+import { axeAvailable, axeViolations } from '../support/axe';
+import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { pmFixtures } from '../support/pm-fixtures';
+import { SIZES, noHorizontalScroll } from '../support/screens';
 
 /**
  * "My matters / All" (epic #758, WP-PX3: #771 to #774) and the short menu of the Project Manager (#775).
@@ -204,5 +207,151 @@ test.describe('My matters / All: lists', () => {
     await page.locator('[data-scope="mine"]').focus();
     await page.keyboard.press('Space');
     await expect(page).toHaveURL(/scope=mine/);
+  });
+});
+
+/**
+ * A link that says "on the matters I manage" (the My Matters strip; WP-PX follow-ups #813 and #817): the scope switch, the chip counts and the
+ * list agree, All and My matters change them together, and the Overdue links open the oldest overdue task first.
+ */
+test.describe('My Matters links open the Task Queue on My matters', () => {
+  async function world(
+    seed: Parameters<typeof mmWorld>[0],
+    personas: Parameters<typeof mmWorld>[1],
+  ) {
+    const w = await mmWorld(seed, personas, 'qs');
+    const a = await w.matter('Alpha');
+    const b = await w.matter('Bravo', w.other);
+    await w.task(a, { dueDate: '2001-05-05', title: 'Older overdue A' });
+    await w.task(a, { dueDate: '2005-05-05', title: 'Newer overdue A' });
+    await w.task(a, { dueDate: inDays(40), title: 'Later A' });
+    await w.task(b, { dueDate: '2002-02-02', title: 'Overdue on Bravo' }); // not mine
+    await w.task(b, { title: 'Open on Bravo' });
+    return w;
+  }
+
+  const count = async (page: Page, view: string) =>
+    Number(
+      await page.locator(`[data-quick-views] [data-view="${view}"]`).getAttribute('data-count'),
+    );
+
+  test('Overdue, Unassigned, On hold and Due cells: My matters pressed, chip counts equal the list, All and My matters follow, Back restores', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await world(seed, personas);
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    const strip = page.locator('[data-mm-strip]');
+    await expect(strip.locator('[data-strip-item=overdue]')).toContainText('2');
+
+    await strip.locator('[data-strip-item=overdue]').click();
+    await expect(page).toHaveURL(/\/tasks\?/);
+    await expect(page).toHaveURL(/scope=mine/);
+    await expect(page).not.toHaveURL(/managedByMe/);
+    expect(await pressed(page, 'mine')).toBe('true');
+    await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
+    // The chips count the same scope as the list: 2 overdue of 3 open on my two matters (the other matter's tasks are not counted).
+    await expect.poll(() => count(page, 'overdue')).toBe(2);
+    await expect.poll(() => count(page, 'allOpen')).toBe(3);
+    await expect(scopeLine(page)).toContainText(/2 tasks|Tasks on matters you manage \(2\)/);
+
+    // All: the filter goes, the chips and the list count everything.
+    await page.locator('[data-scope="all"]').click();
+    await expect(page).toHaveURL(/scope=all/);
+    expect(await pressed(page, 'all')).toBe('true');
+    await expect.poll(() => count(page, 'allOpen')).toBeGreaterThan(3);
+    await expect.poll(() => count(page, 'overdue')).toBeGreaterThan(2);
+
+    // My matters brings the scope back and Back restores the address.
+    await page.locator('[data-scope="mine"]').click();
+    await expect(page).toHaveURL(/scope=mine/);
+    await expect.poll(() => count(page, 'overdue')).toBe(2);
+    await page.goBack();
+    await expect(page).toHaveURL(/scope=all/);
+    expect(await pressed(page, 'all')).toBe('true');
+
+    // The other cells of the strip: the same agreement.
+    for (const cell of ['unassigned', 'due3', 'onHold', 'open']) {
+      await page.goto('/my-matters');
+      const item = page.locator(`[data-mm-strip] [data-strip-item=${cell}]`);
+      await expect(item).toBeVisible();
+      await item.click();
+      await expect(page).toHaveURL(/scope=mine/);
+      expect(await pressed(page, 'mine'), cell).toBe('true');
+      await expect(page.locator('[data-quick-views]')).toBeVisible();
+      await expect.poll(() => count(page, 'allOpen'), cell).toBe(3);
+    }
+  });
+
+  test('the Matters list: the strip cell opens on My matters with the scope in the address', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await world(seed, personas);
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await page.locator('[data-mm-strip] [data-strip-item=matters]').click();
+    await expect(page).toHaveURL(/\/matters/);
+    await expect(page).toHaveURL(/scope=mine/);
+    expect(await pressed(page, 'mine')).toBe('true');
+    await expect(page.locator('tbody tr')).toHaveCount(1);
+    await page.locator('[data-scope="all"]').click();
+    await expect(page).toHaveURL(/scope=all/);
+    await expect.poll(async () => page.locator('tbody tr').count()).toBeGreaterThan(1);
+  });
+
+  test('Overdue links open the oldest overdue task first, the Due header says so, Priority is one click away, a plain link keeps the default order (#817)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await world(seed, personas);
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await page.locator('[data-mm-strip] [data-strip-item=overdue]').click();
+    await expect(page).toHaveURL(/sort=due/);
+    await expect(page).toHaveURL(/dir=asc/);
+    const rows = page.locator('tbody tr[data-task]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first()).toContainText('Older overdue A');
+    await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'ascending');
+
+    // Back to Priority: the header and the address follow.
+    await page.locator('[data-reset-sort]').click();
+    await expect(page).not.toHaveURL(/sort=due/);
+    await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
+
+    // The Needs my attention panel's View all overdue link.
+    await page.goto('/my-matters');
+    await page.locator('[data-group=overdue] [data-view-all]').click();
+    await expect(page).toHaveURL(/sort=due/);
+    await expect(rows.first()).toContainText('Older overdue A');
+
+    // A Task Queue link of any other kind keeps the default order (a bare /tasks restores the view last used, sort included).
+    await page.goto('/tasks?overdue=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD');
+    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(page).not.toHaveURL(/sort=/);
+    await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
+  });
+
+  test('the Task Queue opened from the strip: axe 0 and no sideways scroll at four sizes', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await world(seed, personas);
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await page.locator('[data-mm-strip] [data-strip-item=overdue]').click();
+    await expect(page.locator('tbody tr').first()).toBeVisible();
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await expect(page.locator('[data-quick-views]')).toBeVisible();
+      if (axeAvailable()) expect(await axeViolations(page), `at ${size.width}`).toEqual([]);
+      await noHorizontalScroll(page);
+    }
   });
 });

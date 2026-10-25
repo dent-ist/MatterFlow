@@ -622,7 +622,12 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
    * "My matters / All" (epic #758): people who can be a project manager open the list on the matters they manage, with a remembered switch.
    * A link with filters of the list (a client's matters, a strip cell) and no `scope` means what it says and is not scoped.
    */
-  protected readonly scope = new PageScope('matters', () => !this.filters.isDeepLink());
+  protected readonly scope = new PageScope(
+    'matters',
+    () => !this.filters.isDeepLink(),
+    () => false,
+    ['mine'],
+  );
   /** `?mine=true`, the older link-only form of the same filter (a removable chip). */
   protected readonly mine = computed(() => this.filters.text('mine') === 'true');
   /** "Matters you manage (14 of 212)" / "212 matters". */
