@@ -236,7 +236,8 @@ test.describe('Search results: counted tabs on a fixed page (#466)', () => {
           const where = `${size.width}${tab}`;
           await page.goto(`/search?q=${s.token}${tab}`);
           await expect(tabs(page).getByRole('tab', { name: /^Tasks, \d+ results/ })).toBeVisible();
-          await expect(page.locator('[data-hit-row]').first()).toBeVisible();
+          // Rows in a table, cards below 640 px.
+          await expect(page.locator('[data-hit-row], li.rc').first()).toBeVisible();
           await noHorizontalScroll(page);
           expect(await axeViolations(page), `axe at ${where}`).toEqual([]);
           if (size.width >= 768) {

@@ -1,6 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -9,24 +12,24 @@ import {
   untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { AdvancedSearchPage, SearchClient, SearchGroup } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { PageTitle, pageTab } from '../../core/title/page-title';
 import {
   SEARCH_ERROR_MESSAGE,
+  SearchType,
   SearchTypeInfo,
   isSearchable,
   noResultsMessage,
   searchableTypes,
 } from '../../shared/search/search-meta';
 import { AdminListShell } from '../../shared/ui/admin-list-shell';
-import { ErrorReference } from '../../shared/ui/error-reference';
 import { ScrollArea } from '../../shared/ui/fixed-page';
 import { Pager } from '../../shared/ui/pager';
 import { PAGE_SIZES } from '../../shared/ui/list-query';
 import { restoreRowFocus } from '../../shared/ui/row-nav';
-import { HitTable } from './hit-table';
+import { SearchGrid } from './search-grid';
 import {
   ALL_TAB,
   SearchTabKey,
@@ -57,7 +60,7 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [AdminListShell, ErrorReference, RouterLink, Button, HitTable, ScrollArea, Pager],
+  imports: [AdminListShell, RouterLink, SearchGrid, ScrollArea, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -87,94 +90,95 @@ interface Section {
           </p>
         </div>
       } @else if (tab() === 'all') {
-        @switch (state()) {
-          @case ('loading') {
-            <div class="pg-state" role="status" aria-busy="true" data-state="loading">
-              Searching...
-            </div>
-          }
-          @case ('error') {
-            <div class="pg-alert" role="alert" data-state="error">
-              {{ errorMessage }}
-              <mf-error-reference />
-              <p-button label="Try again" severity="secondary" (onClick)="load()" />
-            </div>
-          }
-          @case ('ready') {
-            @if (sections().length === 0) {
-              <div class="pg-state" data-state="empty">
-                <p>{{ emptyMessage() }}</p>
-                <a class="pg-link" routerLink="/search/advanced" [queryParams]="{ q: trimmed() }"
-                  >Try advanced search</a
-                >
-              </div>
-            } @else {
-              <div class="mf-table-wrap" mfScrollArea="Search results">
-                @for (section of sections(); track section.info.type) {
-                  <section
-                    class="res-section"
-                    [attr.data-section]="section.info.type"
-                    [attr.aria-labelledby]="'res-h-' + section.info.type"
-                  >
-                    <h2 class="res-heading" [id]="'res-h-' + section.info.type">
-                      {{ section.info.label }}
-                      <span class="pg-muted">({{ count(section.group) }})</span>
-                    </h2>
-                    <mf-search-hit-table
-                      [hits]="section.group.items"
-                      [query]="trimmed()"
-                      [caption]="section.info.label"
-                    />
-                  </section>
+        @if (state() === 'ready' && sections().length === 0) {
+          <div class="pg-state" data-state="empty">
+            <p>{{ emptyMessage() }}</p>
+            <a class="pg-link" routerLink="/search/advanced" [queryParams]="{ q: trimmed() }"
+              >Try advanced search</a
+            >
+          </div>
+        } @else if (state() === 'ready') {
+          <div class="mf-table-wrap" mfScrollArea="Search results">
+            @for (section of sections(); track section.info.type) {
+              <section
+                class="res-section"
+                [attr.data-section]="section.info.type"
+                [attr.aria-labelledby]="'res-h-' + section.info.type"
+              >
+                <h2 class="res-heading" [id]="'res-h-' + section.info.type">
+                  {{ section.info.label }}
+                  <span class="pg-muted">({{ count(section.group) }})</span>
+                </h2>
+                <mf-search-grid
+                  [type]="section.info.type"
+                  [label]="section.info.label"
+                  [hits]="section.group.items"
+                  [query]="trimmed()"
+                />
+                @if (
+                  section.group.total > section.group.items.length || section.group.totalCapped
+                ) {
+                  <p class="res-more">
+                    <a
+                      class="pg-link"
+                      data-see-all
+                      [routerLink]="[]"
+                      [queryParams]="{ type: section.info.type, page: null }"
+                      queryParamsHandling="merge"
+                      (click)="seeAll($event)"
+                      >See all {{ count(section.group) }}
+                      <span class="mf-sr-only">{{ section.info.label.toLowerCase() }}</span></a
+                    >
+                  </p>
                 }
-              </div>
+              </section>
             }
-          }
+          </div>
+        } @else {
+          <div class="mf-table-wrap" mfScrollArea="Search results">
+            <mf-search-grid
+              type="mixed"
+              label="Search results"
+              [state]="state()"
+              (retry)="load()"
+            />
+          </div>
         }
       } @else {
-        @switch (typeState()) {
-          @case ('loading') {
-            <div class="pg-state" role="status" aria-busy="true" data-state="loading">
-              Searching...
-            </div>
+        <div class="mf-table-wrap" [mfScrollArea]="tabLabel() + ' results'">
+          <h2 class="pg-sr" id="res-grid-heading" tabindex="-1" data-grid-heading>
+            {{ gridHeading() }}
+          </h2>
+          <mf-search-grid
+            [type]="typeTab()"
+            [label]="tabLabel()"
+            [hits]="typePage()?.items ?? []"
+            [state]="typeState()"
+            [query]="trimmed()"
+            [emptyText]="emptyMessage()"
+            (retry)="loadType()"
+          />
+          @if (typeState() === 'ready' && typePage()?.items?.length === 0) {
+            <p class="res-more">
+              <a
+                class="pg-link"
+                routerLink="/search/advanced"
+                [queryParams]="{ type: tab(), q: trimmed() }"
+                >Try advanced search</a
+              >
+            </p>
           }
-          @case ('error') {
-            <div class="pg-alert" role="alert" data-state="error">
-              {{ errorMessage }}
-              <mf-error-reference />
-              <p-button label="Try again" severity="secondary" (onClick)="loadType()" />
-            </div>
-          }
-          @case ('ready') {
-            @if (typePage(); as result) {
-              @if (result.items.length === 0) {
-                <div class="pg-state" data-state="empty">
-                  <p>{{ emptyMessage() }}</p>
-                  <a
-                    class="pg-link"
-                    routerLink="/search/advanced"
-                    [queryParams]="{ type: tab(), q: trimmed() }"
-                    >Try advanced search</a
-                  >
-                </div>
-              } @else {
-                <div class="mf-table-wrap" [mfScrollArea]="tabLabel() + ' results'">
-                  <mf-search-hit-table
-                    [hits]="result.items"
-                    [query]="trimmed()"
-                    [caption]="tabLabel()"
-                  />
-                </div>
-                <mf-pager
-                  [page]="result.page"
-                  [pageSize]="result.pageSize"
-                  [pageSizes]="pageSizes"
-                  [total]="result.total"
-                  (pageChange)="goToPage($event)"
-                  (pageSizeChange)="setPageSize($event)"
-                />
-              }
-            }
+        </div>
+        @if (typePage(); as result) {
+          @if (typeState() === 'ready' && result.items.length > 0) {
+            <mf-pager
+              [page]="result.page"
+              [pageSize]="result.pageSize"
+              [pageSizes]="pageSizes"
+              [total]="result.total"
+              (pageChange)="goToPage($event)"
+              (pageSizeChange)="setPageSize($event)"
+            />
           }
         }
       }
@@ -189,6 +193,9 @@ interface Section {
     .res-heading {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-h3);
+    }
+    .res-more {
+      margin: var(--mf-s2) 0 0;
     }
     .res-live {
       position: absolute;
@@ -213,6 +220,8 @@ export class SearchResultsPage {
   private readonly api = inject(SearchClient);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
+  private readonly pageTitle = inject(PageTitle);
 
   protected readonly errorMessage = SEARCH_ERROR_MESSAGE;
   protected readonly pageSizes = PAGE_SIZES;
@@ -229,9 +238,17 @@ export class SearchResultsPage {
   protected readonly emptyMessage = computed(() => noResultsMessage(this.trimmed()));
   protected readonly types = computed(() => searchableTypes((c) => this.auth.has(c)));
   protected readonly tab = computed<SearchTabKey>(() => resolveTab(this.type(), this.types()));
+  /** The open tab as a record type (only read where the tab is not All). */
+  protected readonly typeTab = computed(() => this.tab() as SearchType);
   protected readonly tabLabel = computed(
     () => this.types().find((t) => t.type === this.tab())?.label ?? 'Search',
   );
+  protected readonly gridHeading = computed(() => {
+    const total = this.typePage()?.total;
+    return total === undefined
+      ? this.tabLabel()
+      : `${this.tabLabel()}, ${total.toLocaleString('en-US')} ${total === 1 ? 'result' : 'results'}`;
+  });
   protected readonly pageNumber = computed(() => parsePage(this.page()));
   protected readonly size = computed(() => parsePageSize(this.pageSize()));
   protected readonly tabs = computed(() =>
@@ -277,8 +294,24 @@ export class SearchResultsPage {
 
   private requestId = 0;
   private typeRequestId = 0;
+  /** A tab change or page change moves focus to the grid heading once the page of hits is there (a See all link, the pager). */
+  private focusGridHeading = false;
 
   constructor() {
+    // The document title follows the tab: `Search results: Tasks - MatterFlow` (S21).
+    effect(() => {
+      this.pageTitle.pin(
+        pageTab('Search results', this.tab() === ALL_TAB ? 'All' : this.tabLabel()),
+      );
+    });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
+    effect(() => {
+      if (this.typeState() !== 'ready' || !this.focusGridHeading) return;
+      this.focusGridHeading = false;
+      afterNextRender(() => document.getElementById('res-grid-heading')?.focus(), {
+        injector: this.injector,
+      });
+    });
     // Back from a task result: focus the link that was left (T9, #324).
     restoreRowFocus('search', () =>
       this.tab() === 'all' ? this.state() === 'ready' : this.typeState() === 'ready',
@@ -361,15 +394,23 @@ export class SearchResultsPage {
     }
   }
 
+  /** The "See all N" link: the router opens the tab; the grid heading takes focus once its first page is there. */
+  protected seeAll(event: MouseEvent): void {
+    if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey)
+      this.focusGridHeading = true;
+  }
+
   protected select(key: string): void {
     void this.navigate({ type: key === ALL_TAB ? null : key, page: null });
   }
 
   protected goToPage(page: number): void {
+    this.focusGridHeading = true;
     void this.navigate({ page: page <= 1 ? null : page });
   }
 
   protected setPageSize(size: number): void {
+    this.focusGridHeading = true;
     void this.navigate({ pageSize: size === PAGE_SIZES[0] ? null : size, page: null });
   }
 

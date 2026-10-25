@@ -133,7 +133,29 @@ describe('SearchResultsPage', () => {
     fixture.componentRef.setInput('q', '344');
     await settle(fixture);
     expect(tabText(fixture.nativeElement)[0]).toBe('All (--)');
-    expect(fixture.nativeElement.querySelector('[data-state=loading]')).not.toBeNull();
+    // Skeleton rows of the grid body (#470), with one polite "Loading results".
+    expect(fixture.nativeElement.querySelector('[data-loading]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('[data-skeleton]').length).toBe(5);
+  });
+
+  it('All: "See all N" only where hits are left out, no Show more anywhere (#467)', async () => {
+    const response = aResponse(
+      [
+        aGroup('matter', [aHit()], false, 1),
+        aGroup('task', [aHit({ type: 'task', id: 5, path: '/tasks/5', status: 'NEW' })], true, 112),
+        aGroup('asset', [aHit({ type: 'asset', id: 9, path: '/assets/9' })], true, 1000, true),
+      ],
+      'review',
+    );
+    const fixture = await create('review', response);
+    const el: HTMLElement = fixture.nativeElement;
+    const more = Array.from(el.querySelectorAll<HTMLElement>('[data-see-all]'));
+    expect(more.map((a) => a.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+      'See all 112 tasks',
+      'See all 1,000+ assets',
+    ]);
+    expect(more[0].getAttribute('href')).toContain('type=task');
+    expect(el.textContent).not.toContain('Show more');
   });
 
   it('only has tabs for, searches and shows the types the user may view', async () => {
@@ -273,16 +295,21 @@ describe('SearchResultsPage', () => {
     expect(matter.getAttribute('data-row-list')).toBeNull();
   });
 
-  it('shows only the columns that fit each type, with the reference as a link', async () => {
+  it('shows only the columns that fit each type, with the reference as plain text (#469)', async () => {
     const fixture = await create('343');
     const el: HTMLElement = fixture.nativeElement;
     const heads = (i: number) =>
       Array.from(sections(el)[i].querySelectorAll('th')).map((th) => th.textContent!.trim());
-    expect(heads(0)).toEqual(['Reference', 'Name', 'Client', 'Status']);
-    expect(heads(1)).toEqual(['Reference', 'Name', 'Status']);
-    expect(heads(2)).toEqual(['Reference', 'Title', 'Requestor', 'Matter', 'Status']);
-    const refLink = sections(el)[0].querySelector('[data-hit-row] td a')!;
-    expect(refLink.getAttribute('href')).toBe('/matters/7');
+    expect(heads(0)).toEqual(['Number', 'Name', 'Client', 'Status']);
+    expect(heads(1)).toEqual(['Number', 'Name', 'Status']);
+    expect(heads(2)).toEqual(['Ref', 'Title', 'Matter', 'Status']);
+    // The name is the only link of the row; the number is text.
+    const links = sections(el)[0].querySelectorAll('[data-hit-row] a');
+    expect(links.length).toBe(1);
+    expect(links[0].getAttribute('href')).toBe('/matters/7');
+    expect(sections(el)[0].querySelector('[data-hit-row] td.sg-ref')!.textContent!.trim()).toBe(
+      '00343-00012',
+    );
   });
 
   it('never links to a page other than the hit itself: the matter on a task, project or asset row is text (#461)', async () => {
@@ -340,8 +367,8 @@ describe('SearchResultsPage', () => {
     api.search.mockReturnValue(throwError(() => new Error('boom')));
     fixture.componentRef.setInput('q', '344');
     await settle(fixture);
-    const error = fixture.nativeElement.querySelector('[data-state=error]');
-    expect(error.textContent).toContain('Search is unavailable. Try again.');
+    const error = fixture.nativeElement.querySelector('[data-error]');
+    expect(error.textContent).toContain("Couldn't load results.");
 
     api.search.mockReturnValue(ok(numericResponse()));
     error.querySelector('button').click();
