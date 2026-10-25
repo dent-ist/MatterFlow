@@ -38,6 +38,7 @@ import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
 import { ConnectionBanner } from './connection-banner';
 import { NotificationBell } from './notification-bell';
+import { NavTip } from './nav-tip';
 import { RouteAnnouncer } from './route-announcer';
 
 /**
@@ -72,6 +73,7 @@ const PHONE_QUERY = '(max-width: 639px)';
     ConnectionBanner,
     NotificationBell,
     RouteAnnouncer,
+    NavTip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

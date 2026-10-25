@@ -79,7 +79,7 @@
       (click)="closeMenu(true)"
     ></button>
   }
-  <nav id="mf-nav" #nav class="mf-nav" [class.mf-nav--open]="menuOpen()" aria-label="Main">
+  <nav id="mf-nav" #nav class="mf-nav" mfNavTip [class.mf-nav--open]="menuOpen()" aria-label="Main">
     <button
       type="button"
       class="mf-btn mf-nav-close"
@@ -104,7 +104,7 @@
                 [routerLink]="item.path"
                 [class.mf-active]="isActive(item)"
                 [attr.aria-current]="isActive(item) ? 'page' : null"
-                [title]="item.label"
+                [attr.data-tip]="item.label"
               >
                 <i [class]="item.icon" aria-hidden="true"></i>
                 <span class="mf-nav-label">{{ item.label }}</span>
@@ -122,7 +122,7 @@
           data-nav-more-toggle
           aria-controls="mf-nav-more-list"
           [attr.aria-expanded]="moreOpen()"
-          title="More"
+          data-tip="More"
           (click)="toggleMore()"
         >
           <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
@@ -144,7 +144,7 @@
                   [routerLink]="item.path"
                   [class.mf-active]="isActive(item)"
                   [attr.aria-current]="isActive(item) ? 'page' : null"
-                  [title]="item.label"
+                  [attr.data-tip]="item.label"
                 >
                   <i [class]="item.icon" aria-hidden="true"></i>
                   <span class="mf-nav-label">{{ item.label }}</span>
@@ -165,7 +165,11 @@
               [routerLink]="item.path"
               [class.mf-active]="isAdminActive(item)"
               [attr.aria-current]="isAdminActive(item) ? 'page' : null"
-              [title]="item.label"
+              [attr.data-tip]="
+                item.pendingBadge && pendingUsers.count() > 0
+                  ? item.label + ' (' + pendingUsers.count() + ' waiting)'
+                  : item.label
+              "
               [attr.aria-label]="
                 item.pendingBadge && pendingUsers.count() > 0
                   ? item.label + ', ' + pendingUsers.count() + ' users waiting for access'

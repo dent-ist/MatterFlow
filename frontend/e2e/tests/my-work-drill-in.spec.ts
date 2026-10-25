@@ -161,7 +161,10 @@ test.describe('Drill-in keeps its place', () => {
     await new MyWorkPage(page).open('?view=active');
     await page.locator('a.wt-title').first().click();
     await expect(page.locator('[data-task-header]')).toBeVisible();
-    await page.getByTitle('My Work', { exact: true }).click();
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'My Work', exact: true })
+      .click();
     await expect(page.getByRole('heading', { name: 'My Work', level: 1 })).toBeVisible();
     await expect(page.locator('a.wt-title').first()).toBeVisible();
     await expect(page.locator('a.wt-title:focus')).toHaveCount(0);

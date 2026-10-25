@@ -1,0 +1,26 @@
+/* The 56 px icon rail of the app shell (S7, #623; global because the shell component stylesheet is at its 5 kB budget): 18 px icons, the pending count as a dot at the icon's top right corner (the link keeps its accessible
+   name with the count; the name tip is `nav-tip.ts`). Below 640 px the menu is a panel with visible names and keeps the default size. */
+@media (min-width: 640px) and (max-width: 1099px) {
+  .mf-nav :is(a, .mf-nav-morebtn) {
+    position: relative;
+  }
+
+  .mf-nav :is(a, .mf-nav-morebtn) > i {
+    font-size: 18px;
+  }
+
+  .mf-nav a > .mf-badge {
+    position: absolute;
+    top: 3px;
+    right: 2px;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 8px;
+    height: 8px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+    line-height: 0;
+  }
+}

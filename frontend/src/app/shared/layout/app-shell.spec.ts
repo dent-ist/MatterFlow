@@ -161,7 +161,7 @@ describe('AppShell header search', () => {
     const names = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
     expect(names).toContain('Asset types');
     expect(names).toContain('Assets');
-    expect(el.querySelector<HTMLElement>('nav a[title="Asset types"]')).not.toBeNull();
+    expect(el.querySelector<HTMLElement>('nav a[data-tip="Asset types"]')).not.toBeNull();
   });
 
   it('offers a manager with Task.View and Matter.View the short menu: My Matters first, My Work behind More (#691, #775)', async () => {

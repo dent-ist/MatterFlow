@@ -61,7 +61,8 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: 'My Work',
     group: 'work',
-    icon: 'pi pi-user',
+    // Not `pi-user`, which is the header user button's glyph (S8, #623).
+    icon: 'pi pi-check-square',
     path: '/my-work',
     permissions: ['Task.View'],
     compact: 'more',

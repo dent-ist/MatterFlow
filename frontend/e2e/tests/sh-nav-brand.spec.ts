@@ -48,7 +48,7 @@ test.describe('The rail: groups and names (#620, #621)', () => {
         '/admin/asset-types',
       );
       await expect(admin.getByRole('link', { name: 'Asset types' })).toHaveAttribute(
-        'title',
+        'data-tip',
         'Asset types',
       );
       await expect(records.getByRole('link', { name: 'Assets', exact: true })).toHaveAttribute(
