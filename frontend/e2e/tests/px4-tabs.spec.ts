@@ -405,7 +405,7 @@ test.describe('My Matters: Activity', () => {
   });
 });
 
-test.describe('My Matters: the first screen on a phone', () => {
+test.describe('My Matters: the first screen on a phone, and the skip links', () => {
   test('375x812: Since shows its counts line and a "Show events" expander, and Needs my attention starts in the first screen (#818)', async ({
     seed,
     personas,
@@ -452,6 +452,57 @@ test.describe('My Matters: the first screen on a phone', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await expect(toggle).toBeHidden();
     await expect(card.locator('[data-since-item]').first()).toBeVisible();
+  });
+
+  test('skip links: the first stops after the tab strip, each moves focus to its panel heading, the Tab order of the panels is unchanged (#820)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'skip');
+    const m = await w.matter('Alpha');
+    await w.task(m, { dueDate: inDays(-2), title: 'Fell due' });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await expect(panel(page, 'health').locator('[data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-skip-links]')).toBeAttached();
+
+    const keys = ['attention', 'deadlines', 'health', 'workload', 'activity'];
+    await page.locator('[role=tab][aria-selected=true]').focus();
+    await page.keyboard.press('Tab');
+    for (const key of keys) {
+      await expect(page.locator(`[data-skip-to=${key}]`), key).toBeFocused();
+      await expect(page.locator('[data-skip-links]')).toBeVisible(); // shown while a link has the focus
+      await page.keyboard.press('Tab');
+    }
+    // After the skip links the Tab order is what it was: the Since card's first control.
+    await expect(page.locator('[data-mark-read], [data-since-figures] a').first()).toBeFocused();
+
+    // Enter moves focus to the panel heading, with a visible ring; Tab goes on into that panel.
+    for (const key of keys) {
+      await page.locator('[role=tab][aria-selected=true]').focus();
+      await page.keyboard.press('Tab');
+      for (let i = 0; i < keys.indexOf(key); i++) await page.keyboard.press('Tab');
+      await expect(page.locator(`[data-skip-to=${key}]`)).toBeFocused();
+      await page.keyboard.press('Enter');
+      const heading = page.locator(`#mm-${key}-h`);
+      await expect(heading, key).toBeFocused();
+      expect(
+        await heading.evaluate((e) => getComputedStyle(e).outlineStyle !== 'none'),
+        `${key}: a visible focus ring`,
+      ).toBe(true);
+      await expect(page).toHaveURL(/\/my-matters/);
+      await page.keyboard.press('Tab');
+      const inside = await page.evaluate(
+        (k) => !!document.activeElement?.closest(`[data-panel=${k}]`),
+        key,
+      );
+      // A panel that has rows continues with them; one with nothing to focus hands the focus on, never back to the top.
+      if (key === 'attention' || key === 'health')
+        expect(inside, `${key}: Tab continues`).toBe(true);
+    }
+    expect(await axeViolations(page)).toEqual([]);
   });
 });
 

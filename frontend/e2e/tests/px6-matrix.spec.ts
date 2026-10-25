@@ -408,9 +408,20 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.setViewportSize(SIZES[2]);
     await page.goto('/my-matters');
     await page.waitForLoadState('networkidle');
-    const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 60);
+    // No cap that hides the end of the page: the whole Overview is walked (#820 lists the stop count in docs/qa/pm-keyboard-evidence.md).
+    const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 250);
     evidence('my-matters-overview', '1366', result);
     expectGoodStops('my matters', { stops: result.stops, left: true }, 6);
+    // The skip links are the first stops after the tab strip (#820): five links, each with a name and a visible focus.
+    const tabAt = result.stops.findIndex((s) => s.role === 'tab');
+    expect(result.stops.slice(tabAt + 1, tabAt + 6).map((s) => s.name)).toEqual([
+      'Needs my attention',
+      'Upcoming deadlines',
+      'Matter health',
+      'Workload',
+      'Recent activity',
+    ]);
+    expect(result.left, 'the whole page was walked').toBe(true);
     const tabStopsInStrip = result.stops.filter((s) => s.role === 'tab');
     expect(tabStopsInStrip.length, 'the tab strip is a single Tab stop').toBe(1);
 

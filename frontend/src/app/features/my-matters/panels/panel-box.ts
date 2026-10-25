@@ -20,7 +20,7 @@ import { PanelState } from '../panel-loader';
       [attr.aria-busy]="busy() ? 'true' : null"
     >
       <header class="mmp__head">
-        <h2 class="mmp__title" [id]="id() + '-h'">{{ title() }}</h2>
+        <h2 class="mmp__title" [id]="id() + '-h'" tabindex="-1">{{ title() }}</h2>
         <div class="mmp__actions"><ng-content select="[mfPanelActions]" /></div>
       </header>
       @switch (state()) {
@@ -73,6 +73,11 @@ import { PanelState } from '../panel-loader';
       margin: 0;
       font-size: var(--mf-fs-lg);
       font-weight: 700;
+    }
+    /* The target of a skip link (#820): the heading takes the focus, with a ring a keyboard user can see. */
+    .mmp__title:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
     }
     .mmp__actions:empty {
       display: none;

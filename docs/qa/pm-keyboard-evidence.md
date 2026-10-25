@@ -24,13 +24,15 @@ Reading the lists: the order follows the page top to bottom, left to right. Long
 
 ## My Matters, Overview tab, 1366 px
 
-60 stops (the count is capped at 60). First stops: `button: My matters`, `button: All matters`, `combobox: Client`, `select: Role`, `select: Dates`, `a: Matters I manage 7`, `a: Open tasks 5`, `a: Overdue 1`, `a: Due in 3 days 0`, `a: Due in 7 days 0`, `a: Unassigned 5`, `a: On hold, oldest 10 d 1`, `tab: Overview`, `a: TSK-105 E2E Task 1d06uoo24`, ...
+93 stops, the whole page walked (PM Alpha: seven matters; the page was capped at 60 before). First stops: `button: My matters`, `button: All matters`, `button: Choose the matter for a new task: New task`, `combobox: Client`, `select: Role`, `select: Dates`, `a: Matters I manage 7`, `a: Open tasks 5`, `a: Overdue 1`, `a: Due in 3 days 0`, `a: Due in 7 days 0`, `a: Unassigned 5`, `a: On hold 1`, `tab: Overview`, `a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Workload`, `a: Recent activity`, `button: Mark as read`, ...
+
+The five skip links (`a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Workload`, `a: Recent activity`) are the first stops after the tab strip (issue #820); each has a name and a visible focus ring, is visually hidden until it has the focus, and Enter moves the focus to the heading of its panel (a heading with `tabindex=-1` and a visible ring). The Tab order of the panels is unchanged: after the fifth link the next stop is the Since your last visit card.
 
 ## Matter record, Overview tab, 1366 px
 
-28 stops. First stops: `button: Copy matter number`, `button: Edit`, `button: Create task`, `button: More actions`, `a: 38041 E2E Client 1ayeb392`, `button: Change`, `a: Open 1`, `a: Overdue 0`, `a: Unassigned 1`, `a: On hold 0`, `tab: Overview`, `region: Matter overview, scrollable`, `a: Open 1`, `a: Overdue 0`, ...
+25 stops. First stops: `button: Copy matter number`, `button: Edit`, `button: Create task`, `button: More actions`, `a: 68230 E2E Client qlveszd274`, `button: Change`, `a: Open 1`, `a: Overdue 0`, `a: Due soon 0`, `a: ASAP 0`, `a: Unassigned 1`, `a: On hold 0`, `tab: Overview`, `region: Matter overview, scrollable`, ...
 
 ## Observations for the review (#787)
 
-- My Matters (Overview) has more than 60 Tab stops between the title and the end of the page (the test stops counting at 60); the counts of the strip, every panel link and every sort button are stops. Nothing is wrong (order is reading order, nothing traps), but a keyboard user crosses the whole page to reach Recent activity. A "skip to panel" list is a follow-up candidate (no new shortcut is needed: links, not keys).
-- The matter Overview has 28 stops; each status count and each section is its own link, which is what makes every count open the list it counts.
+- My Matters (Overview) has 93 Tab stops between the title and the end of the page; the counts of the strip, every panel link and every sort button are stops. Nothing is wrong (order is reading order, nothing traps), but a keyboard user crossed the whole page to reach Recent activity. Since #820 a "Skip to" list of five links (links, not shortcuts) is the first stop group after the tab strip: Needs my attention, Upcoming deadlines, Matter health, Workload, Recent activity, so Recent activity is 6 Tab presses after the tab strip instead of about 85.
+- The matter Overview has 25 stops (the header strip carries all six counts since #816, so the Overview has no strip of its own); each status count and each section is its own link, which is what makes every count open the list it counts.

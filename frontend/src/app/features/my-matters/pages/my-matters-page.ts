@@ -30,6 +30,7 @@ import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
 import { HealthPanel, HealthSort } from '../panels/health-panel';
 import { SincePanel } from '../panels/since-panel';
+import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
@@ -100,6 +101,7 @@ function storage(): Storage | null {
     PageHeader,
     ScopeSwitch,
     SincePanel,
+    SkipLinks,
     Tabs,
     WorkloadPanel,
     ActivityTab,
@@ -253,6 +255,7 @@ function storage(): Storage | null {
           }
         }
         @default {
+          <mf-mm-skip-links />
           <mf-mm-since
             class="mm__since"
             [filters]="filters()"
