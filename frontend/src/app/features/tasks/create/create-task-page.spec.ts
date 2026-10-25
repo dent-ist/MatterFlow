@@ -765,6 +765,59 @@ describe('CreateTaskPage', () => {
     expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
   });
 
+  describe('recently used task types (#814)', () => {
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
+    it('shows no row for a person who has not created a task yet', async () => {
+      const h = await create({ types: [aType(), aType({ id: 2, name: 'Export' })] });
+      expect(h.el.querySelector('[data-recent-types]')).toBeNull();
+    });
+
+    it('shows the last three types, newest first, above the full list; one click chooses', async () => {
+      localStorage.setItem('mf.create-task.types.1', '[3,2,1,9]');
+      const types = [1, 2, 3, 4].map((id) => aType({ id, name: `Type ${id}` }));
+      const h = await create({ types });
+      const buttons = Array.from(h.el.querySelectorAll<HTMLButtonElement>('[data-recent-type]'));
+      expect(buttons.map((b) => b.getAttribute('data-recent-type'))).toEqual([
+        'Type 3',
+        'Type 2',
+        'Type 1',
+      ]);
+      // The full list is still there below.
+      expect(h.el.querySelectorAll('[data-type-card]').length).toBe(4);
+      buttons[1].click();
+      await settle(h.fixture);
+      expect(h.el.querySelector('[data-type-name]')?.textContent).toBe('Type 2');
+    });
+
+    it('leaves out a remembered type that can no longer be used', async () => {
+      localStorage.setItem('mf.create-task.types.1', '[2,1]');
+      const h = await create({
+        types: [
+          aType({ id: 1, name: 'Type 1' }),
+          aType({ id: 2, name: 'Type 2', isActive: false }),
+        ],
+        inputs: { matterId: '7' },
+      });
+      expect(
+        Array.from(h.el.querySelectorAll('[data-recent-type]')).map((b) =>
+          b.getAttribute('data-recent-type'),
+        ),
+      ).toEqual(['Type 1']);
+    });
+
+    it('remembers the type and the matter of a created task', async () => {
+      const h = await create({ inputs: { matterId: '7' } });
+      await fillRequired(h);
+      await type(h, '[data-request-details] input[type=text]', 'WS-9');
+      await submit(h);
+      expect(h.tasks.createTask).toHaveBeenCalledTimes(1);
+      expect(localStorage.getItem('mf.create-task.types.1')).toBe('[1]');
+      expect(localStorage.getItem('mf.create-task.matter.1')).toBe('7');
+    });
+  });
+
   it('reports unsaved changes until the task is created', async () => {
     const h = await create({ inputs: { matterId: '7' } });
     expect(h.fixture.componentInstance.hasUnsavedChanges()).toBe(false);

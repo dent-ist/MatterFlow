@@ -70,6 +70,9 @@ test.describe('My Matters on a phone and a tablet', () => {
     const description = (await page.locator('[data-page-description]').boundingBox())!;
     expect(description.height).toBeLessThanOrEqual(1);
     await expect(page.locator('[data-page-description]')).toContainText('The matters you manage');
+    // "New task" is on the first screen too (#814).
+    const newTask = (await page.locator('[data-header-new-task] button').first().boundingBox())!;
+    expect(newTask.y + newTask.height).toBeLessThanOrEqual(812);
     // Reading order: attention, health, deadlines, workload, activity.
     const order = await Promise.all(
       ['attention', 'health', 'deadlines', 'workload', 'activity'].map((p) =>

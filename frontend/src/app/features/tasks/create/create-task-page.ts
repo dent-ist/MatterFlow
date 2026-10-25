@@ -64,6 +64,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
 import { TitleArea } from '../../../shared/ui/title-area';
 import { cardText } from './type-card-text';
+import { recentTypeIds, rememberMatter, rememberType } from '../../../shared/tasks/recent-choices';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -200,6 +201,17 @@ export class CreateTaskPage implements HasUnsavedChanges {
   });
   /** What the chooser offers: active types the user can actually create Tasks of (published form and at least one eligible workflow). */
   protected readonly usableChoices = computed(() => this.typeChoices().filter((c) => c.usable));
+  /**
+   * The person's last three task types (issue #814), newest first, as one-click buttons above the full list. Only types that can still be
+   * used; none while a search is typed (the list below then answers it) and none for a person who has not created a task yet.
+   */
+  protected readonly recentChoices = computed(() => {
+    if (this.typeQuery().trim() !== '') return [];
+    const usable = this.usableChoices();
+    return recentTypeIds(this.auth.profile()?.userId ?? 0)
+      .map((id) => usable.find((c) => c.type.id === id))
+      .filter((c): c is TypeChoice => !!c);
+  });
   /** Above this many types the chooser gets a search box. */
   protected readonly searchableAbove = TYPE_SEARCH_THRESHOLD;
   protected readonly showTypeSearch = computed(
@@ -639,7 +651,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (id === this.typeId()) return;
     this.applyType(id);
     this.typeQuery.set('');
-    setTimeout(() => document.getElementById('ct-matter')?.focus());
+    // A matter that is already fixed (the page was opened from one) does not need the focus: the Title does.
+    setTimeout(() => document.getElementById(this.matter() ? 'ct-title' : 'ct-matter')?.focus());
   }
 
   /** "Change type": back to the chooser. Values entered in the type's request form are lost, so ask first when there are any. */
@@ -793,6 +806,9 @@ export class CreateTaskPage implements HasUnsavedChanges {
     try {
       const created = await firstValueFrom(this.tasksApi.createTask(this.buildRequest()));
       this.saved = true;
+      const me = this.auth.profile()?.userId ?? 0;
+      rememberType(me, this.typeId()!);
+      rememberMatter(me, this.matter()!.id);
       this.notify.success(`Task ${created.taskNumber} created`);
       if (addAnother) {
         this.resetForAnother();

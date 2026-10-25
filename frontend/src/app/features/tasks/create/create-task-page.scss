@@ -272,3 +272,26 @@
   font-size: 1rem;
   line-height: 1.7;
 }
+
+/* Recently used task types (#814): the person's last three, one click each, above the full list. */
+.ct__recent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2);
+  margin: 0 0 var(--mf-s3);
+}
+
+.ct__recent-h {
+  margin: 0 var(--mf-s2) 0 0;
+  font-size: var(--mf-fs-base);
+  font-weight: 700;
+}
+
+.ct__recent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s2);
+  min-height: 44px;
+  max-width: 100%;
+}

@@ -16,6 +16,7 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
+import { NewTaskControl } from '../new-task-control';
 import {
   DEFAULT_FILTERS,
   MmFilters,
@@ -98,6 +99,7 @@ function storage(): Storage | null {
     HealthPanel,
     MyMattersFilterBar,
     MyMattersStrip,
+    NewTaskControl,
     PageHeader,
     ScopeSwitch,
     SincePanel,
@@ -195,6 +197,7 @@ function storage(): Storage | null {
           update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
         "
       />
+      <mf-mm-new-task mfActions />
     </mf-page-header>
 
     <mf-mm-filter-bar
