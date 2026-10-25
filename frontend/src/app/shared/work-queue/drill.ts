@@ -45,7 +45,7 @@ export const RECORD_ORIGINS: Readonly<Record<RecordOrigin, RecordOriginInfo>> = 
   matter: { label: 'Matter', nav: '/matters', paths: [] },
   project: { label: 'Project', nav: '/projects', paths: [] },
   dashboard: { label: 'Dashboard', nav: '/dashboard', paths: ['/dashboard'] },
-  search: { label: 'Search', nav: null, paths: ['/search', '/search/advanced'] },
+  search: { label: 'Search', nav: null, paths: ['/search'] },
   // My Matters (#693): a row of a panel opens the task, Back returns to the page with its filters.
   'my-matters': { label: 'My Matters', nav: '/my-matters', paths: ['/my-matters'] },
 };

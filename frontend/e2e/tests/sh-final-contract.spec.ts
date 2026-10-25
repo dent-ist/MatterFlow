@@ -44,7 +44,7 @@ const ROUTES: { name: string; url: () => string }[] = [
   { name: 'Notifications', url: () => '/notifications' },
   { name: 'My profile', url: () => '/profile' },
   { name: 'Search', url: () => '/search?q=e2e' },
-  { name: 'Advanced search', url: () => '/search/advanced' },
+  { name: 'Search filters', url: () => '/search?type=task&q=e2e&filters=open' },
   { name: 'Admin Users', url: () => '/admin/users' },
   { name: 'Admin Roles', url: () => '/admin/roles' },
   { name: 'Admin Pods', url: () => '/admin/pods' },

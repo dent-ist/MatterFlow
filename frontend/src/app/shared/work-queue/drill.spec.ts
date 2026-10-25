@@ -69,7 +69,7 @@ describe('drill-in context (M7)', () => {
       expect(originNav('project')).toBe('/projects');
       expect(originNav('dashboard')).toBe('/dashboard');
       expect(originNav('search')).toBeNull();
-      expect(RECORD_ORIGINS.search.paths).toEqual(['/search', '/search/advanced']);
+      expect(RECORD_ORIGINS.search.paths).toEqual(['/search']);
     });
 
     it('returns to the exact address only when it is on one of the origin paths', () => {
@@ -85,8 +85,12 @@ describe('drill-in context (M7)', () => {
       expect(originUrl(paths, '/m', 'https://evil.example/matters/7')).toBe('/m');
       expect(originUrl(paths, '/m', undefined)).toBe('/m');
       expect(originUrl(paths, '/m', 42)).toBe('/m');
+      expect(originUrl(RECORD_ORIGINS.search.paths, '/search', '/search?type=task&page=2')).toBe(
+        '/search?type=task&page=2',
+      );
+      // The retired Advanced search address is no origin any more (it only redirects).
       expect(originUrl(RECORD_ORIGINS.search.paths, '/search', '/search/advanced?type=task')).toBe(
-        '/search/advanced?type=task',
+        '/search',
       );
     });
   });

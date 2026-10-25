@@ -69,7 +69,7 @@ const ROUTES: { name: string; url: () => string }[] = [
   { name: 'Task page', url: () => `/tasks/${ids.taskId}` },
   { name: 'My profile', url: () => '/profile' },
   { name: 'Search', url: () => '/search?q=e2e' },
-  { name: 'Advanced search', url: () => '/search/advanced' },
+  { name: 'Search filters', url: () => '/search?type=task&q=e2e&filters=open' },
   { name: 'Admin Users', url: () => '/admin/users' },
   { name: 'Admin Task Types', url: () => '/admin/task-types' },
   { name: 'Admin Asset Types', url: () => '/admin/asset-types' },

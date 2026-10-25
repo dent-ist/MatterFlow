@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   Injector,
   afterNextRender,
   computed,
@@ -10,6 +11,7 @@ import {
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -31,7 +33,17 @@ import { ScrollArea } from '../../shared/ui/fixed-page';
 import { Pager } from '../../shared/ui/pager';
 import { PAGE_SIZES } from '../../shared/ui/list-query';
 import { restoreRowFocus } from '../../shared/ui/row-nav';
+import { SearchFilters } from './search-filters';
 import { SearchGrid } from './search-grid';
+import {
+  CLEARED_PARAMS,
+  NO_FILTERS,
+  SearchFilterValues,
+  activeKinds,
+  apiArgs,
+  filterParams,
+  readFilters,
+} from './search-filter-defs';
 import {
   ALL_TAB,
   SearchTabKey,
@@ -62,7 +74,7 @@ interface Section {
  */
 @Component({
   selector: 'mf-search-results-page',
-  imports: [AdminListShell, RouterLink, SearchGrid, ScrollArea, Pager],
+  imports: [AdminListShell, RouterLink, SearchFilters, SearchGrid, ScrollArea, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   template: `
@@ -76,13 +88,33 @@ interface Section {
       idPrefix="search"
       (tabChange)="select($event)"
     >
-      <a
-        mfPrimary
-        class="mf-btn"
-        routerLink="/search/advanced"
-        [queryParams]="{ q: trimmed() || null }"
-        >Advanced search</a
-      >
+      @if (tab() !== 'all' && searchable()) {
+        <button
+          #filtersButton
+          mfPrimary
+          type="button"
+          class="mf-btn"
+          data-filters-button
+          aria-controls="search-filters-panel"
+          [attr.aria-expanded]="panelOpen()"
+          (click)="toggleFilters()"
+        >
+          Filters
+          @if (activeFilterCount() > 0) {
+            ({{ activeFilterCount() }})
+          }
+        </button>
+      }
+
+      @if (tab() !== 'all' && searchable()) {
+        <mf-search-filters
+          [type]="typeTab()"
+          [values]="filterValues()"
+          [open]="panelOpen()"
+          (valuesChange)="applyFilters($event)"
+          (cleared)="clearFilters()"
+        />
+      }
 
       @if (searchedLine(); as line) {
         <p class="res-searched" data-searched-in>{{ line }}</p>
@@ -98,9 +130,6 @@ interface Section {
         @if (state() === 'ready' && sections().length === 0) {
           <div class="pg-state" data-state="empty">
             <p>{{ emptyMessage() }}</p>
-            <a class="pg-link" routerLink="/search/advanced" [queryParams]="{ q: trimmed() }"
-              >Try advanced search</a
-            >
           </div>
         } @else if (state() === 'ready') {
           <div class="mf-table-wrap" mfScrollArea="Search results">
@@ -128,7 +157,7 @@ interface Section {
                       class="pg-link"
                       data-see-all
                       [routerLink]="[]"
-                      [queryParams]="{ type: section.info.type, page: null }"
+                      [queryParams]="seeAllParams(section.info.type)"
                       queryParamsHandling="merge"
                       (click)="seeAll($event)"
                       >{{ seeAllText(count(section.group)) }}
@@ -161,18 +190,10 @@ interface Section {
             [state]="typeState()"
             [query]="trimmed()"
             [emptyText]="emptyMessage()"
+            [filtered]="activeFilterCount() > 0"
             (retry)="loadType()"
+            (clear)="clearFilters()"
           />
-          @if (typeState() === 'ready' && typePage()?.items?.length === 0) {
-            <p class="res-more">
-              <a
-                class="pg-link"
-                routerLink="/search/advanced"
-                [queryParams]="{ type: tab(), q: trimmed() }"
-                >Try advanced search</a
-              >
-            </p>
-          }
         </div>
         @if (typePage(); as result) {
           @if (typeState() === 'ready' && result.items.length > 0) {
@@ -226,6 +247,16 @@ export class SearchResultsPage {
   readonly page = input<string>();
   /** `pageSize=` of a type tab (25, 50 or 100). */
   readonly pageSize = input<string>();
+  /** The filters of the open type tab, named like the parameters of the Advanced search API (`client`, `matter`, `assetType`, `active`, `sensitive`, `status`, `requestor`). */
+  readonly client = input<string>();
+  readonly matter = input<string>();
+  readonly assetType = input<string>();
+  readonly active = input<string>();
+  readonly sensitive = input<string>();
+  readonly status = input<string | string[]>();
+  readonly requestor = input<string>();
+  /** `filters=open`: the panel with the controls is open. */
+  readonly filters = input<string>();
 
   private readonly api = inject(SearchClient);
   private readonly auth = inject(AuthStore);
@@ -255,6 +286,27 @@ export class SearchResultsPage {
   protected readonly tabLabel = computed(
     () => this.types().find((t) => t.type === this.tab())?.label ?? 'Search',
   );
+  /** The filters of the open type tab (none on All). */
+  protected readonly filterValues = computed<SearchFilterValues>(() =>
+    this.tab() === ALL_TAB
+      ? NO_FILTERS
+      : readFilters(this.typeTab(), {
+          client: this.client(),
+          matter: this.matter(),
+          assetType: this.assetType(),
+          active: this.active(),
+          sensitive: this.sensitive(),
+          status: this.status(),
+          requestor: this.requestor(),
+        }),
+  );
+  protected readonly activeFilterCount = computed(
+    () => activeKinds(this.typeTab(), this.filterValues()).length,
+  );
+  protected readonly panelOpen = computed(
+    () => this.filters() === 'open' && this.tab() !== ALL_TAB,
+  );
+  private readonly filtersButton = viewChild<ElementRef<HTMLElement>>('filtersButton');
   protected readonly gridHeading = computed(() => {
     const total = this.typePage()?.total;
     return total === undefined
@@ -344,6 +396,7 @@ export class SearchResultsPage {
       this.tab();
       this.pageNumber();
       this.size();
+      this.filterValues();
       untracked(() => void this.loadType());
     });
   }
@@ -380,20 +433,21 @@ export class SearchResultsPage {
     const type = this.tab();
     if (!this.searchable() || type === ALL_TAB) return;
     const id = ++this.typeRequestId;
+    const filters = apiArgs(this.filterValues());
     this.typeState.set('loading');
     try {
       const result = await firstValueFrom(
         this.api.advancedSearch(
           type,
           this.trimmed(),
+          filters.client,
+          filters.matter,
           undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
+          filters.assetType,
+          filters.active,
+          filters.sensitive,
+          filters.status,
+          filters.requestor,
           this.pageNumber(),
           this.size(),
         ),
@@ -419,7 +473,30 @@ export class SearchResultsPage {
   }
 
   protected select(key: string): void {
-    void this.navigate({ type: key === ALL_TAB ? null : key, page: null });
+    // The filters belong to a type: a tab change drops them.
+    void this.navigate({ type: key === ALL_TAB ? null : key, page: null, ...CLEARED_PARAMS });
+  }
+
+  protected seeAllParams(type: string): Record<string, string | null> {
+    return { type, page: null, ...CLEARED_PARAMS };
+  }
+
+  protected toggleFilters(): void {
+    void this.navigate({ filters: this.panelOpen() ? null : 'open' }, true);
+  }
+
+  /** A filter changed: the address follows at once (a history entry, so Back restores the previous filters) and the list starts at page 1. */
+  protected applyFilters(values: SearchFilterValues): void {
+    void this.navigate({ ...filterParams(values), page: null });
+  }
+
+  /** Clear filters: every filter is dropped and focus returns to the Filters button. */
+  protected clearFilters(): void {
+    void this.navigate({ ...CLEARED_PARAMS, page: null }).then(() =>
+      afterNextRender(() => this.filtersButton()?.nativeElement.focus(), {
+        injector: this.injector,
+      }),
+    );
   }
 
   protected goToPage(page: number): void {
@@ -433,7 +510,7 @@ export class SearchResultsPage {
   }
 
   private navigate(
-    params: Record<string, string | number | null>,
+    params: Record<string, string | string[] | number | null>,
     replace = false,
   ): Promise<boolean> {
     return this.router.navigate([], {

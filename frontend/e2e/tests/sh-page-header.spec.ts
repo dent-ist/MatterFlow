@@ -156,13 +156,12 @@ test.describe('Page-header contract (#600)', () => {
     }
   });
 
-  test('Dashboard, Search, Advanced search, My profile and Create task use the same title numbers and top edge as the list pages (#602, #603, #604)', async ({
+  test('Dashboard, Search, My profile and Create task use the same title numbers and top edge as the list pages (#602, #603, #604)', async ({
     page,
   }) => {
     const MORE = [
       { path: '/dashboard', name: 'Dashboard' },
       { path: '/search?q=acme', name: 'Search results' },
-      { path: '/search/advanced', name: 'Advanced search' },
       { path: '/profile', name: 'My profile' },
     ] as const;
     for (const size of SIZES) {

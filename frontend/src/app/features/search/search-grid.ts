@@ -151,7 +151,9 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
         [emptyText]="emptyText()"
         [state]="state()"
         [empty]="hits().length === 0"
+        [filtered]="filtered()"
         (retry)="retry.emit()"
+        (clear)="clear.emit()"
       >
         <ng-template [mfRecordCard]="hits()" let-hit>
           <mf-search-hit-card [hit]="hit" />
@@ -178,9 +180,11 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
             [emptyText]="emptyText()"
             [state]="state()"
             [empty]="hits().length === 0"
+            [filtered]="filtered()"
             [columns]="columns().length"
             [skeleton]="bones()"
             (retry)="retry.emit()"
+            (clear)="clear.emit()"
           >
             @for (hit of hits(); track hit.type + hit.id) {
               <tr data-hit-row [attr.title]="hit.type === 'asset' ? hit.reference : null">
@@ -295,7 +299,10 @@ export class SearchGrid {
   /** The text to highlight in names. */
   readonly query = input('');
   readonly emptyText = input('No results.');
+  /** A filter limits the hits: the empty text then offers Clear filters. */
+  readonly filtered = input(false);
   readonly retry = output<void>();
+  readonly clear = output<void>();
 
   protected readonly columns = computed(() => SEARCH_COLUMNS[this.type()]);
   protected readonly bones = computed(() => this.columns().map((c) => c.bone));

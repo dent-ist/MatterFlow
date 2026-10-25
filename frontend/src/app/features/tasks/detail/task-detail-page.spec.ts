@@ -1180,8 +1180,8 @@ describe('TaskDetailPage drill-in context (M7, #160)', () => {
       expect(crumbs(search.el)).toEqual([['Search', '/search?q=merger']]);
       expect(back(search.el).getAttribute('href')).toBe('/search?q=merger');
       TestBed.resetTestingModule();
-      const adv = await openFrom('search', '/search/advanced?type=task&q=x');
-      expect(crumbs(adv.el)).toEqual([['Search', '/search/advanced?type=task&q=x']]);
+      const adv = await openFrom('search', '/search?type=task&q=x&page=2');
+      expect(crumbs(adv.el)).toEqual([['Search', '/search?type=task&q=x&page=2']]);
       TestBed.resetTestingModule();
       const foreign = await openFrom('search', '//evil.example/search');
       expect(crumbs(foreign.el)).toEqual([['Search', '/search']]);

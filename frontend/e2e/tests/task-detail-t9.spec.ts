@@ -271,8 +271,9 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     await crumbs(page).getByRole('link').first().click();
     await expect(link).toBeFocused();
 
-    // Advanced Search keeps its own address.
+    // A type tab keeps its own address (the retired Advanced search address redirects here).
     await page.goto(`/search/advanced?type=task&q=${tag}`);
+    await expect(page).toHaveURL(/\/search\?.*type=task/);
     const advanced = page.locator(
       `a[data-row-list="search"][data-row-key="${task.taskId}"]:visible`,
     );
@@ -281,7 +282,7 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     await openWithKeyboard(page, advanced);
     await expect(crumbs(page).getByRole('link').first()).toHaveAttribute('href', advancedUrl);
     await crumbs(page).getByRole('link').first().click();
-    await expect(page).toHaveURL(/\/search\/advanced\?/);
+    await expect(page).toHaveURL(/\/search\?.*type=task/);
     await expect(advanced).toBeFocused();
   });
 

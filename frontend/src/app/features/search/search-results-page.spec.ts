@@ -19,6 +19,7 @@ import {
   anAdvancedPage,
   numericResponse,
 } from '../../shared/testing/search-testing';
+import { CLEARED_PARAMS } from './search-filter-defs';
 import { SearchResultsPage } from './search-results-page';
 
 const ALL: Permission[] = ['Client.View', 'Matter.View', 'Project.View', 'Task.View', 'Asset.View'];
@@ -31,7 +32,7 @@ describe('SearchResultsPage', () => {
     q: string | undefined,
     response: SearchResponse = numericResponse(),
     permissions = ALL,
-    params: { type?: string; page?: string; pageSize?: string } = {},
+    params: Record<string, string> = {},
   ) {
     TestBed.resetTestingModule();
     api = {
@@ -53,9 +54,7 @@ describe('SearchResultsPage', () => {
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(SearchResultsPage);
     fixture.componentRef.setInput('q', q);
-    if (params.type !== undefined) fixture.componentRef.setInput('type', params.type);
-    if (params.page !== undefined) fixture.componentRef.setInput('page', params.page);
-    if (params.pageSize !== undefined) fixture.componentRef.setInput('pageSize', params.pageSize);
+    for (const [key, value] of Object.entries(params)) fixture.componentRef.setInput(key, value);
     await settle(fixture);
     return fixture;
   }
@@ -234,13 +233,13 @@ describe('SearchResultsPage', () => {
     const el: HTMLElement = fixture.nativeElement;
     tabs(el)[3].click();
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { type: 'task', page: null },
+      queryParams: { type: 'task', page: null, ...CLEARED_PARAMS },
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
     tabs(el)[0].click();
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { type: null, page: null },
+      queryParams: { type: null, page: null, ...CLEARED_PARAMS },
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
@@ -367,11 +366,83 @@ describe('SearchResultsPage', () => {
     expect(el.querySelector('mark')!.textContent).toBe('Merger');
   });
 
-  it('says what to try when nothing matches, and links to Advanced search', async () => {
+  it('says what to try when nothing matches', async () => {
     const fixture = await create('zzz', aResponse([aGroup('client', [])], 'zzz'));
     const empty = fixture.nativeElement.querySelector('[data-state=empty]');
     expect(empty.textContent).toContain("No results for 'zzz'. Try a client or matter number");
-    expect(empty.querySelector('a')!.getAttribute('href')).toBe('/search/advanced?q=zzz');
+    expect(fixture.nativeElement.querySelector('a[href*="advanced"]')).toBeNull();
+  });
+
+  describe('Filters on a type tab (#474)', () => {
+    it('has a Filters button with the count only on a type tab, and the panel follows filters=open', async () => {
+      const all = await create('demo');
+      expect(all.nativeElement.querySelector('[data-filters-button]')).toBeNull();
+
+      const closed = await create('demo', numericResponse(), ALL, { type: 'matter' });
+      const button = closed.nativeElement.querySelector('[data-filters-button]')!;
+      expect(button.textContent!.trim()).toBe('Filters');
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(closed.nativeElement.querySelector('[data-filters-panel]')).toBeNull();
+
+      const open = await create('demo', numericResponse(), ALL, {
+        type: 'matter',
+        filters: 'open',
+        active: 'false',
+      });
+      expect(open.nativeElement.querySelector('[data-filters-panel]')).not.toBeNull();
+      expect(
+        open.nativeElement
+          .querySelector('[data-filters-button]')
+          .textContent.replace(/\s+/g, ' ')
+          .trim(),
+      ).toBe('Filters (1)');
+    });
+
+    it('asks the Advanced endpoint with the filters of the address and writes a change back, resetting the page', async () => {
+      const fixture = await create('demo', numericResponse(), ALL, {
+        type: 'task',
+        client: '3',
+        active: 'false', // not a task filter: dropped
+        status: 'NEW,ON_HOLD',
+        requestor: 'pat',
+        page: '2',
+      });
+      expect(api.advancedSearch).toHaveBeenLastCalledWith(
+        'task',
+        'demo',
+        3,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ['NEW', 'ON_HOLD'],
+        'pat',
+        2,
+        25,
+      );
+      fixture.nativeElement.querySelector('[data-filters-button]').click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { filters: 'open' },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    });
+
+    it('drops the filters when the tab changes and clears them with Clear filters', async () => {
+      const fixture = await create('demo', numericResponse(), ALL, {
+        type: 'matter',
+        filters: 'open',
+        active: 'true',
+      });
+      const el: HTMLElement = fixture.nativeElement;
+      el.querySelector<HTMLElement>('[data-clear-filters]')!.click();
+      expect(navigate).toHaveBeenLastCalledWith([], {
+        queryParams: { ...CLEARED_PARAMS, page: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: false,
+      });
+    });
   });
 
   it('asks for more input when the text is too short and does not call the API', async () => {
