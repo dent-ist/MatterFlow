@@ -311,11 +311,25 @@ test.describe('Dashboard shell: roles (R1, R2)', () => {
     seed,
     asUser,
   }) => {
-    for (const roleName of ['Director', 'Project Manager', 'Pod Lead', 'Data Technician']) {
+    // The starter Project Manager role no longer holds the Dashboard permissions (epic #758, script 38): it is not in this list, and
+    // the next test says what its menu is instead.
+    for (const roleName of ['Director', 'Pod Lead', 'Data Technician']) {
       const page = await asUser((await seed.user([roleName], 'seeded')).username);
       await page.goto('/my-work');
       await expect(MENU(page), roleName).toBeVisible();
     }
+  });
+
+  test('the starter Project Manager role has no Dashboard item: its short menu starts with My Matters', async ({
+    seed,
+    asUser,
+  }) => {
+    const page = await asUser((await seed.user(['Project Manager'], 'seeded')).username);
+    await page.goto('/my-work');
+    await expect(
+      page.getByRole('navigation').getByRole('link', { name: 'My Matters' }),
+    ).toBeVisible();
+    await expect(MENU(page)).toHaveCount(0);
   });
 
   test('a link to a tab the role cannot see says why, once, and the address is rewritten', async ({
