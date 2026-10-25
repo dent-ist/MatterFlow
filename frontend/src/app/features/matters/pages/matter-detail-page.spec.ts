@@ -288,29 +288,29 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-page-actions]')!.textContent).toContain('Activity');
   });
 
-  it('shows the task strip first on the Overview: five links to the matter own Tasks tab, from the matter summary', async () => {
+  it('shows each count once: the Overview has no strip of its own, the header strip carries all six counts (#816)', async () => {
     await create(['Matter.View', 'Task.View']);
     expect(matters.getMatterSummary).toHaveBeenCalledWith(7);
+    expect(el().querySelector('[data-matter-overview] [data-strip]')).toBeNull();
+    expect(el().querySelector('[data-matter-overview] mf-summary-strip')).toBeNull();
     const links = Array.from(
-      el().querySelectorAll<HTMLAnchorElement>('[data-matter-overview] [data-strip-item]'),
+      el().querySelectorAll<HTMLAnchorElement>('mf-matter-health-strip [data-strip-item]'),
     );
     expect(links.map((a) => a.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
       'Open 9',
       'Overdue 3',
       'Due soon 1',
       'ASAP 1',
+      'Unassigned 2',
       'On hold 1',
     ]);
-    expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/matters/7?tab=tasks',
-      '/matters/7?tab=tasks&view=overdue',
-      '/matters/7?tab=tasks&view=dueSoon',
-      '/matters/7?tab=tasks&view=asap',
-      '/matters/7?tab=tasks&view=onHold',
-    ]);
-    // The strip comes before the rows.
-    const overview = el().querySelector('[data-matter-overview]')!;
-    expect(overview.firstElementChild!.nextElementSibling!.tagName).toBe('MF-SUMMARY-STRIP');
+    const hrefs = links.map((a) => a.getAttribute('href')!);
+    expect(hrefs.every((h) => h.startsWith('/tasks?matter=7'))).toBe(true);
+    expect(hrefs[1]).toContain('overdue=true');
+    expect(hrefs[2]).toContain('asap=false&overdue=false&dueTo=');
+    expect(hrefs[3]).toContain('asap=true');
+    expect(hrefs[4]).toContain('unassigned=true');
+    expect(hrefs[5]).toContain('status=ON_HOLD');
   });
 
   it('has no strip and asks for no numbers without Task.View, and the tab is still complete', async () => {
@@ -877,7 +877,7 @@ describe('MatterDetailPage', () => {
       expect(el().querySelector('[data-primary-manager]')?.textContent).toBe('Bob Roe');
     });
 
-    it("draws the health strip with Open, Overdue, Unassigned and On hold as links to the matter's tasks, and nothing without Task.View", async () => {
+    it("draws the one strip with Open, Overdue, Due soon, ASAP, Unassigned and On hold as links to the matter's tasks, and nothing without Task.View", async () => {
       await create(['Matter.View', 'Task.View']);
       const items = Array.from(
         el().querySelectorAll(
@@ -887,10 +887,12 @@ describe('MatterDetailPage', () => {
       expect(items.map((i) => i.getAttribute('data-strip-item'))).toEqual([
         'open',
         'overdue',
+        'dueSoon',
+        'asap',
         'unassigned',
         'onHold',
       ]);
-      const unassigned = items[2];
+      const unassigned = items[4];
       expect(unassigned.textContent).toContain('2');
       expect(unassigned.getAttribute('href')).toBe(
         '/tasks?matter=7&status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',

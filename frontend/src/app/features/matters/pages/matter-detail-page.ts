@@ -29,7 +29,6 @@ import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
-import { SummaryStrip } from '../../../shared/work-queue/summary-strip';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
@@ -75,7 +74,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
-    SummaryStrip,
     MatterProjects,
     MatterHealthStrip,
     MatterOverviewSections,
@@ -197,11 +195,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                   <div class="mf-scroll-area" mfScrollArea="Matter overview" data-details-tab>
                     <div class="pg-details" data-matter-overview>
                       <h2 class="pg-sr">Overview</h2>
-                      <mf-summary-strip
-                        kind="matter"
-                        [id]="m.matterId"
-                        [path]="'/matters/' + m.matterId"
-                      />
                       <mf-matter-overview
                         [matterId]="m.matterId"
                         [reload]="healthReload()"

@@ -225,14 +225,17 @@ const press = (page: Page, key: Key): Locator =>
   page.locator(`mf-scoped-tasks [data-strip-item="${key}"]`);
 
 test.describe('WP7: Matter Overview (#263)', () => {
-  test('the first tab is Overview: the strip comes first, then only the rows that are not in the header', async ({
+  test('the first tab is Overview: the matter has one count strip (the header one), then only the rows that are not in the header', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(mUrl(data.a));
     await ready(page);
     const overview = page.locator('[data-matter-overview]');
-    await expect(overview.locator('[data-strip]')).toBeVisible();
+    // Each number once (#816): the Overview has no strip of its own, the one under the header carries the six counts.
+    await expect(overview.locator('[data-strip]')).toHaveCount(0);
+    const header = page.locator('mf-matter-health-strip');
+    await expect(header.locator('[data-strip]')).toBeVisible();
 
     const tabs = (await page.getByRole('tab').allTextContents()).map((t) =>
       t.replace(/\s+/g, ' ').trim(),
@@ -245,13 +248,13 @@ test.describe('WP7: Matter Overview (#263)', () => {
     await expect(page).not.toHaveURL(/tab=/);
     await expect(page).toHaveTitle(/Overview - MatterFlow$/);
 
-    expect(await stripNumbers(page, '[data-matter-overview]')).toEqual(A_NUMBERS);
+    expect(await stripNumbers(page, 'mf-matter-health-strip')).toEqual(A_NUMBERS);
     expect(
-      await overview
+      await header
         .locator('[data-strip-item]')
         .evaluateAll((e) => e.map((x) => x.textContent!.replace(/\s+/g, ' ').trim())),
-    ).toEqual(['Open 10', 'Overdue 2', 'Due soon 1', 'ASAP 1', 'On hold 1']);
-    await expect(overview.locator('[data-strip-item="overdue"] .pi')).toBeVisible();
+    ).toEqual(['Open 10', 'Overdue 2', 'Due soon 1', 'ASAP 1', 'Unassigned 10', 'On hold 1']);
+    await expect(header.locator('[data-strip-item="overdue"] .pi')).toBeVisible();
 
     // The reference, the matter number and the name are in the header; the rows are the rest.
     expect((await overview.locator('dt').allTextContents()).map((t) => t.trim())).toEqual([
@@ -264,33 +267,26 @@ test.describe('WP7: Matter Overview (#263)', () => {
     await expect(overview.getByText('Matter number')).toHaveCount(0);
 
     // The strip is above the rows.
-    const strip = (await overview.locator('[data-strip]').boundingBox())!;
+    const strip = (await header.locator('[data-strip]').boundingBox())!;
     const dl = (await overview.locator('dl').boundingBox())!;
     expect(strip.y + strip.height).toBeLessThanOrEqual(dl.y);
     await shot(page, 'matter-overview');
   });
 
-  test('a strip item opens the matter own Tasks tab on the view and the grid total equals the number; Back returns', async ({
+  test('a strip item opens the Task Queue on this matter and the queue total equals the number; Back returns', async ({
     page,
   }) => {
     await page.goto(mUrl(data.a));
     await ready(page);
-    for (const key of KEYS) {
+    const numbers = { ...A_NUMBERS, unassigned: 10 };
+    for (const key of [...KEYS, 'unassigned'] as const) {
       await page.goto(mUrl(data.a));
-      const link = page.locator(`[data-matter-overview] [data-strip-item="${key}"]`);
+      const link = page.locator(`mf-matter-health-strip [data-strip-item="${key}"]`);
       expect(await link.evaluate((e) => e.tagName)).toBe('A');
       await expect(link).not.toHaveAttribute('aria-pressed', /.*/);
       await link.click();
-      await expect(page).toHaveURL(new RegExp(`/matters/${data.a.matterId}\\?tab=tasks`));
-      const view = VIEW_PARAM[key];
-      if (view) await expect(page).toHaveURL(new RegExp(`view=${view}$`));
-      else await expect(page).not.toHaveURL(/view=/);
-      await expect(page.getByRole('tab', { name: /^Tasks/ })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
-      await expect(press(page, key)).toHaveAttribute('aria-pressed', 'true');
-      expect(await gridTotal(page), `${key}: grid total`).toBe(A_NUMBERS[key]);
+      await expect(page).toHaveURL(new RegExp(`/tasks\\?.*matter=${data.a.matterId}`));
+      expect(await queueTotal(page), `${key}: Task Queue total`).toBe(numbers[key]);
       // Back lands on the Overview again.
       await page.goBack();
       await expect(page.locator('[data-matter-overview]')).toBeVisible();
@@ -299,24 +295,23 @@ test.describe('WP7: Matter Overview (#263)', () => {
 
   test('Enter on a strip link follows it', async ({ page }) => {
     await page.goto(mUrl(data.a));
-    const overdue = page.locator('[data-matter-overview] [data-strip-item="overdue"]');
+    const overdue = page.locator('mf-matter-health-strip [data-strip-item="overdue"]');
     await overdue.focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/tab=tasks&view=overdue/);
-    await expect(press(page, 'overdue')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page).toHaveURL(/\/tasks\?.*overdue=true/);
   });
 
   test('a matter with nothing open shows real zeros, muted, in place', async ({ page }) => {
     await page.goto(mUrl(data.d));
     await ready(page);
-    expect(await stripNumbers(page, '[data-matter-overview]')).toEqual({
+    expect(await stripNumbers(page, 'mf-matter-health-strip')).toEqual({
       open: 0,
       overdue: 0,
       dueSoon: 0,
       asap: 0,
       onHold: 0,
     });
-    await expect(page.locator('[data-matter-overview] [data-strip-item="open"]')).toHaveClass(
+    await expect(page.locator('mf-matter-health-strip [data-strip-item="open"]')).toHaveClass(
       /zero/,
     );
     await shot(page, 'matter-overview-empty');
@@ -328,7 +323,7 @@ test.describe('WP7: Matter Overview (#263)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(mUrl(data.c));
     await ready(page);
-    const strip = (await page.locator('[data-matter-overview] [data-strip]').boundingBox())!;
+    const strip = (await page.locator('mf-matter-health-strip [data-strip]').boundingBox())!;
     console.log(`150-character matter: strip bottom at y ${Math.round(strip.y + strip.height)}`);
     expect(strip.y + strip.height).toBeLessThan(768);
     await shot(page, 'matter-overview-long-name');
@@ -505,14 +500,14 @@ for (const [w, h] of SIZES) {
     await page.setViewportSize({ width: w, height: h });
     await page.goto(mUrl(data.a));
     await ready(page);
-    await expect(page.locator('[data-matter-overview] [data-strip-item="open"] .n')).toHaveText(
+    await expect(page.locator('mf-matter-health-strip [data-strip-item="open"] .n')).toHaveText(
       '10',
     );
     await axeClean(page, `matter overview ${w}x${h}`);
     await noSidewaysScroll(page);
     if (w < 480) {
       const open = (await page
-        .locator('[data-matter-overview] [data-strip-item="open"]')
+        .locator('mf-matter-health-strip [data-strip-item="open"]')
         .boundingBox())!;
       expect(open.height, '44 px target on a phone').toBeGreaterThanOrEqual(44);
     }
@@ -558,7 +553,7 @@ test.describe('WP7: strip numbers equal the Task Queue totals behind each link a
     { label: 'full access', permissions: FULL },
     { label: 'no Project.View', permissions: NO_PROJECTS },
   ]) {
-    test(`${who.label}: Overview strip = Task Queue total = grid total for every item (matter A, matter B, project 1)`, async ({
+    test(`${who.label}: The matter strip = Task Queue total = grid total for every item (matter A, matter B, project 1)`, async ({
       asUser,
       seed,
     }) => {
@@ -573,8 +568,8 @@ test.describe('WP7: strip numbers equal the Task Queue totals behind each link a
         [data.b, B_NUMBERS],
       ] as const) {
         await page.goto(mUrl(matter));
-        await expect(page.locator('[data-matter-overview] [data-strip]')).toBeVisible();
-        const numbers = (await stripNumbers(page, '[data-matter-overview]'))!;
+        await expect(page.locator('mf-matter-health-strip [data-strip]')).toBeVisible();
+        const numbers = (await stripNumbers(page, 'mf-matter-health-strip'))!;
         expect(numbers).toEqual(expected);
         for (const key of KEYS) {
           await page.goto(queueUrl('matter', matter.matterId, key));

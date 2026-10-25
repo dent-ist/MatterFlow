@@ -562,7 +562,7 @@ test.describe('Clients final verification (#287)', () => {
         await expect(who.locator('[role=tablist]')).toBeVisible();
         await expect(clientStrip).toHaveCount(0);
         await who.goto(`/matters/${c.matter.matterId}`);
-        await expect(who.locator('[data-matter-overview] [data-strip]')).toHaveCount(0);
+        await expect(who.locator('mf-matter-health-strip [data-strip]')).toHaveCount(0);
         await who.goto(`/projects/${c.project.projectId}`);
         await expect(who.locator('mf-scoped-tasks [data-strip]')).toHaveCount(0);
         return;
@@ -578,9 +578,9 @@ test.describe('Clients final verification (#287)', () => {
       await clientStrip.locator('[data-strip-item="overdue"]').click();
       await expect(who.locator('[data-range]')).toContainText(`of ${queue.overdue}`);
 
-      // Matter Overview strip and the toggle strip over the Tasks grid.
+      // The matter's one count strip (under its header, #816) and the toggle strip over the Tasks grid.
       await who.goto(`/matters/${c.matter.matterId}`);
-      const matterStrip = who.locator('[data-matter-overview] [data-strip]');
+      const matterStrip = who.locator('mf-matter-health-strip [data-strip]');
       await expect(matterStrip).toBeVisible();
       expect(await strip(matterStrip)).toMatchObject({
         open: matterQueue.open,

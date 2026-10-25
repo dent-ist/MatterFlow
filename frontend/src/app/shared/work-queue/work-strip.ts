@@ -51,6 +51,7 @@ export interface WorkStripItem {
         class="strip"
         [class.seg]="segments()"
         [class.row]="chipRow()"
+        [class.three]="threeUp()"
         [attr.role]="roving() ? 'toolbar' : null"
         [attr.aria-orientation]="roving() ? 'horizontal' : null"
         [attr.aria-label]="label()"
@@ -294,6 +295,21 @@ export interface WorkStripItem {
         justify-content: space-between;
         border: 1px solid var(--mf-border);
       }
+      /* Three to a row, the label above its number (a record with six counts keeps the two rows its four counts had, #816). */
+      .strip.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .strip.three .item {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+        padding: 0 var(--mf-s2);
+        line-height: 1.25;
+      }
+      .strip.three .item .pi {
+        display: none;
+      }
     }
   `,
   imports: [NgTemplateOutlet, RouterLink],
@@ -307,6 +323,8 @@ export class WorkStrip {
   readonly segments = input(false);
   /** Below 640 px the items are one scrolling line of chips with 44 px targets instead of the 2x2 boxes (Pod Work, #563). */
   readonly chipRow = input(false);
+  /** Below 480 px the items are three to a row with the label above the number (the matter's six counts), instead of two to a row. */
+  readonly threeUp = input(false);
   readonly active = input<string | null>(null);
   /**
    * One Tab stop for the whole group, arrow keys move between the choices (a roving tabindex, as a toolbar): Left/Right, Home and End.
