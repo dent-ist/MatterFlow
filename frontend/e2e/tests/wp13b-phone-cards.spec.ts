@@ -462,6 +462,41 @@ test.describe('WP13b: the pager of the cards', () => {
     await shot(page, 'my-work-pager-375x812');
   });
 
+  test('the pager follows the last card instead of floating over the cards: no status trigger is half under it whatever the window height (#822)', async ({
+    seed,
+    page,
+  }) => {
+    test.setTimeout(300_000);
+    // Created by me as the administrator (the person of the suite): unassigned tasks are New, and a New chip is the narrow trigger (75 px)
+    // that axe reported half covered (target-size) on a populated database. The tasks are this test's own; the list is longer than the window.
+    const world = await seed.world();
+    const tag = uid();
+    for (let i = 1; i <= 12; i++) {
+      await seed.task(world, { title: `${tag} ${String(i).padStart(2, '0')}` });
+    }
+    await page.setViewportSize({ width: 375, height: 812 });
+    await new MyWorkPage(page).open('?view=createdByMe');
+    await expect(cards(page).first()).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /^New, change status of/ }).first(),
+    ).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    const pager = page.locator('.wl-footrow');
+    expect(await pager.evaluate((e) => getComputedStyle(e).position)).toBe('static');
+    // Every way a trigger can meet the bottom edge of the window: the cards are about 145 px apart, so a window height in every 4 px.
+    if (axeAvailable()) {
+      for (let h = 640; h <= 860; h += 4) {
+        await page.setViewportSize({ width: 375, height: h });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        expect(await axeViolations(page), `window height ${h}`).toEqual([]);
+      }
+    }
+    // The pager is where the list ends: scrolled to the end it is whole and uncovered.
+    await pager.scrollIntoViewIfNeeded();
+    const box = (await pager.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  });
+
   test('five whole cards fit under the chrome of My Work at 375x812', async ({ seed, asUser }) => {
     const role = await seed.role(PERMS, 'E2E cards five');
     const me = await seed.user([role.name], 'cards-five');

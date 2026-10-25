@@ -106,3 +106,16 @@
     border-top: 1px solid var(--mf-border);
   }
 }
+
+/*
+ * Phone cards (below 640 px, #822): the pager follows the last card instead of floating over the cards. A bar stuck to the bottom edge
+ * covers whichever card happens to be there, so a status trigger half under it is a target that is "partially obscured" (WCAG 2.5.8; axe
+ * target-size) as soon as the list is longer than the window, and the covered part cannot be tapped. At the end of the list nothing is
+ * under it. The toast area keeps its own place and does not depend on the bar.
+ */
+@media (max-width: 639.98px) {
+  .wl-footrow {
+    position: static;
+    margin-top: var(--mf-s3);
+  }
+}
