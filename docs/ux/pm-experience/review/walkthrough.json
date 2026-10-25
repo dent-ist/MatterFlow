@@ -1,0 +1,982 @@
+[
+ {
+  "size": "1366x768",
+  "scenario": "morning",
+  "clicks": 5,
+  "seconds": 4.3,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "1366x768/morning-01-landing.png",
+    "pageOverflowPx": 0,
+    "strip": "Matters I manage 5 Open tasks 76 Overdue 17 Due in 3 days 9 Due in 7 days 11 Unassigned 38 On hold, oldest 0 d 10",
+    "sinceVisible": true,
+    "attentionVisible": true,
+    "stripVisible": true
+   },
+   {
+    "step": "since-last-visit",
+    "clicksSoFar": 0,
+    "note": "Since your last visit Mark as read You have not marked anything as read yet: the last 7 days. 2 tasks became overdue 95 reassigned 22 completed 91 new tasks 10 put on hold 34 comments TSK-9 General / Ad Hoc Request - 1 became overdue 90002-80002 Demo Internal investigation 2026 2 d overdue TSK-199 E"
+   },
+   {
+    "step": "marked-read",
+    "clicksSoFar": 1,
+    "file": "1366x768/morning-02-marked-read.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "tab-deadlines",
+    "clicksSoFar": 2,
+    "file": "1366x768/morning-03-tab-deadlines.png",
+    "pageOverflowPx": 0,
+    "text": "Deadlines 2 weeks 4 weeks List Calendar 90001-80001 Demo Smith v. Acme(5)Demo Northwind Holdings TSK-40 Incoming Production Intake - 2 Sun Oct 25 . Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 . Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 . Test User 37 TSK-10 Archive and Dispositio"
+   },
+   {
+    "step": "tab-workload",
+    "clicksSoFar": 3,
+    "file": "1366x768/morning-04-tab-workload.png",
+    "pageOverflowPx": 0,
+    "text": "Workload Open tasks on your matters by pod and person Pod / person Open Overdue Due this week On hold Away Demo Analytics Pod 13 3 3 Not assigned to a personShow matters 3 0 1 1 Test User 03Show matters 2 0 2 0 Test User 07Show matters 3 1 1 1 Test User 23Show matters 2 0 0 1 Test User 27Show matter"
+   },
+   {
+    "step": "tab-trends",
+    "clicksSoFar": 4,
+    "file": "1366x768/morning-05-tab-trends.png",
+    "pageOverflowPx": 0,
+    "text": "Trends 8 weeks 12 weeks 26 weeks Approximate. These figures are worked out from today's data, not recorded week by week. A task that was re-dated is counted by its current due date. A task that was re-opened is counted by its current status and last status change. The matters are those in scope now,"
+   },
+   {
+    "step": "tab-activity",
+    "clicksSoFar": 5,
+    "file": "1366x768/morning-06-tab-activity.png",
+    "pageOverflowPx": 0,
+    "text": "Activity Matter Kind All kinds New task Status change Completed Put on hold Reassigned Comment Manager changed Unread only Test User 03 created \"Prepare privilege log for the third production\" 90002-80002 Demo Internal investigation 2026 . Demo Contoso Energy 3:28 AM Test User 03 commented on \"Produ"
+   }
+  ]
+ },
+ {
+  "size": "1366x768",
+  "scenario": "overdue",
+  "clicks": 7,
+  "seconds": 5.2,
+  "error": null,
+  "steps": [
+   {
+    "step": "overdue-list",
+    "clicksSoFar": 1,
+    "file": "1366x768/overdue-01-overdue-list.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&managedByMe=true&overdue=true",
+    "range": "Showing 1-17 of 17",
+    "scopePressed": "All",
+    "scopeLine": "17 tasks",
+    "chips": "On matters I manage"
+   },
+   {
+    "step": "task-detail",
+    "clicksSoFar": 2,
+    "file": "1366x768/overdue-02-task-detail.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/59?from=task-queue"
+   },
+   {
+    "step": "task-actions",
+    "clicksSoFar": 2,
+    "note": "Edit | Activity | Complete task | In Progress | Critical | Due Oct 13, overdue 12 days\nOct 13\nOverdue 12d | Test User 02 | Workflow (0/5) | Assets (0) | Comments (15) | 1. Intake Review and Scope Confirmation | Start step | Save inputs | Skip step | Mark complete | 2. Production Generation and Validation | 3. Quality Control Check | 4. Delivery, Transfer and Confirmation | 5. Close-out and Documentation | Link asset | Show all | Request details (Production (Outgoing), form 1)\n22 fields"
+   },
+   {
+    "step": "assignee-menu",
+    "clicksSoFar": 3,
+    "file": "1366x768/overdue-03-assignee-menu.png",
+    "pageOverflowPx": 0,
+    "options": "Unassigned Remove the assignee Test User 14 0 open Test User 34 0 open Test User 42 0 open Test User 18 1 open Test User 06 1 open Test User 02 1 open Test User 30 2 open Test User 38 2 open Test User 50 2 open Test User 26 3 open Test User 46 3 open Test User 10 3 open"
+   },
+   {
+    "step": "reassigned",
+    "clicksSoFar": 4,
+    "file": "1366x768/overdue-04-reassigned.png",
+    "pageOverflowPx": 0,
+    "toast": ""
+   },
+   {
+    "step": "comment-typed",
+    "clicksSoFar": 6,
+    "file": "1366x768/overdue-05-comment-typed.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "comment-posted",
+    "clicksSoFar": 7,
+    "file": "1366x768/overdue-06-comment-posted.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-in-crumb",
+    "clicksSoFar": 7,
+    "note": "1 crumb links with a matter reference"
+   }
+  ]
+ },
+ {
+  "size": "1366x768",
+  "scenario": "addwork",
+  "clicks": 7,
+  "seconds": 9.1,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "1366x768/addwork-01-landing.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "health-panel",
+    "clicksSoFar": 0,
+    "file": "1366x768/addwork-02-health-panel.png",
+    "pageOverflowPx": 0,
+    "scrolledPx": 2004
+   },
+   {
+    "step": "create-task-chooser",
+    "clicksSoFar": 1,
+    "file": "1366x768/addwork-03-create-task-chooser.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "text": "My Matters 90002-80002 Create task Create task Create task Choose a task type to start Quick fill from email Fill from email What kind of task is this? Choose a task type to start. Type, workflow and matter can't be changed after you create the task. Search task types Access Request Add, remove or r"
+   },
+   {
+    "step": "create-task-form",
+    "clicksSoFar": 2,
+    "file": "1366x768/addwork-04-create-task-form.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "fields": "Matter (required) | Title (required) | Project | Requestor name (required) | Requestor email | Category (required) | What is needed (required) | Related asset | Handling flags | What is driving the due date? (required) | Quick Request v1 (2 steps, any order, default) | Priority (required) | Due date | Time (EDT) | Pod | Assignee"
+   },
+   {
+    "step": "create-task-filled",
+    "clicksSoFar": 6,
+    "file": "1366x768/addwork-05-create-task-filled.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "create-task-result",
+    "clicksSoFar": 7,
+    "file": "1366x768/addwork-06-create-task-result.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/my-matters",
+    "errors": ""
+   }
+  ]
+ },
+ {
+  "size": "1366x768",
+  "scenario": "clientcall",
+  "clicks": 5,
+  "seconds": 6.1,
+  "error": null,
+  "steps": [
+   {
+    "step": "matters-list",
+    "clicksSoFar": 1,
+    "file": "1366x768/clientcall-01-matters-list.png",
+    "pageOverflowPx": 0,
+    "count": "Matters you manage (5 of 28)"
+   },
+   {
+    "step": "matter-overview",
+    "clicksSoFar": 2,
+    "file": "1366x768/clientcall-02-matter-overview.png",
+    "pageOverflowPx": 0,
+    "sections": {
+     "health": {
+      "visibleWithoutScroll": true,
+      "text": "Health Red 2 tasks are overdue 3 tasks have nobody assigned 2 tasks are due within 3 days"
+     },
+     "status": {
+      "visibleWithoutScroll": true,
+      "text": "Tasks by status 2 New 7 In progress 1 On hold 0 Completed (30 days)"
+     },
+     "deadlines": {
+      "visibleWithoutScroll": true,
+      "text": "Next deadlines TSK-40 Incoming Production Intake - 2 Sun Oct 25 Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 Test User 37 TSK-10 Archive and Disposition - 1 Thu Nov 19 Test User 01 TSK-100 Export / Transfer - 8 Sun Nov 22 Test User 37 All "
+     },
+     "people": {
+      "visibleWithoutScroll": true,
+      "text": "Who is working on it Test User 37 2 open Test User 50 1 open, 1 overdue Test User 01 1 open Test User 07 1 open Test User 27 1 open Test User 30 1 open 3 open tasks have nobody assigned."
+     },
+     "assets": {
+      "visibleWithoutScroll": false,
+      "text": "Linked assets (5) 90001-80001 - Demo Smith v. Acme Relativity Workspace Demo Collection / Data Set 90001-80001 Collection / Data Set Demo Harvey Vault 90001-80001 Harvey Vault Demo Physical Media 90001-80001 Physical Media Demo Production 90001-80001 Production Open the Assets tab"
+     },
+     "activity": {
+      "visibleWithoutScroll": false,
+      "text": "Recent activity Test User 36 moved \"Data Load / Overlay - 8\" to On Hold 3:16 AM \"Data Load / Overlay - 8\" reassigned from Test User 36 to Demo Workspace Support Pod 3:16 AM ke\\kekim moved \"Data Load / Overlay - 8\" to In Progress 3:16 AM \"Data Load / Overlay - 8\" assigned to Test User 36 3:16 AM ke\\k"
+     }
+    }
+   },
+   {
+    "step": "matter-actions-menu",
+    "clicksSoFar": 3,
+    "file": "1366x768/clientcall-03-matter-actions-menu.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-assets-tab",
+    "clicksSoFar": 4,
+    "file": "1366x768/clientcall-04-matter-assets-tab.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "search-open",
+    "clicksSoFar": 5,
+    "file": "1366x768/clientcall-05-search-open.png",
+    "pageOverflowPx": 0,
+    "options": "MATTERS 90001-80001 Demo Smith v. Acme Demo Northwind Holdings ASSETS 90001-80001 - Demo Smith v. Acme Relativity Workspace · 90001-80001 · Demo Smith v. Acme View all results for \"Smith\""
+   },
+   {
+    "step": "search-clicks",
+    "clicksSoFar": 5,
+    "note": "search route to a matter: 1 click before choosing a result, plus 1 to choose"
+   }
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "scenario": "morning",
+  "clicks": 5,
+  "seconds": 4.7,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "1920x1080/morning-01-landing.png",
+    "pageOverflowPx": 0,
+    "strip": "Matters I manage 5 Open tasks 77 Overdue 17 Due in 3 days 9 Due in 7 days 11 Unassigned 39 On hold, oldest 0 d 10",
+    "sinceVisible": true,
+    "attentionVisible": true,
+    "stripVisible": true
+   },
+   {
+    "step": "since-last-visit",
+    "clicksSoFar": 0,
+    "note": "Since your last visit Mark as read You have not marked anything as read yet: the last 7 days. 2 tasks became overdue 95 reassigned 22 completed 91 new tasks 10 put on hold 34 comments TSK-9 General / Ad Hoc Request - 1 became overdue 90002-80002 Demo Internal investigation 2026 2 d overdue TSK-199 E"
+   },
+   {
+    "step": "marked-read",
+    "clicksSoFar": 1,
+    "file": "1920x1080/morning-02-marked-read.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "tab-deadlines",
+    "clicksSoFar": 2,
+    "file": "1920x1080/morning-03-tab-deadlines.png",
+    "pageOverflowPx": 0,
+    "text": "Deadlines 2 weeks 4 weeks List Calendar 90001-80001 Demo Smith v. Acme(5)Demo Northwind Holdings TSK-40 Incoming Production Intake - 2 Sun Oct 25 . Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 . Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 . Test User 37 TSK-10 Archive and Dispositio"
+   },
+   {
+    "step": "tab-workload",
+    "clicksSoFar": 3,
+    "file": "1920x1080/morning-04-tab-workload.png",
+    "pageOverflowPx": 0,
+    "text": "Workload Open tasks on your matters by pod and person Pod / person Open Overdue Due this week On hold Away Demo Analytics Pod 13 3 3 Not assigned to a personShow matters 3 0 1 1 Test User 03Show matters 2 0 2 0 Test User 07Show matters 3 1 1 1 Test User 23Show matters 2 0 0 1 Test User 27Show matter"
+   },
+   {
+    "step": "tab-trends",
+    "clicksSoFar": 4,
+    "file": "1920x1080/morning-05-tab-trends.png",
+    "pageOverflowPx": 0,
+    "text": "Trends 8 weeks 12 weeks 26 weeks Approximate. These figures are worked out from today's data, not recorded week by week. A task that was re-dated is counted by its current due date. A task that was re-opened is counted by its current status and last status change. The matters are those in scope now,"
+   },
+   {
+    "step": "tab-activity",
+    "clicksSoFar": 5,
+    "file": "1920x1080/morning-06-tab-activity.png",
+    "pageOverflowPx": 0,
+    "text": "Activity Matter Kind All kinds New task Status change Completed Put on hold Reassigned Comment Manager changed Unread only Test User 03 created \"Prepare privilege log for the third production\" 90002-80002 Demo Internal investigation 2026 . Demo Contoso Energy 3:29 AM Test User 03 commented on \"Produ"
+   }
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "scenario": "overdue",
+  "clicks": 7,
+  "seconds": 5.6,
+  "error": null,
+  "steps": [
+   {
+    "step": "overdue-list",
+    "clicksSoFar": 1,
+    "file": "1920x1080/overdue-01-overdue-list.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&managedByMe=true&overdue=true",
+    "range": "Showing 1-17 of 17",
+    "scopePressed": "All",
+    "scopeLine": "17 tasks",
+    "chips": "On matters I manage"
+   },
+   {
+    "step": "task-detail",
+    "clicksSoFar": 2,
+    "file": "1920x1080/overdue-02-task-detail.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/59?from=task-queue"
+   },
+   {
+    "step": "task-actions",
+    "clicksSoFar": 2,
+    "note": "Edit | Activity | Complete task | In Progress | Critical | Due Oct 13, overdue 12 days\nOct 13\nOverdue 12d | Test User 02 | Workflow (0/5) | Assets (0) | Comments (16) | 1. Intake Review and Scope Confirmation | Start step | Save inputs | Skip step | Mark complete | 2. Production Generation and Validation | 3. Quality Control Check | 4. Delivery, Transfer and Confirmation | 5. Close-out and Documentation | Link asset | Show all | Request details (Production (Outgoing), form 1)\n22 fields"
+   },
+   {
+    "step": "assignee-menu",
+    "clicksSoFar": 3,
+    "file": "1920x1080/overdue-03-assignee-menu.png",
+    "pageOverflowPx": 0,
+    "options": "Unassigned Remove the assignee Test User 14 0 open Test User 34 0 open Test User 42 0 open Test User 18 1 open Test User 06 1 open Test User 02 1 open Test User 30 2 open Test User 38 2 open Test User 50 2 open Test User 26 3 open Test User 46 3 open Test User 10 3 open"
+   },
+   {
+    "step": "reassigned",
+    "clicksSoFar": 4,
+    "file": "1920x1080/overdue-04-reassigned.png",
+    "pageOverflowPx": 0,
+    "toast": ""
+   },
+   {
+    "step": "comment-typed",
+    "clicksSoFar": 6,
+    "file": "1920x1080/overdue-05-comment-typed.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "comment-posted",
+    "clicksSoFar": 7,
+    "file": "1920x1080/overdue-06-comment-posted.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-in-crumb",
+    "clicksSoFar": 7,
+    "note": "1 crumb links with a matter reference"
+   }
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "scenario": "addwork",
+  "clicks": 7,
+  "seconds": 9.4,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "1920x1080/addwork-01-landing.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "health-panel",
+    "clicksSoFar": 0,
+    "file": "1920x1080/addwork-02-health-panel.png",
+    "pageOverflowPx": 0,
+    "scrolledPx": 1839
+   },
+   {
+    "step": "create-task-chooser",
+    "clicksSoFar": 1,
+    "file": "1920x1080/addwork-03-create-task-chooser.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "text": "My Matters 90002-80002 Create task Create task Create task Choose a task type to start Quick fill from email Fill from email What kind of task is this? Choose a task type to start. Type, workflow and matter can't be changed after you create the task. Search task types Access Request Add, remove or r"
+   },
+   {
+    "step": "create-task-form",
+    "clicksSoFar": 2,
+    "file": "1920x1080/addwork-04-create-task-form.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "fields": "Matter (required) | Title (required) | Project | Requestor name (required) | Requestor email | Category (required) | What is needed (required) | Related asset | Handling flags | What is driving the due date? (required) | Quick Request v1 (2 steps, any order, default) | Priority (required) | Due date | Time (EDT) | Pod | Assignee"
+   },
+   {
+    "step": "create-task-filled",
+    "clicksSoFar": 6,
+    "file": "1920x1080/addwork-05-create-task-filled.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "create-task-result",
+    "clicksSoFar": 7,
+    "file": "1920x1080/addwork-06-create-task-result.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/my-matters",
+    "errors": ""
+   }
+  ]
+ },
+ {
+  "size": "1920x1080",
+  "scenario": "clientcall",
+  "clicks": 5,
+  "seconds": 6.5,
+  "error": null,
+  "steps": [
+   {
+    "step": "matters-list",
+    "clicksSoFar": 1,
+    "file": "1920x1080/clientcall-01-matters-list.png",
+    "pageOverflowPx": 0,
+    "count": "Matters you manage (5 of 28)"
+   },
+   {
+    "step": "matter-overview",
+    "clicksSoFar": 2,
+    "file": "1920x1080/clientcall-02-matter-overview.png",
+    "pageOverflowPx": 0,
+    "sections": {
+     "health": {
+      "visibleWithoutScroll": true,
+      "text": "Health Red 2 tasks are overdue 3 tasks have nobody assigned 2 tasks are due within 3 days"
+     },
+     "status": {
+      "visibleWithoutScroll": true,
+      "text": "Tasks by status 2 New 7 In progress 1 On hold 0 Completed (30 days)"
+     },
+     "deadlines": {
+      "visibleWithoutScroll": true,
+      "text": "Next deadlines TSK-40 Incoming Production Intake - 2 Sun Oct 25 Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 Test User 37 TSK-10 Archive and Disposition - 1 Thu Nov 19 Test User 01 TSK-100 Export / Transfer - 8 Sun Nov 22 Test User 37 All "
+     },
+     "people": {
+      "visibleWithoutScroll": true,
+      "text": "Who is working on it Test User 37 2 open Test User 50 1 open, 1 overdue Test User 01 1 open Test User 07 1 open Test User 27 1 open Test User 30 1 open 3 open tasks have nobody assigned."
+     },
+     "assets": {
+      "visibleWithoutScroll": true,
+      "text": "Linked assets (5) 90001-80001 - Demo Smith v. Acme Relativity Workspace Demo Collection / Data Set 90001-80001 Collection / Data Set Demo Harvey Vault 90001-80001 Harvey Vault Demo Physical Media 90001-80001 Physical Media Demo Production 90001-80001 Production Open the Assets tab"
+     },
+     "activity": {
+      "visibleWithoutScroll": false,
+      "text": "Recent activity Test User 36 moved \"Data Load / Overlay - 8\" to On Hold 3:16 AM \"Data Load / Overlay - 8\" reassigned from Test User 36 to Demo Workspace Support Pod 3:16 AM ke\\kekim moved \"Data Load / Overlay - 8\" to In Progress 3:16 AM \"Data Load / Overlay - 8\" assigned to Test User 36 3:16 AM ke\\k"
+     }
+    }
+   },
+   {
+    "step": "matter-actions-menu",
+    "clicksSoFar": 3,
+    "file": "1920x1080/clientcall-03-matter-actions-menu.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-assets-tab",
+    "clicksSoFar": 4,
+    "file": "1920x1080/clientcall-04-matter-assets-tab.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "search-open",
+    "clicksSoFar": 5,
+    "file": "1920x1080/clientcall-05-search-open.png",
+    "pageOverflowPx": 0,
+    "options": "MATTERS 90001-80001 Demo Smith v. Acme Demo Northwind Holdings ASSETS 90001-80001 - Demo Smith v. Acme Relativity Workspace · 90001-80001 · Demo Smith v. Acme View all results for \"Smith\""
+   },
+   {
+    "step": "search-clicks",
+    "clicksSoFar": 5,
+    "note": "search route to a matter: 1 click before choosing a result, plus 1 to choose"
+   }
+  ]
+ },
+ {
+  "size": "768x1024",
+  "scenario": "morning",
+  "clicks": 5,
+  "seconds": 4,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "768x1024/morning-01-landing.png",
+    "pageOverflowPx": 0,
+    "strip": "Matters I manage 5 Open tasks 78 Overdue 17 Due in 3 days 9 Due in 7 days 11 Unassigned 40 On hold, oldest 0 d 10",
+    "sinceVisible": true,
+    "attentionVisible": true,
+    "stripVisible": true
+   },
+   {
+    "step": "since-last-visit",
+    "clicksSoFar": 0,
+    "note": "Since your last visit Mark as read You have not marked anything as read yet: the last 7 days. 2 tasks became overdue 95 reassigned 22 completed 91 new tasks 10 put on hold 34 comments TSK-9 General / Ad Hoc Request - 1 became overdue 90002-80002 Demo Internal investigation 2026 2 d overdue TSK-199 E"
+   },
+   {
+    "step": "marked-read",
+    "clicksSoFar": 1,
+    "file": "768x1024/morning-02-marked-read.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "tab-deadlines",
+    "clicksSoFar": 2,
+    "file": "768x1024/morning-03-tab-deadlines.png",
+    "pageOverflowPx": 0,
+    "text": "Deadlines 2 weeks 4 weeks List Calendar 90001-80001 Demo Smith v. Acme(5)Demo Northwind Holdings TSK-40 Incoming Production Intake - 2 Sun Oct 25 . Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 . Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 . Test User 37 TSK-10 Archive and Dispositio"
+   },
+   {
+    "step": "tab-workload",
+    "clicksSoFar": 3,
+    "file": "768x1024/morning-04-tab-workload.png",
+    "pageOverflowPx": 0,
+    "text": "Workload Open tasks on your matters by pod and person Pod / person Open Overdue Due this week On hold Away Demo Analytics Pod 13 3 3 Not assigned to a personShow matters 3 0 1 1 Test User 03Show matters 2 0 2 0 Test User 07Show matters 3 1 1 1 Test User 23Show matters 2 0 0 1 Test User 27Show matter"
+   },
+   {
+    "step": "tab-trends",
+    "clicksSoFar": 4,
+    "file": "768x1024/morning-05-tab-trends.png",
+    "pageOverflowPx": 0,
+    "text": "Trends 8 weeks 12 weeks 26 weeks Approximate. These figures are worked out from today's data, not recorded week by week. A task that was re-dated is counted by its current due date. A task that was re-opened is counted by its current status and last status change. The matters are those in scope now,"
+   },
+   {
+    "step": "tab-activity",
+    "clicksSoFar": 5,
+    "file": "768x1024/morning-06-tab-activity.png",
+    "pageOverflowPx": 0,
+    "text": "Activity Matter Kind All kinds New task Status change Completed Put on hold Reassigned Comment Manager changed Unread only Test User 03 created \"Prepare privilege log for the third production\" 90002-80002 Demo Internal investigation 2026 . Demo Contoso Energy 3:29 AM Test User 03 commented on \"Produ"
+   }
+  ]
+ },
+ {
+  "size": "768x1024",
+  "scenario": "overdue",
+  "clicks": 7,
+  "seconds": 5,
+  "error": null,
+  "steps": [
+   {
+    "step": "overdue-list",
+    "clicksSoFar": 1,
+    "file": "768x1024/overdue-01-overdue-list.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&managedByMe=true&overdue=true",
+    "range": "Showing 1-17 of 17",
+    "scopePressed": "All",
+    "scopeLine": "17 tasks",
+    "chips": "On matters I manage"
+   },
+   {
+    "step": "task-detail",
+    "clicksSoFar": 2,
+    "file": "768x1024/overdue-02-task-detail.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/59?from=task-queue"
+   },
+   {
+    "step": "task-actions",
+    "clicksSoFar": 2,
+    "note": "Edit | Complete task | In Progress | Critical | Due Oct 13, overdue 12 days\nOct 13\nOverdue 12d | Test User 02 | Workflow (0/5) | Assets (0) | Comments (17) | 1. Intake Review and Scope Confirmation | Start step | Save inputs | Skip step | Mark complete | 2. Production Generation and Validation | 3. Quality Control Check | 4. Delivery, Transfer and Confirmation | 5. Close-out and Documentation | Link asset | Show all | Details\nRequestor Liam Morgan [demo DSTIP] · 18 request fields | Request details (Production (Outgoing), form 1)22 fields"
+   },
+   {
+    "step": "assignee-menu",
+    "clicksSoFar": 3,
+    "file": "768x1024/overdue-03-assignee-menu.png",
+    "pageOverflowPx": 0,
+    "options": "Unassigned Remove the assignee Test User 14 0 open Test User 34 0 open Test User 42 0 open Test User 18 1 open Test User 06 1 open Test User 02 1 open Test User 30 2 open Test User 38 2 open Test User 50 2 open Test User 26 3 open Test User 46 3 open Test User 10 3 open"
+   },
+   {
+    "step": "reassigned",
+    "clicksSoFar": 4,
+    "file": "768x1024/overdue-04-reassigned.png",
+    "pageOverflowPx": 0,
+    "toast": ""
+   },
+   {
+    "step": "comment-typed",
+    "clicksSoFar": 6,
+    "file": "768x1024/overdue-05-comment-typed.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "comment-posted",
+    "clicksSoFar": 7,
+    "file": "768x1024/overdue-06-comment-posted.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-in-crumb",
+    "clicksSoFar": 7,
+    "note": "1 crumb links with a matter reference"
+   }
+  ]
+ },
+ {
+  "size": "768x1024",
+  "scenario": "addwork",
+  "clicks": 7,
+  "seconds": 8.9,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "768x1024/addwork-01-landing.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "health-panel",
+    "clicksSoFar": 0,
+    "file": "768x1024/addwork-02-health-panel.png",
+    "pageOverflowPx": 0,
+    "scrolledPx": 1943
+   },
+   {
+    "step": "create-task-chooser",
+    "clicksSoFar": 1,
+    "file": "768x1024/addwork-03-create-task-chooser.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "text": "My Matters 90002-80002 Create task Create task Create task Choose a task type to start Quick fill from email Fill from email What kind of task is this? Choose a task type to start. Type, workflow and matter can't be changed after you create the task. Search task types Access Request Add, remove or r"
+   },
+   {
+    "step": "create-task-form",
+    "clicksSoFar": 2,
+    "file": "768x1024/addwork-04-create-task-form.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "fields": "Matter (required) | Title (required) | Project | Requestor name (required) | Requestor email | Category (required) | What is needed (required) | Related asset | Handling flags | What is driving the due date? (required) | Quick Request v1 (2 steps, any order, default) | Priority (required) | Due date | Time (EDT) | Pod | Assignee"
+   },
+   {
+    "step": "create-task-filled",
+    "clicksSoFar": 6,
+    "file": "768x1024/addwork-05-create-task-filled.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "create-task-result",
+    "clicksSoFar": 7,
+    "file": "768x1024/addwork-06-create-task-result.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/my-matters",
+    "errors": ""
+   }
+  ]
+ },
+ {
+  "size": "768x1024",
+  "scenario": "clientcall",
+  "clicks": 5,
+  "seconds": 6,
+  "error": null,
+  "steps": [
+   {
+    "step": "matters-list",
+    "clicksSoFar": 1,
+    "file": "768x1024/clientcall-01-matters-list.png",
+    "pageOverflowPx": 0,
+    "count": "Matters you manage (5 of 28)"
+   },
+   {
+    "step": "matter-overview",
+    "clicksSoFar": 2,
+    "file": "768x1024/clientcall-02-matter-overview.png",
+    "pageOverflowPx": 0,
+    "sections": {
+     "health": {
+      "visibleWithoutScroll": true,
+      "text": "Health Red 2 tasks are overdue 3 tasks have nobody assigned 2 tasks are due within 3 days"
+     },
+     "status": {
+      "visibleWithoutScroll": true,
+      "text": "Tasks by status 2 New 7 In progress 1 On hold 0 Completed (30 days)"
+     },
+     "deadlines": {
+      "visibleWithoutScroll": true,
+      "text": "Next deadlines TSK-40 Incoming Production Intake - 2 Sun Oct 25 Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 Test User 37 TSK-10 Archive and Disposition - 1 Thu Nov 19 Test User 01 TSK-100 Export / Transfer - 8 Sun Nov 22 Test User 37 All "
+     },
+     "people": {
+      "visibleWithoutScroll": true,
+      "text": "Who is working on it Test User 37 2 open Test User 50 1 open, 1 overdue Test User 01 1 open Test User 07 1 open Test User 27 1 open Test User 30 1 open 3 open tasks have nobody assigned."
+     },
+     "assets": {
+      "visibleWithoutScroll": true,
+      "text": "Linked assets (5) 90001-80001 - Demo Smith v. Acme Relativity Workspace Demo Collection / Data Set 90001-80001 Collection / Data Set Demo Harvey Vault 90001-80001 Harvey Vault Demo Physical Media 90001-80001 Physical Media Demo Production 90001-80001 Production Open the Assets tab"
+     },
+     "activity": {
+      "visibleWithoutScroll": false,
+      "text": "Recent activity Test User 36 moved \"Data Load / Overlay - 8\" to On Hold 3:16 AM \"Data Load / Overlay - 8\" reassigned from Test User 36 to Demo Workspace Support Pod 3:16 AM ke\\kekim moved \"Data Load / Overlay - 8\" to In Progress 3:16 AM \"Data Load / Overlay - 8\" assigned to Test User 36 3:16 AM ke\\k"
+     }
+    }
+   },
+   {
+    "step": "matter-actions-menu",
+    "clicksSoFar": 3,
+    "file": "768x1024/clientcall-03-matter-actions-menu.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-assets-tab",
+    "clicksSoFar": 4,
+    "file": "768x1024/clientcall-04-matter-assets-tab.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "search-open",
+    "clicksSoFar": 5,
+    "file": "768x1024/clientcall-05-search-open.png",
+    "pageOverflowPx": 0,
+    "options": "MATTERS 90001-80001 Demo Smith v. Acme Demo Northwind Holdings ASSETS 90001-80001 - Demo Smith v. Acme Relativity Workspace · 90001-80001 · Demo Smith v. Acme View all results for \"Smith\""
+   },
+   {
+    "step": "search-clicks",
+    "clicksSoFar": 5,
+    "note": "search route to a matter: 1 click before choosing a result, plus 1 to choose"
+   }
+  ]
+ },
+ {
+  "size": "375x812",
+  "scenario": "morning",
+  "clicks": 5,
+  "seconds": 3.6,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "375x812/morning-01-landing.png",
+    "pageOverflowPx": 0,
+    "strip": "Matters I manage 5 Open tasks 79 Overdue 17 Due in 3 days 9 Due in 7 days 11 Unassigned 41 On hold, oldest 0 d 10",
+    "sinceVisible": true,
+    "attentionVisible": false,
+    "stripVisible": true
+   },
+   {
+    "step": "since-last-visit",
+    "clicksSoFar": 0,
+    "note": "Since your last visit Mark as read You have not marked anything as read yet: the last 7 days. 2 tasks became overdue 95 reassigned 22 completed 91 new tasks 10 put on hold 34 comments TSK-9 General / Ad Hoc Request - 1 became overdue 90002-80002 Demo Internal investigation 2026 2 d overdue TSK-199 E"
+   },
+   {
+    "step": "marked-read",
+    "clicksSoFar": 1,
+    "file": "375x812/morning-02-marked-read.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "tab-deadlines",
+    "clicksSoFar": 2,
+    "file": "375x812/morning-03-tab-deadlines.png",
+    "pageOverflowPx": 0,
+    "text": "Deadlines 2 weeks 4 weeks 90001-80001 Demo Smith v. Acme(5)Demo Northwind Holdings TSK-40 Incoming Production Intake - 2 Sun Oct 25 . Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 . Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 . Test User 37 TSK-10 Archive and Disposition - 1 Thu Nov "
+   },
+   {
+    "step": "tab-workload",
+    "clicksSoFar": 3,
+    "file": "375x812/morning-04-tab-workload.png",
+    "pageOverflowPx": 0,
+    "text": "Workload Demo Analytics Pod Open 13 Overdue 3 On hold 3 Not assigned to a person Open 3 Overdue 0 Due this week 1 On hold 1 Show matters Test User 03 Open 2 Overdue 0 Due this week 2 On hold 0 Show matters Test User 07 Open 3 Overdue 1 Due this week 1 On hold 1 Show matters Test User 23 Open 2 Overd"
+   },
+   {
+    "step": "tab-trends",
+    "clicksSoFar": 4,
+    "file": "375x812/morning-05-tab-trends.png",
+    "pageOverflowPx": 0,
+    "text": "Trends 8 weeks 12 weeks 26 weeks Approximate. These figures are worked out from today's data, not recorded week by week. A task that was re-dated is counted by its current due date. A task that was re-opened is counted by its current status and last status change. The matters are those in scope now,"
+   },
+   {
+    "step": "tab-activity",
+    "clicksSoFar": 5,
+    "file": "375x812/morning-06-tab-activity.png",
+    "pageOverflowPx": 0,
+    "text": "Activity Matter Kind All kinds New task Status change Completed Put on hold Reassigned Comment Manager changed Unread only Test User 03 created \"Prepare privilege log for the third production\" 90002-80002 Demo Internal investigation 2026 . Demo Contoso Energy 3:30 AM Test User 03 commented on \"Produ"
+   }
+  ]
+ },
+ {
+  "size": "375x812",
+  "scenario": "overdue",
+  "clicks": 7,
+  "seconds": 4.7,
+  "error": null,
+  "steps": [
+   {
+    "step": "overdue-list",
+    "clicksSoFar": 1,
+    "file": "375x812/overdue-01-overdue-list.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&managedByMe=true&overdue=true",
+    "range": "Showing 1-17 of 17",
+    "scopePressed": "All",
+    "scopeLine": "17 tasks",
+    "chips": "On matters I manage"
+   },
+   {
+    "step": "task-detail",
+    "clicksSoFar": 2,
+    "file": "375x812/overdue-02-task-detail.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/59?from=task-queue"
+   },
+   {
+    "step": "task-actions",
+    "clicksSoFar": 2,
+    "note": "Complete task | In Progress | Critical | Due Oct 13, overdue 12 days\nOct 13\nOverdue 12d | Test User 02 | Workflow (0/5) | Assets (0) | Comments (18) | 1. Intake Review and Scope Confirmation | Start step | Save inputs | Skip step | Mark complete | 2. Production Generation and Validation | 3. Quality Control Check | 4. Delivery, Transfer and Confirmation | 5. Close-out and Documentation | Link asset | Show all | Details\nRequestor Liam Morgan [demo DSTIP] · 18 request fields | Request details (Production (Outgoing), form 1)22 fields"
+   },
+   {
+    "step": "assignee-menu",
+    "clicksSoFar": 3,
+    "file": "375x812/overdue-03-assignee-menu.png",
+    "pageOverflowPx": 0,
+    "options": "Unassigned Remove the assignee Test User 14 0 open Test User 34 0 open Test User 42 0 open Test User 18 1 open Test User 06 1 open Test User 02 1 open Test User 30 2 open Test User 38 2 open Test User 50 2 open Test User 26 3 open Test User 46 3 open Test User 10 3 open"
+   },
+   {
+    "step": "reassigned",
+    "clicksSoFar": 4,
+    "file": "375x812/overdue-04-reassigned.png",
+    "pageOverflowPx": 0,
+    "toast": ""
+   },
+   {
+    "step": "comment-typed",
+    "clicksSoFar": 6,
+    "file": "375x812/overdue-05-comment-typed.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "comment-posted",
+    "clicksSoFar": 7,
+    "file": "375x812/overdue-06-comment-posted.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-in-crumb",
+    "clicksSoFar": 7,
+    "note": "1 crumb links with a matter reference"
+   }
+  ]
+ },
+ {
+  "size": "375x812",
+  "scenario": "addwork",
+  "clicks": 7,
+  "seconds": 8.6,
+  "error": null,
+  "steps": [
+   {
+    "step": "landing",
+    "clicksSoFar": 0,
+    "file": "375x812/addwork-01-landing.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "health-panel",
+    "clicksSoFar": 0,
+    "file": "375x812/addwork-02-health-panel.png",
+    "pageOverflowPx": 0,
+    "scrolledPx": 2736
+   },
+   {
+    "step": "create-task-chooser",
+    "clicksSoFar": 1,
+    "file": "375x812/addwork-03-create-task-chooser.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "text": "Back to Task Queue Create task Choose a task type to start Quick fill from email Fill from email What kind of task is this? Choose a task type to start. Type, workflow and matter can't be changed after you create the task. Search task types Access Request Add, remove or review user access to a works"
+   },
+   {
+    "step": "create-task-form",
+    "clicksSoFar": 2,
+    "file": "375x812/addwork-04-create-task-form.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/tasks/new?matterId=18&returnTo=%2Fmy-matters",
+    "fields": "Matter (required) | Title (required) | Project | Requestor name (required) | Requestor email | Category (required) | What is needed (required) | Related asset | Handling flags | What is driving the due date? (required) | Quick Request v1 (2 steps, any order, default) | Priority (required) | Due date | Time (EDT) | Pod | Assignee"
+   },
+   {
+    "step": "create-task-filled",
+    "clicksSoFar": 6,
+    "file": "375x812/addwork-05-create-task-filled.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "create-task-result",
+    "clicksSoFar": 7,
+    "file": "375x812/addwork-06-create-task-result.png",
+    "pageOverflowPx": 0,
+    "url": "http://127.0.0.1:5391/my-matters",
+    "errors": ""
+   }
+  ]
+ },
+ {
+  "size": "375x812",
+  "scenario": "clientcall",
+  "clicks": 7,
+  "seconds": 6,
+  "error": null,
+  "steps": [
+   {
+    "step": "matters-list",
+    "clicksSoFar": 2,
+    "file": "375x812/clientcall-01-matters-list.png",
+    "pageOverflowPx": 0,
+    "count": "Matters you manage (5 of 28)"
+   },
+   {
+    "step": "matter-overview",
+    "clicksSoFar": 3,
+    "file": "375x812/clientcall-02-matter-overview.png",
+    "pageOverflowPx": 0,
+    "sections": {
+     "health": {
+      "visibleWithoutScroll": true,
+      "text": "Health Red 2 tasks are overdue 3 tasks have nobody assigned 2 tasks are due within 3 days"
+     },
+     "status": {
+      "visibleWithoutScroll": true,
+      "text": "Tasks by status 2 New 7 In progress 1 On hold 0 Completed (30 days)"
+     },
+     "deadlines": {
+      "visibleWithoutScroll": false,
+      "text": "Next deadlines TSK-40 Incoming Production Intake - 2 Sun Oct 25 Test User 30 TSK-91 Collection Receipt - 7 Wed Oct 28 Test User 07 TSK-94 E2E Type r92xwev7 - 5 Mon Nov 9 Test User 37 TSK-10 Archive and Disposition - 1 Thu Nov 19 Test User 01 TSK-100 Export / Transfer - 8 Sun Nov 22 Test User 37 All "
+     },
+     "people": {
+      "visibleWithoutScroll": false,
+      "text": "Who is working on it Test User 37 2 open Test User 50 1 open, 1 overdue Test User 01 1 open Test User 07 1 open Test User 27 1 open Test User 30 1 open 3 open tasks have nobody assigned."
+     },
+     "assets": {
+      "visibleWithoutScroll": false,
+      "text": "Linked assets (5) 90001-80001 - Demo Smith v. Acme Relativity Workspace Demo Collection / Data Set 90001-80001 Collection / Data Set Demo Harvey Vault 90001-80001 Harvey Vault Demo Physical Media 90001-80001 Physical Media Demo Production 90001-80001 Production Open the Assets tab"
+     },
+     "activity": {
+      "visibleWithoutScroll": false,
+      "text": "Recent activity Test User 36 moved \"Data Load / Overlay - 8\" to On Hold 3:16 AM \"Data Load / Overlay - 8\" reassigned from Test User 36 to Demo Workspace Support Pod 3:16 AM ke\\kekim moved \"Data Load / Overlay - 8\" to In Progress 3:16 AM \"Data Load / Overlay - 8\" assigned to Test User 36 3:16 AM ke\\k"
+     }
+    }
+   },
+   {
+    "step": "matter-actions-menu",
+    "clicksSoFar": 4,
+    "file": "375x812/clientcall-03-matter-actions-menu.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "matter-assets-tab",
+    "clicksSoFar": 5,
+    "file": "375x812/clientcall-04-matter-assets-tab.png",
+    "pageOverflowPx": 0
+   },
+   {
+    "step": "search-open",
+    "clicksSoFar": 7,
+    "file": "375x812/clientcall-05-search-open.png",
+    "pageOverflowPx": 0,
+    "options": "MATTERS 90001-80001 Demo Smith v. Acme Demo Northwind Holdings ASSETS 90001-80001 - Demo Smith v. Acme Relativity Workspace · 90001-80001 · Demo Smith v. Acme View all results for \"Smith\""
+   },
+   {
+    "step": "search-clicks",
+    "clicksSoFar": 7,
+    "note": "search route to a matter: 2 click before choosing a result, plus 1 to choose"
+   }
+  ]
+ }
+]
