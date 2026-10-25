@@ -190,7 +190,8 @@ test.describe('Sensitive matters: the screens', () => {
     await p4.goto(`/matters/${u.s1.matterId}`);
     await expect(p4.locator('[data-sensitive-banner]')).toBeVisible();
     await axeAtEverySize(p4, 'sensitive matter overview');
-    await p4.goto('/matters?scope=all');
+    // Found by its own name: on a database that has already run the suite the first page of the list holds other matters.
+    await p4.goto(`/matters?scope=all&name=${encodeURIComponent(u.s1.name)}`);
     await expect(p4.getByText(u.s1.name).first()).toBeVisible();
     await axeAtEverySize(p4, 'matters list with the sensitive marker');
   });

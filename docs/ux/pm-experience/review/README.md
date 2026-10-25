@@ -102,3 +102,21 @@ Found outside the PM views and filed apart: #822 (My Work at 375 px fails axe `t
 - PM specs (`px3-*`, `px4-tabs`, `px5-matter`, `pm4-*`, `pm5-access`, `pm-matters`, `pw2-scope`, `sensitive-ui`, `sensitive-leak-scan`) with the rule off: 131 passed, 1 failed (`nav-phone`, see #822), 1 skipped; with the rule on (data volume of a long run): all PM specs passed, `sensitive-ui` and `sensitive-leak-scan` failed on the populated database and passed 14 of 14 on a fresh one (#823).
 - **Full end-to-end run** (fresh stack, 1 worker, rule off, 4.9 h): 2688 passed, 48 skipped, 5 failed. `dashboard-shell:310` was a stale expectation of this epic (the starter Project Manager role no longer holds the Dashboard permissions, script 38): fixed, with a new test for the short menu. `ad3-priorities-list:150`, `ad5-link-roles:62`, `as757-assignee-suggestions:88` and `ty3-cards:117` pass alone on a fresh database and fail inside the full run (order or data dependent, #823); `t8-edit-create:176` (the failure that started this check) did not fail again and was made deterministic. `nav-phone` passed on the fresh database and failed on the populated one (#822).
 - Also run: frontend lint, Prettier, unit specs (frontend and form-engine), e2e type check, contracts validation; `dotnet build -warnaserror`, `dotnet format --verify-no-changes`, 2268 backend unit tests. Not run: backend integration tests (no backend change in this work), a second full e2e run, a full run with the sensitive-matter rule on (only the PM and sensitive specs were run with it on).
+
+## Follow-ups (epic #812, 2026-10-25)
+
+What was done about the findings above, one commit per issue (`WP-PX ...`), all frontend except two small backend changes (the Task Queue's quick-view counts follow the manager scope of the request, and the first-visit marker of the activity list is flagged so "Since your last visit" ignores it; script 39).
+
+| Finding | Issue | Result |
+|---|---|---|
+| R1 scope switch, chips and counts disagree | #813 | A link with `managedByMe=true` (Task Queue) or `mine=true` (Matters) is the My matters scope: the switch shows it, the address carries `scope=mine`, the chip counts equal the list (17 and 17 in the fixture). |
+| R2 adding work is 2,000 px away | #814 | A New task control in the My Matters header (the matters the person manages, the last one used first, one click for it); the chooser shows the last three types; 3 clicks from the landing page for a remembered type. |
+| R3 Activity tab consumed the summary | #815 | The marker the first read creates is a starting point (`IsInitial`), not a last visit; only Mark as read moves what "Since your last visit" reports. |
+| R4 counts twice on the matter | #816 | One strip under the header with Open, Overdue, Due soon, ASAP, Unassigned, On hold; the Overview has none. |
+| R5 overdue not oldest first | #817 | The Overdue cell and "View all" of Needs my attention add `sort=due&dir=asc`. |
+| R6 phone first screen | #818 | Two-column strip, description for screen readers only, "Show events" expander; Needs my attention starts in the first screen. |
+| R7 same answers again | #819 | "Same as my last task of this type": requestor and list answers, never privilege flags or free text, never silent. |
+| R8 more than 60 Tab stops | #820 | Five skip links after the tab strip; stop counts in `docs/qa/pm-keyboard-evidence.md`. |
+| R9 "On hold, oldest 0 d 10" | #821 | "On hold 10", tooltip "oldest 0 days". |
+| #822 target-size on My Work | #822 | The phone pager follows the last card instead of covering cards. |
+| #823 order and data dependent specs | #823 | See the issue: own data, found by token or name, no assertion loosened. |

@@ -6,6 +6,9 @@
 
 .mf-field {
   display: grid;
+  /* One column that is never wider than the field: a select's width is its longest option (a Pod with a 76-character name), which would
+     otherwise widen the column and push the dialog sideways on a phone. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mf-s1);
   /* A form that wants one width for all its fields sets --mf-field-max on its container (Create task: the whole column). */
   max-width: var(--mf-field-max, 480px);
@@ -23,6 +26,11 @@
 .mf-field__input {
   @include forms.mf-control;
   @include forms.mf-control-states;
+}
+
+select.mf-field__input {
+  max-width: 100%;
+  text-overflow: ellipsis;
 }
 
 textarea.mf-field__input {

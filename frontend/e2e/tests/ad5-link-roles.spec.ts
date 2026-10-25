@@ -63,7 +63,8 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     page,
     admin,
   }) => {
-    const name = `Wide ${uid()} ${'wide name '.repeat(8)}`.slice(0, 50);
+    // 50 characters at most; the API trims a name, so the cut must not end in a space (where it falls depends on the length of the token).
+    const name = `Wide ${uid()} ${'wide name '.repeat(8)}`.slice(0, 50).trim();
     await admin.post('/api/v1/asset-link-roles', { name, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(TAB_URL);
@@ -75,7 +76,14 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
       'Status',
       'Actions',
     ]);
-    for (const r of await page.locator('[data-roles] tbody tr').all()) {
+    // This test's own rows only: on a database that has already run the suite the table also holds the roles of other specs, whose names and
+    // states this test does not control (a row being renamed or deleted by an earlier run, a name that is longer than it was meant to be).
+    const shortName = `Short ${uid()}`;
+    await admin.post('/api/v1/asset-link-roles', { name: shortName, isActive: true });
+    await page.reload();
+    await expect(row(page, shortName)).toBeVisible();
+    for (const r of [row(page, name), row(page, shortName)]) {
+      await expect(r).toHaveCount(1);
       expect((await r.boundingBox())!.height).toBeLessThanOrEqual(45);
       await expect(r.getByRole('button')).toHaveCount(1); // the overflow menu is the only control
     }

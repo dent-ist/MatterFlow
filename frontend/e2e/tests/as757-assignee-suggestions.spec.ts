@@ -108,6 +108,10 @@ test.describe('#757: assignee picker suggestions', () => {
 
     await assigneeTrigger(page).click();
     const pop = page.locator('.im-pop');
+    // The list is read from the server after the menu opens: wait for this test's own members (and their counts) before reading it.
+    for (const member of [loaded, free, away]) {
+      await expect(pop.locator(`[data-option="${member.userId}"] .im-hint`)).toBeVisible();
+    }
     const ids = await pop
       .locator('[data-option]')
       .evaluateAll((els) => els.map((e) => e.getAttribute('data-option')));

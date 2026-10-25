@@ -321,6 +321,8 @@ test.describe('Sensitive matters: a person sees only their share (scan of screen
     await expect(page.locator('a[href^="/matters/"]')).toHaveCount(0);
     // A person who may be a project manager opens the queue on their own matters (epic #758): this check is about the whole queue, so All.
     await w.visit('/tasks?scope=all');
+    // The row is found by its own title (the first page of a long queue holds other tasks); the scan above still read the whole first page.
+    await w.visit(`/tasks?scope=all&q=${encodeURIComponent(u.s3.taskTitle)}`);
     await expect(page.getByText(u.s3.taskTitle).first()).toBeVisible();
     // The queue also lists tasks of normal matters (their matter is a link); the row of the sensitive matter's task has none.
     const row = page.locator('tr', { hasText: u.s3.taskTitle });
@@ -341,7 +343,8 @@ test.describe('Sensitive matters: a person sees only their share (scan of screen
   }) => {
     const page = await asUser(u.people.p1.username);
     const w = new Walker(page, [{ text: u.s1.name, what: 'S1 matter name', visibleTo: ['p1'] }]);
-    await w.visit('/matters');
+    // Its own matter by name: on a database that has already run the suite the first page of the list holds other matters.
+    await w.visit(`/matters?name=${encodeURIComponent(u.s1.name)}`);
     const where = w.findings.map((f) => f.where);
     expect(
       where.some((x) => x.endsWith(': dom')),

@@ -191,6 +191,9 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
       seed,
     }) => {
       const world = await seed.world({ stepCount: 2, fields: FIELDS });
+      // A Pod with a long name is part of the setup, not luck: a select is as wide as its longest option, and the Pod list of the dialog widened
+      // the body sideways by 252 px at 375 px once such a Pod existed (it only did on a database that had run the demo data or other specs).
+      await seed.pod(`Regional Document Review and Production Support Pod ${uid()}`, []);
       const task = await seed.task(world, {
         title: LONG_TITLE,
         formValues: { f1: 'Alpha' },

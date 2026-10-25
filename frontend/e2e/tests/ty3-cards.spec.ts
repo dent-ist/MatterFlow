@@ -122,6 +122,10 @@ test.describe('phone cards below 640 px (#374, #375)', () => {
       const rows = await seedMix(admin, kind, token, 1, 0);
       await page.setViewportSize({ width: 375, height: 812 });
       await page.goto(`${info.list}?${info.filter}=${token}`);
+      // The list has loaded and stopped re-rendering before the menu is used: a card that is replaced under a focused button would lose the
+      // focus, which Escape is then asked to give back (a populated database answers the second read of the list a moment later).
+      await expect(cards(page)).toHaveCount(1);
+      await page.waitForLoadState('networkidle');
       const menu = cards(page).first().locator('button[data-overflow]');
       await menu.focus();
       await page.keyboard.press('Enter');

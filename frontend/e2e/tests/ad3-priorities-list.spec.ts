@@ -159,14 +159,47 @@ test.describe('the Priorities list (#605)', () => {
     await expect(first).toBeVisible();
     await expect(second).toHaveAttribute('draggable', 'true'); // not while the page is busy
     // By hand with intermediate moves: `dragTo` moves in one jump, and the HTML5 drag needs `dragover` events on the target before the drop;
-    // with one jump the drop sometimes arrived before the first `dragover` (the order did not change in 2 of 3 full runs).
-    const from = (await second.boundingBox())!;
-    const to = (await first.boundingBox())!;
-    await page.mouse.move(from.x + 20, from.y + from.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(from.x + 24, from.y + from.height / 2 - 4, { steps: 4 });
-    await page.mouse.move(to.x + 24, to.y + to.height / 2, { steps: 12 });
-    await page.mouse.up();
+    // with one jump the drop sometimes arrived before the first `dragover`. The drag is made from where the rows are when they have stopped
+    // moving (a load or a toast above the grid shifts them) and a drag the browser did not deliver (no `dragover` yet when the button
+    // came up) is made again: the assertion below is the same for every run.
+    await page.waitForLoadState('networkidle');
+    const settled = async (row: ReturnType<Page['locator']>) => {
+      let last = '';
+      await expect
+        .poll(
+          async () => {
+            const box = await row.boundingBox();
+            const now = box ? `${Math.round(box.x)},${Math.round(box.y)}` : '';
+            const same = now !== '' && now === last;
+            last = now;
+            return same;
+          },
+          { intervals: [100] },
+        )
+        .toBe(true);
+      return (await row.boundingBox())!;
+    };
+    const positionOf = async (label: string): Promise<number> =>
+      (await admin.get<Json[]>('/api/v1/priorities')).map((p) => p.label).indexOf(label);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      if ((await positionOf(extras[1].label)) < (await positionOf(extras[0].label))) break;
+      const from = await settled(second);
+      const to = await settled(first);
+      await page.mouse.move(from.x + 20, from.y + from.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(from.x + 24, from.y + from.height / 2 - 4, { steps: 4 });
+      await page.waitForTimeout(50);
+      await page.mouse.move(to.x + 24, to.y + to.height / 2, { steps: 12 });
+      await page.waitForTimeout(50);
+      const saved = page
+        .waitForResponse(
+          (r) => r.url().includes('/api/v1/priorities') && r.request().method() !== 'GET',
+          { timeout: 3000 },
+        )
+        .catch(() => undefined);
+      await page.mouse.up();
+      await saved;
+    }
     const order = (await admin.get<Json[]>('/api/v1/priorities')).map((p) => p.label);
     expect(order.indexOf(extras[1].label)).toBeLessThan(order.indexOf(extras[0].label));
     await expect(page.locator('[data-announce]')).toContainText('moved to position');
