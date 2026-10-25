@@ -20,10 +20,14 @@ import {
   SEARCH_ERROR_MESSAGE,
   SEARCH_TYPES,
   TextPart,
+  formatTotal,
   highlightParts,
   isSearchable,
   noResultsMessage,
+  searchBoxName,
+  searchBoxPlaceholder,
   searchTypeInfo,
+  searchedInLine,
   suggestionLines,
 } from './search-meta';
 import { Badge, SensitiveBadge } from '../ui/badge';
@@ -35,8 +39,10 @@ type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 /** One keyboard-reachable row of the listbox: a hit, or the trailing "View all results" action. */
 interface SearchOption {
   id: string;
-  kind: 'hit' | 'all';
+  kind: 'hit' | 'all' | 'group';
   hit?: SearchHit;
+  /** For a "See all N" option: the type tab it opens. */
+  type?: string;
 }
 
 const MORE_CHARS_HINT = 'Type at least 2 characters to search.';
@@ -44,11 +50,16 @@ const MORE_CHARS_HINT = 'Type at least 2 characters to search.';
 interface DisplayGroup {
   type: string;
   label: string;
+  /** The true count for the heading ("24", "1,000+"). */
+  count: string;
+  total: number;
+  /** "See all 24": present when the group has more hits than the panel shows. */
+  seeAll: SearchOption | null;
   options: SearchOption[];
 }
 
 /**
- * Header search (UX S20): a debounced typeahead that shows up to five hits per object type, grouped Matters, Clients, Tasks, Projects, Assets.
+ * Header search (UX S20): a debounced typeahead that shows up to three hits per object type (the group heading carries the true count and "See all N"), grouped Matters, Clients, Tasks, Projects, Assets.
  * ARIA 1.2 combobox with a listbox popup: Up/Down move, Enter opens the active hit (or the full results page when none is active), Escape closes.
  * Result counts and states are announced through a live region. Only the types the user may view come back (the server filters by permission).
  */
@@ -69,8 +80,8 @@ interface DisplayGroup {
         spellcheck="false"
         aria-autocomplete="list"
         aria-haspopup="listbox"
-        aria-label="Search clients, matters, tasks, assets"
-        placeholder="Search clients, matters, tasks, assets... (Ctrl+K)"
+        [attr.aria-label]="boxName()"
+        [attr.placeholder]="boxPlaceholder()"
         [attr.aria-expanded]="open()"
         [attr.aria-controls]="open() ? listId : null"
         [attr.aria-activedescendant]="activeId()"
@@ -80,7 +91,7 @@ interface DisplayGroup {
         (focus)="onFocus()"
       />
       @if (open()) {
-        <div class="mf-gs__panel" data-search-panel>
+        <div class="mf-gs__panel" data-search-panel [style]="panelStyle()">
           @switch (panelState()) {
             @case ('loading') {
               <p class="mf-gs__note" data-state="loading">Searching...</p>
@@ -109,18 +120,34 @@ interface DisplayGroup {
             <div class="mf-gs__scroll" mfScrollRegion="Search suggestions" data-search-scroll>
               <ul class="mf-gs__list" role="listbox" [id]="listId" aria-label="Search results">
                 @for (group of groups(); track group.type) {
-                  <li role="presentation">
-                    <span
-                      class="mf-gs__group"
-                      [id]="listId + '-' + group.type"
-                      role="presentation"
-                      >{{ group.label }}</span
+                  <li role="presentation" class="mf-gs__section" [attr.data-group]="group.type">
+                    <span class="mf-gs__group" [id]="listId + '-' + group.type" role="presentation"
+                      >{{ group.label }} <span data-group-count>({{ group.count }})</span></span
                     >
                     <ul
                       role="group"
                       [attr.aria-labelledby]="listId + '-' + group.type"
                       class="mf-gs__items"
                     >
+                      @if (group.seeAll; as more) {
+                        <!-- Sits in the heading row (grid) but first in the DOM, so Up and Down meet it before the group's hits. -->
+                        <li
+                          role="option"
+                          class="mf-gs__more"
+                          data-see-all
+                          [id]="more.id"
+                          [class.mf-gs__option--active]="more.id === activeId()"
+                          [attr.aria-selected]="more.id === activeId()"
+                          (mousedown)="$event.preventDefault()"
+                          tabindex="-1"
+                          (click)="choose(more)"
+                          (keydown.enter)="choose(more)"
+                          (mousemove)="hover(more)"
+                        >
+                          See all {{ group.count }}
+                          <span class="mf-sr-only"> {{ group.label.toLowerCase() }}</span>
+                        </li>
+                      }
                       @for (option of group.options; track option.id) {
                         @let lines = linesOf(option.hit!);
                         <li
@@ -199,7 +226,10 @@ interface DisplayGroup {
                     (keydown.enter)="choose(all)"
                     (mousemove)="hover(all)"
                   >
-                    View all results for "{{ trimmed() }}"
+                    <span data-view-all-text>{{ viewAllText() }}</span>
+                    @if (searchedIn(); as line) {
+                      <span class="mf-gs__searched" data-searched-in>{{ line }}</span>
+                    }
                   </li>
                 }
               </ul>
@@ -252,7 +282,7 @@ interface DisplayGroup {
       z-index: 30;
       display: flex;
       flex-direction: column;
-      max-height: min(70vh, 32rem);
+      max-height: min(70vh, 640px);
       overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border-strong);
@@ -265,6 +295,7 @@ interface DisplayGroup {
       min-height: 0;
       overflow-y: auto;
       scroll-padding-bottom: var(--mf-row-h);
+      overscroll-behavior: contain;
     }
     .mf-gs__list,
     .mf-gs__items {
@@ -272,7 +303,38 @@ interface DisplayGroup {
       padding: 0;
       list-style: none;
     }
+    /* A section is a grid: the heading on the left, the "See all N" option (first item of the group) on the right of the same row, the hits below. */
+    .mf-gs__section {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+    }
+    .mf-gs__section > .mf-gs__items {
+      display: contents;
+    }
+    .mf-gs__section .mf-gs__option {
+      grid-column: 1 / -1;
+    }
+    .mf-gs__more {
+      grid-column: 2;
+      grid-row: 1;
+      padding: var(--mf-s1) var(--mf-s3);
+      color: var(--mf-link);
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mf-gs__more.mf-gs__option--active {
+      background: var(--mf-selected-bg);
+    }
+    .mf-gs__searched {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+      font-weight: 400;
+    }
     .mf-gs__group {
+      grid-column: 1;
+      grid-row: 1;
       display: block;
       padding: var(--mf-s2) var(--mf-s3) var(--mf-s1);
       color: var(--mf-text-muted);
@@ -349,6 +411,21 @@ interface DisplayGroup {
     .mf-gs__all.mf-gs__option--active {
       background: var(--mf-selected-bg);
     }
+    @media (max-width: 639px) {
+      .mf-gs__panel {
+        border-radius: 0;
+        border-inline: 0;
+      }
+      .mf-gs__group {
+        min-height: 2rem;
+        box-sizing: border-box;
+      }
+      .mf-gs__more {
+        min-height: var(--mf-row-h);
+        display: flex;
+        align-items: center;
+      }
+    }
     .mf-gs__note {
       margin: 0;
       padding: var(--mf-s3);
@@ -385,8 +462,8 @@ interface DisplayGroup {
 export class GlobalSearch {
   /** Delay between the last keystroke and the request (250 ms, architecture 14). */
   readonly debounceMs = input(250);
-  /** Hits per type in the dropdown. */
-  readonly perType = input(5);
+  /** Hits per type in the dropdown (the heading carries the true count and "See all N" for the rest). */
+  readonly perType = input(3);
 
   protected readonly listId = 'mf-global-search-list';
   protected readonly errorMessage = SEARCH_ERROR_MESSAGE;
@@ -403,6 +480,10 @@ export class GlobalSearch {
   protected readonly open = signal(false);
   private readonly state = signal<LoadState>('idle');
   private readonly response = signal<SearchGroup[]>([]);
+  /** The types the server searched (the response's `searchedTypes`); null until the first answer. */
+  private readonly searched = signal<string[] | null>(null);
+  /** Phone: the panel is a fixed sheet under the box; these are its top edge and height in px (visual viewport), else null. */
+  private readonly sheet = signal<{ top: number; height: number } | null>(null);
   private readonly activeIndex = signal(-1);
 
   protected readonly trimmed = computed(() => this.query().trim());
@@ -413,22 +494,64 @@ export class GlobalSearch {
     const byType = new Map(this.response().map((g) => [g.type, g]));
     return SEARCH_TYPES.filter(
       (t) => this.auth.has(t.permission) && (byType.get(t.type)?.items.length ?? 0) > 0,
-    ).map((t) => ({
-      type: t.type,
-      label: t.label,
-      options: byType
-        .get(t.type)!
-        .items.map((hit) => ({ id: `mf-gs-${t.type}-${hit.id}`, kind: 'hit' as const, hit })),
-    }));
+    ).map((t) => {
+      const group = byType.get(t.type)!;
+      const options = group.items.map((hit) => ({
+        id: `mf-gs-${t.type}-${hit.id}`,
+        kind: 'hit' as const,
+        hit,
+      }));
+      // Older answers without totals count what they hold.
+      const total = group.total ?? options.length;
+      const capped = group.totalCapped ?? false;
+      return {
+        type: t.type,
+        label: t.label,
+        count: formatTotal(total, capped),
+        total,
+        seeAll:
+          total > options.length || capped
+            ? { id: `mf-gs-more-${t.type}`, kind: 'group' as const, type: t.type }
+            : null,
+        options,
+      };
+    });
   });
 
   protected readonly viewAll = computed<SearchOption | null>(() =>
     this.searchable() && this.state() === 'ready' ? { id: 'mf-gs-view-all', kind: 'all' } : null,
   );
 
-  /** Every option in keyboard order (hits group by group, then "View all results"). */
+  /** `View all 140 results for "review"` (the sum of the group totals, `n+` when any group was capped). */
+  protected readonly viewAllText = computed(() => {
+    const groups = this.groups();
+    const shown = new Set(groups.map((g) => g.type));
+    const capped = this.response().some((g) => g.totalCapped && shown.has(g.type));
+    const total = groups.reduce((n, g) => n + g.total, 0);
+    return `View all ${formatTotal(total, capped)} ${total === 1 && !capped ? 'result' : 'results'} for "${this.trimmed()}"`;
+  });
+
+  protected readonly searchedIn = computed(() => searchedInLine(this.searched()));
+  protected readonly boxName = computed(() => searchBoxName((c) => this.auth.has(c)));
+  protected readonly boxPlaceholder = computed(() => searchBoxPlaceholder((c) => this.auth.has(c)));
+
+  /** The phone sheet (below 640 px): fixed under the box, as high as the visible viewport allows, so the footer stays above the on-screen keyboard. */
+  protected readonly panelStyle = computed(() => {
+    const sheet = this.sheet();
+    return sheet && this.open()
+      ? {
+          position: 'fixed',
+          top: `${sheet.top}px`,
+          left: '0',
+          right: '0',
+          maxHeight: `${sheet.height}px`,
+        }
+      : null;
+  });
+
+  /** Every option in keyboard order (per group its "See all N", then its hits; finally "View all results"). */
   private readonly options = computed<SearchOption[]>(() => {
-    const list = this.groups().flatMap((g) => g.options);
+    const list = this.groups().flatMap((g) => (g.seeAll ? [g.seeAll, ...g.options] : g.options));
     const all = this.viewAll();
     return all ? [...list, all] : list;
   });
@@ -477,6 +600,37 @@ export class GlobalSearch {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.timer));
+    // Phone (#464): while the panel is open below 640 px it is a sheet fitted to the visible viewport (it follows the on-screen keyboard);
+    // the page behind does not scroll.
+    effect((onCleanup) => {
+      if (
+        !this.open() ||
+        typeof matchMedia !== 'function' ||
+        !matchMedia('(max-width: 639px)').matches
+      ) {
+        this.sheet.set(null);
+        return;
+      }
+      const measure = () => {
+        const top = this.box().nativeElement.getBoundingClientRect().bottom + 4;
+        const vv = window.visualViewport;
+        const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+        this.sheet.set({ top, height: Math.max(120, bottom - top - 4) });
+      };
+      measure();
+      const root = document.documentElement;
+      const overflow = root.style.overflow;
+      root.style.overflow = 'hidden';
+      window.addEventListener('resize', measure);
+      window.visualViewport?.addEventListener('resize', measure);
+      window.visualViewport?.addEventListener('scroll', measure);
+      onCleanup(() => {
+        window.removeEventListener('resize', measure);
+        window.visualViewport?.removeEventListener('resize', measure);
+        window.visualViewport?.removeEventListener('scroll', measure);
+        root.style.overflow = overflow;
+      });
+    });
     // Keyboard moves keep the active option on screen; the focus stays in the input (aria-activedescendant).
     effect(() => {
       const id = this.activeId();
@@ -587,6 +741,7 @@ export class GlobalSearch {
   protected choose(option: SearchOption): void {
     this.close();
     if (option.kind === 'all') this.goToResults();
+    else if (option.kind === 'group') this.goToResults(option.type);
     else if (option.hit) void this.router.navigateByUrl(option.hit.path);
   }
 
@@ -604,9 +759,9 @@ export class GlobalSearch {
     this.activeIndex.set(-1);
   }
 
-  private goToResults(): void {
+  private goToResults(type?: string): void {
     this.close();
-    void this.router.navigate(['/search'], { queryParams: { q: this.trimmed() } });
+    void this.router.navigate(['/search'], { queryParams: { q: this.trimmed(), type } });
   }
 
   private async run(text: string): Promise<void> {
@@ -621,6 +776,7 @@ export class GlobalSearch {
       const result = await firstValueFrom(api.search(text, types, this.perType()));
       if (id !== this.requestId) return;
       this.response.set(result.groups.filter((g) => searchTypeInfo(g.type)));
+      this.searched.set(result.searchedTypes ?? null);
       this.state.set('ready');
     } catch {
       if (id !== this.requestId) return;

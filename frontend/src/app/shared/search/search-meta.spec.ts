@@ -1,9 +1,14 @@
 import {
   SEARCH_TYPES,
+  formatTotal,
   highlightParts,
   isSearchable,
+  joinWords,
   noResultsMessage,
+  searchBoxName,
+  searchBoxPlaceholder,
   searchableTypes,
+  searchedInLine,
   suggestionLines,
 } from './search-meta';
 
@@ -85,5 +90,41 @@ describe('search-meta', () => {
       }
       expect(suggestionLines({ ...base, type: 'task' }).lock).toBe(false);
     });
+  });
+});
+
+describe('search box words and the searched-in line (#465)', () => {
+  const only =
+    (...codes: string[]) =>
+    (c: string) =>
+      codes.includes(c);
+
+  it('joins words without a serial comma', () => {
+    expect(joinWords([])).toBe('');
+    expect(joinWords(['a'])).toBe('a');
+    expect(joinWords(['a', 'b'])).toBe('a and b');
+    expect(joinWords(['a', 'b', 'c'])).toBe('a, b and c');
+  });
+
+  it('keeps the full name for everyone and shortens it for narrow permissions', () => {
+    const all = only('Client.View', 'Matter.View', 'Project.View', 'Task.View', 'Asset.View');
+    expect(searchBoxPlaceholder(all)).toBe('Search clients, matters, tasks, assets... (Ctrl+K)');
+    expect(searchBoxName(only('Asset.View'))).toBe('Search assets');
+    expect(searchBoxName(only('Project.View'))).toBe('Search projects');
+    expect(searchBoxName(only())).toBe('Search MatterFlow');
+  });
+
+  it('writes the searched-in line only when fewer than five types were searched', () => {
+    expect(searchedInLine(['task'])).toBe('Searched in: Tasks');
+    expect(searchedInLine(['asset', 'client', 'matter'])).toBe(
+      'Searched in: Matters, Clients and Assets',
+    );
+    expect(searchedInLine(['matter', 'client', 'task', 'project', 'asset'])).toBeNull();
+    expect(searchedInLine(null)).toBeNull();
+  });
+
+  it('formats totals with the cap marker', () => {
+    expect(formatTotal(24, false)).toBe('24');
+    expect(formatTotal(1000, true)).toBe('1,000+');
   });
 });

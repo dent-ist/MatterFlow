@@ -110,11 +110,15 @@ test.describe('Hit links lead only where the person may go (#461)', () => {
 
       // The header suggestions: the same rule for every option.
       await page.goto('/dashboard').catch(() => undefined);
-      const box = page.getByRole('combobox', { name: 'Search clients, matters, tasks, assets' });
+      const box = page.getByRole('combobox', {
+        name: /^Search (clients|matters|tasks|assets|projects)/,
+      });
       if (!(await box.isVisible())) await page.goto(hrefs[0]);
       await expect(box).toBeVisible();
       await box.fill(ref);
-      const options = page.locator('[data-search-panel] [role=option]:not([data-view-all])');
+      const options = page.locator(
+        '[data-search-panel] [role=option]:not([data-view-all]):not([data-see-all])',
+      );
       await expect(options.first()).toBeVisible();
       const count = await options.count();
       expect(count).toBeGreaterThan(0);

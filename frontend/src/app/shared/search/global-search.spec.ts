@@ -74,7 +74,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(api.search).toHaveBeenCalledWith(
       '343',
       ['matter', 'client', 'task', 'project', 'asset'],
-      5,
+      3,
     );
   });
 
@@ -101,7 +101,7 @@ describe('mf-global-search (header typeahead)', () => {
           .querySelector(`#${g.getAttribute('aria-labelledby')}`)!
           .textContent!.trim(),
       ),
-    ).toEqual(['Matters', 'Clients', 'Tasks']);
+    ).toEqual(['Matters (1)', 'Clients (1)', 'Tasks (1)']);
     const text = options().map((o) => o.textContent!.replace(/\s+/g, ' ').trim());
     expect(text[0]).toContain('00343-00012');
     expect(text[0]).toContain('Merger Review');
@@ -110,7 +110,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(text[1]).toContain('00343');
     expect(text[1]).toContain('Acme Corp');
     expect(text[2]).toContain('TSK-1042');
-    expect(text.at(-1)).toBe('View all results for "343"');
+    expect(text.at(-1)).toBe('View all 3 results for "343"');
   });
 
   it('requires two characters (or one digit) before it searches', async () => {
@@ -120,7 +120,7 @@ describe('mf-global-search (header typeahead)', () => {
     expect(el().querySelector('[role=listbox]')).toBeNull();
 
     await type('7');
-    expect(api.search).toHaveBeenCalledWith('7', expect.any(Array), 5);
+    expect(api.search).toHaveBeenCalledWith('7', expect.any(Array), 3);
   });
 
   it('debounces: only the last text of a burst is searched', async () => {
@@ -133,7 +133,7 @@ describe('mf-global-search (header typeahead)', () => {
     fixture.detectChanges();
 
     expect(api.search).toHaveBeenCalledTimes(1);
-    expect(api.search).toHaveBeenCalledWith('acme', expect.any(Array), 5);
+    expect(api.search).toHaveBeenCalledWith('acme', expect.any(Array), 3);
   });
 
   it('moves with Arrow keys through hits and "View all", exposing the active option to assistive technology', async () => {
@@ -157,6 +157,94 @@ describe('mf-global-search (header typeahead)', () => {
     expect(box().getAttribute('aria-activedescendant')).toBe(options()[0].id);
     key('End');
     expect(box().getAttribute('aria-activedescendant')).toBe(options().at(-1)!.id);
+  });
+
+  describe('true counts, See all and the footer total (#463)', () => {
+    const manyTasks = () =>
+      aResponse([
+        aGroup('matter', [aHit()], true, 12),
+        aGroup(
+          'task',
+          [1, 2, 3].map((n) =>
+            aHit({ type: 'task', id: n, label: `Task ${n}`, path: `/tasks/${n}` }),
+          ),
+          true,
+          1000,
+          true,
+        ),
+        aGroup('client', [aHit({ type: 'client', id: 9, label: 'Acme', path: '/clients/9' })]),
+      ]);
+
+    it('writes the true count in the heading, `1,000+` when capped, and offers See all only where hits are left out', async () => {
+      await create(ALL, manyTasks());
+      await type('review');
+
+      const headings = Array.from(el().querySelectorAll('.mf-gs__group')).map((h) =>
+        h.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(headings).toEqual(['Matters (12)', 'Clients (1)', 'Tasks (1,000+)']);
+      const more = Array.from(el().querySelectorAll('[data-see-all]')).map((o) =>
+        o.textContent!.replace(/\s+/g, ' ').trim(),
+      );
+      expect(more).toEqual(['See all 12 matters', 'See all 1,000+ tasks']);
+    });
+
+    it('sums the group totals in the footer, with `n+` when any group is capped', async () => {
+      await create(ALL, manyTasks());
+      await type('review');
+      expect(el().querySelector('[data-view-all-text]')!.textContent).toBe(
+        'View all 1,013+ results for "review"',
+      );
+    });
+
+    it('puts See all before the group hits in keyboard order and opens the type tab with Enter', async () => {
+      await create(ALL, manyTasks());
+      await type('review');
+      const ids = options().map((o) => o.getAttribute('data-see-all') !== null);
+      expect(ids.slice(0, 3)).toEqual([true, false, false]); // See all matters, then the matter, then the client
+      key('ArrowDown');
+      expect(options()[0].getAttribute('aria-selected')).toBe('true');
+      key('Enter');
+      expect(router.navigate).toHaveBeenLastCalledWith(['/search'], {
+        queryParams: { q: 'review', type: 'matter' },
+      });
+    });
+
+    it('names the searched types in the footer', async () => {
+      await create(['Task.View'], { ...manyTasks(), searchedTypes: ['task'] });
+      await type('review');
+      expect(el().querySelector('[data-searched-in]')!.textContent).toBe('Searched in: Tasks');
+    });
+
+    it('leaves the searched-in line out when all five types are searched', async () => {
+      await create(ALL, {
+        ...manyTasks(),
+        searchedTypes: ['matter', 'client', 'task', 'project', 'asset'],
+      });
+      await type('review');
+      expect(el().querySelector('[data-searched-in]')).toBeNull();
+    });
+  });
+
+  describe("placeholder and name from the person's types (#465)", () => {
+    it('is unchanged for a person who can search everything', async () => {
+      await create();
+      expect(box().getAttribute('placeholder')).toBe(
+        'Search clients, matters, tasks, assets... (Ctrl+K)',
+      );
+      expect(box().getAttribute('aria-label')).toBe('Search clients, matters, tasks, assets');
+    });
+
+    it('names only the searchable types, keeping the Ctrl+K hint', async () => {
+      await create(['Task.View']);
+      expect(box().getAttribute('placeholder')).toBe('Search tasks... (Ctrl+K)');
+      expect(box().getAttribute('aria-label')).toBe('Search tasks');
+    });
+
+    it('names Client and Matter in the usual order', async () => {
+      await create(['Client.View', 'Matter.View']);
+      expect(box().getAttribute('placeholder')).toBe('Search clients, matters... (Ctrl+K)');
+    });
   });
 
   it('opens the active hit with Enter', async () => {
@@ -287,11 +375,11 @@ describe('mf-global-search (header typeahead)', () => {
     await create(['Client.View']);
     await type('343');
 
-    expect(api.search).toHaveBeenCalledWith('343', ['client'], 5);
+    expect(api.search).toHaveBeenCalledWith('343', ['client'], 3);
     const labels = Array.from(el().querySelectorAll('.mf-gs__group')).map((g) =>
       g.textContent!.trim(),
     );
-    expect(labels).toEqual(['Clients']); // the matter and task groups of the (over-generous) response are not rendered
+    expect(labels).toEqual(['Clients (1)']); // the matter and task groups of the (over-generous) response are not rendered
   });
 
   it('marks sensitive matters with the badge and inactive records with Inactive', async () => {
@@ -455,7 +543,7 @@ describe('mf-global-search (header typeahead)', () => {
       key('ArrowUp');
       expect(box().getAttribute('aria-activedescendant')).toBe(all.id);
       expect(all.getAttribute('aria-selected')).toBe('true');
-      expect(all.textContent!.trim()).toBe('View all results for "343"');
+      expect(all.textContent!.trim()).toBe('View all 3 results for "343"');
     });
 
     it('opens the full results page with Enter on the footer', async () => {

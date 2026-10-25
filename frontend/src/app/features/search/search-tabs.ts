@@ -1,5 +1,5 @@
 import { SearchGroup } from '../../api/generated/api-client';
-import { SearchType, SearchTypeInfo } from '../../shared/search/search-meta';
+import { SearchType, SearchTypeInfo, formatTotal } from '../../shared/search/search-meta';
 import { MfTab } from '../../shared/ui/tabs';
 import { PAGE_SIZES } from '../../shared/ui/list-query';
 
@@ -8,10 +8,7 @@ export const ALL_TAB = 'all';
 
 export type SearchTabKey = typeof ALL_TAB | SearchType;
 
-/** A count as the tabs and headings show it: `24`, `1,000+` when the API stopped counting at its cap. */
-export function formatTotal(total: number, capped: boolean): string {
-  return total.toLocaleString('en-US') + (capped ? '+' : '');
-}
+export { formatTotal };
 
 /** The count a tab announces ("24 results", "1,000 or more results"). */
 function spoken(total: number, capped: boolean): string {

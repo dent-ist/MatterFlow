@@ -22,6 +22,55 @@ export const SEARCH_TYPES: readonly SearchTypeInfo[] = [
   { type: 'asset', label: 'Assets', singular: 'Asset', permission: 'Asset.View' },
 ];
 
+/** "a", "a and b", "a, b and c" (no serial comma, like the rest of the app's lists). */
+export function joinWords(words: readonly string[]): string {
+  if (words.length <= 1) return words.join('');
+  return `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+}
+
+/**
+ * The words the header box names, in the order it has always used (clients, matters, tasks, assets): only the types the person may view.
+ * Projects are searched as well but were never named in the box; they are named only when they are all the person can search.
+ */
+export function searchBoxWords(has: (code: Permission) => boolean): string[] {
+  const named = (
+    [
+      ['client', 'clients'],
+      ['matter', 'matters'],
+      ['task', 'tasks'],
+      ['asset', 'assets'],
+    ] as const
+  )
+    .filter(([type]) => has(searchTypeInfo(type)!.permission))
+    .map(([, word]) => word);
+  if (named.length === 0 && has('Project.View')) return ['projects'];
+  return named;
+}
+
+/** The accessible name of the header box: `Search clients, matters, tasks, assets` for everyone who may search all, shorter otherwise (#465). */
+export function searchBoxName(has: (code: Permission) => boolean): string {
+  const words = searchBoxWords(has);
+  return words.length === 0 ? 'Search MatterFlow' : `Search ${words.join(', ')}`;
+}
+
+/** The placeholder: the name plus the shortcut hint, which stays exactly as it was. */
+export function searchBoxPlaceholder(has: (code: Permission) => boolean): string {
+  return `${searchBoxName(has)}... (Ctrl+K)`;
+}
+
+/** The muted footer line "Searched in: Clients and Matters"; null when all five types are searched (it would be noise). */
+export function searchedInLine(searched: readonly string[] | null | undefined): string | null {
+  const labels = SEARCH_TYPES.filter((t) => searched?.includes(t.type)).map((t) => t.label);
+  return labels.length === 0 || labels.length === SEARCH_TYPES.length
+    ? null
+    : `Searched in: ${joinWords(labels)}`;
+}
+
+/** A total as headings and the footer show it: `24`, `1,000+` when the API stopped counting at its cap. */
+export function formatTotal(total: number, capped: boolean): string {
+  return total.toLocaleString('en-US') + (capped ? '+' : '');
+}
+
 export function searchTypeInfo(type: string): SearchTypeInfo | undefined {
   return SEARCH_TYPES.find((t) => t.type === type);
 }

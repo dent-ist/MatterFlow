@@ -25,8 +25,11 @@ async function seedFamily(seed: import('../support/seed').Seeder, sensitive: boo
 }
 
 /** The header box at any width: on a phone it sits behind the search button. */
-async function openBox(page: Page): Promise<Locator> {
-  const box = page.getByRole('combobox', { name: 'Search clients, matters, tasks, assets' });
+async function openBox(
+  page: Page,
+  name = 'Search clients, matters, tasks, assets',
+): Promise<Locator> {
+  const box = page.getByRole('combobox', { name });
   const button = page.getByTestId('search-button');
   await box.or(button).first().waitFor({ state: 'visible' });
   if (!(await box.isVisible())) await button.click();
@@ -98,7 +101,7 @@ test.describe('Search suggestion panel (WP-SR1)', () => {
     const token = `Srs${uid().replace(/[^a-z0-9]/gi, '')}`;
     const world = await seed.world();
     for (let i = 0; i < 6; i++) await seed.task(world, { title: `${token} task ${i}` });
-    await page.setViewportSize({ width: 1366, height: 320 }); // short window: five groups cannot fit
+    await page.setViewportSize({ width: 1366, height: 240 }); // short window: the three hits and the footer cannot fit
     const box = await suggest(page, token);
     const scroller = page.locator('[data-search-scroll]');
     await expect(scroller).toHaveAttribute('role', 'region');
@@ -121,7 +124,7 @@ test.describe('Search suggestion panel (WP-SR1)', () => {
     const user = await seed.user([role.name], 'tasks-only');
     const page = await asUser(user.username);
     await page.goto('/my-work');
-    const box = await openBox(page);
+    const box = await openBox(page, 'Search tasks');
     await box.fill(s.token);
     const panel = page.locator('[data-search-panel]');
     const task = panel.getByRole('option', { name: new RegExp(`${s.token} task`) });
