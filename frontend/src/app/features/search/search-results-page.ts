@@ -86,6 +86,8 @@ interface Section {
       [tab]="tab()"
       tabsLabel="Search results by type"
       idPrefix="search"
+      tableId="search-results"
+      skipLabel="Skip to results"
       (tabChange)="select($event)"
     >
       @if (tab() !== 'all' && searchable()) {
@@ -350,10 +352,19 @@ export class SearchResultsPage {
       case 'error':
         return SEARCH_ERROR_MESSAGE;
       default: {
-        const count =
-          this.tab() === 'all'
-            ? this.sections().reduce((n, s) => n + s.group.items.length, 0)
-            : (this.typePage()?.items.length ?? 0);
+        if (this.tab() !== 'all') {
+          const page = this.typePage();
+          if (!page || page.items.length === 0) return noResultsMessage(this.trimmed());
+          const pages = Math.max(1, Math.ceil(page.total / page.pageSize));
+          return SEARCH_COPY.tabCount(
+            this.tabLabel(),
+            page.total,
+            page.page,
+            pages,
+            this.activeFilterCount() > 0,
+          );
+        }
+        const count = this.sections().reduce((n, s) => n + s.group.items.length, 0);
         return count === 0
           ? noResultsMessage(this.trimmed())
           : `${count} ${count === 1 ? 'result' : 'results'} for ${this.trimmed()}`;

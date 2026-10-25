@@ -298,7 +298,7 @@ describe('SearchResultsPage', () => {
     });
   });
 
-  it('a task result remembers this view for the Task page (from=search, the row for Back); other results are plain links (T9, #324)', async () => {
+  it('a task result remembers this view for the Task page (from=search); every result keeps its row for Back (T9, #324, #479)', async () => {
     const fixture = await create('343');
     const el: HTMLElement = fixture.nativeElement;
     const task = sections(el)[2].querySelector<HTMLAnchorElement>(
@@ -309,7 +309,9 @@ describe('SearchResultsPage', () => {
     expect(task.getAttribute('data-row-key')).not.toBeNull();
     const matter = sections(el)[0].querySelector<HTMLAnchorElement>('[data-hit-row] a')!;
     expect(matter.getAttribute('href')).toBe('/matters/7');
-    expect(matter.getAttribute('data-row-list')).toBeNull();
+    // Other types keep their plain address and a type-prefixed row key, so browser Back focuses the link left.
+    expect(matter.getAttribute('data-row-list')).toBe('search');
+    expect(matter.getAttribute('data-row-key')).toBe('matter-7');
   });
 
   it('shows only the columns that fit each type, with the reference as plain text (#469)', async () => {
@@ -470,6 +472,20 @@ describe('SearchResultsPage', () => {
     expect(fixture.nativeElement.querySelector('[data-live]').textContent).toContain(
       '3 results for 343',
     );
+  });
+
+  it('announces the tab, the page and a filter change once the page of hits is there (#480)', async () => {
+    const fixture = await create('demo', numericResponse(), ALL, { type: 'matter' });
+    const live = () => fixture.nativeElement.querySelector('[data-live]').textContent.trim();
+    api.advancedSearch.mockReturnValue(
+      ok(anAdvancedPage([aHit()], { total: 60, page: 2, pageSize: 25 })),
+    );
+    fixture.componentRef.setInput('page', '2');
+    await settle(fixture);
+    expect(live()).toBe('Matters, 60 results, page 2 of 3');
+    fixture.componentRef.setInput('active', 'true');
+    await settle(fixture);
+    expect(live()).toBe('Filters applied, 60 results, page 2 of 3');
   });
 
   it('searches again when the query in the URL changes', async () => {

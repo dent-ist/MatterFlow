@@ -79,6 +79,15 @@ export const SEARCH_COPY = {
   /** The panel footer: `View all 140 results for "review"`. */
   viewAll: (count: string, total: number, capped: boolean, query: string) =>
     `View all ${count} ${total === 1 && !capped ? 'result' : 'results'} for "${query}"`,
+  /** The panel after a settled query: `140 results in 5 groups`. */
+  panelCount: (count: string, total: number, groups: number) =>
+    `${count} ${total === 1 ? 'result' : 'results'} in ${groups} ${groups === 1 ? 'group' : 'groups'}`,
+  /** A type tab or page change: `Tasks, 24 results, page 2 of 3`; with a filter: `Filters applied, 12 results`. */
+  tabCount: (label: string, total: number, page: number, pages: number, filtered: boolean) =>
+    (filtered
+      ? `Filters applied, ${total.toLocaleString('en-US')} ${total === 1 ? 'result' : 'results'}`
+      : `${label}, ${total.toLocaleString('en-US')} ${total === 1 ? 'result' : 'results'}`) +
+    (pages > 1 ? `, page ${page} of ${pages}` : ''),
 } as const;
 
 /** A total as headings and the footer show it: `24`, `1,000+` when the API stopped counting at its cap. */

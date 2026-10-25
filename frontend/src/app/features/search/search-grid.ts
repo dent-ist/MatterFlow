@@ -6,16 +6,11 @@ import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
 import { LoadState } from '../../shared/ui/data-table';
 import { GridBody } from '../../shared/ui/grid-body';
 import { MatterRef } from '../../shared/ui/matter-ref';
-import {
-  RecordCard,
-  RecordCardDef,
-  RecordCardList,
-  phoneCards,
-} from '../../shared/ui/record-card-list';
+import { RecordCardDef, RecordCardList, phoneCards } from '../../shared/ui/record-card-list';
 import { RowLink } from '../../shared/ui/row-nav';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
-import { SearchHitCard } from './search-hit-card';
+import { SearchHitCard, hitRowKey } from './search-hit-card';
 
 /** The kinds of cell the grid knows; each type picks its columns from them. */
 type CellKind = 'ref' | 'name' | 'client' | 'matter' | 'matterNumber' | 'assetType' | 'status';
@@ -88,7 +83,6 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     ActiveBadge,
     GridBody,
     MatterRef,
-    RecordCard,
     RecordCardDef,
     RecordCardList,
     RouterLink,
@@ -204,8 +198,8 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                             [routerLink]="hit.path"
                             [queryParams]="hit.type === 'task' ? origin.params('search') : null"
                             [state]="hit.type === 'task' ? origin.state() : undefined"
-                            [mfRowLink]="hit.type === 'task' ? 'search' : ''"
-                            [rowKey]="hit.id"
+                            mfRowLink="search"
+                            [rowKey]="rowKey(hit)"
                             [attr.title]="hit.label"
                           >
                             @for (part of parts(hit.label); track $index) {
@@ -251,7 +245,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                     @case ('matter') {
                       <td [attr.data-cell]="col.kind">
                         @if (hit.matterRef) {
-                          <mf-matter-ref [value]="hit.matterRef" />
+                          <mf-matter-ref [value]="hit.matterRef" [rowStop]="true" />
                           @if (hit.matterName) {
                             <span class="sg-sub" [attr.title]="hit.matterName">{{
                               hit.matterName
@@ -263,7 +257,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                     @case ('matterNumber') {
                       <td [attr.data-cell]="col.kind">
                         @if (hit.matterRef) {
-                          <mf-matter-ref [value]="hit.matterRef" />
+                          <mf-matter-ref [value]="hit.matterRef" [rowStop]="true" />
                         }
                       </td>
                     }
@@ -306,6 +300,8 @@ export class SearchGrid {
 
   protected readonly columns = computed(() => SEARCH_COLUMNS[this.type()]);
   protected readonly bones = computed(() => this.columns().map((c) => c.bone));
+
+  protected readonly rowKey = hitRowKey;
 
   protected parts(text: string) {
     return highlightParts(text, this.query());

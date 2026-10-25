@@ -590,8 +590,10 @@ export class GlobalSearch {
       case 'empty':
         return noResultsMessage(this.trimmed());
       default: {
-        const count = this.groups().reduce((n, g) => n + g.options.length, 0);
-        return `${count} ${count === 1 ? 'result' : 'results'} available. Use the up and down arrow keys to review, Enter to open.`;
+        const groups = this.groups();
+        const capped = this.response().some((g) => g.totalCapped);
+        const total = groups.reduce((n, g) => n + g.total, 0);
+        return `${SEARCH_COPY.panelCount(formatTotal(total, capped), total, groups.length)}. Use the up and down arrow keys to review, Enter to open.`;
       }
     }
   });

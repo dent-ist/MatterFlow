@@ -314,7 +314,7 @@ describe('mf-global-search (header typeahead)', () => {
   it('announces the number of results and the empty and error states through a live region', async () => {
     await create();
     await type('343');
-    expect(live()).toContain('3 results available');
+    expect(live()).toContain('3 results in 3 groups');
 
     api.search.mockReturnValue(ok(aResponse([aGroup('client', [])], 'zzz')));
     await type('zzz');

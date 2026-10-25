@@ -7,6 +7,14 @@ import { StatusBadge } from '../../shared/ui/status-badge';
 import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
 
 /**
+ * The key of a hit's row for "Back returns to the row" (#479): a task keeps its id (Task Detail looks it up), every other type is prefixed so a
+ * matter and a client with the same id are two rows.
+ */
+export function hitRowKey(hit: SearchHit): string | number {
+  return hit.type === 'task' ? hit.id : `${hit.type}-${hit.id}`;
+}
+
+/**
  * What a hit card says on its meta line: the reference (monospace, none for a project or an asset) and the muted context. It is the field map of
  * the suggestion panel (`suggestionLines`: matter and client first, an asset's URL never as text) with the status taken out, because the card shows
  * the status as a badge. The grid columns of the results page (#468) read the same map, so a new searchable type adds one entry in one place.
@@ -58,8 +66,8 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
       [link]="hit().path"
       [queryParams]="task() ? origin.params('search') : undefined"
       [state]="task() ? origin.state() : undefined"
-      [list]="task() ? 'search' : ''"
-      [rowKey]="hit().id"
+      list="search"
+      [rowKey]="rowKey()"
     >
       @if (hit().type === 'matter' && hit().isSensitive) {
         <mf-sensitive-badge mfCardBadges />
@@ -113,4 +121,5 @@ export class SearchHitCard {
 
   protected readonly lines = computed(() => hitCardLines(this.hit()));
   protected readonly task = computed(() => this.hit().type === 'task');
+  protected readonly rowKey = computed(() => hitRowKey(this.hit()));
 }
