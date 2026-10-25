@@ -38,6 +38,7 @@ import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
 import { ConnectionBanner } from './connection-banner';
 import { NotificationBell } from './notification-bell';
+import { RouteAnnouncer } from './route-announcer';
 
 /**
  * Route data that hides the shell's global "Create task" button because the page's record header has its own, prefilled with the record
@@ -70,6 +71,7 @@ const PHONE_QUERY = '(max-width: 639px)';
     UserMenu,
     ConnectionBanner,
     NotificationBell,
+    RouteAnnouncer,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

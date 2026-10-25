@@ -61,6 +61,9 @@
 <!-- The one banner slot under the header (S13, #611): offline now, the sign-in banner joins it (#612). -->
 <mf-connection-banner />
 
+<!-- Says the new page's title after a navigation (S9a, #624); never moves focus. -->
+<mf-route-announcer />
+
 @if (helpHost(); as host) {
   <ng-container *ngComponentOutlet="host" />
 }
