@@ -180,9 +180,25 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       margin: 0;
       color: var(--mf-text-muted);
     }
+    /* The skeleton holds about the room the sections take, so the details list does not jump when they arrive. */
     .mo__sk {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--mf-s3);
+      min-height: 26rem;
+      align-content: start;
+    }
+    .mo__sk-card {
+      display: grid;
+      align-content: start;
       gap: var(--mf-s2);
+      min-height: 10rem;
+      padding: var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+    }
+    .mo__sk-card--wide {
+      grid-column: 1 / -1;
     }
     .mo__bar {
       height: 14px;
@@ -201,7 +217,8 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       margin: 0;
     }
     @media (max-width: 767.98px) {
-      .mo {
+      .mo,
+      .mo__sk {
         grid-template-columns: minmax(0, 1fr);
       }
     }

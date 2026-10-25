@@ -91,6 +91,7 @@ test.describe('Landing for oversight roles (#628)', () => {
       'My Work',
     );
     await nav.getByRole('button', { name: 'More' }).click();
+    await expect(nav.getByRole('link', { name: 'My Work' })).toBeVisible();
     const items = await nav.getByRole('link').allInnerTexts();
     const work = items.map((t) => t.trim()).filter((t) => ['My Matters', 'My Work'].includes(t));
     expect(work).toEqual(['My Matters', 'My Work']);
