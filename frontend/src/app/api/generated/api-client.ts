@@ -15573,6 +15573,15 @@ export interface AssetTaskLink {
     assetLinkRoleId: number | undefined;
     assetLinkRoleName: string | undefined;
     linkedAtUtc: string;
+    dueDate?: string | undefined;
+    dueAtUtc?: string | undefined;
+    isAsap?: boolean;
+    isOverdue?: boolean;
+    isOpen?: boolean;
+    assigneeUserId?: number | undefined;
+    assigneeName?: string | undefined;
+    priorityLabel?: string | undefined;
+    priorityColor?: string | undefined;
 
     [key: string]: any;
 }

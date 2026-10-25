@@ -1,6 +1,7 @@
 using MatterFlow.Assets.Application;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Identity.Contracts;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
@@ -77,9 +78,9 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
 /// <summary>Assets: Matter-owned records Tasks work on. Never deleted; deactivate instead.</summary>
 [ApiController]
 [Route("api/v1/assets")]
-public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkReader> taskLinks) : ControllerBase
+public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkReader> taskLinks, IPermissionChecker permissions) : ControllerBase
 {
-    /// <summary>The Tasks this Asset is linked to ("Linked Tasks" on the Asset detail), with the relationship of the link.</summary>
+    /// <summary>The Tasks this Asset is linked to ("Linked Tasks" on the Asset detail), with the relationship of the link, the due date, the assignee, the priority and the open and overdue flags, due date ascending (no due date last). Empty without <c>Task.View</c>.</summary>
     [HttpGet("{assetId:int}/linked-tasks", Name = "ListAssetLinkedTasks")]
     [Authorize(Policy = AssetPolicies.AssetView)]
     [ProducesResponseType<AssetLinkedTasksResponse>(StatusCodes.Status200OK, "application/json")]
@@ -89,7 +90,8 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
             return this.Problem(AssetSupport.NotFound("Asset"));
 
         var reader = taskLinks.FirstOrDefault();
-        IReadOnlyList<AssetTaskLink> items = reader is null ? [] : await reader.ListForAssetAsync(assetId, cancellationToken);
+        // Task titles, assignees and due dates are Task data: without Task.View the list is empty, never the titles (#504).
+        IReadOnlyList<AssetTaskLink> items = reader is null || !permissions.Has(Permissions.Task.View) ? [] : await reader.ListForAssetAsync(assetId, cancellationToken);
         return Ok(new AssetLinkedTasksResponse(items));
     }
 

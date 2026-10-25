@@ -1,6 +1,9 @@
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Configuration.Contracts;
+using MatterFlow.Identity.Contracts;
+using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Tasks;
+using MatterFlow.SharedKernel.Time;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +13,14 @@ namespace MatterFlow.WorkManagement.Application;
 /// The Task side of Task-Asset links for other modules: the Tasks an Asset is linked to (<see cref="IAssetTaskLinkReader"/>, shown as "Linked Tasks"
 /// on the Asset detail) and whether a link role is in use, so it can only be deactivated, not deleted (<see cref="IAssetLinkRoleUsage"/>).
 /// </summary>
-internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog roles, TaskAccess access) : IAssetTaskLinkReader
+internal sealed class TaskAssetLinkReader(
+    DbContext db,
+    IAssetLinkRoleCatalog roles,
+    TaskAccess access,
+    IPriorityCatalog priorities,
+    IUserDirectory users,
+    IUserTimeZone timeZone,
+    IClock clock) : IAssetTaskLinkReader
 {
     /// <summary>The one definition of the link counts: all linked Tasks and the open ones (New, In Progress, On Hold), grouped by Asset.</summary>
     public IQueryable<AssetTaskCountRow> Grouped() =>
@@ -73,23 +83,48 @@ internal sealed class TaskAssetLinkReader(DbContext db, IAssetLinkRoleCatalog ro
             from l in db.Set<TaskAsset>().AsNoTracking()
             join t in access.Visible() on l.TaskId equals t.Id
             where l.AssetId == assetId
-            orderby l.CreatedAtUtc descending, t.Id descending
-            select new { l.TaskId, t.Number, t.Title, t.Status, l.AssetLinkRoleId, l.CreatedAtUtc })
+            select new { l.TaskId, t.Number, t.Title, t.Status, t.DueDate, t.DueAtUtc, t.PriorityId, t.AssignedUserId, l.AssetLinkRoleId, l.CreatedAtUtc })
             .ToListAsync(cancellationToken);
         if (rows.Count == 0)
             return [];
 
+        // A dozen links at most: the order (due date ascending, none last, then the newest link) is made here, from the one effective due day.
+        var ordered = rows
+            .OrderBy(r => r.DueDate is null && r.DueAtUtc is null ? 1 : 0)
+            .ThenBy(r => r.DueDate?.ToDateTime(TimeOnly.MinValue) ?? r.DueAtUtc ?? DateTime.MaxValue)
+            .ThenByDescending(r => r.CreatedAtUtc)
+            .ThenByDescending(r => r.TaskId)
+            .ToList();
+
+        // Three lookups for the whole list, never one per row.
         var roleNames = (await roles.ListAsync(true, cancellationToken)).ToDictionary(r => r.Id, r => r.Name);
+        var priorityMap = (await priorities.ListAsync(includeInactive: true, cancellationToken)).ToDictionary(p => p.Id);
+        var userMap = await users.FindManyAsync([.. ordered.Select(r => r.AssignedUserId).OfType<int>().Distinct()], cancellationToken);
+        var now = clock.UtcNow;
         return
         [
-            .. rows.Select(r => new AssetTaskLink(
-                r.TaskId,
-                r.Number,
-                r.Title,
-                r.Status.ToCode(),
-                r.AssetLinkRoleId,
-                r.AssetLinkRoleId is { } id && roleNames.TryGetValue(id, out var name) ? name : null,
-                TaskSupport.Utc(r.CreatedAtUtc))),
+            .. ordered.Select(r =>
+            {
+                var due = TaskDue.FromStored(r.DueDate, r.DueAtUtc);
+                priorityMap.TryGetValue(r.PriorityId, out var priority);
+                return new AssetTaskLink(
+                    r.TaskId,
+                    r.Number,
+                    r.Title,
+                    r.Status.ToCode(),
+                    r.AssetLinkRoleId,
+                    r.AssetLinkRoleId is { } id && roleNames.TryGetValue(id, out var name) ? name : null,
+                    TaskSupport.Utc(r.CreatedAtUtc),
+                    r.DueDate,
+                    TaskSupport.Utc(r.DueAtUtc),
+                    due.IsAsap,
+                    due.IsOverdue(r.Status, now, timeZone.Zone),
+                    r.Status.IsOpen(),
+                    r.AssignedUserId,
+                    r.AssignedUserId is { } uid && userMap.TryGetValue(uid, out var user) ? user.DisplayName : null,
+                    priority?.Label,
+                    priority?.Color);
+            }),
         ];
     }
 

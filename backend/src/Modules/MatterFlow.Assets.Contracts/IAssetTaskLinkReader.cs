@@ -8,6 +8,15 @@ namespace MatterFlow.Assets.Contracts;
 /// <param name="AssetLinkRoleId">The relationship of the Asset to the Task, if one was chosen.</param>
 /// <param name="AssetLinkRoleName">Name of that role.</param>
 /// <param name="LinkedAtUtc">When the link was made (UTC).</param>
+/// <param name="DueDate">The Task's due date when it has a date only (the same field the Task Queue shows), else null.</param>
+/// <param name="DueAtUtc">The Task's due instant (UTC) when it has a time, else null.</param>
+/// <param name="IsAsap">The Task is due as soon as possible.</param>
+/// <param name="IsOverdue">The Task is open and its due date has passed in the viewer's time zone: the rule of the Task Queue.</param>
+/// <param name="IsOpen">The Task is New, In Progress or On Hold.</param>
+/// <param name="AssigneeUserId">The assigned person, if any.</param>
+/// <param name="AssigneeName">Display name of the assigned person.</param>
+/// <param name="PriorityLabel">The Task's priority label.</param>
+/// <param name="PriorityColor">The Task's priority colour token.</param>
 public sealed record AssetTaskLink(
     long TaskId,
     string TaskNumber,
@@ -15,7 +24,16 @@ public sealed record AssetTaskLink(
     string StatusCode,
     int? AssetLinkRoleId,
     string? AssetLinkRoleName,
-    DateTime LinkedAtUtc);
+    DateTime LinkedAtUtc,
+    DateOnly? DueDate = null,
+    DateTime? DueAtUtc = null,
+    bool IsAsap = false,
+    bool IsOverdue = false,
+    bool IsOpen = false,
+    int? AssigneeUserId = null,
+    string? AssigneeName = null,
+    string? PriorityLabel = null,
+    string? PriorityColor = null);
 
 /// <summary>How many Tasks an Asset is linked to (BUG A2): all of them, and the open ones (New, In Progress, On Hold: the Task Queue definition).</summary>
 /// <param name="Linked">Every Task linked to the Asset.</param>
@@ -41,7 +59,7 @@ public sealed class AssetTaskCountRow
 /// </summary>
 public interface IAssetTaskLinkReader
 {
-    /// <summary>The Tasks the Asset is linked to, newest link first. Only the Tasks the caller may see (sensitive-matter rule, mode T).</summary>
+    /// <summary>The Tasks the Asset is linked to, due date ascending (no due date last), then newest link first. Only the Tasks the caller may see (sensitive-matter rule, mode T).</summary>
     Task<IReadOnlyList<AssetTaskLink>> ListForAssetAsync(int assetId, CancellationToken cancellationToken = default);
 
     /// <summary>

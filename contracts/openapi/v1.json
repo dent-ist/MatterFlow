@@ -11681,6 +11681,57 @@
           "linkedAtUtc": {
             "type": "string",
             "format": "date-time"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "isAsap": {
+            "type": "boolean",
+            "default": false
+          },
+          "isOverdue": {
+            "type": "boolean",
+            "default": false
+          },
+          "isOpen": {
+            "type": "boolean",
+            "default": false
+          },
+          "assigneeUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "assigneeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priorityLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priorityColor": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

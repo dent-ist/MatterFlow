@@ -197,6 +197,73 @@ public sealed class AssetLinkedTaskCountsApiTests(SqlServerFixture sql) : IAsync
         bySort.Statements.ShouldBeLessThanOrEqualTo(small.Statements + 1);
     }
 
+    [Fact]
+    public async Task Linked_tasks_carry_due_date_assignee_priority_and_open_and_overdue_flags_in_due_order()
+    {
+        var asset = await CreateAssetAsync(_w.MatterId, "Due drive");
+        await _h.UserWithAsync(@"KE\assignee", "Task.View");
+        var userId = await _h.UserIdAsync(@"KE\assignee");
+        var yesterday = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)).ToString("yyyy-MM-dd");
+        var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)).ToString("yyyy-MM-dd");
+        var late = await _h.CreateTaskAsync(_w, extra: new() { ["dueDate"] = yesterday, ["assignedUserId"] = userId });
+        var soon = await _h.CreateTaskAsync(_w, extra: new() { ["dueDate"] = tomorrow });
+        var none = await _h.CreateTaskAsync(_w);
+        var closedLate = await _h.CreateTaskAsync(_w, extra: new() { ["dueDate"] = yesterday });
+        foreach (var task in new[] { none, soon, late, closedLate })
+            await LinkAsync(task, asset.Id);
+        await CancelAsync(closedLate);
+
+        var linked = await OkAsync(await _h.Admin.GetAsync($"/api/v1/assets/{asset.Id}/linked-tasks"));
+        var rows = linked.GetProperty("items").EnumerateArray().ToArray();
+        // Due date ascending, no due date last.
+        rows.Select(r => r.GetProperty("taskId").GetInt64()).ShouldBe([TaskId(closedLate), TaskId(late), TaskId(soon), TaskId(none)]);
+
+        var lateRow = rows[1];
+        lateRow.GetProperty("dueDate").GetString().ShouldBe(yesterday);
+        lateRow.GetProperty("isOpen").GetBoolean().ShouldBeTrue();
+        lateRow.GetProperty("isOverdue").GetBoolean().ShouldBeTrue();
+        lateRow.GetProperty("assigneeUserId").GetInt32().ShouldBe(userId);
+        lateRow.GetProperty("assigneeName").GetString().ShouldNotBeNullOrWhiteSpace();
+        lateRow.GetProperty("priorityLabel").GetString().ShouldNotBeNullOrWhiteSpace();
+        // The same answer as the Task itself for the same day.
+        (await _h.GetTaskAsync(TaskId(late))).GetProperty("isOverdue").GetBoolean().ShouldBeTrue();
+
+        rows[0].GetProperty("isOpen").GetBoolean().ShouldBeFalse(); // a closed task is never overdue, whatever its date
+        rows[0].GetProperty("isOverdue").GetBoolean().ShouldBeFalse();
+        rows[2].GetProperty("isOverdue").GetBoolean().ShouldBeFalse();
+        rows[3].GetProperty("dueDate").ValueKind.ShouldBe(JsonValueKind.Null);
+        rows[3].GetProperty("assigneeUserId").ValueKind.ShouldBe(JsonValueKind.Null);
+        rows[3].GetProperty("isOverdue").GetBoolean().ShouldBeFalse();
+
+        // Without Task.View the list is empty: no titles, assignees or dates.
+        var assetOnly = await _h.UserWithAsync(@"KE\linkedonly", "Asset.View", "Matter.View");
+        (await OkAsync(await assetOnly.GetAsync($"/api/v1/assets/{asset.Id}/linked-tasks"))).GetProperty("items").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task The_linked_tasks_list_costs_the_same_number_of_statements_for_one_and_nineteen_links()
+    {
+        var one = await CreateAssetAsync(_w.MatterId, "Just one");
+        var many = await CreateAssetAsync(_w.MatterId, "Nineteen links");
+        await LinkAsync(await _h.CreateTaskAsync(_w), one.Id);
+        for (var i = 0; i < 19; i++)
+            await LinkAsync(await _h.CreateTaskAsync(_w), many.Id);
+
+        var http = _logged.CreateClient();
+        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
+
+        async Task<int> StatementsAsync(int assetId)
+        {
+            await OkAsync(await http.GetAsync($"/api/v1/assets/{assetId}/linked-tasks")); // warm up
+            _commands.Clear();
+            await OkAsync(await http.GetAsync($"/api/v1/assets/{assetId}/linked-tasks"));
+            return _commands.Snapshot().Count;
+        }
+
+        (await StatementsAsync(many.Id)).ShouldBe(await StatementsAsync(one.Id));
+    }
+
     private sealed class CommandLog : ILoggerProvider
     {
         private readonly object _gate = new();
