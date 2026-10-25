@@ -12,7 +12,13 @@ import {
   ElementRef,
   Type,
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterOutlet,
+} from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Button } from 'primeng/button';
@@ -32,6 +38,12 @@ import { ShellLayout } from '../ui/fixed-page';
 import { UserMenu } from './user-menu';
 import { ConnectionBanner } from './connection-banner';
 import { NotificationBell } from './notification-bell';
+
+/**
+ * Route data that hides the shell's global "Create task" button because the page's record header has its own, prefilled with the record
+ * (Matter and Project records). A route opts in with `data: { hidesGlobalCreateTask: true }`.
+ */
+export const HIDES_GLOBAL_CREATE_TASK = 'hidesGlobalCreateTask';
 
 /** One block of the navigation: the Work and Records groups, or the single block of the compact menu. */
 interface NavSection {
@@ -129,8 +141,10 @@ export class AppShell {
 
   /** The global "Create task" button is redundant on the Create Task page itself (UXR-23). */
   private readonly url = signal(this.router.url);
+  /** True while the page on screen has `data: { hidesGlobalCreateTask: true }` on its route: its record header has its own (S1, #625). */
+  private readonly routeHidesCreate = signal(this.routeFlag());
   protected readonly onCreateTaskPage = computed(
-    () => this.url().split(/[?#]/)[0] === '/tasks/new',
+    () => this.url().split(/[?#]/)[0] === '/tasks/new' || this.routeHidesCreate(),
   );
 
   constructor() {
@@ -142,6 +156,7 @@ export class AppShell {
       )
       .subscribe((e) => {
         this.url.set(e.urlAfterRedirects);
+        this.routeHidesCreate.set(this.routeFlag());
         // Choosing an item closes the panel; focus goes to the page (the router's own focus handling), not back to the button.
         this.menuOpen.set(false);
         this.searchOpen.set(false);
@@ -171,6 +186,16 @@ export class AppShell {
     effect(() => {
       if (this.auth.has('User.View')) untracked(() => void this.pendingUsers.refresh());
     });
+  }
+
+  /** The route flag `hidesGlobalCreateTask` anywhere on the active route chain (Matter and Project records, #625; Assets can opt in the same way). */
+  private routeFlag(): boolean {
+    let route: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
+    while (route) {
+      if (route.data?.[HIDES_GLOBAL_CREATE_TASK] === true) return true;
+      route = route.firstChild;
+    }
+    return false;
   }
 
   /** Keeps `skipPresent` true exactly while an element with the registered id exists (a page's list region mounts after the page). */

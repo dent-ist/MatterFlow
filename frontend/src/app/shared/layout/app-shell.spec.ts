@@ -8,6 +8,9 @@ import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from '../../core
 import { ok, settle } from '../testing/org-testing';
 import { AppShell } from './app-shell';
 import { SkipTarget } from './skip-target';
+import { MATTERS_ROUTES } from '../../features/matters/matters.routes';
+import { PROJECTS_ROUTES } from '../../features/projects/projects.routes';
+import { CLIENTS_ROUTES } from '../../features/clients/clients.routes';
 
 describe('AppShell header search', () => {
   beforeEach(() => localStorage.clear());
@@ -60,6 +63,52 @@ describe('AppShell header search', () => {
     expect(await current('/tasks/12')).toEqual(['Task Queue']);
     expect(await current('/tasks?from=my-work')).toEqual(['Task Queue']);
     expect(await current('/my-work')).toEqual(['My Work']);
+  });
+
+  describe('the global Create task button (S1, #625)', () => {
+    const flagOf = (routes: typeof MATTERS_ROUTES, path: string): unknown =>
+      routes.find((r) => r.path === path)?.data?.['hidesGlobalCreateTask'];
+
+    it('is flagged off on the Matter and Project record routes only', () => {
+      expect(flagOf(MATTERS_ROUTES, ':matterId')).toBe(true);
+      expect(flagOf(PROJECTS_ROUTES, ':projectId')).toBe(true);
+      for (const [routes, paths] of [
+        [MATTERS_ROUTES, ['', 'new', ':matterId/edit']],
+        [PROJECTS_ROUTES, ['', 'new', ':projectId/edit']],
+        [CLIENTS_ROUTES, ['', 'new', ':clientId/edit', ':clientId']],
+      ] as const) {
+        for (const p of paths) expect(flagOf(routes, p), p).toBeUndefined();
+      }
+    });
+
+    it('is hidden by the route flag, on /tasks/new, and shown elsewhere; never without Task.Create', async () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([
+            { path: 'matters/:id', data: { hidesGlobalCreateTask: true }, children: [] },
+            { path: '**', children: [] },
+          ]),
+          { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
+          provideFakeMe(new FakeMeApi(withPermissions('Task.View', 'Task.Create'))),
+          { provide: SearchClient, useValue: { search: vi.fn() } },
+        ],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      const fixture = TestBed.createComponent(AppShell);
+      const router = TestBed.inject(Router);
+      const shown = async (url: string): Promise<boolean> => {
+        await router.navigateByUrl(url);
+        await settle(fixture);
+        return !!(fixture.nativeElement as HTMLElement).querySelector('.mf-create');
+      };
+      expect(await shown('/clients/3')).toBe(true);
+      expect(await shown('/matters/7')).toBe(false);
+      expect(await shown('/tasks')).toBe(true);
+      expect(await shown('/tasks/new')).toBe(false);
+      expect(await shown('/matters/7/edit')).toBe(true);
+      TestBed.resetTestingModule();
+      expect((await create(['Task.View'])).nativeElement.querySelector('.mf-create')).toBeNull();
+    });
   });
 
   it('shows the Dashboard menu item only with Dashboard.View and a tab permission (R2; ViewCoverage alone does not count)', async () => {

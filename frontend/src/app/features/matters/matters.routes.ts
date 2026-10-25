@@ -27,6 +27,8 @@ export const MATTERS_ROUTES: Routes = [
   {
     path: ':matterId',
     title: 'Matter',
+    // The record header has its own "Create task" (prefilled with the record), so the shell hides the global one (#625).
+    data: { hidesGlobalCreateTask: true },
     loadComponent: () => import('./pages/matter-detail-page').then((m) => m.MatterDetailPage),
   },
 ];
