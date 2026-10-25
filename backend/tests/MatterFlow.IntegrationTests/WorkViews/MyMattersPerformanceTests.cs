@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Xml.Linq;
 using MatterFlow.IntegrationTests.Fixtures;
 using MatterFlow.IntegrationTests.Tasks;
@@ -349,8 +350,14 @@ public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputH
     [Fact]
     public async Task The_number_of_statements_does_not_depend_on_the_number_of_matters()
     {
+        // The first read of the activity creates a starting point (flagged initial); "Since your last visit" ignores it and counts the last 7 days, whose
+        // optional name lookups depend on what happened in the data, not on the number of matters. Marking as read makes the marker explicit, so every
+        // endpoint is measured on the same footing (issue #815).
         foreach (var client in new[] { _pm5, _pm50, _heavy })
+        {
             await OkAsync(await client.GetAsync("/api/v1/my-matters/activity"));
+            await OkAsync(await client.PostAsJsonAsync("/api/v1/my-matters/activity/seen", new { }));
+        }
 
         foreach (var (name, url) in Endpoints.Where(e => !e.Name.Contains("page 2", StringComparison.Ordinal)))
         {
