@@ -319,7 +319,8 @@ test.describe('Sensitive matters: a person sees only their share (scan of screen
     // My Work and the Task Queue show the assignee's task with the same plain header.
     await w.visit('/my-work');
     await expect(page.locator('a[href^="/matters/"]')).toHaveCount(0);
-    await w.visit('/tasks');
+    // A person who may be a project manager opens the queue on their own matters (epic #758): this check is about the whole queue, so All.
+    await w.visit('/tasks?scope=all');
     await expect(page.getByText(u.s3.taskTitle).first()).toBeVisible();
     // The queue also lists tasks of normal matters (their matter is a link); the row of the sensitive matter's task has none.
     const row = page.locator('tr', { hasText: u.s3.taskTitle });

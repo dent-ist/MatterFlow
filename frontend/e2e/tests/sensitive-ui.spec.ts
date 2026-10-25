@@ -108,7 +108,7 @@ test.describe('Sensitive matters: the screens', () => {
       .getByRole('dialog', { name: 'You will no longer see this matter' })
       .getByRole('button', { name: 'Mark sensitive' })
       .click();
-    await expect(page).toHaveURL(/\/matters$/);
+    await expect(page).toHaveURL(/\/matters(\?scope=mine)?$/); // the list opens on the person's own matters (epic #758)
     await expect(toasts(page).first()).toContainText('you no longer see it');
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(true);
     const p5 = await Api.as(u.people.p5.username);
@@ -190,7 +190,7 @@ test.describe('Sensitive matters: the screens', () => {
     await p4.goto(`/matters/${u.s1.matterId}`);
     await expect(p4.locator('[data-sensitive-banner]')).toBeVisible();
     await axeAtEverySize(p4, 'sensitive matter overview');
-    await p4.goto('/matters');
+    await p4.goto('/matters?scope=all');
     await expect(p4.getByText(u.s1.name).first()).toBeVisible();
     await axeAtEverySize(p4, 'matters list with the sensitive marker');
   });
