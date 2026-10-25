@@ -58,13 +58,28 @@ export function searchBoxPlaceholder(has: (code: Permission) => boolean): string
   return `${searchBoxName(has)}... (Ctrl+K)`;
 }
 
-/** The muted footer line "Searched in: Clients and Matters"; null when all five types are searched (it would be noise). */
-export function searchedInLine(searched: readonly string[] | null | undefined): string | null {
+/**
+ * The muted "Searched in: Clients and Matters" line (the panel footer and the results page). The panel leaves it out when all five types are
+ * searched (it would be noise there); the results page always says it (`always`), so a person who may view fewer types sees what was searched.
+ * It names only what was searched, never what was left out.
+ */
+export function searchedInLine(
+  searched: readonly string[] | null | undefined,
+  always = false,
+): string | null {
   const labels = SEARCH_TYPES.filter((t) => searched?.includes(t.type)).map((t) => t.label);
-  return labels.length === 0 || labels.length === SEARCH_TYPES.length
-    ? null
-    : `Searched in: ${joinWords(labels)}`;
+  if (labels.length === 0 || (!always && labels.length === SEARCH_TYPES.length)) return null;
+  return `Searched in: ${joinWords(labels)}`;
 }
+
+/** The copy deck of the search area's links: "See all" is the only verb for more results (never "Show more"). */
+export const SEARCH_COPY = {
+  /** The link of a group or section that holds more hits than are shown: `See all 24`. */
+  seeAll: (count: string) => `See all ${count}`,
+  /** The panel footer: `View all 140 results for "review"`. */
+  viewAll: (count: string, total: number, capped: boolean, query: string) =>
+    `View all ${count} ${total === 1 && !capped ? 'result' : 'results'} for "${query}"`,
+} as const;
 
 /** A total as headings and the footer show it: `24`, `1,000+` when the API stopped counting at its cap. */
 export function formatTotal(total: number, capped: boolean): string {

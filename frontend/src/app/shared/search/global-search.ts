@@ -17,6 +17,7 @@ import { firstValueFrom } from 'rxjs';
 import type { SearchGroup, SearchHit } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import {
+  SEARCH_COPY,
   SEARCH_ERROR_MESSAGE,
   SEARCH_TYPES,
   TextPart,
@@ -144,7 +145,7 @@ interface DisplayGroup {
                           (keydown.enter)="choose(more)"
                           (mousemove)="hover(more)"
                         >
-                          See all {{ group.count }}
+                          {{ seeAllText(group.count) }}
                           <span class="mf-sr-only"> {{ group.label.toLowerCase() }}</span>
                         </li>
                       }
@@ -528,7 +529,7 @@ export class GlobalSearch {
     const shown = new Set(groups.map((g) => g.type));
     const capped = this.response().some((g) => g.totalCapped && shown.has(g.type));
     const total = groups.reduce((n, g) => n + g.total, 0);
-    return `View all ${formatTotal(total, capped)} ${total === 1 && !capped ? 'result' : 'results'} for "${this.trimmed()}"`;
+    return SEARCH_COPY.viewAll(formatTotal(total, capped), total, capped, this.trimmed());
   });
 
   protected readonly searchedIn = computed(() => searchedInLine(this.searched()));
@@ -649,6 +650,8 @@ export class GlobalSearch {
     input.focus();
     input.select();
   }
+
+  protected seeAllText = SEARCH_COPY.seeAll;
 
   protected parts(text: string): TextPart[] {
     return highlightParts(text, this.trimmed());

@@ -151,4 +151,30 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await page.locator('li.rc a').first().click();
     await expect(page).toHaveURL(/\/tasks\/\d+/);
   });
+
+  test('#471: the Searched in line names exactly what was searched, for three permission sets', async ({
+    page,
+    seed,
+    asUser,
+  }) => {
+    const s = await seedGrids(seed);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(`/search?q=${s.token}`);
+    await expect(page.locator('[data-searched-in]')).toHaveText(
+      'Searched in: Matters, Clients, Tasks, Projects and Assets',
+    );
+    await expect(page.locator('[data-page-description]')).toContainText('Showing results for');
+
+    for (const [key, permissions, text] of [
+      ['task-only', ['Task.View'], 'Searched in: Tasks'],
+      ['client-matter', ['Client.View', 'Matter.View'], 'Searched in: Matters and Clients'],
+    ] as const) {
+      const role = await seed.role([...permissions], `E2E searched in ${key}`);
+      const user = await seed.user([role.name], `searched-in-${key}`);
+      const other = await asUser(user.username);
+      await other.goto(`/search?q=${s.token}`);
+      await expect(other.locator('[data-searched-in]')).toHaveText(text);
+      expect(await axeViolations(other), `axe ${key}`).toEqual([]);
+    }
+  });
 });

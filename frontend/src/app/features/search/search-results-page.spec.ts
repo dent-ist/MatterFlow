@@ -158,6 +158,24 @@ describe('SearchResultsPage', () => {
     expect(el.textContent).not.toContain('Show more');
   });
 
+  it('says what was searched, never what was left out (#471)', async () => {
+    const all = await create('343');
+    expect(all.nativeElement.querySelector('[data-searched-in]')!.textContent!.trim()).toBe(
+      'Searched in: Matters, Clients, Tasks, Projects and Assets',
+    );
+
+    const tasks = await create('343', { ...numericResponse(), searchedTypes: ['task'] }, [
+      'Task.View',
+    ]);
+    expect(tasks.nativeElement.querySelector('[data-searched-in]')!.textContent!.trim()).toBe(
+      'Searched in: Tasks',
+    );
+    // The echo line is kept next to it.
+    expect(tasks.nativeElement.querySelector('[data-page-description]')!.textContent).toContain(
+      'Showing results for',
+    );
+  });
+
   it('only has tabs for, searches and shows the types the user may view', async () => {
     const fixture = await create('343', numericResponse(), ['Task.View']);
     expect(api.search).toHaveBeenCalledWith('343', ['task'], 5);

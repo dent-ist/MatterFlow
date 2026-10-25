@@ -121,6 +121,10 @@ describe('search box words and the searched-in line (#465)', () => {
     );
     expect(searchedInLine(['matter', 'client', 'task', 'project', 'asset'])).toBeNull();
     expect(searchedInLine(null)).toBeNull();
+    // The results page always says it.
+    expect(searchedInLine(['matter', 'client', 'task', 'project', 'asset'], true)).toBe(
+      'Searched in: Matters, Clients, Tasks, Projects and Assets',
+    );
   });
 
   it('formats totals with the cap marker', () => {

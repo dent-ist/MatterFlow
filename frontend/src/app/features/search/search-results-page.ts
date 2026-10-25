@@ -18,8 +18,10 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { PageTitle, pageTab } from '../../core/title/page-title';
 import {
   SEARCH_ERROR_MESSAGE,
+  SEARCH_COPY,
   SearchType,
   SearchTypeInfo,
+  searchedInLine,
   isSearchable,
   noResultsMessage,
   searchableTypes,
@@ -82,6 +84,9 @@ interface Section {
         >Advanced search</a
       >
 
+      @if (searchedLine(); as line) {
+        <p class="res-searched" data-searched-in>{{ line }}</p>
+      }
       @if (!searchable()) {
         <div class="pg-state" data-state="short">
           <p>
@@ -126,7 +131,7 @@ interface Section {
                       [queryParams]="{ type: section.info.type, page: null }"
                       queryParamsHandling="merge"
                       (click)="seeAll($event)"
-                      >See all {{ count(section.group) }}
+                      >{{ seeAllText(count(section.group)) }}
                       <span class="mf-sr-only">{{ section.info.label.toLowerCase() }}</span></a
                     >
                   </p>
@@ -194,6 +199,11 @@ interface Section {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-h3);
     }
+    .res-searched {
+      margin: 0 0 var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
     .res-more {
       margin: var(--mf-s2) 0 0;
     }
@@ -229,6 +239,8 @@ export class SearchResultsPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly groups = signal<SearchGroup[] | null>(null);
   protected readonly normalized = signal<string | null>(null);
+  /** The types the server searched (from the same answer as the counts). */
+  protected readonly searched = signal<string[] | null>(null);
   /** The open type tab's page of hits. */
   protected readonly typeState = signal<LoadState>('loading');
   protected readonly typePage = signal<AdvancedSearchPage | null>(null);
@@ -249,6 +261,11 @@ export class SearchResultsPage {
       ? this.tabLabel()
       : `${this.tabLabel()}, ${total.toLocaleString('en-US')} ${total === 1 ? 'result' : 'results'}`;
   });
+  /** `Searched in: Matters, Clients and Tasks`: what was searched, never what was left out (S8). */
+  protected readonly searchedLine = computed(() =>
+    this.searchable() && this.state() === 'ready' ? searchedInLine(this.searched(), true) : null,
+  );
+  protected readonly seeAllText = SEARCH_COPY.seeAll;
   protected readonly pageNumber = computed(() => parsePage(this.page()));
   protected readonly size = computed(() => parsePageSize(this.pageSize()));
   protected readonly tabs = computed(() =>
@@ -351,6 +368,7 @@ export class SearchResultsPage {
       );
       if (id !== this.requestId) return;
       this.normalized.set(result.normalized ?? null);
+      this.searched.set(result.searchedTypes ?? null);
       this.groups.set(result.groups);
       this.state.set('ready');
     } catch {
