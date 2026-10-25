@@ -400,22 +400,17 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       }
     });
 
-    it('has a Filters button above the grid that shows and hides the filter row under the headers', async () => {
+    it('has the Filters button in the page header; the filter row is open from the start and the button hides and shows it (A3)', async () => {
       await create(['Asset.View']);
-      const bar = el().querySelector('[data-grid-toolbar]')!;
+      const header = el().querySelector('mf-page-header')!;
       const table = el().querySelector('table')!;
-      expect(bar.contains(toggle())).toBe(true);
-      expect(bar.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(header.contains(toggle())).toBe(true);
+      expect(header.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(toggle().textContent).toContain('Filters');
       expect(toggle().querySelector('.pi-filter')).not.toBeNull();
-      expect(toggle().getAttribute('aria-pressed')).toBe('false');
-      expect(toggle().getAttribute('aria-expanded')).toBe('false');
-      expect(filterRow()).toBeNull();
-
-      toggle().click();
-      await settle(fixture);
       expect(toggle().getAttribute('aria-pressed')).toBe('true');
       expect(toggle().getAttribute('aria-expanded')).toBe('true');
+      expect(toggle().getAttribute('aria-controls')).toBe('asset-filter-row');
       const row = filterRow()!;
       // The second row of the table head, one cell under each column header.
       expect(row.parentElement?.tagName).toBe('THEAD');
@@ -449,20 +444,21 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
     it('remembers whether the filter row is open, per user, and copes with blocked storage', async () => {
       await create(['Asset.View']);
+      expect(filterRow()).not.toBeNull();
       toggle().click();
       await settle(fixture);
       const keys = Object.keys(localStorage).filter((k) => k.startsWith('mf.assets.filters.open'));
       expect(keys).toHaveLength(1);
       expect(keys[0]).toMatch(/\.\d+$/); // per user
-      expect(localStorage.getItem(keys[0])).toBe('1');
+      expect(localStorage.getItem(keys[0])).toBe('0');
 
       fixture.destroy();
       fixture = TestBed.createComponent(AssetsListPage);
       await settle(fixture);
-      expect(filterRow()).not.toBeNull();
+      expect(filterRow()).toBeNull();
       toggle().click();
       await settle(fixture);
-      expect(localStorage.getItem(keys[0])).toBe('0');
+      expect(localStorage.getItem(keys[0])).toBe('1');
 
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('blocked');
@@ -473,10 +469,10 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       fixture.destroy();
       fixture = TestBed.createComponent(AssetsListPage);
       await settle(fixture);
-      expect(filterRow()).toBeNull();
+      expect(filterRow()).not.toBeNull(); // open by default
       toggle().click();
       await settle(fixture);
-      expect(filterRow()).not.toBeNull(); // still works for this visit
+      expect(filterRow()).toBeNull(); // still works for this visit
       vi.restoreAllMocks();
     });
 
@@ -542,7 +538,6 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
     it('puts every column filter into the URL and resets the page', async () => {
       await create(['Asset.View'], { page: '3' });
-      toggle().click();
       await settle(fixture);
 
       typeAndEnter('Name', ' relativity ');

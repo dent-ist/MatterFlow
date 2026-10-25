@@ -28,6 +28,7 @@ import { Badge } from '../../../shared/ui/badge';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AdminColumn } from '../../../shared/ui/admin-list-state';
 import { CopyButton } from '../../../shared/ui/copy-button';
@@ -86,6 +87,7 @@ export function parseSelected(value: string | null | undefined): number | null {
     MatterRef,
     SortHeader,
     FiltersBar,
+    ListFiltersButton,
     ColumnFilterRow,
     AssetDetails,
   ],
@@ -177,6 +179,12 @@ export function parseSelected(value: string | null | undefined): number | null {
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }
+        <mf-list-filters-button
+          mfActions
+          [filters]="filters"
+          controls="asset-filter-row"
+          [clearAlso]="['q']"
+        />
         <p-button
           mfActions
           *mfHasPermission="'Asset.Create'"
@@ -186,7 +194,8 @@ export function parseSelected(value: string | null | undefined): number | null {
         />
       </mf-page-header>
 
-      <mf-filters-bar [filters]="filters" controls="asset-filter-row" [clearAlso]="['q']" />
+      <!-- The Filters button and Clear filters are in the page header; this draws the sheet they open below 640 px and the chips. -->
+      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']" />
 
       <div class="mf-fill as-grid">
         <div
@@ -494,6 +503,9 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     noun: 'assets',
     defs: this.defs,
     visibleColumns: this.visibleColumns,
+    // Open from 640 px (a sheet below), like Clients, Matters and Projects (#499).
+    openByDefault: true,
+    sheetBelow: 640,
   });
 
   /** The user chose the selection in this list (so a row that later leaves the page is not "revealed" by changing the filters). */
