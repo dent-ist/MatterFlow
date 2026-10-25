@@ -9,8 +9,8 @@ The separate "Task Types & Forms" and "Workflows" screens are now **one page wit
   | Tab | Address | Permission | Document title | Breadcrumb |
   |---|---|---|---|---|
   | Task Types | `/admin/task-types` | `TaskType.Manage` | Task Types | Administration > Task Types |
-  | Workflows | `/admin/workflows` | `Workflow.Manage` | Task Types - Workflows | Administration > Task Types > Workflows |
-  | Workflow Steps | `/admin/steps` | `Workflow.Manage` | Task Types - Workflow Steps | Administration > Task Types > Workflow Steps |
+  | Workflows | `/admin/workflows` | `Workflow.Manage` | Task Types: Workflows | Administration > Task Types > Workflows |
+  | Workflow Steps | `/admin/steps` | `Workflow.Manage` | Task Types: Workflow Steps | Administration > Task Types > Workflow Steps |
 - **Only permitted tabs show.** A person with only `Workflow.Manage` sees Workflows and Workflow Steps and lands on Workflows (also from `/admin/task-types`); a person with only `TaskType.Manage` sees one tab. Without either permission every address is the 403 page (route guard, either permission).
 - **Every existing URL is kept, nothing redirects.** `/admin/task-types/new`, `/admin/task-types/:id`, `/admin/task-types/:id/form`, `/admin/workflows/new`, `/admin/workflows/:id[/versions/:v]`, `/admin/steps/new`, `/admin/steps/:id[/form]` keep their pages; their breadcrumbs read `Administration > Task Types > <Workflows | Workflow Steps> > <record>` (task type pages: `Administration > Task Types > <task type> [> Form]`).
 - **One icon rule.** The page header icon is the icon of the menu item (`pi-file-edit`) on all three tabs and on every page below them (`section-icons.ts`: the nav item lists `/admin/workflows` and `/admin/steps` as `alsoActive`, so the longest-prefix rule gives them the same icon; `route-icons.spec.ts` covers the tabs and the record pages).

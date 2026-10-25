@@ -8,7 +8,7 @@ Screenshots are from a throwaway stack (Dev auth, real API and SQL Server), take
 - Tabs: **Users | Roles | Pods** (`mf-tabs`, route-based like the other two): `/admin/users`, `/admin/roles`, `/admin/pods`. One matcher route, so the page stays alive when the tab changes. `/admin/pods?pod=<id>|new` (the pod editor deep link) keeps working inside the tab.
 - Tab permissions: Pods needs `Pod.Manage` or `Pod.ManageMembers` (as before). A tab the person may not use is not offered, and a link to it lands on the first tab they may use (a pods-only user goes from `/admin/users` to `/admin/pods`; no tab at all is the 403 page).
 - Menu: the separate "Pods" item is gone. Order: Users, Task Types & Forms, Workflows, Labels, Assets, Custom Fields, Audit Logs. "Users" shows with any of `User.View`, `User.Manage`, `Role.Manage`, `Pod.Manage`, `Pod.ManageMembers` and stays highlighted on all three tabs.
-- Document titles: "Users", "Users - Roles", "Users - Pods" (then " - MatterFlow").
+- Document titles: "Users", "Users: Roles", "Users: Pods" (then " - MatterFlow").
 - Icon rule: **the Users icon (`pi-id-card`) on all three tabs**, because the tabs are one menu item and one page; the old pods icon is retired (`section-icons.ts` derives it from the Users item's `alsoActive` paths; `route-icons.spec.ts` covers it).
 - Breadcrumbs: none, the page is top level like Roles. The pod editor opens inside the tab (title "Edit pod" / "New pod").
 - Leaving the Pods tab with an unsaved pod edit asks first (same leave guard as Roles).

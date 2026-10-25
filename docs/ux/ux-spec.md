@@ -75,12 +75,14 @@ Other routes
 No notification bell, no approvals inbox, no billing widgets, no reports/exports (addendum F), no attachments tab (addendum C).
 
 ### 2.2 Navigation rules
-- Left nav items require the matching `*.View` permission; unusable items are **hidden**. Within pages see §5.7 for hide vs disable.
-- Default landing: My Matters if the user holds `Matter.BeManager`, `Matter.View` and `Task.View` (a Project Manager; **not** the System Admin, who holds every permission implicitly and keeps the landing below unless they also hold the Project Manager role, #691 and addendum AG item 12); else My Work if the user has any Pod membership or assignment, else Task Queue, else Dashboard (the full rule is `defaultLandingPath`, #628). A user with zero permissions is redirected to Access Pending from every route.
-- Breadcrumbs on detail pages: `Clients > 00343 Acme Corp > 00343-00012 Merger Review > TSK-1042`.
+- Left nav items require the matching `*.View` permission; unusable items are **hidden**. Within pages see §5.7 for hide vs disable. The main items sit under two group labels, **Work** (Dashboard, My Matters, My Work, Task Queue, Pod Work) and **Records** (Clients, Matters, Projects, Assets); a group with no visible item draws no label; the Administration section follows its own heading. The administrator's page for asset types is "Asset types" in the rail (the records list is "Assets"). No counts on rail items; the one badge is the pending-users count on Users.
+- Default landing (one function, `defaultLandingPath` / `landingFor`, #628; addendum AE item 12): **My Matters** if the user holds `Matter.BeManager`, `Matter.View` and `Task.View` (a Project Manager; **not** the System Admin, who holds every permission implicitly and keeps the landing below unless they also hold the Project Manager role, #691 and addendum AG item 12); else **My Work** if the user has `Task.View` and any Pod membership or assignment; else the **Dashboard** if they hold any Dashboard tab permission (Summary, Breakdowns, Trends, Swimlane, Users or Unassigned: Directors, Read-Only Observers, Compliance Auditors and Intake Coordinators land here); else **Task Queue**; else the first page they can open; else Access Pending. A user with zero permissions is redirected to Access Pending from every route. The same function serves the home address, the logo, the "Go to ..." link on the 403 and 404 pages and Access Pending's Check again. Note: a Data Technician with no pod and no assigned task also holds `Dashboard.ViewUnassigned` and therefore lands on the Dashboard.
+- Project Managers (landing on My Matters) see the short menu of §6 S24a; every other route stays reachable by address.
+- Document titles: `<Page or record>: <Tab or view> - MatterFlow` (addendum AE item 6). After a navigation to another page a hidden polite live region says the new title; Back and query-only changes say nothing (§5.1).
+- Breadcrumbs on detail pages: `Clients > 00343 Acme Corp > 00343-00012 Merger Review > TSK-1042`. The separator is drawn by CSS, a crumb is cut at 40 characters with the whole text as its tooltip, and each link is a 24 px target.
 - The combined Matter reference `#####-#####` (monospace, e.g. `00343-00012`) links to Matter detail wherever it appears.
 - Every list row's primary identifier is a real link (keyboard reachable, middle-click opens a new tab).
-- Create Task is reachable from header, Matter detail, Project detail, Pod Work and Task Queue.
+- Create Task is reachable from the header (on every page except Create Task itself and the Matter and Project record pages, whose record header has its own button prefilled with the record, #625), Matter detail, Project detail, Pod Work and Task Queue.
 - Unsaved-changes guard on all forms and designers.
 
 ## 3. Design principles
@@ -181,22 +183,30 @@ One component, `mf-due-cell` (`shared/work-queue/due-cell.ts`), renders `describ
 ### 5.1 App shell
 ```text
 +--------------------------------------------------------------------------------------+
-| [MatterFlow]  [ Search clients, matters, tasks, assets...  (Ctrl+K) ]  [+ Create Task]  Alex D v |
+| [M] MatterFlow  [ Search clients, matters, tasks, assets...  (Ctrl+K) ] [+ Create task] (bell) Alex D v |
 +----------------+---------------------------------------------------------------------+
+| WORK           |  (banner slot: sign-in problem, offline, "Back online.")            |
 | Dashboard      |  Breadcrumb > trail                                                 |
-| My Work        |  Page title (H1)                      [Primary action] [Secondary v]|
-| Task Queue     |  ----------------------------------------------------------------- |
-| Pod Work       |  Page content                                                       |
+| My Work        |  [icon] Page title (H1)               [Secondary] [Filters] [Primary]|
+| Task Queue     |  One muted context line                                             |
+| Pod Work       |  ----------------------------------------------------------------- |
+| RECORDS        |  Page content                                                       |
 | Clients        |                                                                     |
 | Matters        |                                                                     |
-| Projects       |                                                                     |
+| Projects       |                                         toasts: bottom right -----> |
 | Assets         |                                                                     |
 | ----------     |                                                                     |
 | Administration |                                                                     |
 +----------------+---------------------------------------------------------------------+
  Non-production only: "Dev auth: acting as <user> [switch]" banner (development auth provider).
 ```
-Left nav collapses to icons under 1100 px. Skip link first in DOM. A page with a list puts its own skip link ahead of "Skip to main content" as the first Tab stop ("Skip to task list" on the work pages, "Skip to table" on Clients, Matters, Projects and the record tabs that list rows; 5.2 and 5.9); a focused skip link fills the header strip on every width with an inside focus ring. Client, Matter and Project pages have a record header instead of the plain page header (5.9). Slim banners for: inactive-matter context, connection lost, dev-auth.
+- **Header.** The MatterFlow mark (rounded square, primary colour, white M-shaped flow line; also the favicon) beside the text name, a link to the landing page; the persistent search; Create task (icon only on a phone; hidden on Create task and on Matter and Project records, #625); the notification bell (section S25); the user menu.
+- **Left nav.** Work and Records groups, then Administration. Under 1100 px it collapses to a 56 px **icon rail**: 18 px icons, dividers instead of group labels, the name of each item shown in a tip on hover, on keyboard focus and on a long press with a finger (Esc dismisses it; no shortcut is added), the pending-users count as a dot at the icon's top right corner (the link keeps its accessible name "Users, 3 users waiting for access"). My Work has its own glyph (check-square); the header user button keeps the person glyph. Below 640 px the rail is gone: the Menu button opens the same list as a panel with visible names.
+- **Skip links.** Skip link first in DOM. A page with a list puts its own skip link ahead of "Skip to main content" as the first Tab stop ("Skip to task list" on the work pages, "Skip to table" on Clients, Matters, Projects and the record tabs that list rows; 5.2 and 5.9); the link exists only while its target element is in the document (a loading or failed list has none); a focused skip link fills the header strip on every width with an inside focus ring.
+- **Route announcement.** A visually hidden polite live region says the document title after a navigation to another page (once the title has settled, so a record announces its name). It stays silent on the first load, on Back and Forward and when only the query changes; focus is never moved by it.
+- **Page header.** Every page uses the page-header contract (addendum AE item 5): H1 22 px / 700 (18 px below 640 px), 12 px top offset, one context line, actions `[secondary] [Filters] [primary]`; Client, Matter and Project pages have a record header instead of the plain page header (5.9).
+- **Banner slot (one, under the header).** Priority: sign-in ("We couldn't verify your sign-in." with Reload page), then offline ("You're offline. Pages you have open still work; changes can't be saved." with Retry; one automatic retry; "Back online." for 4 seconds). Slim banners for inactive-matter context and dev-auth sit elsewhere. See S22.
+- **Toasts.** One host, bottom right (5.6, §8.5).
 
 ### 5.2 Tables (all queues and lists)
 - Server-side pagination (default 50; 25/50/100), sort and filter. Footer: "Showing 1-50 of 312", Rows per page, and the pager (see the grid contract below).
@@ -283,11 +293,14 @@ Toolbar: Bold, Italic, Bulleted list, Numbered list, Link, Insert table (decisio
 |---|---|
 | Windows auth failed | Full-page "Can't verify your Windows sign-in", Retry, contact guidance (browser handles the credential prompt) |
 | Zero permissions | Redirect to Access Pending (S21) |
-| 403 page | "You don't have permission to view this." + link home. On a Client, Matter or Project page: "You don't have access to this client." with the same link; no Retry |
+| 403 page | One state-page card (S22) that renders in place and **keeps the address** ("You asked for /path" with Copy link): "You don't have permission to view this." + "Go to ..." (the landing page of the person). On a Client, Matter or Project page: "You don't have access to this client." with the same link; no Retry |
 | 403 action | Toast: "You don't have permission to <action>."; permission state reloads |
-| 404 | "We couldn't find that." with search box. On a Client, Matter or Project page: "We couldn't find that client." (matter, project) with "Go to clients" (or the page the landing rule picks when the person may not open the list); no Retry |
+| 404 | State-page card with the address asked for and a search box (only here). On a Client, Matter or Project page: "We couldn't find that client." (matter, project) with "Go to clients" (or the page the landing rule picks when the person may not open the list); no Retry |
 | 409 conflict | Conflict dialog (§5.3) |
 | 422 validation | Field errors + summary |
+| Offline | Banner under the header, not a toast: "You're offline. Pages you have open still work; changes can't be saved." with Retry and one automatic retry; "Back online." for 4 seconds; a failed load adds no toast (a failed save toasts once) |
+| Sign-in could not be verified (401) | One banner "We couldn't verify your sign-in." with Reload page, no toasts; it wins over offline |
+| Failed list load | One inline message "Couldn't load ..." with the Reference, Copy and Retry; never a toast; after about 8 seconds of loading a skeleton adds "Still loading... Retry" |
 | 5xx / network | Inline alert "Something went wrong. Try again." with Retry and copyable reference id. A Client, Matter or Project page shows the page title "Couldn't load this client." and the alert; the breadcrumb stays, the header and tabs do not; Retry keeps focus, says "Loading client" and, on success, "Loaded" and focuses the heading |
 | Permissions removed mid-session | Next 403 triggers permission refresh; if none left, redirect to Access Pending |
 
@@ -984,7 +997,7 @@ Internal only: comments are visible to people who can view tasks.
 Linked Assets (Name, Type, External ref, Link label Source/Destination/Subject/Result, Remove link). "Link asset" opens a picker restricted to the Task's Matter Assets (search + paginate). Duplicate links prevented. Needs `Asset.Link` (and `Task.Edit`). Empty: "No assets linked."
 
 #### Activity (drawer)
-Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comments, Assets). Each event: actor, time (viewer's zone, tooltip UTC), event text, and "View changes" showing old -> new values. Dates in sentences and changes are `Oct 15, 2026` (whole-value calendar dates only; free text is never rewritten). The drawer title is clamped to two lines with the whole text as a tooltip. A failed load shows one inline message with Retry (a failed "Load more" one message under the list). **Comment events** carry `commentId` and an `excerpt` (visible text of the comment, whitespace collapsed, at most 80 characters, cut at a word and ended with "..."; null for a deleted or empty comment and for other event types): the excerpt is a link that closes the drawer, opens Comments, loads older pages when needed, shows the whole thread for now (not remembered), scrolls to the comment, highlights it for 4 seconds and focuses it. **Folding rule:** 3 or more consecutive plain "Comment added" events by one person, each at most 10 minutes after the previous one, fold into `KE\kekim added 12 comments (4:03 to 4:05 PM)` with a Show/Hide control; edits, deletes, hold and cancel reasons and every other event type are never folded; "Load more" extends a fold (a fold counts the events loaded so far, a page holds 25). The tab title becomes `Activity - TSK-n title` while the drawer is open and stays pinned when it closes.
+Chronological, filterable by type (Status, Assignment, Fields, Workflow, Comments, Assets). Each event: actor, time (viewer's zone, tooltip UTC), event text, and "View changes" showing old -> new values. Dates in sentences and changes are `Oct 15, 2026` (whole-value calendar dates only; free text is never rewritten). The drawer title is clamped to two lines with the whole text as a tooltip. A failed load shows one inline message with Retry (a failed "Load more" one message under the list). **Comment events** carry `commentId` and an `excerpt` (visible text of the comment, whitespace collapsed, at most 80 characters, cut at a word and ended with "..."; null for a deleted or empty comment and for other event types): the excerpt is a link that closes the drawer, opens Comments, loads older pages when needed, shows the whole thread for now (not remembered), scrolls to the comment, highlights it for 4 seconds and focuses it. **Folding rule:** 3 or more consecutive plain "Comment added" events by one person, each at most 10 minutes after the previous one, fold into `KE\kekim added 12 comments (4:03 to 4:05 PM)` with a Show/Hide control; edits, deletes, hold and cancel reasons and every other event type are never folded; "Load more" extends a fold (a fold counts the events loaded so far, a page holds 25). The tab title becomes `TSK-n title: Activity` while the drawer is open and stays pinned when it closes.
 
 #### Drill-in, `?from=` and the way back
 `?from=` names the page the task was opened from. The work lists (`my-work`, `task-queue`, `pod-work`) are as in S02 to S04; **for the Task page only** it also accepts `matter`, `project`, `dashboard` and `search` (this reverses decision T, "Dashboard lists unchanged", for the Task page only, as the PM ruled). Task links on a Matter's and a Project's Tasks grid, on the Dashboard (the Summary lists, the Swimlane card and drawer, the Users table and its drawers) and in Search (results page and Advanced Search) carry `from=<origin>` and the exact address of the page in the router state `returnTo`. The crumb names the origin ("Matter 00107-00001", "Project Alpha", "Dashboard", "Search", "My Work"), and the crumb and "Back to ..." go to the exact view (filters, tab, query) with focus on the link that was left; browser Back does the same. The return address is read once when the page opens, and only an address on the origin's own path is used (otherwise `/matters/<id>?tab=tasks`, `/projects/<id>`, `/dashboard`, `/search`). A Matter origin is the one crumb (the matter is not repeated). **An origin the person cannot use is dropped** and the page behaves as opened without `from`: Matter or Project without the View permission, a task without a project, Pod Work without `Pod.View`, the Dashboard without `Dashboard.View` plus at least one Dashboard tab permission. An unknown value is ignored. The navigation keeps Matters, Projects, Dashboard, My Work, Task Queue or Pod Work current (Search has no item). Exactly one link to the origin is visible at every width (the crumb from 640 px, "Back to ..." below it).
@@ -1073,7 +1086,7 @@ Role editor: Name, Description, Permission matrix grouped:
 
 ### S13 Admin: Pods
 
-Pods is the **third tab of the Users page** (`Users | Roles | Pods`, `/admin/pods`, needs `Pod.Manage` or `Pod.ManageMembers`; document title "Users - Pods"; the page header keeps the Users icon on all three tabs, see docs/ux/users-pods/README.md). The Users grid also has a **Pods column** with an inline editor for people with `Pod.ManageMembers`.
+Pods is the **third tab of the Users page** (`Users | Roles | Pods`, `/admin/pods`, needs `Pod.Manage` or `Pod.ManageMembers`; document title "Users: Pods"; the page header keeps the Users icon on all three tabs, see docs/ux/users-pods/README.md). The Users grid also has a **Pods column** with an inline editor for people with `Pod.ManageMembers`.
 
 ```text
 Users  [Users] [Roles] [Pods]                               [+ New Pod]
@@ -1094,7 +1107,7 @@ Pod editor: Name (required, unique), Description, Active
 
 > Rewritten to the built code in #418 (Task Types epic #352, review `docs/ux/task-types-review/`, decisions section AF of `docs/requirements/decisions-addendum.md`). Where the old text described a feature that was never built (Validate button on the workflow, per-step settings drawer, drag handles, Open tasks on a "Versions" tab, autosave) it is gone; where the code has more than the old text (tabs with counts, health strips, phone cards, row overflow, tag filter, record headers) it is described here.
 
-**Pages and permissions.** One Administration menu item, "Task Types", with three route-based tabs: `/admin/task-types` (Task Types, `TaskType.Manage`), `/admin/workflows` (Workflows) and `/admin/steps` (Workflow Steps), the last two with `Workflow.Manage`. Only permitted tabs show; a tab address the person may not open falls back to the first allowed tab, a create, edit, version or form address shows the 403 page (`features/admin/denial.ts`, #416; matrix in `docs/ux/task-types-review/fixes/ty10-permissions/permissions.md`). Each administration permission is enough to read what it manages, `Task.View` is not needed (open-task numbers and links are then absent). Document titles "Task Types", "Task Types - Workflows", "Task Types - Workflow Steps" and, on a record, the record's name.
+**Pages and permissions.** One Administration menu item, "Task Types", with three route-based tabs: `/admin/task-types` (Task Types, `TaskType.Manage`), `/admin/workflows` (Workflows) and `/admin/steps` (Workflow Steps), the last two with `Workflow.Manage`. Only permitted tabs show; a tab address the person may not open falls back to the first allowed tab, a create, edit, version or form address shows the 403 page (`features/admin/denial.ts`, #416; matrix in `docs/ux/task-types-review/fixes/ty10-permissions/permissions.md`). Each administration permission is enough to read what it manages, `Task.View` is not needed (open-task numbers and links are then absent). Document titles "Task Types", "Task Types: Workflows", "Task Types: Workflow Steps" and, on a record, the record's name.
 
 **Page shell (all three tabs).** Breadcrumb `Administration > Task Types`, one-line description, tabs with the count of **active** records (Task Types, Workflows, Workflow Steps), the Filters button in the header (the filter row is open by default from 640 px; below 640 px it is a sheet), a health strip, the grid, the pager. State is in the address (filters, sort, page) and Back or the breadcrumb returns to the same list with focus on the row left (`list-return.ts`, #354). Loading is a skeleton with the table's columns, a failure is one message with Retry (no second New button), an empty result says what filtered it. The Status filter defaults to Active and the pager says "N inactive hidden" with Show all. Rows are 44 px; the name is the only link; one overflow menu per row in the last, sticky column. Below 640 px the rows are cards; optional columns drop by width.
 
@@ -1228,8 +1241,22 @@ Steps (4) | Used by (2)                         Mode: Ordered v
 - Contact line is a configuration value; if unset, omit it.
 - Accessibility: single `main`, H1 "Your access is pending", focus on H1 on load.
 
-### S22 System pages
-403 "You don't have permission to view this page" (links: Go to my work, Contact admin text); 404 "We couldn't find that page"; error page with correlation id and Copy; **Conflict dialog** (§5.3) "This task was changed by someone else. [Reload latest] [Review my changes]"; session/connection lost banner "Connection lost. Retrying..."; Browser sign-in problem page for failed Windows authentication.
+### S22 System pages, session and connection (epic #585; review `docs/ux/shell-review/`, decisions section AE)
+
+**State pages.** The 403, the 404 and the error page are one card (`mf-state-page`): icon and title (22 px / 700, 18 px below 640 px), one sentence of reason, the address asked for in monospace, a primary "Go to ..." link (the landing page of the person), one secondary action (Search on the 404, Copy link on the 403, Retry on the error page) and the brand line under the card. No illustration. The heading takes focus once on arrival.
+- **403 "You don't have permission to view this page."** Renders in place and **keeps the address** ("You asked for /path", Copy link); Back returns to the previous page; reloading after a role was granted opens the page. `/403` still works as an address. On a record: "You don't have access to this client." (matter, project, task) with no Retry.
+- **404 "We couldn't find that page."** With a search box (the only state page with one). Record 404s say "We couldn't find that client." and the tab title says "Client not found".
+- **Error page.** Shows the Reference (trace id, kept in memory for the page) with Copy; Retry reloads the page the person was on; "Go to home" appears only after Retry failed too; it says so when the account call answered 401.
+- **Conflict dialog** (§5.3) "This task was changed by someone else. [Reload latest] [Review my changes]".
+
+**Connection and session.** One banner slot under the header (5.1), sign-in before offline.
+- **Offline:** "You're offline. Pages you have open still work; changes can't be saved." with Retry; the browser's offline event or two network failures in a row show it, one automatic retry asks the server every 15 seconds; "Back online." (polite) for 4 seconds. A page that failed to load while offline shows its inline "couldn't load" state once and loads again by itself when the connection returns. A click on a rail item whose page is not loaded yet says so and keeps focus on the link.
+- **Sign-in not verified (401):** "We couldn't verify your sign-in." with Reload page, one banner, no toasts, until the page is reloaded.
+- **Failed list load:** one inline message with Reference, Copy and Retry; a toast only for actions (saves), never for a load that has an inline state.
+- **Still loading:** after about 8 seconds a skeleton adds "Still loading... Retry" in a polite region; Retry re-issues the page's own request.
+- **Browser sign-in problem page** for failed Windows authentication: **not built**; it needs a real IIS 401 to design against and is recorded for the production rollout.
+
+**Toasts and dialogs.** One toast host, bottom right (§8.5; decision T #158's bottom-left Undo is reversed); dialogs and drawers follow the rule in 5.4 (16 px / 600 titles, one close style, secondary left and primary right).
 
 ### S23 My profile: availability and work hours (epic #68, issues #70 and #74)
 
@@ -1544,7 +1571,7 @@ Create task, Create and add another, Save changes, Save draft, Publish version <
 - **Retire/deactivate priority:** "Existing tasks keep this label. It won't be offered for new changes."
 
 ### 8.5 Toasts
-"Task <TSK-1043> created." / "Assigned to you. Task moved to In Progress." / "Priority set to <High>. Undo" / "Status changed to <On Hold>." / "Step completed." / "Step skipped." / "Step reopened." / "Comment posted." / "Saved." / "Couldn't save. Try again."
+One host, bottom right; success and info are polite status messages, warnings and errors assertive alerts; identical messages fold into one with a count (x2); at most three are visible; at most two lines each. "Task <TSK-1043> created." / "Assigned to you. Task moved to In Progress." / "Priority set to <High>. Undo" / "Status changed to <On Hold>." / "Step completed." / "Step skipped." / "Step reopened." / "Comment posted." / "Saved." / "Couldn't save. Try again."
 
 ### 8.6 Empty, loading, error
 | State | Text |
@@ -1600,6 +1627,13 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-X-12 Unsaved-changes guard works on every form.
 - [ ] UAT-X-13 A link exists only when its target is reachable by the person (no 403 page behind any link on a Client, Matter or Project page); counts the person may not see are absent, never 0 (epic #245).
 - [ ] UAT-X-14 Pages with a list start with a skip link ("Skip to table" or "Skip to task list"); Back from a record returns focus to the row that was left.
+- [ ] UAT-X-15 Landing: a Director, Read-Only Observer, Compliance Auditor or Intake Coordinator without a pod or assigned work lands on the Dashboard; a technician with a pod lands on My Work; a Project Manager lands on My Matters; the logo and the 403/404 "Go to" link lead to the same page (#628).
+- [ ] UAT-X-16 Offline (switch the network off): within a couple of seconds a banner under the header says "You're offline. ..."; no toast piles up; switching the network on shows "Back online." for a few seconds and open lists load again (#611).
+- [ ] UAT-X-17 A page the person may not open (type its address) shows the 403 card at that address with "You asked for /path" and Copy link; Back returns; the address bar was not replaced by /403 (#598).
+- [ ] UAT-X-18 One toast host at the bottom right: two identical errors show one toast with "x2"; success is read out politely, errors assertively; Undo is inside the toast (#616).
+- [ ] UAT-X-19 Tab titles follow `<Page>: <Tab> - MatterFlow` (Users: Roles, Task Types: Workflows, My Work: Closed); a screen reader says the new title once after a menu click, not after Back (#606, #624).
+- [ ] UAT-X-20 Between 640 and 1099 px the rail shows 18 px icons; Tab through them shows each name, Esc hides it; the Users item shows a dot (not a number) while people wait for access (#623).
+- [ ] UAT-X-21 On a Matter or Project page there is one "Create task" button (the record's); on lists and Client pages the header one (#625).
 
 ### S01 Dashboard
 - [ ] UAT-S01-1 The eight Summary tiles (Overdue, Unassigned, On hold, ASAP open; Open, Due soon, Completed, Created) show correct counts, and Completed and Created follow the Period.
@@ -1882,9 +1916,14 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S21-5 Copy button copies Windows account; screen reader announces result.
 - [ ] UAT-S21-6 Role removal mid-session returns the user to this page on next request.
 
-### S22 System pages
-- [ ] UAT-S22-1 403/404/error/conflict pages match copy deck and offer next steps.
-- [ ] UAT-S22-2 Error page shows a copyable correlation id; no stack traces or privileged content.
+### S22 System pages, session and connection
+- [ ] UAT-S22-1 403/404/error/conflict pages match copy deck and offer next steps; the 403, 404 and error page are the same card, and the heading takes focus when the page appears.
+- [ ] UAT-S22-2 Error page shows the Reference with Copy (copyable, still there after the toast time); Retry reloads the page that was open; no stack traces or privileged content.
+- [ ] UAT-S22-3 A page the person may not open shows the 403 card at the same address ("You asked for /path", Copy link); Back goes to the page before; reloading after a role was granted opens the page.
+- [ ] UAT-S22-4 Offline: the banner under the header, no toast pile, "Back online." afterwards; a list that failed while offline loads again by itself.
+- [ ] UAT-S22-5 A 401 shows one banner "We couldn't verify your sign-in." with Reload page and no toasts.
+- [ ] UAT-S22-6 A failed list load is one inline message with Reference, Copy and Retry, never a toast; after about 8 seconds a loading list says "Still loading... Retry".
+- [ ] UAT-S22-7 Axe is clean with each banner open at 1366, 1920, 768 and 375 px, and the page does not scroll sideways.
 
 ### S23 My profile
 - [ ] UAT-S23-1 A person sets Out of office with an until date and a note on My profile or from the header menu; the header says "Out of office until ..."; "I'm back" ends it; the Users screen, assignee pickers, Swimlane cards and Dashboard Users tiles show the same state.
