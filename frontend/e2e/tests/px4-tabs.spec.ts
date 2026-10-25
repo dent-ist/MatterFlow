@@ -115,11 +115,28 @@ test.describe('My Matters: Since your last visit', () => {
     const card = panel(page, 'since');
     await expect(card.locator('[data-since-period]')).toContainText('last 7 days');
     await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
-    // Recent activity waited for the card, then created the marker at the newest event.
+    // Recent activity waited for the card, then created a starting point for its unread dots (issue #815): that is not a last visit.
     await expect(
       panel(page, 'activity').locator('[data-activity-row], [data-empty]').first(),
     ).toBeVisible();
 
+    // Looking at the Activity tab and coming back, or reloading, changes nothing the card says.
+    await page.reload();
+    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
+    await tab(page, 'activity').click();
+    await expect(panel(page, 'activity-tab').locator('[data-activity-row]').first()).toBeVisible();
+    await tab(page, 'overview').click();
+    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
+    await page.reload();
+    await expect(card.locator('[data-since-period]')).toContainText('last 7 days');
+    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
+    await expect(card.locator('[data-since-empty]')).toHaveCount(0);
+
+    // Mark as read is what moves it.
+    await card.locator('[data-mark-read]').click();
+    await expect(card.locator('[data-since-empty]')).toContainText(
+      'Nothing has changed since your last visit.',
+    );
     await page.reload();
     await expect(card.locator('[data-since-empty]')).toContainText(
       'Nothing has changed since your last visit.',

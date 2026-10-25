@@ -228,24 +228,24 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
             DECLARE @max BIGINT = (SELECT ISNULL(MAX(AuditEventId), 0) FROM dbo.AuditEvent);
             DECLARE @to BIGINT = CASE WHEN {upToEventId} IS NULL OR {upToEventId} > @max THEN @max ELSE {upToEventId} END;
             UPDATE dbo.UserMatterActivitySeen
-               SET SeenAuditEventId = CASE WHEN @to > SeenAuditEventId THEN @to ELSE SeenAuditEventId END, SeenAtUtc = SYSUTCDATETIME()
+               SET SeenAuditEventId = CASE WHEN @to > SeenAuditEventId THEN @to ELSE SeenAuditEventId END, SeenAtUtc = SYSUTCDATETIME(), IsInitial = 0
              WHERE UserId = {me};
             IF @@ROWCOUNT = 0
-                INSERT dbo.UserMatterActivitySeen (UserId, SeenAuditEventId, SeenAtUtc) VALUES ({me}, @to, SYSUTCDATETIME());
+                INSERT dbo.UserMatterActivitySeen (UserId, SeenAuditEventId, SeenAtUtc, IsInitial) VALUES ({me}, @to, SYSUTCDATETIME(), 0);
             """, ct);
         var row = await db.Database.SqlQuery<SeenRow>($"SELECT SeenAuditEventId, SeenAtUtc FROM dbo.UserMatterActivitySeen WHERE UserId = {me}").FirstAsync(ct);
         return new MyMattersActivitySeen(row.SeenAuditEventId, DateTime.SpecifyKind(row.SeenAtUtc, DateTimeKind.Utc));
     }
 
-    /// <summary>The person's marker; the first call creates it at the newest audit event so nothing is unread on the first visit.</summary>
+    /// <summary>The person's marker; the first call creates it at the newest audit event so nothing is unread on the first visit. That starting point is flagged <c>IsInitial</c>: "Since your last visit" ignores it until the person marks activity as read (issue #815).</summary>
     internal async Task<long> EnsureSeenAsync(int me, CancellationToken ct)
     {
         try
         {
             await db.Database.ExecuteSqlInterpolatedAsync($"""
                 IF NOT EXISTS (SELECT 1 FROM dbo.UserMatterActivitySeen WHERE UserId = {me})
-                    INSERT dbo.UserMatterActivitySeen (UserId, SeenAuditEventId, SeenAtUtc)
-                    SELECT {me}, ISNULL(MAX(AuditEventId), 0), SYSUTCDATETIME() FROM dbo.AuditEvent;
+                    INSERT dbo.UserMatterActivitySeen (UserId, SeenAuditEventId, SeenAtUtc, IsInitial)
+                    SELECT {me}, ISNULL(MAX(AuditEventId), 0), SYSUTCDATETIME(), 1 FROM dbo.AuditEvent;
                 """, ct);
         }
         catch (SqlException ex) when (ex.Number is 2627 or 2601)

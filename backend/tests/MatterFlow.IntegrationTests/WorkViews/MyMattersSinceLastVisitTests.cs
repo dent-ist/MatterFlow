@@ -44,9 +44,38 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
     }
 
     [Fact]
+    public async Task Reading_the_activity_creates_a_starting_point_that_does_not_hide_the_period_until_Mark_as_read()
+    {
+        var before = await Mine("since-last-visit");
+        before.GetProperty("hasMarker").GetBoolean().ShouldBeFalse();
+        var newTasks = Count(before, "newTasks").GetProperty("count").GetInt32();
+        newTasks.ShouldBeGreaterThan(0);
+
+        // The Activity tab (and the Recent activity panel) read the list: that creates the starting point of the unread dots, flagged initial.
+        await Mine("activity");
+        (await MarkerAsync()).ShouldBeGreaterThan(0);
+        (await H.ScalarLongAsync($"SELECT CAST(IsInitial AS BIGINT) AS [Value] FROM dbo.UserMatterActivitySeen WHERE UserId = {PmA}")).ShouldBe(1);
+
+        var after = await Mine("since-last-visit");
+        after.GetProperty("hasMarker").GetBoolean().ShouldBeFalse();
+        after.GetProperty("seenEventId").GetInt64().ShouldBe(0);
+        Count(after, "newTasks").GetProperty("count").GetInt32().ShouldBe(newTasks);
+        Count(after, "newTasks").GetProperty("query").GetString().ShouldStartWith("kind=TASK_CREATED&from=");
+
+        // Mark as read is the only thing that moves it: afterwards nothing has changed.
+        await OkAsync(await A.PostAsJsonAsync("/api/v1/my-matters/activity/seen", new { }));
+        (await H.ScalarLongAsync($"SELECT CAST(IsInitial AS BIGINT) AS [Value] FROM dbo.UserMatterActivitySeen WHERE UserId = {PmA}")).ShouldBe(0);
+        var marked = await Mine("since-last-visit");
+        marked.GetProperty("hasMarker").GetBoolean().ShouldBeTrue();
+        Count(marked, "newTasks").GetProperty("count").GetInt32().ShouldBe(0);
+    }
+
+    [Fact]
     public async Task With_a_marker_the_counts_are_what_happened_after_it_and_the_links_open_the_same_lists()
     {
-        await Mine("activity"); // first visit: the marker is created at the newest event
+        await Mine("activity"); // first visit: the starting point is created at the newest event (it is not a "last visit")
+        (await MarkerAsync()).ShouldBeGreaterThan(0);
+        await OkAsync(await A.PostAsJsonAsync("/api/v1/my-matters/activity/seen", new { })); // Mark as read: now it is
         var marker = await MarkerAsync();
         marker.ShouldBeGreaterThan(0);
 

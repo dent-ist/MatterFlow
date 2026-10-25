@@ -10,7 +10,8 @@ namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
 /// "Since your last visit" (epic #758, PX-10): what changed on my matters since the person's marker (the last explicit "Mark as read"), or in the last 7 days when they have no marker yet.
-/// It never moves the marker and never creates one: only <c>POST /my-matters/activity/seen</c> does. Counts come from one grouped read of the audit events newer than the marker (a clustered
+/// It never moves the marker and never creates one: only <c>POST /my-matters/activity/seen</c> does. The starting point that the first read of the Activity list creates (<c>IsInitial</c>) is not
+/// a "last visit": it is ignored here, so looking at the Activity tab never changes what this card says (issue #815). Counts come from one grouped read of the audit events newer than the marker (a clustered
 /// range on the event id, bounded below by 30 days), "became overdue" from the open tasks of the scope whose due moment fell inside the period, and the (at most five) most important items
 /// are the tasks that became overdue first, then the newest holds and reassignments. The person's own actions are not counted. Comment text is never read.
 /// </summary>
@@ -33,7 +34,7 @@ public sealed class MyMattersSinceLastVisitService(MyMattersScopeResolver scopes
         var now = DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc);
         var floor = now.AddDays(-MyMattersActivityService.WindowDays);
 
-        var marker = await db.Database.SqlQuery<SeenRow>($"SELECT SeenAuditEventId, SeenAtUtc FROM dbo.UserMatterActivitySeen WHERE UserId = {me}").FirstOrDefaultAsync(ct);
+        var marker = await db.Database.SqlQuery<SeenRow>($"SELECT SeenAuditEventId, SeenAtUtc FROM dbo.UserMatterActivitySeen WHERE UserId = {me} AND IsInitial = 0").FirstOrDefaultAsync(ct);
         var since = marker is null ? now.AddDays(-NoMarkerDays) : DateTime.SpecifyKind(marker.SeenAtUtc, DateTimeKind.Utc);
         if (since < floor)
             since = floor;
