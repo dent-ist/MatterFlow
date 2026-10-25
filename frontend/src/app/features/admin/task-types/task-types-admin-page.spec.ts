@@ -352,8 +352,8 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       };
       await open('/admin/task-types', 'TaskType.Manage', 'Workflow.Manage');
       expect(await titleOf('/admin/task-types')).toBe('Task Types');
-      expect(await titleOf('/admin/workflows')).toBe('Task Types - Workflows');
-      expect(await titleOf('/admin/steps')).toBe('Task Types - Workflow Steps');
+      expect(await titleOf('/admin/workflows')).toBe('Task Types: Workflows');
+      expect(await titleOf('/admin/steps')).toBe('Task Types: Workflow Steps');
       expect(await titleOf('/admin/steps/new')).toBe('New step');
       expect(await titleOf('/admin/task-types/new')).toBe('New task type');
     },

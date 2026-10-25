@@ -74,7 +74,7 @@ test.describe('Pods tab on the Users page', () => {
       /^\s*Pods \(\d+\)$/,
     ]);
     await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
-    await expect(page).toHaveTitle(/^Users - Pods/);
+    await expect(page).toHaveTitle(/^Users: Pods/);
 
     // One menu item for all three tabs, highlighted on each of them.
     const menu = page.getByRole('list', { name: 'Administration' });

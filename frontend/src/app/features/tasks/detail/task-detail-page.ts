@@ -281,7 +281,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
   constructor() {
     // C, A and S (comment, Assignee menu, Status menu) while "Keyboard shortcuts" is on (K2, #327).
     registerTaskShortcuts();
-    // `TSK-12 Title cut at 60 characters`, `Activity - TSK-12 ...` while the drawer is open; the error states name themselves (#290, #295).
+    // `TSK-12 Title cut at 60 characters`, `TSK-12 Title: Activity` while the drawer is open; the error states name themselves (#290, #295).
     // Pinned, so a navigation that only changes the address (closing the drawer removes `?tab=activity`) keeps it.
     effect(() => {
       const t = this.store.state() === 'ready' ? this.store.task() : null;
@@ -290,7 +290,7 @@ export class TaskDetailPage implements HasUnsavedChanges {
       this.pageTitle.pin(
         base
           ? this.store.activityOpen()
-            ? `Activity - ${base}`
+            ? `${base}: Activity`
             : base
           : recordStateTitle('task', state),
       );

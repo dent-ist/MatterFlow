@@ -923,7 +923,7 @@ describe('TaskDetailPage layout and states', () => {
     const base = `TSK-1042 ${'A'.repeat(60)}…`;
     expect(document.title).toBe(`${base} - MatterFlow`);
     await click(fixture, q(el, '[data-action="activity"]'));
-    expect(document.title).toBe(`Activity - ${base} - MatterFlow`);
+    expect(document.title).toBe(`${base}: Activity - MatterFlow`);
     fixture.debugElement.injector.get(TaskDetailStore).activityOpen.set(false);
     await settle(fixture);
     expect(document.title).toBe(`${base} - MatterFlow`);

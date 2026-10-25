@@ -33,7 +33,7 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(TAB_URL);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Asset Types');
-    await expect(page).toHaveTitle('Asset Types - Link Roles - MatterFlow');
+    await expect(page).toHaveTitle('Asset Types: Link Roles - MatterFlow');
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li')).toHaveText([
       /Administration/,
       /Asset Types/,

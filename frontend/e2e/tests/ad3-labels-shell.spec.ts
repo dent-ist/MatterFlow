@@ -76,10 +76,10 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
       "Rename how the five statuses read. You can't add or remove statuses.",
     );
     await expect(page.getByRole('button', { name: 'New priority' })).toHaveCount(0);
-    await expect(page).toHaveTitle('Labels - Status labels - MatterFlow');
+    await expect(page).toHaveTitle('Labels: Status labels - MatterFlow');
     await page.keyboard.press('Home');
     await expect(page).toHaveURL(/\/admin\/priorities$/);
-    await expect(page).toHaveTitle('Labels - Priorities - MatterFlow');
+    await expect(page).toHaveTitle('Labels: Priorities - MatterFlow');
     await page.keyboard.press('End');
     await expect(page).toHaveURL(/\/admin\/status-labels$/);
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute(

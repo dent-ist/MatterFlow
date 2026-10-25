@@ -186,7 +186,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     expect(el().querySelector('mf-users-page')).not.toBeNull();
   });
 
-  it('uses "Users - Pods" as the document title of the Pods tab', async () => {
+  it('uses "Users: Pods" as the document title of the Pods tab', async () => {
     const titleOf = async (url: string): Promise<unknown> => {
       await open(url, 'User.View', 'Role.Manage', 'Pod.Manage');
       let route = TestBed.inject(Router).routerState.snapshot.root;
@@ -195,8 +195,8 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
       return route.title;
     };
     expect(await titleOf('/admin/users')).toBe('Users');
-    expect(await titleOf('/admin/roles')).toBe('Users - Roles');
-    expect(await titleOf('/admin/pods')).toBe('Users - Pods');
+    expect(await titleOf('/admin/roles')).toBe('Users: Roles');
+    expect(await titleOf('/admin/pods')).toBe('Users: Pods');
   });
 
   it('puts Filters with its count and Clear filters in the page header, and Clear keeps the segment (#431)', async () => {

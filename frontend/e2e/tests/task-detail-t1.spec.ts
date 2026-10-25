@@ -461,14 +461,14 @@ test.describe('Task detail T1: Activity drawer (BUG-5 #293, BUG-8 #294) and docu
     );
 
     const drawer = await detail.openActivity();
-    await expect(page).toHaveTitle(`Activity - ${cut} - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut}: Activity - MatterFlow`);
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
     await expect(page).toHaveTitle(`${cut} - MatterFlow`);
 
     // The old link that opens the drawer: closing it removes ?tab=activity, and the title stays right.
     await page.goto(`/tasks/${task.taskId}?tab=activity`);
-    await expect(page).toHaveTitle(`Activity - ${cut} - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut}: Activity - MatterFlow`);
     await page.keyboard.press('Escape');
     await expect(page).toHaveTitle(`${cut} - MatterFlow`);
   });

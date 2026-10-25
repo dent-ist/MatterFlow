@@ -341,16 +341,16 @@ test.describe('Round 4: task type icons', () => {
 test.describe('Round 4: administration naming', () => {
   const titles: [string, string, string | RegExp][] = [
     ['/admin/task-types', 'Task Types', 'Task Types - MatterFlow'],
-    ['/admin/workflows', 'Task Types', 'Task Types - Workflows - MatterFlow'],
-    ['/admin/steps', 'Task Types', 'Task Types - Workflow Steps - MatterFlow'],
-    ['/admin/priorities', 'Labels', 'Labels - Priorities - MatterFlow'],
-    ['/admin/status-labels', 'Labels', 'Labels - Status labels - MatterFlow'],
+    ['/admin/workflows', 'Task Types', 'Task Types: Workflows - MatterFlow'],
+    ['/admin/steps', 'Task Types', 'Task Types: Workflow Steps - MatterFlow'],
+    ['/admin/priorities', 'Labels', 'Labels: Priorities - MatterFlow'],
+    ['/admin/status-labels', 'Labels', 'Labels: Status labels - MatterFlow'],
     ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],
     ['/admin/audit', 'Audit Logs', 'Audit Logs - MatterFlow'],
     ['/admin/users', 'Users', 'Users - MatterFlow'],
-    ['/admin/roles', 'Users', 'Users - Roles - MatterFlow'],
+    ['/admin/roles', 'Users', 'Users: Roles - MatterFlow'],
     ['/admin/asset-types', 'Asset Types', 'Asset Types - MatterFlow'],
-    ['/admin/asset-types?tab=link-roles', 'Asset Types', 'Asset Types - Link Roles - MatterFlow'],
+    ['/admin/asset-types?tab=link-roles', 'Asset Types', 'Asset Types: Link Roles - MatterFlow'],
   ];
 
   for (const [path, heading, title] of titles) {
@@ -369,7 +369,7 @@ test.describe('Round 4: administration naming', () => {
     await page.goto('/admin/users');
     await expect(page).toHaveTitle('Users - MatterFlow');
     await page.getByRole('tab', { name: 'Roles' }).click();
-    await expect(page).toHaveTitle('Users - Roles - MatterFlow');
+    await expect(page).toHaveTitle('Users: Roles - MatterFlow');
     await page.goto('/admin/asset-types');
     await expect(
       page.getByRole('navigation', { name: 'Breadcrumb' }).getByText('Administration'),

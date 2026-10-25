@@ -100,7 +100,7 @@ test.describe('Asset Types page chrome (#633)', () => {
 
     await page.goto('/admin/asset-link-roles');
     await expect(page).toHaveURL(/\/admin\/asset-types\?tab=link-roles$/);
-    await expect(page).toHaveTitle('Asset Types - Link Roles - MatterFlow');
+    await expect(page).toHaveTitle('Asset Types: Link Roles - MatterFlow');
     await expect(page.getByRole('tab', { name: /^Link Roles/ })).toHaveAttribute(
       'aria-selected',
       'true',

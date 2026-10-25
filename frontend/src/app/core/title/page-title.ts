@@ -10,6 +10,16 @@ export function documentTitle(page: string | null | undefined): string {
   return name ? `${name} - ${APP_NAME}` : APP_NAME;
 }
 
+/**
+ * Document-title rule (S21): `<Page or record>: <Tab or view> - MatterFlow`. `pageTab` builds the first part for a page with tabs or
+ * views (`Users: Roles`, `Task Types: New workflow`: a create or edit page keeps its section first); `recordTitle` does the same for a
+ * record. A route sets its title only through these helpers or a plain page name, never with a hyphen between page and tab (the
+ * hyphen is only the one before the app name); a not-found title says "not found" (`recordStateTitle`).
+ */
+export function pageTab(page: string, tab: string): string {
+  return `${page}: ${tab}`;
+}
+
 /** Longest record text in a detail page's document title; longer text is cut with an ellipsis (the page itself shows it whole). */
 export const RECORD_TITLE_MAX = 60;
 

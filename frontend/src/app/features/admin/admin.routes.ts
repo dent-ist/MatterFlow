@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { Route, Router, Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
+import { pageTab } from '../../core/title/page-title';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
@@ -70,7 +71,7 @@ const STEP_ROUTES: Routes = [
 const WORKFLOW_ROUTES: Routes = [
   {
     path: 'workflows/new',
-    title: 'New workflow',
+    title: pageTab('Task Types', 'New workflow'),
     canActivate: [permissionGuard('Workflow.Manage')],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./workflows/workflow-edit-page').then((m) => m.WorkflowEditPage),
@@ -155,12 +156,12 @@ export const ADMIN_ROUTES: Routes = [
   {
     // /admin/users, /admin/roles and /admin/pods are the three tabs of one page; the component stays alive when the tab changes.
     matcher: usersRolesMatcher,
-    // Document title = the page name plus the open tab (UXR4-12): "Users", "Users - Roles", "Users - Pods".
+    // Document title = the page name plus the open tab (UXR4-12): "Users", "Users: Roles", "Users: Pods".
     title: (route) =>
       route.params['tab'] === 'roles'
-        ? 'Users - Roles'
+        ? pageTab('Users', 'Roles')
         : route.params['tab'] === 'pods'
-          ? 'Users - Pods'
+          ? pageTab('Users', 'Pods')
           : 'Users',
     canActivate: [
       permissionGuard('User.View', 'User.Manage', 'Role.Manage', 'Pod.Manage', 'Pod.ManageMembers'),
@@ -172,12 +173,12 @@ export const ADMIN_ROUTES: Routes = [
     // /admin/task-types, /admin/workflows and /admin/steps are the three tabs of one page; the component stays alive when the tab
     // changes. Each tab needs its own permission (the page offers only the permitted ones), so the route needs either.
     matcher: taskTypesTabsMatcher,
-    // Document title = the page name plus the open tab: "Task Types", "Task Types - Workflows", "Task Types - Workflow Steps".
+    // Document title = the page name plus the open tab: "Task Types", "Task Types: Workflows", "Task Types: Workflow Steps".
     title: (route) =>
       route.params['tab'] === 'workflows'
-        ? 'Task Types - Workflows'
+        ? pageTab('Task Types', 'Workflows')
         : route.params['tab'] === 'steps'
-          ? 'Task Types - Workflow Steps'
+          ? pageTab('Task Types', 'Workflow Steps')
           : 'Task Types',
     canActivate: [permissionGuard('TaskType.Manage', 'Workflow.Manage')],
     providers: TASK_TYPE_TAB_PROVIDERS,
@@ -198,7 +199,9 @@ export const ADMIN_ROUTES: Routes = [
       import('./asset-types/asset-admin-page').then((m) => m.AssetAdminPage),
     ),
     title: (route) =>
-      route.queryParams['tab'] === 'link-roles' ? 'Asset Types - Link Roles' : 'Asset Types',
+      route.queryParams['tab'] === 'link-roles'
+        ? pageTab('Asset Types', 'Link Roles')
+        : 'Asset Types',
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
   },
   {
@@ -234,7 +237,9 @@ export const ADMIN_ROUTES: Routes = [
     // changes. Each tab needs its own permission: the other tab's address falls back to the allowed one (labelsTabGuard).
     matcher: labelsTabsMatcher,
     title: (route) =>
-      route.params['tab'] === 'status-labels' ? 'Labels - Status labels' : 'Labels - Priorities',
+      route.params['tab'] === 'status-labels'
+        ? pageTab('Labels', 'Status labels')
+        : pageTab('Labels', 'Priorities'),
     canActivate: [labelsTabGuard()],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./labels-admin-page').then((m) => m.LabelsAdminPage),
@@ -247,10 +252,10 @@ export const ADMIN_ROUTES: Routes = [
     title: (route) => {
       const tab = route.queryParams['tab'];
       const names: Record<string, string> = {
-        categories: 'Reports - Categories',
-        runs: 'Reports - Run log',
-        assignments: 'Reports - Assignments',
-        health: 'Reports - Settings',
+        categories: pageTab('Reports', 'Categories'),
+        runs: pageTab('Reports', 'Run log'),
+        assignments: pageTab('Reports', 'Assignments'),
+        health: pageTab('Reports', 'Settings'),
       };
       return names[tab] ?? 'Reports';
     },

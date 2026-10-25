@@ -31,13 +31,13 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     ['/admin/audit', 'Audit Logs - MatterFlow', 'Audit Logs', ['Administration', 'Audit Logs']],
     [
       '/admin/priorities',
-      'Labels - Priorities - MatterFlow',
+      'Labels: Priorities - MatterFlow',
       'Labels',
       ['Administration', 'Labels'],
     ],
     [
       '/admin/status-labels',
-      'Labels - Status labels - MatterFlow',
+      'Labels: Status labels - MatterFlow',
       'Labels',
       ['Administration', 'Labels'],
     ],
@@ -49,7 +49,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     ],
     [
       '/admin/asset-types?tab=link-roles',
-      'Asset Types - Link Roles - MatterFlow',
+      'Asset Types: Link Roles - MatterFlow',
       'Asset Types',
       ['Administration', 'Asset Types'],
     ],

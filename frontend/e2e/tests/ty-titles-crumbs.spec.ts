@@ -55,12 +55,12 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
 
     const cases: [string, string][] = [
       ['/admin/task-types', 'Task Types - MatterFlow'],
-      ['/admin/workflows', 'Task Types - Workflows - MatterFlow'],
-      ['/admin/steps', 'Task Types - Workflow Steps - MatterFlow'],
+      ['/admin/workflows', 'Task Types: Workflows - MatterFlow'],
+      ['/admin/steps', 'Task Types: Workflow Steps - MatterFlow'],
       ['/admin/task-types/new', 'New task type - MatterFlow'],
       [`/admin/task-types/${tt.id}`, `${tt.name} - MatterFlow`],
       [`/admin/task-types/${tt.id}/form`, `Form: ${tt.name} - MatterFlow`],
-      ['/admin/workflows/new', 'New workflow - MatterFlow'],
+      ['/admin/workflows/new', 'Task Types: New workflow - MatterFlow'],
       [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name}: Overview - MatterFlow`],
       [
         `/admin/workflows/${wf.workflowDefinitionId}/versions/${versionId}`,
