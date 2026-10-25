@@ -343,6 +343,50 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('table.mf-grid')).not.toBeNull();
     });
 
+    it('shows the open linked tasks as a number with the total as tooltip, sorted by it, only with Task.View (A2, #498)', async () => {
+      await create(['Asset.View', 'Task.View']);
+      assets.listAssets.mockReturnValue(
+        ok(
+          pageOfAssets(
+            anAssetListItem({ assetId: 9, linkedTaskCount: 19, openLinkedTaskCount: 4 }),
+            anAssetListItem({ assetId: 10, linkedTaskCount: 0, openLinkedTaskCount: 0 }),
+          ),
+        ),
+      );
+      await setInputs({ sort: 'assetType' });
+      expect(
+        Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
+          t.textContent!.trim(),
+        ),
+      ).toEqual(['Name', 'Type', 'Matter number', 'Linked tasks', 'External reference', 'Status']);
+      const cell = rowOf(9)!.querySelector('td[data-linked]')!;
+      expect(cell.querySelector('[aria-hidden="true"]')?.textContent).toBe('4');
+      expect(cell.querySelector('[title]')?.getAttribute('title')).toBe('19 linked in total');
+      expect(cell.querySelector('.mf-sr-only')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+        '4 open of 19 linked tasks',
+      );
+      // Plain text, also at 0: no link to an empty list (the Task Queue cannot filter by asset).
+      expect(rowOf(9)!.querySelector('td[data-linked] a')).toBeNull();
+      expect(rowOf(10)!.querySelector('td[data-linked] [aria-hidden="true"]')?.textContent).toBe(
+        '0',
+      );
+      // The first click on a count sorts the busiest asset first.
+      const header = Array.from(el().querySelectorAll('thead th')).find((t) =>
+        t.textContent?.includes('Linked tasks'),
+      )!;
+      header.querySelector('button')!.click();
+      expect(navigate).toHaveBeenCalledWith([], {
+        queryParams: { sort: '-linkedTaskCount', page: null },
+        queryParamsHandling: 'merge',
+      });
+    });
+
+    it('leaves the Linked tasks column out without Task.View', async () => {
+      await create(['Asset.View']);
+      expect(el().querySelector('td[data-linked]')).toBeNull();
+      expect(el().textContent).not.toContain('Linked tasks');
+    });
+
     it('shows the matter number as plain text, not a link, without Matter.View (BUG-1)', async () => {
       await create(['Asset.View']);
       const rows = el().querySelectorAll('tbody tr');

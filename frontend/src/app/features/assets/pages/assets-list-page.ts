@@ -30,7 +30,6 @@ import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { AdminColumn } from '../../../shared/ui/admin-list-state';
-import { columnDropOrder } from '../../../shared/ui/admin-card-spec';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
@@ -48,7 +47,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { AssetDetails } from './asset-details';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'type', 'matter', 'externalReference', 'status'] as const;
+const COLUMNS = ['name', 'type', 'matter', 'linkedTasks', 'externalReference', 'status'] as const;
 type Column = (typeof COLUMNS)[number];
 
 const STATUS_OPTIONS: readonly FilterOption[] = [
@@ -135,6 +134,9 @@ export function parseSelected(value: string | null | undefined): number | null {
       width: 20rem;
       max-width: 20rem;
     }
+    .as-zero {
+      color: var(--mf-text-muted);
+    }
     .as-hint {
       color: var(--mf-text-muted);
     }
@@ -219,6 +221,19 @@ export function parseSelected(value: string | null | undefined): number | null {
                     Type
                   </th>
                   <th class="as-matter" scope="col">Matter number</th>
+                  @if (tasksShown()) {
+                    <th
+                      class="mf-cell-num"
+                      mfSort="linkedTaskCount"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      [attr.data-drop]="drop.linkedTasks"
+                      (sorted)="setSort($event)"
+                    >
+                      Linked tasks
+                    </th>
+                  }
                   <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
                     External reference
                   </th>
@@ -236,7 +251,7 @@ export function parseSelected(value: string | null | undefined): number | null {
               <tbody
                 mfGridBody
                 noun="assets"
-                [columnSpec]="columnSpec"
+                [columnSpec]="columnSpec()"
                 [filters]="filters"
                 [state]="state()"
                 [empty]="rows().length === 0"
@@ -284,6 +299,21 @@ export function parseSelected(value: string | null | undefined): number | null {
                         [copy]="false"
                       />
                     </td>
+                    @if (tasksShown()) {
+                      <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
+                        <!-- The open count is the number; the total is the tooltip (the words are for a screen reader). -->
+                        <span
+                          [attr.title]="(a.linkedTaskCount ?? 0) + ' linked in total'"
+                          [class.as-zero]="!a.openLinkedTaskCount"
+                          aria-hidden="true"
+                          >{{ a.openLinkedTaskCount ?? 0 }}</span
+                        >
+                        <span class="mf-sr-only"
+                          >{{ a.openLinkedTaskCount ?? 0 }} open of
+                          {{ a.linkedTaskCount ?? 0 }} linked tasks</span
+                        >
+                      </td>
+                    }
                     <td class="as-refcell" [attr.data-drop]="drop.externalReference" data-reference>
                       @if (a.externalReference) {
                         <div class="as-ref">
@@ -377,20 +407,27 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly emptyText = computed(() =>
     this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
   );
-  /** The External reference column leaves below 1280 px (the kit's column-drop rule); the filter row follows. */
-  protected readonly drop = columnDropOrder(['externalReference']);
-  protected readonly columnSpec: AdminColumn[] = [
+  /** The External reference column leaves below 1280 px and Linked tasks below 900 px (the kit's column-drop rule); the filter row follows. */
+  protected readonly drop = { externalReference: 1280, linkedTasks: 900 } as const;
+  /** The Linked tasks column is for people who may see tasks: the API sends no counts without `Task.View` (#498). */
+  protected readonly tasksShown = computed(() => this.auth.has('Task.View'));
+  protected readonly columnSpec = computed<AdminColumn[]>(() => [
     { cls: 'mf-cell-name', bone: '14rem' },
     { cls: 'as-type', bone: '7rem' },
     { cls: 'as-matter', bone: '6rem' },
+    ...(this.tasksShown()
+      ? [{ cls: 'mf-cell-num', bone: '2rem', drop: this.drop.linkedTasks }]
+      : []),
     { cls: 'as-refcell', bone: '12rem', drop: this.drop.externalReference },
     { cls: 'mf-cell-badge', bone: '4rem' },
-  ];
+  ]);
   /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
   private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
   protected readonly visibleColumns = computed<readonly Column[]>(() =>
     COLUMNS.filter(
-      (c) => !(c === 'externalReference' && this.viewport() < this.drop.externalReference),
+      (c) =>
+        !(c === 'externalReference' && this.viewport() < this.drop.externalReference) &&
+        !(c === 'linkedTasks' && (!this.tasksShown() || this.viewport() < this.drop.linkedTasks)),
     ),
   );
   protected readonly types = signal<AssetTypeResponse[]>([]);
