@@ -77,6 +77,61 @@ test.describe('Matter Overview: the matter at a glance', () => {
     await expect(director.getByRole('dialog', { name: /Activity/ })).toBeVisible();
   });
 
+  test('the first screen carries Health, Tasks by status, Next deadlines and who is working on it, and Recent activity is within a scroll (#816)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    test.setTimeout(120_000);
+    const w = await mmWorld(seed, personas, 'first');
+    const away = await personas.create({
+      label: 'first-away',
+      roles: ['Data Technician'],
+      displayName: 'First Technician',
+    });
+    const m = await w.matter('Alpha');
+    for (const [title, due, who] of [
+      ['Late filing', '2000-01-01', away.userId],
+      ['Soon filing', inDays(3), away.userId],
+      ['Next filing', inDays(5), undefined],
+      ['Later filing', inDays(9), undefined],
+      ['Far filing', inDays(20), undefined],
+      ['Nobody holds this', undefined, undefined],
+    ] as const) {
+      await w.task(m, { title, ...(due ? { dueDate: due } : {}), assignedUserId: who });
+    }
+    await seed.asset(m, 'Custodian laptop');
+    const page = await asUser(w.pm.username);
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`/matters/${m.matterId}`);
+    await expect(section(page, 'activity')).toBeVisible();
+    const health = (await section(page, 'health').boundingBox())!;
+    expect(health.y, 'Health starts in the first screen at 375x812').toBeLessThan(812 - 120);
+    // One strip only: the header's.
+    await expect(page.locator('[data-strip]')).toHaveCount(1);
+
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto(`/matters/${m.matterId}`);
+    await expect(section(page, 'activity')).toBeVisible();
+    const top = async (key: string) => (await section(page, key).boundingBox())!.y;
+    const tops = Object.fromEntries(
+      await Promise.all(
+        ['health', 'status', 'deadlines', 'people', 'assets', 'activity'].map(
+          async (k) => [k, Math.round(await top(k))] as const,
+        ),
+      ),
+    );
+    console.log(`MATTER_FIRST_SCREEN 1366x768 ${JSON.stringify(tops)}`);
+    for (const key of ['health', 'status', 'deadlines', 'people']) {
+      expect(tops[key], `${key} is in the first screen at 1366x768`).toBeLessThan(768);
+    }
+    expect(
+      tops['activity'],
+      'Recent activity starts within 150 px of the fold',
+    ).toBeLessThanOrEqual(768 + 150);
+  });
+
   test('a matter with no manager is normal: nothing warns, nothing is red for it; the details list and the tabs are still there', async ({
     seed,
     personas,
