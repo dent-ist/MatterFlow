@@ -300,7 +300,15 @@ test.describe('WP3: one action rule (#255)', () => {
     await page.goto(urls().matter);
     await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
     expect(await headerButtons(page)).toEqual(['edit', 'activity', 'create-task']);
-    expect(await menuItems(page)).toEqual(['new-project', 'new-asset', 'toggle-active']);
+    // The matter's quick actions (epic #758, PX-25) sit in the overflow between the records to add and Set inactive.
+    expect(await menuItems(page)).toEqual([
+      'new-project',
+      'new-asset',
+      'bulk-tasks',
+      'add-comment',
+      'open-tasks',
+      'toggle-active',
+    ]);
     await shot(page, 'overflow-matter');
     await page.keyboard.press('Escape');
 
@@ -458,8 +466,10 @@ test.describe('WP3: one action rule (#255)', () => {
       for (const url of [urls().client, urls().matter, urls().project]) {
         await page.goto(url);
         await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-        await expect(page.locator('[data-page-actions] button')).toHaveCount(0);
-        await expect(page.locator('[data-overflow]')).toHaveCount(0);
+        // A person who may see tasks has one entry on a matter: Open the matter's tasks (epic #758, PX-25). Nothing else is offered.
+        const quick = url === urls().matter ? 1 : 0;
+        await expect(page.locator('[data-page-actions] button')).toHaveCount(quick);
+        await expect(page.locator('[data-overflow]')).toHaveCount(quick);
       }
       // Context line: plain text without Client.View / Matter.View would be the other branch; this role holds both, so links stay.
       await page.goto(urls().matter);
@@ -500,7 +510,7 @@ test.describe('WP3: one action rule (#255)', () => {
         await page
           .getByRole('menuitem')
           .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-      ).toEqual(['new-project', 'toggle-active']);
+      ).toEqual(['new-project', 'open-tasks', 'toggle-active']);
     });
 
     test('without Client.View the matter context line is plain text, not a link', async ({
@@ -528,7 +538,16 @@ test.describe('WP3: phone header (#254)', () => {
       [
         urls().matter,
         'create-task',
-        ['edit', 'activity', 'new-project', 'new-asset', 'toggle-active'],
+        [
+          'edit',
+          'activity',
+          'new-project',
+          'new-asset',
+          'bulk-tasks',
+          'add-comment',
+          'open-tasks',
+          'toggle-active',
+        ],
       ],
       [urls().project, 'create-task', ['edit', 'activity', 'toggle-active']],
     ] as const) {
@@ -596,7 +615,15 @@ test.describe('WP3: tablet header (#254)', () => {
       await page
         .getByRole('menuitem')
         .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-    ).toEqual(['activity', 'new-project', 'new-asset', 'toggle-active']);
+    ).toEqual([
+      'activity',
+      'new-project',
+      'new-asset',
+      'bulk-tasks',
+      'add-comment',
+      'open-tasks',
+      'toggle-active',
+    ]);
     await shot(page, 'tablet-matter-overflow');
   });
 });

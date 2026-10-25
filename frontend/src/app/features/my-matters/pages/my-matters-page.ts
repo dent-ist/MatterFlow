@@ -147,6 +147,15 @@ function storage(): Storage | null {
       margin: 0;
       color: var(--mf-text-muted);
     }
+    /* On a phone the tabs and the chevrons that page the strip are 44 px targets (the root font is 14 px, so 2.75rem falls short). */
+    @media (max-width: 639.98px) {
+      :host ::ng-deep .mm__tabs .tab {
+        min-height: 44px;
+      }
+      :host ::ng-deep .mm__tabs .cue {
+        bottom: 0;
+      }
+    }
     /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, workload, activity. */
     @media (max-width: 639.98px) {
       .mm__grid {

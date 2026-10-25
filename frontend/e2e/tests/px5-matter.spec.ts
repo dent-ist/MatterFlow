@@ -269,6 +269,8 @@ test.describe('Quick actions per matter', () => {
       await page.goto(`/matters?name=Alpha sz`);
       const row = page.locator('tbody tr, [data-record-card]').first();
       await expect(row).toBeVisible();
+      // The table's row menu sits in the Name cell from 900 px; the phone cards always carry it; 640 to 899 px has no room for it.
+      if (size.width >= 640 && size.width < 900) continue;
       await row.locator('[data-overflow]').click();
       await expect(page.locator('[role=menuitem]').first()).toBeVisible();
       expect(await axeViolations(page), `row menu at ${size.width}`).toEqual([]);

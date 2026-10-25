@@ -238,8 +238,9 @@ test.describe('#285: permission matrix, no dead links', () => {
         expect((await page.getByRole('tab', { name: /^Assets/ }).count()) > 0, 'Assets tab').toBe(
           has(role, 'Asset.View'),
         );
+        // The overflow holds the matter's quick actions (epic #758): everybody who may see tasks has at least Open the matter's tasks.
         expect((await page.locator('[data-overflow]').count()) > 0, 'overflow menu').toBe(
-          role.perms === null,
+          role.perms === null || has(role, 'Task.View'),
         );
         if (role.key === 'matter-no-client')
           await shot(page, 'permissions-matter-no-client-overview');

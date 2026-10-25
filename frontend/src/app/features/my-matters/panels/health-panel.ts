@@ -193,7 +193,7 @@ export { reasonText };
       }
       .hp__table th,
       .hp__table td {
-        padding-inline: 6px;
+        padding-inline: 3px;
       }
       .hp__matter {
         min-width: 7rem;

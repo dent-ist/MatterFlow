@@ -103,6 +103,12 @@ import { PanelState } from '../panel-loader';
       gap: var(--mf-s1);
       justify-items: start;
     }
+    /* A button the page projects into the heading (a toggle, Mark as read) is a 44 px target on a phone. */
+    @media (max-width: 639.98px) {
+      :host ::ng-deep .mmp__actions .mf-btn {
+        min-height: 44px;
+      }
+    }
   `,
 })
 export class PanelBox {

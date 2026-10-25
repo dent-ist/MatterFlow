@@ -36,3 +36,17 @@ The Project Manager test users are the ones the seeder already creates (Test Use
 Matters `none1` (two tasks), `none2` and `none3` have no manager (the bulk test sets the first two, so other tests use `none3`). Tasks: one overdue (`overdue`), two unassigned (`unassigned`), one on hold for ten days (`hold`, needs the SQL container of `frontend/e2e/run-local.sh`), one far in the future (`primary`).
 
 The large set (200 matters, 20,000 open tasks) is not built here: it belongs to the performance issue #686, which has to tune the queries against it.
+
+## Scope fixtures (epic #758, WP-PX3 and WP-PX5)
+
+`pmFixtures` also builds what the "My matters / All" specs (`px3-*`) and the matter specs (`px5-matter`) need, with the token in every name:
+
+| What | Detail |
+|---|---|
+| `pmNoAssign` | Matter.BeManager without `Matter.AssignManagers` (and Task.View, Asset.View, Project.View); Primary of `m.noAssign`; sees no switch and is held on My matters |
+| `technician` | Data Technician: no manager permission, no switch |
+| `otherClient` | a second client whose only matter, `m.otherClient`, has no manager: the Clients list in "My matters" does not show it |
+| `assetMine`, `assetOther` | one asset on `m.primary` (managed by `pmA`) and one on `m.solo` (managed by `pmB`) |
+| `projectMine`, `projectOther` | one project on each of the same two matters |
+
+The Matters list therefore holds 14 matters per token (the twelve above, `m.noAssign` and `m.otherClient`). The specs that need weeks of data (`px4-tabs`) and the matter overview (`px5-matter`) use `mmWorld` (`frontend/e2e/support/my-matters-fixtures.ts`), which builds one Project Manager, one client and the matters and tasks each test writes down. The playwright stack of `e2e/run-local.sh` starts a fresh database: a database that has been used for many runs can have more than 50 people who may be named project manager, and the manager pickers of `pm-matters` then no longer list the fixture people.

@@ -274,21 +274,29 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     effect(() => {
       const state = this.state();
       const params = this.params();
-      // An address that changes only in `scope` (written by the scope helper to name the scope in force) does not reload the list.
+      // The scope helper writes `scope` into a plain address (a replacing navigation): that one emission, which changes nothing the list asks
+      // for, does not reload it. Every other emission reloads, as it always did.
       const signature = JSON.stringify([
         state,
         this.scopeKey(),
         params.keys.filter((k) => k !== 'scope').map((k) => [k, params.getAll(k)]),
       ]);
       untracked(() => {
-        if (!this.shouldLoad(params) || signature === this.loadedSignature) return;
+        if (!this.shouldLoad(params)) return;
+        const hasScope = params.has('scope');
+        if (hasScope && !this.loadedWithScope && signature === this.loadedSignature) {
+          this.loadedWithScope = true;
+          return;
+        }
         this.loadedSignature = signature;
+        this.loadedWithScope = hasScope;
         void this.load(state);
       });
     });
   }
 
   private loadedSignature: string | null = null;
+  private loadedWithScope = false;
 
   /** A part of the request that is not in the state but changes the rows (the Task Queue's "My matters / All" scope); a change reloads the list. */
   protected scopeKey(): string {

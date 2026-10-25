@@ -80,7 +80,6 @@ const BONES: Record<string, string> = {
   openTasks: '3rem',
   overdue: '3rem',
   status: '5rem',
-  actions: '2rem',
 };
 
 /**
@@ -142,9 +141,9 @@ const BONES: Record<string, string> = {
     .ml-pm {
       overflow-wrap: anywhere;
     }
-    .ml-actions {
-      width: 3.25rem;
-      text-align: right;
+    .ml-menu {
+      flex: none;
+      margin-left: auto;
     }
   `,
   template: `
@@ -418,9 +417,6 @@ const BONES: Record<string, string> = {
                       </th>
                     }
                     <th scope="col">Status</th>
-                    @if (hasActions()) {
-                      <th scope="col" class="ml-actions"><span class="pg-sr">Actions</span></th>
-                    }
                   </tr>
                   @if (filters.rowVisible()) {
                     <tr
@@ -492,6 +488,15 @@ const BONES: Record<string, string> = {
                           @if (m.isSensitive) {
                             <mf-sensitive-badge />
                           }
+                          @if (tableActions()) {
+                            <span class="ml-menu" data-row-actions>
+                              <mf-action-menu
+                                [floating]="true"
+                                [label]="menus().get(m.matterId)!.label"
+                                [items]="menus().get(m.matterId)!.items"
+                              />
+                            </span>
+                          }
                         </div>
                       </td>
                       @if (showClient()) {
@@ -545,15 +550,6 @@ const BONES: Record<string, string> = {
                       <td>
                         <mf-active-badge [active]="m.isActive" />
                       </td>
-                      @if (hasActions()) {
-                        <td class="ml-actions" data-row-actions>
-                          <mf-action-menu
-                            [floating]="true"
-                            [label]="menus().get(m.matterId)!.label"
-                            [items]="menus().get(m.matterId)!.items"
-                          />
-                        </td>
-                      }
                     </tr>
                   }
                 </tbody>
@@ -657,6 +653,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   /** The quick actions of a row (epic #758, PX-25): the menu exists for people who can see tasks (Open the matter's tasks is always among them). */
   protected readonly hasActions = computed(() => this.auth.has('Task.View'));
+  /** In the table the menu sits in the Name cell from 900 px (below that the grid has no room for it); the phone cards always carry it. */
+  protected readonly tableActions = computed(() => this.hasActions() && this.wide());
   protected readonly commentRow = signal<MatterResponse | null>(null);
   protected readonly commentOpen = signal(false);
   /** Built once per page of rows, not on every change detection. */
@@ -696,7 +694,6 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     ...(this.showSecondary() ? ['secondaryManager'] : []),
     ...(this.counts() ? ['openTasks', 'overdue'] : []),
     'status',
-    ...(this.hasActions() ? ['actions'] : []),
   ]);
   protected readonly skeleton = computed(() => this.columns().map((key) => BONES[key]));
 
