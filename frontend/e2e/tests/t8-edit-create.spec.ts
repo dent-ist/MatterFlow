@@ -39,6 +39,19 @@ async function shot(page: Page, name: string): Promise<void> {
 }
 
 /** Axe (WCAG 2.2 AA) over the whole page with the dialog open, and no page-level sideways scroll. */
+/** Lets every finite animation and transition finish, so a section that is still opening is measured at rest. */
+async function settled(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      !document.getAnimations().some((a) => {
+        const t = a.effect?.getComputedTiming();
+        return a.playState === 'running' && !!t && t.iterations !== Infinity;
+      }),
+    undefined,
+    { timeout: 5000 },
+  );
+}
+
 async function checkPage(page: Page, label: string): Promise<void> {
   if (axeAvailable()) expect(await axeViolations(page), `axe: ${label}`).toEqual([]);
   const overflow = await page.evaluate(
@@ -183,7 +196,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
         formValues: { f1: 'Alpha' },
         requestorName: 'Rita Requestor-With-A-Rather-Long-Surname',
         requestorEmail: 'rita.requestor.with.a.long.address@very-long-client-domain.example.com',
-        dueDate: '2026-10-14',
+        dueDate: '2099-12-31', // a fixed future date: the dialog must not depend on the day the suite runs (it once said "overdue" from a date that had passed)
         dueTime: '09:30',
       });
       await page.setViewportSize({ width: size.width, height: size.height });
@@ -202,6 +215,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
       // The requestor is part of Input (#350), which is closed for a long form: open it so its labels can be measured.
       await requestToggle(page).click();
       await expect(page.locator('[data-request-body]')).toBeVisible();
+      await settled(page);
       // The labels start inside the dialog (BUG-3 cut "(required)" and "Description" at the left edge).
       for (const label of ['Title', 'Requestor name', 'Requestor email', 'Project']) {
         const el = dialog.locator('label', { hasText: label }).first();
@@ -223,6 +237,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
       await whenToggle(page).click();
       await expect(page.locator('[data-request-body]')).toBeVisible();
       await expect(page.locator('[data-when-body]')).toBeVisible();
+      await settled(page);
       expect(
         await overflowX(dialogBody(page)),
         'dialog body sideways, request open',
