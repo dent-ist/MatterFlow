@@ -265,6 +265,31 @@
             data-type-section
           >
             <h2 id="ct-h-input" class="ct__h">Input</h2>
+            @if (lastTask(); as last) {
+              <div class="ct__again" data-last-answers>
+                @if (lastApplied(); as done) {
+                  <p class="pg-banner" role="status" data-last-applied>
+                    <i class="pi pi-check-circle" aria-hidden="true"></i>
+                    Filled from your last task of this type, {{ last.taskNumber }}:
+                    {{ done.join(', ') }}. Change anything that is different.
+                  </p>
+                } @else {
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    data-use-last
+                    [disabled]="schemaState() === 'loading'"
+                    (click)="useLastAnswers()"
+                  >
+                    Same as my last task of this type ({{ last.taskNumber }})
+                  </button>
+                  <p class="mf-field__help">
+                    Fills the requestor and the answers you chose from lists, such as the category.
+                    Nothing else is copied.
+                  </p>
+                }
+              </div>
+            }
             <mf-text-field
               inputId="ct-requestor-name"
               label="Requestor name"

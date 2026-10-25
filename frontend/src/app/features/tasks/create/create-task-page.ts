@@ -26,6 +26,7 @@ import {
   ProjectResponse,
   ProjectsClient,
   PublishedWorkflowSummary,
+  TaskQueueClient,
   TaskTypeView,
   TaskTypesClient,
   TasksClient,
@@ -64,6 +65,7 @@ import { PriorityBadge } from '../../../shared/ui/priority-badge';
 import { TextField } from '../../../shared/ui/text-field';
 import { TitleArea } from '../../../shared/ui/title-area';
 import { cardText } from './type-card-text';
+import { reusableAnswers } from './last-answers';
 import { recentTypeIds, rememberMatter, rememberType } from '../../../shared/tasks/recent-choices';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 
@@ -160,6 +162,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
   private readonly projectsApi = inject(ProjectsClient);
   private readonly formsApi = inject(FormsClient);
   private readonly tasksApi = inject(TasksClient);
+  private readonly queueApi = inject(TaskQueueClient);
   private readonly assetContext = inject(AssetPickerContext);
 
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
@@ -312,6 +315,18 @@ export class CreateTaskPage implements HasUnsavedChanges {
   protected readonly formValues = signal<Record<string, unknown>>({});
   protected readonly formErrors = signal<ServerFieldError[]>([]);
   protected readonly confirmTypeOpen = signal(false);
+
+  // --- the answers of my last task of this type on this matter (#819) ------------------------------
+  /** My latest task of the chosen type on the chosen matter (its number and what the person answered), or null. */
+  protected readonly lastTask = signal<{
+    taskNumber: string;
+    requestorName: string;
+    requestorEmail: string | undefined;
+    formValues: Record<string, unknown> | null;
+  } | null>(null);
+  /** What the button filled (labels), shown as a sentence; null until the person pressed it. */
+  protected readonly lastApplied = signal<string[] | null>(null);
+  private lastTurn = 0;
 
   // --- submit state --------------------------------------------------------------------------------
   protected readonly submitted = signal(false);
@@ -485,6 +500,13 @@ export class CreateTaskPage implements HasUnsavedChanges {
       });
     });
 
+    // The person's last task of the same type on the same matter is offered as "Same as my last task of this type" (#819).
+    effect(() => {
+      const matterId = this.matter()?.id ?? null;
+      const typeId = this.typeId();
+      untracked(() => void this.findLastTask(matterId, typeId));
+    });
+
     // The Asset picker of ASSET_REF request fields offers the assets of the chosen Matter only.
     effect(() => {
       const picked = this.matter();
@@ -583,6 +605,90 @@ export class CreateTaskPage implements HasUnsavedChanges {
     } catch {
       this.projects.set([]);
     }
+  }
+
+  private async findLastTask(matterId: number | null, typeId: number | null): Promise<void> {
+    const turn = ++this.lastTurn;
+    this.lastTask.set(null);
+    this.lastApplied.set(null);
+    const me = this.auth.profile()?.userId;
+    if (matterId === null || typeId === null || !me || !this.auth.has('Task.View')) return;
+    try {
+      const page = await firstValueFrom(
+        this.queueApi.getTaskQueue(
+          undefined, // group
+          undefined, // q
+          undefined, // status: every status counts
+          undefined, // priority
+          undefined, // pod
+          undefined, // noPod
+          undefined, // assignee
+          undefined, // unassigned
+          [me], // creator: my own tasks
+          undefined, // client
+          matterId,
+          undefined, // project
+          [typeId],
+          undefined, // workflow
+          undefined, // createdFrom
+          undefined, // createdTo
+          undefined, // dueFrom
+          undefined, // dueTo
+          undefined, // asap
+          undefined, // overdue
+          undefined, // requestor
+          undefined, // completedFrom
+          undefined, // completedTo
+          undefined, // matterText
+          undefined, // clientText
+          undefined, // projectText
+          undefined, // updatedFrom
+          undefined, // updatedTo
+          undefined, // managedByMe
+          undefined, // managerId
+          undefined, // role
+          undefined, // dueWithin
+          'created',
+          'desc',
+          1,
+          1,
+        ),
+      );
+      const row = page.items[0];
+      if (!row || turn !== this.lastTurn) return;
+      const task = await firstValueFrom(this.tasksApi.getTask(row.taskId));
+      if (turn !== this.lastTurn) return;
+      this.lastTask.set({
+        taskNumber: task.taskNumber,
+        requestorName: task.requestorName,
+        requestorEmail: task.requestorEmail,
+        formValues:
+          task.formValues && typeof task.formValues === 'object' ? { ...task.formValues } : null,
+      });
+    } catch {
+      // No offer; the form works as it always did.
+    }
+  }
+
+  /** "Same as my last task of this type": fills the requestor and the list answers (Category, due date driver); the page says what it filled. */
+  protected useLastAnswers(): void {
+    const last = this.lastTask();
+    if (!last) return;
+    const labels: string[] = [];
+    if (last.requestorName) {
+      this.requestorName.set(last.requestorName);
+      this.requestorEmail.set(last.requestorEmail ?? '');
+      labels.push('Requestor');
+    }
+    const reused = reusableAnswers(this.definition(), last.formValues);
+    if (labels.length === 0 && reused.labels.length === 0) return;
+    if (reused.labels.length > 0) {
+      const merged = { ...this.formValues(), ...reused.values };
+      this.formValues.set(merged);
+      this.seed.set({ ...merged });
+      labels.push(...reused.labels);
+    }
+    this.lastApplied.set(labels);
   }
 
   // --- pickers ---------------------------------------------------------------------------------------

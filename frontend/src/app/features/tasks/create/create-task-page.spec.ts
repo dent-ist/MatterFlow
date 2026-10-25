@@ -12,6 +12,7 @@ import {
   ProjectsClient,
   PublishedWorkflowSummary,
   StatusLabelsClient,
+  TaskQueueClient,
   TaskTypeView,
   TaskTypesClient,
   TasksClient,
@@ -88,7 +89,8 @@ const createdTask = { taskId: 55, taskNumber: 'TSK-55' };
 interface Harness {
   fixture: ReturnType<typeof TestBed.createComponent<CreateTaskPage>>;
   el: HTMLElement;
-  tasks: { createTask: Mock };
+  tasks: { createTask: Mock; getTask: Mock };
+  queue: { getTaskQueue: Mock };
   intake: { parseEmailText: Mock };
   users: { lookupUsers: Mock };
   pods: { listPods: Mock; getPod: Mock };
@@ -102,11 +104,22 @@ async function create(
     types?: TaskTypeView[];
     matter?: ReturnType<typeof aMatter>;
     createResult?: unknown;
+    /** My last task of the type on the matter (#819): the queue row, and the task as the API returns it. */
+    last?: { taskId: number; task: Record<string, unknown> };
+    fields?: Parameters<typeof aFormVersion>[0];
   } = {},
 ): Promise<Harness> {
   const matter = options.matter ?? aMatter();
   const tasks = {
     createTask: vi.fn().mockReturnValue(options.createResult ?? ok(createdTask)),
+    getTask: vi.fn().mockReturnValue(ok(options.last?.task ?? {})),
+  };
+  const queue = {
+    getTaskQueue: vi
+      .fn()
+      .mockReturnValue(
+        ok({ items: options.last ? [{ taskId: options.last.taskId }] : [], total: 0 }),
+      ),
   };
   const intake = {
     parseEmailText: vi.fn().mockReturnValue(
@@ -168,7 +181,9 @@ async function create(
       {
         provide: FormsClient,
         useValue: {
-          getFormVersionSchema: vi.fn().mockReturnValue(ok(aFormVersion(DOCUMENT_FIELDS))),
+          getFormVersionSchema: vi
+            .fn()
+            .mockReturnValue(ok(aFormVersion(options.fields ?? DOCUMENT_FIELDS))),
         },
       },
       { provide: MattersClient, useValue: matters },
@@ -182,6 +197,7 @@ async function create(
       { provide: PodsClient, useValue: pods },
       { provide: UsersLookupClient, useValue: users },
       { provide: TasksClient, useValue: tasks },
+      { provide: TaskQueueClient, useValue: queue },
       { provide: IntakeClient, useValue: intake },
     ],
   });
@@ -193,7 +209,7 @@ async function create(
     fixture.componentRef.setInput(key, value);
   }
   await settle(fixture);
-  return { fixture, el: fixture.nativeElement, tasks, intake, users, pods, router };
+  return { fixture, el: fixture.nativeElement, tasks, queue, intake, users, pods, router };
 }
 
 const field = <T extends HTMLElement>(h: Harness, selector: string): T =>
@@ -815,6 +831,90 @@ describe('CreateTaskPage', () => {
       expect(h.tasks.createTask).toHaveBeenCalledTimes(1);
       expect(localStorage.getItem('mf.create-task.types.1')).toBe('[1]');
       expect(localStorage.getItem('mf.create-task.matter.1')).toBe('7');
+    });
+  });
+
+  describe('same as my last task of this type (#819)', () => {
+    const FIELDS = [
+      {
+        key: 'category',
+        label: 'Category',
+        control: 'SELECT',
+        options: [
+          { key: 'legal', label: 'Legal' },
+          { key: 'ops', label: 'Operations' },
+        ],
+      },
+      {
+        key: 'driver',
+        label: 'What is driving the due date?',
+        control: 'SELECT',
+        options: [
+          { key: 'court', label: 'Court deadline' },
+          { key: 'client', label: 'Client request' },
+        ],
+      },
+      {
+        key: 'privilege',
+        label: 'Privilege',
+        control: 'SELECT',
+        options: [
+          { key: 'yes', label: 'Privileged' },
+          { key: 'no', label: 'Not privileged' },
+        ],
+      },
+      { key: 'notes', label: 'Notes', control: 'TEXT' },
+    ];
+    const last = {
+      taskId: 77,
+      task: {
+        taskNumber: 'TSK-77',
+        requestorName: 'Jane Doe',
+        requestorEmail: 'jane@example-firm.test',
+        formValues: {
+          category: 'ops',
+          driver: 'court',
+          privilege: 'yes',
+          notes: 'call Ann on 555-0100',
+        },
+      },
+    };
+
+    it('asks for my own latest task of the type on the matter, and offers nothing without one', async () => {
+      const none = await create({ inputs: { matterId: '7', taskType: '1' }, fields: FIELDS });
+      expect(none.queue.getTaskQueue).toHaveBeenCalled();
+      const args = none.queue.getTaskQueue.mock.calls[0];
+      expect(args[8]).toEqual([1]); // creator: me
+      expect(args[10]).toBe(7); // the matter
+      expect(args[12]).toEqual([1]); // the type
+      expect(args[32]).toBe('created');
+      expect(args[33]).toBe('desc');
+      expect(args[35]).toBe(1);
+      expect(none.el.querySelector('[data-use-last]')).toBeNull();
+    });
+
+    it('fills the requestor and the list answers on request and says so; privilege and free text stay empty', async () => {
+      const h = await create({ inputs: { matterId: '7', taskType: '1' }, fields: FIELDS, last });
+      const button = field<HTMLButtonElement>(h, '[data-use-last]');
+      expect(button.textContent).toContain('TSK-77');
+      // Nothing is applied silently.
+      expect(field<HTMLInputElement>(h, '#ct-requestor-name').value).toBe('');
+      button.click();
+      await settle(h.fixture);
+      expect(field<HTMLInputElement>(h, '#ct-requestor-name').value).toBe('Jane Doe');
+      expect(field<HTMLInputElement>(h, '#ct-requestor-email').value).toBe(
+        'jane@example-firm.test',
+      );
+      const note = field(h, '[data-last-applied]').textContent!.replace(/\s+/g, ' ');
+      expect(note).toContain('TSK-77');
+      expect(note).toContain('Requestor, Category, What is driving the due date?');
+      expect(note).not.toContain('Privilege');
+      const shown = field(h, '[data-form-fields]').textContent!.replace(/\s+/g, ' ');
+      expect(shown).toContain('Operations');
+      expect(shown).toContain('Court deadline');
+      expect(shown).not.toContain('Not privileged');
+      expect(shown).not.toContain('Privileged');
+      expect(shown).not.toContain('555-0100');
     });
   });
 

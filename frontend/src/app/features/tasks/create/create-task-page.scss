@@ -295,3 +295,24 @@
   min-height: 44px;
   max-width: 100%;
 }
+
+/* "Same as my last task of this type" (#819). */
+.ct__again {
+  display: grid;
+  gap: var(--mf-s1);
+  justify-items: start;
+  margin: 0 0 var(--mf-s3);
+}
+
+.ct__again .mf-field__help {
+  margin: 0;
+}
+
+@media (max-width: 639.98px) {
+  .ct__again .mf-btn {
+    min-height: 44px;
+    height: auto;
+    text-align: left;
+    white-space: normal;
+  }
+}
