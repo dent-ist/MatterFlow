@@ -323,7 +323,7 @@ test.describe('Sensitive matters: a person sees only their share (scan of screen
     await w.visit('/tasks?scope=all');
     // The row is found by its own title (the first page of a long queue holds other tasks); the scan above still read the whole first page.
     await w.visit(`/tasks?scope=all&q=${encodeURIComponent(u.s3.taskTitle)}`);
-    await expect(page.getByText(u.s3.taskTitle).first()).toBeVisible();
+    await expect(page.locator('tr', { hasText: u.s3.taskTitle }).first()).toBeVisible();
     // The queue also lists tasks of normal matters (their matter is a link); the row of the sensitive matter's task has none.
     const row = page.locator('tr', { hasText: u.s3.taskTitle });
     await expect(row).toHaveCount(1);
