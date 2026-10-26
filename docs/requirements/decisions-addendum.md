@@ -577,7 +577,7 @@ Owner approval (2026-10-20): "I like all of your recommendations, so please don'
 9. **No SQL script number is claimed:** next free number at implementation time; a new table needs `db/report-access.json` and GRANT/DENY for `mf_report_reader`.
 10. **Open questions** Q1 to Q6 in the design (non-admin holders, telling the target, Reports, a reason text, several tabs, downloads), each with a recommended answer; none blocks the start.
 
-## AM. Application settings: branding, title and icon (decided 2026-10-26 by the owner, phase-23; design `docs/ux/app-settings/README.md`, plan `docs/ux/app-settings/delivery-plan.md`)
+## AM. Application settings: branding, title and icon (decided 2026-10-26 by the owner, phase-23, epic #850; design `docs/ux/app-settings/README.md`, plan `docs/ux/app-settings/delivery-plan.md`)
 
 **Status (2026-10-26): planned; ready to start after the current verification** (design, plan and epic only). Priority: after the combined verification that is running, before the impersonation epic AL (#828).
 

@@ -1,6 +1,6 @@
 # Application settings: branding (title and icon)
 
-Epic: "Epic: Application settings: title and icon" (phase-23). Decisions: `docs/requirements/decisions-addendum.md` section AM. Plan: `delivery-plan.md` (same folder).
+Epic #850 "Epic: Application settings: title and icon" (phase-23; issues #843 to #849). Decisions: `docs/requirements/decisions-addendum.md` section AM. Plan: `delivery-plan.md` (same folder).
 **Status: planned; ready to start after the current verification** (design, plan and epic only; nothing is built).
 
 ## 1. Goal

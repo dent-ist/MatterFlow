@@ -1,6 +1,6 @@
 # Application settings: branding, delivery plan
 
-Epic: "Epic: Application settings: title and icon" (phase-23). Design: `README.md`. Decisions: addendum section AM.
+Epic #850 "Epic: Application settings: title and icon" (phase-23; issues #843 to #849). Design: `README.md`. Decisions: addendum section AM.
 **Status: planned; ready to start after the current verification.** Priority: after the combined verification that is running and **before** the impersonation epic #828.
 
 ## Honest estimate
