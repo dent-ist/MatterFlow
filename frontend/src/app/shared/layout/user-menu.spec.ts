@@ -163,6 +163,68 @@ describe('UserMenu (header user area)', () => {
     expect(items(fixture)).toEqual(['My profile', "I'm back", 'Keyboard shortcuts']);
   });
 
+  describe('identity row and phone dot (#580, #578)', () => {
+    const outDto = () =>
+      dto({
+        status: 'OUT_OF_OFFICE',
+        current: {
+          state: 'OUT_OF_OFFICE',
+          outUntilUtc: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+          note: undefined,
+          nextWorkStartUtc: undefined,
+        },
+      });
+
+    it('starts with a non-interactive identity row: name, account when it adds information, the chip', async () => {
+      const fixture = await create(['Task.View'], dto(), { windowsAccount: 'KE\\kekim' });
+      trigger(fixture).click();
+      await settle(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const row = el.querySelector<HTMLElement>('[data-menu-identity]')!;
+      expect(row.querySelector('.um-id__name')!.textContent).toBe('Kim Admin');
+      expect(row.querySelector('.um-id__account')!.textContent).toBe('KE\\kekim');
+      expect(row.querySelector('[data-availability-chip]')).not.toBeNull();
+      expect(row.querySelector('button, a, [tabindex], [role=menuitem]')).toBeNull();
+      // Outside the menuitems, read as the menu's description; the arrows never reach it.
+      const menu = el.querySelector('[role=menu]')!;
+      expect(menu.contains(row)).toBe(false);
+      expect(menu.getAttribute('aria-describedby')).toBe(row.id);
+      expect(items(fixture)).toEqual(['My profile', 'Set out of office...', 'Keyboard shortcuts']);
+      expect(menu.querySelector('[role=separator]')).not.toBeNull();
+    });
+
+    it('says "Out of office until ..." in the row while out, and shows the account once when it equals the name', async () => {
+      const fixture = await create(['Task.View'], outDto(), { windowsAccount: 'kim admin' });
+      trigger(fixture).click();
+      await settle(fixture);
+      const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
+      expect(row.querySelector('[data-availability-chip]')!.textContent).toContain(
+        'Out of office until',
+      );
+      expect(row.querySelector('.um-id__account')).toBeNull();
+    });
+
+    it('a person without Task.View gets the name only, and no chip', async () => {
+      const fixture = await create([]);
+      trigger(fixture).click();
+      await settle(fixture);
+      const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
+      expect(row.querySelector('[data-availability-chip]')).toBeNull();
+      expect(items(fixture)).toEqual(['Keyboard shortcuts']);
+      expect(fixture.nativeElement.querySelector('[role=separator]')).toBeNull();
+    });
+
+    it('the dot sits on the icon only while out of office, with a tooltip; the trigger name says so', async () => {
+      const out = await create(['Task.View'], outDto());
+      const dot = out.nativeElement.querySelector('[data-ooo-dot]');
+      expect(dot?.getAttribute('title')).toBe('Out of office');
+      expect(trigger(out).getAttribute('aria-label')).toContain('Out of office until');
+      TestBed.resetTestingModule();
+      const here = await create(['Task.View']);
+      expect(here.nativeElement.querySelector('[data-ooo-dot]')).toBeNull();
+    });
+  });
+
   it('"I\'m back" saves Available keeping the hours and zone, then the label goes away', async () => {
     const out = dto({
       status: 'OUT_OF_OFFICE',

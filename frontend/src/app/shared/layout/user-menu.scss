@@ -69,18 +69,75 @@
   color: var(--mf-warning);
 }
 
-.um-menu {
+.um-iconwrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Phones (#578): the person icon carries a small amber dot while out of office; the trigger's accessible name says it in words. */
+.um-dot {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--mf-surface);
+  border-radius: 50%;
+  background: var(--mf-warning);
+  box-sizing: content-box;
+}
+
+.um-pop {
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
   z-index: 1100;
   display: grid;
   min-width: 15rem;
-  padding: var(--mf-s1);
+  max-width: min(22rem, calc(100vw - 2rem));
   border: 1px solid var(--mf-border-strong);
   border-radius: var(--mf-radius);
   background: var(--mf-surface);
   box-shadow: var(--mf-shadow-2);
+}
+
+/* The identity row (#580): text, not a menu item; arrows and Tab skip it. */
+.um-id {
+  display: grid;
+  gap: var(--mf-s1);
+  justify-items: start;
+  padding: var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+}
+
+.um-id__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.um-id__account {
+  font-family: var(--mf-font-mono);
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.um-menu {
+  display: grid;
+  padding: var(--mf-s1);
+}
+
+.um-sep {
+  height: 1px;
+  margin: var(--mf-s1) 0;
+  background: var(--mf-border);
 }
 
 .um-item {
@@ -123,6 +180,10 @@
   .um-trigger {
     min-width: var(--mf-row-h);
     justify-content: center;
+  }
+
+  .um-dot {
+    display: block;
   }
 }
 

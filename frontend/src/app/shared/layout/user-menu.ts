@@ -20,6 +20,7 @@ import { MyAvailability } from '../../core/availability/my-availability';
 import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { USER_TIME_ZONE } from '../../core/time/clock';
+import { AvailabilityChip } from '../availability/availability-chip';
 import { sameIdentity } from './same-identity';
 
 interface Item {
@@ -37,6 +38,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-user-menu',
+  imports: [AvailabilityChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
@@ -56,7 +58,12 @@ let nextId = 0;
       (click)="toggle($event)"
       (keydown)="onTriggerKey($event)"
     >
-      <i class="pi pi-user um-icon" aria-hidden="true"></i>
+      <span class="um-iconwrap">
+        <i class="pi pi-user um-icon" aria-hidden="true"></i>
+        @if (outLabel()) {
+          <span class="um-dot" title="Out of office" data-ooo-dot aria-hidden="true"></span>
+        }
+      </span>
       <span class="um-text">
         <span class="um-name">{{ auth.displayName() }}</span>
         @if (outLabel(); as label) {
@@ -70,28 +77,45 @@ let nextId = 0;
       <i class="pi pi-chevron-down um-chevron" aria-hidden="true"></i>
     </button>
     @if (open()) {
-      <div
-        class="um-menu"
-        role="menu"
-        tabindex="-1"
-        [id]="uid + '-menu'"
-        aria-label="Your account"
-        (keydown)="onMenuKey($event)"
-      >
-        @for (item of items(); track item.id) {
-          <button
-            #entry
-            type="button"
-            role="menuitem"
-            class="um-item"
-            tabindex="-1"
-            [attr.data-menu-item]="item.id"
-            (click)="choose(item)"
-          >
-            <i class="pi" [class]="item.icon" aria-hidden="true"></i>
-            <span>{{ item.label }}</span>
-          </button>
-        }
+      <div class="um-pop">
+        <div class="um-id" [id]="uid + '-id'" data-menu-identity>
+          <span class="um-id__name" [attr.title]="auth.displayName()">{{
+            auth.displayName()
+          }}</span>
+          @if (account(); as acc) {
+            <span class="um-id__account" [attr.title]="acc">{{ acc }}</span>
+          }
+          @if (hasProfile() && mine.profile()) {
+            <mf-availability-chip [availability]="mine.current()" />
+          }
+        </div>
+        <div
+          class="um-menu"
+          role="menu"
+          tabindex="-1"
+          [id]="uid + '-menu'"
+          aria-label="Your account"
+          [attr.aria-describedby]="uid + '-id'"
+          (keydown)="onMenuKey($event)"
+        >
+          @for (item of items(); track item.id) {
+            @if (item.id === 'shortcuts' && items().length > 1) {
+              <div class="um-sep" role="separator"></div>
+            }
+            <button
+              #entry
+              type="button"
+              role="menuitem"
+              class="um-item"
+              tabindex="-1"
+              [attr.data-menu-item]="item.id"
+              (click)="choose(item)"
+            >
+              <i class="pi" [class]="item.icon" aria-hidden="true"></i>
+              <span>{{ item.label }}</span>
+            </button>
+          }
+        </div>
       </div>
     }
   `,
@@ -99,7 +123,7 @@ let nextId = 0;
 })
 export class UserMenu {
   protected readonly auth = inject(AuthStore);
-  private readonly mine = inject(MyAvailability);
+  protected readonly mine = inject(MyAvailability);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly zone = inject(USER_TIME_ZONE);
@@ -115,7 +139,7 @@ export class UserMenu {
   private readonly entries = viewChildren<ElementRef<HTMLButtonElement>>('entry');
 
   /** Availability belongs to people who work Tasks (the API policy is Task.View). */
-  private readonly hasProfile = computed(() => this.auth.has('Task.View'));
+  protected readonly hasProfile = computed(() => this.auth.has('Task.View'));
   protected readonly outLabel = computed(() =>
     this.hasProfile() ? outOfOfficeText(this.mine.current(), this.zone) : null,
   );
