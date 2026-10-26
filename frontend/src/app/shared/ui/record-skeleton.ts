@@ -75,13 +75,15 @@ const ROWS = [0, 1, 2, 3, 4] as const;
   selector: 'mf-record-skeleton',
   imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.rk-task]': "kind() === 'task'" },
+  host: { '[class.rk-task]': "kind() === 'task' || kind() === 'profile'" },
   template: `
     <div class="rk" aria-busy="true" data-record-skeleton [attr.data-kind]="kind()">
       <span class="mf-sr-only" role="status" data-loading>Loading {{ noun() }}</span>
       <div class="rk__vis" inert aria-hidden="true">
         @if (kind() === 'task') {
           <ng-container *ngTemplateOutlet="taskTpl" />
+        } @else if (kind() === 'profile') {
+          <ng-container *ngTemplateOutlet="profileTpl" />
         } @else {
           <mf-record-header [kind]="kind()" [parents]="parents()" [skeleton]="true" />
           <mf-tabs
@@ -122,6 +124,41 @@ const ROWS = [0, 1, 2, 3, 4] as const;
           }
         </div>
       </mf-detail-layout>
+    </ng-template>
+    <!-- My profile (#532): the final page without its header (the page shows its own): the left column (Availability, Work hours and the action
+         bar) and the right column (Account, Notifications) as boxes at their final height, so nothing moves when the data arrives. -->
+    <ng-template #profileTpl>
+      <div class="rk__pf" data-profile-skeleton>
+        <div class="rk__pf-col">
+          <div class="rk__card rk__card--avail">
+            <span class="rk__bar rk__h2"></span>
+            <span class="rk__bar rk__line"></span>
+            <span class="rk__bar rk__line rk__line--s"></span>
+            <span class="rk__bar rk__line rk__line--s"></span>
+          </div>
+          <div class="rk__card rk__card--hours">
+            <span class="rk__bar rk__h2"></span>
+            <span class="rk__bar rk__line"></span>
+            <span class="rk__bar rk__line rk__line--s"></span>
+            <span class="rk__bar rk__line"></span>
+          </div>
+          <div class="rk__card rk__card--bar"><span class="rk__bar rk__btn"></span></div>
+        </div>
+        <div class="rk__pf-col">
+          <div class="rk__card rk__card--account">
+            <span class="rk__bar rk__h2"></span>
+            @for (i of [0, 1, 2, 3, 4]; track i) {
+              <span class="rk__bar rk__line"></span>
+            }
+          </div>
+          <div class="rk__card rk__card--notes">
+            <span class="rk__bar rk__h2"></span>
+            @for (i of [0, 1, 2, 3, 4, 5]; track i) {
+              <span class="rk__bar rk__line rk__line--s"></span>
+            }
+          </div>
+        </div>
+      </div>
     </ng-template>
     <ng-template #rowsTpl>
       <div class="rk__rows">
@@ -203,6 +240,59 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       width: 80%;
       height: 12px;
       margin: var(--mf-s3) var(--mf-s4);
+    }
+    /* My profile: two columns from 1100px, one below (the same breakpoint as the page); the boxes are the real cards' height. */
+    .rk__pf {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--mf-s4);
+      align-items: start;
+    }
+    .rk__pf-col {
+      display: grid;
+      gap: var(--mf-s4);
+      min-width: 0;
+    }
+    @media (min-width: 1100px) {
+      .rk__pf {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      }
+    }
+    .rk__card {
+      display: grid;
+      align-content: start;
+      gap: var(--mf-s3);
+      box-sizing: border-box;
+      padding: var(--mf-s4) var(--mf-s5);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+    }
+    .rk__card--avail {
+      min-height: 161px;
+    }
+    .rk__card--hours {
+      min-height: 356px;
+    }
+    .rk__card--bar {
+      min-height: 58px;
+    }
+    .rk__card--account {
+      min-height: 252px;
+    }
+    .rk__card--notes {
+      min-height: 357px;
+    }
+    .rk__line {
+      width: 90%;
+      height: 12px;
+    }
+    .rk__line--s {
+      width: 60%;
+    }
+    .rk__btn {
+      width: 9rem;
+      height: 1.5rem;
     }
     .rk__facts {
       margin-top: var(--mf-s2);

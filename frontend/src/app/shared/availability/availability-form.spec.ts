@@ -47,7 +47,13 @@ describe('AvailabilityForm', () => {
   const q = <T extends HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
   const saveButton = (): HTMLButtonElement => q<HTMLButtonElement>('[data-save] button');
 
-  async function create(options: { userId?: number; initial?: UserAvailabilityDto } = {}) {
+  async function create(
+    options: {
+      userId?: number;
+      initial?: UserAvailabilityDto;
+      mode?: 'page' | 'dialog';
+    } = {},
+  ) {
     mine = {
       getMyAvailability: vi.fn().mockReturnValue(ok(options.initial ?? profile())),
       saveMyAvailability: vi.fn(),
@@ -67,6 +73,7 @@ describe('AvailabilityForm', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     fixture = TestBed.createComponent(AvailabilityForm);
+    if (options.mode) fixture.componentRef.setInput('mode', options.mode);
     if (options.userId !== undefined) {
       fixture.componentRef.setInput('userId', options.userId);
       fixture.componentRef.setInput('displayName', 'Dana Director');
@@ -98,9 +105,13 @@ describe('AvailabilityForm', () => {
     await create();
     expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
     expect(el().querySelector('[data-ooo-fields]')).toBeNull();
-    expect(q<HTMLInputElement>('#av-day-1').checked).toBe(true);
-    expect(q<HTMLInputElement>('#av-day-6').checked).toBe(false);
-    expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('09:00');
+    const on = [...el().querySelectorAll('[data-day-toggle]')].map((b) =>
+      b.getAttribute('aria-pressed'),
+    );
+    expect(on).toEqual(['true', 'true', 'true', 'true', 'true', 'false', 'false']);
+    expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
+    expect(q<HTMLInputElement>('#av-hours-end').value).toBe('17:00');
+    expect(el().querySelector('[data-hours-grid]')).toBeNull();
     expect(q<HTMLInputElement>('#av-tz').value).toBe('America/New_York');
     expect(saveButton().disabled).toBe(true);
   });
@@ -155,35 +166,113 @@ describe('AvailabilityForm', () => {
     expect(q('[data-summary]').textContent).toContain('Until must be on or after From.');
   });
 
-  it('validates the work hours per day, live', async () => {
+  const openGrid = async (): Promise<void> => {
+    q<HTMLButtonElement>('[data-hours-disclosure]').click();
+    await settle(fixture);
+  };
+
+  it('compact hours: one pair writes all days, a day toggled on gets the pair, one error for the pair (P3)', async () => {
     await create();
+    mine.saveMyAvailability.mockReturnValue(ok(profile({ rowVersion: 'V1' })));
+    await type('#av-hours-start', '08:00');
+    await type('#av-hours-end', '16:00');
+    q<HTMLButtonElement>('[data-day-toggle="6"]').click();
+    await settle(fixture);
+    expect(q('[data-day-toggle="6"]').getAttribute('aria-pressed')).toBe('true');
+    q<HTMLButtonElement>('[data-day-toggle="2"]').click();
+    await settle(fixture);
+    await save();
+    const sent = mine.saveMyAvailability.mock.calls[0][0].workHours;
+    expect(sent.map((h: { dayOfWeek: number }) => h.dayOfWeek)).toEqual([1, 3, 4, 5, 6]);
+    expect(
+      sent.every((h: { start: string; end: string }) => h.start === '08:00' && h.end === '16:00'),
+    ).toBe(true);
+  });
+
+  it('compact hours: an end before the start is one problem, named in the summary and linked to the field', async () => {
+    await create();
+    await type('#av-hours-end', '08:00');
+    expect(q('[data-hours-error]').textContent).toContain(
+      'Work hours: the end time must be after the start time.',
+    );
+    await save();
+    expect(q('[data-summary] a').getAttribute('href')).toBe('#av-hours-start');
+    expect(el().querySelectorAll('[data-summary] li')).toHaveLength(1);
+  });
+
+  it('Different hours on some days opens the grid (aria-expanded) and Use the same hours closes it again', async () => {
+    await create();
+    const button = q<HTMLButtonElement>('[data-hours-disclosure]');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(button.textContent!.trim()).toBe('Different hours on some days');
+    await openGrid();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(button.getAttribute('aria-controls')).toBe('av-hours-grid');
+    expect(button.textContent!.trim()).toBe('Use the same hours on all days');
+    expect(el().querySelector('mf-work-hours-compact')).toBeNull();
     await type('#av-day-2-end', '08:00');
     expect(q('[data-day-error]').textContent).toContain(
       'Tuesday: the end time must be after the start time.',
     );
     await type('#av-day-2-end', '17:00');
     expect(el().querySelector('[data-day-error]')).toBeNull();
+    await openGrid();
+    expect(el().querySelector('[data-hours-grid]')).toBeNull();
+    expect(q('[data-hours-disclosure]')).toBe(button);
   });
 
-  it('copies Monday to all weekdays and resets to the default', async () => {
+  it('a week whose days differ opens the grid by itself and cannot be collapsed (hours differ)', async () => {
+    await create({
+      initial: profile({
+        usesDefaultWorkHours: false,
+        workHours: [
+          { dayOfWeek: 1, start: '09:00:00', end: '17:00:00' },
+          { dayOfWeek: 2, start: '10:00:00', end: '14:00:00' },
+        ],
+      }),
+    });
+    expect(el().querySelector('[data-hours-grid]')).not.toBeNull();
+    const button = q<HTMLButtonElement>('[data-hours-disclosure]');
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(q('#av-hours-differ').textContent).toContain('Hours differ');
+    button.click();
+    await settle(fixture);
+    expect(el().querySelector('[data-hours-grid]')).not.toBeNull();
+    // Making them equal enables the way back.
+    await type('#av-day-2-start', '09:00');
+    await type('#av-day-2-end', '17:00');
+    expect(button.getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('copies Monday to all weekdays and resets to the default (grid), both quiet text buttons without an icon (P13)', async () => {
     await create();
+    await openGrid();
     await type('#av-day-1-start', '08:00');
     await type('#av-day-1-end', '16:00');
-    q<HTMLButtonElement>('[data-copy-weekdays] button').click();
+    const copy = q<HTMLButtonElement>('[data-copy-weekdays]');
+    const reset = q<HTMLButtonElement>('[data-reset-hours]');
+    expect(copy.className).toBe(reset.className);
+    expect(copy.querySelector('.pi')).toBeNull();
+    expect(reset.querySelector('.pi')).toBeNull();
+    copy.click();
     await settle(fixture);
     for (const day of [2, 3, 4, 5]) {
       expect(q<HTMLInputElement>(`#av-day-${day}-start`).value).toBe('08:00');
       expect(q<HTMLInputElement>(`#av-day-${day}-end`).value).toBe('16:00');
     }
     expect(el().querySelector('#av-day-6-start')).toBeNull(); // the weekend is untouched
-    q<HTMLButtonElement>('[data-reset-hours] button').click();
+    reset.click();
     await settle(fixture);
     expect(q<HTMLInputElement>('#av-day-3-start').value).toBe('09:00');
   });
 
   it('rejects a time zone that is not in the list', async () => {
     await create();
-    await type('#av-tz', 'Mars/Olympus');
+    const select = q<HTMLSelectElement>('#av-tz');
+    select.value = '__other__';
+    select.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    await type('#av-tz-other', 'Mars/Olympus');
     expect(q('[data-tz-error]').textContent).toContain('is not a time zone we know');
     await save();
     expect(mine.saveMyAvailability).not.toHaveBeenCalled();
@@ -225,6 +314,7 @@ describe('AvailabilityForm', () => {
   it('sends only the working days of an edited schedule', async () => {
     await create();
     mine.saveMyAvailability.mockReturnValue(ok(profile({ rowVersion: 'V1' })));
+    await openGrid();
     await type('#av-day-1-start', '08:30');
     await save();
     expect(mine.saveMyAvailability.mock.calls[0][0].workHours).toEqual([
@@ -239,7 +329,7 @@ describe('AvailabilityForm', () => {
   it('tracks unsaved changes, and discarding puts the saved values back', async () => {
     await create();
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    await type('#av-day-1-start', '08:30');
+    await type('#av-hours-start', '08:30');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     const discard = Array.from(el().querySelectorAll<HTMLButtonElement>('button')).find(
       (b) => b.textContent!.trim() === 'Discard changes',
@@ -247,7 +337,7 @@ describe('AvailabilityForm', () => {
     discard.click();
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
-    expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('09:00');
+    expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
   });
 
   it('on a rowVersion conflict reloads the latest values and says nothing was saved', async () => {
@@ -255,11 +345,11 @@ describe('AvailabilityForm', () => {
     mine.saveMyAvailability.mockReturnValue(
       apiError(409, { code: 'CONCURRENCY_CONFLICT', status: 409, detail: 'changed' }),
     );
-    await type('#av-day-1-start', '08:30');
+    await type('#av-hours-start', '08:30');
     await save();
     expect(q('[data-conflict]').textContent).toContain('your edits were not saved');
     expect(mine.getMyAvailability).toHaveBeenCalledTimes(2);
-    expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('09:00');
+    expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
   });
 
   it('maps server validation codes to the field and the summary', async () => {
@@ -277,6 +367,7 @@ describe('AvailabilityForm', () => {
   it('edits someone else (admin): their name in the copy, the firm zone kept, saved through the user endpoint', async () => {
     await create({
       userId: 9,
+      mode: 'dialog',
       initial: profile({
         userId: 9,
         timeZoneId: undefined,
@@ -304,12 +395,46 @@ describe('AvailabilityForm', () => {
     expect(mine.saveMyAvailability).not.toHaveBeenCalled();
   });
 
-  it('previews the current status: the server value when clean, the edited draft when dirty', async () => {
+  it('page: the preview sits under the Status choice and shows only while there are edits (P12)', async () => {
     await create();
+    expect(el().querySelector('[data-preview]')).toBeNull();
+    await choose('[data-status-ooo]');
+    await type('#av-until', 'Oct 20, 2026');
+    const preview = q('[data-preview]');
+    expect(preview.textContent).toContain('Preview of your changes:');
+    expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
+    expect(q('[data-status-set]').contains(preview)).toBe(true);
+    q('[data-actions] button:not([data-save] button)').click();
+    await settle(fixture);
+    expect(el().querySelector('[data-preview]')).toBeNull();
+  });
+
+  it('dialog: the current status line stays (there is no page header there)', async () => {
+    await create({ userId: 9, mode: 'dialog' });
     expect(q('[data-preview-chip]').textContent!.trim()).toBe('Available');
     await choose('[data-status-ooo]');
     await type('#av-until', 'Oct 20, 2026');
     expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
+  });
+
+  it('page: Availability and Work hours are cards with their own heading, and the first has the description (P2)', async () => {
+    await create();
+    const cards = Array.from(el().querySelectorAll('.av-card'));
+    expect(cards.map((c) => c.querySelector('h2')?.textContent?.trim())).toEqual([
+      'Availability',
+      'Work hours',
+    ]);
+    expect(q('[data-card-description]').textContent).toContain(
+      'Tell colleagues when you are out of office',
+    );
+  });
+
+  it('page: the action bar says No unsaved changes while clean and Unsaved changes otherwise (P8)', async () => {
+    await create();
+    expect(q('[data-actions-state]').textContent!.trim()).toBe('No unsaved changes');
+    expect(q('[data-actions-state]').getAttribute('role')).toBe('status');
+    await choose('[data-status-ooo]');
+    expect(q('[data-actions-state]').textContent!.trim()).toBe('Unsaved changes');
   });
 
   describe('follows the header menu (BUG-1)', () => {
@@ -333,7 +458,7 @@ describe('AvailabilityForm', () => {
       await settle(fixture);
       expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
       expect(q<HTMLTextAreaElement>('#av-note').value).toBe('Covering: Dana');
-      expect(q('[data-preview-chip]').textContent!.trim()).toBe('Out of office until Oct 20');
+      expect(el().querySelector('[data-preview]')).toBeNull();
       expect(q('[data-updated-note]').textContent).toContain('Your availability was updated.');
       expect(q('[data-updated-note]').getAttribute('aria-live')).toBe('polite');
       expect(saveButton().disabled).toBe(true);
@@ -350,11 +475,11 @@ describe('AvailabilityForm', () => {
 
     it('a form with edits keeps them and offers Load latest; Load latest discards them', async () => {
       await create();
-      await type('#av-day-1-start', '08:30');
+      await type('#av-hours-start', '08:30');
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
       expect(q('[data-stale]').textContent).toContain('changed somewhere else');
-      expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('08:30');
+      expect(q<HTMLInputElement>('#av-hours-start').value).toBe('08:30');
       expect(q<HTMLInputElement>('[data-status-available]').checked).toBe(true);
       expect(mine.saveMyAvailability).not.toHaveBeenCalled();
 
@@ -362,7 +487,7 @@ describe('AvailabilityForm', () => {
       await settle(fixture);
       expect(el().querySelector('[data-stale]')).toBeNull();
       expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
-      expect(q<HTMLInputElement>('#av-day-1-start').value).toBe('09:00');
+      expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
       expect(q('[data-updated-note]').textContent).toContain('latest availability');
     });
 
@@ -371,7 +496,7 @@ describe('AvailabilityForm', () => {
       mine.saveMyAvailability.mockReturnValue(
         apiError(409, { code: 'CONCURRENCY_CONFLICT', status: 409, detail: 'changed' }),
       );
-      await type('#av-day-1-start', '08:30');
+      await type('#av-hours-start', '08:30');
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
       await save();
@@ -384,10 +509,10 @@ describe('AvailabilityForm', () => {
 
     it('reverting the edits while a newer copy waits shows the newer copy', async () => {
       await create();
-      await type('#av-day-1-start', '08:30');
+      await type('#av-hours-start', '08:30');
       TestBed.inject(MyAvailability).set(outFromMenu());
       await settle(fixture);
-      await type('#av-day-1-start', '09:00');
+      await type('#av-hours-start', '09:00');
       expect(q<HTMLInputElement>('[data-status-ooo]').checked).toBe(true);
       expect(el().querySelector('[data-stale]')).toBeNull();
     });
@@ -395,7 +520,7 @@ describe('AvailabilityForm', () => {
     it('its own save does not look like a change from elsewhere', async () => {
       await create();
       mine.saveMyAvailability.mockReturnValue(ok(profile({ rowVersion: 'V9' })));
-      await type('#av-day-1-start', '08:30');
+      await type('#av-hours-start', '08:30');
       await save();
       expect(el().querySelector('[data-stale]')).toBeNull();
       expect(q('[data-updated-note]').textContent!.trim()).toBe('');

@@ -1,0 +1,83 @@
+:host {
+  display: block;
+}
+
+.wh {
+  display: grid;
+  gap: var(--mf-s3);
+}
+
+/* Seven toggles that fit a phone (375px): they share the row, none is smaller than 32px (WCAG 2.5.8 asks 24). */
+.wh__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1);
+}
+
+.wh__day {
+  flex: 1 1 0;
+  min-width: 2.25rem;
+  max-width: 4.5rem;
+  min-height: 32px;
+  padding: 0 var(--mf-s1);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: 999px;
+  background: var(--mf-surface);
+  color: var(--mf-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mf-surface-alt);
+  }
+
+  /* On is a filled pill with the same words; the state is also in aria-pressed (never colour alone: the fill and the border both change). */
+  &[aria-pressed='true'] {
+    border-color: var(--mf-primary);
+    background: var(--mf-primary);
+    color: #fff;
+  }
+}
+
+.wh__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2);
+}
+
+.wh__word {
+  color: var(--mf-text-muted);
+}
+
+.wh__time {
+  width: 9.5rem;
+  min-width: 0;
+  padding: 0 var(--mf-s2);
+}
+
+/* The picker button of the native time field is one more Tab stop and a second way to do what the three segments do: left out. */
+.wh__time::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.wh__error {
+  margin: 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+.wh__note {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+/* 375px: seven toggles share about 300px, so the label is 14px and the pill has no side padding. */
+@media (max-width: 480px) {
+  .wh__day {
+    padding: 0;
+    font-size: var(--mf-fs-sm);
+  }
+}

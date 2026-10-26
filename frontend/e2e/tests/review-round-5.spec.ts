@@ -430,7 +430,7 @@ test.describe('review round 5 screenshots', () => {
     ]) {
       await at(techPage, w, h);
       await techPage.goto('/profile');
-      await expect(techPage.locator('[data-preview-chip]')).toBeVisible();
+      await expect(techPage.locator('h1 [data-availability-chip]')).toBeVisible();
       await shot(techPage, `01-profile-technician-${s(w)}`);
     }
     await at(techPage, 1366, 768);
@@ -440,7 +440,8 @@ test.describe('review round 5 screenshots', () => {
     await techPage.locator('#av-from').blur();
     await techPage.locator('#av-until').fill('Oct 20, 2026');
     await techPage.locator('#av-until').blur();
-    await techPage.locator('#av-tz').fill('Mars/Olympus');
+    await techPage.locator('#av-tz').selectOption('__other__');
+    await techPage.locator('#av-tz-other').fill('Mars/Olympus');
     await techPage.getByRole('button', { name: 'Save changes' }).click();
     await shot(techPage, '03-profile-validation-1366');
     await at(techPage, 375, 812);
@@ -466,7 +467,7 @@ test.describe('review round 5 screenshots', () => {
     const tokyoPage = await asUser(tokyo.username, { timezoneId: 'Asia/Tokyo' });
     await at(tokyoPage, 1366, 768);
     await tokyoPage.goto('/profile');
-    await expect(tokyoPage.locator('[data-preview-chip]')).toBeVisible();
+    await expect(tokyoPage.locator('h1 [data-availability-chip]')).toBeVisible();
     await shot(tokyoPage, '07-profile-tokyo-custom-hours-1366');
 
     // Read-only observer.
@@ -477,7 +478,7 @@ test.describe('review round 5 screenshots', () => {
     ]) {
       await at(roPage, w, h);
       await roPage.goto('/profile');
-      await expect(roPage.locator('[data-preview-chip]')).toBeVisible();
+      await expect(roPage.locator('h1 [data-availability-chip]')).toBeVisible();
       await shot(roPage, `08-profile-read-only-${s(w)}`);
     }
     for (const [w, h] of [

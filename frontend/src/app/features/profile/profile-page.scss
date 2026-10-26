@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+/* Two columns from 1100px: Availability and Work hours with the action bar on the left (one width for the cards, the error summary and
+   the bar), Account and Notifications on the right. Below 1100px one column in reading order: Availability, Work hours, Account,
+   Notifications. The columns are the page's only widths (#529). */
+.pp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mf-s4);
+  align-items: start;
+}
+
+.pp--off {
+  display: none;
+}
+
+.pp__col {
+  display: grid;
+  gap: var(--mf-s4);
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .pp {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}

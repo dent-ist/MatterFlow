@@ -84,6 +84,12 @@ export function workHoursForSave(week: readonly DayHours[]): WorkHourDto[] | nul
   return isDefaultWeek(week) ? null : weekToServer(week);
 }
 
+/** True when every working day has the same start and end (no working days counts): a week the compact control can show without loss. */
+export function hasUniformHours(week: readonly DayHours[]): boolean {
+  const working = week.filter((d) => d.working);
+  return working.every((d) => d.start === working[0].start && d.end === working[0].end);
+}
+
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export function isTime(value: string): boolean {
@@ -189,6 +195,30 @@ export function timeZoneList(...extra: (string | null | undefined)[]): string[] 
   for (const z of extra) if (z) all.add(z);
   if (all.size === 0) all.add('UTC');
   return [...all].sort((a, b) => a.localeCompare(b));
+}
+
+/** The US zones the firm uses, in the order the Time zone select lists them (#540); everything else is behind "Other zones...". */
+export const FRIENDLY_ZONES: readonly { label: string; id: string }[] = [
+  { label: 'Eastern', id: 'America/New_York' },
+  { label: 'Central', id: 'America/Chicago' },
+  { label: 'Mountain', id: 'America/Denver' },
+  { label: 'Pacific', id: 'America/Los_Angeles' },
+  { label: 'Alaska', id: 'America/Anchorage' },
+  { label: 'Hawaii', id: 'Pacific/Honolulu' },
+  { label: 'Arizona (no daylight saving)', id: 'America/Phoenix' },
+];
+
+/** "9:41 AM" in `zone` (the viewer's locale), or null when the zone is not one the browser knows. */
+export function localTimeIn(zone: string, now: Date): string | null {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      timeZone: zone,
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(now);
+  } catch {
+    return null;
+  }
 }
 
 // ---- Preview ----------------------------------------------------------------------------------------------------------------

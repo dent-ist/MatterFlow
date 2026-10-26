@@ -28,7 +28,11 @@ interface Geometry {
 }
 
 async function geometry(page: Page, name: string | RegExp): Promise<Geometry> {
-  const h1 = page.getByRole('heading', { name, level: 1 });
+  // My profile's H1 is the person's name (#528), so that page is found by its place, not by its text.
+  const h1 =
+    name === 'My profile'
+      ? page.locator('main h1').first()
+      : page.getByRole('heading', { name, level: 1 });
   await expect(h1).toBeVisible();
   await page.waitForTimeout(300); // the header does not depend on data; let the first layout settle
   return h1.evaluate((el) => {

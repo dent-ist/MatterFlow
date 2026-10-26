@@ -49,7 +49,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
 
       await setOutFromMenu(me);
       await expect(me.locator('[data-status-ooo]')).toBeChecked();
-      await expect(me.locator('[data-preview-chip]')).toContainText('Out of office');
+      await expect(me.locator('h1 [data-availability-chip]')).toContainText('Out of office');
       await expect(me.locator('[data-updated-note]')).toHaveText(/Your availability was updated\./);
       await expect(me.locator('[data-updated-note]')).toHaveAttribute('aria-live', 'polite');
       await expect(me.getByRole('button', { name: 'Save changes' })).toBeDisabled();
@@ -72,12 +72,12 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf1dirty' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    await me.getByLabel('Monday start time').fill('08:30');
+    await me.getByLabel('Start time', { exact: true }).fill('08:30');
     await setOutFromMenu(me);
 
     const stale = me.locator('[data-stale]');
     await expect(stale).toContainText('changed somewhere else');
-    await expect(me.getByLabel('Monday start time')).toHaveValue('08:30');
+    await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('08:30');
     await expect(me.locator('[data-status-available]')).toBeChecked();
     await expect(me.getByRole('button', { name: 'Save changes' })).toBeEnabled();
 
@@ -85,7 +85,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
-    await expect(me.getByLabel('Monday start time')).toHaveValue('09:00');
+    await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('09:00');
     await expect(stale).toHaveCount(0);
   });
 
@@ -99,15 +99,15 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     await setOutFromMenu(me);
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
 
-    await me.getByLabel('Tuesday end time').fill('16:00');
+    await me.getByLabel('End time', { exact: true }).fill('16:00');
     await imBackFromMenu(me);
     await expect(me.locator('[data-stale]')).toBeVisible();
     await expect(me.locator('[data-status-ooo]')).toBeChecked();
-    await expect(me.getByLabel('Tuesday end time')).toHaveValue('16:00');
+    await expect(me.getByLabel('End time', { exact: true })).toHaveValue('16:00');
 
     await me.getByRole('button', { name: 'Load latest' }).click();
     await expect(me.locator('[data-status-available]')).toBeChecked();
-    await expect(me.getByLabel('Tuesday end time')).toHaveValue('17:00');
+    await expect(me.getByLabel('End time', { exact: true })).toHaveValue('17:00');
     await expect(me.locator('[data-updated-note]')).toContainText('latest availability');
     await expect(me.locator('[data-status-available]')).toBeFocused();
     await expect(me.locator('[data-stale]')).toHaveCount(0);
@@ -132,7 +132,7 @@ test.describe('pf1-follow-menu: the open profile page follows the header menu (#
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf1axe' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    await me.getByLabel('Monday start time').fill('08:30');
+    await me.getByLabel('Start time', { exact: true }).fill('08:30');
     await setOutFromMenu(me);
     await expect(me.locator('[data-stale]')).toBeVisible();
     for (const size of SIZES) {
@@ -177,7 +177,7 @@ test.describe('pf1-toast-replace: one availability toast at a time (#525)', () =
     await me.goto('/profile');
     await setOutFromMenu(me);
     await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(1);
-    await me.getByLabel('Monday start time').fill('08:00');
+    await me.getByLabel('Start time', { exact: true }).fill('08:00');
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(toasts(me).filter({ hasText: 'Availability saved' })).toHaveCount(1);
     await expect(toasts(me).filter({ hasText: 'You are out of office' })).toHaveCount(0);

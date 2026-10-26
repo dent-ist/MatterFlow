@@ -101,6 +101,13 @@ const HEADINGS: Record<string, string> = {
     :host {
       display: block;
     }
+    /* One card style on My profile (#529): the bordered 8 px card of the Account card. */
+    .np {
+      padding: var(--mf-s4) var(--mf-s5);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+    }
     .np__title {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-h3);

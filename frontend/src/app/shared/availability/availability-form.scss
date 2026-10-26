@@ -8,6 +8,49 @@
   max-width: 46rem;
 }
 
+/* My profile (#529): the form fills its column (the page sets the column's width); each section is the bordered card of the Account card
+   and the Client overview. The admin dialog keeps flat sections. */
+.av-form--page {
+  gap: var(--mf-s4);
+  max-width: none;
+}
+
+.av-card {
+  min-width: 0;
+}
+
+.av-form--page .av-card {
+  padding: var(--mf-s4) var(--mf-s5);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+}
+
+.av-card__title {
+  margin: 0;
+  font-size: var(--mf-fs-h3);
+  font-weight: 600;
+}
+
+.av-card__desc {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.av-preview-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mf-s2) var(--mf-s3);
+  margin: 0;
+}
+
+/* A focused field is never left behind the sticky action bar (#531, BUG-5). */
+.av-form :is(input, textarea, select, button, a) {
+  scroll-margin-bottom: 5rem;
+}
+
 .av-state {
   padding: var(--mf-s5);
   border: 1px dashed var(--mf-border-strong);
@@ -87,6 +130,10 @@
     margin-bottom: var(--mf-s2);
     font-size: var(--mf-fs-h3);
     font-weight: 600;
+  }
+
+  legend:has(.av-card__title) {
+    margin-bottom: 0;
   }
 }
 
@@ -223,7 +270,22 @@
 .av-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--mf-s2);
+}
+
+/* My profile (#531): the shared sticky bar (white, top shadow) at the width of its column, as a card; the state text sits on the right. */
+.av-actions--page {
+  margin: 0;
+  padding: var(--mf-s3) var(--mf-s4);
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-lg);
+}
+
+.av-actions__state {
+  margin-left: auto;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
 }
 
 /* In a dialog the bar sticks to the bottom of the scrolling content box, which ends one dialog padding (1.25rem) above the dialog's edge: without

@@ -34,7 +34,8 @@ export type RecordKind =
   | 'asset'
   | 'assetType'
   | 'customField'
-  | 'pod';
+  | 'pod'
+  | 'profile';
 
 /** Why a record could not be shown: it does not exist (404), the person may not see it (403), or the load failed (5xx, offline, timeout). */
 export type RecordFailure = 'notFound' | 'forbidden' | 'error';
@@ -144,6 +145,13 @@ const KINDS: Record<
     view: 'CustomField.Manage',
     admin: { crumb: 'Object', own: true },
   },
+  profile: {
+    noun: 'profile',
+    list: 'My profile',
+    label: 'My profile',
+    path: '/profile',
+    view: 'Task.View',
+  },
   pod: {
     noun: 'pod',
     list: 'Pods',
@@ -219,6 +227,8 @@ export function recordStateTitle(kind: RecordKind, state: RecordLoadState): stri
 export class RecordLoadFlow {
   private readonly injector = inject(Injector);
   private readonly quiet = inject(QuietRequests);
+  /** The page that owns the flow (null for a flow kept in a store): the heading is looked up inside it, never in a stale page elsewhere in the document. */
+  private readonly page = inject(ElementRef<HTMLElement>, { optional: true });
 
   readonly state = signal<RecordLoadState>('loading');
   /** True when the load ended in a 404, a 403 or a failure (the page shows `mf-record-state` instead of its header and body). */
@@ -256,7 +266,8 @@ export class RecordLoadFlow {
         this.live.set('Loaded');
         afterNextRender(
           () => {
-            const heading = document.querySelector<HTMLElement>('[data-page-title]');
+            const root: ParentNode = this.page?.nativeElement ?? document;
+            const heading = root.querySelector<HTMLElement>('[data-page-title]');
             heading?.setAttribute('tabindex', '-1');
             heading?.focus();
           },
@@ -286,7 +297,12 @@ export class RecordLoadFlow {
   imports: [PageHeader, RouterLink, Button, ErrorReference],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header [crumbs]="crumbs()" [heading]="text()" icon="" />
+    <mf-page-header
+      [crumbs]="crumbs()"
+      [heading]="kind() === 'profile' ? 'My profile' : text()"
+      [description]="kind() === 'profile' ? text() : ''"
+      [icon]="kind() === 'profile' ? null : ''"
+    />
     <div class="rs" [attr.data-record-state]="failure()">
       @if (failure() === 'error') {
         <div class="rs__alert" role="alert" data-record-error>
@@ -376,6 +392,8 @@ export class RecordState {
   protected readonly crumbs = computed<Crumb[]>(() => {
     const info = this.info();
     const id = this.recordId();
+    // My profile is a page of its own (no list above it): the header stays "My profile" and the reason is its context line.
+    if (this.kind() === 'profile') return [];
     if (info.admin) {
       const list: Crumb = this.auth.has(info.view)
         ? { label: info.label, link: info.path }

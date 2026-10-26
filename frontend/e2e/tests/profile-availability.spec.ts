@@ -62,8 +62,8 @@ test.describe('My profile: availability and work hours', () => {
 
     await me.goto('/profile');
     await expect(me).toHaveTitle('My profile - MatterFlow');
-    await expect(me.getByRole('heading', { name: 'My profile', level: 1 })).toBeVisible();
-    await expect(me.locator('[data-preview-chip]')).toHaveText(/Available|Off hours/);
+    await expect(me.locator('main h1')).toContainText(name);
+    await expect(me.locator('h1 [data-availability-chip]')).toHaveText(/Available|Off hours/);
 
     await me.getByRole('radio', { name: /Out of office/ }).check();
     await fillDate(me.locator('#av-until'), until.text);
@@ -75,10 +75,10 @@ test.describe('My profile: availability and work hours', () => {
     await me.getByRole('button', { name: 'Save changes' }).click();
 
     await expect(me.getByText('Availability saved').first()).toBeVisible();
-    await expect(me.locator('[data-preview-chip]')).toContainText(
+    await expect(me.locator('h1 [data-availability-chip]')).toContainText(
       `Out of office until ${until.short}`,
     );
-    // The header says so too.
+    // The header menu says so too.
     await expect(me.locator('[data-ooo-label]')).toContainText(
       `Out of office until ${until.short}`,
     );
@@ -163,6 +163,7 @@ test.describe('My profile: availability and work hours', () => {
     const me = await asUser(username);
     await me.goto('/profile');
 
+    await me.getByRole('button', { name: 'Different hours on some days' }).click();
     // An end time before the start time is reported at once, in the summary on Save, and nothing is sent.
     await me.getByLabel('Tuesday end time').fill('08:00');
     await expect(me.locator('[data-day-error]')).toContainText(
@@ -202,15 +203,17 @@ test.describe('My profile: availability and work hours', () => {
     const { username } = await seed.user(['Data Technician'], 'zone');
     const me = await asUser(username, { timezoneId: 'Europe/Berlin' });
     await me.goto('/profile');
-    await expect(me.getByLabel('Time zone')).toHaveValue('Europe/Berlin');
-    await me.getByLabel('Time zone').fill('Mars/Olympus');
+    await expect(me.locator('#av-tz')).toHaveValue('Europe/Berlin');
+    await me.locator('#av-tz').selectOption('__other__');
+    await me.locator('#av-tz-other').fill('Mars/Olympus');
     await expect(me.locator('[data-tz-error]')).toContainText('is not a time zone we know');
-    await me.getByLabel('Time zone').fill('Asia/Tokyo');
+    await me.locator('#av-tz-other').fill('Asia/Tokyo');
     await expect(me.locator('[data-tz-error]')).toHaveCount(0);
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
-    await expect(me.getByLabel('Time zone')).toHaveValue('Asia/Tokyo');
+    // A saved zone that is not a US zone stays selectable as an extra option (#540).
+    await expect(me.locator('#av-tz')).toHaveValue('Asia/Tokyo');
   });
 
   test('leaving with unsaved edits asks first; the answer keeps or drops them', async ({
@@ -220,13 +223,13 @@ test.describe('My profile: availability and work hours', () => {
     const { username } = await seed.user(['Data Technician'], 'guard');
     const me = await asUser(username);
     await me.goto('/profile');
-    await me.getByLabel('Monday start time').fill('07:00');
+    await me.getByLabel('Start time', { exact: true }).fill('07:00');
     await me.getByRole('link', { name: 'My Work' }).click();
     const ask = me.getByRole('dialog', { name: 'Leave without saving?' });
     await expect(ask).toBeVisible();
     await ask.getByRole('button', { name: 'Stay' }).click();
     await expect(me).toHaveURL(/\/profile$/);
-    await expect(me.getByLabel('Monday start time')).toHaveValue('07:00');
+    await expect(me.getByLabel('Start time', { exact: true })).toHaveValue('07:00');
 
     await me.getByRole('link', { name: 'My Work' }).click();
     await me
@@ -296,7 +299,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me.getByRole('radio', { name: 'Available' })).toBeChecked();
 
     await seed.outOfOffice(userId, { note: 'Changed elsewhere' }); // another editor saves first
-    await me.getByLabel('Monday start time').fill('07:00');
+    await me.getByLabel('Start time', { exact: true }).fill('07:00');
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(me.locator('[data-conflict]')).toContainText('your edits were not saved');
     await expect(me.getByRole('radio', { name: /Out of office/ })).toBeChecked();
@@ -363,7 +366,7 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       await me.setViewportSize({ width: size.width, height: size.height });
 
       await me.goto('/profile');
-      await expect(me.locator('[data-preview-chip]')).toBeVisible();
+      await expect(me.locator('h1 [data-availability-chip]')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
 
       await me.getByRole('radio', { name: /Out of office/ }).check();
@@ -372,12 +375,12 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       expect(
         await me.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),
       ).toBeLessThanOrEqual(0);
-      await me.getByLabel('Monday end time').fill('07:00'); // an error summary on screen
+      await me.getByLabel('End time', { exact: true }).fill('07:00'); // an error summary on screen
       await me.getByRole('button', { name: 'Save changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       expect(await axeViolations(me)).toEqual([]);
 
-      await me.getByLabel('Monday end time').fill('16:00');
+      await me.getByLabel('End time', { exact: true }).fill('16:00');
       await me.getByRole('button', { name: 'Save changes' }).click();
       await expect(me.locator('[data-ooo-label]')).toBeVisible();
       await me.getByRole('button', { name: /account menu/ }).click();
@@ -449,7 +452,7 @@ test.describe('profile screenshots', () => {
       const me = await asUser(people[2].username);
       await me.setViewportSize({ width: size.w, height: size.h });
       await me.goto('/profile');
-      await expect(me.locator('[data-preview-chip]')).toBeVisible();
+      await expect(me.locator('h1 [data-availability-chip]')).toBeVisible();
       await shot(me, size.n, '01-profile-available');
 
       await me.getByRole('radio', { name: /Out of office/ }).check();
@@ -458,11 +461,11 @@ test.describe('profile screenshots', () => {
       await me.getByLabel('Note (optional)').fill('Annual leave. Dana Director covers my queue.');
       await shot(me, size.n, '02-profile-out-of-office');
 
-      await me.getByLabel('Tuesday end time').fill('08:00');
+      await me.getByLabel('End time', { exact: true }).fill('08:00');
       await me.getByRole('button', { name: 'Save changes' }).click();
       await expect(me.locator('[data-summary]')).toBeVisible();
       await shot(me, size.n, '03-profile-validation');
-      await me.getByLabel('Tuesday end time').fill('17:00');
+      await me.getByLabel('End time', { exact: true }).fill('17:00');
       await fillDate(me.locator('#av-from'), ''); // out of office from now, so the header shows it
 
       await me.getByRole('button', { name: 'Save changes' }).click();

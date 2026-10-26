@@ -154,7 +154,7 @@ test.describe('pf5-dialog-focus: heading focus and the link to My profile (#539)
     await dialog.getByRole('link', { name: 'More options on My profile' }).click();
     await expect(me).toHaveURL(/\/profile$/);
     await expect(dialog).toHaveCount(0);
-    await expect(me.getByRole('heading', { name: 'My profile', level: 1 })).toBeVisible();
+    await expect(me.locator('[data-profile-header] h1')).toBeVisible();
   });
 
   test('on a phone nothing in the dialog is focused on open (no on-screen keyboard) and it fits without scrolling', async ({

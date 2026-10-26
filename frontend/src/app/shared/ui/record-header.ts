@@ -61,6 +61,7 @@ const LIST: Record<RecordKind, { label: string; link: string }> = {
   assetType: { label: 'Asset Types', link: '/admin/asset-types' },
   customField: { label: 'Custom Fields', link: '/admin/custom-fields' },
   pod: { label: 'Pods', link: '/admin/pods' },
+  profile: { label: 'My profile', link: '/profile' },
 };
 const LIST_PATHS = ['/clients', '/matters', '/projects', '/assets'];
 

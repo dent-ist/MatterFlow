@@ -157,6 +157,22 @@ describe('mf-record-state', () => {
     expect(host.retries).toBe(1);
   });
 
+  it('profile (#532): the header stays "My profile", the reason is its context line, no crumbs, Retry on a failure', async () => {
+    const { el, host, settle } = await render();
+    host.kind.set('profile');
+    host.state.set('error');
+    await settle();
+    expect(el.querySelector('h1')?.textContent?.trim()).toBe('My profile');
+    expect(el.querySelector('[data-page-description]')?.textContent?.trim()).toBe(
+      "Couldn't load this profile.",
+    );
+    expect(el.querySelector('nav[aria-label="Breadcrumb"]')).toBeNull();
+    expect(el.querySelector('[data-record-error]')).not.toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-retry] button, button[data-retry]')!.click();
+    expect(host.retries).toBe(1);
+    expect(recordStateTitle('profile', 'error')).toBe('Profile could not be loaded');
+  });
+
   it('ignores Retry while a retry is running and keeps the button where it is', async () => {
     const { el, host, settle } = await render();
     host.state.set('error');

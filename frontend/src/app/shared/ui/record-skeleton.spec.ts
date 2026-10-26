@@ -62,6 +62,15 @@ describe('mf-record-skeleton (#247, #615)', () => {
     expect(el.querySelectorAll('.rk__row')).toHaveLength(5);
   });
 
+  it('draws My profile (#532): the two columns of cards, no header and no tabs, "Loading profile"', async () => {
+    const el = await render('profile');
+    expect(el.querySelector('[data-profile-skeleton]')).not.toBeNull();
+    expect(el.querySelectorAll('.rk__pf-col')).toHaveLength(2);
+    expect(el.querySelectorAll('.rk__card').length).toBe(5);
+    expect(el.querySelector('[data-record-header], mf-tabs')).toBeNull();
+    expect(el.querySelector('[role=status]')?.textContent).toContain('Loading profile');
+  });
+
   it('draws a matter with the real tab labels and -- for the counts', async () => {
     const el = await render('matter', 'projects');
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading matter');
