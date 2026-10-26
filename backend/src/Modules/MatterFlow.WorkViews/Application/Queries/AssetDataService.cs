@@ -1,7 +1,6 @@
 using System.Globalization;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
@@ -19,7 +18,7 @@ public sealed class AssetDataService(
     DbContext db,
     AssetScopeResolver scopes,
     AssetAggregates aggregates,
-    IFormFieldCatalog fieldCatalog,
+    AssetMeasureResolver measures,
     IEnumerable<IAssetTaskLinkReader> links,
     IClock clock)
 {
@@ -32,39 +31,12 @@ public sealed class AssetDataService(
 
         var scope = resolved.Value;
         var assets = scope.Assets();
-        var source = AssetMeasureSource.DefaultSize;
-        if (query.AssetTypeId is { } typeId)
-        {
-            var type = await db.Set<AssetType>().AsNoTracking().Where(t => t.Id == typeId).Select(t => new { t.SizeFieldKey, t.SizeUnit }).SingleOrDefaultAsync(ct);
-            if (type is null)
-                return Error.Validation("assetTypeId", "NOT_FOUND", "The asset type does not exist.");
+        var measure = await measures.ResolveAsync(assets, query.AssetTypeId, query.SizeField, query.SizeUnit, ct);
+        if (measure.IsFailure)
+            return measure.Error!;
 
-            assets = assets.Where(a => a.AssetTypeId == typeId);
-            if (AssetSupportText.Clean(query.SizeField) is { } key)
-            {
-                var published = await fieldCatalog.GetPublishedFieldsAsync(FormOwnerKind.AssetType, typeId, ct);
-                if (!published.Any(f => f.IsNumber && f.Key == key))
-                    return Error.Validation("sizeField", "INVALID", "The size field must be a number field of the published form of this asset type.");
-
-                var unit = key == type.SizeFieldKey ? type.SizeUnit : AssetSupportText.Clean(query.SizeUnit);
-                if (!AssetSize.IsKnownUnit(unit))
-                    return Error.Validation("sizeUnit", "REQUIRED", $"Choose the unit of this field: {string.Join(", ", AssetSize.Units)}.");
-
-                source = new AssetMeasureSource(typeId, key, unit);
-            }
-            else if (type.SizeFieldKey is { } defaultKey && type.SizeUnit is { } defaultUnit)
-            {
-                source = new AssetMeasureSource(typeId, defaultKey, defaultUnit);
-            }
-            else
-            {
-                source = new AssetMeasureSource(typeId, null, null);
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(query.SizeField) || !string.IsNullOrWhiteSpace(query.SizeUnit))
-        {
-            return Error.Validation("assetTypeId", "REQUIRED", "Choose an asset type to measure another size field.");
-        }
+        assets = measure.Value.Assets;
+        var source = measure.Value.Source;
 
         // A type that has no size field contributes assets but no size (the join finds nothing).
         var measured = source.FieldKey is null && source.AssetTypeId is not null ? new AssetMeasureSource(source.AssetTypeId, "\u0001none", string.Empty) : source;

@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { BarChart } from './bar-chart';
 import { ChartPanel, MAX_BARS } from './chart-panel';
 import { ChartTable } from './chart-table';
+import { ColumnChart } from './column-chart';
 import { ChartKind, ChartRow, ChartSlice } from './chart-types';
 import { PieChart } from './pie-chart';
 
@@ -188,5 +189,47 @@ describe('PieChart', () => {
     expect(label).toContain('Disposition, pie chart: Active 12 (75%); Disposed 4 (25%)');
     expect(label).toContain('16 assets, 1 flagged');
     expect(fixture.nativeElement.querySelector('[data-pie-centre]').textContent).toContain('16');
+  });
+});
+
+describe('ColumnChart', () => {
+  async function make(rows: ChartRow[]): Promise<ComponentFixture<ColumnChart>> {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(ColumnChart);
+    fixture.componentRef.setInput('heading', 'Size held');
+    fixture.componentRef.setInput('unit', 'GB');
+    fixture.componentRef.setInput('rows', rows);
+    await settle(fixture);
+    return fixture;
+  }
+
+  it('scales the columns to the largest value, labels about four months and ends on the last', async () => {
+    const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
+    const fixture = await make(labels.map((l, i) => row(l, (i + 1) * 5)));
+    const bars = Array.from(fixture.nativeElement.querySelectorAll('.cc__bar')) as HTMLElement[];
+    expect(bars).toHaveLength(8);
+    expect(bars[7].style.height).toBe('100%');
+    expect(bars[0].style.height).toBe('12.5%');
+    const shown = Array.from(fixture.nativeElement.querySelectorAll('.cc__label'))
+      .map((l) => (l as HTMLElement).textContent!.trim())
+      .filter(Boolean);
+    expect(shown).toEqual(['Feb', 'Apr', 'Jun', 'Aug']);
+    expect(fixture.nativeElement.querySelector('.cc__top').textContent).toContain('Highest 40');
+  });
+
+  it('gives a screen reader one sentence instead of the decorative columns', async () => {
+    const fixture = await make([row('Jan', 10), row('Feb', 30), row('Mar', 20)]);
+    const summary = fixture.nativeElement.querySelector('[data-columns-summary]') as HTMLElement;
+    expect(summary.textContent).toContain('from Jan (10 GB) to Mar (20 GB); highest Feb (30 GB)');
+    expect(fixture.nativeElement.querySelector('.cc__cols').getAttribute('aria-hidden')).toBe(
+      'true',
+    );
+  });
+
+  it('draws nothing but says so when every value is zero or there are no months', async () => {
+    const zero = await make([row('Jan', 0), row('Feb', 0)]);
+    expect((zero.nativeElement.querySelector('.cc__bar') as HTMLElement).style.height).toBe('0%');
+    const none = await make([]);
+    expect(none.nativeElement.querySelector('[data-columns-empty]')).not.toBeNull();
   });
 });

@@ -106,3 +106,64 @@ public sealed record AssetDataResponse(
     [property: Required] AssetDataWarnings Warnings,
     string? UnitsWarning,
     [property: Required] string ScopeQuery);
+
+/// <summary>The parameters of <c>GET /my-matters/data/volume</c> (epic #851, issue #871). Unknown parameters are a 400.</summary>
+public sealed class AssetVolumeQuery
+{
+    public static readonly IReadOnlyList<string> Keys = ["scope", "role", "assetTypeId", "sizeField", "sizeUnit", "matterId", "months"];
+
+    /// <summary><c>mine</c> (default) or <c>all</c> (needs <c>Matter.AssignManagers</c>), as for the Data tab.</summary>
+    [FromQuery(Name = "scope"), StringLength(10)]
+    public string? Scope { get; init; }
+
+    /// <summary><c>both</c> (default), <c>primary</c> or <c>secondary</c> (scope mine only).</summary>
+    [FromQuery(Name = "role"), StringLength(10)]
+    public string? Role { get; init; }
+
+    /// <summary>Only assets of this asset type; needed to override the size field.</summary>
+    [FromQuery(Name = "assetTypeId")]
+    public int? AssetTypeId { get; init; }
+
+    /// <summary>With <c>assetTypeId</c>: measure this number field instead of the type's default size field.</summary>
+    [FromQuery(Name = "sizeField"), StringLength(64)]
+    public string? SizeField { get; init; }
+
+    /// <summary>The unit of <c>sizeField</c> when it is not the type's default.</summary>
+    [FromQuery(Name = "sizeUnit"), StringLength(10)]
+    public string? SizeUnit { get; init; }
+
+    /// <summary>Only the assets of this matter (it must be in the scope; otherwise the result is empty).</summary>
+    [FromQuery(Name = "matterId")]
+    public int? MatterId { get; init; }
+
+    /// <summary>How many months to return, ending with the current month (1 to 60, default 24). Earlier history is carried into the first month, not cut off.</summary>
+    [FromQuery(Name = "months"), Range(1, 60)]
+    public int? Months { get; init; }
+}
+
+/// <summary>One month of the volume chart: the size held at the end of the month and what came in and went out during it.</summary>
+/// <param name="Month">Calendar month, <c>yyyy-MM</c>.</param>
+/// <param name="Assets">Assets held at the end of the month (created up to then, not disposed up to then).</param>
+/// <param name="Held">Cumulative size held at the end of the month, one entry per unit of the result (zero when none).</param>
+/// <param name="Added">Size of the assets created in the month, per unit.</param>
+/// <param name="Removed">Size of the assets whose disposition became Disposed in the month, per unit.</param>
+public sealed record AssetVolumePoint(
+    [property: Required] string Month,
+    [property: Required] int Assets,
+    [property: Required] IReadOnlyList<AssetUnitValue> Held,
+    [property: Required] IReadOnlyList<AssetUnitValue> Added,
+    [property: Required] IReadOnlyList<AssetUnitValue> Removed);
+
+/// <summary>
+/// Data volume over time (monthly, cumulative). It is derived, not recorded: an asset's size is its <b>current</b> value placed at the month the asset was created, and a disposed asset
+/// leaves at the month its disposition changed. There is no snapshot table, so a size edited later changes the past.
+/// </summary>
+/// <param name="Points">The months, oldest first; the last one is the current month.</param>
+/// <param name="Units">The units of the result (one, or GB and Items when they meet).</param>
+/// <param name="UnitsWarning">Set when the units mix, as for the Data tab; null otherwise.</param>
+/// <param name="Limitation">The limit of the figures, as text to show on screen.</param>
+public sealed record AssetVolumeResponse(
+    [property: Required] IReadOnlyList<AssetVolumePoint> Points,
+    [property: Required] IReadOnlyList<string> Units,
+    string? UnitsWarning,
+    [property: Required] string Limitation);

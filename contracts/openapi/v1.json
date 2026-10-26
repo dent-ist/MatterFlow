@@ -9646,6 +9646,90 @@
         }
       }
     },
+    "/api/v1/my-matters/data/volume": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersDataVolume",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "assetTypeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sizeField",
+            "in": "query",
+            "schema": {
+              "maxLength": 64,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "sizeUnit",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "months",
+            "in": "query",
+            "schema": {
+              "maximum": 60,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetVolumeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/deadlines": {
       "get": {
         "tags": [
@@ -14067,6 +14151,75 @@
           "assets": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "AssetVolumePoint": {
+        "required": [
+          "month",
+          "assets",
+          "held",
+          "added",
+          "removed"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "assets": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "held": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetUnitValue"
+            }
+          },
+          "added": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetUnitValue"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetUnitValue"
+            }
+          }
+        }
+      },
+      "AssetVolumeResponse": {
+        "required": [
+          "points",
+          "units",
+          "unitsWarning",
+          "limitation"
+        ],
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetVolumePoint"
+            }
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unitsWarning": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "limitation": {
+            "type": "string"
           }
         }
       },

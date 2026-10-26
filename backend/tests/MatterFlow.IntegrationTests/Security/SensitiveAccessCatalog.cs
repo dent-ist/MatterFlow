@@ -120,6 +120,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/my-matters/activity"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/activity?scope=all&take=100"]),
         ["GET api/v1/my-matters/attention"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/attention?scope=all"]),
         ["GET api/v1/my-matters/data"] = new(AccessKind.Aggregate, IdKind.None, "asset counts, sizes and warnings computed from assets of matters the caller may see (epic #851, PV-18)", ["api/v1/my-matters/data?scope=all"]),
+        ["GET api/v1/my-matters/data/volume"] = new(AccessKind.Aggregate, IdKind.None, "monthly asset size computed from assets of matters the caller may see (epic #851, PV-20)", ["api/v1/my-matters/data/volume?scope=all"]),
         ["GET api/v1/my-matters/deadlines"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/deadlines?scope=all"]),
         ["GET api/v1/my-matters/health"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/health?scope=all&pageSize=100"]),
         ["GET api/v1/my-matters/since-last-visit"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/since-last-visit?scope=all"]),

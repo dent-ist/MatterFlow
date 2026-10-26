@@ -13752,6 +13752,17 @@ export interface IMyMattersClient {
      */
     getMyMattersData(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined): Observable<AssetDataResponse>;
     /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param assetTypeId (optional) 
+     * @param sizeField (optional) 
+     * @param sizeUnit (optional) 
+     * @param matterId (optional) 
+     * @param months (optional) 
+     * @return OK
+     */
+    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined, matterId?: number | undefined, months?: number | undefined): Observable<AssetVolumeResponse>;
+    /**
      * @param days (optional) 
      * @param groupBy (optional) 
      * @param taskTypeId (optional) 
@@ -14356,6 +14367,91 @@ export class MyMattersClient implements IMyMattersClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetDataResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param assetTypeId (optional) 
+     * @param sizeField (optional) 
+     * @param sizeUnit (optional) 
+     * @param matterId (optional) 
+     * @param months (optional) 
+     * @return OK
+     */
+    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined, matterId?: number | undefined, months?: number | undefined): Observable<AssetVolumeResponse> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/data/volume?";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (assetTypeId === null)
+            throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
+        else if (assetTypeId !== undefined)
+            url_ += "assetTypeId=" + encodeURIComponent("" + assetTypeId) + "&";
+        if (sizeField === null)
+            throw new globalThis.Error("The parameter 'sizeField' cannot be null.");
+        else if (sizeField !== undefined)
+            url_ += "sizeField=" + encodeURIComponent("" + sizeField) + "&";
+        if (sizeUnit === null)
+            throw new globalThis.Error("The parameter 'sizeUnit' cannot be null.");
+        else if (sizeUnit !== undefined)
+            url_ += "sizeUnit=" + encodeURIComponent("" + sizeUnit) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
+        if (months === null)
+            throw new globalThis.Error("The parameter 'months' cannot be null.");
+        else if (months !== undefined)
+            url_ += "months=" + encodeURIComponent("" + months) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersDataVolume(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersDataVolume(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetVolumeResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetVolumeResponse>;
+        }));
+    }
+
+    protected processGetMyMattersDataVolume(response: HttpResponseBase): Observable<AssetVolumeResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetVolumeResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -17795,6 +17891,25 @@ export interface AssetUnitValue {
     unit: string;
     value: number;
     assets: number;
+
+    [key: string]: any;
+}
+
+export interface AssetVolumePoint {
+    month: string;
+    assets: number;
+    held: AssetUnitValue[];
+    added: AssetUnitValue[];
+    removed: AssetUnitValue[];
+
+    [key: string]: any;
+}
+
+export interface AssetVolumeResponse {
+    points: AssetVolumePoint[];
+    units: string[];
+    unitsWarning: string | undefined;
+    limitation: string;
 
     [key: string]: any;
 }

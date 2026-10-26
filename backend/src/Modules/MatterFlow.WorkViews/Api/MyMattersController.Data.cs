@@ -25,4 +25,18 @@ public partial class MyMattersController
         FilterParsing.EnsureKnown(Request.Query.Keys, AssetDataQuery.Keys).OrThrow();
         return (await data.GetAsync(query, cancellationToken)).OrThrow();
     }
+
+    /// <summary>
+    /// Data volume over time (epic #851, issue #871): the cumulative size of the scope's assets by the month they were created (their current size placed at that month; disposed assets
+    /// leave in the month their disposition changed), for the last <c>months</c> months (default 24, 1 to 60). Same scope, role and size-field parameters as <c>data</c>; <c>matterId</c> narrows
+    /// it to one matter of the scope. Derived, not recorded: the response states the limit. Needs <c>Asset.View</c> as well.
+    /// </summary>
+    [HttpGet("data/volume", Name = "GetMyMattersDataVolume")]
+    [Authorize(Policy = "Perm:" + Permissions.Asset.View)]
+    [ProducesResponseType<AssetVolumeResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<AssetVolumeResponse>> GetDataVolume([FromQuery] AssetVolumeQuery query, [FromServices] AssetVolumeService volume, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, AssetVolumeQuery.Keys).OrThrow();
+        return (await volume.GetAsync(query, cancellationToken)).OrThrow();
+    }
 }
