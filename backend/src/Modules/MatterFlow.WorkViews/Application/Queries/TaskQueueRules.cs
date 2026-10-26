@@ -64,6 +64,9 @@ public sealed class TaskSortRow
 
     /// <summary>The client name in the accent- and case-insensitive collation (the plain name in tests).</summary>
     public string ClientKey { get; init; } = string.Empty;
+
+    /// <summary>The Task Type name in the accent- and case-insensitive collation (the plain name in tests).</summary>
+    public string TypeKey { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -88,6 +91,9 @@ public static class TaskQueueRules
     public const string SortClient = "client";
     /// <summary>On hold since (project managers' oldest hold first): Tasks that are On Hold by the time they went on hold, all other Tasks after them (epic #667).</summary>
     public const string SortOnHoldSince = "onHoldSince";
+
+    /// <summary>The Task Type name (A to Z), then the default order (PM v2, #860).</summary>
+    public const string SortType = "type";
     public const string SortMatterName = "matterName";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
@@ -104,7 +110,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince, SortType];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -272,6 +278,8 @@ public static class TaskQueueRules
                 return descending
                     ? rows.OrderBy(r => r.AssigneeKey == null ? 1 : 0).ThenByDescending(r => r.AssigneeKey).ThenByDescending(r => r.Id)
                     : rows.OrderBy(r => r.AssigneeKey == null ? 1 : 0).ThenBy(r => r.AssigneeKey).ThenBy(r => r.Id);
+            case SortType:
+                return WithDefaultTail(descending ? rows.OrderByDescending(r => r.TypeKey) : rows.OrderBy(r => r.TypeKey));
             case SortClient:
                 return descending
                     ? rows.OrderByDescending(r => r.ClientKey).ThenByDescending(r => r.MatterRef).ThenByDescending(r => r.Id)

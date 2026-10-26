@@ -16,6 +16,7 @@ public sealed record QueueUser([property: Required] int UserId, [property: Requi
 /// One Task in the Task Queue, My Work or Pod Work. Due is returned as stored (<c>dueDate</c> floating date, <c>dueAtUtc</c> instant when a
 /// time was set); <c>closedAtUtc</c> is the instant the Task last entered Completed or Cancelled (null while it is open); <c>isAsap</c> and <c>isOverdue</c> are computed for the requesting user's time zone (addendum M).
 /// <c>matterCanOpen</c> is false when the caller sees the Task but not its (sensitive) Matter, so the screen shows the Matter as plain text with no link (epic #788 mode H).
+/// <c>taskTypeColourKey</c> is the type's palette colour (null = neutral); <c>onHoldReasonId</c> and <c>onHoldReasonName</c> are the structured reason of the current hold; <c>atRisk</c> is the At risk rule of <see cref="AtRiskRules"/>.
 /// <c>holdReason</c> is the plain text of the latest hold comment, only while the status is On Hold (null when there is none), cut to 200 characters; <c>holdReasonTruncated</c> tells that it was cut.
 /// </summary>
 public sealed record TaskQueueRow(
@@ -57,7 +58,11 @@ public sealed record TaskQueueRow(
     [property: Required] string RowVersion,
     string? HoldReason = null,
     [property: Required] bool HoldReasonTruncated = false,
-    [property: Required] bool MatterCanOpen = true);
+    [property: Required] bool MatterCanOpen = true,
+    string? TaskTypeColourKey = null,
+    int? OnHoldReasonId = null,
+    string? OnHoldReasonName = null,
+    [property: Required] bool AtRisk = false);
 
 /// <summary>Where the Task's workflow stands: the current (first unresolved) step and how many steps are resolved (completed or skipped).</summary>
 /// <param name="StepsTotal">Number of steps.</param>

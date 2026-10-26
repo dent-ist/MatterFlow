@@ -463,6 +463,16 @@ public sealed class TaskQueueService(
         if (f.DueWithinDays is { } dueWithin)
             rows = rows.Where(TaskQueueRules.DueWithin(c, dueWithin));
 
+        if (f.AtRisk)
+            rows = AtRiskRules.Where(rows, db, c);
+
+        if (f.OnHoldReasons is { Count: > 0 } reasons)
+        {
+            var ids = reasons.Where(id => id > 0).ToList();
+            var noReason = reasons.Contains(0);
+            rows = rows.Where(t => t.Status == TaskStatusCode.OnHold && ((t.OnHoldReasonId != null && ids.Contains(t.OnHoldReasonId.Value)) || (noReason && t.OnHoldReasonId == null)));
+        }
+
         if (f.Text is { } text)
         {
             var pattern = TextMatch.ContainsPattern(text);
@@ -630,6 +640,7 @@ public sealed class TaskQueueService(
                        join p in db.Set<Priority>().AsNoTracking() on t.PriorityId equals p.Id
                        join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
                        join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
+                       join sty in db.Set<TaskType>().AsNoTracking() on t.TaskTypeId equals sty.Id
                        join au in db.Set<AppUser>().AsNoTracking() on t.AssignedUserId equals (int?)au.Id into assignees
                        from au in assignees.DefaultIfEmpty()
                        select new TaskSortRow
@@ -648,6 +659,7 @@ public sealed class TaskQueueService(
                            MatterNameKey = EF.Functions.Collate(m.Name, TitleCollation),
                            AssigneeKey = au == null ? null : EF.Functions.Collate(au.DisplayName, TitleCollation),
                            ClientKey = EF.Functions.Collate(c.Name, TitleCollation),
+                           TypeKey = EF.Functions.Collate(sty.Name, TitleCollation),
                        };
         var ordered = groupByDue ? TaskQueueRules.OrderByDueBucket(sortRows, queueClock) : queueGroups ? TaskQueueRules.OrderByDueGroups(sortRows, queueClock, descending) : sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
         var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
@@ -711,6 +723,10 @@ public sealed class TaskQueueService(
                 ProjectName = pr == null ? null : pr.Name,
                 TaskTypeName = ty.Name,
                 TaskTypeIconKey = ty.IconKey,
+                TaskTypeColourKey = ty.ColourKey,
+                TaskTypeTargetDays = ty.TargetDays,
+                OnHoldReasonId = t.OnHoldReasonId,
+                OnHoldReasonName = t.OnHoldReasonId == null ? null : db.Set<OnHoldReason>().Where(r => r.Id == t.OnHoldReasonId).Select(r => r.Name).FirstOrDefault(),
                 WorkflowDefinitionId = wd.Id,
                 WorkflowName = wd.Name,
                 PodName = pod == null ? null : pod.Name,
@@ -801,7 +817,11 @@ public sealed class TaskQueueService(
                 Convert.ToBase64String(t.RowVersion),
                 holdReason,
                 holdTruncated,
-                !d.MatterIsSensitive || openableMatterIds.Contains(d.MatterId)));
+                !d.MatterIsSensitive || openableMatterIds.Contains(d.MatterId),
+                d.TaskTypeColourKey,
+                d.OnHoldReasonId,
+                d.OnHoldReasonName,
+                AtRiskRules.IsAtRisk(t.Status, TaskQueueRules.IsOverdue(t.Status, t.DueDate, t.DueAtUtc, queueClock), t.CreatedAtUtc, d.TaskTypeTargetDays, queueClock.NowUtc)));
         }
 
         return result;
@@ -900,6 +920,14 @@ public sealed class TaskQueueService(
         public string TaskTypeName { get; init; } = string.Empty;
 
         public string TaskTypeIconKey { get; init; } = string.Empty;
+
+        public string? TaskTypeColourKey { get; init; }
+
+        public int? TaskTypeTargetDays { get; init; }
+
+        public int? OnHoldReasonId { get; init; }
+
+        public string? OnHoldReasonName { get; init; }
 
         public int WorkflowDefinitionId { get; init; }
 

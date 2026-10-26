@@ -19,6 +19,7 @@ public class TaskQueueQuery
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
         "matterText", "clientText", "projectText", "updatedFrom", "updatedTo",
         "managedByMe", "managerId", "role", "dueWithin",
+        "atRisk", "onHoldReason",
     ];
 
     /// <summary>All parameters of the Task Queue.</summary>
@@ -157,6 +158,14 @@ public class TaskQueueQuery
     [FromQuery(Name = "dueWithin")]
     public int? DueWithin { get; init; }
 
+    /// <summary>True: only open Tasks that are At risk: not overdue, their Task Type has a target turnaround and 80 percent of it has passed since creation (<see cref="AtRiskRules"/>). False is the same as leaving it out.</summary>
+    [FromQuery(Name = "atRisk")]
+    public bool? AtRisk { get; init; }
+
+    /// <summary>On-hold reason ids; repeatable. Matches Tasks that are On Hold with one of those reasons; <c>0</c> matches Tasks On Hold with no reason chosen.</summary>
+    [FromQuery(Name = "onHoldReason")]
+    public int[]? OnHoldReason { get; init; }
+
     /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
@@ -274,7 +283,9 @@ public sealed record TaskQueueFilter(
     bool ManagedByMe = false,
     int? ManagerId = null,
     string ManagerRole = TaskQueueFilter.RoleBoth,
-    int? DueWithinDays = null)
+    int? DueWithinDays = null,
+    bool AtRisk = false,
+    IReadOnlyList<int>? OnHoldReasons = null)
 {
     public const string RolePrimary = "primary";
     public const string RoleSecondary = "secondary";
@@ -338,7 +349,9 @@ public sealed record TaskQueueFilter(
             query.ManagedByMe == true,
             query.ManagerId,
             role,
-            query.DueWithin);
+            query.DueWithin,
+            query.AtRisk == true,
+            query.OnHoldReason is null ? [] : [.. query.OnHoldReason.Where(id => id >= 0).Distinct()]);
     }
 
     /// <summary>True when no filter is set at all (a plain link): My Work then counts and lists Created by me as open tasks only.</summary>
@@ -347,7 +360,7 @@ public sealed record TaskQueueFilter(
         && Creators.Count == 0 && ClientId is null && MatterId is null && ProjectId is null && TaskTypes.Count == 0 && Workflows.Count == 0
         && CreatedFrom is null && CreatedTo is null && DueFrom is null && DueTo is null && Asap is null && Overdue is null && Requestor is null
         && CompletedFrom is null && CompletedTo is null && MatterText is null && ClientText is null && ProjectText is null
-        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null;
+        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null && !AtRisk && (OnHoldReasons is null || OnHoldReasons.Count == 0);
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
