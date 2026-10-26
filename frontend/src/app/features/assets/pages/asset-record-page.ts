@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   Injector,
   afterNextRender,
   computed,
@@ -188,6 +189,7 @@ export class AssetRecordPage {
   private readonly pageTitle = inject(PageTitle);
   private readonly drill = inject(DrillReturn);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly flow = new RecordLoadFlow('asset');
   protected readonly state = this.flow.state;
@@ -347,9 +349,10 @@ export class AssetRecordPage {
       const returned = untracked(() => this.drill.takeTab([]));
       afterNextRender(
         () => {
+          const root = this.host.nativeElement;
           const target = returned
-            ? document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
-            : document.querySelector<HTMLElement>('[data-page-title]');
+            ? root.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+            : root.querySelector<HTMLElement>('[data-page-title]');
           if (!returned) target?.setAttribute('tabindex', '-1');
           target?.focus({ preventScroll: true });
         },
@@ -364,7 +367,7 @@ export class AssetRecordPage {
       setTimeout(() => this.focusHeading(tries + 1), 50);
       return;
     }
-    const heading = document.querySelector<HTMLElement>('[data-page-title]');
+    const heading = this.host.nativeElement.querySelector<HTMLElement>('[data-page-title]');
     heading?.setAttribute('tabindex', '-1');
     heading?.focus({ preventScroll: true });
   }

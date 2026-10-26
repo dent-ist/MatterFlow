@@ -206,12 +206,14 @@ describe('AssetRecordPage', () => {
       .find((i) => i.textContent!.includes('Set inactive'))!
       .click();
     await settle(fixture);
-    document.body.appendChild(el());
     buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();
     await settle(fixture);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(document.activeElement).toBe(el().querySelector('[data-page-title]'));
-    el().remove();
+    // The heading is focused once the closing dialog is gone (it polls for the dialog mask).
+    const heading = el().querySelector('[data-page-title]');
+    for (let i = 0; i < 60 && document.activeElement !== heading; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(document.activeElement).toBe(heading);
   });
 
   it('has Details, Linked tasks (n) and History tabs; the count is the number of linked tasks', async () => {
