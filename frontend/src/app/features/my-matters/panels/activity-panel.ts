@@ -11,7 +11,6 @@ import { RouterLink } from '@angular/router';
 import { MyMattersActivityItem, MyMattersClient } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatInstant } from '../../../core/time/time';
-import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { activityTime, statusWords } from '../facts';
@@ -19,9 +18,8 @@ import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
 
-export const ACTIVITY_PAGE = 30;
-/** How many events a phone shows before "Show all" (README 9). */
-export const PHONE_EVENTS = 5;
+/** The Overview shows the latest five events on every screen; the Activity tab holds the rest (#827). */
+export const OVERVIEW_EVENTS = 5;
 
 /**
  * The sentence of one event, composed from its structured fields (README 6.6). A comment is only ever "commented on <task>": the text is
@@ -56,7 +54,8 @@ export function activityText(e: MyMattersActivityItem): string {
 /**
  * Recent activity (README 6.6): the last seven days on the viewer's matters, newest first, as sentences. An event newer than the person's
  * marker has a dot and the word "unread". Only "Mark all as read" and opening an event move the marker: viewing the panel never does, and
- * the first visit shows nothing unread. "Show more" adds 30. Below 640 px the first five show, then "Show all".
+ * the first visit shows nothing unread. The panel shows the latest five events with "View all activity", a link to the Activity tab (full list,
+ * filters and paging); one event is one line, cut with an ellipsis (the whole sentence is the tooltip).
  */
 @Component({
   selector: 'mf-mm-activity',
@@ -100,7 +99,9 @@ export function activityText(e: MyMattersActivityItem): string {
       grid-area: text;
       min-width: 0;
       min-height: 24px;
-      overflow-wrap: anywhere;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       color: var(--mf-link);
     }
     .ac__row--unread .ac__text {
@@ -131,7 +132,11 @@ export function activityText(e: MyMattersActivityItem): string {
       font-size: var(--mf-fs-sm);
     }
     .ac__more {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
       margin-top: var(--mf-s2);
+      color: var(--mf-link);
     }
     @media (max-width: 639.98px) {
       .ac__row {
@@ -146,9 +151,8 @@ export function activityText(e: MyMattersActivityItem): string {
         min-height: 44px;
       }
       .ac__text {
-        display: flex;
-        align-items: center;
         min-height: 44px;
+        line-height: 44px;
       }
     }
   `,
@@ -200,6 +204,7 @@ export function activityText(e: MyMattersActivityItem): string {
                 [routerLink]="e.taskId ? ['/tasks', e.taskId] : ['/matters', e.matterId]"
                 [queryParams]="e.taskId ? origin.params('my-matters') : undefined"
                 [state]="origin.state()"
+                [attr.title]="text(e)"
                 (click)="opened(e)"
                 >{{ text(e) }}</a
               >
@@ -212,15 +217,14 @@ export function activityText(e: MyMattersActivityItem): string {
             </li>
           }
         </ul>
-        @if (items().length > visible().length) {
-          <button type="button" class="mf-btn ac__more" data-show-all (click)="expanded.set(true)">
-            Show all {{ items().length }}
-          </button>
-        } @else if (hasMore()) {
-          <button type="button" class="mf-btn ac__more" data-show-more (click)="more()">
-            Show more
-          </button>
-        }
+        <a
+          class="ac__more"
+          data-view-all-activity
+          routerLink="/my-matters"
+          [queryParams]="{ tab: 'activity' }"
+          queryParamsHandling="merge"
+          >View all activity</a
+        >
         <p class="ac__legend">An event is unread until you mark all as read or open it.</p>
       }
     </mf-mm-panel>
@@ -241,9 +245,6 @@ export class ActivityPanel {
   private readonly api = inject(MyMattersClient);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
-  protected readonly phone = phoneCards();
-  protected readonly take = signal(ACTIVITY_PAGE);
-  protected readonly expanded = signal(false);
   protected readonly marking = signal(false);
   protected readonly announcement = signal('');
   /** The marks made here: the page counts them in `marker` too, and they must not make the panel read again what it just updated itself. */
@@ -252,11 +253,11 @@ export class ActivityPanel {
   private readonly moves = computed(() => this.marker() - this.own());
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.take(), this.moves()],
+    () => [this.filters(), this.moves()],
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersActivity(
-        this.take(),
+        OVERVIEW_EVENTS,
         undefined,
         undefined,
         undefined,
@@ -278,10 +279,7 @@ export class ActivityPanel {
 
   protected readonly items = computed(() => this.loader.data()?.items ?? []);
   protected readonly unread = computed(() => this.loader.data()?.unreadCount ?? 0);
-  protected readonly hasMore = computed(() => this.loader.data()?.hasMore ?? false);
-  protected readonly visible = computed(() =>
-    this.phone() && !this.expanded() ? this.items().slice(0, PHONE_EVENTS) : this.items(),
-  );
+  protected readonly visible = computed(() => this.items().slice(0, OVERVIEW_EVENTS));
   protected readonly text = activityText;
 
   protected when(e: MyMattersActivityItem): string {
@@ -290,10 +288,6 @@ export class ActivityPanel {
 
   protected stamp(e: MyMattersActivityItem): string {
     return formatInstant(e.occurredAtUtc, this.zone);
-  }
-
-  protected more(): void {
-    this.take.update((n) => n + ACTIVITY_PAGE);
   }
 
   /** The marker moves to the newest event the person has seen on this page; nothing else moves it. */
