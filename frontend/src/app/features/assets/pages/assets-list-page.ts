@@ -66,12 +66,11 @@ const COLUMNS = [
 ] as const;
 type Column = (typeof COLUMNS)[number];
 
-/** The Disposition filter (the `status` address key stays, so old links keep working). Active is the default; "Not active" is the three other states together. */
+/** The Disposition filter (the `status` address key stays, so old links keep working). Active is the default. The address also accepts `notactive` (the three other states together, as the warning link uses); it has no entry in the list, because the longest label sets the width of the column and the grid must still fit at 640 px. */
 const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: 'active', label: 'Active' },
-  { value: 'notactive', label: 'Not active' },
   { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending disposition' },
+  { value: 'pending', label: 'Pending' },
   { value: 'disposed', label: 'Disposed' },
   { value: 'all', label: 'All' },
 ];
@@ -79,7 +78,9 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
 type StatusKey = 'active' | 'notactive' | 'inactive' | 'pending' | 'disposed' | 'all';
 
 function parseStatusKey(value: string | null | undefined): StatusKey {
-  return STATUS_OPTIONS.some((o) => o.value === value) ? (value as StatusKey) : 'active';
+  return value === 'notactive' || STATUS_OPTIONS.some((o) => o.value === value)
+    ? (value as StatusKey)
+    : 'active';
 }
 
 /** What each choice asks the API for: `isActive` for Active and Not active, the disposition for the single states. */
@@ -145,7 +146,7 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
       }
     }
     .as-type {
-      max-width: 12rem;
+      max-width: 10rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -168,8 +169,8 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
       color: var(--mf-text-muted);
     }
     td.as-refcell {
-      width: 20rem;
-      max-width: 20rem;
+      width: 14rem;
+      max-width: 14rem;
     }
     .as-zero {
       color: var(--mf-text-muted);
@@ -178,13 +179,15 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
       color: var(--mf-text-muted);
     }
     .as-check {
-      width: 2.5rem;
+      width: 2rem;
+      padding-inline: var(--mf-s1);
       text-align: center;
     }
     .as-size {
       white-space: nowrap;
     }
     .as-disposition {
+      padding-inline: var(--mf-s1);
       white-space: nowrap;
     }
     .as-warn {
@@ -400,7 +403,8 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
                       [defaultSort]="defaultSort"
                       (sorted)="setSort($event)"
                     >
-                      Disposition
+                      <!-- The short word below 768 px: the header sets the width of the column and the grid must fit at 640 px. -->
+                      {{ viewport() < drop.select ? 'Status' : 'Disposition' }}
                     </th>
                   </tr>
                   @if (filters.rowVisible()) {
@@ -584,13 +588,20 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
   );
   /** The External reference column leaves below 1280 px and Linked tasks below 900 px (the kit's column-drop rule); the filter row follows. */
-  protected readonly drop = { externalReference: 1280, linkedTasks: 900, size: 1100 } as const;
+  protected readonly drop = {
+    externalReference: 1280,
+    linkedTasks: 900,
+    size: 1100,
+    select: 768,
+  } as const;
   protected readonly dispositionOf = dispositionOf;
   /** The Linked tasks column is for people who may see tasks: the API sends no counts without `Task.View` (#498). */
   protected readonly tasksShown = computed(() => this.auth.has('Task.View'));
   /** People who may change an asset's disposition get a checkbox column and the bulk bar. */
   protected readonly canChange = computed(
-    () => !this.phone() && (this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose')),
+    () =>
+      this.viewport() >= this.drop.select &&
+      (this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose')),
   );
   protected readonly columnSpec = computed<AdminColumn[]>(() => [
     ...(this.canChange() ? [{ cls: 'as-check', bone: '1rem' }] : []),
@@ -605,7 +616,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     { cls: 'as-disposition', bone: '6rem' },
   ]);
   /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
-  private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
+  protected readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
   protected readonly visibleColumns = computed<readonly Column[]>(() =>
     COLUMNS.filter(
       (c) =>

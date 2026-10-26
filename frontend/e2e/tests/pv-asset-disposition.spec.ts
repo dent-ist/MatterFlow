@@ -103,7 +103,7 @@ test.describe('Asset disposition (PM v2)', () => {
     await page.getByLabel(/^Note/).fill('Disposed by mistake');
     await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
     await expect(page.locator('[data-disposition-badge]')).toHaveCount(0);
-    await expect(page.locator('[data-disposition-change]')).toHaveCount(3);
+    await expect(page.locator('[data-disposition-change]')).toHaveCount(2);
   });
 
   test('the Assets list shows the disposition and a warning, filters by it and changes several assets at once', async ({

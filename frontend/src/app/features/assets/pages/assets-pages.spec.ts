@@ -692,7 +692,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         Array.from(control<HTMLSelectElement>('Disposition').options).map((o) =>
           o.textContent!.trim(),
         ),
-      ).toEqual(['Active', 'Not active', 'Inactive', 'Pending disposition', 'Disposed', 'All']);
+      ).toEqual(['Active', 'Inactive', 'Pending', 'Disposed', 'All']);
       expect(control<HTMLSelectElement>('Disposition').value).toBe('active');
 
       toggle().click();

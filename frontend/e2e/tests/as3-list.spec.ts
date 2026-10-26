@@ -204,7 +204,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await shot(page, 'as3-768');
   });
 
-  test('keyboard: Skip to table is the first stop and lands on the first name; a row has one Tab stop (two with Matter.View) (#503)', async ({
+  test('keyboard: Skip to table is the first stop and lands on the first name; a row has one Tab stop (two with Matter.View, one more with the select box for bulk disposition) (#503)', async ({
     page,
     seed,
     personas,
@@ -231,7 +231,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
               tr.querySelectorAll<HTMLElement>('a[href], button, input, select, [tabindex]'),
             ).filter((e) => e.tabIndex >= 0).length,
         );
-    expect(await stops(page, busy.assetId)).toBe(2); // admin: name and matter link
+    expect(await stops(page, busy.assetId)).toBe(3); // admin: the select box, the name and the matter link (the select box is for Asset.Dispose, #866)
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}`);

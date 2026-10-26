@@ -147,7 +147,7 @@ test.describe('Assets final verification (#517)', () => {
         );
     await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
     measure('Tab stops per row for a System Admin (review: 3)', await stops(page));
-    expect(await stops(page)).toBe(2);
+    expect(await stops(page)).toBe(3); // the select box for bulk disposition (#866), the name and the matter link
     const viewer = await personas.create({ label: 'finalstops', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}&size=50`);
