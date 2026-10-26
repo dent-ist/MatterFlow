@@ -45,6 +45,27 @@ public class MyMattersQuery
     public bool? Fresh { get; init; }
 }
 
+/// <summary>
+/// The sections that list tasks (Needs my attention, Upcoming deadlines): the common parameters plus the task type filter and the sort, both done on the server
+/// because a section returns only its first 10 or 25 rows (PM v2, #855). Unknown sort keys and directions are a 400.
+/// </summary>
+public class MyMattersSectionQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> SectionKeys = [.. CommonKeys, "taskTypeId", "sort", "dir"];
+
+    /// <summary>Only tasks of these task types (repeatable, OR). The totals, the rows and the "View all" link follow the filter; <c>unfilteredTotal</c> keeps the total without it.</summary>
+    [FromQuery(Name = "taskTypeId")]
+    public int[]? TaskTypeId { get; init; }
+
+    /// <summary><c>type</c> (task type name), <c>due</c> (soonest first), <c>priority</c> (most urgent first), <c>matter</c> (matter reference) or <c>age</c> (oldest first). Absent: the section's own order. Ties follow the due date, then the task id.</summary>
+    [FromQuery(Name = "sort"), StringLength(20)]
+    public string? Sort { get; init; }
+
+    /// <summary><c>asc</c> (default) or <c>desc</c>: reverses the sort key only.</summary>
+    [FromQuery(Name = "dir"), StringLength(4)]
+    public string? Dir { get; init; }
+}
+
 /// <summary>The health table: the common parameters plus sort and paging.</summary>
 public sealed class MyMattersHealthQuery : MyMattersQuery
 {
@@ -80,16 +101,16 @@ public sealed class MyMattersWorkloadQuery : MyMattersQuery
 }
 
 /// <summary>Upcoming deadlines: the common parameters plus the window.</summary>
-public sealed class MyMattersDeadlinesQuery : MyMattersQuery
+public sealed class MyMattersDeadlinesQuery : MyMattersSectionQuery
 {
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "days", "groupBy"];
+    public static readonly IReadOnlyList<string> Keys = [.. SectionKeys, "days", "groupBy"];
 
     /// <summary><c>14</c> (default) or <c>28</c>: how many days ahead, today included.</summary>
     [FromQuery(Name = "days")]
     public int? Days { get; init; }
 
     /// <summary>
-    /// Absent: the flat list of today (25 rows). <c>day</c>: every day of the window with its count and first five tasks (the calendar). <c>matter</c>: the matters with deadlines in the window,
+    /// Absent: the flat list of today (25 rows; <c>sort</c> and <c>dir</c> apply to it only). <c>day</c>: every day of the window with its count and first five tasks (the calendar). <c>matter</c>: the matters with deadlines in the window,
     /// soonest first, each with its total and next five tasks. Counts equal the Task Queue query each bucket carries.
     /// </summary>
     [FromQuery(Name = "groupBy"), StringLength(10)]

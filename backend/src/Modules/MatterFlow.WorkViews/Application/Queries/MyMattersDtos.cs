@@ -83,6 +83,16 @@ public static class AttentionFacts
 /// <param name="DueDate">The explicit due date; null for ASAP.</param>
 /// <param name="DueAtUtc">The due instant when a time was chosen.</param>
 /// <param name="AssigneeName">The assigned person; null while unassigned.</param>
+/// <param name="TaskTypeId">The task's type (PM v2): with the name, icon and colour it is what a row shows as its badge.</param>
+/// <param name="TaskTypeName">The type's name (the badge's accessible name and tooltip).</param>
+/// <param name="TaskTypeIconKey">The type's icon key (<c>contracts/task-type-icons.json</c>).</param>
+/// <param name="TaskTypeColourKey">The type's palette colour (<c>contracts/task-type-colours.json</c>); null = neutral default.</param>
+/// <param name="PriorityName">The priority's label.</param>
+/// <param name="PriorityRank">The priority's sort order (1 = most urgent), for drawing the level.</param>
+/// <param name="StatusCode">The status code (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>, ...).</param>
+/// <param name="AgeDays">Whole days since the task was created.</param>
+/// <param name="OnHold">While the task is On Hold: the reason (when one was chosen) and the whole days on hold; otherwise null.</param>
+/// <param name="AtRisk">True when the task is open, not overdue and has used at least 80 percent of its type's target days (<see cref="AtRiskRules"/>).</param>
 public sealed record MyMattersTaskItem(
     [property: Required] long TaskId,
     [property: Required] string TaskNumber,
@@ -96,17 +106,32 @@ public sealed record MyMattersTaskItem(
     DateOnly? DueDate,
     DateTime? DueAtUtc,
     int? AssigneeId,
-    string? AssigneeName);
+    string? AssigneeName,
+    [property: Required] int TaskTypeId,
+    [property: Required] string TaskTypeName,
+    [property: Required] string TaskTypeIconKey,
+    string? TaskTypeColourKey,
+    [property: Required] string PriorityName,
+    [property: Required] int PriorityRank,
+    [property: Required] string StatusCode,
+    [property: Required] int AgeDays,
+    MyMattersOnHold? OnHold,
+    [property: Required] bool AtRisk);
+
+/// <summary>The hold of a task that is On Hold: the structured reason (null when none was chosen) and for how many whole days.</summary>
+public sealed record MyMattersOnHold(string? ReasonName, [property: Required] int Days);
 
 /// <summary>One group of the attention list: the total in the group, the first rows and the Task Queue query behind "View all".</summary>
 /// <param name="Kind"><c>overdue</c>, <c>dueSoon</c>, <c>unassigned</c> or <c>stuckOnHold</c>.</param>
 /// <param name="Total">All tasks of the group (the rows are capped at 10).</param>
+/// <param name="TotalUnfiltered">With a <c>taskTypeId</c> filter: the total of the group without it, so a heading can read "4 of 13"; null without a filter.</param>
 /// <param name="Query">For <c>stuckOnHold</c> the list shows every task on hold, oldest hold first (the Task Queue has no "longer than 7 days" filter), so its total can be larger than <c>Total</c>.</param>
 public sealed record MyMattersAttentionGroup(
     [property: Required] string Kind,
     [property: Required] int Total,
     [property: Required] string Query,
-    [property: Required] IReadOnlyList<MyMattersTaskItem> Items);
+    [property: Required] IReadOnlyList<MyMattersTaskItem> Items,
+    int? TotalUnfiltered = null);
 
 /// <summary>Needs my attention (6.2): four groups in this order, each capped at 10 rows. Matters and tasks nobody manages never appear.</summary>
 public sealed record MyMattersAttention(
@@ -122,6 +147,7 @@ public sealed record MyMattersAttention(
 /// <param name="GroupBy">The grouping asked for (<c>day</c>, <c>matter</c>); null for the flat list.</param>
 /// <param name="ByDay">One entry per calendar day from today to the last day (days without a deadline have a count of 0), only with <c>groupBy=day</c>.</param>
 /// <param name="ByMatter">The matters that have a deadline in the window, soonest first, at most <see cref="MyMattersAttentionService.MatterGroupSize"/>, only with <c>groupBy=matter</c>.</param>
+/// <param name="TotalUnfiltered">With a <c>taskTypeId</c> filter: the total of the window without it ("4 of 13"); null without a filter.</param>
 /// <param name="MatterTotal">How many matters have a deadline in the window (more than <c>ByMatter</c> holds when it was cut), only with <c>groupBy=matter</c>.</param>
 public sealed record MyMattersDeadlines(
     [property: Required] string TimeZone,
@@ -135,7 +161,8 @@ public sealed record MyMattersDeadlines(
     string? GroupBy = null,
     IReadOnlyList<MyMattersDeadlineDay>? ByDay = null,
     IReadOnlyList<MyMattersDeadlineMatter>? ByMatter = null,
-    int? MatterTotal = null);
+    int? MatterTotal = null,
+    int? TotalUnfiltered = null);
 
 /// <summary>One calendar day of the deadlines window: its tasks (first five) and the Task Queue query that lists exactly the counted tasks.</summary>
 /// <param name="Count">Open, not overdue tasks due on this day; equals the list the <c>Query</c> opens.</param>

@@ -51,6 +51,8 @@ public class VisibilitySourceRulesTests
         ["MatterOverviewService.cs"] = "the matter header after the visibility check of that one matter (CanSeeMatterAsync, 404 otherwise); the tasks come from VisibleTasks",
         ["MyMattersAttentionService.cs"] = "rows of the scope's visible matters, loaded by id",
         ["MyMattersTrendsService.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope); counts and instants only",
+        ["MyMattersTaskFacts.cs"] = "type, priority, age and hold facts of the few task ids a My Matters call already returned (loaded by id)",
+        ["SectionSorts.cs"] = "a one-row lookup of the matter reference as a sort key of tasks that are already in the scope's visible set",
         ["MyMattersSinceLastVisitService.cs"] = "names of the scope's matters (visible by construction) for the few items shown",
         ["MyMattersWorkloadService.cs"] = "names of the scope's matters (visible by construction) for the per-person split",
         ["MyMattersScope.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope)",

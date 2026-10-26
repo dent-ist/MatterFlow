@@ -8,7 +8,7 @@ namespace MatterFlow.WorkViews.Api;
 
 public partial class MyMattersController
 {
-    /// <summary>Upcoming deadlines: open tasks due from today to 14 (default) or 28 days ahead, not overdue, soonest first, at most 25, with the total.</summary>
+    /// <summary>Upcoming deadlines: open tasks due from today to 14 (default) or 28 days ahead, not overdue, soonest first, at most 25, with the total. <c>taskTypeId</c>, <c>sort</c> and <c>dir</c> work as on the attention list (the flat list is sorted; the day and matter groupings are only filtered).</summary>
     [HttpGet("deadlines", Name = "GetMyMattersDeadlines")]
     [ProducesResponseType<MyMattersDeadlines>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<MyMattersDeadlines>> GetDeadlines([FromQuery] MyMattersDeadlinesQuery query, [FromServices] MyMattersAttentionService attention, CancellationToken cancellationToken)

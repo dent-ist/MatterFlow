@@ -24,8 +24,12 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
     public const int MatterGroupSize = 50;
     public static readonly IReadOnlyList<int> DeadlineWindows = [14, 28];
 
-    public async Task<Result<MyMattersAttention>> GetAsync(MyMattersQuery query, CancellationToken ct)
+    public async Task<Result<MyMattersAttention>> GetAsync(MyMattersSectionQuery query, CancellationToken ct)
     {
+        var options = SectionSorts.Parse(query);
+        if (options.IsFailure)
+            return options.Error!;
+        var opts = options.Value;
         var resolved = await scopes.ResolveAsync(query, ct);
         if (resolved.IsFailure)
             return resolved.Error!;
@@ -37,37 +41,36 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         var stuck = MyMattersRules.StuckOnHold(clock.NowUtc);
         var today = clock.Today;
         var weekEnd = today.AddDays(7);
-        var open = scope.OpenTasks();
+        var allOpen = scope.OpenTasks();
+        var open = SectionSorts.Filter(allOpen, opts);
 
-        var totals = await open.GroupBy(_ => 1).Select(g => new
-        {
-            Overdue = g.AsQueryable().Count(overdue),
-            Due3 = g.AsQueryable().Count(due3),
-            Unassigned = g.AsQueryable().Count(MyMattersRules.Unassigned),
-            Stuck = g.AsQueryable().Count(stuck),
-        }).FirstOrDefaultAsync(ct);
+        var totals = await TotalsAsync(open, overdue, due3, stuck, ct);
+        // With a type filter the headings read "4 of 13": the same four counts without it.
+        var unfiltered = opts.Filtered ? await TotalsAsync(allOpen, overdue, due3, stuck, ct) : null;
+        Func<IQueryable<WorkTask>, IOrderedQueryable<WorkTask>> Order(Func<IQueryable<WorkTask>, IOrderedQueryable<WorkTask>> natural) =>
+            opts.Sort is { } sort ? q => SectionSorts.Apply(q, db, sort, opts.Descending) : natural;
 
         // Each group is first a TOP N of task ids over index columns only (a seek and a small sort, no row lookups); the other columns of those few
         // tasks, and then the names of their matters, clients and people, are read once for all four groups.
-        var overdueIds = await TopIdsAsync(open.Where(overdue), q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id), GroupSize, ct);
-        var dueSoonIds = await TopIdsAsync(open.Where(due3), q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id), GroupSize, ct);
+        var overdueIds = await TopIdsAsync(open.Where(overdue), Order(q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id)), GroupSize, ct);
+        var dueSoonIds = await TopIdsAsync(open.Where(due3), Order(q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id)), GroupSize, ct);
         // Unassigned: those due within 7 days (overdue ones included) first, soonest first; then the rest, oldest first.
         var unassignedIds = await TopIdsAsync(
             open.Where(MyMattersRules.Unassigned),
-            q => q.OrderBy(x => x.DueDate != null && x.DueDate <= weekEnd ? 0 : 1).ThenBy(x => x.DueDate != null && x.DueDate <= weekEnd ? x.DueSortKey : (DateTime?)null).ThenBy(x => x.CreatedAtUtc).ThenBy(x => x.Id),
+            Order(q => q.OrderBy(x => x.DueDate != null && x.DueDate <= weekEnd ? 0 : 1).ThenBy(x => x.DueDate != null && x.DueDate <= weekEnd ? x.DueSortKey : (DateTime?)null).ThenBy(x => x.CreatedAtUtc).ThenBy(x => x.Id)),
             GroupSize,
             ct);
-        var stuckIds = await TopIdsAsync(open.Where(stuck), q => q.OrderBy(x => x.StatusChangedAtUtc).ThenBy(x => x.Id), GroupSize, ct);
+        var stuckIds = await TopIdsAsync(open.Where(stuck), Order(q => q.OrderBy(x => x.StatusChangedAtUtc).ThenBy(x => x.Id)), GroupSize, ct);
         var details = await DetailsAsync([.. overdueIds, .. dueSoonIds, .. unassignedIds, .. stuckIds], ct);
-        var names = await NamesAsync(details.Values, ct);
+        var names = await NamesAsync(details.Values, clock, ct);
         IReadOnlyList<TaskRow> Rows(IEnumerable<long> ids) => [.. ids.Select(id => details[id])];
         var overdueRows = Rows(overdueIds);
         var dueSoonRows = Rows(dueSoonIds);
         var unassignedRows = Rows(unassignedIds);
         var stuckRows = Rows(stuckIds);
 
-        MyMattersAttentionGroup Group(string kind, int total, string queryString, IReadOnlyList<TaskRow> rows, Func<TaskRow, (string, int?)> fact) =>
-            new(kind, total, queryString, [.. rows.Select(r => ToItem(r, names, fact(r)))]);
+        MyMattersAttentionGroup Group(string kind, int total, int? totalUnfiltered, string queryString, IReadOnlyList<TaskRow> rows, Func<TaskRow, (string, int?)> fact) =>
+            new(kind, total, queryString, [.. rows.Select(r => ToItem(r, names, fact(r)))], totalUnfiltered);
 
         (string, int?) OverdueFact(TaskRow r) => (AttentionFacts.Overdue, DaysOverdue(r, today, clock.NowUtc));
         (string, int?) DueFact(TaskRow r) => DueFactOf(r, today);
@@ -79,12 +82,30 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
             MyMattersRules.StuckOnHoldDays,
             [
-                Group("overdue", totals?.Overdue ?? 0, scope.QueueOpen("overdue=true", "sort=due"), overdueRows, OverdueFact),
-                Group("dueSoon", totals?.Due3 ?? 0, scope.QueueOpen($"dueWithin={MyMattersRules.AmberDueDays}", "sort=due"), dueSoonRows, DueFact),
-                Group("unassigned", totals?.Unassigned ?? 0, scope.QueueOpen("unassigned=true", "sort=due"), unassignedRows, NoAssigneeFact),
-                Group("stuckOnHold", totals?.Stuck ?? 0, scope.QueueStatus(TaskStatusCode.OnHold, "sort=" + TaskQueueRules.SortOnHoldSince), stuckRows, HoldFact),
+                Group("overdue", totals.Overdue, unfiltered?.Overdue, scope.QueueOpen(["overdue=true", .. QueueTail(opts, "due")]), overdueRows, OverdueFact),
+                Group("dueSoon", totals.Due3, unfiltered?.Due3, scope.QueueOpen([$"dueWithin={MyMattersRules.AmberDueDays}", .. QueueTail(opts, "due")]), dueSoonRows, DueFact),
+                Group("unassigned", totals.Unassigned, unfiltered?.Unassigned, scope.QueueOpen(["unassigned=true", .. QueueTail(opts, "due")]), unassignedRows, NoAssigneeFact),
+                Group("stuckOnHold", totals.Stuck, unfiltered?.Stuck, scope.QueueStatus(TaskStatusCode.OnHold, [.. QueueTail(opts, TaskQueueRules.SortOnHoldSince)]), stuckRows, HoldFact),
             ]);
     }
+
+    private sealed record GroupTotals(int Overdue, int Due3, int Unassigned, int Stuck);
+
+    private static async Task<GroupTotals> TotalsAsync(
+        IQueryable<WorkTask> open,
+        System.Linq.Expressions.Expression<Func<WorkTask, bool>> overdue,
+        System.Linq.Expressions.Expression<Func<WorkTask, bool>> due3,
+        System.Linq.Expressions.Expression<Func<WorkTask, bool>> stuck,
+        CancellationToken ct) =>
+        await open.GroupBy(_ => 1).Select(g => new GroupTotals(
+            g.AsQueryable().Count(overdue),
+            g.AsQueryable().Count(due3),
+            g.AsQueryable().Count(MyMattersRules.Unassigned),
+            g.AsQueryable().Count(stuck))).FirstOrDefaultAsync(ct) ?? new GroupTotals(0, 0, 0, 0);
+
+    /// <summary>The Task Queue parameters after the group's own: the type filter and the sort (the section's natural sort when none was asked).</summary>
+    private static string[] QueueTail(SectionOptions options, string naturalSort) =>
+        options.Sort is null ? [.. options.QueueParts(), "sort=" + naturalSort] : [.. options.QueueParts()];
 
     public async Task<Result<MyMattersDeadlines>> DeadlinesAsync(MyMattersDeadlinesQuery query, CancellationToken ct)
     {
@@ -92,6 +113,10 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         var days = query.Days ?? DeadlineWindows[0];
         if (!DeadlineWindows.Contains(days))
             return Error.Validation("days", "UNKNOWN_DAYS", $"days must be {string.Join(" or ", DeadlineWindows)}.");
+        var options = SectionSorts.Parse(query);
+        if (options.IsFailure)
+            return options.Error!;
+        var opts = options.Value;
 
         var resolved = await scopes.ResolveAsync(query, ct);
         if (resolved.IsFailure)
@@ -102,22 +127,24 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         var last = today.AddDays(days);
 
         // Open, an explicit due date today or within the window, not overdue (overdue is in "Needs my attention"). The date range, if any, narrows it further.
-        var window = scope.OpenTasks().Where(TaskQueueRules.DueWithin(clock, days));
+        var allWindow = scope.OpenTasks().Where(TaskQueueRules.DueWithin(clock, days));
+        var window = SectionSorts.Filter(allWindow, opts);
         var grouping = query.GroupBy?.Trim().ToLowerInvariant();
         if (!string.IsNullOrEmpty(grouping) && grouping is not ("day" or "matter"))
             return Error.Validation("groupBy", "UNKNOWN_GROUP_BY", "groupBy must be day or matter.");
 
-        var windowQuery = scope.QueueOpen("asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(last), "sort=due");
+        var windowQuery = scope.QueueOpen(["asap=false", "overdue=false", "dueTo=" + DashboardRules.Date(last), .. QueueTail(opts, "due")]);
+        var totalUnfiltered = opts.Filtered ? await allWindow.CountAsync(ct) : (int?)null;
         if (grouping == "day")
-            return await ByDayAsync(scope, window, days, windowQuery, ct);
+            return await ByDayAsync(scope, window, days, windowQuery, totalUnfiltered, ct);
         if (grouping == "matter")
-            return await ByMatterAsync(scope, window, days, windowQuery, ct);
+            return await ByMatterAsync(scope, window, days, windowQuery, totalUnfiltered, ct);
 
         var total = await window.CountAsync(ct);
-        var ids = await TopIdsAsync(window, q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id), DeadlineSize, ct);
+        var ids = await TopIdsAsync(window, opts.Sort is { } sort ? q => SectionSorts.Apply(q, db, sort, opts.Descending) : q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id), DeadlineSize, ct);
         var details = await DetailsAsync(ids, ct);
         var rows = ids.Select(id => details[id]).ToList();
-        var names = await NamesAsync(rows, ct);
+        var names = await NamesAsync(rows, clock, ct);
 
         return new MyMattersDeadlines(
             clock.ZoneId,
@@ -127,14 +154,15 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             last,
             total,
             windowQuery,
-            [.. rows.Select(r => ToItem(r, names, DueFactOf(r, today)))]);
+            [.. rows.Select(r => ToItem(r, names, DueFactOf(r, today)))],
+            TotalUnfiltered: totalUnfiltered);
     }
 
     /// <summary>
     /// The calendar: every day of the window with its count (one grouped statement) and its first five tasks (one statement, a <c>CROSS APPLY</c> of a <c>TOP 5</c> per distinct due date),
     /// then the task columns and the names for all of them at once. The statements do not depend on the number of matters. The day is the task's calendar due date (the viewer's day).
     /// </summary>
-    private async Task<Result<MyMattersDeadlines>> ByDayAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, CancellationToken ct)
+    private async Task<Result<MyMattersDeadlines>> ByDayAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, int? totalUnfiltered, CancellationToken ct)
     {
         var clock = scope.Clock;
         var today = clock.Today;
@@ -149,7 +177,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
                      from t in window.Where(x => x.DueDate == d).OrderBy(x => x.DueSortKey).ThenBy(x => x.Id).Take(BucketSize)
                      select new { Date = d, t.Id }).ToListAsync(ct);
         var details = await DetailsAsync([.. topIds.Select(t => t.Id)], ct);
-        var names = await NamesAsync(details.Values, ct);
+        var names = await NamesAsync(details.Values, clock, ct);
 
         var byDay = new List<MyMattersDeadlineDay>();
         for (var date = today; date <= last; date = date.AddDays(1))
@@ -174,14 +202,15 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             windowQuery,
             [],
             "day",
-            byDay);
+            byDay,
+            TotalUnfiltered: totalUnfiltered);
     }
 
     /// <summary>
     /// The matters with deadlines in the window, soonest first (one grouped statement), and the first five tasks of the first <see cref="MatterGroupSize"/> of them (one statement, a
     /// <c>CROSS APPLY</c> of a <c>TOP 5</c> per matter that seeks <c>IX_Task_Matter</c>), then task columns and names at once.
     /// </summary>
-    private async Task<Result<MyMattersDeadlines>> ByMatterAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, CancellationToken ct)
+    private async Task<Result<MyMattersDeadlines>> ByMatterAsync(MyMattersScope scope, IQueryable<WorkTask> window, int days, string windowQuery, int? totalUnfiltered, CancellationToken ct)
     {
         var clock = scope.Clock;
         var today = clock.Today;
@@ -201,7 +230,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
                      from t in window.Where(x => x.MatterId == m.Id).OrderBy(x => x.DueSortKey).ThenBy(x => x.Id).Take(BucketSize)
                      select new { MatterId = m.Id, t.Id }).ToListAsync(ct);
         var details = await DetailsAsync([.. topIds.Select(t => t.Id)], ct);
-        var names = await NamesAsync(details.Values, ct);
+        var names = await NamesAsync(details.Values, clock, ct);
         var matterNames = shown.Count == 0 ? new Dictionary<int, MatterNameRow>() : names.Matters.ToDictionary(kv => kv.Key, kv => kv.Value);
         if (shown.Any(id => !matterNames.ContainsKey(id)))
             matterNames = await MatterNamesAsync(shown, ct);
@@ -233,7 +262,8 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             "matter",
             null,
             byMatter,
-            matterTotal);
+            matterTotal,
+            totalUnfiltered);
     }
 
     private async Task<Dictionary<int, MatterNameRow>> MatterNamesAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
@@ -260,6 +290,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
     private static MyMattersTaskItem ToItem(TaskRow r, Names names, (string Code, int? Days) fact)
     {
         var matter = names.Matters[r.MatterId];
+        var facts = names.Facts.GetValueOrDefault(r.Id) ?? TaskFacts.Unknown;
         return new MyMattersTaskItem(
             r.Id,
             r.Number,
@@ -273,7 +304,17 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             r.DueDate,
             r.DueAtUtc is { } d ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : null,
             r.AssignedUserId,
-            r.AssignedUserId is { } uid ? names.Users.GetValueOrDefault(uid) : null);
+            r.AssignedUserId is { } uid ? names.Users.GetValueOrDefault(uid) : null,
+            facts.TaskTypeId,
+            facts.TaskTypeName,
+            facts.TaskTypeIconKey,
+            facts.TaskTypeColourKey,
+            facts.PriorityName,
+            facts.PriorityRank,
+            facts.StatusCode,
+            facts.AgeDays,
+            facts.OnHold,
+            facts.AtRisk);
     }
 
     private sealed class TaskRow
@@ -295,7 +336,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         public DateTime StatusChangedAtUtc { get; init; }
     }
 
-    private sealed record Names(IReadOnlyDictionary<int, MatterNameRow> Matters, IReadOnlyDictionary<int, string> Users);
+    private sealed record Names(IReadOnlyDictionary<int, MatterNameRow> Matters, IReadOnlyDictionary<int, string> Users, IReadOnlyDictionary<long, TaskFacts> Facts);
 
     private sealed record MatterNameRow(string MatterRef, string MatterName, string ClientName);
 
@@ -322,8 +363,8 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         }).ToDictionaryAsync(t => t.Id, ct);
     }
 
-    /// <summary>Matter, client and assignee names of the rows: two statements whatever the number of rows.</summary>
-    private async Task<Names> NamesAsync(IEnumerable<TaskRow> source, CancellationToken ct)
+    /// <summary>Matter, client and assignee names of the rows, and their type, priority and state facts: a fixed number of statements whatever the number of rows.</summary>
+    private async Task<Names> NamesAsync(IEnumerable<TaskRow> source, QueueClock clock, CancellationToken ct)
     {
         var rows = source.ToList();
         var matterIds = rows.Select(r => r.MatterId).Distinct().ToList();
@@ -334,6 +375,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
                      join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
                      select new { m.Id, m.MatterRef, MatterName = m.Name, ClientName = c.Name }).ToDictionaryAsync(m => m.Id, m => new MatterNameRow(m.MatterRef, m.MatterName, m.ClientName), ct);
         var users = userIds.Count == 0 ? [] : await db.Set<AppUser>().AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName, ct);
-        return new Names(matters, users);
+        var facts = await MyMattersTaskFacts.LoadAsync(db, [.. rows.Select(r => r.Id)], clock, ct);
+        return new Names(matters, users, facts);
     }
 }

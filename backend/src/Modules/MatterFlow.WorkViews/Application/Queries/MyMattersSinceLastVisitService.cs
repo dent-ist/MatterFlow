@@ -83,13 +83,16 @@ public sealed class MyMattersSinceLastVisitService(MyMattersScopeResolver scopes
                                  select new { m.Id, m.MatterRef, MatterName = m.Name, ClientName = c.Name }).ToDictionaryAsync(m => m.Id, ct);
             var users = userIds.Count == 0 ? [] : await db.Set<AppUser>().AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName, ct);
             var today = clock.Today;
+            var facts = await MyMattersTaskFacts.LoadAsync(db, [.. overdueTop.Select(t => t.Id)], clock, ct);
             foreach (var t in overdueTop)
             {
+                var fact = facts.GetValueOrDefault(t.Id) ?? TaskFacts.Unknown;
                 var matter = matters[t.MatterId];
                 var days = t.DueDate is { } due ? Math.Max(0, today.DayNumber - due.DayNumber) : t.DueAtUtc is { } at ? MyMattersRules.WholeDaysSince(at, now) : 0;
                 items.Add(new MyMattersSinceItem(
                     "BECAME_OVERDUE",
-                    new MyMattersTaskItem(t.Id, t.Number, t.Title, t.MatterId, matter.MatterRef, matter.MatterName, matter.ClientName, AttentionFacts.Overdue, days, t.DueDate, t.DueAtUtc is { } d ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : null, t.AssignedUserId, t.AssignedUserId is { } uid ? users.GetValueOrDefault(uid) : null),
+                    new MyMattersTaskItem(t.Id, t.Number, t.Title, t.MatterId, matter.MatterRef, matter.MatterName, matter.ClientName, AttentionFacts.Overdue, days, t.DueDate, t.DueAtUtc is { } d ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : null, t.AssignedUserId, t.AssignedUserId is { } uid ? users.GetValueOrDefault(uid) : null,
+                        fact.TaskTypeId, fact.TaskTypeName, fact.TaskTypeIconKey, fact.TaskTypeColourKey, fact.PriorityName, fact.PriorityRank, fact.StatusCode, fact.AgeDays, fact.OnHold, fact.AtRisk),
                     null));
             }
         }
