@@ -233,6 +233,8 @@ describe('AssetRecordPage', () => {
     expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled();
     await openTab('history');
     expect(tab('Details').getAttribute('aria-selected')).toBe('true'); // falls back to Details
+    await openTab('nonsense');
+    expect(tab('Details').getAttribute('aria-selected')).toBe('true');
     await openTab('tasks');
     expect(el().querySelector('[data-no-access="linked-tasks"]')?.textContent).toContain(
       "You don't have permission to view tasks.",

@@ -32,6 +32,7 @@ import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/r
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { AssetDetailsTab } from './asset-details-tab';
+import { firstAllowedTab } from '../../admin/denial';
 import { dialogCopy } from '../../admin/shared/dialog-copy';
 import { AssetLinkedTasks, LinkedTaskTotals } from './asset-linked-tasks';
 
@@ -280,11 +281,14 @@ export class AssetRecordPage {
     const all = recordTabs('asset', { tasks: count });
     return this.canHistory() ? all : all.filter((t) => t.key !== 'history');
   });
-  protected readonly current = computed<Tab>(() => {
-    const t = this.tab();
-    if (t === 'tasks') return 'tasks';
-    return t === 'history' && this.canHistory() ? 'history' : 'details';
-  });
+  /** The tab to show: the one in `?tab=` when the person may see it, else Details (the denial rule of Task Types #416, `firstAllowedTab`). */
+  protected readonly current = computed<Tab>(() =>
+    firstAllowedTab<Tab>(
+      this.tab(),
+      this.tabs().map((t) => t.key as Tab),
+      'details',
+    ),
+  );
 
   /** The header's actions: Edit (hidden for an inactive asset), Activity (opens History) and, in the overflow, Set inactive / Set active. */
   protected readonly headerActions = computed<RecordAction[]>(() => {

@@ -80,6 +80,17 @@ describe('Assets routes', () => {
     expect(TestBed.inject(Router).url).toBe('/assets?name=x');
   });
 
+  it('guards New with Asset.Create and Edit with Asset.Edit (the 403 page), and unsaved changes on both (#515)', () => {
+    const children = ASSETS_ROUTES[0].children!;
+    const route = (path: string) => children.find((r) => r.path === path)!;
+    expect(route('new').canActivate).toHaveLength(1);
+    expect(route(':assetId/edit').canActivate).toHaveLength(1);
+    expect(route('new').canDeactivate).toHaveLength(1);
+    expect(route(':assetId/edit').canDeactivate).toHaveLength(1);
+    // The record page needs no permission of its own: the parent route of the area needs Asset.View.
+    expect(route(':assetId').canActivate).toBeUndefined();
+  });
+
   it('keeps the create and edit addresses', () => {
     const paths = ASSETS_ROUTES[0].children!.map((r) => r.path);
     expect(paths).toEqual(['', 'new', ':assetId/edit', ':assetId']);
