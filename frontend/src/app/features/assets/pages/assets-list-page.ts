@@ -3,11 +3,9 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
-  input,
   signal,
   untracked,
   viewChild,
@@ -17,7 +15,6 @@ import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetListItem,
-  AssetResponse,
   AssetTypeResponse,
   AssetTypesClient,
   AssetsClient,
@@ -39,7 +36,7 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { SortHeader } from '../../../shared/ui/data-table';
-import { FIXED_MODE_QUERY, FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
@@ -49,7 +46,6 @@ import { PageScope } from '../../../shared/scope/page-scope';
 import { scopeLine } from '../../../shared/scope/scope-line';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
-import { AssetDetails } from './asset-details';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = ['name', 'type', 'matter', 'linkedTasks', 'externalReference', 'status'] as const;
@@ -61,17 +57,12 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: 'all', label: 'All' },
 ];
 
-/** The id in `?selected=`, or null when it is missing or not a positive whole number. */
-export function parseSelected(value: string | null | undefined): number | null {
-  const n = Number(value);
-  return value && Number.isInteger(n) && n > 0 ? n : null;
-}
-
 /**
- * Global Assets list (UX S08) as a master-detail screen. The grid has one inline filter per filterable column (a second header row, shown
- * with the Filters button above the grid), all server-side (a Matter can hold 200 to 300 assets, so nothing is filtered in the browser),
- * and clicking a name shows the asset's details in a panel BELOW the grid (`?selected=<id>`), so the list stays where it was.
- * The URL keeps every filter, the sort, the page and the selection; `/assets/:id` redirects here.
+ * Global Assets list (UX S08): 44 px rows on the admin grid, one inline filter per filterable column (a second header row, open from 640 px;
+ * a sheet below), all server-side (a Matter can hold 200 to 300 assets, so nothing is filtered in the browser), phone cards below 640 px.
+ * The name is the one link and opens the record page `/assets/:id`; Back returns here with the row focused. The URL keeps every filter, the
+ * sort and the page. (The master-detail panel under the grid and its `?selected=` address were retired with #510; an old `?selected=` link is
+ * sent to the record page by the route.)
  */
 @Component({
   selector: 'mf-assets-list-page',
@@ -95,22 +86,10 @@ export function parseSelected(value: string | null | undefined): number | null {
     ColumnFilterRow,
     AdminCardList,
     RecordSort,
-    AssetDetails,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
-    /* The 44 px row of the grid contract (decision U): one clipped line in every cell but the Name, which is the spring and the only link. */
-    tr[data-selected] td {
-      background: var(--mf-selected-bg);
-    }
-    /* Not colour alone: a bar at the left edge of the row and a bold name. */
-    tr[data-selected] td:first-child {
-      box-shadow: inset 4px 0 0 var(--mf-primary);
-    }
-    tr[data-selected] .mf-name {
-      font-weight: 700;
-    }
     .as-matter {
       width: 1%;
       white-space: nowrap;
@@ -154,29 +133,8 @@ export function parseSelected(value: string | null | undefined): number | null {
     .as-hint {
       color: var(--mf-text-muted);
     }
-    .as-panel {
-      margin-top: var(--mf-s3);
-      padding: var(--mf-s3) var(--mf-s4);
-      background: var(--mf-surface);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      box-shadow: var(--mf-shadow-1);
-    }
-    /* Fixed-header screens: the grid keeps the upper part, the details panel takes about 40% of the height and scrolls by itself. */
-    @media (min-width: 768px) and (min-height: 561px) {
-      .as-panel {
-        flex: 0 0 40%;
-        min-height: 0;
-        margin-top: var(--mf-s2);
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        border-radius: 0;
-        border-width: 1px 0 0;
-        box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
-      }
-    }
   `,
-  host: { '(keydown.escape)': 'onEscape($event)', '(window:resize)': 'onResize()' },
+  host: { '(window:resize)': 'onResize()' },
   template: `
     <mf-fixed-page>
       <mf-page-header heading="Assets">
@@ -253,7 +211,6 @@ export function parseSelected(value: string | null | undefined): number | null {
           <div
             class="mf-table-wrap"
             mfScrollArea="Assets list"
-            [keepOn]="['selected']"
             [style.scroll-padding-top]="filters.rowVisible() ? '5.5rem' : null"
             #scroll
           >
@@ -344,11 +301,7 @@ export function parseSelected(value: string | null | undefined): number | null {
                     </button>
                   }
                   @for (a of rows(); track a.assetId) {
-                    <tr
-                      [attr.data-asset-id]="a.assetId"
-                      [attr.data-selected]="a.assetId === selectedId() ? '' : null"
-                      [attr.aria-current]="a.assetId === selectedId() ? 'true' : null"
-                    >
+                    <tr [attr.data-asset-id]="a.assetId">
                       <td class="mf-cell-name">
                         <a
                           class="mf-name"
@@ -432,37 +385,15 @@ export function parseSelected(value: string | null | undefined): number | null {
           />
         }
       </div>
-
-      @if (selectedId(); as id) {
-        <section
-          id="asset-panel"
-          class="as-panel"
-          aria-label="Asset details"
-          data-asset-panel
-          #panel
-        >
-          <mf-asset-details
-            [assetId]="'' + id"
-            [closable]="true"
-            (closed)="close()"
-            (loaded)="detailLoaded.set($event)"
-            (changed)="rowChanged($event)"
-          />
-        </section>
-      }
     </mf-fixed-page>
   `,
 })
 export class AssetsListPage extends ServerListPage<AssetListItem> {
-  /** Query parameter (bound by the router): the selection. The filters are read from the URL by `ListFilters`. */
-  readonly selected = input<string>();
-
   private readonly api = inject(AssetsClient);
   private readonly auth = inject(AuthStore);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
-  private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly defaultSort = 'displayName';
 
@@ -536,9 +467,6 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     };
   };
   protected readonly types = signal<AssetTypeResponse[]>([]);
-  protected readonly selectedId = computed(() => parseSelected(this.selected()));
-  /** The asset the panel has loaded (its Matter and state are only known once it is there). */
-  protected readonly detailLoaded = signal<AssetResponse | null>(null);
 
   protected readonly typeOptions = computed<FilterOption[]>(() =>
     this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
@@ -604,11 +532,6 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     sheetBelow: 640,
   });
 
-  /** The user chose the selection in this list (so a row that later leaves the page is not "revealed" by changing the filters). */
-  private ownSelection: number | null = null;
-  private revealTried: number | null = null;
-  private lastRevealed = '';
-
   constructor() {
     super();
     // Back from a record page: focus goes to the name link of the row the person left (#494).
@@ -621,60 +544,6 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     effect(() => {
       const area = this.scroll()?.nativeElement;
       if (area) untracked(() => this.filters.watchOverflow(area));
-    });
-
-    // The selected row is brought into view (a link from a task, a search result, the matter's Assets tab). Where the page scrolls as a
-    // whole (phones, short windows) the panel is below a long grid, so choosing a row brings the panel into view instead.
-    effect(() => {
-      const id = this.selectedId();
-      if (id === null || this.state() !== 'ready') return;
-      const present = this.rows().some((r) => r.assetId === id);
-      untracked(() => {
-        const key = `${id}:${present}`;
-        if (key === this.lastRevealed) return;
-        this.lastRevealed = key;
-        afterNextRender(
-          () => {
-            const fixed = typeof matchMedia === 'function' && matchMedia(FIXED_MODE_QUERY).matches;
-            if (!fixed && this.ownSelection === id) {
-              this.panel()?.nativeElement.scrollIntoView?.({ block: 'start' });
-              return;
-            }
-            const row = this.scroll()?.nativeElement.querySelector<HTMLElement>(
-              `tr[data-asset-id="${id}"]`,
-            );
-            row?.scrollIntoView?.({ block: 'nearest' });
-          },
-          { injector: this.injector },
-        );
-      });
-    });
-
-    // A link to an asset that is not on this page of the list (a deep link, a search result): narrow the list to its Matter, all states.
-    effect(() => {
-      const id = this.selectedId();
-      const asset = this.detailLoaded();
-      if (id === null || this.state() !== 'ready' || asset?.assetId !== id) return;
-      const present = this.rows().some((r) => r.assetId === id);
-      untracked(() => {
-        if (present || this.ownSelection === id || this.revealTried === id) return;
-        this.revealTried = id;
-        void this.router.navigate([], {
-          queryParams: {
-            matter: asset.matterRef,
-            // A link to an asset outside the scope shows it with its matter, whoever opens it (the scope is a default view, not a limit).
-            ...(this.scope.canAll() ? { scope: 'all' } : {}),
-            matterId: null,
-            name: null,
-            extref: null,
-            typeId: null,
-            status: 'all',
-            page: null,
-          },
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-      });
     });
   }
 
@@ -753,47 +622,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     );
   }
 
-  // ---- selection and details panel
-
-  protected close(): void {
-    const id = this.selectedId();
-    this.ownSelection = null;
-    this.navigate({ selected: null });
-    if (id !== null) this.focusRow(id);
-  }
-
   protected onResize(): void {
     this.viewport.set(window.innerWidth);
-  }
-
-  protected onEscape(event: Event): void {
-    if (event.defaultPrevented || this.selectedId() === null) return;
-    // An open dialog or menu (Set inactive) takes its own Escape.
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('[role="dialog"], [role="listbox"], [role="menu"]')) return;
-    this.close();
-  }
-
-  /** Puts focus back on the row's name button (or the grid when the row is not on this page). */
-  private focusRow(id: number): void {
-    afterNextRender(
-      () => {
-        const area = this.scroll()?.nativeElement;
-        const button = area?.querySelector<HTMLElement>(`[data-asset-name="${id}"]`);
-        (button ?? area)?.focus();
-      },
-      { injector: this.injector },
-    );
-  }
-
-  /** The panel changed the asset (set inactive / active): the row follows without a reload. */
-  protected rowChanged(asset: AssetResponse): void {
-    this.rows.update((rows) =>
-      rows.map((r) =>
-        r.assetId === asset.assetId
-          ? { ...r, isActive: asset.isActive, rowVersion: asset.rowVersion }
-          : r,
-      ),
-    );
   }
 }

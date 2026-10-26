@@ -8,7 +8,7 @@ import {
   convertToParamMap,
   provideRouter,
 } from '@angular/router';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import {
   AssetTypesClient,
   AssetsClient,
@@ -40,9 +40,8 @@ import {
 import { SkipTarget } from '../../../shared/layout/skip-target';
 import { provideLookups } from '../../../shared/work-queue/work-queue-testing';
 import { ASSETS_ROUTES } from '../assets.routes';
-import { AssetDetails } from './asset-details';
 import { AssetFormPage, externalReferenceError } from './asset-form-page';
-import { AssetsListPage, parseSelected } from './assets-list-page';
+import { AssetsListPage } from './assets-list-page';
 
 type Mock = ReturnType<typeof vi.fn>;
 
@@ -778,158 +777,23 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('thead th')).not.toBeNull();
     });
 
-    describe('selection and the details panel', () => {
-      it('parses the selected id', () => {
-        expect(parseSelected('9')).toBe(9);
-        expect(parseSelected('0')).toBeNull();
-        expect(parseSelected('x')).toBeNull();
-        expect(parseSelected('1.5')).toBeNull();
-        expect(parseSelected(undefined)).toBeNull();
-      });
+    it('has no details panel: the name is a real link to the record page (BUG-3, #510)', async () => {
+      await create(['Asset.View']);
+      expect(el().querySelector('[data-asset-panel], #asset-panel, mf-asset-details')).toBeNull();
+      expect(rowOf(9)!.hasAttribute('aria-current')).toBe(false);
 
-      it('shows no panel without a selection; the name is a real link to the record page (BUG-3)', async () => {
-        await create(['Asset.View']);
-        expect(el().querySelector('[data-asset-panel]')).toBeNull();
+      const name = rowOf(9)!.querySelector<HTMLAnchorElement>('a.mf-name[data-asset-name="9"]')!;
+      expect(name.tagName).toBe('A');
+      expect(name.getAttribute('href')).toBe('/assets/9');
+      expect(name.textContent?.trim()).toBe('Contract bundle');
+      expect(rowOf(9)!.querySelector('button:not(.mf-copy)')).toBeNull(); // the name was a button before
+      expect(assets.getAsset).not.toHaveBeenCalled(); // the list loads no details
+    });
 
-        const name = rowOf(9)!.querySelector<HTMLAnchorElement>('a.mf-name[data-asset-name="9"]')!;
-        expect(name.tagName).toBe('A');
-        expect(name.getAttribute('href')).toBe('/assets/9');
-        expect(name.textContent?.trim()).toBe('Contract bundle');
-        expect(rowOf(9)!.querySelector('button:not(.mf-copy)')).toBeNull(); // the name was a button before
-        expect(assets.getAsset).not.toHaveBeenCalled(); // details load only once something is selected
-      });
-
-      it('highlights the selected row (aria-current, not colour alone) and shows its details below the grid', async () => {
-        await create(['Asset.View', 'Asset.Edit'], { selected: '9' });
-
-        expect(rowOf(9)!.getAttribute('aria-current')).toBe('true');
-        expect(rowOf(9)!.hasAttribute('data-selected')).toBe(true);
-        expect(rowOf(10)!.getAttribute('aria-current')).toBeNull();
-        expect(rowOf(9)!.querySelector('a.mf-name')).not.toBeNull();
-
-        const panel = el().querySelector('#asset-panel')!;
-        expect(panel.getAttribute('aria-label')).toBe('Asset details');
-        expect(assets.getAsset).toHaveBeenCalledWith(9);
-        expect(panel.querySelector('h2')?.textContent).toContain('Contract bundle');
-        expect(panel.querySelector('[data-type-fields]')?.textContent).toContain('WS-8841');
-        // Below the grid: after the table and its pager in reading order.
-        expect(
-          el().querySelector('table')!.compareDocumentPosition(panel) &
-            Node.DOCUMENT_POSITION_FOLLOWING,
-        ).toBeTruthy();
-        expect(buttonByLabel(panel as HTMLElement, 'Edit')).toBeDefined();
-      });
-
-      it('swaps the panel to another asset without recreating it', async () => {
-        await create(['Asset.View'], { selected: '9' });
-        const panel = el().querySelector('mf-asset-details');
-        assets.getAsset.mockReturnValue(
-          ok(anAsset({ assetId: 10, displayName: 'Old room', isActive: false })),
-        );
-        await setInputs({ selected: '10' });
-
-        expect(el().querySelector('mf-asset-details')).toBe(panel);
-        expect(assets.getAsset).toHaveBeenLastCalledWith(10);
-        expect(el().querySelector('#asset-panel h2')?.textContent).toContain('Old room');
-        expect(rowOf(10)!.getAttribute('aria-current')).toBe('true');
-        expect(rowOf(9)!.getAttribute('aria-current')).toBeNull();
-      });
-
-      it('closes the panel with the Close button, and with Escape, putting focus back on the row', async () => {
-        await create(['Asset.View'], { selected: '9' });
-        const close = el().querySelector<HTMLButtonElement>('[data-close-details]')!;
-        expect(close.getAttribute('aria-label')).toBe('Close details');
-        close.click();
-        await settle(fixture);
-        expect(navigate).toHaveBeenLastCalledWith([], {
-          queryParams: { selected: null },
-          queryParamsHandling: 'merge',
-        });
-        expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
-
-        navigate.mockClear();
-        (document.activeElement as HTMLElement).blur();
-        el()
-          .querySelector<HTMLElement>('#asset-panel h2')!
-          .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        await settle(fixture);
-        expect(navigate).toHaveBeenCalledWith([], {
-          queryParams: { selected: null },
-          queryParamsHandling: 'merge',
-        });
-        expect(document.activeElement).toBe(rowOf(9)!.querySelector('a.mf-name'));
-      });
-
-      it('leaves Escape alone without a selection, when already handled, and inside a dialog', async () => {
-        await create(['Asset.View']);
-        const escape = (target: Element, prevent = false) => {
-          const e = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            bubbles: true,
-            cancelable: true,
-          });
-          if (prevent) e.preventDefault();
-          target.dispatchEvent(e);
-        };
-        escape(el().querySelector('table')!);
-        expect(navigate).not.toHaveBeenCalled();
-
-        await setInputs({ selected: '9' });
-        escape(el().querySelector('#asset-panel h2')!, true);
-        const dialog = document.createElement('div');
-        dialog.setAttribute('role', 'dialog');
-        el().querySelector('#asset-panel')!.appendChild(dialog);
-        escape(dialog);
-        expect(navigate).not.toHaveBeenCalled();
-      });
-
-      it('narrows the list to the matter of a linked asset that is not on this page, once, all states', async () => {
-        await configure(['Asset.View']);
-        assets.getAsset.mockReturnValue(
-          ok(anAsset({ assetId: 55, matterRef: '00343-00099', isActive: false })),
-        );
-        fixture = TestBed.createComponent(AssetsListPage);
-        fixture.componentRef.setInput('selected', '55');
-        await settle(fixture);
-
-        expect(navigate).toHaveBeenCalledTimes(1);
-        expect(navigate).toHaveBeenCalledWith([], {
-          queryParams: {
-            matter: '00343-00099',
-            matterId: null,
-            name: null,
-            extref: null,
-            typeId: null,
-            status: 'all',
-            page: null,
-          },
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-        // Not again for the same asset.
-        setQuery({ matter: '00343-00099' });
-        await settle(fixture);
-        expect(navigate).toHaveBeenCalledTimes(1);
-      });
-
-      it('does not touch the filters when the linked asset is on the page', async () => {
-        await create(['Asset.View'], { selected: '9' });
-        expect(navigate).not.toHaveBeenCalled();
-      });
-
-      it('updates the row when the panel sets the asset inactive', async () => {
-        await create(['Asset.View', 'Asset.Edit'], { selected: '9' });
-        expect(rowOf(9)!.textContent).not.toContain('Inactive');
-        buttonByLabel(el().querySelector('#asset-panel') as HTMLElement, 'Set inactive')!.click();
-        await settle(fixture);
-        (
-          Array.from(document.body.querySelectorAll<HTMLButtonElement>('p-dialog button')).find(
-            (b) => b.textContent!.trim() === 'Set inactive',
-          ) as HTMLButtonElement
-        ).click();
-        await settle(fixture);
-        expect(rowOf(9)!.textContent).toContain('Inactive');
-      });
+    it('does nothing on Escape: there is no panel to close any more', async () => {
+      await create(['Asset.View']);
+      el().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(navigate).not.toHaveBeenCalled();
     });
   });
 
@@ -1305,199 +1169,6 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         9,
         expect.objectContaining({ displayName: 'Renamed', formValues: undefined }),
       );
-    });
-  });
-
-  describe('details', () => {
-    let fixture: ComponentFixture<AssetDetails>;
-    const el = (): HTMLElement => fixture.nativeElement;
-    const tab = (label: string): HTMLElement | undefined =>
-      Array.from(el().querySelectorAll<HTMLElement>('[role=tab]')).find(
-        (t) => t.textContent!.trim() === label,
-      );
-
-    async function create(permissions: Permission[], asset = anAsset()): Promise<void> {
-      await configure(permissions);
-      assets.getAsset.mockReturnValue(ok(asset));
-      fixture = TestBed.createComponent(AssetDetails);
-      fixture.componentRef.setInput('assetId', '9');
-      await settle(fixture);
-    }
-
-    it('shows the type badge, the matter link, the external reference link and the stored values with their form version', async () => {
-      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
-
-      expect(el().querySelector('h2')?.textContent).toContain('Contract bundle');
-      expect(el().querySelector('[data-type-badge]')?.textContent).toBe('Document Set');
-      expect(el().querySelector('[data-matter] a')?.getAttribute('href')).toBe('/matters/7');
-      const link = el().querySelector('[data-external-reference] a')!;
-      expect(link.getAttribute('href')).toBe('https://dms.example/folders/42');
-      expect(link.getAttribute('rel')).toContain('noopener');
-      expect(forms.getFormVersionSchema).toHaveBeenCalledWith(21);
-      const values = el().querySelector('[data-type-fields]')!.textContent!;
-      expect(values).toContain('WS-8841');
-      expect(values).toContain('check later');
-    });
-
-    it('shows a non-URL external reference as plain text, with a copy button', async () => {
-      await create(['Asset.View'], anAsset({ externalReference: 'WS-8841' }));
-      expect(el().querySelector('[data-external-reference] a')).toBeNull();
-      expect(el().querySelector('[data-external-reference]')?.textContent).toContain('WS-8841');
-      expect(el().querySelector('[data-external-reference] mf-copy-button')).not.toBeNull();
-    });
-
-    it('has Details, a Linked Tasks tab and a History tab only with Audit.View', async () => {
-      await create(['Asset.View', 'Task.View']);
-      expect(tab('History')).toBeUndefined();
-      expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled(); // lazy: only once the tab opens
-      tab('Linked Tasks')!.click();
-      await settle(fixture);
-      expect(assets.listAssetLinkedTasks).toHaveBeenCalledWith(9);
-
-      TestBed.resetTestingModule();
-      await create(['Asset.View', 'Audit.View']);
-      tab('History')!.click();
-      await settle(fixture);
-      expect(audit.listAuditEvents).toHaveBeenCalledWith('Asset', '9', undefined, 50);
-    });
-
-    it('lists the linked tasks with number, title, status, role and a link to the task', async () => {
-      await create(['Asset.View', 'Task.View']);
-      tab('Linked Tasks')!.click();
-      await settle(fixture);
-
-      const row = el().querySelector('tbody tr[data-task=TSK-1042]')!;
-      expect(row.querySelector('td')?.textContent).toBe('TSK-1042');
-      expect(row.querySelector('a')?.getAttribute('href')).toBe('/tasks/1042');
-      expect(row.querySelector('a')?.textContent).toBe('Process Smith custodians');
-      expect(row.querySelector('[data-status]')?.getAttribute('data-status')).toBe('IN_PROGRESS');
-      expect(row.textContent).toContain('Source');
-    });
-
-    it('shows empty, error and no-permission states for the linked tasks', async () => {
-      await create(['Asset.View', 'Task.View']);
-      assets.listAssetLinkedTasks.mockReturnValue(ok({ items: [] }));
-      tab('Linked Tasks')!.click();
-      await settle(fixture);
-      expect(el().querySelector('[data-empty=linked-tasks]')).not.toBeNull();
-
-      TestBed.resetTestingModule();
-      await create(['Asset.View', 'Task.View']);
-      assets.listAssetLinkedTasks.mockReturnValue(apiError(500, { title: 'x' } as never));
-      tab('Linked Tasks')!.click();
-      await settle(fixture);
-      expect(el().querySelector('[data-error]')).not.toBeNull();
-
-      TestBed.resetTestingModule();
-      await create(['Asset.View']);
-      tab('Linked Tasks')!.click();
-      await settle(fixture);
-      expect(el().querySelector('[data-no-access=linked-tasks]')).not.toBeNull();
-      expect(assets.listAssetLinkedTasks).not.toHaveBeenCalled();
-    });
-
-    it('gates Edit and the activation button by permission and hides Edit for an inactive asset', async () => {
-      await create(['Asset.View']);
-      expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
-      expect(buttonByLabel(el(), 'Set inactive')).toBeUndefined();
-
-      TestBed.resetTestingModule();
-      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
-      buttonByLabel(el(), 'Edit')!.click();
-      expect(navigateByUrl).toHaveBeenCalledWith('/assets/9/edit');
-
-      TestBed.resetTestingModule();
-      await create(['Asset.View', 'Asset.Edit', 'Task.View'], anAsset({ isActive: false }));
-      expect(buttonByLabel(el(), 'Edit')).toBeUndefined();
-      expect(buttonByLabel(el(), 'Set active')).toBeDefined();
-      expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
-    });
-
-    it('deactivates after confirmation with the row version (assets are never deleted)', async () => {
-      await create(['Asset.View', 'Asset.Edit', 'Task.View']);
-      expect(buttonByLabel(el(), 'Delete')).toBeUndefined();
-      const changed = vi.fn();
-      fixture.componentInstance.changed.subscribe(changed);
-
-      buttonByLabel(el(), 'Set inactive')!.click();
-      await settle(fixture);
-      expect(document.body.querySelector('[data-toggle-body]')?.textContent).toContain(
-        'never deleted',
-      );
-      (
-        Array.from(document.body.querySelectorAll<HTMLButtonElement>('p-dialog button')).find(
-          (b) => b.textContent!.trim() === 'Set inactive',
-        ) as HTMLButtonElement
-      ).click();
-      await settle(fixture);
-
-      expect(assets.setAssetActive).toHaveBeenCalledWith(9, {
-        isActive: false,
-        rowVersion: 'AAAA',
-      });
-      expect(el().querySelector('[data-status]')?.textContent).toBe('Inactive');
-      expect(changed).toHaveBeenCalledWith(expect.objectContaining({ isActive: false }));
-    });
-
-    it('offers a retry when the asset cannot be loaded', async () => {
-      await configure(['Asset.View']);
-      assets.getAsset.mockReturnValue(
-        apiError(404, { title: 'x', status: 404, code: 'NOT_FOUND' }),
-      );
-      fixture = TestBed.createComponent(AssetDetails);
-      fixture.componentRef.setInput('assetId', '9');
-      await settle(fixture);
-      expect(el().querySelector('[role=alert]')?.textContent).toContain("couldn't find that asset");
-
-      assets.getAsset.mockReturnValue(ok(anAsset()));
-      buttonByLabel(el(), 'Retry')!.click();
-      await settle(fixture);
-      expect(el().querySelector('[role=alert]')).toBeNull();
-      expect(el().querySelector('h2')?.textContent).toContain('Contract bundle');
-    });
-
-    it('shows a loading state, then reloads for another asset and ignores a slow answer for the old one', async () => {
-      await configure(['Asset.View']);
-      let release!: (a: ReturnType<typeof anAsset>) => void;
-      assets.getAsset.mockReturnValueOnce(
-        new Observable((o) => {
-          release = (a) => {
-            o.next(a);
-            o.complete();
-          };
-        }),
-      );
-      fixture = TestBed.createComponent(AssetDetails);
-      fixture.componentRef.setInput('assetId', '9');
-      await settle(fixture);
-      expect(el().querySelector('[data-loading]')?.getAttribute('aria-busy')).toBe('true');
-
-      assets.getAsset.mockReturnValue(ok(anAsset({ assetId: 10, displayName: 'Old room' })));
-      fixture.componentRef.setInput('assetId', '10');
-      await settle(fixture);
-      expect(el().querySelector('h2')?.textContent).toContain('Old room');
-
-      release(anAsset({ assetId: 9, displayName: 'Contract bundle' }));
-      await settle(fixture);
-      expect(el().querySelector('h2')?.textContent).toContain('Old room');
-    });
-
-    it('has a Close button only when asked to, and moves focus to the heading on request', async () => {
-      await create(['Asset.View']);
-      expect(el().querySelector('[data-close-details]')).toBeNull();
-
-      fixture.componentRef.setInput('closable', true);
-      const closed = vi.fn();
-      fixture.componentInstance.closed.subscribe(closed);
-      await settle(fixture);
-      el().querySelector<HTMLButtonElement>('[data-close-details]')!.click();
-      expect(closed).toHaveBeenCalled();
-
-      fixture.componentInstance.requestFocus();
-      await settle(fixture);
-      const heading = el().querySelector('h2')!;
-      expect(heading.getAttribute('tabindex')).toBe('-1');
-      expect(document.activeElement).toBe(heading);
     });
   });
 });

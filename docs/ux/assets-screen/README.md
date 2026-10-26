@@ -1,5 +1,7 @@
 # Assets screen: inline column filters and details below the grid
 
+> **Superseded by the Asset record page (Assets UX epic #485, decision AA); kept for history.** The details panel under the grid, its `?selected=` address, the 60/40 split and Esc-closes-panel are gone (#510): a name opens `/assets/:id`, and an old `/assets?selected=<id>` link is sent there once. The **column-filter part below still applies**, with two changes: the filter row is open on arrival from 640 px and the Filters and Clear filters buttons are in the page header (#499), and below 640 px the list is cards with the filters in a sheet (#502).
+
 Product-owner request for `/assets` (the data records): the three standalone filter boxes were misaligned and a click opened a new page. Now the filters sit in the grid and the selected asset's details appear in the same screen.
 
 Screenshots (1366x768 and 375x812): `before/` (the earlier screen, from docs/ux/fixed-header, scrolled state) and `after/`:

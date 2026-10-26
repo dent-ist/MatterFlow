@@ -7,7 +7,7 @@ import { seedBulk } from '../support/bulk';
 /**
  * Screenshot run for docs/ux/assets-screen (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/assets-screen/after frontend/e2e/run-local.sh -g "assets screen screenshots"
- * Seeds 60 assets in 8 matters, then takes the Assets screen at 1366x768 and 375x812: filters hidden, filters shown (some active), with a
+ * Seeds 60 assets in 8 matters, then takes the Assets screen at 1366x768 and 375x812: filters open on arrival (a sheet on a phone) (some active), the
  * record page, and an empty result.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -47,17 +47,19 @@ test.describe('assets screen screenshots', () => {
       await page.setViewportSize({ width: size.w, height: size.h });
       await page.addInitScript(() => localStorage.clear());
 
+      // The filter row is open on arrival from 640 px; below that the Filters button opens the sheet (WP-AS3).
+      const rows = size.w < 640 ? page.locator('li.rc') : page.locator('tbody tr[data-asset-id]');
       await page.goto('/assets');
       await expect(page.getByRole('heading', { name: 'Assets', level: 1 })).toBeVisible();
-      await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
-      await shot(page, 'assets-filters-hidden', size);
+      await expect(rows.first()).toBeVisible();
+      await shot(page, 'assets-list', size);
 
-      await page.getByRole('button', { name: /^Filters/ }).click();
+      if (size.w < 640) await page.getByRole('button', { name: /^Filters/ }).click();
       await expect(page.getByRole('textbox', { name: 'Filter by Name' })).toBeVisible();
       await shot(page, 'assets-filters-shown', size);
 
       await page.goto('/assets?name=Bulk%20asset&matter=Bulk&status=all');
-      await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
+      await expect(rows.first()).toBeVisible();
       await shot(page, 'assets-filters-active', size);
 
       await page.goto(`/assets/${first.assetId}`);
