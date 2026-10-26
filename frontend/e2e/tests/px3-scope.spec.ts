@@ -140,7 +140,10 @@ test.describe('My matters / All: lists', () => {
     await expect(page.locator('tbody tr').first()).toBeVisible();
     // The same wording on the other lists.
     await page.goto('/assets?scope=mine');
-    await expect(page.locator('[data-empty]')).toContainText('You do not manage any matter yet.');
+    // The filter row is open on arrival now (#499) and its select also carries a `data-empty` attribute: name the empty-state row.
+    await expect(page.locator('[data-empty="none"]')).toContainText(
+      'You do not manage any matter yet.',
+    );
   });
 
   test('a PM without Matter.AssignManagers stays on My matters: no switch, ?scope=all is ignored', async ({
