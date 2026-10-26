@@ -281,7 +281,9 @@ describe('AssetRecordPage', () => {
   it('moves focus to the heading when the page opens', async () => {
     await create(['Asset.View']);
     await settle(fixture);
-    expect(document.activeElement).toBe(el().querySelector('[data-page-title]'));
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(el().querySelector('[data-page-title]')),
+    );
   });
 
   it('shows the not-found text with a link back and no Retry for a 404', async () => {

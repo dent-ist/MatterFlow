@@ -45,7 +45,8 @@ test.describe('Route announcement (#624)', () => {
     await expect(link).toBeVisible();
     await nav(page).getByRole('link', { name: 'Matters', exact: true }).click();
     await expect(region(page)).toHaveText('Matters - MatterFlow');
-    await page.goto('/clients');
+    // The list is filtered to this client's own unique name: on a database with many clients it is not on the first page of /clients.
+    await page.goto(`/clients?name=${encodeURIComponent(client.name as string)}&status=all`);
     await page
       .getByRole('link', { name: client.name as string })
       .first()

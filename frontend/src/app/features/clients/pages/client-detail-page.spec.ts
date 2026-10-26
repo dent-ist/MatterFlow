@@ -404,7 +404,10 @@ describe('ClientDetailPage', () => {
     await settle(fixture);
     expect(el().querySelector('[data-page-title]')?.textContent).toContain('Acme Corp');
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
-    expect(document.activeElement).toBe(el().querySelector('[data-page-title]'));
+    // Focus moves after the next render: wait for that state instead of assuming it is already there, and look only inside this page.
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(el().querySelector('[data-page-title]')),
+    );
     expect(el().querySelector('[data-record-live]')?.textContent).toBe('Loaded');
   });
 
