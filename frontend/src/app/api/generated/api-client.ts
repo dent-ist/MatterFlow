@@ -18880,6 +18880,7 @@ export interface MyMattersSummary {
     dueIn7Days: DashboardCount;
     unassigned: DashboardCount;
     onHold: DashboardCount;
+    atRisk: DashboardCount;
     oldestHoldDays: number | undefined;
     oldestHoldSinceUtc: string | undefined;
 

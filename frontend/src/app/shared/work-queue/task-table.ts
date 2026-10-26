@@ -423,6 +423,7 @@ const LONG_PRESS_MS = 500;
                         <mf-due-cell
                           [due]="row"
                           [status]="row.status"
+                          [atRisk]="row.atRisk"
                           [layout]="density() === 'compact' ? 'inline' : 'two-line'"
                         />
                       }

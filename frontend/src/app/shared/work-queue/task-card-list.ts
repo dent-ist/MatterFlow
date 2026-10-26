@@ -223,7 +223,7 @@ export function initialsOf(name: string): string {
                     }
                     @if (shows('due') && !closed(row)) {
                       <span class="tc-due" data-col="due">
-                        <mf-due-cell [due]="row" [status]="row.status" />
+                        <mf-due-cell [due]="row" [status]="row.status" [atRisk]="row.atRisk" />
                       </span>
                     }
                     @if (shows('closed') && closedOn(row); as day) {

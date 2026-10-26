@@ -12,6 +12,7 @@ import { DueCell } from './due-cell';
     [status]="status()"
     [layout]="layout()"
     [wasDue]="wasDue()"
+    [atRisk]="atRisk()"
   />`,
 })
 class Host {
@@ -19,6 +20,7 @@ class Host {
   readonly status = signal<string | null>('NEW');
   readonly layout = signal<'two-line' | 'inline'>('two-line');
   readonly wasDue = signal(false);
+  readonly atRisk = signal(false);
 }
 
 describe('DueCell (#209)', () => {
@@ -106,5 +108,37 @@ describe('DueCell (#209)', () => {
     expect(r.root.classList).toContain('dc--inline');
     expect(r.l1).toBe('Oct 14');
     expect(r.l2).toBe('Overdue 6h');
+  });
+});
+
+describe('DueCell At risk (PM v2, #878)', () => {
+  function render(atRisk: boolean, due: DueInput, status = 'NEW') {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
+        { provide: Clock, useValue: { now: () => new Date('2026-10-14T16:00:00Z') } },
+      ],
+    });
+    const f = TestBed.createComponent(Host);
+    f.componentInstance.due.set(due);
+    f.componentInstance.status.set(status);
+    f.componentInstance.atRisk.set(atRisk);
+    f.detectChanges();
+    return f.nativeElement as HTMLElement;
+  }
+
+  it('says At risk in words and in the spoken name, and keeps quiet when it is not', () => {
+    const el = render(true, { dueDate: '2026-10-30' });
+    expect(el.querySelector('[data-at-risk]')?.textContent).toContain('At risk');
+    expect(el.querySelector('.dc-sr')?.textContent).toContain('At risk');
+    expect(render(false, { dueDate: '2026-10-30' }).querySelector('[data-at-risk]')).toBeNull();
+  });
+
+  it('never shows it on an overdue or a closed task', () => {
+    expect(render(true, { dueDate: '2026-10-01' }).querySelector('[data-at-risk]')).toBeNull();
+    expect(
+      render(true, { dueDate: '2026-10-30' }, 'COMPLETED').querySelector('[data-at-risk]'),
+    ).toBeNull();
   });
 });

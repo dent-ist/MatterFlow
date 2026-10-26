@@ -38,6 +38,7 @@ public sealed class MyMattersSummaryService(MyMattersScopeResolver scopes, Dashb
             OldestHold = g.AsQueryable().Where(MyMattersRules.OnHold).Min(t => (DateTime?)t.StatusChangedAtUtc),
         }).FirstOrDefaultAsync(ct);
         var matters = await scope.Matters.CountAsync(ct);
+        var atRisk = await AtRiskRules.Where(scope.OpenTasks(), scope.Db, clock).CountAsync(ct);
 
         DateTime? since = head?.OldestHold is { } held ? DateTime.SpecifyKind(held, DateTimeKind.Utc) : null;
         var summary = new MyMattersSummary(
@@ -52,6 +53,7 @@ public sealed class MyMattersSummaryService(MyMattersScopeResolver scopes, Dashb
             new DashboardCount(head?.Due7 ?? 0, scope.QueueOpen("dueWithin=7")),
             new DashboardCount(head?.Unassigned ?? 0, scope.QueueOpen("unassigned=true")),
             new DashboardCount(head?.OnHold ?? 0, scope.QueueStatus(TaskStatusCode.OnHold, "sort=" + TaskQueueRules.SortOnHoldSince)),
+            new DashboardCount(atRisk, scope.QueueOpen("atRisk=true")),
             since is { } at ? MyMattersRules.WholeDaysSince(at, clock.NowUtc) : null,
             since);
         cache.Set(cacheKey, summary);

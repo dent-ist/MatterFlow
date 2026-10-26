@@ -21,7 +21,7 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
       [attr.data-due-tone]="tone()"
       [attr.title]="tip()"
     >
-      <span class="dc-sr">{{ sentence() }}</span>
+      <span class="dc-sr">{{ sentence() }}{{ riskShown() ? '. At risk' : '' }}</span>
       @if (tone() === 'asap') {
         <span class="dc-l1" aria-hidden="true"><i class="pi pi-bolt"></i>ASAP</span>
       } @else if (tone() === 'none-closed') {
@@ -38,6 +38,10 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
               <i class="pi pi-clock"></i>
             }
             {{ c.line2 }}
+          </span>
+        } @else if (riskShown()) {
+          <span class="dc-l2 dc-risk" aria-hidden="true" data-at-risk>
+            <i class="pi pi-clock"></i>At risk
           </span>
         }
       }
@@ -85,6 +89,9 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
     .dc--overdue .dc-l2 {
       color: var(--mf-due-overdue);
     }
+    .dc-risk {
+      color: var(--mf-due-soon);
+    }
     .dc--today .dc-l2 {
       color: var(--mf-due-soon);
     }
@@ -126,6 +133,12 @@ export class DueCell {
   /** A closed task says "Was due Oct 14" (the Task page's Due tile, B2 #302); the work lists show the plain date. */
   readonly wasDue = input(false);
 
+  /** PM v2 (#878): the task is At risk (the server's rule: open, not overdue, 80 percent of the type's target used). Said in words, never colour alone. */
+  readonly atRisk = input(false);
+
+  protected readonly riskShown = computed(
+    () => this.atRisk() && !this.closed() && this.tone() !== 'overdue',
+  );
   protected readonly closed = computed(() => CLOSED_STATUSES.includes(this.status() ?? ''));
   protected readonly lead = computed(() => (this.wasDue() && this.closed() ? 'Was due ' : ''));
   protected readonly cell = computed(() =>
@@ -140,7 +153,12 @@ export class DueCell {
     this.tone() === 'none-closed' ? 'No due date' : this.cell().sentence,
   );
   protected readonly tip = computed(() => {
-    const extra = this.extraTip();
+    const extra = [
+      this.riskShown() ? 'At risk: 80 percent of the target turnaround used' : '',
+      this.extraTip(),
+    ]
+      .filter(Boolean)
+      .join('\n');
     return extra ? `${this.cell().tooltip}\n${extra}` : this.cell().tooltip;
   });
   protected readonly iso = computed(() => this.due().dueAtUtc ?? this.due().dueDate ?? null);

@@ -116,6 +116,8 @@ export class MyMattersStrip {
       cell('open', 'Open tasks', s?.openTasks, '/tasks'),
       // Opens oldest overdue first: a person who handles overdue work starts with the longest wait (issue #817); Priority is one click on the header.
       cell('overdue', 'Overdue', s?.overdue, '/tasks', { alert: true }, OLDEST_FIRST),
+      // PM v2 (#878): open, not overdue, 80 percent of the type's target used; the same rule as the Task Queue's At risk filter.
+      cell('atRisk', 'At risk', s?.atRisk, '/tasks'),
       cell('due3', 'Due in 3 days', s?.dueIn3Days, '/tasks'),
       cell('due7', 'Due in 7 days', s?.dueIn7Days, '/tasks'),
       cell('unassigned', 'Unassigned', s?.unassigned, '/tasks'),

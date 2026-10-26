@@ -10,7 +10,7 @@ namespace MatterFlow.IntegrationTests.WorkViews;
 [Collection(SqlServerCollection.Name)]
 public sealed class MyMattersSummaryTests(SqlServerFixture sql) : MyMattersTestBase(sql)
 {
-    private static readonly string[] TaskCells = ["openTasks", "overdue", "dueIn3Days", "dueIn7Days", "unassigned", "onHold"];
+    private static readonly string[] TaskCells = ["openTasks", "overdue", "dueIn3Days", "dueIn7Days", "unassigned", "onHold", "atRisk"];
 
     private static int Count(JsonElement summary, string cell) => summary.GetProperty(cell).GetProperty("count").GetInt32();
 

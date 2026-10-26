@@ -18771,6 +18771,7 @@
           "dueIn7Days",
           "unassigned",
           "onHold",
+          "atRisk",
           "oldestHoldDays",
           "oldestHoldSinceUtc"
         ],
@@ -18808,6 +18809,9 @@
             "$ref": "#/components/schemas/DashboardCount"
           },
           "onHold": {
+            "$ref": "#/components/schemas/DashboardCount"
+          },
+          "atRisk": {
             "$ref": "#/components/schemas/DashboardCount"
           },
           "oldestHoldDays": {

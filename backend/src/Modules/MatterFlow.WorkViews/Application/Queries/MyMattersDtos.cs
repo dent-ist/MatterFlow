@@ -12,6 +12,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <param name="Role"><c>both</c>, <c>primary</c> or <c>secondary</c>.</param>
 /// <param name="Matters">Active matters in the scope; <c>Query</c> is for the Matters list.</param>
 /// <param name="OnHold">Tasks On Hold; <c>Query</c> sorts the oldest hold first.</param>
+/// <param name="AtRisk">Open tasks that are At risk (<see cref="AtRiskRules"/>, PM v2 #878); <c>Query</c> is the Task Queue query with <c>atRisk=true</c>.</param>
 /// <param name="OldestHoldDays">Whole days the longest-running hold has lasted; null with no task on hold.</param>
 /// <param name="OldestHoldSinceUtc">When that hold started.</param>
 public sealed record MyMattersSummary(
@@ -26,6 +27,7 @@ public sealed record MyMattersSummary(
     [property: Required] DashboardCount DueIn7Days,
     [property: Required] DashboardCount Unassigned,
     [property: Required] DashboardCount OnHold,
+    [property: Required] DashboardCount AtRisk,
     int? OldestHoldDays,
     DateTime? OldestHoldSinceUtc);
 

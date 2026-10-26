@@ -27,6 +27,7 @@ function summary() {
     dueIn7Days: count(41, 'managedByMe=true&dueWithin=7'),
     unassigned: count(6, 'managedByMe=true&unassigned=true'),
     onHold: count(3, 'managedByMe=true&status=ON_HOLD'),
+    atRisk: count(5, 'managedByMe=true&status=NEW&status=IN_PROGRESS&atRisk=true'),
     oldestHoldDays: 12,
     oldestHoldSinceUtc: '2026-10-11T12:00:00Z',
   };
@@ -284,13 +285,14 @@ describe('MyMattersPage', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows the seven strip cells as links to the lists they count', async () => {
+  it('shows the eight strip cells as links to the lists they count', async () => {
     const h = await open('/my-matters');
     const cells = Array.from(el(h).querySelectorAll<HTMLAnchorElement>('[data-strip-item]'));
     expect(cells.map((c) => c.getAttribute('data-strip-item'))).toEqual([
       'matters',
       'open',
       'overdue',
+      'atRisk',
       'due3',
       'due7',
       'unassigned',
@@ -300,11 +302,13 @@ describe('MyMattersPage', () => {
     expect(cells[2].getAttribute('href')).toBe(
       '/tasks?managedByMe=true&overdue=true&sort=due&dir=asc',
     );
+    expect(cells[3].textContent?.replace(/\s+/g, ' ').trim()).toBe('At risk 5');
+    expect(cells[3].getAttribute('href')).toContain('atRisk=true');
     expect(cells[1].getAttribute('href')).toContain('status=NEW&status=IN_PROGRESS&status=ON_HOLD');
     // The label says what it counts; the age of the oldest hold is the tooltip, never before the count (#821).
-    expect(cells[6].textContent?.replace(/\s+/g, ' ').trim()).toBe('On hold 3');
-    expect(cells[6].getAttribute('title')).toBe('oldest 12 days');
-    expect(cells[3].textContent).toContain('17');
+    expect(cells[7].textContent?.replace(/\s+/g, ' ').trim()).toBe('On hold 3');
+    expect(cells[7].getAttribute('title')).toBe('oldest 12 days');
+    expect(cells[4].textContent).toContain('17');
     expect(el(h).querySelector('[data-strip]')!.getAttribute('aria-label')).toContain(
       'your matters',
     );
