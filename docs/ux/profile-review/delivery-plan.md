@@ -134,11 +134,11 @@ Contract e2e at four sizes over the review's personas (available, out, errors, l
 
 - Owner decision (2026-10-20): no new or changed keyboard shortcuts in this phase; the existing "Keyboard shortcuts" menu entry and shortcuts stay as they are (Phase 2 backlog #420).
 - Planning (2026-10-20): epic #520 and 21 sub-issues created and linked; PM requirements review comments posted on every issue; #522 and #524 closed as duplicates of the App shell epic's #592; no issue is blocked on the owner; SQL script 28 is free and none is planned.
-- WP-PF1 Bugs: not started.
-- WP-PF2 Identity: not started.
-- WP-PF3 Layout: not started.
-- WP-PF4 Work hours: not started.
-- WP-PF5 Menu and dialog: not started.
-- WP-PF6 Time zone: not started.
-- WP-PF7 Keyboard, permissions, regression: not started.
-- WP-PF8 Docs and final verification: not started.
+- WP-PF1 Bugs (2026-10-25): #521, #525 done (earlier commits); e2e `profile-pf1-bugs`; screenshots `fixes/pf1-bugs/`.
+- WP-PF2 Identity (2026-10-26): #527 done, #528 done (header: name, context line, chip, one primary action; no avatar or icon); e2e `profile-pf2-account`, `profile-pf3-layout`; screenshots `fixes/pf2-identity/`.
+- WP-PF3 Layout (2026-10-26): #529, #531, #532 done (two columns from 1100 px, card style, bar, skeleton and record state `profile`); first screen at 1366x768 holds Availability, Work hours with the time zone and the bar (Notifications sits in the right column); e2e `profile-pf3-layout`; screenshots `fixes/pf3-layout/`.
+- WP-PF4 Work hours (2026-10-26): #534, #535, #536 done; 18 Tab stops from Status to Save (was about 50); e2e `profile-pf4-hours-zone`; screenshots `fixes/pf4-work-hours/`.
+- WP-PF5 Menu and dialog (2026-10-26): #538, #539 (earlier), #580, #578 done; e2e `profile-pf5-dialog`, `profile-pf5-menu`; screenshots `fixes/pf5-menu/`.
+- WP-PF6 Time zone (2026-10-26): #540, #567 done (select, saved and browser zones as extra options, local time, display-zone sentence); screenshots `fixes/pf6-time-zone/`.
+- WP-PF7 Keyboard, permissions, regression (2026-10-26): #582, #584, #589 done; e2e `profile-pf7-keyboard`, `profile-pf7-permissions`, `profile-pf7-users-dialog`; evidence `fixes/pf7-audit/`.
+- WP-PF8 Docs and final verification (2026-10-26): #595, #601 done; `profile-pf8-final`; `fixes/final/` with the before and after table.
