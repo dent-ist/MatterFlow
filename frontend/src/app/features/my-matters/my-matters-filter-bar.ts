@@ -59,7 +59,13 @@ const clientOption = (c: {
     :host {
       display: block;
     }
+    /* One height for every control of the row: the compact control height of the list filter bars (--mf-row-h-compact, 32 px; 44 px touch
+       targets on a phone). The Client / Project manager picker is a shared component whose input takes its height from --mf-row-h, so
+       the row sets that token for its own subtree instead of a pixel value. The pointer and the touch target are one rule, so the row
+       can never mix heights again (#824). */
     .fb {
+      --mf-fb-h: var(--mf-row-h-compact);
+      --mf-row-h: var(--mf-fb-h);
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
@@ -83,6 +89,13 @@ const clientOption = (c: {
       min-width: 9rem;
       max-width: 22rem;
     }
+    /* The date controls are the row's own flex items (the wrapper has no box); off a tab they are only hidden. */
+    .fb__dates {
+      display: contents;
+    }
+    .fb__dates--off {
+      visibility: hidden;
+    }
     .fb__link {
       align-self: center;
       color: var(--mf-link);
@@ -94,26 +107,40 @@ const clientOption = (c: {
         min-height: 44px;
       }
     }
+    .fb .mf-btn,
+    .fb select,
+    .fb input {
+      box-sizing: border-box;
+      height: var(--mf-fb-h);
+      min-height: var(--mf-fb-h);
+    }
+    /* The hint line is part of the bar on every tab: its height is that of the longest wording (all wordings share one grid cell, only
+       the current one is seen), so the tab strip below never moves when the tab changes (#825). */
     .fb__hint {
+      display: grid;
       flex: 1 0 100%;
       margin: 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    .fb__hint > span {
+      grid-area: 1 / 1;
+    }
+    .fb__hint > span[data-reserve] {
+      visibility: hidden;
+    }
     .fb--phone {
       margin-bottom: var(--mf-s2);
     }
     @media (max-width: 639.98px) {
+      .fb {
+        --mf-fb-h: 44px;
+      }
       .fb__field,
       .fb__client,
       .fb__select {
         width: 100%;
         max-width: none;
-      }
-      .fb .mf-btn,
-      .fb select,
-      .fb input {
-        min-height: 44px;
       }
     }
   `,
@@ -184,46 +211,6 @@ const clientOption = (c: {
             </select>
           </div>
         }
-        @if (dates()) {
-          <div class="fb__field">
-            <label for="mm-range">Dates</label>
-            <select
-              id="mm-range"
-              class="mf-control mf-control--compact fb__select"
-              data-filter="range"
-              [value]="filters().range"
-              (change)="rangePicked($any($event.target).value)"
-            >
-              @for (r of ranges; track r) {
-                <option [value]="r" [selected]="r === filters().range">{{ rangeLabels[r] }}</option>
-              }
-            </select>
-          </div>
-        }
-        @if (dates() && filters().range === 'custom') {
-          <div class="fb__field">
-            <label for="mm-from">From</label>
-            <input
-              id="mm-from"
-              type="date"
-              class="mf-control mf-control--compact"
-              data-filter="from"
-              [value]="filters().from ?? ''"
-              (change)="filterChange.emit({ from: $any($event.target).value || null })"
-            />
-          </div>
-          <div class="fb__field">
-            <label for="mm-to">To</label>
-            <input
-              id="mm-to"
-              type="date"
-              class="mf-control mf-control--compact"
-              data-filter="to"
-              [value]="filters().to ?? ''"
-              (change)="filterChange.emit({ to: $any($event.target).value || null })"
-            />
-          </div>
-        }
         @if (filters().scope === 'all') {
           <a
             class="fb__link"
@@ -239,9 +226,53 @@ const clientOption = (c: {
             Clear filters
           </button>
         }
-        @if (dates()) {
-          <p class="fb__hint">{{ hint() }}</p>
-        }
+        <!-- The date controls close the row. On the tabs they do not belong to they stay in place, unseen and inert, so the row wraps the same
+             way on every tab and the tab strip below never moves (#825). -->
+        <div class="fb__dates" [class.fb__dates--off]="!dates()" [attr.inert]="dates() ? null : ''">
+          <div class="fb__field">
+            <label for="mm-range">Dates</label>
+            <select
+              id="mm-range"
+              class="mf-control mf-control--compact fb__select"
+              data-filter="range"
+              [value]="filters().range"
+              (change)="rangePicked($any($event.target).value)"
+            >
+              @for (r of ranges; track r) {
+                <option [value]="r" [selected]="r === filters().range">{{ rangeLabels[r] }}</option>
+              }
+            </select>
+          </div>
+          @if (filters().range === 'custom') {
+            <div class="fb__field">
+              <label for="mm-from">From</label>
+              <input
+                id="mm-from"
+                type="date"
+                class="mf-control mf-control--compact"
+                data-filter="from"
+                [value]="filters().from ?? ''"
+                (change)="filterChange.emit({ from: $any($event.target).value || null })"
+              />
+            </div>
+            <div class="fb__field">
+              <label for="mm-to">To</label>
+              <input
+                id="mm-to"
+                type="date"
+                class="mf-control mf-control--compact"
+                data-filter="to"
+                [value]="filters().to ?? ''"
+                (change)="filterChange.emit({ to: $any($event.target).value || null })"
+              />
+            </div>
+          }
+        </div>
+        <p class="fb__hint" data-filters-hint [attr.aria-hidden]="dates() ? null : 'true'">
+          @for (h of hintSpace(); track h) {
+            <span [attr.data-reserve]="dates() && h === hint() ? null : ''">{{ h }}</span>
+          }
+        </p>
       </div>
     </ng-template>
   `,
@@ -256,6 +287,10 @@ export class MyMattersFilterBar {
   readonly hint = input(
     'The dates apply to Upcoming deadlines. The other panels show all open work.',
   );
+  /** Every wording the line can take on any tab: the line is as high as the longest, whichever is shown (the tab strip must not move). */
+  readonly hintSpace = input<readonly string[]>([
+    'The dates apply to Upcoming deadlines. The other panels show all open work.',
+  ]);
   readonly filterChange = output<Partial<MmFilters>>();
   readonly clear = output<void>();
   /** The name of the chosen client / manager, reported so the strip can name the filters. */

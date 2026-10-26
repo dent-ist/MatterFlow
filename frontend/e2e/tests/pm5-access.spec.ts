@@ -98,7 +98,6 @@ test.describe('My Matters: keyboard', () => {
       /Client$|Matter$|Open$/,
       /Keyboard alpha/,
       /New task for/,
-      /Pod \/ person|Open$/,
     ]);
     // Evidence for the review: the stops in order (written once per run to the test output).
     test.info().annotations.push({ type: 'tab-stops', description: stops.join(' > ') });
@@ -197,12 +196,16 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
         await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
       }
       // The suggestion lists of the two typeaheads.
+      // Axe judges what the fixed header covers: the filters are looked at from the top of the page (a 32 px input that Playwright scrolls
+      // under the header would be half covered whatever the page does).
+      await page.locator('main h1').scrollIntoViewIfNeeded();
       const client = page.locator('#mm-client');
       await client.fill('E2E');
       await expect(page.getByRole('listbox').first()).toBeVisible();
       expect(await axeViolations(page), `client suggestions at ${size.width}`).toEqual([]);
       await client.fill('');
       await client.blur();
+      await page.locator('main h1').scrollIntoViewIfNeeded();
       const manager = page.locator('#mm-manager');
       await manager.fill('PM');
       await expect(page.getByRole('listbox').first()).toBeVisible();

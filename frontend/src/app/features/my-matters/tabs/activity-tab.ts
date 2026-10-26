@@ -88,7 +88,11 @@ export function activityRows(
   imports: [EntityPicker, PanelBox, RouterLink, RowLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    /* One control height in the row (the compact height of the list filter bars, 44 px on a phone); the Matter picker is a shared component
+       whose input takes its height from --mf-row-h, so the row sets that token for its subtree (#824). */
     .at__filters {
+      --mf-fb-h: var(--mf-row-h-compact);
+      --mf-row-h: var(--mf-fb-h);
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
@@ -220,9 +224,12 @@ export function activityRows(
       .at__matter {
         width: 100%;
       }
+      .at__filters {
+        --mf-fb-h: 44px;
+      }
       .at__filters .mf-control,
       .at__check {
-        min-height: 44px;
+        min-height: var(--mf-fb-h, 44px);
       }
     }
   `,
