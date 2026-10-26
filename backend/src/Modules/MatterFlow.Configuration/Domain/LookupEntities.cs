@@ -22,6 +22,17 @@ public class Priority : AuditedEntity<int>
     public bool IsDefault { get; set; }
 }
 
+/// <summary>A structured reason for putting a task On Hold. Tasks reference <see cref="Entity{TKey}.Id"/>; a used reason is deactivated, never deleted.</summary>
+[Audited(ObjectType = "OnHoldReason")]
+public class OnHoldReason : AuditedEntity<int>
+{
+    public string Name { get; set; } = string.Empty;
+
+    public int SortOrder { get; set; }
+
+    public bool IsActive { get; set; } = true;
+}
+
 /// <summary>Badge color tokens (docs/ux/tokens.css <c>--mf-pr-*</c>); anything else must be a <c>#RRGGBB</c> override.</summary>
 public static class PriorityColors
 {

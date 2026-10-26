@@ -45,6 +45,7 @@ internal sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         b.Property(x => x.AssignedAtUtc).HasColumnName("AssignedAt").HasColumnType("datetime2(3)");
         b.Property(x => x.StatusChangedAtUtc).HasColumnName("StatusChangedAt").HasColumnType("datetime2(3)");
         b.Property(x => x.CompletedAtUtc).HasColumnName("CompletedAt").HasColumnType("datetime2(3)");
+        b.Property(x => x.OnHoldReasonId);
         b.HasIndex(x => x.Number).IsUnique().HasDatabaseName("UQ_Task_Number");
         b.HasIndex(x => x.WorkflowInstanceId).IsUnique().HasDatabaseName("UQ_Task_WorkflowInstance");
         b.HasIndex(x => new { x.MatterId, x.Status }).HasDatabaseName("IX_Task_Matter");

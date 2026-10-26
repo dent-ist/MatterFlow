@@ -23,6 +23,8 @@ public static class ConfigurationModule
 
         services.AddScoped<PriorityService>();
         services.AddScoped<IPriorityCatalog>(sp => sp.GetRequiredService<PriorityService>());
+        services.AddScoped<OnHoldReasonService>();
+        services.AddScoped<IOnHoldReasonCatalog>(sp => sp.GetRequiredService<OnHoldReasonService>());
         services.AddScoped<StatusLabelService>();
         services.AddScoped<IStatusLabelCatalog>(sp => sp.GetRequiredService<StatusLabelService>());
         services.AddScoped<AssetLinkRoleService>();

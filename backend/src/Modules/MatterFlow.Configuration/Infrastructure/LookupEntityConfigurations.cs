@@ -44,6 +44,16 @@ internal sealed class AssetLinkRoleConfiguration : IEntityTypeConfiguration<Asse
     }
 }
 
+internal sealed class OnHoldReasonConfiguration : IEntityTypeConfiguration<OnHoldReason>
+{
+    public void Configure(EntityTypeBuilder<OnHoldReason> b)
+    {
+        b.ToTable("OnHoldReason");
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.HasIndex(x => x.Name).IsUnique().HasDatabaseName(LookupConstraints.OnHoldReasonName);
+    }
+}
+
 /// <summary>Names of the unique indexes in <c>07-configuration-basics.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
 internal static class LookupConstraints
 {
@@ -51,4 +61,5 @@ internal static class LookupConstraints
     public const string PriorityDefault = "UQ_Priority_Default";
     public const string StatusLabel = "UQ_TaskStatusLabel_Label";
     public const string AssetLinkRoleName = "UQ_AssetLinkRole_Name";
+    public const string OnHoldReasonName = "UQ_OnHoldReason_Name";
 }

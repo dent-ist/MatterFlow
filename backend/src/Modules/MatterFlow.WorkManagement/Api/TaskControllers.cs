@@ -123,7 +123,7 @@ public class TasksController(TaskService tasks, TaskLifecycleService lifecycle) 
         if (!TaskStatusCodeExtensions.TryParse(request.Status?.Trim().ToUpperInvariant(), out var target))
             throw new ErrorException(Error.Validation("status", "UNKNOWN_STATUS", "Status must be one of NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED."));
 
-        return (await lifecycle.ChangeStatusAsync(taskId, target, request.Comment, false, request.RowVersion, cancellationToken)).OrThrow();
+        return (await lifecycle.ChangeStatusAsync(taskId, target, request.Comment, false, request.RowVersion, cancellationToken, onHoldReasonId: request.OnHoldReasonId)).OrThrow();
     }
 
     /// <summary>

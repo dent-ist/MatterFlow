@@ -1,4 +1,5 @@
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Identity;
@@ -8,6 +9,7 @@ using MatterFlow.SharedKernel.Time;
 using MatterFlow.WorkflowEngine.Contracts;
 using MatterFlow.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace MatterFlow.WorkManagement.Application;
 
@@ -26,7 +28,9 @@ public sealed class TaskLifecycleService(
     IClock clock,
     IMatterDirectory matters,
     IWorkflowInstanceService workflows,
-    TaskAccess access)
+    TaskAccess access,
+    IOnHoldReasonCatalog onHoldReasons,
+    IConfiguration configuration)
 {
     /// <summary>The Task's completion check: what is unresolved and what a bulk completion would do. Read-only.</summary>
     public async Task<Result<TaskCompletionCheck>> CheckCompletionAsync(long taskId, CancellationToken ct)
@@ -57,9 +61,10 @@ public sealed class TaskLifecycleService(
         string rowVersion,
         CancellationToken ct,
         IReadOnlyCollection<TaskStatusCode>? onlyFrom = null,
-        string? workflowRowVersion = null)
+        string? workflowRowVersion = null,
+        int? onHoldReasonId = null)
     {
-        var done = await tx.RunAsync(token => ChangeCoreAsync(taskId, target, comment, completeUnresolvedSteps, rowVersion, onlyFrom, workflowRowVersion, token), ct);
+        var done = await tx.RunAsync(token => ChangeCoreAsync(taskId, target, comment, completeUnresolvedSteps, rowVersion, onlyFrom, workflowRowVersion, onHoldReasonId, token), ct);
         return done.IsFailure ? done.Error! : await presenter.GetAsync(taskId, done.Value, ct, afterWrite: true);
     }
 
@@ -71,6 +76,7 @@ public sealed class TaskLifecycleService(
         string rowVersion,
         IReadOnlyCollection<TaskStatusCode>? onlyFrom,
         string? workflowRowVersion,
+        int? onHoldReasonId,
         CancellationToken ct)
     {
         var task = await tx.LockTaskAsync(taskId, ct);
@@ -108,6 +114,26 @@ public sealed class TaskLifecycleService(
         if (!decision.Allowed)
             return DecisionError(decision.ErrorCode!, from, target);
 
+        // The structured reason of a hold: optional unless the firm requires it, an active reason only, and only with ON_HOLD.
+        OnHoldReasonInfo? holdReason = null;
+        if (target == TaskStatusCode.OnHold)
+        {
+            if (onHoldReasonId is { } wanted)
+            {
+                holdReason = await onHoldReasons.GetAsync(wanted, ct);
+                if (holdReason is not { IsActive: true })
+                    return Error.Validation("onHoldReasonId", "UNKNOWN_ON_HOLD_REASON", "Choose a reason from the list.");
+            }
+            else if (bool.TryParse(configuration["Tasks:OnHoldReasonRequired"], out var required) && required)
+            {
+                return Error.Validation("onHoldReasonId", "ON_HOLD_REASON_REQUIRED", "Choose why the task is being put on hold.");
+            }
+        }
+        else if (onHoldReasonId is not null)
+        {
+            return Error.Validation("onHoldReasonId", "ON_HOLD_REASON_NOT_ALLOWED", "A reason is only given when the task is put on hold.");
+        }
+
         // 3. Completion rule and bulk completion (addendum K), in this transaction.
         IReadOnlyList<int> bulkCompleted = [];
         if (target == TaskStatusCode.Completed)
@@ -135,6 +161,7 @@ public sealed class TaskLifecycleService(
         }
 
         task.Status = target;
+        task.OnHoldReasonId = holdReason?.Id; // set by a hold, cleared by any other change (a task leaving On Hold)
         if (decision.Effects.UpdateStatusChangedAt)
             task.StatusChangedAtUtc = now;
         if (decision.Effects.SetCompletedAt)
@@ -153,7 +180,7 @@ public sealed class TaskLifecycleService(
             target,
             "MANUAL",
             commentId,
-            bulkCompleted.Count > 0 ? $"bulk completed {bulkCompleted.Count} step(s)" : null);
+            string.Join("; ", new[] { holdReason is null ? null : $"onHoldReason={holdReason.Name}", bulkCompleted.Count > 0 ? $"bulk completed {bulkCompleted.Count} step(s)" : null }.OfType<string>()) is { Length: > 0 } note ? note : null);
 
         await db.SaveChangesAsync(ct);
         return new CommandNotes([], [], bulkCompleted);

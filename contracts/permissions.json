@@ -217,6 +217,11 @@
       "description": "Manage priorities"
     },
     {
+      "code": "OnHoldReason.Manage",
+      "group": "Configuration",
+      "description": "Manage the reasons for putting a task on hold"
+    },
+    {
       "code": "StatusLabel.Manage",
       "group": "Configuration",
       "description": "Manage task status labels"

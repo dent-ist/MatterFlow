@@ -164,7 +164,11 @@ public sealed record TaskResponse(
     [property: Required] IReadOnlyList<string> Warnings,
     [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] IReadOnlyList<int> BulkCompletedStepInstanceIds,
-    TaskUserRef? StatusChangedBy = null);
+    TaskUserRef? StatusChangedBy = null,
+    TaskOnHoldReasonRef? OnHoldReason = null);
+
+/// <summary>The structured reason of the current hold (null when the Task is not On Hold or no reason was chosen).</summary>
+public sealed record TaskOnHoldReasonRef([property: Required] int OnHoldReasonId, [property: Required] string Name, [property: Required] bool IsActive);
 
 /// <summary>A Task in the minimal list.</summary>
 public sealed record TaskListItem(
@@ -366,6 +370,13 @@ public sealed class ChangeTaskStatusRequest
     /// <summary>Plain-text reason; mandatory for ON_HOLD and CANCELLED (stored as a non-deletable comment).</summary>
     [StringLength(4000)]
     public string? Comment { get; init; }
+
+    /// <summary>
+    /// With ON_HOLD: the structured reason (an active id from <c>GET /on-hold-reasons</c>). Optional unless the firm requires it
+    /// (<c>Tasks:OnHoldReasonRequired</c>: 400 <c>ON_HOLD_REASON_REQUIRED</c>); 400 <c>UNKNOWN_ON_HOLD_REASON</c> for an unknown or inactive id.
+    /// Ignored (400 <c>ON_HOLD_REASON_NOT_ALLOWED</c> when sent) for any other status. Cleared when the task leaves On Hold.
+    /// </summary>
+    public int? OnHoldReasonId { get; init; }
 }
 
 /// <summary>Completes the Task, optionally bulk-completing unresolved steps first (all or nothing).</summary>

@@ -11,6 +11,7 @@ export const ADMIN_FIELD_LIMITS = {
   assetTypeDescription: 500,
   /** `AssetLinkRole.Name`. */
   linkRoleName: 50,
+  onHoldReasonName: 100,
   /** `Priority.Label`. */
   priorityLabel: 50,
   /** `StatusLabel.DisplayLabel` (the code is not editable). */

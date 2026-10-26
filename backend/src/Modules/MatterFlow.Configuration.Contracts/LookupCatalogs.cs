@@ -60,6 +60,17 @@ public interface IStatusLabelCatalog
     Task<string> GetLabelAsync(string statusCode, CancellationToken cancellationToken = default);
 }
 
+/// <summary>A reason for putting a task On Hold (Waiting for client data, ...), admin-managed; never deleted, only deactivated.</summary>
+public sealed record OnHoldReasonInfo(int Id, string Name, int SortOrder, bool IsActive);
+
+/// <summary>Read access to the on-hold reasons for other modules (the status change of a task).</summary>
+public interface IOnHoldReasonCatalog
+{
+    Task<IReadOnlyList<OnHoldReasonInfo>> ListAsync(bool includeInactive, CancellationToken cancellationToken = default);
+
+    Task<OnHoldReasonInfo?> GetAsync(int onHoldReasonId, CancellationToken cancellationToken = default);
+}
+
 /// <summary>A Task-to-Asset link role (Source, Destination, Subject, Result, ...).</summary>
 public sealed record AssetLinkRoleInfo(int Id, string Name, int SortOrder, bool IsActive);
 

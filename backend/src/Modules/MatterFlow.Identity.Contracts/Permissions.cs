@@ -190,6 +190,13 @@ public static class Permissions
         public const string Manage = "Priority.Manage";
     }
 
+    /// <summary>OnHoldReason permissions.</summary>
+    public static class OnHoldReason
+    {
+        /// <summary>Manage the reasons for putting a task on hold.</summary>
+        public const string Manage = "OnHoldReason.Manage";
+    }
+
     /// <summary>StatusLabel permissions.</summary>
     public static class StatusLabel
     {
@@ -292,6 +299,7 @@ public static class Permissions
         AssetType.Manage,
         CustomField.Manage,
         Priority.Manage,
+        OnHoldReason.Manage,
         StatusLabel.Manage,
         Dashboard.View,
         Dashboard.ViewSummary,

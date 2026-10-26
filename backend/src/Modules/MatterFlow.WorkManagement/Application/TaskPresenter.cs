@@ -28,6 +28,7 @@ public sealed class TaskPresenter(
     IProjectDirectory projects,
     ITaskTypeCatalog taskTypes,
     IPriorityCatalog priorities,
+    IOnHoldReasonCatalog onHoldReasons,
     IStatusLabelCatalog labels,
     IPodDirectory pods,
     IUserDirectory users,
@@ -129,7 +130,16 @@ public sealed class TaskPresenter(
             notes.Warnings,
             notes.Dropped,
             notes.BulkCompleted,
-            UserRef(userMap, statusActorId));
+            UserRef(userMap, statusActorId),
+            await OnHoldReasonAsync(t, ct));
+    }
+
+    private async Task<TaskOnHoldReasonRef?> OnHoldReasonAsync(WorkTask t, CancellationToken ct)
+    {
+        if (t.Status != TaskStatusCode.OnHold || t.OnHoldReasonId is not { } id)
+            return null;
+        var reason = await onHoldReasons.GetAsync(id, ct);
+        return reason is null ? null : new TaskOnHoldReasonRef(reason.Id, reason.Name, reason.IsActive);
     }
 
     /// <summary>The page of list items for already-loaded Tasks (names resolved once per distinct id).</summary>

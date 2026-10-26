@@ -25,10 +25,13 @@ public sealed class ConfigurationSeeder(DbContext db, ILogger<ConfigurationSeede
 
     private const string DefaultPriorityLabel = "Normal";
 
+    private static readonly string[] DefaultOnHoldReasons = ["Waiting for client data", "Waiting for approval", "Waiting for vendor", "Waiting for a decision"];
+
     public async Task SeedAsync(CancellationToken ct = default)
     {
         await SeedPrioritiesAsync(ct);
         await SeedAssetLinkRolesAsync(ct);
+        await SeedOnHoldReasonsAsync(ct);
         await VerifyStatusLabelsAsync(ct);
     }
 
@@ -66,6 +69,18 @@ public sealed class ConfigurationSeeder(DbContext db, ILogger<ConfigurationSeede
 
         await db.SaveChangesAsync(ct);
         logger.LogInformation("Seeded {Count} default priorities.", DefaultPriorities.Length);
+    }
+
+    public async Task SeedOnHoldReasonsAsync(CancellationToken ct)
+    {
+        if (await db.Set<OnHoldReason>().AnyAsync(ct))
+            return;
+
+        for (var i = 0; i < DefaultOnHoldReasons.Length; i++)
+            db.Set<OnHoldReason>().Add(new OnHoldReason { Name = DefaultOnHoldReasons[i], SortOrder = i + 1, IsActive = true });
+
+        await db.SaveChangesAsync(ct);
+        logger.LogInformation("Seeded {Count} default on-hold reasons.", DefaultOnHoldReasons.Length);
     }
 
     public async Task SeedAssetLinkRolesAsync(CancellationToken ct)

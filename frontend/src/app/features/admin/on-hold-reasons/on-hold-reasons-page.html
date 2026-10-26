@@ -1,0 +1,121 @@
+<div class="mf-sr-only" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
+
+@if (failure()) {
+  <p class="ohr-failure" role="alert" data-failure>
+    <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ failure() }}
+  </p>
+}
+
+@if (phone()) {
+  <mf-admin-card-list
+    noun="on-hold reasons"
+    label="On-hold reasons"
+    [items]="rows()"
+    [spec]="cardOf"
+    emptyText="No on-hold reasons yet. Use New reason above to add the first one."
+    [state]="ls.state()"
+    [empty]="ls.empty()"
+    [filtered]="false"
+    (retry)="load()"
+  />
+} @else {
+  <div class="mf-table-wrap" mfScrollArea="On-hold reasons list">
+    <div class="mf-scroll">
+      <table class="mf-grid" id="on-hold-reasons-table" data-roles>
+        <caption class="mf-sr-only">
+          On-hold reasons in display order
+        </caption>
+        <thead>
+          <tr>
+            <th class="mf-cell-num" scope="col" [attr.data-drop]="dropOrder">Order</th>
+            <th class="mf-cell-name" scope="col">Name</th>
+            <th class="mf-cell-badge" scope="col">Status</th>
+            <th class="mf-cell-actions" scope="col"><span class="mf-sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody
+          mfGridBody
+          noun="on-hold reasons"
+          [columnSpec]="columnSpec()"
+          emptyText="No on-hold reasons yet. Use New reason above to add the first one."
+          [state]="ls.state()"
+          [empty]="ls.empty()"
+          [filtered]="false"
+          (retry)="load()"
+        >
+          @for (r of rows(); track r.id; let i = $index) {
+            <tr
+              [attr.data-row]="r.name"
+              [class.inactive]="!r.isActive"
+              [attr.draggable]="busy() || !canManage() ? 'false' : 'true'"
+              (dragstart)="onDragStart(i, $event)"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop(i, $event)"
+            >
+              <td class="mf-cell-num" [attr.data-drop]="dropOrder" data-order>{{ i + 1 }}</td>
+              <td class="mf-cell-name">
+                @if (canManage()) {
+                  <a
+                    class="mf-name"
+                    mfRowLink="on-hold-reasons"
+                    [rowKey]="r.id"
+                    [routerLink]="['/admin/on-hold-reasons']"
+                    [queryParams]="{ edit: r.id }"
+                    [attr.title]="r.name"
+                    data-edit
+                    >{{ r.name }}</a
+                  >
+                } @else {
+                  <span class="mf-name" [attr.title]="r.name">{{ r.name }}</span>
+                }
+              </td>
+              <td class="mf-cell-badge"><mf-active-badge [active]="r.isActive" /></td>
+              <td class="mf-cell-actions" [attr.data-actions-of]="r.id">
+                @if (menus().get(r.id); as menu) {
+                  <mf-action-menu [floating]="true" [label]="menu.label" [items]="menu.items" />
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+<mf-lookup-dialog
+  [title]="editing() ? 'Rename reason' : 'New reason'"
+  [submitLabel]="editing() ? 'Save name' : 'Add reason'"
+  cancelLabel="Cancel"
+  [visible]="dialogOpen()"
+  (visibleChange)="onDialogOpen($event)"
+  [dirty]="isDirty()"
+  [saving]="busy()"
+  [error]="saveError()"
+  [summary]="summary()"
+  (save)="commit()"
+  (cancel)="closeDialog()"
+>
+  <mf-text-field
+    inputId="on-hold-reason-name"
+    label="Name"
+    [required]="true"
+    [maxLength]="limits.onHoldReasonName"
+    [counter]="true"
+    [error]="fieldError()"
+    [(value)]="draft"
+  />
+</mf-lookup-dialog>
+
+<mf-confirm-dialog
+  [title]="deactivateCopy().title"
+  [confirmLabel]="deactivateCopy().confirm"
+  [cancelLabel]="deactivateCopy().cancel"
+  [danger]="deactivateCopy().danger"
+  [busy]="busy()"
+  [visible]="deactivating() !== null"
+  (visibleChange)="!$event && cancelDeactivate()"
+  (confirmed)="confirmDeactivate()"
+>
+  <p data-deactivate-body>{{ deactivateCopy().body }}</p>
+</mf-confirm-dialog>

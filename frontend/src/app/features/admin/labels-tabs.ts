@@ -4,7 +4,7 @@ import { APP_PATHS } from '../../core/auth/guards';
 import { AuthStore } from '../../core/auth/auth.store';
 import { AdminTab, allowedAdminTabs, adminMenuTarget, resolveAdminTab } from './admin-tabs';
 
-/** The two tabs of the Labels page; each permission is enough to read what it manages (AD-D #519, #523). */
+/** The tabs of the Labels page; each permission is enough to read what it manages (AD-D #519, #523). */
 export const LABEL_TABS: readonly AdminTab[] = [
   {
     id: 'priorities',
@@ -20,11 +20,18 @@ export const LABEL_TABS: readonly AdminTab[] = [
     permission: ['StatusLabel.Manage'],
     countKey: 'status-labels',
   },
+  {
+    id: 'on-hold-reasons',
+    label: 'On-hold reasons',
+    route: '/admin/on-hold-reasons',
+    permission: ['OnHoldReason.Manage'],
+    countKey: 'on-hold-reasons',
+  },
 ];
 
-export type LabelsTab = 'priorities' | 'status-labels';
+export type LabelsTab = 'priorities' | 'status-labels' | 'on-hold-reasons';
 
-/** Whether this person may use both Labels tabs (a lone tab needs no tab strip). */
+/** Whether this person may use more than one Labels tab (a lone tab needs no tab strip). */
 export function hasBothLabelTabs(auth: AuthStore): boolean {
   return allowedAdminTabs(LABEL_TABS, (p) => auth.has(p)).length > 1;
 }

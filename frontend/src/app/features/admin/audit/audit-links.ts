@@ -48,6 +48,8 @@ export function auditObjectLink(item: AuditSearchItem, can: CanFn): AuditLink | 
       return admin('Priority.Manage', ['/admin/priorities']);
     case 'StatusLabel':
       return admin('StatusLabel.Manage', ['/admin/status-labels']);
+    case 'OnHoldReason':
+      return admin('OnHoldReason.Manage', ['/admin/on-hold-reasons']);
     case 'Role':
       return admin('Role.Manage', ['/admin/roles']);
     case 'Pod':
@@ -77,6 +79,7 @@ export const CONFIGURATION_OBJECT_TYPES: readonly string[] = [
   'AssetLinkRole',
   'Priority',
   'StatusLabel',
+  'OnHoldReason',
   'TaskType',
   'WorkflowDefinition',
   'StepDefinition',

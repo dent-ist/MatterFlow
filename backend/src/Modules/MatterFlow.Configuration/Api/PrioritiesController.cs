@@ -29,6 +29,11 @@ internal static class ConfigurationPolicies
     /// <summary>Read the priorities: <c>Task.View</c> or <c>Priority.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>
     public const string PriorityRead = Prefix + Permissions.Task.View + "|" + Permissions.Priority.Manage;
 
+    public const string OnHoldReasonManage = Prefix + Permissions.OnHoldReason.Manage;
+
+    /// <summary>Read the on-hold reasons: <c>Task.View</c> or <c>OnHoldReason.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>
+    public const string OnHoldReasonRead = Prefix + Permissions.Task.View + "|" + Permissions.OnHoldReason.Manage;
+
     public const string StatusLabelManage = Prefix + Permissions.StatusLabel.Manage;
 
     /// <summary>Read the status labels: <c>Task.View</c> or <c>StatusLabel.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>

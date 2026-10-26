@@ -46,6 +46,7 @@ export const PERMISSIONS = [
   'AssetType.Manage',
   'CustomField.Manage',
   'Priority.Manage',
+  'OnHoldReason.Manage',
   'StatusLabel.Manage',
   'Dashboard.View',
   'Dashboard.ViewSummary',

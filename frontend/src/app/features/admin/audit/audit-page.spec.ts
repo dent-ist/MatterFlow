@@ -451,7 +451,7 @@ describe('AuditPage', () => {
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: expect.objectContaining({
         objectType:
-          'AssetType,AssetLinkRole,Priority,StatusLabel,TaskType,WorkflowDefinition,StepDefinition,FormDefinition,FormVersion',
+          'AssetType,AssetLinkRole,Priority,StatusLabel,OnHoldReason,TaskType,WorkflowDefinition,StepDefinition,FormDefinition,FormVersion',
       }),
       queryParamsHandling: 'merge',
     });

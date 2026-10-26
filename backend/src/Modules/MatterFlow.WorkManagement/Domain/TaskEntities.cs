@@ -66,6 +66,9 @@ public class WorkTask : AuditedEntity<long>
     public DateTime StatusChangedAtUtc { get; set; }
 
     public DateTime? CompletedAtUtc { get; set; }
+
+    /// <summary>The structured reason of the current hold (an <c>OnHoldReason</c> id, script 42); null unless the Task is On Hold, and still null when no reason was chosen. Cleared when the Task leaves On Hold.</summary>
+    public int? OnHoldReasonId { get; set; }
 }
 
 /// <summary>

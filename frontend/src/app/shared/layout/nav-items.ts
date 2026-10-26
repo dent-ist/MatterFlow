@@ -173,8 +173,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     label: 'Labels',
     icon: 'pi pi-flag',
     path: '/admin/priorities',
-    alsoActive: ['/admin/status-labels'],
-    permissions: ['Priority.Manage', 'StatusLabel.Manage'],
+    alsoActive: ['/admin/status-labels', '/admin/on-hold-reasons'],
+    permissions: ['Priority.Manage', 'StatusLabel.Manage', 'OnHoldReason.Manage'],
   },
   {
     // The Asset Types and Asset Link Roles tabs. Not the Assets data records above: the rail says "Asset types" (S5, #620), so the two
