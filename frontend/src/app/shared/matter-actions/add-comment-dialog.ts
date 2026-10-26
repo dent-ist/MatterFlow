@@ -235,6 +235,8 @@ export class AddCommentDialog {
           undefined,
           undefined,
           undefined,
+          undefined,
+          undefined,
           'updated',
           'desc',
           1,

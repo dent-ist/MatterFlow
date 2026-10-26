@@ -104,6 +104,8 @@ describe('queue filter state', () => {
       managerId: null,
       role: '',
       dueWithin: null,
+      atRisk: false,
+      onHoldReason: [],
     });
     expect([s.sort, s.dir, s.page, s.pageSize]).toEqual(['due', 'desc', 3, 100]);
   });
@@ -419,7 +421,7 @@ describe('API arguments', () => {
     const state = { ...emptyState(), page: 2, pageSize: 25 };
     const args = queueArgs(state);
     expect(args.slice(0, 31).every((a) => a === undefined)).toBe(true);
-    expect(args.slice(31)).toEqual([undefined, undefined, 2, 25]);
+    expect(args.slice(33)).toEqual([undefined, undefined, 2, 25]);
 
     const sorted = queueArgs({
       ...state,
@@ -431,7 +433,7 @@ describe('API arguments', () => {
     expect(sorted[1]).toEqual(['NEW']);
     expect(sorted[17]).toBe(false); // asap
     expect(sorted[18]).toBe(true); // overdue
-    expect(sorted.slice(31)).toEqual(['due', 'desc', 2, 25]);
+    expect(sorted.slice(33)).toEqual(['due', 'desc', 2, 25]);
   });
 
   it('can leave the pod filter out (Pod Work has its own Pod)', () => {

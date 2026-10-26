@@ -2392,6 +2392,254 @@ export class FormsClient implements IFormsClient {
     }
 }
 
+export interface IOnHoldReasonsClient {
+    /**
+     * @return OK
+     */
+    listOnHoldReasons(): Observable<OnHoldReasonView[]>;
+    /**
+     * @return Created
+     */
+    createOnHoldReason(body: CreateOnHoldReasonRequest): Observable<OnHoldReasonView>;
+    /**
+     * @return OK
+     */
+    updateOnHoldReason(id: number, body: UpdateOnHoldReasonRequest): Observable<OnHoldReasonView>;
+    /**
+     * @return OK
+     */
+    reorderOnHoldReasons(body: ReorderRequest): Observable<OnHoldReasonView[]>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class OnHoldReasonsClient implements IOnHoldReasonsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listOnHoldReasons(): Observable<OnHoldReasonView[]> {
+        let url_ = this.baseUrl + "/api/v1/on-hold-reasons";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListOnHoldReasons(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListOnHoldReasons(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<OnHoldReasonView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<OnHoldReasonView[]>;
+        }));
+    }
+
+    protected processListOnHoldReasons(response: HttpResponseBase): Observable<OnHoldReasonView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as OnHoldReasonView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createOnHoldReason(body: CreateOnHoldReasonRequest): Observable<OnHoldReasonView> {
+        let url_ = this.baseUrl + "/api/v1/on-hold-reasons";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateOnHoldReason(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateOnHoldReason(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<OnHoldReasonView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<OnHoldReasonView>;
+        }));
+    }
+
+    protected processCreateOnHoldReason(response: HttpResponseBase): Observable<OnHoldReasonView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as OnHoldReasonView;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateOnHoldReason(id: number, body: UpdateOnHoldReasonRequest): Observable<OnHoldReasonView> {
+        let url_ = this.baseUrl + "/api/v1/on-hold-reasons/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateOnHoldReason(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateOnHoldReason(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<OnHoldReasonView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<OnHoldReasonView>;
+        }));
+    }
+
+    protected processUpdateOnHoldReason(response: HttpResponseBase): Observable<OnHoldReasonView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as OnHoldReasonView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    reorderOnHoldReasons(body: ReorderRequest): Observable<OnHoldReasonView[]> {
+        let url_ = this.baseUrl + "/api/v1/on-hold-reasons/order";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReorderOnHoldReasons(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReorderOnHoldReasons(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<OnHoldReasonView[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<OnHoldReasonView[]>;
+        }));
+    }
+
+    protected processReorderOnHoldReasons(response: HttpResponseBase): Observable<OnHoldReasonView[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as OnHoldReasonView[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IPrioritiesClient {
     /**
      * @return OK
@@ -5155,6 +5403,318 @@ export class UsersLookupClient implements IUsersLookupClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserLookupItem[];
             return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IUserViewsClient {
+    /**
+     * @param surface (optional) 
+     * @return OK
+     */
+    listMyViews(surface?: string | undefined): Observable<UserViewListResponse>;
+    /**
+     * @return Created
+     */
+    createMyView(body: CreateUserViewRequest): Observable<UserViewDto>;
+    /**
+     * @return OK
+     */
+    saveMyRememberedView(surface: string, body: SaveRememberedViewRequest): Observable<UserViewDto>;
+    /**
+     * @return OK
+     */
+    updateMyView(id: number, body: UpdateUserViewRequest): Observable<UserViewDto>;
+    /**
+     * @return No Content
+     */
+    deleteMyView(id: number): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UserViewsClient implements IUserViewsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param surface (optional) 
+     * @return OK
+     */
+    listMyViews(surface?: string | undefined): Observable<UserViewListResponse> {
+        let url_ = this.baseUrl + "/api/v1/me/views?";
+        if (surface === null)
+            throw new globalThis.Error("The parameter 'surface' cannot be null.");
+        else if (surface !== undefined)
+            url_ += "surface=" + encodeURIComponent("" + surface) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListMyViews(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListMyViews(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserViewListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserViewListResponse>;
+        }));
+    }
+
+    protected processListMyViews(response: HttpResponseBase): Observable<UserViewListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserViewListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createMyView(body: CreateUserViewRequest): Observable<UserViewDto> {
+        let url_ = this.baseUrl + "/api/v1/me/views";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateMyView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateMyView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserViewDto>;
+        }));
+    }
+
+    protected processCreateMyView(response: HttpResponseBase): Observable<UserViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserViewDto;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    saveMyRememberedView(surface: string, body: SaveRememberedViewRequest): Observable<UserViewDto> {
+        let url_ = this.baseUrl + "/api/v1/me/views/{surface}";
+        if (surface === undefined || surface === null)
+            throw new globalThis.Error("The parameter 'surface' must be defined.");
+        url_ = url_.replace("{surface}", encodeURIComponent("" + surface));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSaveMyRememberedView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSaveMyRememberedView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserViewDto>;
+        }));
+    }
+
+    protected processSaveMyRememberedView(response: HttpResponseBase): Observable<UserViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserViewDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateMyView(id: number, body: UpdateUserViewRequest): Observable<UserViewDto> {
+        let url_ = this.baseUrl + "/api/v1/me/views/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateMyView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateMyView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserViewDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserViewDto>;
+        }));
+    }
+
+    protected processUpdateMyView(response: HttpResponseBase): Observable<UserViewDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as UserViewDto;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteMyView(id: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/me/views/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteMyView(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteMyView(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteMyView(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -12354,6 +12914,9 @@ export interface IMyMattersClient {
      */
     markMyMattersActivitySeen(body: MarkActivitySeenRequest): Observable<MyMattersActivitySeen>;
     /**
+     * @param taskTypeId (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12363,10 +12926,29 @@ export interface IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersAttention(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention>;
+    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention>;
+    /**
+     * @param view (optional) 
+     * @param status (optional) 
+     * @param taskTypeId (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersBreakdown>;
     /**
      * @param days (optional) 
      * @param groupBy (optional) 
+     * @param taskTypeId (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12376,7 +12958,7 @@ export interface IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
     /**
      * @param sort (optional) 
      * @param dir (optional) 
@@ -12692,6 +13274,9 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
+     * @param taskTypeId (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12701,8 +13286,20 @@ export class MyMattersClient implements IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersAttention(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention> {
+    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention> {
         let url_ = this.baseUrl + "/api/v1/my-matters/attention?";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            taskTypeId && taskTypeId.forEach(item => { url_ += "taskTypeId=" + encodeURIComponent("" + item) + "&"; });
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -12777,8 +13374,11 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
-     * @param days (optional) 
-     * @param groupBy (optional) 
+     * @param view (optional) 
+     * @param status (optional) 
+     * @param taskTypeId (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -12788,7 +13388,117 @@ export class MyMattersClient implements IMyMattersClient {
      * @param fresh (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
+    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersBreakdown> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/breakdown?";
+        if (view === null)
+            throw new globalThis.Error("The parameter 'view' cannot be null.");
+        else if (view !== undefined)
+            url_ += "view=" + encodeURIComponent("" + view) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "status=" + encodeURIComponent("" + status) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            taskTypeId && taskTypeId.forEach(item => { url_ += "taskTypeId=" + encodeURIComponent("" + item) + "&"; });
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (scope === null)
+            throw new globalThis.Error("The parameter 'scope' cannot be null.");
+        else if (scope !== undefined)
+            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
+        if (role === null)
+            throw new globalThis.Error("The parameter 'role' cannot be null.");
+        else if (role !== undefined)
+            url_ += "role=" + encodeURIComponent("" + role) + "&";
+        if (clientId === null)
+            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
+        else if (clientId !== undefined)
+            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
+        if (managerId === null)
+            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
+        else if (managerId !== undefined)
+            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
+        if (fresh === null)
+            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
+        else if (fresh !== undefined)
+            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMyMattersBreakdown(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMyMattersBreakdown(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MyMattersBreakdown>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MyMattersBreakdown>;
+        }));
+    }
+
+    protected processGetMyMattersBreakdown(response: HttpResponseBase): Observable<MyMattersBreakdown> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersBreakdown;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param days (optional) 
+     * @param groupBy (optional) 
+     * @param taskTypeId (optional) 
+     * @param sort (optional) 
+     * @param dir (optional) 
+     * @param scope (optional) 
+     * @param role (optional) 
+     * @param clientId (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
+     * @param managerId (optional) 
+     * @param fresh (optional) 
+     * @return OK
+     */
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
         let url_ = this.baseUrl + "/api/v1/my-matters/deadlines?";
         if (days === null)
             throw new globalThis.Error("The parameter 'days' cannot be null.");
@@ -12798,6 +13508,18 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'groupBy' cannot be null.");
         else if (groupBy !== undefined)
             url_ += "groupBy=" + encodeURIComponent("" + groupBy) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            taskTypeId && taskTypeId.forEach(item => { url_ += "taskTypeId=" + encodeURIComponent("" + item) + "&"; });
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -13276,13 +13998,15 @@ export interface ITaskQueueClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
 }
 
 @Injectable({
@@ -13331,13 +14055,15 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
         let url_ = this.baseUrl + "/api/v1/task-queue?";
         if (group === null)
             throw new globalThis.Error("The parameter 'group' cannot be null.");
@@ -13467,6 +14193,14 @@ export class TaskQueueClient implements ITaskQueueClient {
             throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
         else if (dueWithin !== undefined)
             url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
+        if (atRisk === null)
+            throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
+        else if (atRisk !== undefined)
+            url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (onHoldReason === null)
+            throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
+        else if (onHoldReason !== undefined)
+            onHoldReason && onHoldReason.forEach(item => { url_ += "onHoldReason=" + encodeURIComponent("" + item) + "&"; });
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -13567,13 +14301,15 @@ export interface IMyWorkClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
 }
 
 @Injectable({
@@ -13626,13 +14362,15 @@ export class MyWorkClient implements IMyWorkClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
         let url_ = this.baseUrl + "/api/v1/my-work?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -13778,6 +14516,14 @@ export class MyWorkClient implements IMyWorkClient {
             throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
         else if (dueWithin !== undefined)
             url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
+        if (atRisk === null)
+            throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
+        else if (atRisk !== undefined)
+            url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (onHoldReason === null)
+            throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
+        else if (onHoldReason !== undefined)
+            onHoldReason && onHoldReason.forEach(item => { url_ += "onHoldReason=" + encodeURIComponent("" + item) + "&"; });
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -13875,13 +14621,15 @@ export interface IPodWorkClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
 }
 
 @Injectable({
@@ -13931,13 +14679,15 @@ export class PodWorkClient implements IPodWorkClient {
      * @param managerId (optional) 
      * @param role (optional) 
      * @param dueWithin (optional) 
+     * @param atRisk (optional) 
+     * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
         let url_ = this.baseUrl + "/api/v1/pod-work?";
         if (podId === null)
             throw new globalThis.Error("The parameter 'podId' cannot be null.");
@@ -14071,6 +14821,14 @@ export class PodWorkClient implements IPodWorkClient {
             throw new globalThis.Error("The parameter 'dueWithin' cannot be null.");
         else if (dueWithin !== undefined)
             url_ += "dueWithin=" + encodeURIComponent("" + dueWithin) + "&";
+        if (atRisk === null)
+            throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
+        else if (atRisk !== undefined)
+            url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (onHoldReason === null)
+            throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
+        else if (onHoldReason !== undefined)
+            onHoldReason && onHoldReason.forEach(item => { url_ += "onHoldReason=" + encodeURIComponent("" + item) + "&"; });
         if (sort === null)
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
@@ -15748,6 +16506,61 @@ export interface AuditSearchPage {
     [key: string]: any;
 }
 
+export interface BreakdownCell {
+    taskTypeId: number;
+    open: number;
+    overdue: number;
+    onHold: number;
+    atRisk: number;
+    query: string;
+    overdueQuery: string;
+
+    [key: string]: any;
+}
+
+export interface BreakdownRow {
+    matterId: number;
+    matterRef: string;
+    matterName: string;
+    clientName: string;
+    open: number;
+    overdue: number;
+    onHold: number;
+    atRisk: number;
+    cells: BreakdownCell[];
+
+    [key: string]: any;
+}
+
+export interface BreakdownTotals {
+    open: number;
+    overdue: number;
+    onHold: number;
+    atRisk: number;
+    query: string;
+    overdueQuery: string;
+
+    [key: string]: any;
+}
+
+export interface BreakdownType {
+    taskTypeId: number;
+    name: string;
+    iconKey: string;
+    colourKey: string | undefined;
+    targetDays: number | undefined;
+    open: number;
+    overdue: number;
+    onHold: number;
+    atRisk: number;
+    avgDaysDone: number | undefined;
+    doneCount: number;
+    query: string;
+    overdueQuery: string;
+
+    [key: string]: any;
+}
+
 export interface BulkReassignTo {
     userId?: number | undefined;
     podId?: number | undefined;
@@ -15807,6 +16620,7 @@ export interface ChangeTaskStatusRequest {
     rowVersion: string;
     status: string;
     comment?: string | undefined;
+    onHoldReasonId?: number | undefined;
 
     [key: string]: any;
 }
@@ -15859,6 +16673,7 @@ export interface ClientResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+    myMatterCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -16034,6 +16849,13 @@ export interface CreateMatterRequest {
     [key: string]: any;
 }
 
+export interface CreateOnHoldReasonRequest {
+    name: string;
+    isActive?: boolean;
+
+    [key: string]: any;
+}
+
 export interface CreatePodRequest {
     name: string;
     description?: string | undefined;
@@ -16118,6 +16940,17 @@ export interface CreateTaskTypeRequest {
     eligibleWorkflowIds?: number[] | undefined;
     defaultWorkflowDefinitionId?: number | undefined;
     iconKey?: string | undefined;
+    colourKey?: string | undefined;
+    targetDays?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateUserViewRequest {
+    surface: string;
+    name: string;
+    state: JsonElement;
+    isDefault?: boolean;
 
     [key: string]: any;
 }
@@ -16764,6 +17597,7 @@ export interface MyMattersAttentionGroup {
     total: number;
     query: string;
     items: MyMattersTaskItem[];
+    totalUnfiltered?: number | undefined;
 
     [key: string]: any;
 }
@@ -16772,6 +17606,23 @@ export interface MyMattersAwayWindow {
     from: string | undefined;
     to: string | undefined;
     reasonCode: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersBreakdown {
+    timeZone: string;
+    asOfUtc: string;
+    view: string;
+    status: string;
+    types: BreakdownType[];
+    typeTotal: number;
+    rows: BreakdownRow[];
+    matterTotal: number;
+    page: number;
+    pageSize: number;
+    totals: BreakdownTotals;
+    avgWindowDays: number;
 
     [key: string]: any;
 }
@@ -16813,6 +17664,7 @@ export interface MyMattersDeadlines {
     byDay?: MyMattersDeadlineDay[] | undefined;
     byMatter?: MyMattersDeadlineMatter[] | undefined;
     matterTotal?: number | undefined;
+    totalUnfiltered?: number | undefined;
 
     [key: string]: any;
 }
@@ -16847,6 +17699,13 @@ export interface MyMattersHealthRow {
     flag: string;
     flagReasons: string[];
     query: string;
+
+    [key: string]: any;
+}
+
+export interface MyMattersOnHold {
+    reasonName: string | undefined;
+    days: number;
 
     [key: string]: any;
 }
@@ -16922,6 +17781,16 @@ export interface MyMattersTaskItem {
     dueAtUtc: string | undefined;
     assigneeId: number | undefined;
     assigneeName: string | undefined;
+    taskTypeId: number;
+    taskTypeName: string;
+    taskTypeIconKey: string;
+    taskTypeColourKey: string | undefined;
+    priorityName: string;
+    priorityRank: number;
+    statusCode: string;
+    ageDays: number;
+    onHold: MyMattersOnHold | undefined;
+    atRisk: boolean;
 
     [key: string]: any;
 }
@@ -17119,6 +17988,16 @@ export interface NotificationPreferenceItem {
 
 export interface NotificationPreferencesResponse {
     items: NotificationPreferenceItem[];
+
+    [key: string]: any;
+}
+
+export interface OnHoldReasonView {
+    id: number;
+    name: string;
+    sortOrder: number;
+    isActive: boolean;
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -17764,6 +18643,12 @@ export interface SaveFormDraftRequest {
     [key: string]: any;
 }
 
+export interface SaveRememberedViewRequest {
+    state: JsonElement;
+
+    [key: string]: any;
+}
+
 export interface SaveStepValuesRequest {
     rowVersion: string;
     values?: any | undefined;
@@ -18313,6 +19198,14 @@ export interface TaskMatterRef {
     [key: string]: any;
 }
 
+export interface TaskOnHoldReasonRef {
+    onHoldReasonId: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
 export interface TaskPodRef {
     podId: number;
     name: string;
@@ -18402,6 +19295,10 @@ export interface TaskQueueRow {
     holdReason?: string | undefined;
     holdReasonTruncated: boolean;
     matterCanOpen: boolean;
+    taskTypeColourKey?: string | undefined;
+    onHoldReasonId?: number | undefined;
+    onHoldReasonName?: string | undefined;
+    atRisk: boolean;
 
     [key: string]: any;
 }
@@ -18459,6 +19356,7 @@ export interface TaskResponse {
     droppedFields: string[];
     bulkCompletedStepInstanceIds: number[];
     statusChangedBy?: TaskUserRef | undefined;
+    onHoldReason?: TaskOnHoldReasonRef | undefined;
 
     [key: string]: any;
 }
@@ -18543,6 +19441,8 @@ export interface TaskTypeView {
     usabilityIssues: string[];
     rowVersion: string;
     openTaskCount?: number | undefined;
+    colourKey?: string | undefined;
+    targetDays?: number | undefined;
 
     [key: string]: any;
 }
@@ -18650,6 +19550,14 @@ export interface UpdateNotificationPreferencesRequest {
     [key: string]: any;
 }
 
+export interface UpdateOnHoldReasonRequest {
+    name: string;
+    isActive: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdatePodRequest {
     name: string;
     description?: string | undefined;
@@ -18749,6 +19657,8 @@ export interface UpdateTaskTypeRequest {
     defaultWorkflowDefinitionId: number | undefined;
     rowVersion: string;
     iconKey: string;
+    colourKey?: string | undefined;
+    targetDays?: number | undefined;
 
     [key: string]: any;
 }
@@ -18756,6 +19666,15 @@ export interface UpdateTaskTypeRequest {
 export interface UpdateUserProfileRequest {
     displayName: string;
     email: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateUserViewRequest {
+    name: string | undefined;
+    state: JsonElement | undefined;
+    isDefault: boolean | undefined;
     rowVersion: string;
 
     [key: string]: any;
@@ -18860,6 +19779,24 @@ export interface UserSummaryDto {
     pods: UserPodDto[];
     availability?: UserAvailabilitySummary | undefined;
     openTaskCount?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface UserViewDto {
+    id: number;
+    surface: string;
+    name: string | undefined;
+    isDefault: boolean;
+    state: JsonElement;
+    modifiedAtUtc: string;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UserViewListResponse {
+    items: UserViewDto[];
 
     [key: string]: any;
 }

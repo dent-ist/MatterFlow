@@ -304,6 +304,26 @@ export function queueFilterDefs(
       ],
       normalize: (v: string) => (v === '3' || v === '7' ? v : null),
     },
+    // PM v2, link-only: the At risk rule (open, not overdue, 80 percent of the type's target used) and the structured reason of a hold.
+    {
+      key: 'atRisk',
+      label: 'At risk',
+      type: 'select',
+      param: 'atRisk',
+      noControl: true,
+      bareChip: true,
+      options: [{ value: 'true', label: 'At risk' }],
+      normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
+    },
+    {
+      key: 'onHoldReason',
+      label: 'On-hold reason',
+      type: 'multiSelect',
+      noControl: true,
+      param: 'onHoldReason',
+      options: [],
+      valueLabel: (id: string) => (id === '0' ? 'No reason given' : 'selected reason'),
+    },
   ];
   const omit = options.omit ?? [];
   return defs.filter((d) => !omit.includes(d.key));
@@ -395,5 +415,7 @@ export function filtersToValues(f: QueueFilters): Record<string, FilterValue> {
     managerId: f.managerId === null ? '' : String(f.managerId),
     role: f.role,
     dueWithin: f.dueWithin === null ? '' : String(f.dueWithin),
+    atRisk: f.atRisk ? 'true' : '',
+    onHoldReason: str(f.onHoldReason),
   };
 }

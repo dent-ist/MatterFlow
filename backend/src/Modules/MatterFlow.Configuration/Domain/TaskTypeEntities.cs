@@ -20,6 +20,12 @@ public class TaskType : AuditedEntity<int>
     /// <summary>Key of this type's icon in the icon library (<c>contracts/task-type-icons.json</c>). Required; neutral colour, never uploaded.</summary>
     public string IconKey { get; set; } = TaskTypeIcons.DefaultKey;
 
+    /// <summary>Name of this type's colour in the palette (<c>contracts/task-type-colours.json</c>); null = the neutral default. Never a free hex value.</summary>
+    public string? ColourKey { get; set; }
+
+    /// <summary>Expected turnaround in calendar days (1 to 365); null = no target. Drives the At risk badge.</summary>
+    public int? TargetDays { get; set; }
+
     /// <summary>One of the eligible workflow definitions, pre-selected for new Tasks. No foreign key until the workflow tables exist.</summary>
     public int? DefaultWorkflowDefinitionId { get; set; }
 

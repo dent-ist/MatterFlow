@@ -429,6 +429,9 @@ export class DeadlinesTab {
       return this.api.getMyMattersDeadlines(
         d.days,
         this.calendar() ? 'day' : 'matter',
+        undefined,
+        undefined,
+        undefined,
         a.scope,
         a.role,
         a.clientId,

@@ -54,6 +54,10 @@ export function aRow(overrides: Partial<TaskQueueRow> = {}): TaskQueueRow {
     holdReason: undefined,
     holdReasonTruncated: false,
     matterCanOpen: true,
+    taskTypeColourKey: undefined,
+    onHoldReasonId: undefined,
+    onHoldReasonName: undefined,
+    atRisk: false,
     ...overrides,
   };
 }

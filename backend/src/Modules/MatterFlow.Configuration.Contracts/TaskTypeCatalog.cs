@@ -15,6 +15,8 @@ namespace MatterFlow.Configuration.Contracts;
 /// True when the type may be used for new Tasks: it is active, its request form is published (or it has no fields) and it has at least one
 /// eligible workflow. Whether an eligible workflow has a published version is checked by the Tasks module when a workflow is chosen.
 /// </param>
+/// <param name="ColourKey">Name of the type's colour in the palette (<see cref="TaskTypeColours"/>); null = the neutral default.</param>
+/// <param name="TargetDays">Expected turnaround in calendar days (1 to 365); null = no target.</param>
 public sealed record TaskTypeInfo(
     int Id,
     string Name,
@@ -26,7 +28,9 @@ public sealed record TaskTypeInfo(
     bool HasFormFields,
     IReadOnlyList<int> EligibleWorkflowIds,
     int? DefaultWorkflowDefinitionId,
-    bool IsUsable);
+    bool IsUsable,
+    string? ColourKey = null,
+    int? TargetDays = null);
 
 /// <summary>One "this Task Type may use this workflow" link, for the workflow admin screens (which Task Types use a workflow).</summary>
 /// <param name="TaskTypeId">Task Type id.</param>

@@ -34,8 +34,8 @@ const ARG = {
   asap: 22,
   completedFrom: 25,
   matterText: 27,
-  sort: 36,
-  page: 38,
+  sort: 38,
+  page: 40,
 };
 
 const COUNTS = { active: 7, dueSoon: 2, completed: 5, createdByMe: 3 };

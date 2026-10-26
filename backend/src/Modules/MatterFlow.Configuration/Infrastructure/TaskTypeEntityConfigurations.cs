@@ -12,6 +12,8 @@ internal sealed class TaskTypeConfiguration : IEntityTypeConfiguration<TaskType>
         b.Property(x => x.Name).HasMaxLength(100).IsRequired();
         b.Property(x => x.Description).HasMaxLength(1000);
         b.Property(x => x.IconKey).HasMaxLength(50).IsUnicode(false).IsRequired();
+        b.Property(x => x.ColourKey).HasMaxLength(20).IsUnicode(false);
+        b.Property(x => x.TargetDays).HasColumnType("smallint");
         b.HasIndex(x => x.Name).IsUnique().HasDatabaseName(TaskTypeConstraints.Name);
         b.HasMany(x => x.EligibleWorkflows).WithOne().HasForeignKey(x => x.TaskTypeId).HasConstraintName("FK_TaskTypeWorkflowEligibility_TaskType");
     }

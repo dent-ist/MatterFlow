@@ -218,14 +218,14 @@ export function parseValue(def: FilterDef, params: ParamMap): FilterValue {
   switch (def.type) {
     case 'text': {
       const raw = params.get(paramOf(def));
-      return raw === null
+      return raw == null
         ? (defaultValue(def) as string)
         : (clean(def, raw.trim().slice(0, def.maxLength ?? 200)) ?? '');
     }
     case 'select': {
       if (def.paramMap) return parseMapped(def, params);
       const raw = params.get(paramOf(def));
-      return raw === null ? (defaultValue(def) as string) : (clean(def, raw.trim()) ?? '');
+      return raw == null ? (defaultValue(def) as string) : (clean(def, raw.trim()) ?? '');
     }
     case 'triState': {
       const raw = params.get(paramOf(def))?.toLowerCase();

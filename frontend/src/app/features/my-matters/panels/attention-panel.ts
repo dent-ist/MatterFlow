@@ -88,6 +88,9 @@ export class AttentionPanel {
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersAttention(
+        undefined,
+        undefined,
+        undefined,
         a.scope,
         a.role,
         a.clientId,

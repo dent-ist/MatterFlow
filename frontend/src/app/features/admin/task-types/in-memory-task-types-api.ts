@@ -4,6 +4,11 @@ import { Observable, defer, of, throwError } from 'rxjs';
 import { FormVersionStatus } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import {
+  TASK_TYPE_TARGET_DAYS_MAX,
+  TASK_TYPE_TARGET_DAYS_MIN,
+  isTaskTypeColour,
+} from '../../../shared/task-type/task-type-colours';
+import {
   CreateTaskTypeRequest,
   TaskTypeView,
   TaskTypesApi,
@@ -72,6 +77,8 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         name,
         description: request.description?.trim() || undefined,
         iconKey: this.checkIcon(request.iconKey, true),
+        colourKey: this.checkColour(request.colourKey),
+        targetDays: this.checkTargetDays(request.targetDays),
         isActive: request.isActive ?? true,
         defaultWorkflowDefinitionId: request.defaultWorkflowDefinitionId,
         eligibleWorkflowIds: eligible,
@@ -107,6 +114,8 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         name,
         description: request.description?.trim() || undefined,
         iconKey: this.checkIcon(request.iconKey, false),
+        colourKey: this.checkColour(request.colourKey),
+        targetDays: this.checkTargetDays(request.targetDays),
         isActive: request.isActive,
         defaultWorkflowDefinitionId: request.defaultWorkflowDefinitionId,
         eligibleWorkflowIds: eligible,
@@ -145,6 +154,32 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
       });
     }
     return key;
+  }
+
+  private checkColour(key: string | undefined): string | undefined {
+    if (!key?.trim()) return undefined;
+    if (!isTaskTypeColour(key)) {
+      const message = 'Choose a colour from the palette.';
+      throw problem(400, 'VALIDATION_FAILED', message, {
+        colourKey: [{ code: 'UNKNOWN_COLOUR', message }],
+      });
+    }
+    return key;
+  }
+
+  private checkTargetDays(days: number | undefined): number | undefined {
+    if (days === undefined || days === null) return undefined;
+    if (
+      !Number.isInteger(days) ||
+      days < TASK_TYPE_TARGET_DAYS_MIN ||
+      days > TASK_TYPE_TARGET_DAYS_MAX
+    ) {
+      const message = `Enter a whole number of days from ${TASK_TYPE_TARGET_DAYS_MIN} to ${TASK_TYPE_TARGET_DAYS_MAX}, or leave it empty.`;
+      throw problem(400, 'VALIDATION_FAILED', message, {
+        targetDays: [{ code: 'INVALID_TARGET_DAYS', message }],
+      });
+    }
+    return days;
   }
 
   private check(ids: number[], defaultId: number | undefined): number[] {

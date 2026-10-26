@@ -21,6 +21,8 @@ namespace MatterFlow.Configuration.Application.TaskTypes;
 /// <param name="Name">Unique display name.</param>
 /// <param name="Description">Optional description.</param>
 /// <param name="IconKey">Key of the type's icon in the icon library (<c>contracts/task-type-icons.json</c>). Always set; neutral colour.</param>
+/// <param name="ColourKey">Name of the type's colour in the palette (<c>contracts/task-type-colours.json</c>); null = the neutral default.</param>
+/// <param name="TargetDays">Expected turnaround in calendar days (1 to 365); null = no target.</param>
 /// <param name="IsActive">False = not offered for new Tasks; historical Tasks keep it.</param>
 /// <param name="DefaultWorkflowDefinitionId">Workflow pre-selected for new Tasks; one of the eligible workflows.</param>
 /// <param name="EligibleWorkflowIds">Workflow definition ids a new Task of this type may use, ascending.</param>
@@ -55,7 +57,9 @@ public sealed record TaskTypeView(
     [property: Required] bool IsUsable,
     [property: Required] IReadOnlyList<string> UsabilityIssues,
     [property: Required] string RowVersion,
-    int? OpenTaskCount = null);
+    int? OpenTaskCount = null,
+    string? ColourKey = null,
+    int? TargetDays = null);
 
 /// <summary>Body to create a Task Type. Its (empty) request form is provisioned with it.</summary>
 /// <param name="Name">Unique display name.</param>
@@ -64,15 +68,22 @@ public sealed record TaskTypeView(
 /// <param name="EligibleWorkflowIds">Workflows a new Task of this type may use.</param>
 /// <param name="DefaultWorkflowDefinitionId">One of the eligible workflows.</param>
 /// <param name="IconKey">An icon key from the library; omitted = the default icon (<c>file-text</c>). 400 <c>UNKNOWN_ICON</c> when not in the library.</param>
+/// <param name="ColourKey">A palette name (<c>contracts/task-type-colours.json</c>); omitted = the neutral default. 400 <c>UNKNOWN_COLOUR</c> otherwise.</param>
+/// <param name="TargetDays">Expected turnaround in calendar days, 1 to 365; omitted = no target. 400 <c>INVALID_TARGET_DAYS</c> otherwise.</param>
 public sealed record CreateTaskTypeRequest(
     [Required, StringLength(100)] string Name,
     [StringLength(1000)] string? Description,
     bool IsActive = true,
     IReadOnlyList<int>? EligibleWorkflowIds = null,
     int? DefaultWorkflowDefinitionId = null,
-    [StringLength(50)] string? IconKey = null);
+    [StringLength(50)] string? IconKey = null,
+    [StringLength(20)] string? ColourKey = null,
+    int? TargetDays = null);
 
-/// <summary>Body to change a Task Type, including its complete set of eligible workflows.</summary>
+/// <summary>
+/// Body to change a Task Type, including its complete set of eligible workflows. Like the icon, <c>colourKey</c> and <c>targetDays</c> are replaced as
+/// sent: null clears them (neutral colour, no target).
+/// </summary>
 public sealed record UpdateTaskTypeRequest(
     [Required, StringLength(100)] string Name,
     [StringLength(1000)] string? Description,
@@ -80,7 +91,9 @@ public sealed record UpdateTaskTypeRequest(
     [Required] IReadOnlyList<int> EligibleWorkflowIds,
     int? DefaultWorkflowDefinitionId,
     [Required] string RowVersion,
-    [Required, StringLength(50)] string IconKey);
+    [Required, StringLength(50)] string IconKey,
+    [StringLength(20)] string? ColourKey = null,
+    int? TargetDays = null);
 
 /// <summary>Task Types: admin commands (audited) and the <see cref="ITaskTypeCatalog"/> read side for other modules.</summary>
 public sealed class TaskTypeService(
@@ -209,7 +222,7 @@ public sealed class TaskTypeService(
     }
 
     private static TaskTypeInfo ToInfo(TaskTypeView v) =>
-        new(v.Id, v.Name, v.Description, v.IconKey, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable);
+        new(v.Id, v.Name, v.Description, v.IconKey, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable, v.ColourKey, v.TargetDays);
 
     private static TaskTypeView ToView(TaskType t, FormFacts? form, int? openTaskCount)
     {
@@ -245,7 +258,9 @@ public sealed class TaskTypeService(
             issues.Count == 0,
             issues,
             LookupSupport.FormatRowVersion(t.RowVersion),
-            openTaskCount);
+            openTaskCount,
+            t.ColourKey,
+            t.TargetDays);
     }
 
     private async Task<Dictionary<int, FormFacts>> LoadFormFactsAsync(IReadOnlyCollection<int> taskTypeIds, CancellationToken ct)
@@ -285,6 +300,12 @@ public sealed class TaskTypeService(
         var icon = CheckIcon(request.IconKey, allowOmitted: true);
         if (icon.IsFailure)
             return icon.Error!;
+        var colour = CheckColour(request.ColourKey);
+        if (colour.IsFailure)
+            return colour.Error!;
+        var target = CheckTargetDays(request.TargetDays);
+        if (target.IsFailure)
+            return target.Error!;
         if (await NameExistsAsync(name.Value, null, ct))
             return Duplicate(name.Value);
 
@@ -295,6 +316,8 @@ public sealed class TaskTypeService(
             Description = description.Value,
             IsActive = request.IsActive,
             IconKey = icon.Value,
+            ColourKey = colour.Value,
+            TargetDays = target.Value,
             DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId,
         };
         foreach (var workflowId in workflows.Value)
@@ -331,6 +354,12 @@ public sealed class TaskTypeService(
         var icon = CheckIcon(request.IconKey, allowOmitted: false);
         if (icon.IsFailure)
             return icon.Error!;
+        var colour = CheckColour(request.ColourKey);
+        if (colour.IsFailure)
+            return colour.Error!;
+        var target = CheckTargetDays(request.TargetDays);
+        if (target.IsFailure)
+            return target.Error!;
 
         var taskType = await db.Set<TaskType>().Include(t => t.EligibleWorkflows).FirstOrDefaultAsync(t => t.Id == id, ct);
         if (taskType is null)
@@ -344,6 +373,8 @@ public sealed class TaskTypeService(
         taskType.Description = description.Value;
         taskType.IsActive = request.IsActive;
         taskType.IconKey = icon.Value;
+        taskType.ColourKey = colour.Value;
+        taskType.TargetDays = target.Value;
         taskType.DefaultWorkflowDefinitionId = request.DefaultWorkflowDefinitionId;
 
         var before = taskType.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
@@ -405,6 +436,22 @@ public sealed class TaskTypeService(
             ? Result<string>.Success(key)
             : Error.Validation("iconKey", "UNKNOWN_ICON", "Choose an icon from the library.");
     }
+
+    /// <summary>The colour must be a palette name; omitted or blank means the neutral default (null). Never a free hex value.</summary>
+    private static Result<string?> CheckColour(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return Result<string?>.Success(null);
+        return TaskTypeColours.IsValid(key)
+            ? Result<string?>.Success(key)
+            : Error.Validation("colourKey", "UNKNOWN_COLOUR", "Choose a colour from the palette.");
+    }
+
+    /// <summary>The target turnaround is optional; when set it is 1 to 365 calendar days.</summary>
+    private static Result<int?> CheckTargetDays(int? days) =>
+        days is null || (days >= TaskTypeColours.MinTargetDays && days <= TaskTypeColours.MaxTargetDays)
+            ? Result<int?>.Success(days)
+            : Error.Validation("targetDays", "INVALID_TARGET_DAYS", $"Enter a whole number of days from {TaskTypeColours.MinTargetDays} to {TaskTypeColours.MaxTargetDays}, or leave it empty.");
 
     /// <summary>Distinct ascending workflow ids; the default must be among them (erd.md: application check).</summary>
     private static Result<IReadOnlyList<int>> CheckWorkflows(IReadOnlyList<int> ids, int? defaultId)

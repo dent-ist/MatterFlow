@@ -1623,6 +1623,161 @@
         }
       }
     },
+    "/api/v1/on-hold-reasons": {
+      "get": {
+        "tags": [
+          "OnHoldReasons"
+        ],
+        "operationId": "ListOnHoldReasons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnHoldReasonView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OnHoldReasons"
+        ],
+        "operationId": "CreateOnHoldReason",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOnHoldReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOnHoldReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOnHoldReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnHoldReasonView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/on-hold-reasons/{id}": {
+      "put": {
+        "tags": [
+          "OnHoldReasons"
+        ],
+        "operationId": "UpdateOnHoldReason",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOnHoldReasonRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOnHoldReasonRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOnHoldReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnHoldReasonView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/on-hold-reasons/order": {
+      "put": {
+        "tags": [
+          "OnHoldReasons"
+        ],
+        "operationId": "ReorderOnHoldReasons",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnHoldReasonView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/priorities": {
       "get": {
         "tags": [
@@ -3361,6 +3516,199 @@
                   }
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/views": {
+      "get": {
+        "tags": [
+          "UserViews"
+        ],
+        "operationId": "ListMyViews",
+        "parameters": [
+          {
+            "name": "surface",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "UserViews"
+        ],
+        "operationId": "CreateMyView",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/views/{surface}": {
+      "put": {
+        "tags": [
+          "UserViews"
+        ],
+        "operationId": "SaveMyRememberedView",
+        "parameters": [
+          {
+            "name": "surface",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRememberedViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRememberedViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRememberedViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/views/{id}": {
+      "put": {
+        "tags": [
+          "UserViews"
+        ],
+        "operationId": "UpdateMyView",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserViewRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserViewRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserViewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserViewDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "UserViews"
+        ],
+        "operationId": "DeleteMyView",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
             }
           }
         }
@@ -8519,6 +8867,35 @@
         "operationId": "GetMyMattersAttention",
         "parameters": [
           {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "maxLength": 4,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -8590,6 +8967,134 @@
         }
       }
     },
+    "/api/v1/my-matters/breakdown": {
+      "get": {
+        "tags": [
+          "MyMatters"
+        ],
+        "operationId": "GetMyMattersBreakdown",
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "managerId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fresh",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyMattersBreakdown"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/my-matters/deadlines": {
       "get": {
         "tags": [
@@ -8610,6 +9115,35 @@
             "in": "query",
             "schema": {
               "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 20,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "maxLength": 4,
               "minLength": 0,
               "type": "string"
             }
@@ -9343,6 +9877,24 @@
             }
           },
           {
+            "name": "atRisk",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "onHoldReason",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -9715,6 +10267,24 @@
             }
           },
           {
+            "name": "atRisk",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "onHoldReason",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -10058,6 +10628,24 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "atRisk",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "onHoldReason",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
@@ -12337,6 +12925,208 @@
           }
         }
       },
+      "BreakdownCell": {
+        "required": [
+          "taskTypeId",
+          "open",
+          "overdue",
+          "onHold",
+          "atRisk",
+          "query",
+          "overdueQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
+      "BreakdownRow": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "matterName",
+          "clientName",
+          "open",
+          "overdue",
+          "onHold",
+          "atRisk",
+          "cells"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
+          },
+          "clientName": {
+            "type": "string"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownCell"
+            }
+          }
+        }
+      },
+      "BreakdownTotals": {
+        "required": [
+          "open",
+          "overdue",
+          "onHold",
+          "atRisk",
+          "query",
+          "overdueQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
+      "BreakdownType": {
+        "required": [
+          "taskTypeId",
+          "name",
+          "iconKey",
+          "colourKey",
+          "targetDays",
+          "open",
+          "overdue",
+          "onHold",
+          "atRisk",
+          "avgDaysDone",
+          "doneCount",
+          "query",
+          "overdueQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atRisk": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "avgDaysDone": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "doneCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
       "BulkReassignTo": {
         "type": "object",
         "properties": {
@@ -12534,6 +13324,13 @@
               "null",
               "string"
             ]
+          },
+          "onHoldReasonId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12726,6 +13523,13 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "myMatterCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -13308,6 +14112,21 @@
           }
         }
       },
+      "CreateOnHoldReasonRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "CreatePodRequest": {
         "required": [
           "name"
@@ -13685,6 +14504,42 @@
               "null",
               "string"
             ]
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CreateUserViewRequest": {
+        "required": [
+          "surface",
+          "name",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "surface": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "isDefault": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -15958,6 +16813,13 @@
             "items": {
               "$ref": "#/components/schemas/MyMattersTaskItem"
             }
+          },
+          "totalUnfiltered": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -15985,6 +16847,73 @@
           },
           "reasonCode": {
             "type": "string"
+          }
+        }
+      },
+      "MyMattersBreakdown": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "view",
+          "status",
+          "types",
+          "typeTotal",
+          "rows",
+          "matterTotal",
+          "page",
+          "pageSize",
+          "totals",
+          "avgWindowDays"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "view": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownType"
+            }
+          },
+          "typeTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BreakdownRow"
+            }
+          },
+          "matterTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/BreakdownTotals"
+          },
+          "avgWindowDays": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -16147,6 +17076,13 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "totalUnfiltered": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -16282,6 +17218,25 @@
           },
           "query": {
             "type": "string"
+          }
+        }
+      },
+      "MyMattersOnHold": {
+        "required": [
+          "reasonName",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "reasonName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -16492,7 +17447,17 @@
           "dueDate",
           "dueAtUtc",
           "assigneeId",
-          "assigneeName"
+          "assigneeName",
+          "taskTypeId",
+          "taskTypeName",
+          "taskTypeIconKey",
+          "taskTypeColourKey",
+          "priorityName",
+          "priorityRank",
+          "statusCode",
+          "ageDays",
+          "onHold",
+          "atRisk"
         ],
         "type": "object",
         "properties": {
@@ -16555,6 +17520,49 @@
               "null",
               "string"
             ]
+          },
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "taskTypeName": {
+            "type": "string"
+          },
+          "taskTypeIconKey": {
+            "type": "string"
+          },
+          "taskTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "priorityName": {
+            "type": "string"
+          },
+          "priorityRank": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statusCode": {
+            "type": "string"
+          },
+          "ageDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onHold": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyMattersOnHold"
+              }
+            ]
+          },
+          "atRisk": {
+            "type": "boolean"
           }
         }
       },
@@ -17229,6 +18237,35 @@
             "items": {
               "$ref": "#/components/schemas/NotificationPreferenceItem"
             }
+          }
+        }
+      },
+      "OnHoldReasonView": {
+        "required": [
+          "id",
+          "name",
+          "sortOrder",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -19502,6 +20539,17 @@
           }
         }
       },
+      "SaveRememberedViewRequest": {
+        "required": [
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/JsonElement"
+          }
+        }
+      },
       "SaveStepValuesRequest": {
         "required": [
           "rowVersion"
@@ -21426,6 +22474,26 @@
           }
         }
       },
+      "TaskOnHoldReasonRef": {
+        "required": [
+          "onHoldReasonId",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "onHoldReasonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "TaskPodRef": {
         "required": [
           "podId",
@@ -21619,7 +22687,8 @@
           "workflow",
           "rowVersion",
           "holdReasonTruncated",
-          "matterCanOpen"
+          "matterCanOpen",
+          "atRisk"
         ],
         "type": "object",
         "properties": {
@@ -21803,6 +22872,29 @@
           "matterCanOpen": {
             "type": "boolean",
             "default": true
+          },
+          "taskTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "onHoldReasonId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "onHoldReasonName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "atRisk": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -22106,6 +23198,16 @@
               },
               {
                 "$ref": "#/components/schemas/TaskUserRef"
+              }
+            ]
+          },
+          "onHoldReason": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskOnHoldReasonRef"
               }
             ]
           }
@@ -22441,6 +23543,19 @@
             "type": "string"
           },
           "openTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetDays": {
             "type": [
               "null",
               "integer"
@@ -22794,6 +23909,25 @@
             "items": {
               "$ref": "#/components/schemas/NotificationPreferenceInput"
             }
+          }
+        }
+      },
+      "UpdateOnHoldReasonRequest": {
+        "required": [
+          "name",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -23216,6 +24350,19 @@
           },
           "iconKey": {
             "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "targetDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -23234,6 +24381,42 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateUserViewRequest": {
+        "required": [
+          "name",
+          "state",
+          "isDefault",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/JsonElement"
+              }
+            ]
+          },
+          "isDefault": {
+            "type": [
+              "null",
+              "boolean"
             ]
           },
           "rowVersion": {
@@ -23647,6 +24830,60 @@
               "integer"
             ],
             "format": "int32"
+          }
+        }
+      },
+      "UserViewDto": {
+        "required": [
+          "id",
+          "surface",
+          "name",
+          "isDefault",
+          "state",
+          "modifiedAtUtc",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "surface": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JsonElement"
+          },
+          "modifiedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "UserViewListResponse": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserViewDto"
+            }
           }
         }
       },
@@ -24621,6 +25858,9 @@
       "name": "Forms"
     },
     {
+      "name": "OnHoldReasons"
+    },
+    {
       "name": "Priorities"
     },
     {
@@ -24652,6 +25892,9 @@
     },
     {
       "name": "UsersLookup"
+    },
+    {
+      "name": "UserViews"
     },
     {
       "name": "Intake"

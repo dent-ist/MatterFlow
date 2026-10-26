@@ -944,7 +944,7 @@ describe('DashboardPage', () => {
     );
     // The list asks the Task Queue for priority then age, 5 rows.
     const call = getTaskQueue.mock.calls.find((c) => c[7] === true)!;
-    expect(call.slice(32)).toEqual(['priorityAge', 'asc', 1, 5]);
+    expect(call.slice(34)).toEqual(['priorityAge', 'asc', 1, 5]);
   });
 
   it('keeps the tab stops down: a row has one link and its actions, the matter reference is plain text, and a list can be skipped', async () => {
@@ -1070,7 +1070,7 @@ describe('DashboardPage', () => {
     );
     // The list asks the Task Queue for priority then the most overdue (due ascending), 5 rows, filtered to overdue.
     const call = getTaskQueue.mock.calls.find((c) => c[19] === true)!;
-    expect(call.slice(32)).toEqual(['priority', 'asc', 1, 5]);
+    expect(call.slice(34)).toEqual(['priority', 'asc', 1, 5]);
     expect(text(overdue.querySelector('[data-order]'))).toBe(
       'Critical first, then longest overdue.',
     );

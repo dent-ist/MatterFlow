@@ -44,6 +44,10 @@ export interface QueueFilters {
   managerId: number | null;
   role: '' | 'primary' | 'secondary';
   dueWithin: 3 | 7 | null;
+  /** PM v2: only open tasks that are At risk (`atRisk=true`; the target-turnaround rule of the server). Link-only, a removable chip. */
+  atRisk: boolean;
+  /** PM v2: On Hold tasks with one of these on-hold reasons (`onHoldReason=<id>`, repeatable; `0` = no reason chosen). Link-only, a removable chip. */
+  onHoldReason: number[];
 }
 
 export type SortDirection = 'asc' | 'desc';
@@ -86,6 +90,7 @@ export const SORT_FIELDS: readonly string[] = [
   'assignee',
   'client',
   'onHoldSince',
+  'type',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;
@@ -123,6 +128,8 @@ export function emptyFilters(): QueueFilters {
     managerId: null,
     role: '',
     dueWithin: null,
+    atRisk: false,
+    onHoldReason: [],
   };
 }
 
@@ -175,6 +182,18 @@ function managerRole(value: string | null): '' | 'primary' | 'secondary' {
 
 function dueWithin(value: string | null): 3 | 7 | null {
   return value === '3' ? 3 : value === '7' ? 7 : null;
+}
+
+/** `onHoldReason=<id>` (repeatable): ids of reasons; `0` means On Hold with no reason. Anything else is ignored. */
+function reasonIds(params: ParamMap): number[] {
+  const out: number[] = [];
+  for (const raw of params.getAll('onHoldReason')) {
+    for (const part of raw.split(',')) {
+      const n = Number(part.trim());
+      if (part.trim() !== '' && Number.isInteger(n) && n >= 0 && !out.includes(n)) out.push(n);
+    }
+  }
+  return out;
 }
 
 function statuses(params: ParamMap): string[] {
@@ -231,6 +250,8 @@ export function parseQueueState(
       managerId: id(params, 'managerId'),
       role: managerRole(params.get('role')),
       dueWithin: dueWithin(params.get('dueWithin')),
+      atRisk: bool(params, 'atRisk') === true,
+      onHoldReason: reasonIds(params),
     },
     sort: sort && SORT_FIELDS.includes(sort) ? sort : null,
     dir: dir === 'asc' || dir === 'desc' ? dir : null,
@@ -290,6 +311,8 @@ export function toQueryParams(
     managerId: f.managerId === null ? null : String(f.managerId),
     role: f.role || null,
     dueWithin: f.dueWithin === null ? null : String(f.dueWithin),
+    atRisk: f.atRisk ? 'true' : null,
+    onHoldReason: list(f.onHoldReason),
     sort: state.sort,
     dir: state.sort && state.dir ? state.dir : null,
     page: state.page > 1 ? String(state.page) : null,
@@ -339,6 +362,8 @@ export function filterCount(f: QueueFilters): number {
     f.managedByMe || f.managerId,
     f.role,
     f.dueWithin,
+    f.atRisk,
+    f.onHoldReason.length,
   ].filter(Boolean).length;
 }
 
@@ -557,6 +582,8 @@ export function queueArgs(
   managerId: number | undefined,
   role: string | undefined,
   dueWithin: number | undefined,
+  atRisk: boolean | undefined,
+  onHoldReason: number[] | undefined,
   sort: string | undefined,
   dir: string | undefined,
   page: number | undefined,
@@ -596,6 +623,8 @@ export function queueArgs(
     f.managerId ?? undefined,
     f.role || undefined,
     f.dueWithin ?? undefined,
+    f.atRisk ? true : undefined,
+    some(f.onHoldReason),
     state.sort ?? undefined,
     state.sort ? (state.dir ?? undefined) : undefined,
     state.page,

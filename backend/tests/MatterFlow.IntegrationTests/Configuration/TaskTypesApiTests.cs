@@ -61,11 +61,13 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         return await ReadAsync(response);
     }
 
-    private static object UpdateBody(JsonElement current, string? name = null, bool? isActive = null, int[]? workflows = null, int? defaultWorkflow = null, bool keepDefault = true, string? iconKey = null) => new
+    private static object UpdateBody(JsonElement current, string? name = null, bool? isActive = null, int[]? workflows = null, int? defaultWorkflow = null, bool keepDefault = true, string? iconKey = null, string? colourKey = null, int? targetDays = null, bool clearColourAndTarget = false) => new
     {
         name = name ?? current.GetProperty("name").GetString(),
         description = current.GetProperty("description").GetString(),
         iconKey = iconKey ?? current.GetProperty("iconKey").GetString(),
+        colourKey = clearColourAndTarget ? null : colourKey ?? (current.TryGetProperty("colourKey", out var c) ? c.GetString() : null),
+        targetDays = clearColourAndTarget ? null : targetDays ?? (current.TryGetProperty("targetDays", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : (int?)null),
         isActive = isActive ?? current.GetProperty("isActive").GetBoolean(),
         eligibleWorkflowIds = workflows ?? Ints(current.GetProperty("eligibleWorkflowIds")),
         defaultWorkflowDefinitionId = keepDefault && defaultWorkflow is null && current.GetProperty("defaultWorkflowDefinitionId").ValueKind == JsonValueKind.Number
@@ -418,5 +420,87 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
             .OrderBy(e => e.Id)
             .ToListAsync());
         events.Single(e => e.NewValue == "scale").OldValue.ShouldBe("file-text");
+    }
+
+    // ---- colour (named palette, optional) and target days (1 to 365, optional)
+
+    [Fact]
+    public async Task A_new_task_type_has_no_colour_and_no_target_by_default_and_a_chosen_pair_is_returned_everywhere()
+    {
+        var admin = As();
+        var plain = await CreateAsync(admin, new { name = "Plain" });
+        plain.GetProperty("colourKey").ValueKind.ShouldBe(JsonValueKind.Null);
+        plain.GetProperty("targetDays").ValueKind.ShouldBe(JsonValueKind.Null);
+
+        var styled = await CreateAsync(admin, new { name = "Styled", colourKey = "teal", targetDays = 3 });
+        styled.GetProperty("colourKey").GetString().ShouldBe("teal");
+        styled.GetProperty("targetDays").GetInt32().ShouldBe(3);
+
+        var list = await ReadAsync(await admin.GetAsync("/api/v1/task-types"));
+        list.EnumerateArray().Single(t => Id(t) == Id(styled)).GetProperty("colourKey").GetString().ShouldBe("teal");
+        (await GetAsync(admin, Id(styled))).GetProperty("targetDays").GetInt32().ShouldBe(3);
+
+        using var scope = _factory.Services.CreateScope();
+        var info = await scope.ServiceProvider.GetRequiredService<ITaskTypeCatalog>().GetAsync(Id(styled));
+        info!.ColourKey.ShouldBe("teal");
+        info.TargetDays.ShouldBe(3);
+    }
+
+    [Theory]
+    [InlineData("pink")]
+    [InlineData("TEAL")]
+    [InlineData("#ff0000")]
+    [InlineData("teal ")]
+    public async Task A_colour_outside_the_palette_is_a_400_on_create_and_update(string colour)
+    {
+        var admin = As();
+        var rejected = await admin.PostAsJsonAsync("/api/v1/task-types", new { name = "Bad colour", colourKey = colour });
+        rejected.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await ReadAsync(rejected)).GetProperty("errors").GetProperty("colourKey")[0].GetProperty("code").GetString().ShouldBe("UNKNOWN_COLOUR");
+
+        var created = await CreateAsync(admin, new { name = "Good colour", colourKey = "blue" });
+        var update = await admin.PutAsJsonAsync($"/api/v1/task-types/{Id(created)}", UpdateBody(created, colourKey: colour));
+        update.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await GetAsync(admin, Id(created))).GetProperty("colourKey").GetString().ShouldBe("blue");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(366)]
+    public async Task Target_days_outside_1_to_365_is_a_400_on_create_and_update(int days)
+    {
+        var admin = As();
+        var rejected = await admin.PostAsJsonAsync("/api/v1/task-types", new { name = "Bad target", targetDays = days });
+        rejected.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await ReadAsync(rejected)).GetProperty("errors").GetProperty("targetDays")[0].GetProperty("code").GetString().ShouldBe("INVALID_TARGET_DAYS");
+
+        var created = await CreateAsync(admin, new { name = "Good target", targetDays = 365 });
+        var update = await admin.PutAsJsonAsync($"/api/v1/task-types/{Id(created)}", UpdateBody(created, targetDays: days));
+        update.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await GetAsync(admin, Id(created))).GetProperty("targetDays").GetInt32().ShouldBe(365);
+        (await CreateAsync(admin, new { name = "One day", targetDays = 1 })).GetProperty("targetDays").GetInt32().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Changing_and_clearing_colour_and_target_is_audited_with_old_and_new_values()
+    {
+        var admin = As();
+        var created = await CreateAsync(admin, new { name = "Colour audit" });
+
+        var styled = await UpdateAsync(admin, created, UpdateBody(created, colourKey: "violet", targetDays: 5));
+        styled.GetProperty("colourKey").GetString().ShouldBe("violet");
+        var cleared = await UpdateAsync(admin, styled, UpdateBody(styled, clearColourAndTarget: true));
+        cleared.GetProperty("colourKey").ValueKind.ShouldBe(JsonValueKind.Null);
+        cleared.GetProperty("targetDays").ValueKind.ShouldBe(JsonValueKind.Null);
+
+        var events = await _factory.WithDbAsync(db => db.Set<AuditEvent>()
+            .Where(e => e.ObjectType == "TaskType" && e.ObjectId == Id(created).ToString() && (e.FieldKey == "ColourKey" || e.FieldKey == "TargetDays"))
+            .OrderBy(e => e.Id)
+            .ToListAsync());
+        var colour = events.Where(e => e.FieldKey == "ColourKey").ToList();
+        colour.Select(e => (e.OldValue, e.NewValue)).ShouldBe([(null, "violet"), ("violet", null)]);
+        var target = events.Where(e => e.FieldKey == "TargetDays").ToList();
+        target.Select(e => (e.OldValue, e.NewValue)).ShouldBe([(null, "5"), ("5", null)]);
     }
 }
