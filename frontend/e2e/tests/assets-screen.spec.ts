@@ -37,11 +37,11 @@ test.describe('Assets list: column filters and the record page link', () => {
     const gridBox = (await grid.boundingBox())!;
     expect(toggleBox.y + toggleBox.height).toBeLessThanOrEqual(gridBox.y + 1);
 
-    const columns = ['Name', 'Type', 'Matter', 'External reference', 'Status'];
+    const columns = ['Name', 'Type', 'Matter', 'External reference', 'Disposition'];
     const headers = grid.locator('thead tr:first-child th');
-    // The admin sees Linked tasks (no filter of its own): the cell under it is empty, the other five columns have a control.
-    await expect(headers).toHaveCount(6);
-    const position = [0, 1, 2, 4, 5];
+    // The admin sees the selection column, Size and Linked tasks (no filter of their own): the cells under them are empty, the other five columns have a control.
+    await expect(headers).toHaveCount(8);
+    const position = [1, 2, 3, 6, 7];
     const headerBottom = (await headers.first().boundingBox())!;
     for (let i = 0; i < columns.length; i++) {
       const th = (await headers.nth(position[i]).boundingBox())!;
@@ -58,7 +58,9 @@ test.describe('Assets list: column filters and the record page link', () => {
       expect(control.width).toBeGreaterThan(th.width - 26); // the header text's own padding
       expect(Math.round(control.height)).toBe(32);
     }
-    await expect(page.getByRole('combobox', { name: 'Filter by Status' })).toHaveValue('active');
+    await expect(page.getByRole('combobox', { name: 'Filter by Disposition' })).toHaveValue(
+      'active',
+    );
 
     // The choice is remembered per user, also after a reload.
     await filtersToggle(page).click();
@@ -128,7 +130,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await filter(page, 'Matter').fill(`Other Matter`);
     await filter(page, 'Matter').press('Enter');
     await expect(page.getByText('No assets match these filters')).toBeVisible(); // Gamma is inactive
-    await page.getByRole('combobox', { name: 'Filter by Status' }).selectOption('all');
+    await page.getByRole('combobox', { name: 'Filter by Disposition' }).selectOption('all');
     await expect(names).toHaveText([`Gamma ${token}`]);
     await filter(page, 'Matter').fill(String(matter.matterRef).replace(/(^|-)0+/g, '$1')); // typed pair, unpadded
     await filter(page, 'Matter').press('Enter');
@@ -140,7 +142,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(page.getByText('No assets match these filters')).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     await expect(filter(page, 'Name')).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Filter by Status' })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Filter by Disposition' })).toBeVisible();
 
     await page.getByRole('main').getByRole('button', { name: 'Clear filters' }).first().click();
     await expect(page).not.toHaveURL(/name=|typeId=|matter=|status=|extref=/);

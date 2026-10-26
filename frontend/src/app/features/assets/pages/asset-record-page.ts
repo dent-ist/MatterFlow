@@ -33,6 +33,12 @@ import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/r
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { AssetDetailsTab } from './asset-details-tab';
+import {
+  AssetDispositionDialog,
+  DispositionOutcome,
+  DispositionTarget,
+} from '../disposition/asset-disposition-dialog';
+import { DispositionCode, dispositionOf } from '../disposition/asset-disposition';
 import { firstAllowedTab } from '../../admin/denial';
 import { dialogCopy } from '../../admin/shared/dialog-copy';
 import { AssetLinkedTasks, LinkedTaskTotals } from './asset-linked-tasks';
@@ -58,6 +64,7 @@ type Tab = 'details' | 'tasks' | 'history';
     Badge,
     MatterRef,
     ConfirmDialog,
+    AssetDispositionDialog,
     EntityActivity,
     AssetDetailsTab,
     AssetLinkedTasks,
@@ -87,10 +94,21 @@ type Tab = 'details' | 'tasks' | 'history';
               [current]="a.displayName"
               [name]="a.displayName"
               [active]="a.isActive"
+              [showStatus]="a.dispositionCode === 'ACTIVE' || a.dispositionCode === 'INACTIVE'"
               [actions]="headerActions()"
             >
               <span mfBadges>
                 <mf-badge tone="info" data-type-badge>{{ a.assetTypeName }}</mf-badge>
+                @if (
+                  a.dispositionCode === 'PENDING_DISPOSITION' || a.dispositionCode === 'DISPOSED'
+                ) {
+                  <mf-badge
+                    [tone]="disposition().tone"
+                    [icon]="disposition().icon"
+                    data-disposition-badge
+                    >{{ disposition().label }}</mf-badge
+                  >
+                }
               </span>
               <span mfContext data-matter
                 >Matter
@@ -101,8 +119,20 @@ type Tab = 'details' | 'tasks' | 'history';
 
             @if (!a.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
-                This asset is inactive. It keeps its history and existing task links, and can't be
-                edited until it is reactivated.
+                @if (a.dispositionCode === 'ACTIVE' || a.dispositionCode === 'INACTIVE') {
+                  This asset is inactive. It keeps its history and existing task links, and can't be
+                  edited until it is reactivated.
+                } @else {
+                  This asset is {{ disposition().label.toLowerCase() }}. It keeps its history and
+                  existing task links, can't be newly linked and can't be edited.
+                }
+              </div>
+            }
+            @if (a.inactiveLinked) {
+              <div class="pg-banner" role="note" data-inactive-linked-banner>
+                <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                Not active, but still linked to {{ a.openLinkedTaskCount }} open
+                {{ a.openLinkedTaskCount === 1 ? 'task' : 'tasks' }}.
               </div>
             }
             @if (!a.assetTypeIsActive) {
@@ -162,6 +192,14 @@ type Tab = 'details' | 'tasks' | 'history';
                 <p data-toggle-body>Reactivate {{ a.displayName }}?</p>
               }
             </mf-confirm-dialog>
+
+            <mf-asset-disposition-dialog
+              [targets]="dispositionTargets()"
+              [canEdit]="auth.has('Asset.Edit')"
+              [canDispose]="auth.has('Asset.Dispose')"
+              [(visible)]="dispositionOpen"
+              (finished)="dispositionDone($event)"
+            />
           }
         }
         @default {
@@ -183,7 +221,7 @@ export class AssetRecordPage {
   readonly tab = input<string>();
 
   private readonly api = inject(AssetsClient);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
   private readonly pageTitle = inject(PageTitle);
@@ -195,6 +233,22 @@ export class AssetRecordPage {
   protected readonly state = this.flow.state;
   protected readonly asset = signal<AssetResponse | null>(null);
   protected readonly toggleOpen = signal(false);
+  protected readonly dispositionOpen = signal(false);
+  protected readonly disposition = computed(() => dispositionOf(this.asset()?.dispositionCode));
+  protected readonly dispositionTargets = computed<DispositionTarget[]>(() => {
+    const a = this.asset();
+    return a
+      ? [
+          {
+            assetId: a.assetId,
+            name: a.displayName,
+            code: a.dispositionCode as DispositionCode,
+            openLinkedTaskCount: this.canTasks() ? (a.openLinkedTaskCount ?? null) : null,
+            rowVersion: a.rowVersion,
+          },
+        ]
+      : [];
+  });
   protected readonly busy = signal(false);
 
   protected readonly canTasks = computed(() => this.auth.has('Task.View'));
@@ -242,6 +296,24 @@ export class AssetRecordPage {
         label: 'Linked',
         count: a.linkedTaskCount ?? null,
         hint: 'All tasks linked to this asset',
+      });
+    }
+    items.push({
+      key: 'disposition',
+      label: 'Disposition',
+      count: null,
+      value:
+        this.disposition().label +
+        (a.dispositionChangedAtUtc
+          ? ', ' + mfDate(a.dispositionChangedAtUtc, this.zone, 'date')
+          : ''),
+    });
+    if (a.sizeValue !== undefined && a.sizeValue !== null) {
+      items.push({
+        key: 'size',
+        label: 'Size',
+        count: null,
+        value: `${a.sizeValue} ${a.sizeUnit}`,
       });
     }
     items.push({
@@ -312,6 +384,14 @@ export class AssetRecordPage {
         label: 'Activity',
         icon: 'pi-history',
         run: () => this.select('history'),
+      });
+    }
+    if (this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose')) {
+      list.push({
+        id: 'change-disposition',
+        role: 'state',
+        label: 'Change disposition',
+        run: () => this.dispositionOpen.set(true),
       });
     }
     if (this.auth.has('Asset.Edit')) {
@@ -390,6 +470,16 @@ export class AssetRecordPage {
         this.asset.set(asset);
       },
     );
+  }
+
+  /** After the dialog saved: the page shows the updated asset; focus goes to the heading once the dialog is gone. */
+  protected dispositionDone(outcome: DispositionOutcome): void {
+    if (!outcome.asset) return;
+    this.asset.set(outcome.asset);
+    this.notify.success(
+      'Disposition changed: ' + dispositionOf(outcome.asset.dispositionCode).label,
+    );
+    setTimeout(() => this.focusHeading(), 0);
   }
 
   protected async toggleActive(): Promise<void> {

@@ -37,7 +37,6 @@ import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { SortHeader } from '../../../shared/ui/data-table';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { matterLinkOf } from '../../../shared/ui/matter-link';
@@ -46,16 +45,60 @@ import { PageScope } from '../../../shared/scope/page-scope';
 import { scopeLine } from '../../../shared/scope/scope-line';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { Pager } from '../../../shared/ui/pager';
+import {
+  AssetDispositionDialog,
+  DispositionOutcome,
+  DispositionTarget,
+} from '../disposition/asset-disposition-dialog';
+import { DispositionCode, dispositionOf } from '../disposition/asset-disposition';
+import { formatSize } from '../disposition/asset-size';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'type', 'matter', 'linkedTasks', 'externalReference', 'status'] as const;
+const COLUMNS = [
+  'select',
+  'name',
+  'type',
+  'matter',
+  'size',
+  'linkedTasks',
+  'externalReference',
+  'status',
+] as const;
 type Column = (typeof COLUMNS)[number];
 
+/** The Disposition filter (the `status` address key stays, so old links keep working). Active is the default; "Not active" is the three other states together. */
 const STATUS_OPTIONS: readonly FilterOption[] = [
   { value: 'active', label: 'Active' },
+  { value: 'notactive', label: 'Not active' },
   { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending disposition' },
+  { value: 'disposed', label: 'Disposed' },
   { value: 'all', label: 'All' },
 ];
+
+type StatusKey = 'active' | 'notactive' | 'inactive' | 'pending' | 'disposed' | 'all';
+
+function parseStatusKey(value: string | null | undefined): StatusKey {
+  return STATUS_OPTIONS.some((o) => o.value === value) ? (value as StatusKey) : 'active';
+}
+
+/** What each choice asks the API for: `isActive` for Active and Not active, the disposition for the single states. */
+function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string[] } {
+  switch (key) {
+    case 'active':
+      return { isActive: true };
+    case 'notactive':
+      return { isActive: false };
+    case 'inactive':
+      return { disposition: ['INACTIVE'] };
+    case 'pending':
+      return { disposition: ['PENDING_DISPOSITION'] };
+    case 'disposed':
+      return { disposition: ['DISPOSED'] };
+    default:
+      return {};
+  }
+}
 
 /**
  * Global Assets list (UX S08): 44 px rows on the admin grid, one inline filter per filterable column (a second header row, open from 640 px;
@@ -86,6 +129,7 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
     ColumnFilterRow,
     AdminCardList,
     RecordSort,
+    AssetDispositionDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -133,6 +177,38 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
     .as-hint {
       color: var(--mf-text-muted);
     }
+    .as-check {
+      width: 2.5rem;
+      text-align: center;
+    }
+    .as-size {
+      white-space: nowrap;
+    }
+    .as-disposition {
+      white-space: nowrap;
+    }
+    .as-warn {
+      display: block;
+      margin-top: 2px;
+      color: var(--mf-warning-fg);
+      font-size: var(--mf-fs-sm);
+      white-space: normal;
+    }
+    .as-bulk {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s3);
+      padding: var(--mf-s2) var(--mf-s3);
+      background: var(--mf-selected-bg);
+      border-radius: var(--mf-radius);
+    }
+    .as-bulk__count {
+      font-weight: 600;
+    }
+    tr.as-row--on {
+      background: var(--mf-selected-bg);
+    }
   `,
   host: { '(window:resize)': 'onResize()' },
   template: `
@@ -174,6 +250,37 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
           (sorted)="pickSort($event)"
         />
       </mf-filters-bar>
+
+      @if (canChange() && selected().size > 0) {
+        <div class="as-bulk" role="region" aria-label="Selected assets" data-bulk-bar>
+          <span class="as-bulk__count" role="status" data-bulk-count
+            >{{ selected().size }} {{ selected().size === 1 ? 'asset' : 'assets' }} selected</span
+          >
+          <button
+            type="button"
+            class="mf-btn"
+            data-bulk-disposition
+            (click)="dispositionOpen.set(true)"
+          >
+            Change disposition
+          </button>
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-bulk-clear
+            (click)="clearSelection()"
+          >
+            Clear selection
+          </button>
+        </div>
+      }
+      <mf-asset-disposition-dialog
+        [targets]="targets()"
+        [canEdit]="auth.has('Asset.Edit')"
+        [canDispose]="auth.has('Asset.Dispose')"
+        [(visible)]="dispositionOpen"
+        (finished)="dispositionDone($event)"
+      />
 
       <div class="mf-fill as-grid">
         @if (phone()) {
@@ -221,6 +328,18 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                 </caption>
                 <thead>
                   <tr>
+                    @if (canChange()) {
+                      <th class="as-check" scope="col">
+                        <input
+                          type="checkbox"
+                          data-select-all
+                          aria-label="Select all assets on this page"
+                          [checked]="allSelected()"
+                          [indeterminate]="selected().size > 0 && !allSelected()"
+                          (change)="toggleAll($any($event.target).checked)"
+                        />
+                      </th>
+                    }
                     <th
                       class="mf-cell-name"
                       mfSort="displayName"
@@ -247,6 +366,17 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                     >
                       Matter number
                     </th>
+                    <th
+                      class="mf-cell-num as-size"
+                      mfSort="size"
+                      [firstDesc]="true"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      [attr.data-drop]="drop.size"
+                      (sorted)="setSort($event)"
+                    >
+                      Size
+                    </th>
                     @if (tasksShown()) {
                       <th
                         class="mf-cell-num"
@@ -263,7 +393,15 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                     <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
                       External reference
                     </th>
-                    <th class="mf-cell-badge" scope="col">Status</th>
+                    <th
+                      class="as-disposition"
+                      mfSort="disposition"
+                      [sort]="sort()"
+                      [defaultSort]="defaultSort"
+                      (sorted)="setSort($event)"
+                    >
+                      Disposition
+                    </th>
                   </tr>
                   @if (filters.rowVisible()) {
                     <tr
@@ -301,7 +439,21 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                     </button>
                   }
                   @for (a of rows(); track a.assetId) {
-                    <tr [attr.data-asset-id]="a.assetId">
+                    <tr
+                      [attr.data-asset-id]="a.assetId"
+                      [class.as-row--on]="selected().has(a.assetId)"
+                    >
+                      @if (canChange()) {
+                        <td class="as-check">
+                          <input
+                            type="checkbox"
+                            data-select-row
+                            [attr.aria-label]="'Select ' + a.displayName"
+                            [checked]="selected().has(a.assetId)"
+                            (change)="toggle(a.assetId, $any($event.target).checked)"
+                          />
+                        </td>
+                      }
                       <td class="mf-cell-name">
                         <a
                           class="mf-name"
@@ -320,6 +472,14 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                           [link]="matterLink(a.matterId)"
                           [copy]="false"
                         />
+                      </td>
+                      <td class="mf-cell-num as-size" [attr.data-drop]="drop.size" data-size>
+                        @if (sizeText(a); as size) {
+                          {{ size }}
+                        } @else {
+                          <span class="as-ref__none" aria-hidden="true">&ndash;</span>
+                          <span class="mf-sr-only">No size</span>
+                        }
                       </td>
                       @if (tasksShown()) {
                         <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
@@ -357,12 +517,23 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
                           <span class="mf-sr-only">No external reference</span>
                         }
                       </td>
-                      <td class="mf-cell-badge" data-status>
-                        @if (a.isActive) {
+                      <td class="as-disposition" data-status>
+                        @if (a.dispositionCode === 'ACTIVE') {
                           <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
                           <span class="mf-sr-only">Active</span>
                         } @else {
-                          <mf-badge tone="neutral">Inactive</mf-badge>
+                          <mf-badge
+                            [tone]="dispositionOf(a.dispositionCode).tone"
+                            [icon]="dispositionOf(a.dispositionCode).icon"
+                            data-disposition-badge
+                            >{{ dispositionOf(a.dispositionCode).label }}</mf-badge
+                          >
+                        }
+                        @if (a.inactiveLinked) {
+                          <span class="as-warn" data-inactive-linked>
+                            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                            Still linked to open tasks
+                          </span>
                         }
                       </td>
                     </tr>
@@ -390,7 +561,7 @@ const STATUS_OPTIONS: readonly FilterOption[] = [
 })
 export class AssetsListPage extends ServerListPage<AssetListItem> {
   private readonly api = inject(AssetsClient);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
   private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
@@ -413,24 +584,33 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     this.scope.mine() ? 'You do not manage any matter yet.' : 'No assets yet.',
   );
   /** The External reference column leaves below 1280 px and Linked tasks below 900 px (the kit's column-drop rule); the filter row follows. */
-  protected readonly drop = { externalReference: 1280, linkedTasks: 900 } as const;
+  protected readonly drop = { externalReference: 1280, linkedTasks: 900, size: 1100 } as const;
+  protected readonly dispositionOf = dispositionOf;
   /** The Linked tasks column is for people who may see tasks: the API sends no counts without `Task.View` (#498). */
   protected readonly tasksShown = computed(() => this.auth.has('Task.View'));
+  /** People who may change an asset's disposition get a checkbox column and the bulk bar. */
+  protected readonly canChange = computed(
+    () => !this.phone() && (this.auth.has('Asset.Edit') || this.auth.has('Asset.Dispose')),
+  );
   protected readonly columnSpec = computed<AdminColumn[]>(() => [
+    ...(this.canChange() ? [{ cls: 'as-check', bone: '1rem' }] : []),
     { cls: 'mf-cell-name', bone: '14rem' },
     { cls: 'as-type', bone: '7rem' },
     { cls: 'as-matter', bone: '6rem' },
+    { cls: 'mf-cell-num as-size', bone: '4rem', drop: this.drop.size },
     ...(this.tasksShown()
       ? [{ cls: 'mf-cell-num', bone: '2rem', drop: this.drop.linkedTasks }]
       : []),
     { cls: 'as-refcell', bone: '12rem', drop: this.drop.externalReference },
-    { cls: 'mf-cell-badge', bone: '4rem' },
+    { cls: 'as-disposition', bone: '6rem' },
   ]);
   /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
   private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
   protected readonly visibleColumns = computed<readonly Column[]>(() =>
     COLUMNS.filter(
       (c) =>
+        !(c === 'select' && !this.canChange()) &&
+        !(c === 'size' && this.viewport() < this.drop.size) &&
         !(c === 'externalReference' && this.viewport() < this.drop.externalReference) &&
         !(c === 'linkedTasks' && (!this.tasksShown() || this.viewport() < this.drop.linkedTasks)),
     ),
@@ -442,6 +622,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     { value: 'displayName', label: 'Name' },
     { value: 'assetType', label: 'Type' },
     { value: 'matter', label: 'Matter number' },
+    { value: 'size', label: 'Size', descFirst: true },
+    { value: 'disposition', label: 'Disposition' },
     ...(this.tasksShown()
       ? [{ value: 'linkedTaskCount', label: 'Linked tasks', descFirst: true }]
       : []),
@@ -456,16 +638,44 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       title: a.displayName,
       link: ['/assets', a.assetId],
       rowKey: a.assetId,
-      badges: a.isActive ? [] : [{ text: 'Inactive', tone: 'neutral', icon: 'pi-minus-circle' }],
+      badges:
+        a.dispositionCode === 'ACTIVE'
+          ? []
+          : [
+              {
+                text: dispositionOf(a.dispositionCode).label,
+                tone: dispositionOf(a.dispositionCode).tone,
+                icon: dispositionOf(a.dispositionCode).icon,
+              },
+            ],
       subtitle: a.assetTypeName,
       meta: [
         `Matter ${a.matterRef}`,
+        ...(this.sizeText(a) ? [this.sizeText(a)] : []),
+        ...(a.inactiveLinked ? ['Not active, still linked to open tasks'] : []),
         ...(this.tasksShown() && open !== undefined && open !== null
           ? [`${open} open ${open === 1 ? 'task' : 'tasks'}`]
           : []),
       ],
     };
   };
+  /** The rows ticked for a bulk disposition change (this page only; cleared when the list changes). */
+  protected readonly selected = signal<ReadonlySet<number>>(new Set());
+  protected readonly dispositionOpen = signal(false);
+  protected readonly allSelected = computed(
+    () => this.rows().length > 0 && this.rows().every((r) => this.selected().has(r.assetId)),
+  );
+  protected readonly targets = computed<DispositionTarget[]>(() =>
+    this.rows()
+      .filter((r) => this.selected().has(r.assetId))
+      .map((r) => ({
+        assetId: r.assetId,
+        name: r.displayName,
+        code: r.dispositionCode as DispositionCode,
+        openLinkedTaskCount: this.tasksShown() ? (r.openLinkedTaskCount ?? null) : null,
+        rowVersion: r.rowVersion,
+      })),
+  );
   protected readonly types = signal<AssetTypeResponse[]>([]);
 
   protected readonly typeOptions = computed<FilterOption[]>(() =>
@@ -506,7 +716,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
     {
       key: 'status',
-      label: 'Status',
+      label: 'Disposition',
       column: 'status',
       type: 'select',
       options: STATUS_OPTIONS,
@@ -566,7 +776,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   protected override fetch() {
     return this.list(
-      isActiveParam(parseStatus(this.filters.text('status'))),
+      parseStatusKey(this.filters.text('status')),
       this.pageNumber(),
       this.pageSize(),
       this.sort() || undefined,
@@ -575,8 +785,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
   /** The inactive assets the default Active hides, under the same other filters ("of 55 active - 5 inactive hidden  Show all"). */
   protected override fetchHidden() {
-    return parseStatus(this.filters.text('status')) === 'active'
-      ? this.list(false, 1, 1, undefined)
+    return parseStatusKey(this.filters.text('status')) === 'active'
+      ? this.list('notactive', 1, 1, undefined)
       : null;
   }
 
@@ -588,12 +798,12 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   /** The same list without the scope: the "of 1,204". */
   protected override fetchUnscoped() {
     return this.scope.mine()
-      ? this.list(isActiveParam(parseStatus(this.filters.text('status'))), 1, 1, undefined, false)
+      ? this.list(parseStatusKey(this.filters.text('status')), 1, 1, undefined, false)
       : null;
   }
 
   private list(
-    isActive: boolean | undefined,
+    status: StatusKey,
     page: number,
     size: number,
     sort: string | undefined,
@@ -604,6 +814,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       .list('typeId')
       .map(Number)
       .filter((n) => Number.isInteger(n) && n > 0);
+    const { isActive, disposition } = statusQuery(status);
     return firstValueFrom(
       this.api.listAssets(
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
@@ -615,11 +826,40 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         this.filters.text('matter') || undefined,
         scoped && this.scope.mine() ? true : undefined,
         undefined,
+        disposition,
+        undefined,
         page,
         size,
         sort,
       ),
     );
+  }
+
+  /** "412 GB", "26,400 Items" or an empty string when the asset has no size. */
+  protected sizeText(a: AssetListItem): string {
+    return formatSize(a.sizeValue, a.sizeUnit);
+  }
+
+  protected toggle(id: number, on: boolean): void {
+    const next = new Set(this.selected());
+    if (on) next.add(id);
+    else next.delete(id);
+    this.selected.set(next);
+  }
+
+  protected toggleAll(on: boolean): void {
+    this.selected.set(on ? new Set(this.rows().map((r) => r.assetId)) : new Set());
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  /** After the dialog: the list reloads; the assets that could not be changed stay selected so the person sees which. */
+  protected dispositionDone(outcome: DispositionOutcome): void {
+    const failed = outcome.bulk?.results.filter((r) => !r.ok).map((r) => r.assetId) ?? [];
+    this.selected.set(new Set(failed));
+    this.load();
   }
 
   protected onResize(): void {

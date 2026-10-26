@@ -28,7 +28,7 @@ const LINK = {
 
 describe('AssetRecordPage', () => {
   let assets: Record<
-    'getAsset' | 'setAssetActive' | 'listAssetLinkedTasks',
+    'getAsset' | 'setAssetActive' | 'listAssetLinkedTasks' | 'getAssetDispositionHistory',
     ReturnType<typeof vi.fn>
   >;
   let fixture: ComponentFixture<AssetRecordPage>;
@@ -52,6 +52,7 @@ describe('AssetRecordPage', () => {
         .mockReturnValue(ok(anAsset({ linkedTaskCount: 2, openLinkedTaskCount: 1 }))),
       setAssetActive: vi.fn().mockReturnValue(ok(anAsset({ isActive: false, rowVersion: 'BBBB' }))),
       listAssetLinkedTasks: vi.fn().mockReturnValue(ok({ items: [LINK, { ...LINK, taskId: 7 }] })),
+      getAssetDispositionHistory: vi.fn().mockReturnValue(ok({ items: [] })),
     };
     TestBed.configureTestingModule({
       providers: [
@@ -139,6 +140,101 @@ describe('AssetRecordPage', () => {
     expect(el().querySelector('[data-inactive-banner]')).not.toBeNull();
     const menu = await openOverflow(fixture);
     expect(menu?.textContent).toContain('Set active');
+  });
+
+  describe('disposition (epic #851, issue #866)', () => {
+    const pending = (over = {}) =>
+      anAsset({
+        isActive: false,
+        dispositionCode: 'PENDING_DISPOSITION',
+        dispositionChangedAtUtc: '2026-10-12T09:00:00Z',
+        dispositionNote: 'Matter closed',
+        linkedTaskCount: 3,
+        openLinkedTaskCount: 2,
+        inactiveLinked: true,
+        ...over,
+      });
+
+    it('offers Change disposition in the overflow to a person who may edit or dispose, and to nobody else', async () => {
+      await create(['Asset.View', 'Asset.Edit']);
+      expect((await openOverflow(fixture))?.textContent).toContain('Change disposition');
+      TestBed.resetTestingModule();
+      await create(['Asset.View', 'Asset.Dispose']);
+      expect((await openOverflow(fixture))?.textContent).toContain('Change disposition');
+      TestBed.resetTestingModule();
+      await create(['Asset.View']);
+      expect(el().querySelector('[data-overflow]')).toBeNull();
+    });
+
+    it('shows Pending disposition as a badge in place of the status, with a banner and the strip item', async () => {
+      await create(['Asset.View', 'Task.View']);
+      assets.getAsset.mockReturnValue(ok(pending()));
+      await fixture.componentInstance.load();
+      await settle(fixture);
+
+      expect(el().querySelector('[data-disposition-badge]')?.textContent).toContain(
+        'Pending disposition',
+      );
+      expect(el().querySelector('[data-record-header] mf-active-badge')).toBeNull();
+      expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain(
+        'pending disposition',
+      );
+      expect(el().querySelector('[data-inactive-linked-banner]')?.textContent).toContain(
+        'Not active, but still linked to 2 open tasks',
+      );
+      const strip = el().querySelector('[data-asset-strip]')!.textContent!;
+      expect(strip).toContain('Disposition');
+      expect(strip).toContain('Pending disposition');
+    });
+
+    it('shows no disposition badge for an Active or an Inactive asset (the status badge says it)', async () => {
+      await create(['Asset.View']);
+      expect(el().querySelector('[data-disposition-badge]')).toBeNull();
+      assets.getAsset.mockReturnValue(
+        ok(anAsset({ isActive: false, dispositionCode: 'INACTIVE' })),
+      );
+      await fixture.componentInstance.load();
+      await settle(fixture);
+      expect(el().querySelector('[data-disposition-badge]')).toBeNull();
+      expect(el().querySelector('[data-record-header] mf-active-badge')?.textContent).toContain(
+        'Inactive',
+      );
+      expect(el().querySelector('[data-inactive-banner]')?.textContent).toContain('inactive');
+    });
+
+    it('lists the disposition and its history on the Details tab', async () => {
+      await create(['Asset.View']);
+      // A new row version is what makes the history list reload after a change.
+      assets.getAsset.mockReturnValue(ok({ ...pending(), rowVersion: 'PPPP' }));
+      assets.getAssetDispositionHistory.mockReturnValue(
+        ok({
+          items: [
+            {
+              auditEventId: 5,
+              occurredAtUtc: '2026-10-12T09:00:00Z',
+              actorName: 'Test User 03',
+              fromCode: 'ACTIVE',
+              toCode: 'PENDING_DISPOSITION',
+              note: 'Matter closed',
+            },
+          ],
+        }),
+      );
+      await fixture.componentInstance.load();
+      await settle(fixture);
+
+      const details = el().querySelector('[data-details]')!;
+      expect(details.querySelector('[data-disposition]')?.textContent).toContain(
+        'Pending disposition',
+      );
+      expect(details.querySelector('[data-disposition-note]')?.textContent).toContain(
+        'Matter closed',
+      );
+      const change = details.querySelector('[data-disposition-change]')!.textContent!;
+      expect(change).toContain('Active to Pending disposition');
+      expect(change).toContain('Test User 03');
+      expect(change).toContain('Matter closed');
+    });
   });
 
   it('shows the inactive-type banner', async () => {

@@ -20,7 +20,10 @@ import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { CopyButton } from '../../../shared/ui/copy-button';
+import { Badge } from '../../../shared/ui/badge';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { AssetDispositionHistory } from '../disposition/asset-disposition-history';
+import { dispositionOf } from '../disposition/asset-disposition';
 import { matterLinkOf } from '../../../shared/ui/matter-link';
 
 /**
@@ -31,7 +34,7 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
  */
 @Component({
   selector: 'mf-asset-details-tab',
-  imports: [MatterRef, CopyButton, DynamicForm, MfDatePipe],
+  imports: [MatterRef, CopyButton, DynamicForm, MfDatePipe, Badge, AssetDispositionHistory],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -52,6 +55,28 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
             <dt>Type</dt>
             <dd>{{ asset().assetTypeName }}</dd>
           </div>
+          <div class="ad__f" data-disposition>
+            <dt>Disposition</dt>
+            <dd>
+              <mf-badge [tone]="disposition().tone" [icon]="disposition().icon">{{
+                disposition().label
+              }}</mf-badge>
+              @if (asset().dispositionChangedAtUtc) {
+                <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfDate }}</span>
+              }
+              @if (asset().dispositionNote) {
+                <span class="ad__muted" data-disposition-note>
+                  &ldquo;{{ asset().dispositionNote }}&rdquo;</span
+                >
+              }
+            </dd>
+          </div>
+          @if (asset().sizeValue !== undefined && asset().sizeValue !== null) {
+            <div class="ad__f" data-size>
+              <dt>Size</dt>
+              <dd>{{ asset().sizeValue }} {{ asset().sizeUnit }}</dd>
+            </div>
+          }
           <div class="ad__f" data-external-reference>
             <dt>External reference</dt>
             <dd>
@@ -110,6 +135,15 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
               }
             </dd>
           </div>
+          <div class="ad__f" data-disposition-history-row>
+            <dt>Disposition history</dt>
+            <dd>
+              <mf-asset-disposition-history
+                [assetId]="asset().assetId"
+                [version]="asset().rowVersion"
+              />
+            </dd>
+          </div>
           <div class="ad__f">
             <dt>Created</dt>
             <dd>{{ asset().createdAtUtc | mfDate }}</dd>
@@ -147,6 +181,10 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
     :host {
       display: block;
       padding: var(--mf-s3) var(--mf-s4);
+    }
+    .ad__muted {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
     }
     .ad__dl {
       display: grid;
@@ -214,6 +252,7 @@ export class AssetDetailsTab {
   private readonly auth = inject(AuthStore);
   private readonly pickerContext = inject(AssetPickerContext);
 
+  protected readonly disposition = computed(() => dispositionOf(this.asset().dispositionCode));
   protected readonly schema = signal<FormDefinition | null>(null);
   protected readonly values = computed<Record<string, unknown>>(() => ({
     ...(this.asset().formValues ?? {}),

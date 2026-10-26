@@ -127,16 +127,19 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
   async function configure(permissions: Permission[]): Promise<void> {
     assets = {
-      listAssets: vi
-        .fn()
-        .mockReturnValue(
-          ok(
-            pageOfAssets(
-              anAssetListItem(),
-              anAssetListItem({ assetId: 10, displayName: 'Old room', isActive: false }),
-            ),
+      listAssets: vi.fn().mockReturnValue(
+        ok(
+          pageOfAssets(
+            anAssetListItem(),
+            anAssetListItem({
+              assetId: 10,
+              displayName: 'Old room',
+              isActive: false,
+              dispositionCode: 'INACTIVE',
+            }),
           ),
         ),
+      ),
       getAsset: vi.fn().mockReturnValue(ok(anAsset())),
       createAsset: vi.fn().mockReturnValue(ok(anAsset({ assetId: 12 }))),
       updateAsset: vi.fn().mockReturnValue(ok(anAsset({ displayName: 'Renamed' }))),
@@ -259,7 +262,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
       const calls = () =>
         (assets.listAssets as ReturnType<typeof vi.fn>).mock.calls
-          .filter((c) => c[10] !== 1)
+          .filter((c) => c[12] !== 1)
           .map((c) => c[7]);
       await create(['Asset.View']);
       expect(el().querySelector('[data-scope-switch]')).toBeNull();
@@ -294,11 +297,13 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
           t.textContent!.trim(),
         ),
-      ).toEqual(['Name', 'Type', 'Matter number', 'External reference', 'Status']);
+      ).toEqual(['Name', 'Type', 'Matter number', 'Size', 'External reference', 'Disposition']);
       expect(assets.listAssets).toHaveBeenCalledWith(
         undefined,
         undefined,
         true,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -354,6 +359,142 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('table.mf-grid')).not.toBeNull();
     });
 
+    describe('disposition, size and the bulk change (epic #851, issue #866)', () => {
+      const rows = () =>
+        ok(
+          pageOfAssets(
+            anAssetListItem({
+              assetId: 9,
+              sizeValue: 412,
+              sizeUnit: 'GB',
+              sizeBytes: 442381631488,
+            }),
+            anAssetListItem({
+              assetId: 10,
+              displayName: 'Harvey Vault 2',
+              isActive: false,
+              dispositionCode: 'PENDING_DISPOSITION',
+              inactiveLinked: true,
+              linkedTaskCount: 2,
+              openLinkedTaskCount: 1,
+            }),
+            anAssetListItem({
+              assetId: 11,
+              displayName: 'Prod set 7',
+              isActive: false,
+              dispositionCode: 'DISPOSED',
+              sizeValue: 26400,
+              sizeUnit: 'Items',
+            }),
+          ),
+        );
+
+      it('shows the size, a badge for every state but Active, and a warning for a not-active asset that is still linked', async () => {
+        await create(['Asset.View', 'Task.View']);
+        assets.listAssets.mockReturnValue(rows());
+        await setInputs({ sort: 'assetType' });
+
+        expect(rowOf(9)!.querySelector('[data-size]')?.textContent?.trim()).toBe('412 GB');
+        expect(rowOf(10)!.querySelector('[data-size]')?.textContent).toContain('No size');
+        expect(rowOf(11)!.querySelector('[data-size]')?.textContent?.trim()).toBe('26,400 Items');
+        expect(rowOf(9)!.querySelector('[data-status] mf-badge')).toBeNull();
+        expect(rowOf(10)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
+          'Pending disposition',
+        );
+        expect(rowOf(11)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
+          'Disposed',
+        );
+        expect(rowOf(10)!.querySelector('[data-inactive-linked]')?.textContent).toContain(
+          'Still linked to open tasks',
+        );
+        expect(rowOf(11)!.querySelector('[data-inactive-linked]')).toBeNull();
+      });
+
+      it('sorts by size and by disposition through the header', async () => {
+        await create(['Asset.View']);
+        const heads = Array.from(el().querySelectorAll<HTMLElement>('thead tr:first-child th'));
+        expect(heads.find((h) => h.textContent!.trim() === 'Size')?.getAttribute('aria-sort')).toBe(
+          'none',
+        );
+        heads
+          .find((h) => h.textContent!.trim() === 'Size')!
+          .querySelector('button')!
+          .click();
+        expect(navigate).toHaveBeenLastCalledWith(
+          [],
+          expect.objectContaining({ queryParams: expect.objectContaining({ sort: '-size' }) }),
+        );
+        heads
+          .find((h) => h.textContent!.trim() === 'Disposition')!
+          .querySelector('button')!
+          .click();
+        expect(navigate).toHaveBeenLastCalledWith(
+          [],
+          expect.objectContaining({
+            queryParams: expect.objectContaining({ sort: 'disposition' }),
+          }),
+        );
+      });
+
+      it('asks the server for the chosen disposition: Pending disposition as a disposition filter, Not active as isActive=false', async () => {
+        await create(['Asset.View'], { status: 'pending' });
+        let call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
+        expect(call[2]).toBeUndefined(); // no isActive
+        expect(call[9]).toEqual(['PENDING_DISPOSITION']);
+
+        TestBed.resetTestingModule();
+        await create(['Asset.View'], { status: 'notactive' });
+        call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
+        expect(call[2]).toBe(false);
+        expect(call[9]).toBeUndefined();
+
+        TestBed.resetTestingModule();
+        await create(['Asset.View'], { status: 'disposed' });
+        call = assets.listAssets.mock.calls.find((c) => c[12] !== 1)!;
+        expect(call[9]).toEqual(['DISPOSED']);
+      });
+
+      it('has no selection column without Asset.Edit or Asset.Dispose', async () => {
+        await create(['Asset.View']);
+        expect(el().querySelector('[data-select-all], [data-select-row]')).toBeNull();
+        TestBed.resetTestingModule();
+        await create(['Asset.View', 'Asset.Dispose']);
+        expect(el().querySelector('[data-select-all]')).not.toBeNull();
+      });
+
+      it('selects rows, shows the bulk bar with the count, opens the dialog for the selection and clears', async () => {
+        await create(['Asset.View', 'Asset.Edit', 'Task.View']);
+        assets.listAssets.mockReturnValue(rows());
+        await setInputs({ sort: 'assetType' });
+        expect(el().querySelector('[data-bulk-bar]')).toBeNull();
+
+        rowOf(9)!.querySelector<HTMLInputElement>('[data-select-row]')!.click();
+        await settle(fixture);
+        expect(el().querySelector('[data-bulk-count]')?.textContent).toContain('1 asset selected');
+        expect(
+          rowOf(9)!
+            .querySelector<HTMLInputElement>('[data-select-row]')!
+            .getAttribute('aria-label'),
+        ).toBe('Select Contract bundle');
+
+        el().querySelector<HTMLInputElement>('[data-select-all]')!.click();
+        await settle(fixture);
+        expect(el().querySelector('[data-bulk-count]')?.textContent).toContain('3 assets selected');
+
+        el().querySelector<HTMLButtonElement>('[data-bulk-disposition]')!.click();
+        await settle(fixture);
+        expect(document.body.querySelector('[data-disposition-subject]')?.textContent).toContain(
+          '3 selected assets',
+        );
+        document.body.querySelector<HTMLButtonElement>('.p-dialog-footer button')!.click(); // Cancel
+        await settle(fixture);
+
+        el().querySelector<HTMLButtonElement>('[data-bulk-clear]')!.click();
+        await settle(fixture);
+        expect(el().querySelector('[data-bulk-bar]')).toBeNull();
+      });
+    });
+
     it('shows the open linked tasks as a number with the total as tooltip, sorted by it, only with Task.View (A2, #498)', async () => {
       await create(['Asset.View', 'Task.View']);
       assets.listAssets.mockReturnValue(
@@ -369,7 +510,15 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
           t.textContent!.trim(),
         ),
-      ).toEqual(['Name', 'Type', 'Matter number', 'Linked tasks', 'External reference', 'Status']);
+      ).toEqual([
+        'Name',
+        'Type',
+        'Matter number',
+        'Size',
+        'Linked tasks',
+        'External reference',
+        'Disposition',
+      ]);
       const cell = rowOf(9)!.querySelector('td[data-linked]')!;
       expect(cell.querySelector('[aria-hidden="true"]')?.textContent).toBe('4');
       expect(cell.querySelector('[title]')?.getAttribute('title')).toBe('19 linked in total');
@@ -412,7 +561,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         queryParamsHandling: 'merge',
       });
       expect(header('Type').querySelector('button')).not.toBeNull();
-      expect(assets.listAssets.mock.calls.some((c) => c[11] === 'matter')).toBe(true);
+      expect(assets.listAssets.mock.calls.some((c) => c[13] === 'matter')).toBe(true);
     });
 
     it('offers Skip to table as the first stop of the page and it lands on the first name link (A9, #503)', async () => {
@@ -454,6 +603,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
                 assetId: 10,
                 displayName: 'Old room',
                 isActive: false,
+                dispositionCode: 'INACTIVE',
                 linkedTaskCount: 1,
                 openLinkedTaskCount: 1,
               }),
@@ -525,7 +675,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(row.querySelectorAll('td')).toHaveLength(
         el().querySelectorAll('thead tr:first-child th').length,
       );
-      for (const name of ['Name', 'Type', 'Matter', 'External reference', 'Status'])
+      for (const name of ['Name', 'Type', 'Matter', 'External reference', 'Disposition'])
         expect(control(name), name).not.toBeNull();
       // Type is a multi-select: a button that says "All types", the choices are in its panel.
       expect(control<HTMLButtonElement>('Type').textContent).toContain('All types');
@@ -539,9 +689,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       control<HTMLButtonElement>('Type').click();
       await settle(fixture);
       expect(
-        Array.from(control<HTMLSelectElement>('Status').options).map((o) => o.textContent!.trim()),
-      ).toEqual(['Active', 'Inactive', 'All']);
-      expect(control<HTMLSelectElement>('Status').value).toBe('active');
+        Array.from(control<HTMLSelectElement>('Disposition').options).map((o) =>
+          o.textContent!.trim(),
+        ),
+      ).toEqual(['Active', 'Not active', 'Inactive', 'Pending disposition', 'Disposed', 'All']);
+      expect(control<HTMLSelectElement>('Disposition').value).toBe('active');
 
       toggle().click();
       await settle(fixture);
@@ -597,7 +749,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(control<HTMLInputElement>('Matter').value).toBe('343-12');
       expect(control<HTMLInputElement>('External reference').value).toBe('WS');
       expect(control<HTMLButtonElement>('Type').textContent).toContain('Document Set');
-      expect(control<HTMLSelectElement>('Status').value).toBe('inactive');
+      expect(control<HTMLSelectElement>('Disposition').value).toBe('inactive');
       expect(el().querySelector('[data-clear-filters]')).not.toBeNull();
     });
 
@@ -621,6 +773,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         'dms',
         'WS-1',
         '00343',
+        undefined,
+        undefined,
         undefined,
         undefined,
         2,
@@ -679,7 +833,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         queryParamsHandling: 'merge',
       });
 
-      const status = control<HTMLSelectElement>('Status');
+      const status = control<HTMLSelectElement>('Disposition');
       status.value = 'all';
       status.dispatchEvent(new Event('change'));
       expect(navigate).toHaveBeenLastCalledWith([], {
@@ -751,12 +905,14 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(el().querySelector('mf-pager')).toBeNull();
     });
 
-    it('says how many inactive assets the default Status hides when nothing active matches, and Show all reaches them', async () => {
+    it('says how many inactive assets the default Disposition hides when nothing active matches, and Show all reaches them', async () => {
       await create(['Asset.View'], { name: 'zzz' });
       assets.listAssets.mockImplementation((_m: unknown, _t: unknown, isActive?: boolean) =>
         ok(
           isActive === false
-            ? pageOfAssets(anAssetListItem({ assetId: 10, isActive: false }))
+            ? pageOfAssets(
+                anAssetListItem({ assetId: 10, isActive: false, dispositionCode: 'INACTIVE' }),
+              )
             : pageOfAssets(),
         ),
       );

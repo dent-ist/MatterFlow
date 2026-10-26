@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { FormsClient } from '../../../api/generated/api-client';
+import { AssetsClient, FormsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import { aFormVersion, anAsset } from '../../../shared/testing/asset-testing';
@@ -25,6 +25,10 @@ describe('AssetDetailsTab', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: FormsClient, useValue: forms },
+        {
+          provide: AssetsClient,
+          useValue: { getAssetDispositionHistory: vi.fn().mockReturnValue(ok({ items: [] })) },
+        },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();

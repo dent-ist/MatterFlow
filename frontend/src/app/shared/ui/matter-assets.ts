@@ -261,6 +261,8 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
         undefined,
         undefined,
         undefined,
+        undefined,
+        undefined,
         page,
         size,
         this.sort() || undefined,

@@ -100,9 +100,9 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
     await page.getByRole('link', { name: 'Skip to table' }).focus();
     // Shift+Tab backwards from the table reaches the filter controls in reverse order, Name first when walking forward from the header.
     await page.getByRole('textbox', { name: 'Filter by Name' }).focus();
-    const order = await tabUntil(page, (n) => n.includes('Status'), 12);
+    const order = await tabUntil(page, (n) => n.includes('Disposition'), 12);
     expect(order.some((n) => /Type/.test(n))).toBe(true);
-    expect(order.at(-1)).toContain('Status');
+    expect(order.at(-1)).toContain('Disposition');
 
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`/assets?name=${token}`);
