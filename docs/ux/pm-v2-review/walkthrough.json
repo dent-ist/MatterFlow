@@ -1,0 +1,320 @@
+[
+ {
+  "size": "1366x768",
+  "shot": "01-my-matters-overview",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 3255
+ },
+ {
+  "size": "1366x768",
+  "shot": "01b-my-matters-overview-full",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 3255
+ },
+ {
+  "size": "1366x768",
+  "shot": "02-my-matters-deadlines",
+  "url": "/my-matters?tab=deadlines",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 1551
+ },
+ {
+  "size": "1366x768",
+  "shot": "03-my-matters-trends",
+  "url": "/my-matters?tab=trends",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 961
+ },
+ {
+  "size": "1366x768",
+  "shot": "04-my-matters-activity",
+  "url": "/my-matters?tab=activity",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 1994
+ },
+ {
+  "size": "1366x768",
+  "shot": "05-matters-list",
+  "url": "/matters?scope=mine",
+  "overflowPx": 0,
+  "title": "Matters - MatterFlow",
+  "h1": "Matters",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "06-matter-overview",
+  "url": "/matters/1",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (16)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "06b-matter-overview-full",
+  "url": "/matters/1",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (16)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "07-matter-tasks",
+  "url": "/matters/1?tab=tasks",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Tasks - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (16)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "08-matter-assets",
+  "url": "/matters/1?tab=assets",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Assets - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (16)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "shot": "Details",
+  "error": "locator.click: Timeout 30000ms exceeded."
+ },
+ {
+  "shot": "create-task",
+  "error": "locator.click: Timeout 30000ms exceeded."
+ },
+ {
+  "size": "1366x768",
+  "shot": "11-task-queue",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "12-assets-list",
+  "url": "/assets?scope=mine",
+  "overflowPx": 0,
+  "title": "Assets - MatterFlow",
+  "h1": "Assets",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "13-asset-record",
+  "url": "/assets/1",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "14-clients-list",
+  "url": "/clients?scope=mine",
+  "overflowPx": 0,
+  "title": "Clients - MatterFlow",
+  "h1": "Clients",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "15-projects-list",
+  "url": "/projects?scope=mine",
+  "overflowPx": 0,
+  "title": "Projects - MatterFlow",
+  "h1": "Projects",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "16-search-results",
+  "url": "/search?q=review",
+  "overflowPx": 0,
+  "title": "Search results: All - MatterFlow",
+  "h1": "Search results",
+  "tabs": [
+   "All (15)",
+   "Matters (0)",
+   "Clients (0)",
+   "Tasks (14)",
+   "Projects (1)",
+   "Assets (0)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "17-notification-bell",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 3255
+ },
+ {
+  "size": "1366x768",
+  "shot": "18-notifications-page",
+  "url": "/notifications",
+  "overflowPx": 0,
+  "title": "Notifications - MatterFlow",
+  "h1": "Notifications",
+  "tabs": [],
+  "scrollHeight": 1383
+ },
+ {
+  "size": "1366x768",
+  "shot": "19-menu",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Trends",
+   "Activity"
+  ],
+  "scrollHeight": 3255
+ },
+ {
+  "size": "1366x768",
+  "shot": "20-admin-task-types",
+  "url": "/admin/task-types",
+  "overflowPx": 0,
+  "title": "Task Types - MatterFlow",
+  "h1": "Task Types",
+  "tabs": [
+   "Task Types (15)",
+   "Workflows (8)",
+   "Workflow Steps (10)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "21-admin-task-type-edit",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 773
+ },
+ {
+  "size": "1366x768",
+  "shot": "21b-admin-task-type-edit-full",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 773
+ },
+ {
+  "size": "1366x768",
+  "shot": "22-admin-asset-types",
+  "url": "/admin/asset-types",
+  "overflowPx": 0,
+  "title": "Asset Types - MatterFlow",
+  "h1": "Asset Types",
+  "tabs": [
+   "Asset Types (7)",
+   "Link Roles (4)"
+  ],
+  "scrollHeight": 768
+ }
+]
