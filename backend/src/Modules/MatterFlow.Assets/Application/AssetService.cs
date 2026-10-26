@@ -9,6 +9,7 @@ using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
+using MatterFlow.SharedKernel.Time;
 using MatterFlow.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,9 @@ public sealed class AssetService(
     IPermissionChecker permissions,
     IEnumerable<IAssetTaskLinkReader> taskLinks,
     AssetAccess access,
-    IManagedMatterScope managed)
+    IManagedMatterScope managed,
+    ICurrentUser currentUser,
+    IClock clock)
 {
     /// <summary>Sort fields: <c>matter</c> is the Matter reference (then the name), <c>linkedTaskCount</c> the number of linked Tasks (constant without <c>Task.View</c>).</summary>
     public static readonly string[] SortFields = ["displayName", "assetType", "createdAt", "matter", "linkedTaskCount"];
@@ -334,7 +337,10 @@ public sealed class AssetService(
 
         if (asset.IsActive != request.IsActive)
         {
-            asset.IsActive = request.IsActive;
+            asset.SetDisposition(
+                request.IsActive ? AssetDisposition.Active : AssetDisposition.Inactive,
+                clock.UtcNow,
+                currentUser.UserId);
             AssetSupport.TrackOriginalRowVersion(db, asset, request.RowVersion);
             try
             {

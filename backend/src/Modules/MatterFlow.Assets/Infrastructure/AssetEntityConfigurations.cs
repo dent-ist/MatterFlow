@@ -28,5 +28,9 @@ internal sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
         b.HasIndex(x => new { x.MatterId, x.AssetTypeId }).HasDatabaseName("IX_Asset_Matter");
         b.HasIndex(x => x.DisplayName).HasDatabaseName("IX_Asset_Name");
         b.HasIndex(x => x.AssetTypeId).HasDatabaseName("IX_Asset_Type");
+        b.Property(x => x.DispositionCode).HasMaxLength(20).IsUnicode(false).IsRequired().HasDefaultValue(AssetDisposition.Active);
+        b.Property(x => x.DispositionChangedAtUtc).HasColumnName("DispositionChangedAt");
+        b.Property(x => x.DispositionNote).HasMaxLength(500);
+        b.HasIndex(x => new { x.MatterId, x.AssetTypeId, x.DispositionCode }).HasDatabaseName("IX_Asset_Matter_Disposition");
     }
 }

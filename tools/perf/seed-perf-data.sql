@@ -156,12 +156,12 @@ CREATE TABLE #AM (MatterId INT NOT NULL PRIMARY KEY, cnt INT NOT NULL);
 -- non-big Matters hold between 1 and 2x the average so the spread adds up to about @spread
 INSERT #AM SELECT MatterId, CASE WHEN IsBig = 1 THEN 250 ELSE 1 + ABS(CHECKSUM(NEWID())) % (CASE WHEN @nSmall = 0 THEN 1 ELSE (2 * @spread / @nSmall) END) END FROM #M;
 
-INSERT dbo.Asset (MatterId, AssetTypeId, DisplayName, ExternalReference, Description, IsActive, CreatedAt, CreatedByUserId)
+INSERT dbo.Asset (MatterId, AssetTypeId, DisplayName, ExternalReference, Description, IsActive, DispositionCode, CreatedAt, CreatedByUserId)
 SELECT a.MatterId, t.AssetTypeId,
   t.Name + N' ' + RIGHT('0000' + CAST(g.value AS VARCHAR(5)), 4) + N' ' + w.v,
   CASE WHEN g.value % 5 < 3 THEN N'EXT-' + CAST(a.MatterId AS NVARCHAR(10)) + N'-' + CAST(g.value AS NVARCHAR(10)) END,
   CASE WHEN g.value % 3 = 0 THEN N'Registered for the matter during intake; see the linked tasks for handling history.' END,
-  CASE WHEN g.value % 40 = 0 THEN 0 ELSE 1 END, DATEADD(DAY, -(g.value % 200), @now), @creator
+  CASE WHEN g.value % 40 = 0 THEN 0 ELSE 1 END, CASE WHEN g.value % 40 = 0 THEN 'INACTIVE' ELSE 'ACTIVE' END, DATEADD(DAY, -(g.value % 200), @now), @creator
 FROM #AM a CROSS APPLY GENERATE_SERIES(1, a.cnt) g
 JOIN #AT t ON t.k = (g.value + a.MatterId) % @nTypes
 JOIN #word w ON w.i = (g.value * 7 + a.MatterId) % 30

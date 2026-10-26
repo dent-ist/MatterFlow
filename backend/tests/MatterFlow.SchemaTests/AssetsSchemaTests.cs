@@ -67,7 +67,7 @@ public class AssetsSchemaTests(SqlServerFixture sql)
 
         await ShouldRejectAsync(cs, "UPDATE dbo.Asset SET MatterId = 2 WHERE AssetId = 1", "cannot move");
         await ShouldRejectAsync(cs, "DELETE dbo.Asset WHERE AssetId = 1", "cannot be deleted");
-        await ExecAsync(cs, "UPDATE dbo.Asset SET IsActive = 0, DisplayName = N'Renamed' WHERE AssetId = 1");
+        await ExecAsync(cs, "UPDATE dbo.Asset SET IsActive = 0, DispositionCode = 'INACTIVE', DisplayName = N'Renamed' WHERE AssetId = 1");
         (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.Asset WHERE MatterId = 1 AND IsActive = 0")).ShouldBe(1);
     }
 

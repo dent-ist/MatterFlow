@@ -39,9 +39,45 @@ public class Asset : AuditedEntity<int>, IAuditScoped
 
     public string? Description { get; set; }
 
+    /// <summary>
+    /// Always equals <c>DispositionCode == Active</c> (database check <c>CK_Asset_IsActive_Disposition</c>): use <see cref="SetDisposition"/>
+    /// instead of assigning it, so both columns change together.
+    /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Retention state of the record, one of the <see cref="AssetDisposition"/> codes.</summary>
+    public string DispositionCode { get; set; } = AssetDisposition.Active;
+
+    public DateTime? DispositionChangedAtUtc { get; set; }
+
+    public int? DispositionChangedByUserId { get; set; }
+
+    public string? DispositionNote { get; set; }
+
+    /// <summary>Sets the disposition and keeps <see cref="IsActive"/> in step (active only when the disposition is Active).</summary>
+    public void SetDisposition(string code, DateTime? changedAtUtc = null, int? changedByUserId = null, string? note = null)
+    {
+        DispositionCode = code;
+        IsActive = code == AssetDisposition.Active;
+        DispositionChangedAtUtc = changedAtUtc;
+        DispositionChangedByUserId = changedByUserId;
+        DispositionNote = note;
+    }
 
     int? IAuditScoped.AuditMatterId => MatterId;
 
     long? IAuditScoped.AuditTaskId => null;
+}
+
+/// <summary>The four disposition codes stored in <c>dbo.Asset.DispositionCode</c> (the database CHECK lists the same values).</summary>
+public static class AssetDisposition
+{
+    public const string Active = "ACTIVE";
+    public const string Inactive = "INACTIVE";
+    public const string PendingDisposition = "PENDING_DISPOSITION";
+    public const string Disposed = "DISPOSED";
+
+    public static readonly IReadOnlyList<string> All = [Active, Inactive, PendingDisposition, Disposed];
+
+    public static bool IsValid(string? code) => code is not null && All.Contains(code);
 }
