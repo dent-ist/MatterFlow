@@ -59,6 +59,11 @@ test.beforeAll(async ({ admin, seed }) => {
 
 const TREND = '/dashboard?tab=trends';
 const lines = (page: Page) => page.locator('[data-plot] polyline.series:not(.partial)');
+/**
+ * The chart tooltip. The shell navigation links also carry a `data-tip` attribute (the rail's hover name), so the locator is scoped to the Trends
+ * panel; an unscoped `[data-tip]` matches the 17 nav links and fails Playwright's strict mode.
+ */
+const trendTip = (page: Page) => page.locator('mf-dash-trends-tab [data-tip]');
 const box = (page: Page, id: number) => page.locator(`[data-type-box="${id}"]`);
 const row = (page: Page, id: number) => page.locator(`[data-type="${id}"]`);
 
@@ -177,10 +182,9 @@ test.describe('Trends by task type', () => {
 
     // Tooltip: the keyboard moves through the days and the live read-out lists every line.
     await page.locator('[data-plot]').focus();
-    await expect(page.locator('[data-tip]')).toContainText('All task types');
-    await expect(page.locator('[data-tip]')).toContainText('Backlog at end of day');
-    for (const t of mine.slice(0, 3))
-      await expect(page.locator('[data-tip]')).toContainText(t.name);
+    await expect(trendTip(page)).toContainText('All task types');
+    await expect(trendTip(page)).toContainText('Backlog at end of day');
+    for (const t of mine.slice(0, 3)) await expect(trendTip(page)).toContainText(t.name);
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText('All task types');
     await expect(page.locator('[data-readout]')).toContainText(mine[1].name);
@@ -478,7 +482,7 @@ test.describe('Trends backlog and labels', () => {
     // The keyboard reads weeks: the last one is the current week (so far).
     await page.locator('[data-plot]').focus();
     await expect(page.locator('[data-tip-heading]')).toHaveText(/^Week of [A-Z][a-z]{2} \d+$/);
-    await expect(page.locator('[data-tip]')).toContainText('This week so far');
+    await expect(trendTip(page)).toContainText('This week so far');
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText(/^Week of /);
     await page.keyboard.press('Home');
@@ -525,7 +529,7 @@ test.describe('Trends backlog and labels', () => {
         await expect(page.locator('[data-end-label]').first()).toBeVisible();
         expect(await axeViolations(page), `${url} at ${width}`).toEqual([]);
         await page.locator('[data-plot]').focus();
-        await expect(page.locator('[data-tip]')).toBeVisible();
+        await expect(trendTip(page)).toBeVisible();
         expect(await axeViolations(page), `${url} with the tooltip at ${width}`).toEqual([]);
       }
     }
@@ -568,10 +572,10 @@ test.describe('Trends on a phone', () => {
     // A tap on a day shows the tooltip with the values, and it stays after the finger lifts.
     const plot = (await page.locator('[data-panel-plot="flows"]').boundingBox())!;
     await page.touchscreen.tap(plot.x + plot.width * 0.4, plot.y + plot.height / 2);
-    await expect(page.locator('[data-tip]')).toBeVisible();
-    await expect(page.locator('[data-tip]')).toContainText('Created');
+    await expect(trendTip(page)).toBeVisible();
+    await expect(trendTip(page)).toContainText('Created');
     await page.waitForTimeout(300);
-    await expect(page.locator('[data-tip]')).toBeVisible();
+    await expect(trendTip(page)).toBeVisible();
 
     // Opening the list and picking a task type changes the count on the button; the identity of the line is in the list and the tooltip.
     await toggle.tap();
