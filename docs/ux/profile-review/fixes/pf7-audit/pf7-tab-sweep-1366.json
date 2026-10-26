@@ -1,0 +1,127 @@
+{
+  "stopsToSave": 18,
+  "budget": 18,
+  "totalStopsInForm": 24,
+  "stops": [
+    {
+      "label": "Available Shown as available during work",
+      "ring": false,
+      "covered": false
+    },
+    {
+      "label": "Monday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Tuesday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Wednesday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Thursday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Friday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Saturday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Sunday",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Start time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Start time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Start time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "End time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "End time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "End time",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Different hours on some days",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Reset to Mon-Fri 9:00 AM-5:00 PM",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Time zone",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Save changes",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Discard changes",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Copy Windows account",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "A task is assigned to me",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "My task is overdue or due within a day",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Someone comments on or mentions me in my",
+      "ring": true,
+      "covered": false
+    },
+    {
+      "label": "Other events",
+      "ring": true,
+      "covered": false
+    }
+  ]
+}
