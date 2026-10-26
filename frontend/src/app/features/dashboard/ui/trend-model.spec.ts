@@ -1,4 +1,5 @@
 import { convertToParamMap } from '@angular/router';
+import { TYPE_STYLES } from '../../../shared/charts/chart-palette';
 import {
   DashboardTrend,
   DashboardTrendDay,
@@ -9,7 +10,6 @@ import {
   DEFAULT_CHOICE,
   MAX_TYPES,
   MEASURE_STYLES,
-  TYPE_STYLES,
   TrendChoice,
   allVisible,
   FIRST_BACKLOG,

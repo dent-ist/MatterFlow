@@ -3,7 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { TrendChart } from './trend-chart';
-import { ALL_STYLE, ChartLine, MEASURE_STYLES, PanelView, TYPE_STYLES } from './trend-model';
+import { TYPE_STYLES } from '../../../shared/charts/chart-palette';
+import { ALL_STYLE, ChartLine, MEASURE_STYLES, PanelView } from './trend-model';
 
 function line(partial: Partial<ChartLine> & Pick<ChartLine, 'key' | 'name' | 'values'>): ChartLine {
   return {

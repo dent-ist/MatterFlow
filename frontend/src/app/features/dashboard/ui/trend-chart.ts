@@ -32,10 +32,8 @@ import {
   bucketRange,
   containsDay,
   endLabelText,
-  isHollow,
   linkNote,
   markerIndexes,
-  markerPath,
   niceScale,
   nudgeLabels,
   pointHeading,
@@ -45,6 +43,7 @@ import {
   weekLabel,
   xTicks,
 } from './trend-model';
+import { isHollow, markerPath } from '../../../shared/charts/chart-palette';
 
 export { niceMax } from './trend-model';
 

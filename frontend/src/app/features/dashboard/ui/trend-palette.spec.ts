@@ -1,13 +1,6 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
-import {
-  ALL_STYLE,
-  LineStyle,
-  MEASURE_STYLES,
-  MEASURES,
-  TYPE_STYLES,
-  isHollow,
-  markerPath,
-} from './trend-model';
+import { LineStyle, TYPE_STYLES, isHollow, markerPath } from '../../../shared/charts/chart-palette';
+import { ALL_STYLE, MEASURE_STYLES, MEASURES } from './trend-model';
 
 /**
  * The colours, dash patterns and markers of the Trends lines. Graphics need 3:1 against what they sit on (WCAG 1.4.11): the white card and

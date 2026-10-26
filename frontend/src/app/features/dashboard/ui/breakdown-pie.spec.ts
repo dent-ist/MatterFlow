@@ -3,15 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { BarItem, BarList } from './bar-list';
 import { BreakdownPrefs, NEXT_MODE, nextModeLabel } from './breakdown-view';
-import {
-  MAX_SLICES,
-  PIE,
-  PieSlice,
-  groupSlices,
-  layoutPie,
-  paletteColor,
-  sectorPath,
-} from './breakdown-slices';
+import { MAX_SLICES } from '../../../shared/charts/pie-geometry';
+import { PieSlice, groupSlices, paletteColor } from './breakdown-slices';
 import { Segment, StackedBar } from './stacked-bar';
 
 const slice = (label: string, count: number, overdue?: number): PieSlice => ({
@@ -62,26 +55,7 @@ describe('groupSlices', () => {
   });
 });
 
-describe('layoutPie', () => {
-  it("lays slices out clockwise from 12 o'clock in proportion to their counts and skips empty ones", () => {
-    const arcs = layoutPie([slice('a', 1), slice('b', 0), slice('c', 3)]);
-    expect(arcs[0].start).toBe(0);
-    expect(arcs[0].end).toBeCloseTo(Math.PI / 2, 6);
-    expect(arcs[1].path).toBe('');
-    expect(arcs[2].end).toBeCloseTo(Math.PI * 2, 6);
-  });
-
-  it('draws the overdue part as an outer ring segment that ends where the slice ends', () => {
-    const arcs = layoutPie([slice('a', 2, 1), slice('b', 2, 0)]);
-    expect(arcs[0].overduePath).toContain(`A${PIE.ringOuter} ${PIE.ringOuter}`);
-    expect(arcs[1].overduePath).toBeNull();
-  });
-
-  it('draws one slice that is the whole total as a closed ring', () => {
-    const path = sectorPath(PIE.cx, PIE.cy, PIE.inner, PIE.outer, 0, Math.PI * 2);
-    expect(path.match(/Z/g)).toHaveLength(2);
-  });
-
+describe('paletteColor', () => {
   it('has palette colours that repeat after eight', () => {
     expect(paletteColor(0)).toBe(paletteColor(8));
     expect(paletteColor(0)).not.toBe(paletteColor(1));

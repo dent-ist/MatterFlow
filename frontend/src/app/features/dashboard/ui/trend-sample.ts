@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { LineStyle, isHollow, markerPath } from './trend-model';
+import { LineStyle, isHollow, markerPath } from '../../../shared/charts/chart-palette';
 
 /** A short sample of a line (its colour, dash pattern and marker) for the legend, the tooltip and the table header. Decorative. */
 @Component({

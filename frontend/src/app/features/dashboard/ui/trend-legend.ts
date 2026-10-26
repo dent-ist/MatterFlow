@@ -5,13 +5,13 @@ import { DashboardTrend, DashboardTrendType } from '../../../api/generated/api-c
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { queueParams } from '../dashboard-links';
 import { TrendSample } from './trend-sample';
+import { TYPE_STYLES } from '../../../shared/charts/chart-palette';
 import {
   ALL_STYLE,
   FlowMeasure,
   MAX_TYPES,
   MEASURE_INFO,
   MEASURE_STYLES,
-  TYPE_STYLES,
   TrendChoice,
   allVisible,
   totalMeasure,
