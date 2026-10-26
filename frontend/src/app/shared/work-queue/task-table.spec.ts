@@ -216,7 +216,12 @@ describe('TaskTable', () => {
         '.wt-new',
       ])
         expect(t.querySelector(sel), sel).toBeNull();
-      expect(t.textContent?.replace(/\s+/g, ' ').trim()).toBe('Process Smith custodians');
+      // The badge's hidden sentence ("Task type: ...") is the link's description, not visible text of the cell.
+      const visible = Array.from(t.querySelectorAll('[data-type-description]')).reduce(
+        (text, d) => text.replace(d.textContent ?? '', ''),
+        t.textContent ?? '',
+      );
+      expect(visible.replace(/\s+/g, ' ').trim()).toBe('Process Smith custodians');
     };
     noExtras();
     // The dot stays in the Ref cell (A5).
@@ -325,11 +330,18 @@ describe('TaskTable', () => {
     expect(markers[0].closest('tr')!.querySelector('.wt-title')).not.toBeNull();
   });
 
-  it('shows the task type icon before the title, with the type name as its tooltip', async () => {
-    await create([aRow({ taskTypeIconKey: 'cpu-2' })], ['ref', 'title']);
-    const icon = cell('title').querySelector('[data-type-icon]')!;
-    expect(icon.getAttribute('title')).toBe('Data Processing');
-    expect(icon.querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe('true');
+  it('shows the task type badge before the title: the name is its tooltip and accessible name, and the title link is described by it', async () => {
+    await create([aRow({ taskTypeIconKey: 'cpu-2', taskTypeColourKey: 'teal' })], ['ref', 'title']);
+    const badge = cell('title').querySelector('[data-type-icon]')!;
+    expect(badge.getAttribute('data-colour')).toBe('teal');
+    const chip = badge.querySelector('[data-type-badge]')!;
+    expect(chip.getAttribute('title')).toBe('Data Processing');
+    expect(chip.getAttribute('aria-label')).toBe('Task type: Data Processing');
+    expect(chip.querySelector('mf-task-type-icon svg')?.getAttribute('aria-hidden')).toBe('true');
+    const description = badge.querySelector('[data-type-description]')!;
+    expect(cell('title').querySelector('.wt-title')!.getAttribute('aria-describedby')).toBe(
+      description.id,
+    );
   });
 
   it('has no Actions column: Pod Work\'s "Assign to me" lives in the Assignee cell (#199)', async () => {

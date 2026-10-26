@@ -154,11 +154,9 @@ th[aria-sort='descending'] .wt-sort {
   text-overflow: ellipsis;
 }
 
-/* The Task Type icon sits before the title; neutral colour, it never replaces the name. */
+/* The Task Type badge (icon in a chip tinted with the type's colour) sits before the title; it never replaces the name. */
 .wt-typeicon {
   flex: none;
-  padding-top: 1px;
-  color: var(--mf-text-muted);
 }
 
 .wt-title {

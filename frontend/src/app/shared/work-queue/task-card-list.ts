@@ -21,7 +21,7 @@ import { LoadState } from '../ui/data-table';
 import { MatterRef } from '../ui/matter-ref';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
-import { TaskTypeIcon } from '../icons/task-type-icon';
+import { TaskTypeBadge } from '../task-type/task-type-badge';
 import { DueCell } from './due-cell';
 import { RowGroup } from './due-groups';
 import { HoldNote } from './hold-note';
@@ -64,7 +64,7 @@ export function initialsOf(name: string): string {
     PriorityBadge,
     RowEdit,
     StatusBadge,
-    TaskTypeIcon,
+    TaskTypeBadge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
@@ -152,9 +152,14 @@ export function initialsOf(name: string): string {
               >
                 <article [attr.aria-label]="row.taskNumber + ', ' + row.title">
                   <h2 class="tc-h">
-                    <span class="wt-typeicon" [attr.title]="row.taskTypeName" data-type-icon>
-                      <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
-                    </span>
+                    <mf-task-type-badge
+                      #tt
+                      class="wt-typeicon"
+                      [iconKey]="row.taskTypeIconKey"
+                      [colourKey]="row.taskTypeColourKey"
+                      [name]="row.taskTypeName"
+                      data-type-icon
+                    />
                     <a
                       class="wt-title tc-title"
                       [routerLink]="['/tasks', row.taskId]"
@@ -162,6 +167,7 @@ export function initialsOf(name: string): string {
                       [state]="linkState()"
                       [attr.data-task-id]="row.taskId"
                       [attr.title]="row.title"
+                      [attr.aria-describedby]="tt.descriptionId"
                       (click)="drilled.emit({ event: $event, row })"
                       >{{ row.title }}</a
                     >

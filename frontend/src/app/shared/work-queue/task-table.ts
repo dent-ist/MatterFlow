@@ -31,7 +31,7 @@ import { TaskQueueRow } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { mfDate } from '../../core/time/time';
-import { TaskTypeIcon } from '../icons/task-type-icon';
+import { TaskTypeBadge } from '../task-type/task-type-badge';
 import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
@@ -84,7 +84,7 @@ const LONG_PRESS_MS = 500;
 @Component({
   selector: 'mf-task-table',
   imports: [
-    TaskTypeIcon,
+    TaskTypeBadge,
     RouterLink,
     RowLink,
     MatterCell,
@@ -293,9 +293,14 @@ const LONG_PRESS_MS = 500;
                       }
                       @case ('title') {
                         <div class="wt-titlecell">
-                          <span class="wt-typeicon" [attr.title]="row.taskTypeName" data-type-icon>
-                            <mf-task-type-icon [iconKey]="row.taskTypeIconKey" size="sm" />
-                          </span>
+                          <mf-task-type-badge
+                            #tt
+                            class="wt-typeicon"
+                            [iconKey]="row.taskTypeIconKey"
+                            [colourKey]="row.taskTypeColourKey"
+                            [name]="row.taskTypeName"
+                            data-type-icon
+                          />
                           <div class="wt-titlebody">
                             <a
                               class="wt-title"
@@ -306,6 +311,7 @@ const LONG_PRESS_MS = 500;
                               [rowKey]="row.taskId"
                               [attr.data-task-id]="row.taskId"
                               [attr.title]="titleTip(row)"
+                              [attr.aria-describedby]="tt.descriptionId"
                               (click)="drillOut($event, row)"
                               >{{ row.title }}</a
                             >
