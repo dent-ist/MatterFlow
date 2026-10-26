@@ -576,3 +576,17 @@ Owner approval (2026-10-20): "I like all of your recommendations, so please don'
 8. **Safety net.** Default-deny middleware for every non-GET, a data guard, and an endpoint catalog with a coverage test (same approach as sensitive matters) so a new write endpoint cannot bypass the rule. GETs that wrote (the first read of My Matters activity creates a marker row) are fixed.
 9. **No SQL script number is claimed:** next free number at implementation time; a new table needs `db/report-access.json` and GRANT/DENY for `mf_report_reader`.
 10. **Open questions** Q1 to Q6 in the design (non-admin holders, telling the target, Reports, a reason text, several tabs, downloads), each with a recommended answer; none blocks the start.
+
+## AM. Application settings: branding, title and icon (decided 2026-10-26 by the owner, phase-23; design `docs/ux/app-settings/README.md`, plan `docs/ux/app-settings/delivery-plan.md`)
+
+**Status (2026-10-26): planned; ready to start after the current verification** (design, plan and epic only). Priority: after the combined verification that is running, before the impersonation epic AL (#828).
+
+1. **What.** An administrator changes the application name and icon on Administration > Settings > Branding without rebuilding or redeploying. It shows on the next page load for everyone. Environments, integrations and secrets are out of scope; the owner revisits them later.
+2. **Permission.** New `Settings.Manage`, held by the System Administrator by default (implicit), assignable to other roles.
+3. **Name.** Default `MatterFlow`; trimmed, 1 to 40 characters, no `<`, `>` or control characters (`&` allowed); rendered as text only.
+4. **Icon.** PNG, SVG or ICO, up to 256 KB, square, at least 64 px (SVG: square viewBox); type decided by content; an unsafe SVG is rejected, never rewritten; preview of tab and header; reset to default.
+5. **Storage.** SQL Server, table `dbo.AppSetting` (generic typed key/value store, `varbinary(max)` for the icon, rowVersion, audited). Defaults live in code; there is no seed row; a missing row is the normal default state. The table is classified deny for `mf_report_reader`. Owned by the Configuration module (no new module).
+6. **Serving.** Public (anonymous) `GET /api/v1/branding` and `GET /api/v1/branding/icon` with ETag and short caching (`max-age` 60 s and 1 h with a versioned URL); `SecurityHeadersMiddleware` gets a narrow exception to its `no-store` rule for these paths. A change is visible within about 2 minutes of the next page load; browsers may keep an old tab favicon longer.
+7. **Frontend.** A tiny bootstrap fetch before first render with a built-in default and a last-known copy in `localStorage`; never imports the api-client eagerly; initial bundle stays under 700 kB. Applies header name and mark, the title rule `<Page>: <Tab> - <Application name>`, state pages, search labels, favicon and apple-touch-icon (the latter only for PNG). No e-mail, export or manifest prints the name today.
+8. **Not changed.** No new or changed keyboard shortcuts (#420). No SQL script number is claimed: next free number at implementation time (last used 39).
+9. **Open questions** Q1 to Q5 in the design (ampersand, IIS anonymous access for the branding paths, dark-mode icon, icon-only logos, theme colour), each with a recommended answer; none blocks the start.
