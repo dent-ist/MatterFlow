@@ -2,6 +2,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   Injector,
   afterNextRender,
   computed,
@@ -11,6 +12,7 @@ import {
   untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { PageTitle } from '../../../core/title/page-title';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
@@ -33,6 +35,7 @@ import { HealthPanel, HealthSort } from '../panels/health-panel';
 import { SincePanel } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
+import { BreakdownTab } from '../tabs/breakdown-tab';
 import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
 
@@ -48,11 +51,12 @@ const SORTS: readonly HealthSort[] = [
 ];
 
 /** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
-export const MM_TABS = ['overview', 'deadlines', 'trends', 'activity'] as const;
+export const MM_TABS = ['overview', 'deadlines', 'breakdown', 'trends', 'activity'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
   deadlines: 'Deadlines',
+  breakdown: 'Breakdown',
   trends: 'Trends',
   activity: 'Activity',
 };
@@ -106,6 +110,7 @@ function storage(): Storage | null {
     SkipLinks,
     Tabs,
     ActivityTab,
+    BreakdownTab,
     DeadlinesTab,
     TrendsTab,
   ],
@@ -231,6 +236,13 @@ function storage(): Storage | null {
             <p class="mm__loading" role="status">Loading deadlines</p>
           }
         }
+        @case ('breakdown') {
+          @defer (on immediate) {
+            <mf-mm-breakdown-tab [filters]="filters()" />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading breakdown</p>
+          }
+        }
         @case ('trends') {
           @defer (on immediate) {
             <mf-mm-trends-tab [filters]="filters()" />
@@ -290,6 +302,7 @@ export class MyMattersPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
+  private readonly pageTitle = inject(PageTitle);
 
   private readonly params = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
@@ -346,6 +359,12 @@ export class MyMattersPage {
 
   constructor() {
     this.restoreRemembered();
+    // The title rule `<Page>: <Tab> - <App name>`: the Overview is the page itself.
+    effect(() => {
+      const tab = this.tab();
+      this.pageTitle.pin(tab === 'overview' ? 'My Matters' : `My Matters: ${TAB_LABELS[tab]}`);
+    });
+    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     effect(() => {
       const tab = this.tab();
       untracked(() => {

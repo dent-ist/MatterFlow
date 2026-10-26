@@ -154,6 +154,83 @@ function since(empty = false) {
   };
 }
 
+function breakdown(view = 'matrix') {
+  const type = (id: number, name: string, open: number, overdue: number, avg: number | null) => ({
+    taskTypeId: id,
+    name,
+    iconKey: 'file-text',
+    colourKey: null,
+    targetDays: 5,
+    open,
+    overdue,
+    onHold: 1,
+    atRisk: 2,
+    avgDaysDone: avg,
+    doneCount: avg === null ? 0 : 12,
+    query: `managedByMe=true&type=${id}&status=NEW`,
+    overdueQuery: `managedByMe=true&type=${id}&overdue=true`,
+  });
+  return {
+    timeZone: 'America/New_York',
+    asOfUtc: '2026-10-23T12:00:00Z',
+    view,
+    status: 'open',
+    types: [
+      type(1, 'Production', 7, 2, 4.2),
+      type(2, 'Review', 3, 0, 6.5),
+      type(3, 'Intake', 1, 0, null),
+    ],
+    typeTotal: 3,
+    rows:
+      view === 'types'
+        ? []
+        : [
+            {
+              matterId: 5,
+              matterRef: '90001-80001',
+              matterName: 'Merger',
+              clientName: 'Acme',
+              open: 8,
+              overdue: 2,
+              onHold: 0,
+              atRisk: 1,
+              cells: [
+                {
+                  taskTypeId: 1,
+                  open: 6,
+                  overdue: 2,
+                  onHold: 0,
+                  atRisk: 1,
+                  query: 'matter=5&type=1&status=NEW',
+                  overdueQuery: 'matter=5&type=1&overdue=true',
+                },
+                {
+                  taskTypeId: 2,
+                  open: 2,
+                  overdue: 0,
+                  onHold: 0,
+                  atRisk: 0,
+                  query: 'matter=5&type=2&status=NEW',
+                  overdueQuery: 'matter=5&type=2&overdue=true',
+                },
+              ],
+            },
+          ],
+    matterTotal: 1,
+    page: 1,
+    pageSize: 50,
+    totals: {
+      open: 11,
+      overdue: 2,
+      onHold: 3,
+      atRisk: 6,
+      query: 'managedByMe=true&status=NEW',
+      overdueQuery: 'managedByMe=true&overdue=true',
+    },
+    avgWindowDays: 90,
+  };
+}
+
 function trends() {
   const week = (i: number) => ({
     weekStart: `2026-09-${String(7 + i * 7).padStart(2, '0')}`,
@@ -240,6 +317,7 @@ describe('MyMattersPage', () => {
         ),
       getMyMattersSinceLastVisit: vi.fn().mockReturnValue(of(since())),
       getMyMattersTrends: vi.fn().mockReturnValue(of(trends())),
+      getMyMattersBreakdown: vi.fn().mockImplementation((view: string) => of(breakdown(view))),
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
       markMyMattersActivitySeen: vi.fn().mockReturnValue(of({ seenEventId: 12, seenAtUtc: 'x' })),
     };
@@ -631,7 +709,7 @@ describe('MyMattersPage', () => {
 
     it('has the four tabs, Overview selected, and the page as it was under it', async () => {
       const h = await open('/my-matters');
-      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Trends', 'Activity']);
+      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Trends', 'Activity']);
       expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
         'Overview',
       );
@@ -674,6 +752,40 @@ describe('MyMattersPage', () => {
       await h.fixture.whenStable();
       expect(router.parseUrl(router.url).queryParams['tab']).toBeUndefined();
       expect(router.parseUrl(router.url).queryParams['clientId']).toBe('4');
+    });
+
+    it('the Breakdown tab is a real table of matters by task type with a totals row and cells that open the filtered queue (PV-11)', async () => {
+      const h = await open('/my-matters?tab=breakdown');
+      const root = el(h).querySelector('[data-panel=breakdown]')!;
+      const table = root.querySelector('table[data-bd-table=matrix]')!;
+      expect(table.querySelector('caption')).not.toBeNull();
+      expect(
+        Array.from(table.querySelectorAll('thead th')).map((t) => t.textContent!.trim()),
+      ).toEqual(['Matter', 'Production', 'Review', 'Intake', 'All types']);
+      const cell = table.querySelector<HTMLAnchorElement>('[data-bd-cell]')!;
+      expect(cell.textContent!.trim()).toBe('6');
+      expect(cell.getAttribute('href')).toBe('/tasks?matter=5&type=1&status=NEW');
+      expect(cell.getAttribute('aria-label')).toBe('90001-80001, Production: 6 open, 2 overdue');
+      expect(table.querySelector('[data-bd-overdue]')!.textContent).toContain('2 overdue');
+      expect(table.querySelector('tbody th[scope=row]')!.textContent).toContain('Merger');
+      const totals = table.querySelector('tfoot [data-bd-totals], tfoot tr')!;
+      expect(totals.textContent).toContain('11');
+      expect(api['getMyMattersBreakdown'].mock.calls[0][0]).toBe('matrix');
+    });
+
+    it('the Breakdown tab switches to all matters: per type counts and the average turnaround against the target (PV-27)', async () => {
+      const h = await open('/my-matters?tab=breakdown&bview=types');
+      const root = el(h).querySelector('[data-panel=breakdown]')!;
+      expect(api['getMyMattersBreakdown'].mock.calls[0][0]).toBe('types');
+      const rows = Array.from(root.querySelectorAll('[data-bd-type]'));
+      expect(rows).toHaveLength(3);
+      expect(rows[0].querySelector('[data-bd-turnaround]')!.textContent).toContain(
+        '4.2 d average, 5 d target: within target (12 done)',
+      );
+      expect(rows[1].querySelector('[data-bd-turnaround]')!.textContent).toContain('over target');
+      expect(rows[2].querySelector('[data-bd-turnaround]')!.textContent).toContain(
+        'No tasks completed in the last 90 days',
+      );
     });
 
     it('the Trends tab shows the limitation on the screen, a summary, a table on request and the figures', async () => {
