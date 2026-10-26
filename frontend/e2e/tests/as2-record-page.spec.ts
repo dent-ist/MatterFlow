@@ -348,7 +348,11 @@ test.describe('Asset record page (WP-AS2)', () => {
       await noHorizontalScroll(page);
 
       await page.getByRole('tab', { name: /^Linked tasks/ }).click();
-      await expect(page.locator('[data-tasks-tab] tbody tr')).toHaveCount(3);
+      await expect(
+        size.width < 640
+          ? page.locator('[data-tasks-tab] li.rc')
+          : page.locator('[data-tasks-tab] tbody tr'),
+      ).toHaveCount(3);
       expect(await axeViolations(page), `tasks at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
       if (size.width === 1366 || size.width === 375) await shot(page, 'as2-record-tasks');
