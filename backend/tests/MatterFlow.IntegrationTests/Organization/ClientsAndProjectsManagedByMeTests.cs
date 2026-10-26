@@ -106,4 +106,37 @@ public sealed class ClientsAndProjectsManagedByMeTests(SqlServerFixture sql) : I
         await ProblemAsync(await _fx.PmNoTaskView.GetAsync("/api/v1/clients?matterManagedByMe=true"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         await ProblemAsync(await _fx.PmNoTaskView.GetAsync("/api/v1/projects?matterManagedByMe=true"), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
     }
+
+    [Fact]
+    public async Task The_client_row_carries_the_count_of_my_matters_equal_to_the_matters_list_and_null_without_Matter_BeManager()
+    {
+        foreach (var pm in new[] { _fx.PmFew, _fx.PmMany, _fx.PmOther, _fx.PmNone })
+        {
+            var clients = await OkAsync(await pm.GetAsync("/api/v1/clients?pageSize=100"));
+            var matters = await OkAsync(await pm.GetAsync("/api/v1/matters?pageSize=100&managedByMe=true"));
+            var perClient = matters.GetProperty("items").EnumerateArray().GroupBy(m => m.GetProperty("clientId").GetInt32()).ToDictionary(g => g.Key, g => g.Count());
+            foreach (var row in clients.GetProperty("items").EnumerateArray())
+            {
+                var mine = row.GetProperty("myMatterCount").GetInt32();
+                mine.ShouldBeLessThanOrEqualTo(row.GetProperty("matterCount").GetInt32());
+                mine.ShouldBe(perClient.GetValueOrDefault(row.GetProperty("clientId").GetInt32()));
+            }
+        }
+
+        // The scoped list asks for the same place the filter does; the detail answers for either place.
+        var primary = await OkAsync(await _fx.PmFew.GetAsync("/api/v1/clients?pageSize=100&matterManagedByMe=true&role=primary"));
+        primary.GetProperty("items").EnumerateArray().Single(c => c.GetProperty("clientId").GetInt32() == _fx.Clients["Managed"]).GetProperty("myMatterCount").GetInt32().ShouldBe(2); // few1, few3
+        var detail = await OkAsync(await _fx.PmFew.GetAsync($"/api/v1/clients/{_fx.Clients["Managed"]}"));
+        detail.GetProperty("myMatterCount").GetInt32().ShouldBe(3);
+
+        // A client with matters but none of mine is 0, not null; people who cannot manage matters get null.
+        (await OkAsync(await _fx.PmFew.GetAsync("/api/v1/clients?pageSize=100"))).GetProperty("items").EnumerateArray()
+            .Single(c => c.GetProperty("clientId").GetInt32() == _fx.Clients["Unmanaged"]).GetProperty("myMatterCount").GetInt32().ShouldBe(0);
+        foreach (var other in new[] { _fx.Director, _fx.Technician })
+        {
+            var rows = (await OkAsync(await other.GetAsync("/api/v1/clients?pageSize=100"))).GetProperty("items").EnumerateArray().ToList();
+            rows.ShouldNotBeEmpty();
+            rows.ShouldAllBe(r => r.GetProperty("myMatterCount").ValueKind == JsonValueKind.Null);
+        }
+    }
 }

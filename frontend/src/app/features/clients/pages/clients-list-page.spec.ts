@@ -417,6 +417,36 @@ describe('ClientsListPage', () => {
       expect(el.querySelector('[data-scope="mine"]')?.getAttribute('aria-pressed')).toBe('true');
     });
 
+    it('shows the count of my matters per client in the scoped view, and not for people who cannot manage matters (PV-35)', async () => {
+      localStorage.clear();
+      api = {
+        listClients: vi
+          .fn()
+          .mockReturnValue(ok(pageOfClients(aClient({ matterCount: 5, myMatterCount: 2 })))),
+      };
+      query = fakeQuery();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          query.provider,
+          provideFakeMe(new FakeMeApi(withPermissions(...PM))),
+          { provide: ClientsClient, useValue: api },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true as never);
+      await TestBed.inject(AuthStore).ensureLoaded();
+      query.set({});
+      const fixture = TestBed.createComponent(ClientsListPage);
+      await settle(fixture);
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('[data-my-matters-col]')?.textContent).toContain('My matters');
+      expect(el.querySelector('[data-my-matters-cell]')?.textContent?.trim()).toBe('2');
+
+      TestBed.resetTestingModule();
+      const plain = await create(['Client.View', 'Matter.AssignManagers']);
+      expect(plain.nativeElement.querySelector('[data-my-matters-col]')).toBeNull();
+    });
+
     it('does not scope a link that carries filters, and All is remembered per page', async () => {
       await create(PM, { name: 'acme' });
       expect(scoped()).toEqual([undefined]);

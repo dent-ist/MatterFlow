@@ -47,13 +47,14 @@ const BONES: Record<string, string> = {
   clientNumber: '6rem',
   name: '16rem',
   matters: '3rem',
+  myMatters: '3rem',
   openTasks: '3rem',
   overdue: '3rem',
   status: '5rem',
 };
 
 /**
- * Clients list (UX S05): Client number, Name (the one link), Matters, Open tasks and Overdue (counts that open the Task Queue; left out
+ * Clients list (UX S05): Client number, Name (the one link), Matters, My matters (scoped view of a person who can manage matters), Open tasks and Overdue (counts that open the Task Queue; left out
  * without Task.View), Status. Inline column filters (Client number, Name, Status with Active by default), sortable, server paged. State lives
  * in the URL (`clientNumber`, `name`, `status`, `page`, `size`, `sort`).
  */
@@ -166,7 +167,8 @@ const BONES: Record<string, string> = {
                   <span class="rc-ref">{{ c.clientNumber }}</span>
                   <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
                   <span class="rc-text"
-                    >{{ c.matterCount }} {{ c.matterCount === 1 ? 'matter' : 'matters' }}</span
+                    >{{ c.matterCount }} {{ c.matterCount === 1 ? 'matter' : 'matters'
+                    }}{{ myCount() ? ', ' + (c.myMatterCount ?? 0) + ' mine' : '' }}</span
                   >
                 </p>
                 @if (counts()) {
@@ -220,6 +222,9 @@ const BONES: Record<string, string> = {
                       Name
                     </th>
                     <th scope="col" class="pg-num">Matters</th>
+                    @if (myCount()) {
+                      <th scope="col" class="pg-num" data-my-matters-col>My matters</th>
+                    }
                     @if (counts()) {
                       <th
                         class="pg-num"
@@ -299,6 +304,9 @@ const BONES: Record<string, string> = {
                         >
                       </td>
                       <td class="pg-num">{{ c.matterCount }}</td>
+                      @if (myCount()) {
+                        <td class="pg-num" data-my-matters-cell>{{ c.myMatterCount ?? 0 }}</td>
+                      }
                       @if (counts()) {
                         <td class="pg-num">
                           <mf-task-count
@@ -386,11 +394,16 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   protected readonly defaultSort = 'clientNumber';
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
+  /** "My matters" per client: only in the scoped view of a person who can manage matters (the API sends null otherwise). */
+  protected readonly myCount = computed(
+    () => this.scope.mine() && this.auth.has('Matter.BeManager'),
+  );
   /** The columns of the grid, in order; the keys the filter definitions point at. */
   protected readonly columns = computed(() => [
     'clientNumber',
     'name',
     'matters',
+    ...(this.myCount() ? ['myMatters'] : []),
     ...(this.counts() ? ['openTasks', 'overdue'] : []),
     'status',
   ]);

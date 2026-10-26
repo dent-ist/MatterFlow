@@ -18,6 +18,7 @@ namespace MatterFlow.Organization.Application;
 /// <param name="RowVersion">Concurrency token (base64); send it back on every update.</param>
 /// <param name="CreatedAtUtc">When the Client was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Client was last changed (UTC), if ever.</param>
+/// <param name="MyMatterCount">Number of the Client's Matters the caller manages (Primary or Secondary; with <c>role</c> on the list, that place only); null when the caller lacks <c>Matter.BeManager</c>. Counts exactly the Matters the Matters list shows for <c>clientNumber</c> with <c>managedByMe=true</c>, hidden sensitive Matters excluded.</param>
 public sealed record ClientResponse(
     [property: Required] int ClientId,
     [property: Required] string ClientNumber,
@@ -32,7 +33,8 @@ public sealed record ClientResponse(
     [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    int? MyMatterCount = null);
 
 /// <summary>Creates a Client.</summary>
 public sealed class CreateClientRequest

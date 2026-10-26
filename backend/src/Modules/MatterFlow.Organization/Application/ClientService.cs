@@ -32,6 +32,12 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
 
     private bool CanCountTasks => permissions.Has(Permissions.Task.View);
 
+    private bool CanBeManager => permissions.Has(Permissions.Matter.BeManager);
+
+    /// <summary>The visible Matters the caller manages (the same rule as <c>managedByMe</c> on the Matters list); empty without a person.</summary>
+    private IQueryable<Matter> MyMatterSet(ManagerPlace place) =>
+        managed.WhereManagedBy(db.Set<Matter>().AsNoTracking(), m => m.PrimaryManagerId, m => m.SecondaryManagerId, m => m.Id, managed.CurrentUserId ?? 0, place);
+
     public async Task<Result<PagedResult<ClientResponse>>> ListAsync(ClientListQuery query, CancellationToken ct)
     {
         var paging = OrganizationSupport.PagingOf(query, SortFields);
@@ -89,6 +95,8 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         var canCount = CanCountTasks;
         var joinCounts = canCount && sort.Any(f => OrganizationSupport.IsCountSort(f.Field));
         var visibleMatters = MatterSet();
+        var canBeManager = CanBeManager;
+        var myMatters = MyMatterSet(managedBy.Value?.Place ?? ManagerPlace.Either);
         var counted = joinCounts
             ? from c in clients
               join g in taskCounts.Grouped(TaskCountScope.Client) on c.Id equals g.Key into joined
@@ -98,7 +106,14 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         var rows = await OrganizationSupport.ApplySort(counted, OrganizationSupport.WithDefaultTail(sort, new SortField("clientNumber", false)), Orderings, r => r.Client.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
-            .Select(r => new { r.Client, MatterCount = visibleMatters.Count(m => m.ClientId == r.Client.Id), r.Open, r.Overdue })
+            .Select(r => new
+            {
+                r.Client,
+                MatterCount = visibleMatters.Count(m => m.ClientId == r.Client.Id),
+                MyMatterCount = canBeManager ? myMatters.Count(m => m.ClientId == r.Client.Id) : 0,
+                r.Open,
+                r.Overdue,
+            })
             .ToListAsync(ct);
 
         IReadOnlyDictionary<int, TaskCountRow> byClient = canCount && !joinCounts
@@ -109,7 +124,8 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
                 r.Client,
                 r.MatterCount,
                 !canCount ? null : joinCounts ? r.Open : byClient.GetValueOrDefault(r.Client.Id)?.Open ?? 0,
-                !canCount ? null : joinCounts ? r.Overdue : byClient.GetValueOrDefault(r.Client.Id)?.Overdue ?? 0)).ToList(),
+                !canCount ? null : joinCounts ? r.Overdue : byClient.GetValueOrDefault(r.Client.Id)?.Overdue ?? 0,
+                myMatterCount: canBeManager ? r.MyMatterCount : null)).ToList(),
             total,
             page);
     }
@@ -144,9 +160,11 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
     private async Task<Result<ClientResponse>> GetAsync(int id, IReadOnlyList<string> dropped, CancellationToken ct)
     {
         var visibleMatters = MatterSet();
+        var canBeManager = CanBeManager;
+        var myMatters = MyMatterSet(ManagerPlace.Either);
         var row = await db.Set<Client>().AsNoTracking()
             .Where(c => c.Id == id)
-            .Select(c => new { Client = c, MatterCount = visibleMatters.Count(m => m.ClientId == c.Id) })
+            .Select(c => new { Client = c, MatterCount = visibleMatters.Count(m => m.ClientId == c.Id), MyMatterCount = canBeManager ? myMatters.Count(m => m.ClientId == c.Id) : 0 })
             .SingleOrDefaultAsync(ct);
         if (row is null)
             return OrganizationSupport.NotFound("Client");
@@ -159,7 +177,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
             overdue = counts.GetValueOrDefault(id)?.Overdue ?? 0;
         }
 
-        return ToResponse(row.Client, row.MatterCount, open, overdue, await custom.ReadAsync(CustomFieldTarget.Client, id, ct), dropped);
+        return ToResponse(row.Client, row.MatterCount, open, overdue, await custom.ReadAsync(CustomFieldTarget.Client, id, ct), dropped, canBeManager ? row.MyMatterCount : null);
     }
 
     public async Task<Result<ClientResponse>> CreateAsync(CreateClientRequest request, CancellationToken ct)
@@ -325,7 +343,7 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
     private static Error DuplicateNumber(BusinessNumber number, int? existingId, string field = "clientNumber") =>
         OrganizationSupport.Duplicate(ErrorCodes.DuplicateNumber, field, $"Client {number} already exists.", existingId);
 
-    private static ClientResponse ToResponse(Client c, int matterCount, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null) => new(
+    private static ClientResponse ToResponse(Client c, int matterCount, int? openTaskCount, int? overdueTaskCount, CustomFieldView? view = null, IReadOnlyList<string>? dropped = null, int? myMatterCount = null) => new(
         c.Id,
         c.ClientNumber.Value,
         c.Name,
@@ -339,7 +357,8 @@ public sealed class ClientService(DbContext db, IAuditWriter audit, CustomFieldV
         dropped ?? [],
         OrganizationSupport.Encode(c.RowVersion),
         OrganizationSupport.Utc(c.CreatedAtUtc),
-        OrganizationSupport.Utc(c.ModifiedAtUtc));
+        OrganizationSupport.Utc(c.ModifiedAtUtc),
+        myMatterCount);
 
     private sealed class ClientRow
     {
