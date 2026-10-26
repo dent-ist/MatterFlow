@@ -24,6 +24,7 @@ import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { activityText } from './activity-panel';
 import { PanelBox } from './panel-box';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 
 /** One figure of the sentence: its words and where it leads. */
 interface Figure {
@@ -61,7 +62,7 @@ function plural(n: number, one: string, many: string): string {
  */
 @Component({
   selector: 'mf-mm-since',
-  imports: [PanelBox, RouterLink, RowLink],
+  imports: [PanelBox, RouterLink, RowLink, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .sv__line {
@@ -98,6 +99,12 @@ function plural(n: number, one: string, many: string): string {
       column-gap: var(--mf-s3);
       padding: var(--mf-s1) 0;
       border-top: 1px solid var(--mf-border);
+    }
+    .sv__line {
+      display: flex;
+      gap: var(--mf-s2);
+      align-items: center;
+      min-width: 0;
     }
     .sv__link {
       min-width: 0;
@@ -215,15 +222,24 @@ function plural(n: number, one: string, many: string): string {
             @for (it of items(); track $index) {
               <li class="sv__item" data-since-item>
                 @if (it.task; as t) {
-                  <a
-                    class="sv__link"
-                    mfRowLink="my-matters-since"
-                    [rowKey]="t.taskId"
-                    [routerLink]="['/tasks', t.taskId]"
-                    [queryParams]="origin.params('my-matters')"
-                    [state]="origin.state()"
-                    >{{ t.taskNumber }} {{ t.title }} became overdue</a
-                  >
+                  <span class="sv__line">
+                    <mf-task-type-badge
+                      #tt
+                      [iconKey]="t.taskTypeIconKey"
+                      [colourKey]="t.taskTypeColourKey"
+                      [name]="t.taskTypeName"
+                    />
+                    <a
+                      class="sv__link"
+                      mfRowLink="my-matters-since"
+                      [rowKey]="t.taskId"
+                      [routerLink]="['/tasks', t.taskId]"
+                      [queryParams]="origin.params('my-matters')"
+                      [state]="origin.state()"
+                      [attr.aria-describedby]="tt.descriptionId"
+                      >{{ t.taskNumber }} {{ t.title }} became overdue</a
+                    >
+                  </span>
                   <span class="sv__meta">{{ t.matterRef }} {{ t.matterName }}</span>
                   <span class="sv__fact">{{ fact(t) }}</span>
                 } @else if (it.event; as e) {

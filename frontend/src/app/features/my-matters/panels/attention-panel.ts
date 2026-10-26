@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Params, RouterLink } from '@angular/router';
 import { MyMattersClient } from '../../../api/generated/api-client';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
-import { OLDEST_FIRST, factText } from '../facts';
+import { OLDEST_FIRST, rowFactText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { SectionToolbar } from '../section-toolbar';
+import { sectionPref } from '../section-prefs';
+import { SectionTypes } from '../section-types';
 import { PanelBox } from './panel-box';
 import { PANEL_LIST_STYLES } from './panel-styles';
 
@@ -23,7 +27,7 @@ const GROUP_TITLES: Record<string, string> = {
  */
 @Component({
   selector: 'mf-mm-attention',
-  imports: [PanelBox, RouterLink, RowLink],
+  imports: [PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: PANEL_LIST_STYLES,
   template: `
@@ -34,8 +38,32 @@ const GROUP_TITLES: Record<string, string> = {
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
+      <mf-mm-section-toolbar
+        label="Needs my attention"
+        [options]="typeChoices.options()"
+        [types]="pref.value().types"
+        [sort]="pref.value().sort"
+        [dir]="pref.value().dir"
+        (typesChange)="pref.setTypes($event)"
+        (sortChange)="pref.setSort($event)"
+        (dirChange)="pref.setDir($event)"
+      />
       @if (groups().length === 0) {
-        <p class="pl__empty" data-empty>Nothing needs your attention.</p>
+        @if (filtered()) {
+          <p class="pl__empty" data-empty data-filtered-empty>
+            Nothing of the selected types needs your attention.
+            <button
+              type="button"
+              class="mf-btn mf-btn--text"
+              data-show-all
+              (click)="pref.showAll()"
+            >
+              Show all types
+            </button>
+          </p>
+        } @else {
+          <p class="pl__empty" data-empty>Nothing needs your attention.</p>
+        }
       } @else {
         @for (g of groups(); track g.kind) {
           <section
@@ -44,22 +72,46 @@ const GROUP_TITLES: Record<string, string> = {
             [attr.aria-labelledby]="'mm-att-' + g.kind"
           >
             <h3 class="pl__sub" [id]="'mm-att-' + g.kind">
-              {{ title(g.kind) }} <span class="pl__n">({{ g.total }})</span>
+              {{ title(g.kind) }}
+              <span class="pl__n" data-count
+                >({{
+                  g.totalUnfiltered !== undefined && g.totalUnfiltered !== null
+                    ? g.total + ' of ' + g.totalUnfiltered
+                    : g.total
+                }})</span
+              >
             </h3>
             <ul class="pl__list">
               @for (t of g.items; track t.taskId) {
                 <li class="pl__row">
-                  <a
-                    class="pl__link"
-                    data-attention-row
-                    mfRowLink="my-matters-attention"
-                    [rowKey]="g.kind + '-' + t.taskId"
-                    [routerLink]="['/tasks', t.taskId]"
-                    [queryParams]="origin.params('my-matters')"
-                    [state]="origin.state()"
-                    >{{ t.taskNumber }} {{ t.title }}</a
-                  >
-                  <span class="pl__meta">{{ t.matterRef }} {{ t.matterName }}</span>
+                  <span class="pl__line">
+                    <mf-task-type-badge
+                      #tt
+                      [iconKey]="t.taskTypeIconKey"
+                      [colourKey]="t.taskTypeColourKey"
+                      [name]="t.taskTypeName"
+                    />
+                    <a
+                      class="pl__link"
+                      data-attention-row
+                      mfRowLink="my-matters-attention"
+                      [rowKey]="g.kind + '-' + t.taskId"
+                      [routerLink]="['/tasks', t.taskId]"
+                      [queryParams]="origin.params('my-matters')"
+                      [state]="origin.state()"
+                      [attr.aria-describedby]="tt.descriptionId"
+                      >{{ t.taskNumber }} {{ t.title }}</a
+                    >
+                  </span>
+                  <span class="pl__meta"
+                    >{{ t.matterRef }} {{ t.matterName }}
+                    <span class="pl__prio" data-priority>{{ t.priorityName }}</span>
+                    @if (t.atRisk) {
+                      <span class="pl__risk" data-at-risk
+                        ><i class="pi pi-clock" aria-hidden="true"></i> At risk</span
+                      >
+                    }
+                  </span>
                   <span class="pl__fact" data-fact>{{ fact(t) }}</span>
                 </li>
               }
@@ -82,15 +134,19 @@ export class AttentionPanel {
   readonly filters = input.required<MmFilters>();
   protected readonly origin = inject(TaskOriginLinks);
   private readonly api = inject(MyMattersClient);
+  protected readonly typeChoices = inject(SectionTypes);
+  protected readonly pref = sectionPref('my-matters.attention', { sort: true });
+  protected readonly filtered = computed(() => this.pref.value().types.length > 0);
 
   protected readonly loader = panelLoader(
-    () => this.filters(),
+    () => [this.filters(), this.pref.value()],
     () => {
       const a = commonArgs(this.filters());
+      const p = this.pref.value();
       return this.api.getMyMattersAttention(
-        undefined,
-        undefined,
-        undefined,
+        p.types.length > 0 ? p.types : undefined,
+        p.sort || undefined,
+        p.sort ? p.dir : undefined,
         a.scope,
         a.role,
         a.clientId,
@@ -102,6 +158,7 @@ export class AttentionPanel {
   );
 
   constructor() {
+    this.typeChoices.ensure();
     restoreRowFocus('my-matters-attention', () => this.loader.state() === 'ready');
   }
 
@@ -109,12 +166,12 @@ export class AttentionPanel {
   protected readonly groups = computed(() =>
     (this.loader.data()?.groups ?? []).filter((g) => g.total > 0),
   );
-  protected readonly fact = factText;
+  protected readonly fact = rowFactText;
   protected readonly params = queryToParams;
 
   /** "View all": the group's list; overdue opens oldest first (issue #817). */
   protected allParams(g: { kind: string; query: string }): Params {
-    return g.kind === 'overdue'
+    return g.kind === 'overdue' && !this.pref.value().sort
       ? { ...queryToParams(g.query), ...OLDEST_FIRST }
       : queryToParams(g.query);
   }

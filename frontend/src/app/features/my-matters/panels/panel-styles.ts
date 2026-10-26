@@ -32,8 +32,16 @@ export const PANEL_LIST_STYLES = `
     padding: var(--mf-s1) 0;
     border-top: 1px solid var(--mf-border);
   }
+  .pl__line {
+    grid-area: link;
+    display: flex;
+    gap: var(--mf-s2);
+    align-items: center;
+    min-width: 0;
+  }
   .pl__link {
     grid-area: link;
+    flex: 1 1 auto;
     min-width: 0;
     min-height: 24px;
     line-height: 24px;
@@ -50,6 +58,29 @@ export const PANEL_LIST_STYLES = `
     font-size: var(--mf-fs-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .pl__prio {
+    display: inline-block;
+    padding: 0 var(--mf-s2);
+    border: 1px solid var(--mf-border);
+    border-radius: var(--mf-radius);
+    color: var(--mf-text);
+    font-size: var(--mf-fs-xs);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .pl__risk {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    padding: 0 var(--mf-s2);
+    border: 1px solid var(--mf-warning-border, #b45309);
+    border-radius: var(--mf-radius);
+    background: var(--mf-warning-bg, #fef3c7);
+    color: var(--mf-warning-text, #5c3b00);
+    font-size: var(--mf-fs-xs);
+    font-weight: 600;
+    line-height: 1.5;
   }
   .pl__fact {
     grid-area: fact;

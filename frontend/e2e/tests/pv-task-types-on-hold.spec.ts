@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { mmWorld } from '../support/my-matters-fixtures';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
@@ -145,4 +146,43 @@ test.describe('On-hold reasons', () => {
       expect(overflow, 'no sideways page scroll').toBeLessThanOrEqual(0);
     });
   }
+});
+
+test.describe('My Matters section toolbar (#857)', () => {
+  test('filter by task type, the choice is remembered, and the page stays clean at four sizes', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'tb');
+    const second = await seed.taskType({ workflows: [w.world.workflow] });
+    const a = await w.matter('Alpha');
+    await w.task(a, { dueDate: '2000-01-01' });
+    await w.task(a, { dueDate: '2000-01-02' });
+    await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    const rows = page.locator('[data-group="overdue"] [data-attention-row]');
+    await expect(rows).toHaveCount(3);
+    await page.locator('[data-types-trigger]').first().click();
+    await page.locator(`[data-type-option="${second.id}"]`).first().check();
+    await expect(rows).toHaveCount(1);
+    await expect(page.locator('[data-chip]').first()).toContainText(second.name);
+    await page.reload();
+    await expect(rows).toHaveCount(1);
+    await page.locator('[data-clear-all]').first().click();
+    await expect(rows).toHaveCount(3);
+    await page.locator('[data-sort]').first().selectOption('type');
+    await expect(rows).toHaveCount(3);
+    for (const size of SIZES) {
+      await page.setViewportSize({ width: size.width, height: size.height });
+      await page.goto('/my-matters');
+      await expect(rows.first()).toBeVisible();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+      expect(overflow, `no sideways scroll at ${size.name}`).toBe(false);
+      await clean(page, `My Matters toolbar at ${size.name}`);
+    }
+  });
 });

@@ -28,6 +28,20 @@ export function factText(t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'>): s
   }
 }
 
+/**
+ * The fact of a row with the reason of a hold: "on hold 6 d - Waiting for client data". The reason is the structured one an administrator-managed list gives;
+ * a hold without one reads as before.
+ */
+export function rowFactText(
+  t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'> & {
+    onHold?: { reasonName?: string | undefined } | undefined;
+  },
+): string {
+  const base = factText(t);
+  const reason = t.factCode === 'ON_HOLD_DAYS' ? t.onHold?.reasonName : undefined;
+  return reason ? `${base} - ${reason}` : base;
+}
+
 /** The Task Queue order of a link that means "overdue": the oldest due date first (the Due column header shows it; Priority is one click away). */
 export const OLDEST_FIRST = { sort: 'due', dir: 'asc' } as const;
 

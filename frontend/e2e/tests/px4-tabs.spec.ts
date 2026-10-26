@@ -442,6 +442,8 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
       if (key === 'attention' || key === 'health')
         expect(inside, `${key}: Tab continues`).toBe(true);
     }
+    // axe counts a control under the sticky header as obscured; the focus walk leaves the page scrolled, so look from the top.
+    await page.evaluate(() => window.scrollTo(0, 0));
     expect(await axeViolations(page)).toEqual([]);
   });
 });
