@@ -32,6 +32,10 @@ public static class WorkViewsModule
         services.AddScoped<MyMattersHealthService>();
         services.AddScoped<MyMattersScopeResolver>();
         services.AddScoped<MyMattersSummaryService>();
+        services.AddScoped<AssetScopeResolver>();
+        services.AddScoped<AssetAggregates>();
+        services.AddScoped<AssetDataService>();
+        services.AddScoped<AssetReportRunService>();
         services.RemoveAll<IOrganizationTaskCounts>();
         services.AddScoped<IOrganizationTaskCounts, OrganizationTaskCounts>();
         services.RemoveAll<IConfigurationTaskCounts>();
