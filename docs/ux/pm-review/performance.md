@@ -92,3 +92,26 @@ Within the 10 percent allowance in all three. Note for the owner: a global searc
 ### Matter overview
 
 `GET /matters/{id}/overview`: 9 statements for a matter with nothing in it, 14 to 16 for a matter with 120 tasks, assets and 500 audit events, the same for a project manager and for an observer; cold 31 to 41 ms, p95 29 to 105 ms. The count does not depend on the number of tasks, people or events: the only variation is the optional name lookups that are skipped when there is nothing to name (the test allows a difference of two between matters, and fewer than 20 in all).
+
+## Asset reports (epic #851, issues #873 and #875)
+
+`POST /api/v1/asset-reports/run` (and `GET /asset-reports/{id}/run`) runs `AssetReportRunService`: the assets of the matters the caller may see (`IMatterVisibility`, scope mine or all through `IManagedMatterScope`), grouped in the database; never `JSON_VALUE`, never in memory except the 200 group labels. Per request: one count statement, one sum statement (Sum and Average), and for a matter, client or asset type group one small statement for the labels (3 to 4 statements in all, independent of the number of groups).
+
+**Measured by** `tools/perf/asset-report-timings.mjs` (data: `tools/perf/seed-asset-report-data.sql`) on 2026-10-26: SQL Server 2022 in Docker and the published API on the shared 4-core build machine **with other jobs running (load average 4 to 7 during the runs)**, so every number below is pessimistic. **Data: 100,000 assets of one type in 100 matters of one manager, and 200,000 rows of the typed index** (one NUMBER and one SELECT value per asset: twice the index volume the issue names). 60 runs per shape, the first 5 dropped; "cold" is the very first call.
+
+| Report (every asset is in scope) | cold ms | p50 ms | p95 ms |
+|---|---|---|---|
+| Count by disposition | 175 | 53 | 71 |
+| Sum of size by disposition | 387 | 269 | 330 |
+| Sum of size by matter (100 groups) | 414 | 311 | 388 |
+| Sum of size by client (rolled up from the matters) | 326 | 301 | 350 |
+| Sum by asset type, all asset types, scope all | 349 | 321 | 417 |
+| Count by a select field (platform), scope all | 108 | 80 | 106 |
+| Average of size by a select field | 605 | 441 | **504** |
+| Sum of size by a select field, Active only (90,000 assets) | 654 | 450 | **524** |
+
+**What the plans say.** Every statement reads the typed index (`IX_CFI_Number` for the number, `IX_CFI_Text` for the select value; an index seek on `OwnerKind` and `FieldKey`, then a hash join on `OwnerId`) and `IX_Asset_Matter_Disposition` for the assets; the managed matters come from `IX_Matter_PrimaryManager` and `IX_Matter_SecondaryManager`. No statement contains `JSON_VALUE`. When every one of 100,000 assets is in scope the asset side is necessarily a scan of the narrow disposition index (it has to count them all), 858 to 4,117 logical reads per statement. The work is CPU in the hash joins: the plan cache (`--plans`) shows 64 to 280 ms of CPU for the single-join statements (serial plans) and 630 to 660 ms of CPU for the two-join Sum and Average by a select field (parallel plans, 308 to 334 ms elapsed).
+
+**Against the target (p95 under 500 ms at 100,000 assets and 100,000 index rows).** Six of eight shapes are at 71 to 417 ms. The two shapes that join both the number and the select value (a Sum or Average grouped by a select field) were **504 and 524 ms** in the last run and 681 to 843 ms in an earlier run made while three browser suites were running: they are at the target on this loaded machine, not clearly under it, and the quiet-machine figure was not measured. If it matters, the two cheap levers are one statement for the count and the sum together (today two statements read the same assets) and `OPTION (MAXDOP 4)` for the two-join shape; neither is done. The 10-second run limit is in code (`AssetReportRunService.TimeoutSeconds`, a 409 `REPORT_TIMEOUT` with advice) and has no automated test.
+
+The page (`/assets/reports`) adds one request per action (Run, Save, Open) and one `GET /asset-reports/fields` per asset type choice; the CSV is built in the browser from the table on screen. Its chunk is 52.6 kB (about 13 kB gzip), loaded only when the route opens; the initial bundle does not change (641.21 kB before and after).

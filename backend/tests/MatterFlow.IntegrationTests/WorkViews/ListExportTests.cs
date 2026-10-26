@@ -63,6 +63,8 @@ public sealed class ListExportTests(SqlServerFixture sql) : MyMattersTestBase(sq
     {
         var ok = await A.PostAsJsonAsync("/api/v1/exports/log", new { surface = "my-matters.breakdown", format = "csv", rowCount = 12, filters = "scope=mine" });
         ok.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var report = await A.PostAsJsonAsync("/api/v1/exports/log", new { surface = "asset-report", format = "csv", rowCount = 3, filters = "Workspace, sum by Platform, scope mine, disposition any" });
+        report.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         var unknown = await A.PostAsJsonAsync("/api/v1/exports/log", new { surface = "nope", format = "csv", rowCount = 1 });
         unknown.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var tooMany = await A.PostAsJsonAsync("/api/v1/exports/log", new { surface = "my-matters.breakdown", format = "csv", rowCount = 10001 });

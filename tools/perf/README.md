@@ -9,6 +9,7 @@ against it. Results of the first round: `docs/qa/performance-round-1.md`.
 | `loadtest.mjs` | N concurrent virtual users (Dev auth, persona mix, think time) for D seconds; per scenario count, errors, requests per second, p50/p95/p99/max. Node 22, no packages. |
 | `top-queries.sql` | The costliest statements (plan cache) and missing-index suggestions after a run. |
 | `frontend-timings.mjs` | Chromium timings of the published web app (cold/warm load, queue with 25 and 100 rows, long comment thread); needs `npm ci` in `frontend/`. |
+| `seed-asset-report-data.sql`, `asset-report-timings.mjs` | The asset report engine at 100,000 assets (epic #851, issue #873): creates an asset type with a number and a select field, loads 100,000 assets and 200,000 typed index rows in 100 matters of one manager, and times `POST /asset-reports/run` for eight report shapes (p50, p95, max; `--plans` prints the plan-cache view). Needs a running stack, for example `E2E_KEEP_STACK=1 frontend/e2e/run-local.sh --list -g none`, then `node tools/perf/asset-report-timings.mjs --base http://127.0.0.1:5190 --container <sql container>`. Results: `docs/ux/pm-review/performance.md`, "Asset reports". |
 | `reproduce.sh` | Does all of the above (`PERF_SENSITIVE=1` starts the API with the sensitive-matter rule on) on a throwaway stack: SQL container on a random loopback port, publish, seed, run, collect, clean up. |
 
 ## One command

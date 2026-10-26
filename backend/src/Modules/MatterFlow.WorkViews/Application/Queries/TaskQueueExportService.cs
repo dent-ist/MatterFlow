@@ -54,7 +54,7 @@ public sealed class TaskQueueExportService(TaskQueueService queue, IAuditWriter 
     /// <summary>Records an export made in the browser from rows the person already sees (My Matters sections, Breakdown): the surface, the count and the filters, never the data.</summary>
     public async Task<Result> LogAsync(string surface, string format, int rowCount, string? filters, CancellationToken ct)
     {
-        var allowed = new[] { "my-matters.attention", "my-matters.deadlines", "my-matters.breakdown", ListExport.SurfaceTaskQueue };
+        var allowed = new[] { "my-matters.attention", "my-matters.deadlines", "my-matters.breakdown", ListExport.SurfaceAssetReport, ListExport.SurfaceTaskQueue };
         if (!allowed.Contains(surface))
             return Error.Validation("surface", "UNKNOWN_SURFACE", "Unknown export surface.");
         if (rowCount is < 0 or > ListExport.RowCap)

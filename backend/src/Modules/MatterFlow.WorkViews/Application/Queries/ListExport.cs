@@ -19,6 +19,9 @@ public static class ListExport
     /// <summary>The surface name written to the audit event for the Task Queue.</summary>
     public const string SurfaceTaskQueue = "task-queue";
 
+    /// <summary>The surface name written to the audit event for the asset report builder (epic #851, #875): the table on screen, exported by the browser.</summary>
+    public const string SurfaceAssetReport = "asset-report";
+
     private static readonly char[] FormulaStarts = ['=', '+', '-', '@', '\t', '\r'];
 
     /// <summary>The cell as it is written: a leading quote before a formula start, then CSV quoting where needed.</summary>
