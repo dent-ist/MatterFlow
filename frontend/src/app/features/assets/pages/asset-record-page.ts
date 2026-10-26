@@ -354,7 +354,12 @@ export class AssetRecordPage {
     });
   }
 
-  private focusHeading(): void {
+  /** Focus on the heading once the closing dialog is gone (its leave animation would otherwise take focus with it). */
+  private focusHeading(tries = 0): void {
+    if (document.querySelector('.p-dialog-mask') && tries < 20) {
+      setTimeout(() => this.focusHeading(tries + 1), 50);
+      return;
+    }
     const heading = document.querySelector<HTMLElement>('[data-page-title]');
     heading?.setAttribute('tabindex', '-1');
     heading?.focus({ preventScroll: true });

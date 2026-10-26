@@ -99,4 +99,57 @@ describe('AssetDetailsTab', () => {
     expect(el().querySelector('[data-external-reference] .pg-mono')?.textContent).toBe('REL-77');
     expect(el().textContent).not.toContain('Last changed');
   });
+
+  describe('long text (#508)', () => {
+    const long = 'A long description sentence. '.repeat(60);
+    const heights = (scroll: number, client: number): void => {
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+        configurable: true,
+        get: () => scroll,
+      });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+        configurable: true,
+        get: () => client,
+      });
+    };
+    afterEach(() => {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>)['scrollHeight'];
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>)['clientHeight'];
+    });
+
+    it('clamps a long description at six lines with a Show more / Show less button (aria-expanded)', async () => {
+      heights(400, 120);
+      await create(['Asset.View'], anAsset({ description: long }));
+      const box = el().querySelector<HTMLElement>('[data-description]')!;
+      expect(box.classList.contains('ad__desc--clamped')).toBe(true);
+      const toggle = el().querySelector<HTMLButtonElement>('[data-description-toggle]')!;
+      expect(toggle.textContent?.trim()).toBe('Show more');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      expect(toggle.getAttribute('aria-controls')).toBe('ad-description');
+
+      toggle.click();
+      await settle(fixture);
+      expect(box.classList.contains('ad__desc--clamped')).toBe(false);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(toggle.textContent?.trim()).toBe('Show less');
+      expect(box.textContent).toContain(long.trim());
+    });
+
+    it('offers no button when the description fits in six lines', async () => {
+      heights(100, 100);
+      await create(['Asset.View'], anAsset({ description: 'Short.' }));
+      expect(el().querySelector('[data-description-toggle]')).toBeNull();
+      expect(el().querySelector('[data-description]')?.textContent).toContain('Short.');
+    });
+
+    it('shows the external reference on one line with the whole value as tooltip and a copy button', async () => {
+      const url = 'https://dms.example/' + 'folder/'.repeat(100);
+      await create(['Asset.View'], anAsset({ externalReference: url }));
+      const link = el().querySelector<HTMLElement>('[data-external-reference] .ad__ref-text')!;
+      expect(link.getAttribute('title')).toBe(url);
+      expect(
+        el().querySelector('[data-external-reference] .ad__ref button.mf-copy'),
+      ).not.toBeNull();
+    });
+  });
 });

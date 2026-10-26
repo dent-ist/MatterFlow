@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { DynamicForm, FormDefinition } from 'form-engine';
 import { firstValueFrom } from 'rxjs';
@@ -54,24 +58,57 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
               @if (!asset().externalReference) {
                 Not provided
               } @else {
-                @if (isUrl(asset().externalReference!)) {
-                  <a
-                    class="pg-link"
-                    [href]="asset().externalReference"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >{{ asset().externalReference }}</a
-                  >
-                } @else {
-                  <span class="pg-mono">{{ asset().externalReference }}</span>
-                }
-                <mf-copy-button [text]="asset().externalReference!" label="external reference" />
+                <!-- One line with an ellipsis (the whole value is the tooltip and the copy button copies all of it). -->
+                <span class="ad__ref">
+                  @if (isUrl(asset().externalReference!)) {
+                    <a
+                      class="pg-link ad__ref-text"
+                      [href]="asset().externalReference"
+                      [attr.title]="asset().externalReference"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      >{{ asset().externalReference }}</a
+                    >
+                  } @else {
+                    <span class="pg-mono ad__ref-text" [attr.title]="asset().externalReference">{{
+                      asset().externalReference
+                    }}</span>
+                  }
+                  <mf-copy-button [text]="asset().externalReference!" label="external reference" />
+                </span>
               }
             </dd>
           </div>
           <div class="ad__f">
             <dt>Description</dt>
-            <dd>{{ asset().description || 'Not provided' }}</dd>
+            <dd>
+              @if (asset().description) {
+                <!-- Six lines, then "Show more" (only when the text is longer than that). -->
+                <div
+                  #description
+                  id="ad-description"
+                  class="ad__desc"
+                  [class.ad__desc--clamped]="!expanded()"
+                  data-description
+                >
+                  {{ asset().description }}
+                </div>
+                @if (overflows() || expanded()) {
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text ad__more"
+                    aria-controls="ad-description"
+                    [attr.aria-expanded]="expanded()"
+                    data-description-toggle
+                    (click)="expanded.set(!expanded())"
+                  >
+                    {{ expanded() ? 'Show less' : 'Show more' }}
+                  </button>
+                }
+              } @else {
+                Not provided
+              }
+            </dd>
           </div>
           <div class="ad__f">
             <dt>Created</dt>
@@ -142,6 +179,28 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
     .ad__sec {
       min-width: 0;
     }
+    .ad__ref {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
+    }
+    .ad__ref-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ad__desc {
+      white-space: pre-line;
+    }
+    .ad__desc--clamped {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 6;
+      line-clamp: 6;
+    }
     .ad__subtitle {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-md);
@@ -171,13 +230,38 @@ export class AssetDetailsTab {
 
   private requestId = 0;
 
+  private readonly injector = inject(Injector);
+  private readonly description = viewChild<ElementRef<HTMLElement>>('description');
+  /** The description is shown whole (Show less) or cut at six lines (Show more). */
+  protected readonly expanded = signal(false);
+  /** The text is longer than six lines at this width (measured; the button only exists then). */
+  protected readonly overflows = signal(false);
+
   constructor() {
     effect(() => {
       const asset = this.asset();
       untracked(() => {
         this.pickerContext.matterId.set(asset.matterId);
         void this.loadSchema(asset);
+        this.expanded.set(false);
       });
+    });
+    // Measure the clamp now and whenever the width changes (a phone turned, the window resized).
+    effect((onCleanup) => {
+      const box = this.description()?.nativeElement;
+      if (!box) {
+        this.overflows.set(false);
+        return;
+      }
+      const measure = (): void => {
+        if (this.expanded()) return; // the button stays while the text is open
+        this.overflows.set(box.scrollHeight > box.clientHeight + 1);
+      };
+      afterNextRender(measure, { injector: this.injector });
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(measure);
+      observer.observe(box);
+      onCleanup(() => observer.disconnect());
     });
   }
 
