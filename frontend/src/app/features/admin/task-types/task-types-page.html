@@ -54,7 +54,13 @@
         [list]="listId"
         [rowKey]="t.id"
       >
-        <mf-task-type-icon mfCardIcon [iconKey]="t.iconKey" />
+        <mf-task-type-badge
+          mfCardIcon
+          [decorative]="true"
+          [iconKey]="t.iconKey"
+          [colourKey]="t.colourKey"
+          [name]="t.name"
+        />
         <mf-active-badge mfCardBadges [active]="t.isActive" />
         <!-- One root element per @if: the slots of the card take a block's single element by its attribute. -->
         @if (notUsableReason(t)) {
@@ -119,6 +125,7 @@
             >
               Default workflow
             </th>
+            <th scope="col" class="num" data-target-col>Target (days)</th>
             @if (formRoomShown()) {
               <th
                 mfSort="form"
@@ -192,7 +199,12 @@
             <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
               <td class="tt-namecell">
                 <span class="tt-name">
-                  <mf-task-type-icon [iconKey]="t.iconKey" />
+                  <mf-task-type-badge
+                    [decorative]="true"
+                    [iconKey]="t.iconKey"
+                    [colourKey]="t.colourKey"
+                    [name]="t.name"
+                  />
                   <a
                     class="tt-link"
                     [routerLink]="['/admin/task-types', t.id]"
@@ -216,6 +228,14 @@
                   } @else {
                     <span class="tt-clip muted">No workflow</span>
                   }
+                }
+              </td>
+              <td class="num" data-target>
+                @if (t.targetDays !== undefined && t.targetDays !== null) {
+                  {{ t.targetDays }}
+                } @else {
+                  <span class="muted" aria-hidden="true">-</span>
+                  <span class="sr-only">No target</span>
                 }
               </td>
               @if (formRoomShown()) {

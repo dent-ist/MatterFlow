@@ -40,6 +40,13 @@ import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
+import {
+  TASK_TYPE_COLOURS,
+  TASK_TYPE_COLOUR_DEFAULT_LABEL,
+  TASK_TYPE_TARGET_DAYS_MAX,
+  TASK_TYPE_TARGET_DAYS_MIN,
+} from '../../../shared/task-type/task-type-colours';
 import { FormDesignerApi, FormVersionSummary } from './form-designer-api';
 import {
   FORM_TAB_REASON,
@@ -55,10 +62,27 @@ import {
 import { TaskTypeStatusNote } from './task-type-status-note';
 import { TaskTypeWorkflowsTab, WorkflowsChange } from './task-type-workflows-tab';
 
+/** The typed target turnaround: empty is none, otherwise a whole number of days from 1 to 365 (calendar days). */
+export function parseTarget(text: string): { value?: number; error?: string } {
+  const t = text.trim();
+  if (!t) return {};
+  const n = Number(t);
+  if (!/^\d+$/.test(t) || n < TASK_TYPE_TARGET_DAYS_MIN || n > TASK_TYPE_TARGET_DAYS_MAX) {
+    return {
+      error: `Enter a whole number of days from ${TASK_TYPE_TARGET_DAYS_MIN} to ${TASK_TYPE_TARGET_DAYS_MAX}, or leave it empty.`,
+    };
+  }
+  return { value: n };
+}
+
 interface Model {
   name: string;
   description: string;
   iconKey: string;
+  /** A palette name; empty = the neutral default. */
+  colourKey: string;
+  /** Calendar days as typed; empty = no target. */
+  targetDays: string;
   isActive: boolean;
   eligible: number[];
   defaultWorkflow: number | null;
@@ -68,6 +92,8 @@ const EMPTY: Model = {
   name: '',
   description: '',
   iconKey: DEFAULT_TASK_TYPE_ICON,
+  colourKey: '',
+  targetDays: '',
   isActive: true,
   eligible: [],
   defaultWorkflow: null,
@@ -79,6 +105,8 @@ const overviewKey = (m: Model, isNew: boolean): string =>
     name: m.name.trim(),
     description: m.description.trim(),
     iconKey: m.iconKey,
+    colourKey: m.colourKey,
+    targetDays: m.targetDays.trim(),
     ...(isNew ? { isActive: m.isActive } : {}),
   });
 
@@ -109,6 +137,7 @@ const workflowsKey = (m: Model): string =>
     Tabs,
     TaskTypeIcon,
     TaskTypeIconPicker,
+    TaskTypeBadge,
     TaskTypeStatusNote,
     TaskTypeWorkflowsTab,
     WorkStrip,
@@ -204,6 +233,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     const f = this.formFacts();
     return !!f && (f.published !== null || f.draftVersionNo !== null || f.retired);
   });
+  protected readonly colours = TASK_TYPE_COLOURS;
+  protected readonly defaultColourLabel = TASK_TYPE_COLOUR_DEFAULT_LABEL;
+  protected readonly targetMin = TASK_TYPE_TARGET_DAYS_MIN;
+  protected readonly targetMax = TASK_TYPE_TARGET_DAYS_MAX;
+
   protected readonly tabs = computed<MfTab[]>(() => {
     const new_ = this.isNew();
     const count = activeWorkflowCount(this.model().eligible, this.workflows());
@@ -351,6 +385,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           name: s.name.trim(),
           description: s.description.trim() || undefined,
           iconKey: s.iconKey,
+          colourKey: s.colourKey || undefined,
+          targetDays: parseTarget(s.targetDays).value,
           isActive: active,
           eligibleWorkflowIds: s.eligible,
           defaultWorkflowDefinitionId: s.defaultWorkflow ?? undefined,
@@ -376,7 +412,10 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   private showErrors(errors: Record<string, string>): void {
     this.fieldErrors.set(errors);
     // The fields of the Overview tab are on screen only there: a failed save from another tab brings the person to them.
-    if ((errors['name'] || errors['iconKey']) && this.current() !== 'overview') {
+    if (
+      (errors['name'] || errors['iconKey'] || errors['colourKey'] || errors['targetDays']) &&
+      this.current() !== 'overview'
+    ) {
       void this.go('overview');
     }
     focusFirstInvalid(this.injector);
@@ -401,6 +440,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       name: t.name,
       description: t.description ?? '',
       iconKey: t.iconKey,
+      colourKey: t.colourKey ?? '',
+      targetDays: t.targetDays == null ? '' : String(t.targetDays),
       isActive: t.isActive,
       eligible: [...t.eligibleWorkflowIds],
       defaultWorkflow: t.defaultWorkflowDefinitionId ?? null,
@@ -424,7 +465,13 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     this.model.set({
       ...fresh,
       ...(keepOverview
-        ? { name: now.name, description: now.description, iconKey: now.iconKey }
+        ? {
+            name: now.name,
+            description: now.description,
+            iconKey: now.iconKey,
+            colourKey: now.colourKey,
+            targetDays: now.targetDays,
+          }
         : {}),
       ...(keepWorkflows
         ? { eligible: [...now.eligible], defaultWorkflow: now.defaultWorkflow }
@@ -443,6 +490,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
             name: s.name,
             description: s.description,
             iconKey: s.iconKey,
+            colourKey: s.colourKey,
+            targetDays: s.targetDays,
             isActive: s.isActive,
           }
         : { ...m, eligible: [...s.eligible], defaultWorkflow: s.defaultWorkflow },
@@ -534,6 +583,11 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       this.showErrors({ iconKey: 'Choose an icon.' });
       return false;
     }
+    const target = parseTarget(m.targetDays);
+    if (target.error) {
+      this.showErrors({ targetDays: target.error });
+      return false;
+    }
     this.busy.set(true);
     this.failure.set('');
     this.conflict.set(false);
@@ -545,6 +599,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
             name,
             description: m.description.trim() || undefined,
             iconKey: m.iconKey,
+            colourKey: m.colourKey || undefined,
+            targetDays: target.value,
             isActive: m.isActive,
             eligibleWorkflowIds: m.eligible,
             defaultWorkflowDefinitionId: m.defaultWorkflow ?? undefined,
@@ -566,6 +622,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           name: overview.name.trim(),
           description: overview.description.trim() || undefined,
           iconKey: overview.iconKey,
+          colourKey: overview.colourKey || undefined,
+          targetDays: parseTarget(overview.targetDays).value,
           isActive: current.isActive,
           eligibleWorkflowIds: flow.eligible,
           defaultWorkflowDefinitionId: flow.defaultWorkflow ?? undefined,

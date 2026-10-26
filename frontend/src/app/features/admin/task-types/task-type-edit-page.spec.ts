@@ -486,4 +486,56 @@ describe('TaskTypeEditPage', () => {
       expect(q('[data-open-form]').textContent).toContain('Create form');
     });
   });
+
+  describe('colour and expected turnaround (#853)', () => {
+    async function pickColour(value: string): Promise<void> {
+      const select = q<HTMLSelectElement>('[data-colour-select]');
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+      await settle(fixture);
+    }
+
+    async function savedFull(id: number) {
+      return new Promise<{ colourKey?: string; targetDays?: number }>((resolve) =>
+        api.get(id).subscribe(resolve),
+      );
+    }
+
+    beforeEach(() => open('1'));
+
+    it('offers the neutral default and the ten named colours, with a live preview of the badge', async () => {
+      const options = all('[data-colour-select] option').map((o) => o.textContent!.trim());
+      expect(options).toHaveLength(11);
+      expect(options[0]).toBe('Neutral (default)');
+      expect(options).toContain('Teal');
+      expect(q('[data-preview]').getAttribute('data-colour')).toBeNull();
+      await pickColour('teal');
+      expect(q('[data-preview]').getAttribute('data-colour')).toBe('teal');
+      expect(q('[data-preview] [data-type-name]').textContent).toContain('Data Processing');
+    });
+
+    it('saves a colour and a target, shows them again and can clear them', async () => {
+      await pickColour('violet');
+      await type('[data-target-input]', '5');
+      expect(q('[data-footer]')).not.toBeNull();
+      await save();
+      expect(await savedFull(1)).toMatchObject({ colourKey: 'violet', targetDays: 5 });
+
+      await pickColour('');
+      await type('[data-target-input]', '');
+      await save();
+      const cleared = await savedFull(1);
+      expect(cleared.colourKey).toBeUndefined();
+      expect(cleared.targetDays).toBeUndefined();
+    });
+
+    it('refuses a target outside 1 to 365 with a message on the field and focus on it', async () => {
+      await type('[data-target-input]', '400');
+      await save();
+      expect(q('[data-target-error]').textContent).toContain('from 1 to 365');
+      expect(q('[data-summary]').textContent).toContain('from 1 to 365');
+      expect(q('#tt-target').getAttribute('aria-invalid')).toBe('true');
+      expect((await savedFull(1)).targetDays).toBeUndefined();
+    });
+  });
 });

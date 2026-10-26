@@ -53,12 +53,13 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
 import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
-import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
   'name',
   'defaultWorkflow',
+  'target',
   'form',
   'workflows',
   'openTasks',
@@ -73,6 +74,7 @@ const COLUMNS = [
 const BONES: Record<(typeof COLUMNS)[number], string> = {
   name: '12rem',
   defaultWorkflow: '9rem',
+  target: '2rem',
   form: '5rem',
   workflows: '1.5rem',
   openTasks: '1.5rem',
@@ -84,6 +86,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
 const SKELETON_CELL: Record<(typeof COLUMNS)[number], string> = {
   name: 'tt-namecell',
   defaultWorkflow: '',
+  target: 'num',
   form: 'tt-nowrap',
   workflows: 'num',
   openTasks: 'num',
@@ -124,7 +127,7 @@ const FORM_OPTIONS = [
     GridBody,
     FiltersBar,
     ColumnFilterRow,
-    TaskTypeIcon,
+    TaskTypeBadge,
     AssocFilter,
     RecordCardList,
     RecordCardDef,
@@ -437,9 +440,13 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected cardLine(t: TaskTypeView): string {
     const form = [this.formStatus(t), this.formVersion(t)].filter(Boolean).join(' ');
     const ids = t.eligibleWorkflowIds;
-    if (ids.length === 0) return `${form} - No workflow`;
+    const target =
+      t.targetDays == null
+        ? ''
+        : ` - Target ${t.targetDays} ${t.targetDays === 1 ? 'day' : 'days'}`;
+    if (ids.length === 0) return `${form} - No workflow${target}`;
     const name = this.workflowName(t.defaultWorkflowDefinitionId ?? ids[0]);
-    return `${form} - ${name}${ids.length > 1 ? ` +${ids.length - 1}` : ''}`;
+    return `${form} - ${name}${ids.length > 1 ? ` +${ids.length - 1}` : ''}${target}`;
   }
 
   protected formStatus(t: TaskTypeView): string {
@@ -581,6 +588,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
           name: t.name,
           description: t.description,
           iconKey: t.iconKey,
+          colourKey: t.colourKey,
+          targetDays: t.targetDays,
           isActive,
           eligibleWorkflowIds: t.eligibleWorkflowIds,
           defaultWorkflowDefinitionId: t.defaultWorkflowDefinitionId,

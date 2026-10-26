@@ -202,7 +202,13 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
         (th as HTMLElement).textContent!.trim(),
       );
     let fixture = await open(768);
-    expect(heads(fixture)).toEqual(['Name', 'Default workflow', 'Status', 'Actions']);
+    expect(heads(fixture)).toEqual([
+      'Name',
+      'Default workflow',
+      'Target (days)',
+      'Status',
+      'Actions',
+    ]);
     expect(fixture.nativeElement.querySelector('[data-workflows]')).toBeNull();
     fixture.destroy();
     TestBed.resetTestingModule();
@@ -210,6 +216,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     expect(heads(fixture)).toEqual([
       'Name',
       'Default workflow',
+      'Target (days)',
       'Request form',
       'Status',
       'Actions',
@@ -220,6 +227,7 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
     expect(heads(fixture)).toEqual([
       'Name',
       'Default workflow',
+      'Target (days)',
       'Request form',
       'Workflows',
       'Status',
@@ -377,6 +385,24 @@ describe('TaskTypesPage', () => {
       queryParams: { status: 'inactive', form: null, usable: null, page: null },
       queryParamsHandling: 'merge',
     });
+  });
+
+  it('shows the target turnaround in its own column (a dash and "No target" for none) and a coloured badge before the name (#853)', async () => {
+    await new Promise<void>((resolve) =>
+      api
+        .create({ name: 'Production', description: undefined, colourKey: 'teal', targetDays: 3 })
+        .subscribe(() => resolve()),
+    );
+    await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    expect(el().querySelector('[data-target-col]')!.textContent).toContain('Target (days)');
+    expect(row('Production').querySelector('[data-target]')!.textContent!.trim()).toBe('3');
+    expect(row('Production').querySelector('mf-task-type-badge')!.getAttribute('data-colour')).toBe(
+      'teal',
+    );
+    expect(row('Data Processing').querySelector('[data-target]')!.textContent).toContain(
+      'No target',
+    );
   });
 
   it('shows each type with its icon in neutral colour before the name', () => {

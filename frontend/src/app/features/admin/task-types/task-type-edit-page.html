@@ -143,6 +143,81 @@
                 }
               </div>
               <div class="field">
+                <label for="tt-colour">Colour</label>
+                <div class="tt__colour">
+                  <select
+                    id="tt-colour"
+                    class="text"
+                    name="colourKey"
+                    [ngModel]="model().colourKey"
+                    (ngModelChange)="patch({ colourKey: $event })"
+                    [attr.aria-invalid]="fieldErrors()['colourKey'] ? 'true' : null"
+                    aria-describedby="tt-colour-help"
+                    data-colour-select
+                  >
+                    <option value="">{{ defaultColourLabel }}</option>
+                    @for (c of colours; track c.key) {
+                      <option [value]="c.key">{{ c.label }}</option>
+                    }
+                  </select>
+                  <mf-task-type-badge
+                    class="tt__preview"
+                    variant="wide"
+                    [iconKey]="model().iconKey"
+                    [colourKey]="model().colourKey"
+                    [name]="model().name.trim() || 'Task type name'"
+                    data-preview
+                  />
+                </div>
+                <p id="tt-colour-help" class="muted hint">
+                  One of ten named colours, shown behind the icon in lists. The icon and the name
+                  are always shown too, so the colour is never the only signal. The preview shows
+                  how it looks.
+                </p>
+                @if (fieldErrors()['colourKey']) {
+                  <p class="error" role="alert" data-colour-error>
+                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                    {{ fieldErrors()['colourKey'] }}
+                  </p>
+                }
+              </div>
+              <div class="field">
+                <label for="tt-target">Expected turnaround (days)</label>
+                <input
+                  id="tt-target"
+                  class="text tt__target"
+                  name="targetDays"
+                  type="number"
+                  inputmode="numeric"
+                  [min]="targetMin"
+                  [max]="targetMax"
+                  step="1"
+                  [ngModel]="model().targetDays"
+                  (ngModelChange)="
+                    patch({
+                      targetDays: $event === null || $event === undefined ? '' : '' + $event,
+                    })
+                  "
+                  [attr.aria-invalid]="fieldErrors()['targetDays'] ? 'true' : null"
+                  [attr.aria-describedby]="
+                    fieldErrors()['targetDays']
+                      ? 'tt-target-error tt-target-help'
+                      : 'tt-target-help'
+                  "
+                  data-target-input
+                />
+                <p id="tt-target-help" class="muted hint">
+                  Optional, in calendar days (1 to 365). An open task that has used 80 percent of it
+                  and is not yet overdue is shown as At risk.
+                </p>
+                @if (fieldErrors()['targetDays']) {
+                  <p id="tt-target-error" class="error" role="alert" data-target-error>
+                    <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                    {{ fieldErrors()['targetDays'] }}
+                  </p>
+                }
+              </div>
+              <div class="field">
                 <label for="tt-description">Description</label>
                 <textarea
                   id="tt-description"
