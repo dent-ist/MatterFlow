@@ -740,34 +740,48 @@ Details (?tab=details): Matter (link) | Description (only when set) | Status | C
 
 ### S08 Assets
 
-Assets are Matter-owned references to external resources. The product records, does not provision.
-**List (global and per Matter).**
+Assets are Matter-owned references to external resources. The product records, does not provision. An asset is **Active or Inactive** (deactivated, never deleted; published form versions are the things that are "retired"). Built by the Assets UX epic #485 (review `docs/ux/assets-review/`, decisions addendum section AA); the record page replaced the older master-detail screen (`docs/ux/assets-screen`).
+
+**List (`/assets`, needs `Asset.View`).** A fixed-height page on the admin grid kit, like Clients. Header: crumb-less H1 "Assets", the My matters / All switch for people who manage matters, **Filters** (count) with **Clear filters**, and **New asset** (`Asset.Create`).
 ```text
-Assets                                         [+ New Asset]
-Search [name, ref, type]  Matter [00343-00012]  Type [All v]  Status [Active v]
-+--------------------+----------------------+----------------+------------+--------------+
-| Name               | Type                 | Matter         | External ref| Linked tasks|
-| ACME Review WS     | Relativity Workspace | 00343-00012    | WS-8841     | 5           |
+Assets                                  [My matters | All]  [Filters (1)] [+ New asset]
+Name [___]  Type [All types v]  Matter [___]  External ref [___]  Status [Active v]    filter row, open from 640 px
++---------------------+----------------+--------------+--------------+---------------------+--------+
+| Name (link)         | Type           | Matter number| Linked tasks | External reference  | Status |
+| ACME Review WS      | Relativity WS  | 00343-00012  |            5 | WS-8841             |        |
+Showing 1-25 of 1054 active - 151 inactive hidden  Show all
 ```
-Per-Matter assets can reach 200 to 300: server pagination and search, no client-side filtering.
-**Create/Edit.**
+- Rows are **44 px**. The **name is the one link** (a real `a` to `/assets/:id`, two lines at most, the full text as tooltip). The matter number is plain text, a link to the matter only with `Matter.View` (no copy button, no second line; the matter name is its tooltip). The reference is one line with an ellipsis (full value as tooltip, copy button not a Tab stop). Only **Inactive** has a badge.
+- **Linked tasks** shows the open linked tasks (New, In Progress, On Hold) as a plain right-aligned number, the total in the tooltip; absent without `Task.View`; sortable (busiest first). It is plain text because the Task Queue cannot filter by asset.
+- Columns drop by window width: External reference below 1280 px, Linked tasks below 900 px; the grid never scrolls sideways at 768 px.
+- Sort: Name (default), Type, Matter number (then name) and Linked tasks, in the address (`sort=`). Filters are server-side and in the address (`name`, `typeId`, `matter`, `extref`, `status`, `matterId` from a Matter); 25, 50 or 100 per page. Per-Matter assets can reach 200 to 300: server pagination and search, no client-side filtering.
+- The filter row is open on arrival from 640 px (remembered per person); **below 640 px** the list is **cards** (name, type, matter number, open tasks, Inactive badge; the whole card opens the record) and the filters and "Sort by" are in a sheet. **Skip to table** is the first Tab stop and lands on the first name or card; a row has one Tab stop (two with `Matter.View`). Loading is a skeleton of the real columns; 403, error (with the error reference and Retry), no-match (Clear filters, "n inactive hidden - Show all") and first-run rows are the shared grid-body ones, with no second New button. Back from a record returns to the exact list address with the row focused. An old `/assets?selected=<id>` link is sent once to `/assets/<id>`.
+
+**Record page (`/assets/:id`, needs `Asset.View`).** The shared record header: crumb **Assets > name** (name cut at 40 characters), the name as H1 (two lines, full text as tooltip), type badge, Active/Inactive badge, context line "Matter <number> <name>" (the number a link only with `Matter.View`). Actions: **Edit** (`Asset.Edit`, hidden when inactive), **Activity** (opens History, `Audit.View`), and in the overflow **Set inactive / Set active** (`Asset.Edit`). No primary action: linking is made from the Task page. Then banners for an inactive asset and for an inactive asset type, the **summary strip** and tabs **Details | Linked tasks (n) | History** in `?tab=` (replaced, not added; a tab the person cannot see falls back to Details).
+- **Summary strip** (`mf-work-strip`): Open (link to the tab when above 0), Overdue (once the Linked tasks tab has loaded, from its list), Linked, Created, Modified; only the dates without `Task.View`.
+- **Details:** section **Asset** (matter, type, external reference as a link when it is a URL, one line with copy, description clamped at 6 lines with Show more / Show less, created, last changed) and section **<Type> fields (n)** with the stored values read-only (`mf-dynamic-form`). Without `Task.View` or a form-management permission no schema is requested and one muted sentence ("Type fields are not available with your access.") stands in.
+- **Linked tasks:** a 44 px table: Ref (text), Title (the one link to the task), Status, Due (the shared Due cell, overdue in the warning style), Assignee, Role of the link; earliest due first, no due date last, sortable by Due and Status; a line "19 linked - 4 open - 1 overdue"; cards below 640 px. Without `Task.View` the sentence "You don't have permission to view tasks." and no request.
+- **History:** the entity activity feed (`Audit.View`).
+- **Set inactive** dialog: "Set <name> inactive? 4 open tasks keep this link. It can't be edited or linked to new tasks while inactive. Its history and links stay; assets are never deleted." (the count sentence is left out without `Task.View`); Keep active is the safe default; Cancel and Escape return focus to the overflow button; after Confirm focus is on the heading and the badge says Inactive. Set active asks "Reactivate <name>?".
+- **States:** loading skeleton; 404 "We couldn't find that asset."; 403 "You don't have access to this asset."; 5xx "Couldn't load this asset." with the error reference and Retry. Focus goes to the heading when the page opens. Document title `<Name>: <Tab> - MatterFlow`.
+- Phones (375): header actions collapse into the overflow, the strip is a 2x2 group, tabs scroll, Details is one column, Linked tasks are cards; the page scrolls as a whole.
+
+**New and Edit (`/assets/new`, `/assets/:id/edit`, `Asset.Create` / `Asset.Edit`; otherwise the 403 page).** The Create task form pattern: record-header style title, one input width, sections **Asset** and **<Type> fields (n)** (the type's published form via `mf-dynamic-form`; fields that depend on other assets use the matter-scoped asset picker), validation summary, sticky footer **Create asset / Save changes** and **Cancel**, a leave guard for unsaved changes.
 ```text
-New Asset
-Matter (required)         [typeahead]            (locked once created; prefilled from Matter)
-Asset type (required)     [ Relativity Workspace v ]  -> loads type-specific fields
+New asset
+Matter (required)         [typeahead: e.g. 90001-80011 or matter name]   locked when launched from a Matter
+Asset type (required)     [ Relativity Workspace v ]  -> loads the type's fields
 Display name (required)   [__________]
-External reference / URL  [__________]   (URL validated if looks like URL)
+External reference / URL  [__________]   (validated only when it looks like a URL)
 Description               [__________]
-Status                    Active / Retired
--- Type-specific fields (Asset Type's form via DynamicForm) --
-   Workspace ID [___]  Environment [Prod v]
--- Custom fields (Asset-level) --
+-- Relativity Workspace fields (3) --      Workspace ID [___]  Environment [Prod v]   (a type's "Lifecycle" select is one of them)
 ```
-Asset type change after creation: not allowed [UX-PROPOSAL: type drives the fields; to change, retire and create a new one]. Matter cannot change (an Asset belongs to exactly one Matter).
-**Detail.** Header with type badge, Matter link, external ref (copy button; link if URL), tabs: **Details**, **Linked Tasks** (table, with link label Source/Destination/Subject/Result), **Activity**.
+Matter and type are locked after creation (an Asset belongs to exactly one Matter; the type drives the fields; to change the type, set the asset inactive and create a new one). Edit shows the status, type badge and matter link and keeps Save changes disabled until something changed; an inactive asset cannot be edited ("Reactivate it on its asset page first."). The seeded type forms call their life-cycle select **Lifecycle**, so it is not mistaken for the record's Active/Inactive.
 **Linking to Tasks** happens from Task detail > Assets tab (S10): the picker lists only Assets of the Task's Matter; a cross-Matter attempt (e.g. via URL) shows server error "That asset belongs to a different matter."
-**Messages.** "Enter a display name." "Select an asset type." "Enter a valid URL (starting with http:// or https://)."
-**Permissions.** `Asset.View/Create/Edit/Link`.
+**Messages.** "Enter a display name." "Select an asset type." "Select a matter." "Enter a valid URL (starting with http:// or https://)." "Another change was saved at the same time. Try again." (409 on a lost race: the typed values stay, no reload offered) "That matter is inactive, so assets can't be added to it."
+**API (additive).** `GET /assets` and `GET /assets/{id}` carry `linkedTaskCount` and `openLinkedTaskCount` (null without `Task.View`); `sort` accepts `matter` and `linkedTaskCount`; `GET /assets/{id}/linked-tasks` returns `dueDate`, `dueAtUtc`, `isAsap`, `isOverdue`, `isOpen`, `assigneeUserId`, `assigneeName`, `priorityLabel`, `priorityColor`, earliest due first, and an empty list without `Task.View`.
+**Permissions.** `Asset.View/Create/Edit/Link`; task items need `Task.View`, History `Audit.View`, matter links `Matter.View`. No keyboard shortcut is defined for Assets (Phase 2, #420).
+**Where the build differs from the issues.** The Linked tasks count in the list is plain text, not a link (no Task Queue filter by asset); on a phone card the matter number is text; the Ref in the Linked tasks table is text and the title is the link (one Tab stop per row); the Overdue item of the strip appears only after the Linked tasks tab has loaded; the shared tabs are 35 to 38 px high on a phone.
 
 ---
 
@@ -1760,11 +1774,19 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S07-8 A 130-character project name keeps the header to the limits of 5.9 (title two lines, tabs not pushed below the fold at 1366x768).
 
 ### S08 Assets
-- [ ] UAT-S08-1 Create with Matter and Asset Type; type-specific fields appear and validate.
-- [ ] UAT-S08-2 Matter and Type fixed after creation.
-- [ ] UAT-S08-3 List handles 300 assets per matter with server search/pagination.
-- [ ] UAT-S08-4 Detail lists linked tasks with link labels.
+- [ ] UAT-S08-1 Create with Matter and Asset Type; the type's fields appear in their own section and validate; a lost race shows the 409 sentence and keeps what was typed.
+- [ ] UAT-S08-2 Matter and Type are locked after creation (Edit says why); an inactive asset cannot be edited.
+- [ ] UAT-S08-3 List handles 300 assets per matter with server search, sort (Name, Type, Matter number, Linked tasks) and pagination; rows are 44 px; the filter row is open on arrival from 640 px.
+- [ ] UAT-S08-4 The name opens `/assets/:id`; Back returns to the same list view with the row focused; an old `?selected=` link lands on the record page.
 - [ ] UAT-S08-5 Linking from Task offers only same-Matter assets; cross-Matter rejected (SCN-016).
+- [ ] UAT-S08-6 Record page: header with Edit, Activity, overflow; strip (Open, Overdue, Linked, Created, Modified); tabs Details, Linked tasks (n), History in `?tab=`.
+- [ ] UAT-S08-7 Linked tasks shows Due, Assignee and Role, earliest due first, overdue in the warning style, "n linked - n open - n overdue"; cards at 375.
+- [ ] UAT-S08-8 Set inactive names the open linked tasks that keep the link; Cancel and Escape return focus to the overflow; after Confirm the heading has focus.
+- [ ] UAT-S08-9 A 1,500-character description is clamped at 6 lines with Show more; a 1,000-character URL is one line with a copy button; a 300-character name shows two lines.
+- [ ] UAT-S08-10 Without `Matter.View` the matter number is text everywhere; without `Task.View` there is no Linked tasks column, count or request; without `Audit.View` no History tab (a `?tab=history` shows Details); no 403 page is reached from a link, no failing request, no error toast.
+- [ ] UAT-S08-11 `/assets/new` without `Asset.Create` and `/assets/:id/edit` without `Asset.Edit` show the 403 page; without `Asset.View` the whole area does.
+- [ ] UAT-S08-12 Keyboard only: Skip to table, open an asset, change tab with the arrows, Edit, Save, Set inactive, Back; no sideways scroll and no axe findings at 375, 768, 1366 and 1920.
+- [ ] UAT-S08-13 No asset or type form says "Retired" for an asset; the seeded type forms call their select "Lifecycle".
 
 ### S09 Create Task
 - [ ] UAT-S09-1 Manual creation with required fields works; created task has the exact selected Type, Workflow, Matter.

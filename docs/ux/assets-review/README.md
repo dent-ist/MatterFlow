@@ -1,5 +1,7 @@
 # Assets (user-facing): independent UX review
 
+> **Status (2026-10-26): built.** Every finding of this review was planned and delivered by epic #485 (plan and status lines: `delivery-plan.md`; decisions: addendum section AA; spec: `docs/ux/ux-spec.md` S08). Below is the review as written at `48aa4aa`; "the panel", "`?selected=`" and "Retired" describe the screen before the epic. Screenshots of the result are in `fixes/`.
+
 Scope: **Assets** at `/assets` (list with inline filters, the asset details panel with its Details, Linked Tasks and History tabs, Set inactive / Set active), **New asset** (`/assets/new`) and **Edit asset** (`/assets/:id/edit`), and how an asset links to its Matter and to Tasks (linking itself is made from the Task page, reviewed in the Task Detail review). `/assets/:id` redirects to `/assets?selected=:id`. The admin Asset Types pages are not in scope. Reviewed at `origin/dev` `48aa4aa` as a user would see it (System Admin, plus three narrower roles): production build, published API with Dev auth, SQL Server, Playwright Chromium. **No application code was changed and no issues were created.**
 
 In flight and not reviewed: Task Types epic, column-filters re-review (#75), keyboard audit. Overlaps with shared components are named. **No keyboard-shortcut recommendations** (owner decision).
