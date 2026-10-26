@@ -85,6 +85,11 @@
       "reason": "Per-person notification switches, not report data."
     },
     {
+      "name": "OnHoldReason",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
       "name": "Permission",
       "access": "deny",
       "reason": "Authorization catalogue; not report data."
