@@ -15,7 +15,7 @@ export type TrendWeeks = (typeof TREND_WEEKS)[number];
 const CHART_MIN_PX = 480;
 
 const W = 600;
-const H = 200;
+const H = 160;
 const LEFT = 36;
 const RIGHT = 12;
 const TOP = 12;
@@ -85,8 +85,11 @@ export function limitationText(code: string): string {
       background: var(--mf-selected-bg);
       font-weight: 700;
     }
+    .tr__approx-line {
+      cursor: pointer;
+    }
     .tr__approx {
-      margin: 0 0 var(--mf-s3);
+      margin: 0 0 var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
@@ -100,7 +103,7 @@ export function limitationText(code: string): string {
     .tr__grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--mf-s4);
+      gap: var(--mf-s3);
     }
     .tr__fig {
       margin: 0;
@@ -176,7 +179,7 @@ export function limitationText(code: string): string {
     }
     .tr__big {
       margin: 0;
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
@@ -271,15 +274,16 @@ export function limitationText(code: string): string {
         }
       </div>
       @if (data(); as d) {
-        <div class="tr__approx" data-approximate>
-          <strong>Approximate.</strong> These figures are worked out from today's data, not recorded
-          week by week.
+        <details class="tr__approx" data-approximate>
+          <summary class="tr__approx-line">
+            <strong>Approximate.</strong> Worked out from today's data, not recorded week by week.
+          </summary>
           <ul data-limitations>
             @for (code of d.limitations; track code) {
               <li>{{ limitation(code) }}</li>
             }
           </ul>
-        </div>
+        </details>
         <div class="tr__grid">
           <figure class="tr__fig" data-chart="overdue">
             <h3 class="tr__title">Overdue at week end</h3>

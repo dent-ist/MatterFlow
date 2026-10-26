@@ -753,7 +753,7 @@ describe('MyMattersPage', () => {
 
     it('has the four tabs, Overview selected, and the page as it was under it', async () => {
       const h = await open('/my-matters');
-      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Trends', 'Activity']);
+      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Activity', 'Trends']);
       expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
         'Overview',
       );
@@ -836,6 +836,9 @@ describe('MyMattersPage', () => {
       const h = await open('/my-matters?tab=trends');
       const root = el(h).querySelector('[data-panel=trends]')!;
       expect(root.querySelector('[data-approximate]')!.textContent).toContain('Approximate');
+      // One line while closed (PV-12): the limitations sit behind the disclosure.
+      expect(root.querySelector('[data-approximate]')!.tagName).toBe('DETAILS');
+      expect(root.querySelector('[data-approximate]')!.hasAttribute('open')).toBe(false);
       expect(root.querySelector('[data-limitations]')!.textContent).toContain('re-dated');
       expect(root.querySelectorAll('svg[role=img]')).toHaveLength(2);
       expect(root.querySelector('[data-chart=overdue] [data-summary]')!.textContent).toContain(

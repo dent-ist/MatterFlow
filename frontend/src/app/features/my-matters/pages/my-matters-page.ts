@@ -52,7 +52,7 @@ const SORTS: readonly HealthSort[] = [
 ];
 
 /** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
-export const MM_TABS = ['overview', 'deadlines', 'breakdown', 'trends', 'activity'] as const;
+export const MM_TABS = ['overview', 'deadlines', 'breakdown', 'activity', 'trends'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
