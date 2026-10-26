@@ -233,3 +233,33 @@ describe('ColumnChart', () => {
     expect(none.nativeElement.querySelector('[data-columns-empty]')).not.toBeNull();
   });
 });
+
+@Component({
+  imports: [ChartPanel],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<mf-chart-panel heading="Result" [rows]="rows" [customTable]="true" [(kind)]="kind"
+    ><p data-own-table>My own table</p></mf-chart-panel
+  >`,
+})
+class OwnTableHost {
+  rows = [row('Active', 12), row('Disposed', 3)];
+  kind = signal<ChartKind>('table');
+}
+
+describe("ChartPanel with the page's own table", () => {
+  it('shows the projected table instead of its own, and the chart views are unchanged', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(OwnTableHost);
+    await settle(fixture);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-own-table]')).toBeTruthy();
+    expect(el.querySelector('mf-chart-table')).toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-show-bar]')!.click();
+    await settle(fixture);
+    expect(el.querySelector('mf-bar-chart')).toBeTruthy();
+    expect(el.querySelector('[data-own-table]')).toBeNull();
+    el.querySelector<HTMLButtonElement>('[data-show-table]')!.click();
+    await settle(fixture);
+    expect(el.querySelector('[data-own-table]')).toBeTruthy();
+  });
+});

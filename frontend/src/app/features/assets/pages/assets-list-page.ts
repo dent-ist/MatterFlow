@@ -228,6 +228,14 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }
+        <a
+          mfActions
+          class="mf-btn"
+          routerLink="/assets/reports"
+          data-build-report
+          *mfHasPermission="'Asset.View'"
+          >Build a report</a
+        >
         <mf-list-filters-button
           mfActions
           [filters]="filters"

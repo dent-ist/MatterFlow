@@ -136,6 +136,7 @@ async function walk(
     '/matters',
     '/projects',
     '/assets',
+    '/assets/reports',
     '/admin/audit',
     '/admin/users',
   ];

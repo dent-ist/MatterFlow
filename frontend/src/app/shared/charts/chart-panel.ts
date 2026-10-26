@@ -104,16 +104,20 @@ export const MAX_BARS = 25;
           }
         }
         @default {
-          <mf-chart-table
-            [caption]="heading()"
-            [rows]="rows()"
-            [labelHeader]="labelHeader()"
-            [valueHeader]="valueHeader()"
-            [emptyText]="emptyText()"
-            [format]="format()"
-            [showShare]="showShare()"
-            [totalLabel]="totalLabel()"
-          />
+          @if (customTable()) {
+            <ng-content />
+          } @else {
+            <mf-chart-table
+              [caption]="heading()"
+              [rows]="rows()"
+              [labelHeader]="labelHeader()"
+              [valueHeader]="valueHeader()"
+              [emptyText]="emptyText()"
+              [format]="format()"
+              [showShare]="showShare()"
+              [totalLabel]="totalLabel()"
+            />
+          }
         }
       }
     </div>
@@ -159,6 +163,8 @@ export class ChartPanel {
   readonly format = input<ChartFormat>(plainFormat);
   readonly showShare = input(false);
   readonly totalLabel = input('Total');
+  /** The page draws the table itself (a result with several columns) and projects it as the content; the chart views are unchanged. */
+  readonly customTable = input(false);
   /** What is shown; the table until someone picks a chart. */
   readonly kind = model<ChartKind>('table');
 

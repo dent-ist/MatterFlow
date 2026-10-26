@@ -93,7 +93,7 @@ describe('Assets routes', () => {
 
   it('keeps the create and edit addresses', () => {
     const paths = ASSETS_ROUTES[0].children!.map((r) => r.path);
-    expect(paths).toEqual(['', 'new', ':assetId/edit', ':assetId']);
+    expect(paths).toEqual(['', 'reports', 'new', ':assetId/edit', ':assetId']);
   });
 });
 
