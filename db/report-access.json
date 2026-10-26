@@ -20,6 +20,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "AssetReport",
+      "access": "deny",
+      "reason": "Personal saved asset report definitions of the report builder (per person), not report data."
+    },
+    {
       "name": "AssetType",
       "access": "allow",
       "reason": "Business data that reports may read."
