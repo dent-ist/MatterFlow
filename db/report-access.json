@@ -250,6 +250,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "UserView",
+      "access": "deny",
+      "reason": "Per-person remembered screen state and saved views (personal preferences), not report data."
+    },
+    {
       "name": "UserWorkHour",
       "access": "allow",
       "reason": "Business data that reports may read."
