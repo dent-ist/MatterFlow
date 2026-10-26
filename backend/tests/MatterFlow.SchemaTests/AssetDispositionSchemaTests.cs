@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>40-asset-disposition.sql (epic #851, issue #864): the disposition columns, the backfill from IsActive and the IsActive/disposition agreement.</summary>
+/// <summary>43-asset-disposition.sql (epic #851, issue #864): the disposition columns, the backfill from IsActive and the IsActive/disposition agreement.</summary>
 [Collection(SqlServerCollection.Name)]
 public class AssetDispositionSchemaTests(SqlServerFixture sql)
 {
@@ -45,7 +45,7 @@ public class AssetDispositionSchemaTests(SqlServerFixture sql)
     public async Task Existing_assets_migrate_and_inactive_ones_become_INACTIVE()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(40));
+        await RunAsync(cs, new ScriptsBefore(43));
         await ExecAsync(cs, Seed);
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource());
