@@ -86,6 +86,14 @@ export function retireCopy(versionNo: number | string): DialogCopy {
  * from the row overflow. Pages call `dialogCopy.deactivatePriority({ openTasks })` and never spell dialog text themselves.
  */
 export const dialogCopy = {
+  /** Set an Asset inactive (#507): the open tasks linked to it keep the link; the sentence is dropped when the count is not known. */
+  deactivateAsset: (facts: ImpactFacts = {}): DialogCopy => ({
+    title: 'Set asset inactive',
+    body: impactLine('deactivateAsset', facts).text,
+    confirm: 'Set inactive',
+    cancel: 'Keep active',
+    danger: true,
+  }),
   deactivateAssetType: (facts: ImpactFacts = {}): DialogCopy => ({
     title: 'Deactivate asset type?',
     body: impactLine('deactivateAssetType', facts).text,
@@ -159,6 +167,7 @@ export type ImpactKind =
   | 'publishVersion'
   | 'deactivateStep'
   | 'deactivateAssetType'
+  | 'deactivateAsset'
   | 'deactivatePriority'
   | 'deactivateLinkRole'
   | 'deleteUnusedPriority'
@@ -293,6 +302,18 @@ export function impactLine(kind: ImpactKind, facts: ImpactFacts): Impact {
             ? 'No open tasks are assigned to them.'
             : `This user has ${plural(open, 'open task', 'open tasks')}. They stay assigned until you reassign them one by one.`
           : 'Their assigned tasks stay assigned until you reassign them one by one.',
+      );
+      break;
+    case 'deactivateAsset':
+      if (known(open)) {
+        parts.push(
+          open === 0
+            ? 'No open tasks are linked to this asset.'
+            : `${plural(open, 'open task keeps', 'open tasks keep')} this link.`,
+        );
+      }
+      parts.push(
+        "It can't be edited or linked to new tasks while inactive. Its history and links stay; assets are never deleted.",
       );
       break;
     case 'deactivateAssetType':

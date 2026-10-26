@@ -32,6 +32,7 @@ import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/r
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { AssetDetailsTab } from './asset-details-tab';
+import { dialogCopy } from '../../admin/shared/dialog-copy';
 import { AssetLinkedTasks, LinkedTaskTotals } from './asset-linked-tasks';
 
 type Tab = 'details' | 'tasks' | 'history';
@@ -145,19 +146,16 @@ type Tab = 'details' | 'tasks' | 'history';
             </div>
 
             <mf-confirm-dialog
-              [title]="a.isActive ? 'Set asset inactive' : 'Reactivate asset'"
-              [confirmLabel]="a.isActive ? 'Set inactive' : 'Set active'"
-              [danger]="a.isActive"
+              [title]="toggleCopy().title"
+              [confirmLabel]="toggleCopy().confirm"
+              [cancelLabel]="toggleCopy().cancel"
+              [danger]="toggleCopy().danger"
               [busy]="busy()"
               [(visible)]="toggleOpen"
               (confirmed)="toggleActive()"
             >
               @if (a.isActive) {
-                <p data-toggle-body>
-                  Set {{ a.displayName }} inactive? Assets are never deleted: its history and task
-                  links stay, but it can't be edited or linked to new tasks until it is active
-                  again.
-                </p>
+                <p data-toggle-body>Set {{ a.displayName }} inactive? {{ toggleCopy().body }}</p>
               } @else {
                 <p data-toggle-body>Reactivate {{ a.displayName }}?</p>
               }
@@ -260,6 +258,22 @@ export class AssetRecordPage {
     return items;
   });
 
+  /** The Set inactive / Set active dialog (#507): the open linked tasks that keep the link, when the count is known (not without Task.View). */
+  protected readonly toggleCopy = computed(() => {
+    const a = this.asset();
+    return a?.isActive
+      ? dialogCopy.deactivateAsset({
+          openTasks: this.canTasks() ? (a.openLinkedTaskCount ?? null) : null,
+        })
+      : {
+          title: 'Reactivate asset',
+          body: '',
+          confirm: 'Set active',
+          cancel: 'Cancel',
+          danger: false,
+        };
+  });
+
   protected readonly tabs = computed<MfTab[]>(() => {
     // The number of linked tasks (all) comes with the asset (#496): absent without Task.View, where the API sends null.
     const count = this.canTasks() ? (this.asset()?.linkedTaskCount ?? null) : null;
@@ -340,6 +354,12 @@ export class AssetRecordPage {
     });
   }
 
+  private focusHeading(): void {
+    const heading = document.querySelector<HTMLElement>('[data-page-title]');
+    heading?.setAttribute('tabindex', '-1');
+    heading?.focus({ preventScroll: true });
+  }
+
   protected select(key: string): void {
     void this.router.navigate([], {
       queryParams: { tab: key === 'details' ? null : key },
@@ -371,6 +391,8 @@ export class AssetRecordPage {
       this.asset.set(updated);
       this.toggleOpen.set(false);
       this.notify.success(updated.isActive ? 'Asset reactivated' : 'Asset set inactive');
+      // After a confirmed change focus is on the heading (the status badge in the header has changed); Cancel and Escape give focus back to the opener.
+      setTimeout(() => this.focusHeading(), 0);
     } catch {
       this.toggleOpen.set(false);
       await this.load(); // conflicts and failures are toasted by the HTTP layer; show the latest state

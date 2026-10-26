@@ -170,6 +170,50 @@ describe('AssetRecordPage', () => {
     );
   });
 
+  it('the Set inactive dialog says how many open linked tasks keep the link, and drops the sentence without Task.View; Set active has no impact line (#507)', async () => {
+    const openDialog = async (): Promise<HTMLElement> => {
+      const menu = await openOverflow(fixture);
+      Array.from(menu!.querySelectorAll<HTMLElement>('[role=menuitem]'))
+        .find((i) => i.textContent!.match(/Set (in)?active/))!
+        .click();
+      await settle(fixture);
+      return document.body.querySelector('p-dialog') as HTMLElement;
+    };
+    await create(['Asset.View', 'Asset.Edit', 'Task.View']);
+    let body = (await openDialog()).querySelector('[data-toggle-body]')!.textContent!;
+    expect(body).toContain('1 open task keeps this link.');
+    expect(body).toContain("can't be edited or linked to new tasks while inactive");
+
+    TestBed.resetTestingModule();
+    await create(['Asset.View', 'Asset.Edit']);
+    body = (await openDialog()).querySelector('[data-toggle-body]')!.textContent!;
+    expect(body).not.toContain('keeps this link');
+    expect(body).toContain("can't be edited or linked to new tasks while inactive");
+
+    TestBed.resetTestingModule();
+    await create(['Asset.View', 'Asset.Edit', 'Task.View']);
+    assets.getAsset.mockReturnValue(ok(anAsset({ isActive: false })));
+    await fixture.componentInstance.load();
+    await settle(fixture);
+    body = (await openDialog()).querySelector('[data-toggle-body]')!.textContent!;
+    expect(body).toBe('Reactivate Contract bundle?');
+  });
+
+  it('after a confirmed Set inactive the heading has focus and the badge says Inactive (#507)', async () => {
+    await create(['Asset.View', 'Asset.Edit']);
+    const menu = await openOverflow(fixture);
+    Array.from(menu!.querySelectorAll<HTMLElement>('[role=menuitem]'))
+      .find((i) => i.textContent!.includes('Set inactive'))!
+      .click();
+    await settle(fixture);
+    document.body.appendChild(el());
+    buttonByLabel(document.body.querySelector('p-dialog') as HTMLElement, 'Set inactive')!.click();
+    await settle(fixture);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(document.activeElement).toBe(el().querySelector('[data-page-title]'));
+    el().remove();
+  });
+
   it('has Details, Linked tasks (n) and History tabs; the count is the number of linked tasks', async () => {
     await create(['Asset.View', 'Task.View', 'Audit.View']);
     expect(tabs()).toEqual(['Details', 'Linked tasks (2)', 'History']);
