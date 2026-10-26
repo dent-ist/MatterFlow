@@ -109,6 +109,16 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
   { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
+  // PM v2 (#877): the structured reason of a hold and its age; in the chooser only, the first to drop out of a narrow box.
+  {
+    key: 'onHoldReason',
+    label: 'On-hold reason',
+    sortField: 'onHoldSince',
+    width: 176,
+    minWidth: 120,
+    maxWidth: 280,
+    autoHide: true,
+  },
   { key: 'closed', label: 'Closed', sortField: 'closed', width: 104, minWidth: 88, maxWidth: 160 },
   {
     key: 'age',

@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { TaskTypesClient, UsersClient, WorkflowsClient } from '../../api/generated/api-client';
+import {
+  OnHoldReasonsClient,
+  TaskTypesClient,
+  UsersClient,
+  WorkflowsClient,
+} from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { QueueChoices, mergeOptions } from './queue-choices';
 
@@ -8,6 +13,7 @@ describe('QueueChoices', () => {
   const types = { listTaskTypes: vi.fn() };
   const users = { listUsers: vi.fn() };
   const workflows = { listWorkflows: vi.fn() };
+  const reasons = { listOnHoldReasons: vi.fn() };
   let permissions: string[];
 
   function create() {
@@ -17,6 +23,7 @@ describe('QueueChoices', () => {
         { provide: TaskTypesClient, useValue: types },
         { provide: UsersClient, useValue: users },
         { provide: WorkflowsClient, useValue: workflows },
+        { provide: OnHoldReasonsClient, useValue: reasons },
       ],
     });
     return TestBed.inject(QueueChoices);
@@ -24,6 +31,9 @@ describe('QueueChoices', () => {
   const flush = () => new Promise((r) => setTimeout(r));
 
   beforeEach(() => {
+    reasons.listOnHoldReasons
+      .mockReset()
+      .mockReturnValue(of([{ id: 3, name: 'Waiting for client data', isActive: true }]));
     types.listTaskTypes.mockReset().mockReturnValue(
       of([
         { id: 2, name: 'Review', isActive: true },
@@ -55,6 +65,7 @@ describe('QueueChoices', () => {
     expect(types.listTaskTypes).not.toHaveBeenCalled();
     expect(users.listUsers).not.toHaveBeenCalled();
     expect(workflows.listWorkflows).not.toHaveBeenCalled();
+    expect(reasons.listOnHoldReasons).not.toHaveBeenCalled();
     expect(choices.people()).toEqual([]);
   });
 
@@ -75,6 +86,7 @@ describe('QueueChoices', () => {
       { value: '9', label: 'Tariq Malik' },
     ]);
     expect(choices.workflows()).toEqual([{ value: '3', label: 'Ordered' }]);
+    expect(choices.onHoldReasons()).toEqual([{ value: '3', label: 'Waiting for client data' }]);
   });
 
   it('works without the lists when a request fails', async () => {

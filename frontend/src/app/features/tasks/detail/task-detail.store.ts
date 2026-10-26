@@ -211,13 +211,18 @@ export class TaskDetailStore {
   }
 
   /** Hold or cancel with the mandatory comment. Returns the failure so the dialog can show server field errors. */
-  async submitReason(action: 'HOLD' | 'CANCEL', comment: string): Promise<ActResult> {
+  async submitReason(
+    action: 'HOLD' | 'CANCEL',
+    comment: string,
+    onHoldReasonId?: number | null,
+  ): Promise<ActResult> {
     const result = await this.act((t) =>
       action === 'HOLD'
         ? this.tasks.changeTaskStatus(t.taskId, {
             rowVersion: t.rowVersion,
             status: 'ON_HOLD',
             comment,
+            onHoldReasonId: onHoldReasonId ?? undefined,
           })
         : this.tasks.cancelTask(t.taskId, { rowVersion: t.rowVersion, comment }),
     );

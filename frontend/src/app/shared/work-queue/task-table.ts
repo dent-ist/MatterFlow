@@ -278,6 +278,8 @@ const LONG_PRESS_MS = 500;
                             kind="mark"
                             [holdReason]="row.holdReason"
                             [truncated]="row.holdReasonTruncated"
+                            [reasonName]="row.onHoldReasonName"
+                            [since]="row.statusChangedAtUtc"
                           />
                         }
                         <span class="wt-mono">{{ row.taskNumber }}</span>
@@ -435,14 +437,31 @@ const LONG_PRESS_MS = 500;
                           } @else {
                             <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                           }
-                          @if (row.status === 'ON_HOLD' && row.holdReason) {
+                          @if (
+                            row.status === 'ON_HOLD' && (row.holdReason || row.onHoldReasonName)
+                          ) {
                             <mf-hold-note
                               [holdReason]="row.holdReason"
                               [truncated]="row.holdReasonTruncated"
+                              [reasonName]="row.onHoldReasonName"
+                              [since]="row.statusChangedAtUtc"
                               [quiet]="density() === 'compact'"
                             />
                           }
                         </div>
+                      }
+                      @case ('onHoldReason') {
+                        @if (row.status === 'ON_HOLD') {
+                          <span
+                            class="wt-holdreason"
+                            [attr.title]="holdTitle(row)"
+                            data-hold-reason-cell
+                            >{{ row.onHoldReasonName || 'No reason given' }}
+                            <span class="wt-muted">({{ holdDays(row) }} d)</span></span
+                          >
+                        } @else {
+                          <span aria-label="Not on hold">-</span>
+                        }
                       }
                       @case ('closed') {
                         @if (row.closedAtUtc) {
@@ -514,6 +533,12 @@ export class TaskTable {
   /** The title link to go back to when a menu opened with S or P closes (#181). */
   private returnTo: HTMLElement | null = null;
   protected readonly holdTitle = holdTitle;
+  protected holdDays(row: TaskQueueRow): number {
+    return Math.max(
+      0,
+      Math.floor((Date.now() - new Date(row.statusChangedAtUtc).getTime()) / 86_400_000),
+    );
+  }
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly router = inject(Router);
   private readonly drill = inject(DrillReturn);

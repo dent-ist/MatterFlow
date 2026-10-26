@@ -1,6 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { TaskTypesClient, UsersClient, WorkflowsClient } from '../../api/generated/api-client';
+import {
+  OnHoldReasonsClient,
+  TaskTypesClient,
+  UsersClient,
+  WorkflowsClient,
+} from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { FilterOption } from '../filters/filter-def';
 
@@ -19,10 +24,13 @@ export class QueueChoices {
   private readonly typesApi = inject(TaskTypesClient);
   private readonly usersApi = inject(UsersClient);
   private readonly workflowsApi = inject(WorkflowsClient);
+  private readonly reasonsApi = inject(OnHoldReasonsClient);
 
   readonly types = signal<readonly FilterOption[]>([]);
   readonly workflows = signal<readonly FilterOption[]>([]);
   readonly people = signal<readonly FilterOption[]>([]);
+  /** The on-hold reasons of the column filter (PM v2, #877); the first choice is "No reason given" (`0`). */
+  readonly onHoldReasons = signal<readonly FilterOption[]>([]);
 
   private started = false;
 
@@ -33,6 +41,23 @@ export class QueueChoices {
     void this.loadTypes();
     void this.loadPeople();
     void this.loadWorkflows();
+    void this.loadOnHoldReasons();
+  }
+
+  private async loadOnHoldReasons(): Promise<void> {
+    if (!this.auth.has('Task.View')) return;
+    try {
+      const reasons = await firstValueFrom(this.reasonsApi.listOnHoldReasons());
+      this.onHoldReasons.set(
+        reasons.map((r) => ({
+          value: String(r.id),
+          label: r.name,
+          ...(r.isActive ? {} : { hint: '(inactive)' }),
+        })),
+      );
+    } catch {
+      // The list works without the choices.
+    }
   }
 
   private async loadTypes(): Promise<void> {

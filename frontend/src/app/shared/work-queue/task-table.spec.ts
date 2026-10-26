@@ -121,8 +121,8 @@ describe('TaskTable', () => {
       await create([held()], ['ref', 'title', 'status']);
       const line = cell('status').querySelector('[data-hold-reason]')!;
       expect(line.textContent?.trim()).toBe('Waiting for the custodian');
-      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
-        'Waiting for the custodian',
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toMatch(
+        /^On hold for \d+ days\nWaiting for the custodian$/,
       );
       const mark = cell('ref').querySelector('[data-hold-mark]')!;
       expect(mark.getAttribute('aria-label')).toBe('On hold');
@@ -134,8 +134,8 @@ describe('TaskTable', () => {
 
     it('adds an ellipsis to the tooltip of a reason the server cut', async () => {
       await create([held({ holdReason: 'x'.repeat(200), holdReasonTruncated: true })], ['status']);
-      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
-        'x'.repeat(200) + '...',
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toMatch(
+        /\n(x{200})\.\.\.$/,
       );
     });
 
@@ -143,9 +143,33 @@ describe('TaskTable', () => {
       await create([held()], ['status'], { density: 'compact' });
       const host = cell('status').querySelector('mf-hold-note')!;
       expect(host.classList.contains('quiet')).toBe(true);
-      expect(cell('status').querySelector('div')!.getAttribute('title')).toBe(
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toContain(
         'Waiting for the custodian',
       );
+    });
+
+    it('prefers the structured reason in the line and the aging sentence in the tooltip (PM v2, #877)', async () => {
+      await create(
+        [held({ onHoldReasonId: 3, onHoldReasonName: 'Waiting for client data' })],
+        ['status', 'onHoldReason'],
+      );
+      expect(cell('status').querySelector('[data-hold-reason]')!.textContent?.trim()).toBe(
+        'Waiting for client data',
+      );
+      expect(cell('status').querySelector('div')!.getAttribute('title')).toMatch(
+        /^On hold for \d+ days because Waiting for client data\nWaiting for the custodian$/,
+      );
+      expect(cell('onHoldReason').textContent).toContain('Waiting for client data');
+    });
+
+    it('the On-hold reason column says "No reason given" for a hold without one and "-" off hold', async () => {
+      await create(
+        [held({ holdReason: undefined }), aRow({ taskId: 2, taskNumber: 'TSK-2' })],
+        ['status', 'onHoldReason'],
+      );
+      const cells = Array.from(el().querySelectorAll('td[data-col="onHoldReason"]'));
+      expect(cells[0].textContent).toContain('No reason given');
+      expect(cells[1].textContent?.trim()).toBe('-');
     });
 
     it('shows nothing for an On Hold row without a reason, for a resumed row, or in the status of other rows', async () => {

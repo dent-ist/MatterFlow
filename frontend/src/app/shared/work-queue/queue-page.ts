@@ -239,6 +239,7 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     users: mergeOptions(this.choices.people(), this.rowPeople()),
     types: mergeOptions(this.choices.types(), this.rowTypes()),
     workflows: mergeOptions(this.choices.workflows(), this.rowWorkflows()),
+    onHoldReasons: this.choices.onHoldReasons(),
   }));
 
   protected readonly viewContext = computed<ViewContext>(() => ({

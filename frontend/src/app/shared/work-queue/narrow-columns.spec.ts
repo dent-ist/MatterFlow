@@ -59,7 +59,7 @@ describe('narrow-box rule (#201)', () => {
     expect([...narrowDrops(set, 1300, 14)]).toEqual([]);
     expect([...narrowDrops(set, 1250, 14)]).toEqual(['matterName']);
     expect([...narrowDrops(set, 1100, 14)]).toEqual(['matterName', 'client']);
-    expect(NARROW_DROP_ORDER[0]).toBe('matterName');
+    expect(NARROW_DROP_ORDER[1]).toBe('matterName');
     // A column the person added (Age) keeps its room at 1366: Matter Name alone goes.
     const withAge = defs(
       'ref',

@@ -215,7 +215,7 @@ describe('TaskCardList', () => {
     const chip = el().querySelector('[data-hold-chip]')!;
     expect(chip.textContent).toContain('Awaiting the custodian');
     expect(chip.textContent).not.toContain('Waiting:');
-    expect(chip.getAttribute('title')).toBe('Awaiting the custodian');
+    expect(chip.getAttribute('title')).toMatch(/Awaiting the custodian$/);
   });
 
   it('marks overdue open tasks, shows the New dot only where asked, and mutes a task that is leaving', async () => {

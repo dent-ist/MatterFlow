@@ -28,7 +28,14 @@ export function statusNoteOf(
   task: TaskResponse,
   zone: string,
   now: Date,
-): { icon: string; label: string; lead: string; reason: string; tooltip: string } | null {
+): {
+  icon: string;
+  label: string;
+  lead: string;
+  reason: string;
+  reasonName: string;
+  tooltip: string;
+} | null {
   const state = STATES[task.status];
   if (!state) return null;
   // Completed names the completion moment; Cancelled and On Hold the moment the status changed.
@@ -39,10 +46,16 @@ export function statusNoteOf(
     .filter(Boolean)
     .join(' ');
   const full = at ? formatInstant(at, zone) : '';
-  const tooltip = [full ? `${state.label} ${full}${who ? ` by ${who}` : ''}` : lead, reason]
+  // PM v2 (#877): the structured reason of a hold, beside the free comment.
+  const reasonName = task.status === 'ON_HOLD' ? (task.onHoldReason?.name ?? '') : '';
+  const tooltip = [
+    full ? `${state.label} ${full}${who ? ` by ${who}` : ''}` : lead,
+    reasonName ? `Because: ${reasonName}` : '',
+    reason,
+  ]
     .filter(Boolean)
     .join('\n');
-  return { icon: state.icon, label: state.label, lead, reason, tooltip };
+  return { icon: state.icon, label: state.label, lead, reason, reasonName, tooltip };
 }
 
 /**
@@ -68,6 +81,10 @@ export function statusNoteOf(
           data-note-text
         >
           <strong data-note-lead>{{ n.lead }}</strong>
+          @if (n.reasonName) {
+            <span aria-hidden="true"> - </span><span class="mf-sr-only">. Because </span
+            ><span class="sn__reasonname" data-note-reason-name>{{ n.reasonName }}</span>
+          }
           @if (n.reason) {
             <span aria-hidden="true">: </span><span class="mf-sr-only">. Reason: </span
             ><span class="sn__reason" data-note-reason>{{ n.reason }}</span>

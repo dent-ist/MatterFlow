@@ -19,6 +19,7 @@ import {
   TaskStepInstance,
   TaskTransitionOption,
   TaskWorkflowClient,
+  OnHoldReasonsClient,
   TasksClient,
   UsersClient,
   UsersLookupClient,
@@ -267,6 +268,22 @@ export async function mountTaskPage(
           getTaskActivity: vi
             .fn()
             .mockReturnValue(ok({ items: [], nextCursor: null, canViewChanges: false })),
+        },
+      },
+      {
+        provide: OnHoldReasonsClient,
+        useValue: {
+          listOnHoldReasons: () =>
+            ok([
+              {
+                id: 3,
+                name: 'Waiting for client data',
+                sortOrder: 1,
+                isActive: true,
+                rowVersion: 'r',
+              },
+              { id: 4, name: 'Old reason', sortOrder: 2, isActive: false, rowVersion: 'r' },
+            ]),
         },
       },
       {

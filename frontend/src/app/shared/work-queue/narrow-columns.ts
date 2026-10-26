@@ -15,6 +15,7 @@ export const TITLE_MIN_BOX_PX = 200;
  * the ones they added: Age, Updated, Client, Workflow progress) keep their room instead of being dropped one by one before it.
  */
 export const NARROW_DROP_ORDER: readonly string[] = [
+  'onHoldReason',
   'matterName',
   'updated',
   'created',

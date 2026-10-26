@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { OnHoldReasonView, OnHoldReasonsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { TaskDetailStore } from './task-detail.store';
@@ -34,6 +44,32 @@ import { TaskDetailStore } from './task-detail.store';
           The task stays On Hold until someone resumes it. Workflow steps can't be changed while it
           is on hold.
         </p>
+      }
+      @if (reasonKind() === 'HOLD') {
+        <div class="reason" data-hold-reason-field>
+          <label for="task-hold-reason">
+            Why is it on hold?
+            <span class="req">{{ reasonRequired() ? '(required)' : '(optional)' }}</span>
+          </label>
+          <select
+            id="task-hold-reason"
+            [value]="holdReasonId()"
+            [attr.aria-required]="reasonRequired() ? 'true' : null"
+            [attr.aria-invalid]="holdReasonError() ? 'true' : null"
+            [attr.aria-describedby]="holdReasonError() ? 'task-hold-reason-error' : null"
+            (change)="onHoldReason($event)"
+          >
+            <option value="">Choose a reason</option>
+            @for (r of reasons(); track r.id) {
+              <option [value]="r.id">{{ r.name }}</option>
+            }
+          </select>
+          @if (holdReasonError(); as e) {
+            <p class="error" id="task-hold-reason-error" role="alert" data-hold-reason-error>
+              {{ e }}
+            </p>
+          }
+        </div>
       }
       <div class="reason">
         <label for="task-reason">
@@ -122,6 +158,18 @@ import { TaskDetailStore } from './task-detail.store';
       font-weight: 400;
       color: var(--mf-text-muted);
     }
+    select {
+      min-height: 2rem;
+      padding: var(--mf-s1) var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+    }
+    select[aria-invalid='true'] {
+      border-color: var(--mf-danger);
+    }
     textarea {
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
@@ -162,6 +210,38 @@ import { TaskDetailStore } from './task-detail.store';
 })
 export class TaskActionDialogs {
   protected readonly store = inject(TaskDetailStore);
+  private readonly reasonsApi = inject(OnHoldReasonsClient);
+
+  /** The active on-hold reasons (PM v2, #877), read the first time a hold dialog opens. The choice is optional until the server says it is required. */
+  protected readonly reasons = signal<readonly OnHoldReasonView[]>([]);
+  protected readonly holdReasonId = signal('');
+  protected readonly holdReasonError = signal<string | null>(null);
+  /** `Tasks:OnHoldReasonRequired` is server configuration: learnt from the first ON_HOLD_REASON_REQUIRED answer, then the label says so. */
+  protected readonly reasonRequired = signal(false);
+  private reasonsLoaded = false;
+
+  constructor() {
+    effect(() => {
+      const d = this.store.dialog();
+      if (d?.kind === 'reason' && d.action === 'HOLD') untracked(() => void this.loadReasons());
+    });
+  }
+
+  private async loadReasons(): Promise<void> {
+    if (this.reasonsLoaded) return;
+    this.reasonsLoaded = true;
+    try {
+      const all = await firstValueFrom(this.reasonsApi.listOnHoldReasons());
+      this.reasons.set(all.filter((r) => r.isActive));
+    } catch {
+      this.reasonsLoaded = false;
+    }
+  }
+
+  protected onHoldReason(event: Event): void {
+    this.holdReasonId.set((event.target as HTMLSelectElement).value);
+    this.holdReasonError.set(null);
+  }
 
   protected readonly reason = signal('');
   protected readonly reasonError = signal<string | null>(null);
@@ -210,6 +290,8 @@ export class TaskActionDialogs {
     this.store.closeDialog();
     this.reason.set('');
     this.reasonError.set(null);
+    this.holdReasonId.set('');
+    this.holdReasonError.set(null);
   }
 
   protected async submitReason(): Promise<void> {
@@ -224,12 +306,26 @@ export class TaskActionDialogs {
       );
       return;
     }
-    const result = await this.store.submitReason(d.action, text);
+    if (d.action === 'HOLD' && this.reasonRequired() && !this.holdReasonId()) {
+      this.holdReasonError.set('Choose why the task is being put on hold.');
+      return;
+    }
+    const chosen = d.action === 'HOLD' && this.holdReasonId() ? Number(this.holdReasonId()) : null;
+    const result = await this.store.submitReason(d.action, text, chosen);
     if (result.ok) {
       this.reason.set('');
       this.reasonError.set(null);
+      this.holdReasonId.set('');
+      this.holdReasonError.set(null);
     } else if (result.error instanceof ApiError && result.error.hasFieldErrors) {
-      const first = Object.values(result.error.problem?.errors ?? {})[0]?.[0]?.message;
+      const errors = result.error.problem?.errors ?? {};
+      const key = Object.keys(errors).find((k) => k.toLowerCase() === 'onholdreasonid');
+      if (key) {
+        if (errors[key]?.[0]?.code === 'ON_HOLD_REASON_REQUIRED') this.reasonRequired.set(true);
+        this.holdReasonError.set(errors[key]?.[0]?.message ?? result.error.message);
+        return;
+      }
+      const first = Object.values(errors)[0]?.[0]?.message;
       this.reasonError.set(first ?? result.error.message);
     }
   }

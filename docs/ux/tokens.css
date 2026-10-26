@@ -56,6 +56,7 @@
      never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
   --mf-col-ref-w: 112px; --mf-col-ref-min: 80px; --mf-col-ref-max: 120px;
   --mf-col-matter-w: 144px; --mf-col-matter-min: 112px; --mf-col-matter-max: 320px;
+  --mf-col-onHoldReason-w: 176px; --mf-col-onHoldReason-min: 120px; --mf-col-onHoldReason-max: 280px;
   --mf-col-matterName-w: 160px; --mf-col-matterName-min: 112px; --mf-col-matterName-max: 360px;
   --mf-col-client-w: 140px; --mf-col-client-min: 96px; --mf-col-client-max: 280px;
   --mf-col-project-w: 140px; --mf-col-project-min: 96px; --mf-col-project-max: 280px;

@@ -19,6 +19,8 @@ export interface QueueLookups {
   users?: readonly FilterOption[];
   types?: readonly FilterOption[];
   workflows?: readonly FilterOption[];
+  /** The on-hold reasons (PM v2, #877); "No reason given" (`0`) is added in front. */
+  onHoldReasons?: readonly FilterOption[];
 }
 
 export interface QueueDefOptions {
@@ -304,25 +306,30 @@ export function queueFilterDefs(
       ],
       normalize: (v: string) => (v === '3' || v === '7' ? v : null),
     },
-    // PM v2, link-only: the At risk rule (open, not overdue, 80 percent of the type's target used) and the structured reason of a hold.
+    // PM v2 (#877, #878): the At risk rule (open, not overdue, 80 percent of the type's target used; Other filters) and the structured
+    // reason of a hold (the On-hold reason column, beside Status).
     {
       key: 'atRisk',
       label: 'At risk',
       type: 'select',
       param: 'atRisk',
-      noControl: true,
+      allLabel: 'Any',
       bareChip: true,
-      options: [{ value: 'true', label: 'At risk' }],
+      options: [{ value: 'true', label: 'At risk only' }],
       normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
     },
     {
       key: 'onHoldReason',
       label: 'On-hold reason',
+      column: 'onHoldReason',
       type: 'multiSelect',
-      noControl: true,
       param: 'onHoldReason',
-      options: [],
-      valueLabel: (id: string) => (id === '0' ? 'No reason given' : 'selected reason'),
+      options: () => [{ value: '0', label: 'No reason given' }, ...(lookups.onHoldReasons ?? [])],
+      normalize: (v: string) => (/^\d+$/.test(v) ? v : null),
+      valueLabel: (id: string) =>
+        id === '0'
+          ? 'No reason given'
+          : (lookups.onHoldReasons?.find((o) => o.value === id)?.label ?? 'selected reason'),
     },
   ];
   const omit = options.omit ?? [];

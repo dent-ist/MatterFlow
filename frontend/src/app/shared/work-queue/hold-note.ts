@@ -1,14 +1,39 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-/** The text of the tooltip: the whole reason, with "..." when the server cut it at 200 characters (M12.2, #165). */
-export function holdTitle(row: {
-  status?: string;
-  holdReason?: string | null;
-  holdReasonTruncated?: boolean;
-}) {
-  return row.holdReason && (row.status ?? 'ON_HOLD') === 'ON_HOLD'
-    ? row.holdReason + (row.holdReasonTruncated ? '...' : '')
-    : null;
+const DAY_MS = 86_400_000;
+
+/**
+ * "On hold for 6 days because Waiting for client data" (PM v2, #877): the aging of a hold in whole calendar-agnostic days since the status
+ * changed, with the structured reason when there is one. Null when nothing is known about the hold. Pure; `now` is injectable.
+ */
+export function holdSentence(
+  row: { onHoldReasonName?: string | null; statusChangedAtUtc?: Date | string | null },
+  now: number = Date.now(),
+): string | null {
+  const since = row.statusChangedAtUtc ? new Date(row.statusChangedAtUtc).getTime() : NaN;
+  const reason = row.onHoldReasonName?.trim();
+  if (Number.isNaN(since)) return reason ? `On hold because ${reason}` : null;
+  const days = Math.max(0, Math.floor((now - since) / DAY_MS));
+  const aging =
+    days === 0 ? 'On hold since today' : `On hold for ${days} ${days === 1 ? 'day' : 'days'}`;
+  return reason ? `${aging} because ${reason}` : aging;
+}
+
+/** The text of the tooltip: the aging sentence with the structured reason, then the whole comment, with "..." when the server cut it at 200 characters (M12.2, #165). */
+export function holdTitle(
+  row: {
+    status?: string;
+    holdReason?: string | null;
+    holdReasonTruncated?: boolean;
+    onHoldReasonName?: string | null;
+    statusChangedAtUtc?: Date | string | null;
+  },
+  now: number = Date.now(),
+) {
+  if ((row.status ?? 'ON_HOLD') !== 'ON_HOLD') return null;
+  const comment = row.holdReason ? row.holdReason + (row.holdReasonTruncated ? '...' : '') : null;
+  const sentence = holdSentence(row, now);
+  return [sentence, comment].filter(Boolean).join('\n') || null;
 }
 
 /**
@@ -34,8 +59,11 @@ export function holdTitle(row: {
       }
       @case ('chip') {
         <span class="line" data-hold-chip [attr.title]="title()"
-          ><i class="pi pi-pause" aria-hidden="true"></i><span class="mf-sr-only">On hold: </span
-          >{{ reason() }}</span
+          ><i class="pi pi-pause" aria-hidden="true"></i>
+          @if (!reasonName()) {
+            <span class="mf-sr-only">On hold: </span>
+          }
+          {{ chipText() }}</span
         >
       }
       @default {
@@ -93,11 +121,26 @@ export class HoldNote {
   readonly kind = input<'mark' | 'reason' | 'chip'>('reason');
   readonly holdReason = input<string | null | undefined>(null);
   readonly truncated = input(false);
+  /** PM v2 (#877): the structured reason (preferred over the comment in the one-line text) and the instant the status changed (aging). */
+  readonly reasonName = input<string | null | undefined>(null);
+  readonly since = input<Date | string | null | undefined>(null);
   /** Compact density: the line is not drawn, only the tooltip and the accessible text stay. */
   readonly quiet = input(false);
 
-  protected readonly reason = computed(() => this.holdReason() ?? '');
+  protected readonly reason = computed(() => this.reasonName() || this.holdReason() || '');
+  /** The phone card's line: the whole aging sentence ("On hold for 6 days because ..."), else the reason. */
+  protected readonly sentence = computed(() =>
+    holdSentence({ onHoldReasonName: this.reasonName(), statusChangedAtUtc: this.since() }),
+  );
+  protected readonly chipText = computed(
+    () => (this.reasonName() && this.sentence()) || this.reason(),
+  );
   protected readonly title = computed(() =>
-    holdTitle({ holdReason: this.holdReason(), holdReasonTruncated: this.truncated() }),
+    holdTitle({
+      holdReason: this.holdReason(),
+      holdReasonTruncated: this.truncated(),
+      onHoldReasonName: this.reasonName(),
+      statusChangedAtUtc: this.since(),
+    }),
   );
 }

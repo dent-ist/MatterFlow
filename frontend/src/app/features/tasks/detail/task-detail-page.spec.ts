@@ -323,13 +323,41 @@ describe('TaskDetailPage header', () => {
     });
   });
 
+  it('On hold offers the active reasons, optional, and sends the chosen one (PM v2, #877)', async () => {
+    const { fixture, el, fakes } = await mountTaskPage(aTask());
+    await openMenu(fixture, el);
+    await click(fixture, q(el, '[data-option=HOLD]'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const select = body().querySelector<HTMLSelectElement>('#task-hold-reason')!;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
+      'Choose a reason',
+      'Waiting for client data',
+    ]);
+    expect(body().querySelector('[data-hold-reason-field] label')!.textContent).toContain(
+      '(optional)',
+    );
+    select.value = '3';
+    select.dispatchEvent(new Event('change'));
+    const area = body().querySelector<HTMLTextAreaElement>('#task-reason')!;
+    area.value = 'Waiting for the vendor';
+    area.dispatchEvent(new Event('input'));
+    await click(fixture, dialogButton('Put on hold')!);
+    expect(fakes.tasks['changeTaskStatus']).toHaveBeenCalledWith(1042, {
+      rowVersion: 'RV1',
+      status: 'ON_HOLD',
+      comment: 'Waiting for the vendor',
+      onHoldReasonId: 3,
+    });
+  });
+
   it('dialog wording (#305): Hold dismisses with "Close", Cancel keeps "Keep task", both ask for a "Reason"', async () => {
     const { fixture, el } = await mountTaskPage(aTask());
     await openMenu(fixture, el);
     await click(fixture, q(el, '[data-option=HOLD]'));
     expect(dialogButton('Close')).toBeDefined();
     expect(dialogButton('Cancel')).toBeUndefined();
-    expect(q(body(), '.reason label')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+    expect(q(body(), 'label[for=task-reason]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
       'Reason (required)',
     );
     await click(fixture, dialogButton('Close')!);

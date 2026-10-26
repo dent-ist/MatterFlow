@@ -243,11 +243,13 @@ export function initialsOf(name: string): string {
                       }
                     </span>
                   </div>
-                  @if (row.status === 'ON_HOLD' && row.holdReason) {
+                  @if (row.status === 'ON_HOLD' && (row.holdReason || row.onHoldReasonName)) {
                     <mf-hold-note
                       kind="chip"
                       [holdReason]="row.holdReason"
                       [truncated]="row.holdReasonTruncated"
+                      [reasonName]="row.onHoldReasonName"
+                      [since]="row.statusChangedAtUtc"
                     />
                   }
                   @if (assigneeShown()) {

@@ -351,3 +351,22 @@ describe('the managed-by filters are link-only', () => {
     );
   });
 });
+
+describe('At risk and On-hold reason have controls (PM v2, #877, #878)', () => {
+  it('offers the reasons with "No reason given" first, and At risk only in Other filters', () => {
+    const defs = queueFilterDefs({
+      onHoldReasons: [{ value: '3', label: 'Waiting for client data' }],
+    });
+    const reason = defs.find((d) => d.key === 'onHoldReason')!;
+    expect(reason.noControl).toBeFalsy();
+    expect(reason.column).toBe('onHoldReason');
+    expect(optionsOf(reason).map((o) => o.label)).toEqual([
+      'No reason given',
+      'Waiting for client data',
+    ]);
+    expect(reason.valueLabel!('3')).toBe('Waiting for client data');
+    const risk = defs.find((d) => d.key === 'atRisk')!;
+    expect(risk.noControl).toBeFalsy();
+    expect(risk.column).toBeUndefined();
+  });
+});

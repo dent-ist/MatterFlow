@@ -111,6 +111,7 @@ export function provideQueueChoices(
     people?: FilterOption[];
     types?: FilterOption[];
     workflows?: FilterOption[];
+    onHoldReasons?: FilterOption[];
   } = {},
 ): Provider[] {
   return [
@@ -120,6 +121,7 @@ export function provideQueueChoices(
         people: signal(choices.people ?? []),
         types: signal(choices.types ?? []),
         workflows: signal(choices.workflows ?? []),
+        onHoldReasons: signal(choices.onHoldReasons ?? []),
         ensure: () => undefined,
       },
     },

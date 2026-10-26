@@ -27,7 +27,7 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
   { label: 'Where', keys: ['matter', 'matterName', 'client', 'project'] },
   { label: 'Who', keys: ['assignee', 'pod', 'creator', 'requestor'] },
   { label: 'When', keys: ['due', 'created', 'updated', 'closed', 'age'] },
-  { label: 'State', keys: ['priority', 'status'] },
+  { label: 'State', keys: ['priority', 'status', 'onHoldReason'] },
 ];
 
 /** "Columns" and "Density" controls (UX 5.2): Ref and Title are always shown; the choice is remembered per user by the page. */
