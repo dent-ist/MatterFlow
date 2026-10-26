@@ -5,6 +5,8 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { ViewsMenu } from '../../../shared/ui/views-menu';
+import { ViewState } from '../../../core/views/view-state';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { groupByDay } from '../facts';
 import { MmFilters, MmRange, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
@@ -28,7 +30,7 @@ export function todayText(clock: Clock, zone: string): string {
  */
 @Component({
   selector: 'mf-mm-deadlines',
-  imports: [PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
+  imports: [PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge, ViewsMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
@@ -66,6 +68,13 @@ export function todayText(clock: Clock, zone: string): string {
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
+      <mf-views-menu
+        mfPanelActions
+        surface="my-matters.deadlines"
+        [defaults]="false"
+        [capture]="captureView"
+        [apply]="pref.restore"
+      />
       <div mfPanelActions class="dl__toggle" role="group" aria-label="Look ahead">
         <button
           type="button"
@@ -177,6 +186,12 @@ export class DeadlinesPanel {
 
   protected readonly typeChoices = inject(SectionTypes);
   protected readonly pref = sectionPref('my-matters.deadlines', { sort: true });
+
+  /** The state a saved view keeps (PV-29): the section's own filter and sort. */
+  protected readonly captureView = (): ViewState => {
+    const p = this.pref.value();
+    return { types: p.types, sort: p.sort, dir: p.dir };
+  };
   protected readonly filtered = computed(() => this.pref.value().types.length > 0);
   /** The day headings only make sense while the list runs in date order. */
   protected readonly flat = computed(() => {

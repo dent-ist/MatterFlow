@@ -113,6 +113,18 @@ describe('ViewStateService (#856)', () => {
     expect(keys[0]).toMatch(/^mf\.view\.assets\.\d+$/);
   });
 
+  it('keeps the default saved view of a surface for the first paint, per person, and forgets it (PV-29)', async () => {
+    await setup();
+    expect(service.cachedDefault('task-queue')).toBeNull();
+    service.cacheDefault('task-queue', { query: { status: ['NEW'] } });
+    expect(service.cachedDefault('task-queue')).toEqual({ query: { status: ['NEW'] } });
+    expect(
+      Object.keys(localStorage).filter((k) => k.startsWith('mf.view-default.task-queue.')),
+    ).toHaveLength(1);
+    service.cacheDefault('task-queue', null);
+    expect(service.cachedDefault('task-queue')).toBeNull();
+  });
+
   it('wraps the named view calls with the row version', async () => {
     await setup();
     const view = row({ a: 1 }, 'Intake focus');

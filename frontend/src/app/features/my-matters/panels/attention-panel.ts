@@ -7,10 +7,12 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { OLDEST_FIRST, rowFactText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { ViewsMenu } from '../../../shared/ui/views-menu';
 import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
 import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat, buildList } from '../../../shared/ui/list-export';
 import { TASK_ITEM_HEADER, taskItemRow } from '../export-rows';
+import { ViewState } from '../../../core/views/view-state';
 import { SectionToolbar } from '../section-toolbar';
 import { sectionPref } from '../section-prefs';
 import { SectionTypes } from '../section-types';
@@ -38,7 +40,7 @@ const GROUP_TITLES: Record<string, string> = {
  */
 @Component({
   selector: 'mf-mm-attention',
-  imports: [ExportMenu, PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
+  imports: [ExportMenu, ViewsMenu, PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: PANEL_LIST_STYLES,
   template: `
@@ -49,6 +51,13 @@ const GROUP_TITLES: Record<string, string> = {
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
+      <mf-views-menu
+        mfPanelActions
+        surface="my-matters.attention"
+        [defaults]="false"
+        [capture]="captureView"
+        [apply]="pref.restore"
+      />
       <mf-export-menu
         mfPanelActions
         fileName="needs-my-attention"
@@ -210,6 +219,12 @@ export class AttentionPanel {
     return { groups: shown.filter((g) => g.total > 0), tags };
   });
   protected readonly fact = rowFactText;
+
+  /** The state a saved view keeps (PV-29): the section's own filter and sort. */
+  protected readonly captureView = (): ViewState => {
+    const p = this.pref.value();
+    return { types: p.types, sort: p.sort, dir: p.dir };
+  };
 
   /** The rows on screen as a list (PM v2, #879): one line per task, the group first; the export is logged, never the data. */
   protected readonly exportRun = async (format: ExportFormat): Promise<ExportResult> => {

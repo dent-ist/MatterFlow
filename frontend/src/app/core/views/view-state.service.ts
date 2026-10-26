@@ -54,6 +54,33 @@ export class ViewStateService {
     }
   }
 
+  /**
+   * The state of the person's default saved view of a surface, kept in the browser so a page can open on it before anything loads (PV-29, #880).
+   * Null when there is none, storage is blocked or it is unreadable. `cacheDefault` writes it (null removes it); the Views menu keeps it current.
+   */
+  cachedDefault(surface: ViewSurface): ViewState | null {
+    try {
+      const raw = storage()?.getItem(
+        `mf.view-default.${surface}.${this.auth.profile()?.userId ?? 0}`,
+      );
+      if (!raw) return null;
+      const parsed: unknown = JSON.parse(raw);
+      return isViewState(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  cacheDefault(surface: ViewSurface, state: ViewState | null): void {
+    try {
+      const key = `mf.view-default.${surface}.${this.auth.profile()?.userId ?? 0}`;
+      if (state) storage()?.setItem(key, JSON.stringify(state));
+      else storage()?.removeItem(key);
+    } catch {
+      // Not caching is fine: the page then opens on its own default.
+    }
+  }
+
   private cache(surface: ViewSurface, state: ViewState): void {
     try {
       storage()?.setItem(this.key(surface), JSON.stringify(state));

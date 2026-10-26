@@ -34,6 +34,9 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { PlainLink } from '../../../shared/filters/filter-def';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ViewsMenu } from '../../../shared/ui/views-menu';
+import { ViewState } from '../../../core/views/view-state';
+import { ViewStateService } from '../../../core/views/view-state.service';
 import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
 import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat } from '../../../shared/ui/list-export';
@@ -76,6 +79,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
   selector: 'mf-task-queue-page',
   imports: [
     ExportMenu,
+    ViewsMenu,
     ColumnsNotice,
     FixedPage,
     PageHeader,
@@ -101,6 +105,12 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           announceMine="Showing tasks on matters you manage"
           announceAll="Showing all tasks"
           (scopeChange)="scope.set($event)"
+        />
+        <mf-views-menu
+          mfActions
+          surface="task-queue"
+          [capture]="captureSavedView"
+          [apply]="showSavedView"
         />
         <mf-export-menu
           mfActions
@@ -218,6 +228,28 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   private readonly podsApi = inject(PodsClient);
   private readonly navigator = inject(Router);
   private readonly exports = inject(ExportService);
+  private readonly viewStore = inject(ViewStateService);
+
+  /** The state of a saved view (PV-29, #880): the address of the list (filters, sort, scope), exactly as the person sees it. */
+  protected readonly captureSavedView = (): ViewState => {
+    const query: Record<string, string[]> = {};
+    for (const key of this.params().keys) query[key] = this.params().getAll(key);
+    return { query };
+  };
+
+  /** Shows a saved view: its address replaces the list's own. */
+  protected readonly showSavedView = (state: ViewState): void => {
+    const query = state['query'];
+    if (typeof query !== 'object' || query === null || Array.isArray(query)) return;
+    const params: Record<string, string | string[]> = {};
+    for (const [key, value] of Object.entries(query)) {
+      const list = (Array.isArray(value) ? value : [value]).filter(
+        (v): v is string => typeof v === 'string',
+      );
+      if (list.length > 0) params[key] = list.length === 1 ? list[0] : list;
+    }
+    void this.navigator.navigate([], { queryParams: params });
+  };
 
   /**
    * The Export menu's document (PM v2, #879): the same filters and sort as the screen (the "My matters" scope included), every page, built and audited by the
@@ -333,7 +365,12 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   constructor() {
     super('queue');
     const keys = this.route.snapshot?.queryParamMap?.keys ?? [];
-    if (keys.length === 0) {
+    // A saved view the person made the default opens the list on a plain link, before the last view is considered (PV-29).
+    const opener = keys.length === 0 ? this.viewStore.cachedDefault('task-queue') : null;
+    if (opener) {
+      this.pendingRestore = true;
+      this.showSavedView(opener);
+    } else if (keys.length === 0) {
       const last = this.lastView();
       // A remembered view that names a view this viewer no longer has (Created by me without Task.Create) opens All open, without a notice.
       if (last && !this.namesHiddenView(last)) {

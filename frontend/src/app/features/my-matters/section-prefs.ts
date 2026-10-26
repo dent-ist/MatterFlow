@@ -109,6 +109,17 @@ export function sectionPref(surface: ViewSurface, options: { sort: boolean }) {
       allTypes: next.allTypes,
     });
   };
+  /** Shows a saved view (PV-29): its types, sort and direction become the section's own and are remembered like any change. */
+  const restore = (state: ViewState): void => {
+    const saved = prefFromState(state);
+    const types = saved.types ?? [];
+    update({
+      types,
+      sort: options.sort ? (saved.sort ?? '') : '',
+      dir: saved.dir ?? 'asc',
+      allTypes: types.length === 0 && focus.types().length > 0,
+    });
+  };
   // Choosing types makes the filter the section's own; choosing none while a Focus is set means "All types" here.
   const choose = (types: number[]): void =>
     update({ types, allTypes: types.length === 0 && focus.types().length > 0 });
@@ -120,6 +131,7 @@ export function sectionPref(surface: ViewSurface, options: { sort: boolean }) {
     /** True while the types shown are the Focus (the section has no filter of its own). */
     focused,
     setTypes: choose,
+    restore,
     setSort: (sort: string) => update({ sort }),
     setDir: (dir: SectionDir) => update({ dir }),
     showAll: () => choose([]),
