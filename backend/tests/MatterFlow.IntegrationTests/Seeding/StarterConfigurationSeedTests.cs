@@ -50,6 +50,22 @@ public sealed class StarterSeedDataTests
     }
 
     [Fact]
+    public void The_seeded_asset_type_status_select_is_labelled_Lifecycle_with_the_same_key_and_values()
+    {
+        var data = StarterSeedData.LoadEmbedded();
+        var withStatus = data.AssetTypes.Where(a => a.StatusValues.Count > 0).ToList();
+        withStatus.ShouldNotBeEmpty();
+        foreach (var type in withStatus)
+        {
+            var field = StarterFormBuilder.BuildAssetType(type).First();
+            field.Key.ShouldBe("asset_status", type.Name); // the key never changes: stored values stay valid
+            field.Label.ShouldBe("Lifecycle", type.Name);
+            field.Options!.Select(o => o.Label).ShouldBe(type.StatusValues, type.Name);
+            field.Options!.Select(o => o.Key).ShouldBe(type.StatusValues.Select(StarterFormBuilder.Slug), type.Name);
+        }
+    }
+
+    [Fact]
     public void Workflows_and_task_types_reference_only_existing_items()
     {
         var data = StarterSeedData.LoadEmbedded();

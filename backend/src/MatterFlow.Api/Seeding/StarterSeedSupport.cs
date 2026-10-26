@@ -145,8 +145,12 @@ public static class StarterFormBuilder
 
     /// <summary>
     /// The Asset Type form of the seed: the SME status values become a leading <c>asset_status</c> SELECT, because an Asset has only an
-    /// active flag in the real schema (no status list).
+    /// active flag in the real schema (no status list). The field is LABELLED "Lifecycle" (#513): the record itself is Active or Inactive, and a
+    /// second "Status" next to it reads as two statuses. The key and the option keys do not change, so stored values stay valid.
     /// </summary>
+    /// <summary>The label of the seeded life-cycle select of an Asset Type form (key <c>asset_status</c>).</summary>
+    public const string AssetLifecycleLabel = "Lifecycle";
+
     public static IReadOnlyList<FormFieldModel> BuildAssetType(SeedAssetType type)
     {
         var fields = new List<FormFieldModel>();
@@ -155,7 +159,7 @@ public static class StarterFormBuilder
             fields.Add(new FormFieldModel
             {
                 Key = "asset_status",
-                Label = "Status",
+                Label = AssetLifecycleLabel,
                 Control = "SELECT",
                 Options = [.. type.StatusValues.Select(v => new FormOptionModel { Key = Slug(v), Label = v })],
             });

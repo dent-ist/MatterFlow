@@ -24,7 +24,7 @@ The seed runs through the real application services (Task Types, forms designer 
 
 | Seed content | Real schema | What the seeder does |
 |---|---|---|
-| Asset Type `statusValues` (Planned, Active, ...) | An Asset has only an active flag; there is no status list. | Adds a leading optional SELECT field `asset_status` ("Status") to each Asset Type form with the SME values. |
+| Asset Type `statusValues` (Planned, Active, ...) | An Asset has only an active flag; there is no status list. | Adds a leading optional SELECT field `asset_status` ("Lifecycle", #513; the record itself is Active or Inactive) to each Asset Type form with the SME values. |
 | Asset Type `naming` | Asset Type has a 500 character description. | Used as the description (backticks removed). |
 | Task Type `titleHint` | Task Type has no example-title column. | Appended to the description as "Example title: ...". |
 | Field `help` | `helpText` (max 1000). | Mapped one to one. This carries the privilege reminder on `handling_flags` and the deadline/handling notes. |
