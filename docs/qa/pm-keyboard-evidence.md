@@ -24,9 +24,9 @@ Reading the lists: the order follows the page top to bottom, left to right. Long
 
 ## My Matters, Overview tab, 1366 px
 
-93 stops, the whole page walked (PM Alpha: seven matters; the page was capped at 60 before). First stops: `button: My matters`, `button: All matters`, `button: Choose the matter for a new task: New task`, `combobox: Client`, `select: Role`, `select: Dates`, `a: Matters I manage 7`, `a: Open tasks 5`, `a: Overdue 1`, `a: Due in 3 days 0`, `a: Due in 7 days 0`, `a: Unassigned 5`, `a: On hold 1`, `tab: Overview`, `a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Workload`, `a: Recent activity`, `button: Mark as read`, ...
+93 stops, the whole page walked (PM Alpha: seven matters; the page was capped at 60 before). First stops: `button: My matters`, `button: All matters`, `button: Choose the matter for a new task: New task`, `combobox: Client`, `select: Role`, `select: Dates`, `a: Matters I manage 7`, `a: Open tasks 5`, `a: Overdue 1`, `a: Due in 3 days 0`, `a: Due in 7 days 0`, `a: Unassigned 5`, `a: On hold 1`, `tab: Overview`, `a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Recent activity`, `button: Mark as read`, ...
 
-The five skip links (`a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Workload`, `a: Recent activity`) are the first stops after the tab strip (issue #820); each has a name and a visible focus ring, is visually hidden until it has the focus, and Enter moves the focus to the heading of its panel (a heading with `tabindex=-1` and a visible ring). The Tab order of the panels is unchanged: after the fifth link the next stop is the Since your last visit card.
+The four skip links (`a: Needs my attention`, `a: Upcoming deadlines`, `a: Matter health`, `a: Recent activity`; the Workload link was removed with the panel, #826) are the first stops after the tab strip (issue #820); each has a name and a visible focus ring, is visually hidden until it has the focus, and Enter moves the focus to the heading of its panel (a heading with `tabindex=-1` and a visible ring). The Tab order of the panels is unchanged: after the fourth link the next stop is the Since your last visit card.
 
 ## Matter record, Overview tab, 1366 px
 

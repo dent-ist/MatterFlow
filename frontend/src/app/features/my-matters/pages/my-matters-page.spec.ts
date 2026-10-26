@@ -237,48 +237,6 @@ describe('MyMattersPage', () => {
         .mockReturnValue(
           of(health([row(5, 'RED', ['OVERDUE']), row(6, 'GREEN', ['NO_OPEN_TASKS'])])),
         ),
-      getMyMattersWorkload: vi.fn().mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          open: 64,
-          pods: [
-            {
-              podId: 1,
-              podName: 'Processing Pod',
-              open: 64,
-              overdue: 5,
-              onHold: 1,
-              query: 'managedByMe=true&pod=1',
-              people: [
-                {
-                  userId: 3,
-                  displayName: 'Priya Rao',
-                  isActive: true,
-                  open: 9,
-                  overdue: 0,
-                  onHold: 0,
-                  availability: {
-                    isOutOfOffice: true,
-                    state: 'OUT_OF_OFFICE',
-                    until: '2026-10-30T00:00:00Z',
-                  },
-                  query: 'managedByMe=true&assignee=3',
-                },
-                {
-                  userId: null,
-                  displayName: null,
-                  isActive: true,
-                  open: 4,
-                  overdue: 1,
-                  onHold: 0,
-                  query: 'managedByMe=true&unassigned=true&pod=1',
-                },
-              ],
-            },
-          ],
-        }),
-      ),
       getMyMattersSinceLastVisit: vi.fn().mockReturnValue(of(since())),
       getMyMattersTrends: vi.fn().mockReturnValue(of(trends())),
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
@@ -570,21 +528,6 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('lists the workload by pod and person with the out-of-office chip and links to the Task Queue', async () => {
-    const h = await open('/my-matters');
-    const lines = Array.from(el(h).querySelectorAll('[data-workload-line]'));
-    expect(lines.map((l) => l.querySelector('a')!.textContent!.trim())).toEqual([
-      'Processing Pod',
-      'Not assigned to a person',
-      'Priya Rao',
-    ]);
-    expect(lines[2].querySelector('[data-availability-chip]')).not.toBeNull();
-    expect(lines[2].querySelector('a')!.getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&assignee=3',
-    );
-    expect(el(h).textContent).not.toMatch(/overload/i);
-  });
-
   it('shows unread events with the dot and the word, and Mark all as read moves them to read', async () => {
     const h = await open('/my-matters');
     const unread = el(h).querySelectorAll('[data-activity-row][data-unread=true]');
@@ -609,6 +552,35 @@ describe('MyMattersPage', () => {
     expect(api['markMyMattersActivitySeen']).toHaveBeenCalledWith({ upToEventId: 12 });
   });
 
+  it('shows at most five events, one line each with the whole sentence as the tooltip, and "View all activity" opens the Activity tab (#827)', async () => {
+    const many = activity();
+    many.items = Array.from({ length: 8 }, (_, i) => ({
+      ...many.items[0],
+      eventId: 100 + i,
+      isUnread: false,
+    }));
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersActivity'].mockReturnValue(of(many));
+    });
+    expect(api['getMyMattersActivity'].mock.calls[0][0]).toBe(5);
+    expect(el(h).querySelectorAll('[data-activity-row]').length).toBeLessThanOrEqual(5);
+    const link = el(h).querySelector<HTMLAnchorElement>('[data-activity-link]')!;
+    expect(link.getAttribute('title')).toBe(link.textContent!.trim());
+    const all = el(h).querySelector<HTMLAnchorElement>('[data-view-all-activity]')!;
+    expect(all.textContent).toContain('View all activity');
+    expect(all.getAttribute('href')).toContain('tab=activity');
+    expect(el(h).querySelector('[data-show-all], [data-show-more]')).toBeNull();
+  });
+
+  it('?tab=workload is Overview (the Workload tab was removed, #826)', async () => {
+    const h = await open('/my-matters?tab=workload');
+    expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+      'Overview',
+    );
+    expect(el(h).querySelector('[data-panel=workload]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=health]')).not.toBeNull();
+  });
+
   it('shows no comment text, only "commented on"', async () => {
     const h = await open('/my-matters');
     expect(el(h).textContent).toContain('Priya commented on "Review batch 4"');
@@ -616,21 +588,19 @@ describe('MyMattersPage', () => {
 
   it('a failing panel shows its own error with Retry and leaves the others alone', async () => {
     const h = await open('/my-matters');
-    api['getMyMattersWorkload'].mockReturnValue(throwError(() => new Error('boom')));
+    api['getMyMattersActivity'].mockReturnValue(throwError(() => new Error('boom')));
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(el(h).querySelector('[data-panel=workload] [data-panel-error]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=activity] [data-panel-error]')).not.toBeNull();
     expect(el(h).querySelector('[data-panel=health] [data-health-table]')).not.toBeNull();
-    api['getMyMattersWorkload'].mockClear();
-    api['getMyMattersWorkload'].mockReturnValue(
-      of({ timeZone: 'x', asOfUtc: 'x', open: 0, pods: [] }),
-    );
-    el(h).querySelector<HTMLButtonElement>('[data-panel=workload] [data-panel-retry]')!.click();
+    api['getMyMattersActivity'].mockClear();
+    api['getMyMattersActivity'].mockReturnValue(of(activity()));
+    el(h).querySelector<HTMLButtonElement>('[data-panel=activity] [data-panel-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(api['getMyMattersWorkload']).toHaveBeenCalledTimes(1);
-    expect(el(h).querySelector('[data-panel=workload] [data-empty]')).not.toBeNull();
+    expect(api['getMyMattersActivity']).toHaveBeenCalledTimes(1);
+    expect(el(h).querySelector('[data-panel=activity] [data-activity-list]')).not.toBeNull();
   });
 
   it('loads every panel on its own: a panel still waiting does not hold the others', async () => {
@@ -649,9 +619,9 @@ describe('MyMattersPage', () => {
         t.textContent!.trim(),
       );
 
-    it('has the five tabs, Overview selected, and the page as it was under it', async () => {
+    it('has the four tabs, Overview selected, and the page as it was under it', async () => {
       const h = await open('/my-matters');
-      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Workload', 'Trends', 'Activity']);
+      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Trends', 'Activity']);
       expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
         'Overview',
       );
@@ -673,7 +643,7 @@ describe('MyMattersPage', () => {
       expect(api['getMyMattersTrends'].mock.calls[0][2]).toBe('primary'); // weeks, scope, role
       expect(api['getMyMattersHealth']).not.toHaveBeenCalled();
       // The date control belongs to Overview and Deadlines only.
-      expect(el(h).querySelector('[data-filter=range]')).toBeNull();
+      expect(el(h).querySelector('.fb__dates')!.hasAttribute('inert')).toBe(true); // kept in place, unseen
       expect(el(h).querySelector('[data-filter=role]')).not.toBeNull();
     });
 

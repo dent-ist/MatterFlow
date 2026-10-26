@@ -1,5 +1,7 @@
 # Project Manager experience: review and specification
 
+> **Update 2026-10-26 (owner decision, addendum AK item 16, #826):** Workload and capacity is removed from the Project Manager UI. The My Matters tabs are **Overview, Deadlines, Trends, Activity**; the Overview has no Workload panel and no Workload skip link; `?tab=workload` opens Overview. The Workload parts of this document (panel, tab, section 6.3, issues #696, #766, #779) are **superseded** and kept only as history. `GET /my-matters/workload` stays in the backend and is not used by the UI. Recent activity on the Overview shows five events with "View all activity" (#827).
+
 Date 2026-10-23, base `origin/dev`. Epic #758 (children #759 to #787). Extends epic #667 (Project Manager role and My Matters, built: `docs/ux/pm-review/`); nothing from #667 is rebuilt here. Decisions: `docs/requirements/decisions-addendum.md` section AK. Plan: `delivery-plan.md`.
 
 Method: code and docs read against `origin/dev`; no build, no running product (a review with screenshots runs after the build, issue #787).
@@ -9,7 +11,7 @@ Method: code and docs read against `origin/dev`; no build, no running product (a
 1. "Projects" means **Matters**. PMs are assigned to Matters, not to the Projects entity. The UI keeps the word **Matter**.
 2. **My matters is the default scope everywhere** for people holding `Matter.BeManager`: Matters list, Task Queue, Assets, Clients and Projects lists open scoped to matters they manage, with a visible, remembered **My matters / All** switch. **All** only for holders of `Matter.AssignManagers` (the permission that can already change managers). **Search stays global**; results outside the PM's matters carry a small label.
 3. **Shorter menu**: My Matters (landing), Matters, Tasks, Assets (of my matters), Reports (when epic #671 exists), search. No Pod Work, no department Dashboard, no everyone's-tasks view.
-4. The Dashboard is hidden from the Project Manager role **through permissions** (still configurable). My Matters therefore gains the monitoring views: tabs **Overview, Deadlines, Workload, Trends, Activity**, and a **Since your last visit** summary on Overview.
+4. The Dashboard is hidden from the Project Manager role **through permissions** (still configurable). My Matters therefore gains the monitoring views: tabs **Overview, Deadlines, Trends, Activity** (Workload removed 2026-10-26), and a **Since your last visit** summary on Overview.
 5. The matter record **Overview tab is enriched** (reverses the earlier "no per-matter dashboards" decision; addendum AK item 5).
 6. Quick actions per matter: + New task (exists), bulk re-assign / re-prioritise (exists), add a comment, open the matter's tasks. Starter Reports for the role: tables, CSV only, no status report, no email.
 7. Primary and Secondary identical. A matter with no manager is normal (no warning, no red flag). **No new or changed keyboard shortcuts** (#420). Initial bundle under 700 kB (about 614 kB now): new pages and tabs are lazy.
@@ -35,7 +37,7 @@ Method: code and docs read against `origin/dev`; no build, no running product (a
 |---|---|---|
 | What changed since I last looked? | Activity panel with unread marker | No summary at the top; 7 days only; no filters |
 | What is due in the next weeks, by matter? | Deadlines panel (25 rows, 14/28 days) | No grouping by matter, no calendar |
-| Who is overloaded or away? | Workload panel | No away window, no per-matter split |
+| Who is overloaded or away? | (no longer answered for Project Managers, #826) Workload panel | No away window, no per-matter split |
 | Is it getting better or worse? | Nothing (Dashboard trends are hidden from PMs) | Trends missing entirely |
 | Everything about one matter | Header strip + thin Overview + Tasks tab | No deadlines, people, assets, activity, reasons on one screen |
 | Only my stuff | Matters list and Task Queue offer filters; Assets, Clients, Projects open unscoped | A PM drowns in other matters' data |
@@ -103,7 +105,7 @@ Route `/my-matters` keeps the page header, the filter bar (client, role, dates, 
 My Matters                                          Scope [My matters | All]
 Client [All v] Role [Both v] Dates [Next 4 wk v]
 | 14 matters | 212 open | 9 overdue | 17 due 3d | 41 due 7d | 6 unassigned | 3 on hold |
-[ Overview ] [ Deadlines ] [ Workload ] [ Trends ] [ Activity ]
+[ Overview ] [ Deadlines ] [ Trends ] [ Activity ]
 ```
 
 ### 6.1 Overview (current page + summary)
@@ -113,7 +115,7 @@ Since your last visit (Mon 19 Oct 09:12)                         [ Mark as read 
   4 tasks became overdue - 2 reassigned - 7 completed - 3 comments - 1 put on hold
   Dana moved "Privilege log" to On hold (Acme)  - Priya commented on "Review batch 4" ...
 -------------------------------------------------------------------------------
-Needs my attention | Upcoming deadlines | Matter health | Workload | Recent activity   (as in #667)
+Needs my attention | Upcoming deadlines | Matter health | Recent activity (5 events + View all activity)
 ```
 Empty: "Nothing has changed since your last visit." Opening the page does not move the marker, only Mark as read does (as today).
 
@@ -129,7 +131,7 @@ List by matter                               Calendar (week rows)
 ```
 Phone: calendar becomes the grouped list. Weekends muted, today marked by text "Today".
 
-### 6.3 Workload
+### 6.3 Workload (REMOVED 2026-10-26, #826; kept as history)
 
 ```
 Workload   (open work on my matters, per person)

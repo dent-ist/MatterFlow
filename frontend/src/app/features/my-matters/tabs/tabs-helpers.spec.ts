@@ -3,7 +3,6 @@ import { figureLink } from '../panels/since-panel';
 import { activityRows } from './activity-tab';
 import { calendarWeeks } from './deadlines-tab';
 import { limitationText, linePoints, niceMax, weekLabel, valueY } from './trends-tab';
-import { awayText, podPeople } from './workload-tab';
 
 const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {}) =>
   ({
@@ -61,47 +60,6 @@ describe('calendarWeeks (Deadlines tab)', () => {
 
   it('is empty without days', () => {
     expect(calendarWeeks([])).toEqual([]);
-  });
-});
-
-describe('Workload tab helpers', () => {
-  const person = (name: string, overdue: number, away: boolean) =>
-    ({
-      displayName: name,
-      overdue,
-      open: 1,
-      onHold: 0,
-      isActive: true,
-      query: '',
-      dueThisWeek: 0,
-      away: away
-        ? { from: '2026-10-26', to: '2026-10-30', reasonCode: 'OUT_OF_OFFICE' }
-        : undefined,
-    }) as never;
-
-  it('says an away window in days: both ends, one day, open start, open end', () => {
-    expect(awayText({ from: '2026-10-26', to: '2026-10-30', reasonCode: 'X' }, 2026)).toBe(
-      'Away Oct 26 to Oct 30',
-    );
-    expect(awayText({ from: '2026-10-26', to: '2026-10-26', reasonCode: 'X' }, 2026)).toBe(
-      'Away Oct 26',
-    );
-    expect(awayText({ from: undefined, to: '2026-10-30', reasonCode: 'X' }, 2026)).toBe(
-      'Away until Oct 30',
-    );
-    expect(awayText({ from: '2026-10-26', to: undefined, reasonCode: 'X' }, 2026)).toBe(
-      'Away from Oct 26, no end date',
-    );
-  });
-
-  it('lists people who are away and hold overdue tasks first, and keeps the order of the others', () => {
-    const order = podPeople([
-      person('Ann', 3, false),
-      person('Bob', 0, true),
-      person('Cy', 2, true),
-      person('Di', 0, false),
-    ]).map((p) => p.displayName);
-    expect(order).toEqual(['Cy', 'Ann', 'Bob', 'Di']);
   });
 });
 

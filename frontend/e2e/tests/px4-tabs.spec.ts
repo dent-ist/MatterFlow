@@ -5,7 +5,7 @@ import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 
 /**
- * My Matters tabs (epic #758, WP-PX4: #776 to #781): Overview with "Since your last visit", Deadlines, Workload, Trends and Activity. Every test
+ * My Matters tabs (epic #758, WP-PX4: #776 to #781): Overview with "Since your last visit", Deadlines, Trends and Activity. Every test
  * builds the matters and tasks it needs in a world of its own, so the numbers on the page are written down here instead of read back.
  */
 const tab = (page: Page, key: string) => page.locator(`[role=tab][data-tab="${key}"]`);
@@ -20,7 +20,7 @@ async function prime(page: Page): Promise<void> {
 }
 
 test.describe('My Matters: the tab shell', () => {
-  test('five tabs, Overview first, the filters shared and kept in the address, Back brings the tab back with focus', async ({
+  test('four tabs, Overview first, the filters shared and kept in the address, Back brings the tab back with focus', async ({
     seed,
     personas,
     asUser,
@@ -30,13 +30,7 @@ test.describe('My Matters: the tab shell', () => {
     await w.task(m, { dueDate: inDays(3) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.getByRole('tab')).toHaveText([
-      'Overview',
-      'Deadlines',
-      'Workload',
-      'Trends',
-      'Activity',
-    ]);
+    await expect(page.getByRole('tab')).toHaveText(['Overview', 'Deadlines', 'Trends', 'Activity']);
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-mm-tabpanel]')).toHaveAttribute(
       'aria-labelledby',
@@ -50,9 +44,9 @@ test.describe('My Matters: the tab shell', () => {
     await expect(page).toHaveURL(/role=primary/);
     await expect(panel(page, 'deadlines-tab')).toBeVisible();
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
-    await tab(page, 'workload').click();
-    await expect(panel(page, 'workload-tab')).toBeVisible();
-    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // the dates belong to Overview and Deadlines
+    await tab(page, 'trends').click();
+    await expect(panel(page, 'trends')).toBeVisible();
+    await expect(page.locator('[data-filter=range]')).toBeHidden(); // the dates belong to Overview and Deadlines (kept in place, unseen)
 
     // Back returns to the earlier tab and puts focus on its tab.
     await page.goBack();
@@ -62,7 +56,7 @@ test.describe('My Matters: the tab shell', () => {
     // Keyboard only, with the keys the app has: Right and Left move between tabs, Home goes to Overview.
     await tab(page, 'deadlines').focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tab(page, 'workload')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'trends')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     expect(page.url()).not.toContain('tab=');
@@ -90,8 +84,8 @@ test.describe('My Matters: the tab shell', () => {
       await expect(page.locator('[role=tab]')).toHaveCount(0);
     }
     const page = await asUser(w.pm.username); // the Project Manager role holds Matter.AssignManagers
-    await page.goto('/my-matters?scope=all&tab=workload');
-    await expect(panel(page, 'workload-tab')).toBeVisible();
+    await page.goto('/my-matters?scope=all&tab=trends');
+    await expect(panel(page, 'trends')).toBeVisible();
     await expect(page.locator('[data-scope="all"]')).toHaveAttribute('aria-pressed', 'true');
     await tab(page, 'activity').click();
     await expect(panel(page, 'activity-tab')).toBeVisible();
@@ -225,60 +219,6 @@ test.describe('My Matters: Deadlines', () => {
     await expect(tabPanel.locator('[data-calendar]')).toHaveCount(0);
     await expect(tabPanel.locator('[data-view]')).toHaveCount(0);
     await expect(tabPanel.locator('[data-matter-group]')).toHaveCount(2);
-  });
-});
-
-test.describe('My Matters: Workload', () => {
-  test('open work per person on my matters, who is away, the matters behind a person, a name opens the Task Queue', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'wl');
-    const away = await personas.create({
-      label: 'wl-away',
-      roles: ['Data Technician'],
-      displayName: 'Away Technician',
-    });
-    await seed.outOfOffice(away.userId);
-    const here = await personas.create({
-      label: 'wl-here',
-      roles: ['Data Technician'],
-      displayName: 'Here Technician',
-    });
-    const pod = await seed.pod(undefined, [away.userId, here.userId]);
-    const a = await w.matter('Alpha');
-    const b = await w.matter('Bravo');
-    const elsewhere = await w.matter('Other pm', w.other, null);
-    await w.task(a, {
-      assignedUserId: away.userId,
-      assignedPodId: pod.podId,
-      dueDate: '2000-01-01',
-    });
-    await w.task(a, { assignedUserId: away.userId, assignedPodId: pod.podId, dueDate: inDays(30) });
-    await w.task(b, { assignedUserId: away.userId, assignedPodId: pod.podId, dueDate: inDays(2) });
-    await w.task(a, { assignedUserId: here.userId, assignedPodId: pod.podId, dueDate: inDays(30) });
-    await w.task(elsewhere, { assignedUserId: here.userId, assignedPodId: pod.podId });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters?tab=workload');
-    const table = panel(page, 'workload-tab');
-    const person = (name: string) => table.locator('[data-person]', { hasText: name });
-    await expect(person('Away Technician')).toContainText('Away');
-    await expect(person('Away Technician').locator('[data-away]')).toContainText(/^Away/);
-    await expect(person('Away Technician').locator('td.num').nth(0)).toContainText('3'); // open
-    await expect(person('Away Technician').locator('td.num').nth(1)).toHaveText('1'); // overdue
-    await expect(person('Away Technician').locator('td.num').nth(2)).toHaveText('1'); // due this week
-    await expect(person('Here Technician').locator('td.num').nth(0)).toContainText('1'); // not the other PM's matter
-    await expect(person('Here Technician').locator('[data-away]')).toHaveCount(0);
-    // Away and holding overdue work sorts first inside the pod; nothing is ranked or coloured.
-    await expect(table.locator('[data-person]').first()).toContainText('Away Technician');
-    await expect(table).not.toContainText(/overload/i);
-
-    await person('Away Technician').locator('[data-matters-toggle]').click();
-    await expect(table.locator('[data-matters] li')).toHaveCount(2);
-    await person('Away Technician').getByRole('link', { name: 'Away Technician' }).click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect(page.locator('[data-range]').first()).toContainText('of 3');
   });
 });
 
@@ -468,7 +408,7 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     await expect(panel(page, 'health').locator('[data-health-row]').first()).toBeVisible();
     await expect(page.locator('[data-skip-links]')).toBeAttached();
 
-    const keys = ['attention', 'deadlines', 'health', 'workload', 'activity'];
+    const keys = ['attention', 'deadlines', 'health', 'activity'];
     await page.locator('[role=tab][aria-selected=true]').focus();
     await page.keyboard.press('Tab');
     for (const key of keys) {
@@ -524,7 +464,6 @@ test.describe('My Matters tabs: four sizes', () => {
         ['overview', '/my-matters'],
         ['deadlines', '/my-matters?tab=deadlines'],
         ['calendar', '/my-matters?tab=deadlines&view=calendar'],
-        ['workload', '/my-matters?tab=workload'],
         ['trends', '/my-matters?tab=trends'],
         ['activity', '/my-matters?tab=activity'],
       ];

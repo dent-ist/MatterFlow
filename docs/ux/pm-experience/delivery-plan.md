@@ -1,5 +1,7 @@
 # Project Manager experience: delivery plan
 
+> **Update 2026-10-26 (owner decision, addendum AK item 16, #826):** Workload and capacity is removed from the Project Manager UI. The My Matters tabs are **Overview, Deadlines, Trends, Activity**; the Overview has no Workload panel and no Workload skip link; `?tab=workload` opens Overview. The Workload rows of this plan (#766 PX-08, #779 PX-21, the Workload part of #776 PX-18 and #770 PX-12) are **superseded** and kept only as history. `GET /my-matters/workload` stays in the backend and is not used by the UI. Recent activity on the Overview shows five events with "View all activity" (#827).
+
 Date: 2026-10-23, base `origin/dev`. Source: `README.md` in this folder. Structure on GitHub: one epic **#758** (labels `epic` + `phase-21`) with 29 sub-issues #759 to #787. Extends epic #667 (built); nothing there is redone.
 
 Effort is in **AI-agent hours** (wall-clock of one developer agent, with unit, integration, e2e, axe and screenshots). Total **117.0 hours** in 29 issues.
@@ -25,7 +27,7 @@ Effort is in **AI-agent hours** (wall-clock of one developer agent, with unit, i
 | #763 | PX-05 | Global search: results outside my matters carry an 'inMyMatters' flag | 3.5 | #760 | WP-PX1 | B |
 | #764 | PX-06 | Permissions and starter roles: remove Dashboard permissions from the Project Manager role, Report grants, grant script | 2.5 | None | WP-PX1 | B |
 | #765 | PX-07 | My Matters deadlines by matter: 2 to 4 week range with per-day and per-matter grouping | 3 | #760 | WP-PX2 | C |
-| #766 | PX-08 | My Matters workload: who is away in the next 4 weeks and per-person open load by matter | 3 | #760 | WP-PX2 | C |
+| #766 | PX-08 | (superseded 2026-10-26, #826: endpoint kept, unused by the UI) My Matters workload: who is away in the next 4 weeks and per-person open load by matter | 3 | #760 | WP-PX2 | C |
 | #767 | PX-09 | My Matters trends: overdue over time, created vs closed per week, average task age, on hold | 5.5 | #760 | WP-PX2 | C |
 | #768 | PX-10 | My Matters activity: 30 days, filter by matter and kind, and the 'Since your last visit' summary | 4.5 | #760 | WP-PX2 | C |
 | #769 | PX-11 | Matter overview endpoint: counts by status, next five deadlines, people working, linked assets, recent activity, health with reasons | 5 | #760 | WP-PX2 | B |
@@ -35,10 +37,10 @@ Effort is in **AI-agent hours** (wall-clock of one developer agent, with unit, i
 | #773 | PX-15 | Assets, Clients and Projects lists open scoped to my matters | 5 | #771, #761, #762 | WP-PX3 | A |
 | #774 | PX-16 | Search: small 'Not in your matters' label on results outside the PM's matters | 2.5 | #763 | WP-PX3 | A |
 | #775 | PX-17 | Compact menu for the Project Manager: My Matters, Matters, Tasks, Assets, Reports, search | 3 | #764 | WP-PX3 | A |
-| #776 | PX-18 | My Matters tab shell: Overview, Deadlines, Workload, Trends, Activity (lazy routes, URL state) | 3.5 | #771 | WP-PX4 | C |
+| #776 | PX-18 | My Matters tab shell: Overview, Deadlines, Trends, Activity (Workload removed, #826) (lazy routes, URL state) | 3.5 | #771 | WP-PX4 | C |
 | #777 | PX-19 | Overview tab: 'Since your last visit' summary | 3 | #776, #768 | WP-PX4 | C |
 | #778 | PX-20 | Deadlines tab: 2 to 4 week calendar and list, by matter | 4.5 | #776, #765 | WP-PX4 | C |
-| #779 | PX-21 | Workload tab: open work per person on my matters, who is away | 4 | #776, #766 | WP-PX4 | C |
+| #779 | PX-21 | (superseded 2026-10-26, #826: tab removed) Workload tab: open work per person on my matters, who is away | 4 | #776, #766 | WP-PX4 | C |
 | #780 | PX-22 | Trends tab: overdue over time, created vs closed per week, average task age, on hold | 5.5 | #776, #767 | WP-PX4 | C |
 | #781 | PX-23 | Activity tab: what changed since I last looked, filters, mark as read | 4 | #776, #768 | WP-PX4 | C |
 | #782 | PX-24 | Matter record Overview tab enriched (reverses 'no per-matter dashboards') | 6 | #769 | WP-PX5 | B |

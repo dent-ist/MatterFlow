@@ -7,7 +7,7 @@ import { axeAvailable } from '../support/axe';
 
 /**
  * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Upcoming deadlines (#693), the matter health
- * table with "+ New task" (#695), Workload and capacity (#696) and Recent activity (#697). Each test builds the matters and tasks it needs in a
+ * table with "+ New task" (#695), Recent activity (#697; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs in a
  * world of its own, so the numbers on the page are written down here instead of read back from the page.
  */
 const total = async (page: Page): Promise<number> => {
@@ -156,20 +156,20 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     const m = await w.matter('Alpha');
     await w.task(m, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
-    await page.route('**/api/v1/my-matters/workload**', (route) =>
+    await page.route('**/api/v1/my-matters/activity**', (route) =>
       route.fulfill({ status: 500, body: '{}' }),
     );
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=workload] [data-panel-error]')).toContainText(
-      "Couldn't load workload and capacity.",
+    await expect(page.locator('[data-panel=activity] [data-panel-error]')).toContainText(
+      "Couldn't load recent activity.",
     );
     await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(1);
     await expect(
       page.locator('[data-panel=attention] [data-group=overdue] [data-attention-row]'),
     ).toHaveCount(1);
-    await page.unroute('**/api/v1/my-matters/workload**');
-    await page.locator('[data-panel=workload] [data-panel-retry]').click();
-    await expect(page.locator('[data-panel=workload] [data-workload-table]')).toBeVisible();
+    await page.unroute('**/api/v1/my-matters/activity**');
+    await page.locator('[data-panel=activity] [data-panel-retry]').click();
+    await expect(page.locator('[data-panel=activity] [data-activity-row]').first()).toBeVisible();
   });
 });
 
@@ -425,58 +425,6 @@ test.describe('My Matters: Matter health', () => {
       // The Task Queue names the project manager's scope in its address (epic #758).
       await expect(page, bad).toHaveURL(/\/tasks(\?scope=mine)?$/);
     }
-  });
-});
-
-test.describe('My Matters: Workload and capacity', () => {
-  test('pods and people on my matters, an out-of-office person flagged, links to the Task Queue with matching totals, nothing ranked', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'load');
-    const away = await personas.create({
-      label: 'load-away',
-      roles: ['Data Technician'],
-      displayName: 'Away Technician',
-    });
-    await seed.outOfOffice(away.userId, { note: 'Annual leave' });
-    const here = await personas.create({
-      label: 'load-here',
-      roles: ['Data Technician'],
-      displayName: 'Here Technician',
-    });
-    const pod = await seed.pod(undefined, [away.userId, here.userId]);
-    const m = await w.matter('Alpha');
-    const elsewhere = await w.matter('Other pm', w.other, null);
-    await w.task(m, { assignedUserId: away.userId, dueDate: inDays(30), assignedPodId: pod.podId });
-    await w.task(m, {
-      assignedUserId: away.userId,
-      dueDate: '2000-01-01',
-      assignedPodId: pod.podId,
-    });
-    await w.task(m, { assignedUserId: here.userId, dueDate: inDays(30), assignedPodId: pod.podId });
-    await w.task(m, { assignedPodId: pod.podId });
-    await w.task(elsewhere, {
-      assignedUserId: here.userId,
-      dueDate: inDays(30),
-      assignedPodId: pod.podId,
-    });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    const panel = page.locator('[data-panel=workload]');
-    const line = (name: string) => panel.locator('[data-workload-line]', { hasText: name });
-    await expect(line('Away Technician')).toContainText('Out of office');
-    await expect(line('Away Technician').locator('td.num').nth(0)).toHaveText('2');
-    await expect(line('Away Technician').locator('td.num').nth(1)).toHaveText('1');
-    await expect(line('Here Technician').locator('td.num').nth(0)).toHaveText('1'); // not the task on someone else's matter
-    await expect(line('Not assigned to a person').locator('td.num').nth(0)).toHaveText('1');
-    await expect(panel).not.toContainText(/overload|capacity exceeded|busiest/i);
-    await expect(panel.locator('[data-availability-chip]')).toHaveCount(1);
-    // The person's name opens the Task Queue for that person on these matters: the totals agree.
-    await line('Away Technician').getByRole('link').click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect.poll(() => total(page)).toBe(2);
   });
 });
 

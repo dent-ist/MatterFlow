@@ -92,10 +92,10 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients', 'Projects', 'My Work'];
-const FIVE_TABS = ['Overview', 'Deadlines', 'Workload', 'Trends', 'Activity'];
+const FOUR_TABS = ['Overview', 'Deadlines', 'Trends', 'Activity'];
 
 test.describe('Permission matrix of the Project Manager views', () => {
-  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, five tabs, the full Overview and header menu, every endpoint', async ({
+  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, four tabs, the full Overview and header menu, every endpoint', async ({
     seed,
     personas,
     asUser,
@@ -106,7 +106,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(ui.landing).toBe('/my-matters');
     expect(ui.menu).toEqual(PM_MENU);
     expect(ui.switchOnMatters && ui.switchOnAssets).toBe(true);
-    expect(ui.tabs).toEqual(FIVE_TABS);
+    expect(ui.tabs).toEqual(FOUR_TABS);
     expect(ui.overviewSections).toEqual(
       expect.arrayContaining(['health', 'status', 'deadlines', 'people', 'assets', 'activity']),
     );
@@ -118,7 +118,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     for (const [name, code] of Object.entries(status)) expect(code, name).toBe(200);
   });
 
-  test('PM without Matter.AssignManagers: no switch, scope=all refused (403), five tabs, everything else as the Project Manager', async ({
+  test('PM without Matter.AssignManagers: no switch, scope=all refused (403), four tabs, everything else as the Project Manager', async ({
     seed,
     personas,
     asUser,
@@ -129,7 +129,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(ui.landing).toBe('/my-matters');
     expect(ui.menu).toEqual(PM_MENU);
     expect(ui.switchOnMatters || ui.switchOnAssets).toBe(false);
-    expect(ui.tabs).toEqual(FIVE_TABS);
+    expect(ui.tabs).toEqual(FOUR_TABS);
     const api = await Api.as(fx.pmNoAssign.username);
     const status = await collectApi(api, fx);
     await api.dispose();
@@ -412,13 +412,12 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 250);
     evidence('my-matters-overview', '1366', result);
     expectGoodStops('my matters', { stops: result.stops, left: true }, 6);
-    // The skip links are the first stops after the tab strip (#820): five links, each with a name and a visible focus.
+    // The skip links are the first stops after the tab strip (#820): four links, each with a name and a visible focus.
     const tabAt = result.stops.findIndex((s) => s.role === 'tab');
-    expect(result.stops.slice(tabAt + 1, tabAt + 6).map((s) => s.name)).toEqual([
+    expect(result.stops.slice(tabAt + 1, tabAt + 5).map((s) => s.name)).toEqual([
       'Needs my attention',
       'Upcoming deadlines',
       'Matter health',
-      'Workload',
       'Recent activity',
     ]);
     expect(result.left, 'the whole page was walked').toBe(true);
@@ -493,7 +492,7 @@ test.describe('Reduced motion and focus after a change', () => {
     for (const url of [
       '/my-matters',
       '/my-matters?tab=deadlines',
-      '/my-matters?tab=workload',
+      '/my-matters?tab=workload', // the removed Workload tab: an old link opens Overview
       '/my-matters?tab=trends',
       '/my-matters?tab=activity',
       '/matters',

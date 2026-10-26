@@ -35,8 +35,6 @@ import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
-import { WorkloadTab } from '../tabs/workload-tab';
-import { WorkloadPanel } from '../panels/workload-panel';
 
 const SORTS: readonly HealthSort[] = [
   'nextDeadline',
@@ -50,15 +48,17 @@ const SORTS: readonly HealthSort[] = [
 ];
 
 /** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
-export const MM_TABS = ['overview', 'deadlines', 'workload', 'trends', 'activity'] as const;
+export const MM_TABS = ['overview', 'deadlines', 'trends', 'activity'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
   deadlines: 'Deadlines',
-  workload: 'Workload',
   trends: 'Trends',
   activity: 'Activity',
 };
+
+const HINT_OVERVIEW = 'The dates apply to Upcoming deadlines. The other panels show all open work.';
+const HINT_DEADLINES = 'The dates choose the weeks of the Deadlines tab.';
 
 const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
 
@@ -83,12 +83,12 @@ function storage(): Storage | null {
 }
 
 /**
- * My Matters (epic #667, README 6): the Project Manager's home. A count strip, Needs my attention, Upcoming deadlines, Matter health, Workload
- * and capacity and Recent activity, each loading and failing on its own. The matters are "mine" (primary or secondary manager) by default, a
+ * My Matters (epic #667, README 6): the Project Manager's home. A count strip, Needs my attention, Upcoming deadlines, Matter health
+ * and Recent activity (the five latest events; the Activity tab has the rest). Each loading and failing on its own. The matters are "mine" (primary or secondary manager) by default, a
  * default view and not a limit on access; with `Matter.AssignManagers` the scope can be All matters. The filters (client, role, dates,
  * scope, project manager) and the health table's sort and page live in the address, so Back restores them; the last filters are also
  * remembered per person in the browser as a convenience. One scrolling page, no tabs, no nested scroll boxes. Different from the
- * department Dashboard: it answers "what is on fire on my matters", not "how is the department doing".
+ * department Dashboard: it answers "what is on fire on my matters", not "how is the department doing". Workload and capacity of technicians is not shown here (owner decision, #826).
  */
 @Component({
   selector: 'mf-my-matters-page',
@@ -105,11 +105,9 @@ function storage(): Storage | null {
     SincePanel,
     SkipLinks,
     Tabs,
-    WorkloadPanel,
     ActivityTab,
     DeadlinesTab,
     TrendsTab,
-    WorkloadTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
@@ -122,7 +120,7 @@ function storage(): Storage | null {
       grid-template-areas:
         'attention deadlines'
         'health health'
-        'workload activity';
+        'activity activity';
       gap: var(--mf-s3);
       align-items: start;
     }
@@ -134,9 +132,6 @@ function storage(): Storage | null {
     }
     .mm__health {
       grid-area: health;
-    }
-    .mm__workload {
-      grid-area: workload;
     }
     .mm__activity {
       grid-area: activity;
@@ -173,7 +168,7 @@ function storage(): Storage | null {
         white-space: nowrap;
       }
     }
-    /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, workload, activity. */
+    /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, activity. */
     @media (max-width: 639.98px) {
       .mm__grid {
         grid-template-columns: minmax(0, 1fr);
@@ -181,7 +176,6 @@ function storage(): Storage | null {
           'attention'
           'health'
           'deadlines'
-          'workload'
           'activity';
       }
     }
@@ -205,6 +199,7 @@ function storage(): Storage | null {
       [active]="active()"
       [dates]="datesApply()"
       [hint]="datesHint()"
+      [hintSpace]="hintSpace"
       (filterChange)="update($event)"
       (clear)="clear()"
       (clientName)="clientName.set($event)"
@@ -234,13 +229,6 @@ function storage(): Storage | null {
             <mf-mm-deadlines-tab [filters]="filters()" (rangeChange)="setRange($event)" />
           } @placeholder {
             <p class="mm__loading" role="status">Loading deadlines</p>
-          }
-        }
-        @case ('workload') {
-          @defer (on immediate) {
-            <mf-mm-workload-tab [filters]="filters()" />
-          } @placeholder {
-            <p class="mm__loading" role="status">Loading workload</p>
           }
         }
         @case ('trends') {
@@ -285,7 +273,6 @@ function storage(): Storage | null {
               (clearFilters)="clear()"
               (showAll)="update({ scope: 'all' })"
             />
-            <mf-mm-workload class="mm__workload" [filters]="filters()" />
             <mf-mm-activity
               class="mm__activity"
               [filters]="filters()"
@@ -324,10 +311,10 @@ export class MyMattersPage {
     () => this.tab() === 'overview' || this.tab() === 'deadlines',
   );
   protected readonly datesHint = computed(() =>
-    this.tab() === 'deadlines'
-      ? 'The dates choose the weeks of the Deadlines tab.'
-      : 'The dates apply to Upcoming deadlines. The other panels show all open work.',
+    this.tab() === 'deadlines' ? HINT_DEADLINES : HINT_OVERVIEW,
   );
+  /** Both wordings, so the line below the filters keeps its height on the tabs that have no Dates control. */
+  protected readonly hintSpace: readonly string[] = [HINT_OVERVIEW, HINT_DEADLINES];
   /** Counts the moves of the "seen" marker, so the panels that show it read again. */
   protected readonly marker = signal(0);
   /** "Since your last visit" has been read once: Recent activity may ask now (its first read creates the marker, see the panel). */

@@ -27,7 +27,7 @@ The contract is `contracts/openapi/v1.json`; this page records the decisions whe
 | `GET /my-matters/summary` | matters, open, overdue, dueIn3Days, dueIn7Days, unassigned, onHold (each `{count, query}`; `query` is for the Task Queue, or the Matters list for `matters`) + oldest hold | 2 |
 | `GET /my-matters/attention` | groups `overdue`, `dueSoon`, `unassigned`, `stuckOnHold` with `total`, `query` and the first 10 tasks (`factCode`, `factDays`) | 7 |
 | `GET /my-matters/health?sort=&dir=&page=&pageSize=` | rows, `total`, flag + reasons; sort `nextDeadline` (default) `client` `matter` `open` `overdue` `dueThisWeek` `unassigned` `flag`; page size 50 (max 100) | 3 |
-| `GET /my-matters/workload` | pods (alphabetical, no-pod group last) with people; `userId` null = "not assigned to a person"; `availability` only while out of office | 4 |
+| `GET /my-matters/workload` (UNUSED by the UI since 2026-10-26, #826; kept in the backend) | pods (alphabetical, no-pod group last) with people; `userId` null = "not assigned to a person"; `availability` only while out of office | 4 |
 | `GET /my-matters/deadlines?days=14\|28` | open, not overdue, due today to +N days, soonest first, 25 rows, `total`, `query` | 4 |
 | `GET /my-matters/activity?take=` | last 7 days, 30 rows (max 100), structured events, `isUnread`, `unreadCount`, `seenEventId`, `hasMore` | 8 |
 | `POST /my-matters/activity/seen` `{upToEventId?}` | moves the person's marker forward (to the newest event when omitted) | 2 |
