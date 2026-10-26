@@ -7,6 +7,9 @@ import {
   BreakdownType,
   MyMattersClient,
 } from '../../../api/generated/api-client';
+import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
+import { ExportService } from '../../../shared/ui/export.service';
+import { ExportFormat, buildList } from '../../../shared/ui/list-export';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
@@ -42,7 +45,7 @@ export function turnaroundText(
  */
 @Component({
   selector: 'mf-mm-breakdown-tab',
-  imports: [PanelBox, RouterLink, TaskTypeBadge],
+  imports: [ExportMenu, PanelBox, RouterLink, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -135,7 +138,10 @@ export function turnaroundText(
       font-weight: 600;
     }
     .bd__over {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-height: 24px;
       color: var(--mf-due-overdue);
       font-size: var(--mf-fs-xs);
       font-weight: 700;
@@ -205,6 +211,13 @@ export function turnaroundText(
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
+      <mf-export-menu
+        mfPanelActions
+        fileName="breakdown"
+        [run]="exportRun"
+        [disabled]="!data() || data()!.types.length === 0"
+        reason="Nothing to export."
+      />
       <div mfPanelActions class="bd__toggle" role="group" aria-label="Matters shown">
         <button
           type="button"
@@ -547,6 +560,7 @@ export class BreakdownTab {
   readonly filters = input.required<MmFilters>();
 
   private readonly api = inject(MyMattersClient);
+  private readonly exports = inject(ExportService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly query = toSignal(this.route.queryParamMap, {
@@ -603,6 +617,69 @@ export class BreakdownTab {
     const types = `${d.types.length}${d.typeTotal > d.types.length ? ` of ${d.typeTotal}` : ''} task types`;
     return `${d.totals.open} ${this.noun().toLowerCase()} on ${d.matterTotal} ${d.matterTotal === 1 ? 'matter' : 'matters'}, ${types}`;
   });
+
+  /** The table on screen as a list (PM v2, #879): per matter, one column per task type (plus a totals row); all matters, one row per task type. */
+  protected readonly exportRun = async (format: ExportFormat): Promise<ExportResult> => {
+    const d = this.data();
+    if (!d) return { text: '', rows: 0 };
+    let header: string[];
+    let rows: (string | number)[][];
+    if (this.view() === 'types') {
+      header = [
+        'Task type',
+        this.countLabel(),
+        'Overdue',
+        'At risk',
+        'On hold',
+        'Average days to complete',
+        'Target days',
+        'Completed in the window',
+      ];
+      rows = d.types.map((t) => [
+        t.name,
+        t.open,
+        t.overdue,
+        t.atRisk,
+        t.onHold,
+        t.avgDaysDone ?? '',
+        t.targetDays ?? '',
+        t.doneCount,
+      ]);
+    } else {
+      header = [
+        'Matter',
+        'Matter name',
+        'Client',
+        ...d.types.map((t) => `${t.name} (${this.countLabel().toLowerCase()})`),
+        `${this.countLabel()} in total`,
+        'Overdue in total',
+      ];
+      rows = d.rows.map((r) => [
+        r.matterRef,
+        r.matterName,
+        r.clientName,
+        ...d.types.map((t) => this.cell(r, t.taskTypeId)?.open ?? 0),
+        r.open,
+        r.overdue,
+      ]);
+      rows.push([
+        'All matters',
+        '',
+        '',
+        ...d.types.map((t) => t.open),
+        d.totals.open,
+        d.totals.overdue,
+      ]);
+    }
+    const text = buildList(format, header, rows);
+    void this.exports.log(
+      'my-matters.breakdown',
+      format,
+      rows.length,
+      `${this.view()}, ${this.status()}, page ${this.pageNo()}`,
+    );
+    return { text, rows: rows.length };
+  };
 
   protected params(query: string): Params {
     return queryToParams(query);

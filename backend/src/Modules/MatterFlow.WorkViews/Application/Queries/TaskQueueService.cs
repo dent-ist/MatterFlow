@@ -65,6 +65,34 @@ public sealed class TaskQueueService(
         return new TaskQueuePage(items, total, page.Page, page.PageSize, queueClock.ZoneId, await ViewCountsAsync(filter, queueClock, ct), bucketCounts);
     }
 
+    /// <summary>
+    /// The rows of the Task Queue for an export (PM v2, #879): the same filter, sort and rule as <see cref="QueueAsync"/>, all pages in one list. More than
+    /// <see cref="ListExport.RowCap"/> rows is refused with a message (the person narrows the filters), never cut.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<TaskQueueRow>>> ExportRowsAsync(TaskQueueListQuery query, CancellationToken ct)
+    {
+        var request = Prepare(query);
+        if (request.IsFailure)
+            return request.Error!;
+
+        var (filter, _, sort, descending, queueClock) = request.Value;
+        var rows = ApplyFilter(Tasks(), filter, queueClock);
+        var total = await rows.CountAsync(ct);
+        if (total > ListExport.RowCap)
+            return Error.Validation("export", "EXPORT_TOO_LARGE", $"This list has {total:N0} tasks. An export carries at most {ListExport.RowCap:N0}: narrow the filters and try again.");
+
+        var all = new List<TaskQueueRow>(total);
+        for (var pageNumber = 1; all.Count < total; pageNumber++)
+        {
+            var (items, _) = await PageAsync(rows, new PageRequest(pageNumber, PageRequest.MaxPageSize), sort, descending, queueClock, ct);
+            if (items.Count == 0)
+                break;
+            all.AddRange(items);
+        }
+
+        return all;
+    }
+
     /// <summary>Days of the "Recently completed" window, today included (the Dashboard Completed tile's 30 days; the client sends the same first day as <c>completedFrom</c>).</summary>
     public const int RecentlyCompletedDays = 30;
 

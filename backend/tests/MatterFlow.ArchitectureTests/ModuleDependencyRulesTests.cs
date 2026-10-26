@@ -25,7 +25,7 @@ public class ModuleDependencyRulesTests
         ["Assets"] = ["Configuration", "Organization", "Identity", "Audit"],
         ["WorkflowEngine"] = ["Configuration", "Identity", "Audit"],
         ["WorkManagement"] = ["Organization", "Assets", "WorkflowEngine", "Configuration", "Identity", "Audit", "Notifications"],
-        ["WorkViews"] = ["WorkManagement", "Organization", "Assets", "WorkflowEngine", "Configuration", "Identity"],
+        ["WorkViews"] = ["WorkManagement", "Organization", "Assets", "WorkflowEngine", "Configuration", "Identity", "Audit"],
         ["Search"] = ["WorkManagement", "Organization", "Assets", "Configuration", "Identity"],
         ["Intake"] = ["Identity"],
         ["Notifications"] = ["Identity"],

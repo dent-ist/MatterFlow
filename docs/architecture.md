@@ -300,7 +300,7 @@ Because EF no longer generates the schema, drift is a real risk. Controls:
 | **Assets** | AssetType, Asset | `IAssetLookup` (asset belongs to matter) |
 | **WorkflowEngine** | StepDefinition, WorkflowDefinition/Version/VersionStep, WorkflowInstance, StepInstance, step state machine | `IWorkflowInstantiator`, `IWorkflowProgress` (completion check), `IStepCommands` |
 | **WorkManagement** | Task, TaskAsset, TaskComment(+Revision), lifecycle state machine, assignment | `ITaskLookup`, `ITaskLifecycle` (used by WorkflowEngine callbacks via contract interface `ITaskStatusGate`) |
-| **WorkViews** | Queue/My Work/Pod Work/Dashboard queries | none (leaf) |
+| **WorkViews** | Queue/My Work/Pod Work/Dashboard queries | none (leaf); `Audit.Contracts` only, to record `EXPORT_RUN` of a list export (PM v2 #879) |
 | **Search** | Global/advanced queries | none (leaf) |
 | **Intake** | Email parsing | none (leaf) |
 

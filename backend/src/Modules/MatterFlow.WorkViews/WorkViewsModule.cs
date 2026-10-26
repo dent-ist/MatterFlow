@@ -15,6 +15,7 @@ public static class WorkViewsModule
     {
         services.AddControllers().AddApplicationPart(typeof(WorkViewsModule).Assembly);
         services.AddScoped<TaskQueueService>();
+        services.AddScoped<TaskQueueExportService>();
         services.AddScoped<DashboardScopeResolver>();
         services.AddScoped<VisibilityStamp>();
         services.AddScoped<DashboardService>();

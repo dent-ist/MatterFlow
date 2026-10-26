@@ -80,6 +80,8 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/clients/custom-fields"] = new(AccessKind.Neutral, IdKind.None, "form definition", ["api/v1/clients/custom-fields"]),
         ["GET api/v1/clients/{clientId:int}"] = new(AccessKind.Aggregate, IdKind.None, "matter and task counts over visible matters and tasks (SM-04)", ["api/v1/clients/{client}"]),
         ["GET api/v1/clients/{clientId:int}/summary"] = new(AccessKind.Aggregate, IdKind.None, "matter and task counts over visible matters and tasks (SM-04)", ["api/v1/clients/{client}/summary"]),
+        ["GET api/v1/task-queue/export"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule (PM v2 #879: the same rows as the screen, all pages)", ["api/v1/task-queue/export?format=csv", "api/v1/task-queue/export?format=text&q=ZZSENS"]),
+        ["POST api/v1/exports/log"] = new(AccessKind.Neutral, IdKind.None, "records an export made in the browser (surface, count, filters): no matter data", []),
         ["GET api/v1/dashboard"] = new(AccessKind.Aggregate, IdKind.None, "computed from visible tasks (SM-09)", ["api/v1/dashboard?fresh=true"]),
         ["GET api/v1/dashboard/coverage"] = new(AccessKind.Aggregate, IdKind.None, "computed from visible tasks (SM-09)", ["api/v1/dashboard/coverage"]),
         ["GET api/v1/dashboard/scopes"] = new(AccessKind.Neutral, IdKind.None, "pod names only", ["api/v1/dashboard/scopes"]),

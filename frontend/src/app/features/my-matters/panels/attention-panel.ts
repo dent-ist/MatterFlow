@@ -7,6 +7,10 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { OLDEST_FIRST, rowFactText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
+import { ExportService } from '../../../shared/ui/export.service';
+import { ExportFormat, buildList } from '../../../shared/ui/list-export';
+import { TASK_ITEM_HEADER, taskItemRow } from '../export-rows';
 import { SectionToolbar } from '../section-toolbar';
 import { sectionPref } from '../section-prefs';
 import { SectionTypes } from '../section-types';
@@ -34,7 +38,7 @@ const GROUP_TITLES: Record<string, string> = {
  */
 @Component({
   selector: 'mf-mm-attention',
-  imports: [PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
+  imports: [ExportMenu, PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: PANEL_LIST_STYLES,
   template: `
@@ -45,6 +49,13 @@ const GROUP_TITLES: Record<string, string> = {
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
+      <mf-export-menu
+        mfPanelActions
+        fileName="needs-my-attention"
+        [run]="exportRun"
+        [disabled]="groups().groups.length === 0"
+        reason="Nothing to export."
+      />
       <mf-mm-section-toolbar
         label="Needs my attention"
         [options]="typeChoices.options()"
@@ -147,6 +158,7 @@ const GROUP_TITLES: Record<string, string> = {
 export class AttentionPanel {
   readonly filters = input.required<MmFilters>();
   protected readonly origin = inject(TaskOriginLinks);
+  private readonly exports = inject(ExportService);
   private readonly api = inject(MyMattersClient);
   protected readonly typeChoices = inject(SectionTypes);
   protected readonly pref = sectionPref('my-matters.attention', { sort: true });
@@ -198,6 +210,21 @@ export class AttentionPanel {
     return { groups: shown.filter((g) => g.total > 0), tags };
   });
   protected readonly fact = rowFactText;
+
+  /** The rows on screen as a list (PM v2, #879): one line per task, the group first; the export is logged, never the data. */
+  protected readonly exportRun = async (format: ExportFormat): Promise<ExportResult> => {
+    const rows = this.groups().groups.flatMap((g) =>
+      g.items.map((t) => [this.title(g.kind), ...taskItemRow(t)]),
+    );
+    const text = buildList(format, ['List', ...TASK_ITEM_HEADER], rows);
+    void this.exports.log(
+      'my-matters.attention',
+      format,
+      rows.length,
+      this.pref.value().types.length > 0 ? 'task types chosen' : '',
+    );
+    return { text, rows: rows.length };
+  };
   protected readonly params = queryToParams;
 
   /** "View all": the group's list; overdue opens oldest first (issue #817). */

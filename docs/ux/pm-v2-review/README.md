@@ -388,6 +388,9 @@ All additive; the scripts are separate small files (one per area) so a failed re
 | `GET /asset-reports`, `POST`, `PUT/{id}`, `DELETE/{id}`, `POST /asset-reports/run`, `GET /asset-reports/{id}/run`, `GET /asset-reports/fields?assetTypeId=` | new, personal, visibility-checked |
 | `GET /me/views?surface=`, `PUT /me/views/{surface}` (remembered), `POST/PUT/DELETE /me/views` (named) | new |
 | `GET .../export` (`text/csv`) on queue, sections, breakdown, data, report | new, 10,000 row cap, audited |
+| `GET /task-queue/export?format=csv|text` (built, PV-28 #879) | the Task Queue's filters and sort, every page, at most 10,000 tasks (400 `EXPORT_TOO_LARGE` beyond), UTF-8 BOM, formula-safe, audit `EXPORT_RUN`; catalogued as List |
+| `POST /exports/log` (built, PV-28 #879) | records an `EXPORT_RUN` for an export the browser built from rows already on screen (My Matters sections, Breakdown): surface, format, count, filters; catalogued as Neutral. The sections and the Breakdown are exported client side from the loaded rows, so they need no new read endpoint |
+| `GET /my-matters/summary` (PV-27 #878) | gains `atRisk` (same rule and count as the Task Queue's `atRisk=true`) |
 
 Sensitive-matter coverage (docs/ux/sensitive-matters/README.md section 12 and 16): every endpoint above is added to `SensitiveAccessCatalog` with kind List/Aggregate and to the six-persona walk; aggregate parity tests (sum of cells = visible task count; Data totals = visible asset count) and a sentinel sweep over CSV and report results. PV-37.
 

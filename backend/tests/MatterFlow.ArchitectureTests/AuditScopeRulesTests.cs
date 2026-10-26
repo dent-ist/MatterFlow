@@ -67,6 +67,7 @@ public class AuditScopeRulesTests
         ["WorkflowAdminService.cs"] = 7,
         ["StepDefinitionService.cs"] = 1,
         ["ClientService.cs"] = 2,
+        ["TaskQueueExportService.cs"] = 2, // EXPORT_RUN (PM v2 #879): the surface, the row count and the filters of a list export; no record data
         ["MatterService.cs"] = 1, // MATTER_CREATED: the Data layer scopes an event about a Matter object to that matter
     };
 

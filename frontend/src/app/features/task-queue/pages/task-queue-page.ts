@@ -34,6 +34,9 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { PlainLink } from '../../../shared/filters/filter-def';
 import { FixedPage } from '../../../shared/ui/fixed-page';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
+import { ExportService } from '../../../shared/ui/export.service';
+import { ExportFormat } from '../../../shared/ui/list-export';
 import { PodOption, loadPodChoices } from '../../../shared/work-queue/pod-options';
 import { queueEmpty } from '../../../shared/work-queue/empty-copy';
 import { pageName } from '../../../shared/work-queue/list-announce';
@@ -54,6 +57,7 @@ import {
   QueueState,
   builtInFilters,
   taskQueueArgs,
+  toQueryParams,
 } from '../../../shared/work-queue/queue-filters';
 import { SortNote } from '../../../shared/work-queue/sort-note';
 import { PhoneSort } from '../../../shared/work-queue/phone-sort';
@@ -71,6 +75,7 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
 @Component({
   selector: 'mf-task-queue-page',
   imports: [
+    ExportMenu,
     ColumnsNotice,
     FixedPage,
     PageHeader,
@@ -96,6 +101,13 @@ import { WorkViewControls } from '../../../shared/work-queue/work-view-controls'
           announceMine="Showing tasks on matters you manage"
           announceAll="Showing all tasks"
           (scopeChange)="scope.set($event)"
+        />
+        <mf-export-menu
+          mfActions
+          fileName="task-queue"
+          [run]="exportRun"
+          [disabled]="loadState() !== 'ready' || total() === 0"
+          reason="There is nothing to export."
         />
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
@@ -205,6 +217,23 @@ export class TaskQueuePage extends QueuePageBase<TaskQueueData> {
   private readonly api = inject(TaskQueueClient);
   private readonly podsApi = inject(PodsClient);
   private readonly navigator = inject(Router);
+  private readonly exports = inject(ExportService);
+
+  /**
+   * The Export menu's document (PM v2, #879): the same filters and sort as the screen (the "My matters" scope included), every page, built and audited by the
+   * server. The address keys that are not the queue's own (page, view, group) are left out.
+   */
+  protected readonly exportRun = (format: ExportFormat): Promise<ExportResult> => {
+    const state = this.state();
+    const scoped = this.scope.mine()
+      ? { ...state, filters: { ...state.filters, managedByMe: true } }
+      : state;
+    const own = new Set([...QUEUE_FILTER_PARAMS, 'sort', 'dir']);
+    const query = Object.fromEntries(
+      Object.entries(toQueryParams(scoped)).filter(([key]) => own.has(key)),
+    );
+    return this.exports.taskQueue(query, format);
+  };
 
   /** A plain link opens on the tasks of the matters the person manages ("My matters / All", epic #758); a link with filters means what it says. */
   protected readonly scope = new PageScope(

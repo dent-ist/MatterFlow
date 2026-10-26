@@ -16,7 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 [ApiController]
 [Route("api/v1/task-queue")]
 [MatterFlow.SharedKernel.Visibility.PreparesViewer]
-public class TaskQueueController(TaskQueueService queue) : ControllerBase
+public class TaskQueueController(TaskQueueService queue, TaskQueueExportService export) : ControllerBase
 {
     /// <summary>Lists Tasks with server-side filtering, sorting and paging (offset paging: page, pageSize, total).</summary>
     [HttpGet(Name = "GetTaskQueue")]
@@ -26,6 +26,49 @@ public class TaskQueueController(TaskQueueService queue) : ControllerBase
     {
         FilterParsing.EnsureKnown(Request.Query.Keys, TaskQueueListQuery.ListKeys).OrThrow();
         return (await queue.QueueAsync(query, cancellationToken)).OrThrow();
+    }
+
+    /// <summary>
+    /// Exports the Task Queue as a list (PM v2, #879): the same filters and sort as the screen, every page, at most 10,000 tasks (more is a 400 with a message).
+    /// <c>format</c> is <c>csv</c> (UTF-8 with a byte order mark, ISO dates, formula-safe cells) or <c>text</c> (tab separated, for pasting). It is a list export, not a
+    /// status report. One <c>EXPORT_RUN</c> audit event records the surface, the row count and the filters.
+    /// </summary>
+    [HttpGet("export", Name = "ExportTaskQueue")]
+    [Authorize(Policy = "Perm:" + Permissions.Task.View)]
+    [ProducesResponseType<string>(StatusCodes.Status200OK, "text/csv", "text/plain")]
+    public async Task<IActionResult> Export([FromQuery] TaskQueueListQuery query, [FromQuery] string? format, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, [.. TaskQueueListQuery.ListKeys, "format"]).OrThrow();
+        var summary = string.Join("&", Request.Query
+            .Where(q => q.Key is not ("format" or "page" or "pageSize"))
+            .SelectMany(q => q.Value.Select(v => $"{q.Key}={v}")));
+        var file = (await export.ExportAsync(query, ListExport.FormatOf(format), summary, cancellationToken)).OrThrow();
+        Response.Headers["X-Export-Rows"] = file.RowCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+}
+
+/// <summary>Records an export that was made in the browser from rows the person already sees (My Matters sections, Breakdown): surface, count, filters; never the data.</summary>
+[ApiController]
+[Route("api/v1/exports")]
+[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+public class ExportsController(TaskQueueExportService export) : ControllerBase
+{
+    /// <summary>The body of <see cref="Log"/>.</summary>
+    public sealed record ExportLogRequest(
+        [System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(64)] string Surface,
+        [System.ComponentModel.DataAnnotations.StringLength(8)] string? Format,
+        [System.ComponentModel.DataAnnotations.Range(0, ListExport.RowCap)] int RowCount,
+        [System.ComponentModel.DataAnnotations.StringLength(500)] string? Filters);
+
+    /// <summary>Writes the <c>EXPORT_RUN</c> audit event of an export made in the browser.</summary>
+    [HttpPost("log", Name = "LogExport")]
+    [Authorize(Policy = "Perm:" + Permissions.Task.View)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Log([FromBody] ExportLogRequest request, CancellationToken cancellationToken)
+    {
+        (await export.LogAsync(request.Surface, request.Format ?? ListExport.Csv, request.RowCount, request.Filters, cancellationToken)).OrThrow();
+        return NoContent();
     }
 }
 
