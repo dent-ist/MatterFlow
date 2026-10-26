@@ -91,6 +91,8 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     );
     await page.locator('[data-filter=role]').selectOption('secondary');
     await expect(page.locator('[data-health-row]')).toContainText('As secondary');
+    // The Dates control belongs to the Deadlines tab (PV-08).
+    await page.locator('[data-tab=deadlines]').click();
     await page.locator('[data-filter=range]').selectOption('2w');
     await expect(page).toHaveURL(/range=2w/);
     await page.locator('[data-filter=range]').selectOption('custom');
@@ -101,6 +103,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await page.goBack();
     await expect(page.locator('[data-filter=range]')).toHaveValue('4w');
     await expect(page.locator('[data-filter=role]')).toHaveValue('secondary');
+    await page.goBack(); // the Deadlines tab was chosen after this: back to Overview
     await page.goBack();
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
     await expect(cell(page, 'matters').locator('strong')).toHaveText('1');
@@ -191,7 +194,12 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     const attention = page.locator('[data-panel=attention]');
     await expect(attention.locator('[data-group=overdue] [data-attention-row]')).toHaveCount(1);
     await expect(attention.locator('[data-group=dueSoon] [data-attention-row]')).toHaveCount(1);
-    await expect(attention.locator('[data-group=unassigned] [data-attention-row]')).toHaveCount(3);
+    // The overdue task is also unassigned: it is listed once, under Overdue, with a tag (PV-08); the count of the group stays 3.
+    await expect(attention.locator('[data-group=unassigned] [data-attention-row]')).toHaveCount(2);
+    await expect(attention.locator('[data-group=unassigned] [data-count]')).toContainText('3');
+    await expect(attention.locator('[data-group=overdue] [data-also-tag]')).toHaveText(
+      'No assignee',
+    );
     await expect(attention.locator('[data-group=overdue] [data-fact]')).toContainText('overdue');
     await expect(attention).not.toContainText('On a matter without manager');
     await expect(attention).not.toContainText(nobody.name);
@@ -237,8 +245,9 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
       'true',
     );
     // "Today" is a due-date range of one day: nothing is due today here, and the empty text is positive.
+    await page.locator('[data-tab=deadlines]').click();
     await page.locator('[data-filter=range]').selectOption('today');
-    await expect(page.locator('[data-panel=deadlines] [data-empty]')).toContainText(
+    await expect(page.locator('[data-panel=deadlines-tab] [data-empty]')).toContainText(
       'No deadlines in this period.',
     );
   });

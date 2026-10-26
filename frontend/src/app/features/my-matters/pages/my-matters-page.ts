@@ -16,6 +16,7 @@ import { PageTitle } from '../../../core/title/page-title';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
+import { phoneCards } from '../../../shared/ui/record-card-list';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { FocusChip, FocusControl } from '../focus-control';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
@@ -199,7 +200,9 @@ function storage(): Storage | null {
           update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
         "
       />
-      <mf-mm-focus mfActions />
+      @if (!phone()) {
+        <mf-mm-focus mfActions />
+      }
       <mf-mm-new-task mfActions />
     </mf-page-header>
 
@@ -208,12 +211,15 @@ function storage(): Storage | null {
       [active]="active()"
       [dates]="datesApply()"
       [hint]="datesHint()"
-      [hintSpace]="hintSpace"
       (filterChange)="update($event)"
       (clear)="clear()"
       (clientName)="clientName.set($event)"
       (managerName)="managerName.set($event)"
-    />
+    >
+      @if (phone()) {
+        <mf-mm-focus mfPhoneRowExtra />
+      }
+    </mf-mm-filter-bar>
 
     <mf-mm-focus-chip />
 
@@ -314,6 +320,7 @@ export class MyMattersPage {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
+  protected readonly phone = phoneCards();
   protected readonly canAll = computed(() => this.auth.has('Matter.AssignManagers'));
   protected readonly filters = computed(() => parseFilters(this.params(), this.canAll()), {
     equal: same,
@@ -330,8 +337,6 @@ export class MyMattersPage {
   protected readonly datesHint = computed(() =>
     this.tab() === 'deadlines' ? HINT_DEADLINES : HINT_OVERVIEW,
   );
-  /** Both wordings, so the line below the filters keeps its height on the tabs that have no Dates control. */
-  protected readonly hintSpace: readonly string[] = [HINT_OVERVIEW, HINT_DEADLINES];
   /** Counts the moves of the "seen" marker, so the panels that show it read again. */
   protected readonly marker = signal(0);
   /** "Since your last visit" has been read once: Recent activity may ask now (its first read creates the marker, see the panel). */

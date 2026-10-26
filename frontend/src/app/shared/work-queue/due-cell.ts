@@ -39,11 +39,12 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
             }
             {{ c.line2 }}
           </span>
-        } @else if (riskShown()) {
-          <span class="dc-l2 dc-risk" aria-hidden="true" data-at-risk>
-            <i class="pi pi-clock"></i>At risk
-          </span>
         }
+      }
+      @if (riskShown() && (tone() === 'asap' || !c.line2)) {
+        <span class="dc-l2 dc-risk" aria-hidden="true" data-at-risk>
+          <i class="pi pi-clock"></i>At risk
+        </span>
       }
     </span>
   `,

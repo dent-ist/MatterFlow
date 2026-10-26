@@ -46,6 +46,8 @@ export class MyMattersFocus {
     const next = [...new Set(types)];
     this.types.set(next);
     this.views.save(SURFACE, { types: next });
+    // A change of Focus is rare and a reload may follow at once: send it now instead of after the usual pause.
+    void this.views.flush(SURFACE);
   }
 
   clear(): void {

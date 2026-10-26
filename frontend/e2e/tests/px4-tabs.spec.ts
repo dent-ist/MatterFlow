@@ -30,7 +30,13 @@ test.describe('My Matters: the tab shell', () => {
     await w.task(m, { dueDate: inDays(3) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.getByRole('tab')).toHaveText(['Overview', 'Deadlines', 'Trends', 'Activity']);
+    await expect(page.getByRole('tab')).toHaveText([
+      'Overview',
+      'Deadlines',
+      'Breakdown',
+      'Activity',
+      'Trends',
+    ]);
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-mm-tabpanel]')).toHaveAttribute(
       'aria-labelledby',
@@ -56,7 +62,7 @@ test.describe('My Matters: the tab shell', () => {
     // Keyboard only, with the keys the app has: Right and Left move between tabs, Home goes to Overview.
     await tab(page, 'deadlines').focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tab(page, 'trends')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'breakdown')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     expect(page.url()).not.toContain('tab=');
@@ -242,6 +248,9 @@ test.describe('My Matters: Trends', () => {
     await page.goto('/my-matters?tab=trends');
     const trends = panel(page, 'trends');
     await expect(trends.locator('[data-approximate]')).toContainText('Approximate');
+    // One line while closed (PV-12): the limitations open under it.
+    await expect(trends.locator('[data-limitations] li').first()).toBeHidden();
+    await trends.locator('[data-approximate] summary').click();
     await expect(trends.locator('[data-limitations] li').first()).toBeVisible();
     await expect(trends.locator('svg[role=img]')).toHaveCount(2);
     await expect(trends.locator('[data-chart=flow] [data-summary]')).toContainText(
@@ -388,9 +397,9 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     expect(await axeViolations(page), 'expanded').toEqual([]);
     await noHorizontalScroll(page);
 
-    // From 640 px there is no button and the events always show.
+    // At every width the events sit behind the button (PV-08: Needs my attention starts near the top); it is open here, so they show.
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(toggle).toBeHidden();
+    await expect(toggle).toBeVisible();
     await expect(card.locator('[data-since-item]').first()).toBeVisible();
   });
 

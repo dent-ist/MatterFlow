@@ -89,13 +89,14 @@ const clientOption = (c: {
       min-width: 9rem;
       max-width: 22rem;
     }
-    /* The date controls are the row's own flex items (the wrapper has no box). They belong to the Deadlines tab only (PV-08 #859): elsewhere
-       they are gone, so the filters are one row at 1366 px. */
+    /* The date controls are the row's own flex items (the wrapper has no box). They belong to the Deadlines tab only (PV-08 #859); off it they stay
+       in place, unseen and inert, so the row wraps the same way on every tab and the tab strip never moves (#825). The line that said what the
+       dates apply to is gone (the bar is one row at 1366 px): the control carries it as its description. */
     .fb__dates {
       display: contents;
     }
     .fb__dates--off {
-      display: none;
+      visibility: hidden;
     }
     .fb__link {
       align-self: center;
@@ -114,21 +115,6 @@ const clientOption = (c: {
       box-sizing: border-box;
       height: var(--mf-fb-h);
       min-height: var(--mf-fb-h);
-    }
-    /* The hint line is part of the bar on every tab: its height is that of the longest wording (all wordings share one grid cell, only
-       the current one is seen), so the tab strip below never moves when the tab changes (#825). */
-    .fb__hint {
-      display: grid;
-      flex: 1 0 100%;
-      margin: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .fb__hint > span {
-      grid-area: 1 / 1;
-    }
-    .fb__hint > span[data-reserve] {
-      visibility: hidden;
     }
     .fb--phone {
       margin-bottom: var(--mf-s2);
@@ -158,6 +144,8 @@ const clientOption = (c: {
           <i class="pi pi-filter" aria-hidden="true"></i>
           Filters{{ active() > 0 ? ' (' + active() + ')' : '' }}
         </button>
+        <!-- Focus sits beside Filters on a phone: its own row would push Needs my attention out of the first screen (PV-08). -->
+        <ng-content select="[mfPhoneRowExtra]" />
       </div>
       <mf-confirm-dialog
         title="Filters"
@@ -234,6 +222,7 @@ const clientOption = (c: {
             <label for="mm-range">Dates</label>
             <select
               id="mm-range"
+              aria-describedby="mm-dates-hint"
               class="mf-control mf-control--compact fb__select"
               data-filter="range"
               [value]="filters().range"
@@ -269,13 +258,7 @@ const clientOption = (c: {
             </div>
           }
         </div>
-        @if (dates()) {
-          <p class="fb__hint" data-filters-hint>
-            @for (h of hintSpace(); track h) {
-              <span [attr.data-reserve]="h === hint() ? null : ''">{{ h }}</span>
-            }
-          </p>
-        }
+        <span class="mf-sr-only" id="mm-dates-hint" data-filters-hint>{{ hint() }}</span>
       </div>
     </ng-template>
   `,
@@ -284,16 +267,12 @@ export class MyMattersFilterBar {
   readonly filters = input.required<MmFilters>();
   /** How many filters differ from the default (Clear filters shows from 1). */
   readonly active = input(0);
-  /** The Dates control: Overview and Deadlines only (the other tabs show all open work, or their own weeks). */
+  /** The Dates control: the Deadlines tab only (the other tabs show all open work, or their own weeks). */
   readonly dates = input(true);
-  /** The line under the controls that says what the dates apply to. */
+  /** What the dates apply to: the description of the Dates control. */
   readonly hint = input(
     'The dates apply to Upcoming deadlines. The other panels show all open work.',
   );
-  /** Every wording the line can take on any tab: the line is as high as the longest, whichever is shown (the tab strip must not move). */
-  readonly hintSpace = input<readonly string[]>([
-    'The dates apply to Upcoming deadlines. The other panels show all open work.',
-  ]);
   readonly filterChange = output<Partial<MmFilters>>();
   readonly clear = output<void>();
   /** The name of the chosen client / manager, reported so the strip can name the filters. */

@@ -82,7 +82,6 @@ test.describe('My Matters: keyboard', () => {
       /All matters/,
       /Client/,
       /Role/,
-      /Dates/,
       /Matters I manage/,
       /Open tasks/,
       /Overdue/,

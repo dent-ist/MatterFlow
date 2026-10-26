@@ -12,7 +12,7 @@ import { SIZES } from '../support/screens';
  * #825: the tab strip stays at exactly the same top (y) on all four tabs: with data and with none, while loading, with an error, after a
  * reload and on a deep link.
  */
-const TABS = ['overview', 'deadlines', 'trends', 'activity'] as const;
+const TABS = ['overview', 'deadlines', 'breakdown', 'activity', 'trends'] as const;
 type Tab = (typeof TABS)[number];
 const url = (tab: Tab, extra = ''): string =>
   `/my-matters?${tab === 'overview' ? '' : `tab=${tab}`}${extra}`;
@@ -112,7 +112,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       if (!phone) expectSameBox(all, `${size.width} px (row)`);
 
       // The same with the custom range's From / To.
-      await page.goto(`/my-matters?role=primary&range=custom`);
+      await page.goto(`/my-matters?tab=deadlines&role=primary&range=custom`);
       if (phone) {
         await page.locator('[data-filters-open]').click();
       }
@@ -187,6 +187,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       personas,
       asUser,
     }) => {
+      test.slow(); // five tabs, each visited four ways, with axe
       const w = await mmWorld(seed, personas, `ts${size.width}`);
       const a = await w.matter('Strip alpha');
       await w.task(a, { dueDate: '2000-01-01' });
@@ -261,8 +262,9 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
     await expect(page.locator('[role=tab]')).toHaveText([
       'Overview',
       'Deadlines',
-      'Trends',
+      'Breakdown',
       'Activity',
+      'Trends',
     ]);
   });
 

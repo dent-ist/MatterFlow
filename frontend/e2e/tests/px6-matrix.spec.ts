@@ -92,7 +92,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients', 'Projects', 'My Work'];
-const FOUR_TABS = ['Overview', 'Deadlines', 'Trends', 'Activity'];
+const FOUR_TABS = ['Overview', 'Deadlines', 'Breakdown', 'Activity', 'Trends'];
 
 test.describe('Permission matrix of the Project Manager views', () => {
   test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, four tabs, the full Overview and header menu, every endpoint', async ({

@@ -20,7 +20,12 @@ describe('Focus (PV-07)', () => {
   });
 
   describe('the store', () => {
-    const views = { cached: vi.fn(), load: vi.fn(), save: vi.fn() };
+    const views = {
+      cached: vi.fn(),
+      load: vi.fn(),
+      save: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    };
     function make() {
       TestBed.configureTestingModule({
         providers: [{ provide: ViewStateService, useValue: views }],
