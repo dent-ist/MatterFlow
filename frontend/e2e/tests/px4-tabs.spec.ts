@@ -34,6 +34,7 @@ test.describe('My Matters: the tab shell', () => {
       'Overview',
       'Deadlines',
       'Breakdown',
+      'Data',
       'Activity',
       'Trends',
     ]);

@@ -741,6 +741,22 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       noControl: true,
       valueLabel: (): string => this.matterChip(),
     },
+    // `?inactiveLinked=true` and `?role=` (links from the Data tab of My Matters, #870): no control, a removable chip, so the count there and the list agree.
+    {
+      key: 'inactiveLinked',
+      label: 'Not active',
+      type: 'text',
+      noControl: true,
+      valueLabel: (): string => 'still linked to open tasks',
+    },
+    {
+      key: 'role',
+      label: 'My role',
+      type: 'text',
+      noControl: true,
+      valueLabel: (v: string): string =>
+        v === 'secondary' ? 'Secondary project manager' : 'Primary project manager',
+    },
   ]);
 
   protected readonly filters: ListFilters = new ListFilters({
@@ -826,6 +842,8 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
       .map(Number)
       .filter((n) => Number.isInteger(n) && n > 0);
     const { isActive, disposition } = statusQuery(status);
+    const roleText = this.filters.text('role');
+    const role = roleText === 'primary' || roleText === 'secondary' ? roleText : undefined;
     return firstValueFrom(
       this.api.listAssets(
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
@@ -836,9 +854,9 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         this.filters.text('extref') || undefined,
         this.filters.text('matter') || undefined,
         scoped && this.scope.mine() ? true : undefined,
-        undefined,
+        scoped && this.scope.mine() && role ? role : undefined,
         disposition,
-        undefined,
+        this.filters.text('inactiveLinked') === 'true' ? true : undefined,
         page,
         size,
         sort,

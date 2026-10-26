@@ -12,7 +12,7 @@ import { SIZES } from '../support/screens';
  * #825: the tab strip stays at exactly the same top (y) on all four tabs: with data and with none, while loading, with an error, after a
  * reload and on a deep link.
  */
-const TABS = ['overview', 'deadlines', 'breakdown', 'activity', 'trends'] as const;
+const TABS = ['overview', 'deadlines', 'breakdown', 'data', 'activity', 'trends'] as const;
 type Tab = (typeof TABS)[number];
 const url = (tab: Tab, extra = ''): string =>
   `/my-matters?${tab === 'overview' ? '' : `tab=${tab}`}${extra}`;
@@ -263,6 +263,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       'Overview',
       'Deadlines',
       'Breakdown',
+      'Data',
       'Activity',
       'Trends',
     ]);

@@ -751,6 +751,30 @@ describe('MyMattersPage', () => {
         t.textContent!.trim(),
       );
 
+    it('offers the Data tab, between Breakdown and Activity, to a person who may see assets', async () => {
+      const permissions: Permission[] = [
+        'Matter.BeManager',
+        'Matter.View',
+        'Task.View',
+        'Task.Create',
+        'Client.View',
+        'Asset.View',
+      ];
+      const h = await open('/my-matters', permissions, (a) => {
+        a['getMyMattersData'] = vi.fn().mockReturnValue(NEVER);
+        a['getMyMattersDataVolume'] = vi.fn().mockReturnValue(NEVER);
+      });
+      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Data', 'Activity', 'Trends']);
+    });
+
+    it('has no Data tab without Asset.View, and its address opens Overview', async () => {
+      const h = await open('/my-matters?tab=data');
+      expect(tabs(h)).not.toContain('Data');
+      expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+        'Overview',
+      );
+    });
+
     it('has the four tabs, Overview selected, and the page as it was under it', async () => {
       const h = await open('/my-matters');
       expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Activity', 'Trends']);

@@ -38,6 +38,7 @@ import { SincePanel } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { BreakdownTab } from '../tabs/breakdown-tab';
+import { DataTab } from '../tabs/data-tab';
 import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
 
@@ -53,12 +54,20 @@ const SORTS: readonly HealthSort[] = [
 ];
 
 /** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
-export const MM_TABS = ['overview', 'deadlines', 'breakdown', 'activity', 'trends'] as const;
+export const MM_TABS = [
+  'overview',
+  'deadlines',
+  'breakdown',
+  'data',
+  'activity',
+  'trends',
+] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
   deadlines: 'Deadlines',
   breakdown: 'Breakdown',
+  data: 'Data',
   trends: 'Trends',
   activity: 'Activity',
 };
@@ -115,6 +124,7 @@ function storage(): Storage | null {
     Tabs,
     ActivityTab,
     BreakdownTab,
+    DataTab,
     DeadlinesTab,
     TrendsTab,
   ],
@@ -229,7 +239,7 @@ function storage(): Storage | null {
       class="mm__tabs"
       label="My Matters sections"
       idPrefix="mm"
-      [tabs]="tabList"
+      [tabs]="tabList()"
       [selected]="tab()"
       (tabChange)="selectTab($event)"
     />
@@ -253,6 +263,17 @@ function storage(): Storage | null {
             <mf-mm-breakdown-tab [filters]="filters()" />
           } @placeholder {
             <p class="mm__loading" role="status">Loading breakdown</p>
+          }
+        }
+        @case ('data') {
+          @defer (on immediate) {
+            <mf-mm-data-tab
+              [filters]="filters()"
+              [canAll]="canAll()"
+              (showAll)="update({ scope: 'all' })"
+            />
+          } @placeholder {
+            <p class="mm__loading" role="status">Loading data</p>
           }
         }
         @case ('trends') {
@@ -329,9 +350,12 @@ export class MyMattersPage {
   /** The tab in the address (`?tab=`); Overview when absent or unknown. */
   protected readonly tab = computed<MmTab>(() => {
     const t = this.params().get('tab');
-    return MM_TABS.includes(t as MmTab) ? (t as MmTab) : 'overview';
+    return MM_TABS.includes(t as MmTab) && this.offered(t as MmTab) ? (t as MmTab) : 'overview';
   });
-  protected readonly tabList: MfTab[] = MM_TABS.map((key) => ({ key, label: TAB_LABELS[key] }));
+  /** The Data tab is for people who may see assets (the Data API needs `Asset.View`). */
+  protected readonly tabList = computed<MfTab[]>(() =>
+    MM_TABS.filter((key) => this.offered(key)).map((key) => ({ key, label: TAB_LABELS[key] })),
+  );
   /** The Dates control belongs to the Deadlines tab (PV-08: the filter bar is one row on Overview; Upcoming deadlines there has its own range choice). */
   protected readonly datesApply = computed(() => this.tab() === 'deadlines');
   protected readonly datesHint = computed(() =>
@@ -365,6 +389,10 @@ export class MyMattersPage {
   /** The tab changed by the person's own click or key (focus is already on it); a change from the address (Back) puts focus on the tab. */
   private chose = false;
   private shown: MmTab | null = null;
+
+  private offered(tab: MmTab): boolean {
+    return tab !== 'data' || this.auth.has('Asset.View');
+  }
 
   constructor() {
     this.restoreRemembered();

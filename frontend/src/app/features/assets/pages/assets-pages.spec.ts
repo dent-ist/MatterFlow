@@ -871,6 +871,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
           q: null,
           status: null,
           matterId: null,
+          inactiveLinked: null,
+          role: null,
           typeId: null,
           name: null,
           matter: null,
