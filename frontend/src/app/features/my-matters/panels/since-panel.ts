@@ -128,21 +128,22 @@ function plural(n: number, one: string, many: string): string {
       margin: 0;
       color: var(--mf-text-muted);
     }
-    /* Below 640 px the events sit behind a "Show events" button so the counts line and the next panel share the first screen (#818). */
+    /* At every width the card is two lines (the period and the counts) and the events sit behind a "Show events" button, so Needs my attention
+       starts above the fold (PV-08 #859, and #818 for the phone). */
     .sv__toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-height: 32px;
+      padding: 0 var(--mf-s3);
+      margin: 0 0 var(--mf-s1);
+    }
+    .sv__items--shut {
       display: none;
     }
     @media (max-width: 639.98px) {
       .sv__toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--mf-s2);
         min-height: 44px;
-        padding: 0 var(--mf-s3);
-        margin: 0 0 var(--mf-s1);
-      }
-      .sv__items--shut {
-        display: none;
       }
       .sv__fig a,
       .sv__link {
@@ -276,7 +277,7 @@ export class SincePanel {
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
   protected readonly marking = signal(false);
-  /** Phone: the events below the counts are shown (a button toggles them; from 640 px they always show). */
+  /** The events below the counts are shown (a button toggles them at every width). */
   protected readonly eventsOpen = signal(false);
   protected readonly announcement = signal('');
   /** The marks made here (the page counts them in `marker` too): the card reads again by itself, once. */

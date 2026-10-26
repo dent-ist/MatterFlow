@@ -69,6 +69,21 @@ export const PANEL_LIST_STYLES = `
     font-weight: 600;
     line-height: 1.5;
   }
+  .pl__tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--mf-s2);
+    border: 1px solid var(--mf-border-strong);
+    border-radius: var(--mf-radius);
+    background: var(--mf-surface-alt);
+    color: var(--mf-text);
+    font-size: var(--mf-fs-xs);
+  }
+  .pl__repeat {
+    margin: var(--mf-s1) 0 0;
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-sm);
+  }
   .pl__risk {
     display: inline-flex;
     gap: 2px;

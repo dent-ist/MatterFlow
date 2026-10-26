@@ -89,12 +89,13 @@ const clientOption = (c: {
       min-width: 9rem;
       max-width: 22rem;
     }
-    /* The date controls are the row's own flex items (the wrapper has no box); off a tab they are only hidden. */
+    /* The date controls are the row's own flex items (the wrapper has no box). They belong to the Deadlines tab only (PV-08 #859): elsewhere
+       they are gone, so the filters are one row at 1366 px. */
     .fb__dates {
       display: contents;
     }
     .fb__dates--off {
-      visibility: hidden;
+      display: none;
     }
     .fb__link {
       align-self: center;
@@ -268,11 +269,13 @@ const clientOption = (c: {
             </div>
           }
         </div>
-        <p class="fb__hint" data-filters-hint [attr.aria-hidden]="dates() ? null : 'true'">
-          @for (h of hintSpace(); track h) {
-            <span [attr.data-reserve]="dates() && h === hint() ? null : ''">{{ h }}</span>
-          }
-        </p>
+        @if (dates()) {
+          <p class="fb__hint" data-filters-hint>
+            @for (h of hintSpace(); track h) {
+              <span [attr.data-reserve]="h === hint() ? null : ''">{{ h }}</span>
+            }
+          </p>
+        }
       </div>
     </ng-template>
   `,

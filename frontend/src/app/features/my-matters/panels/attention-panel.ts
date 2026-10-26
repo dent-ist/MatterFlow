@@ -13,6 +13,13 @@ import { SectionTypes } from '../section-types';
 import { PanelBox } from './panel-box';
 import { PANEL_LIST_STYLES } from './panel-styles';
 
+/** What a task that is also overdue is called in the Overdue row that replaces its second row. */
+const TAG_WORDS: Record<string, string> = {
+  unassigned: 'No assignee',
+  stuckOnHold: 'On hold',
+  dueSoon: 'Due soon',
+};
+
 const GROUP_TITLES: Record<string, string> = {
   overdue: 'Overdue',
   dueSoon: 'Due soon',
@@ -49,7 +56,7 @@ const GROUP_TITLES: Record<string, string> = {
         (sortChange)="pref.setSort($event)"
         (dirChange)="pref.setDir($event)"
       />
-      @if (groups().length === 0) {
+      @if (groups().groups.length === 0) {
         @if (filtered()) {
           <p class="pl__empty" data-empty data-filtered-empty>
             Nothing of the selected types needs your attention.
@@ -66,7 +73,7 @@ const GROUP_TITLES: Record<string, string> = {
           <p class="pl__empty" data-empty>Nothing needs your attention.</p>
         }
       } @else {
-        @for (g of groups(); track g.kind) {
+        @for (g of groups().groups; track g.kind) {
           <section
             class="pl__group"
             [attr.data-group]="g.kind"
@@ -107,6 +114,9 @@ const GROUP_TITLES: Record<string, string> = {
                   <span class="pl__meta"
                     >{{ t.matterRef }} {{ t.matterName }}
                     <span class="pl__prio" data-priority>{{ t.priorityName }}</span>
+                    @for (tag of groups().tags.get(t.taskId) ?? []; track tag) {
+                      <span class="pl__tag" data-also-tag>{{ tag }}</span>
+                    }
                     @if (t.atRisk) {
                       <span class="pl__risk" data-at-risk
                         ><i class="pi pi-clock" aria-hidden="true"></i> At risk</span
@@ -117,6 +127,9 @@ const GROUP_TITLES: Record<string, string> = {
                 </li>
               }
             </ul>
+            @if (g.repeated > 0) {
+              <p class="pl__repeat" data-repeated>{{ g.repeated }} also listed under Overdue.</p>
+            }
             <a
               class="pl__all"
               data-view-all
@@ -163,10 +176,27 @@ export class AttentionPanel {
     restoreRowFocus('my-matters-attention', () => this.loader.state() === 'ready');
   }
 
-  /** Groups with something in them, in the API's order. */
-  protected readonly groups = computed(() =>
-    (this.loader.data()?.groups ?? []).filter((g) => g.total > 0),
-  );
+  /**
+   * Groups with something in them, in the API's order, with no task shown twice (PV-08 #859): a task in the Overdue group is left out of the
+   * other groups' rows and carries a text tag for what it also is ("No assignee", "On hold") instead. The counts in the headings stay the true
+   * totals of the lists they open, so a group may say "(6)" and show fewer rows; `repeated` says how many are listed under Overdue.
+   */
+  protected readonly groups = computed(() => {
+    const all = (this.loader.data()?.groups ?? []).filter((g) => g.total > 0);
+    const overdue = all.find((g) => g.kind === 'overdue');
+    const first = new Set(overdue?.items.map((t) => t.taskId) ?? []);
+    const tags = new Map<number, string[]>();
+    const shown = all.map((g) => {
+      if (g.kind === 'overdue' || first.size === 0) return { ...g, repeated: 0 };
+      const items = g.items.filter((t) => {
+        if (!first.has(t.taskId)) return true;
+        tags.set(t.taskId, [...(tags.get(t.taskId) ?? []), TAG_WORDS[g.kind] ?? g.kind]);
+        return false;
+      });
+      return { ...g, items, repeated: g.items.length - items.length };
+    });
+    return { groups: shown.filter((g) => g.total > 0), tags };
+  });
   protected readonly fact = rowFactText;
   protected readonly params = queryToParams;
 

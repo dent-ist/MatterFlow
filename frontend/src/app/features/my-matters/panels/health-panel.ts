@@ -169,6 +169,11 @@ export { reasonText };
     .hp__muted {
       color: var(--mf-text-muted);
     }
+    .hp__worst {
+      display: block;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-xs);
+    }
     .hp__new {
       white-space: nowrap;
     }
@@ -304,6 +309,9 @@ export { reasonText };
                     <ng-container mfCardMeta>
                       <p class="rc-line">
                         <span class="rc-text">{{ r.clientName }}</span>
+                      </p>
+                      <p class="rc-line">
+                        <span class="rc-text" data-flag-reason>{{ worst(r) }}</span>
                       </p>
                       <p class="rc-line" data-card-numbers>
                         <span class="rc-text">{{ numbers(r) }}</span>
@@ -442,6 +450,7 @@ export { reasonText };
                           <mf-badge [tone]="flag(r).tone" [icon]="flag(r).icon" data-flag>{{
                             flag(r).label
                           }}</mf-badge>
+                          <span class="hp__worst" data-flag-reason>{{ worst(r) }}</span>
                           <span class="mf-sr-only"> ({{ why(r) }})</span>
                         </span>
                       </td>
@@ -581,6 +590,20 @@ export class HealthPanel {
 
   protected flag(r: MyMattersHealthRow) {
     return FLAGS[r.flag] ?? FLAGS['GREEN'];
+  }
+
+  /** The worst reason of the flag as words, with the number where there is one ("2 overdue"; "+1 more" when others apply): the row says why, not only a colour. */
+  protected worst(r: MyMattersHealthRow): string {
+    const [first, ...rest] = r.flagReasons;
+    const words: Record<string, string> = {
+      OVERDUE: `${r.overdue} overdue`,
+      UNASSIGNED: `${r.unassigned} unassigned`,
+      DUE_SOON: 'due soon',
+      LONG_HOLD: 'on hold a long time',
+      NO_OPEN_TASKS: 'no open tasks',
+    };
+    if (!first) return '';
+    return (words[first] ?? first) + (rest.length > 0 ? `, +${rest.length} more` : '');
   }
 
   protected why(r: MyMattersHealthRow): string {

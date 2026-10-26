@@ -471,6 +471,50 @@ describe('MyMattersPage', () => {
     ).toBe('/tasks?managedByMe=true&overdue=true&sort=due&dir=asc');
   });
 
+  it('shows a task once: an overdue task that is also unassigned is tagged in Overdue and not repeated, the counts stay true (PV-08)', async () => {
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersAttention'].mockReturnValue(
+        of({
+          timeZone: 'x',
+          asOfUtc: 'x',
+          stuckOnHoldDays: 7,
+          groups: [
+            { kind: 'overdue', total: 9, query: 'q', items: [task(1)] },
+            {
+              kind: 'unassigned',
+              total: 6,
+              query: 'q',
+              items: [
+                task(1, { factCode: 'NO_ASSIGNEE', factDays: undefined }),
+                task(2, { factCode: 'NO_ASSIGNEE', factDays: undefined }),
+              ],
+            },
+          ],
+        }),
+      );
+    });
+    const rows = Array.from(el(h).querySelectorAll('[data-attention-row]')).map((r) =>
+      r.getAttribute('href'),
+    );
+    expect(rows).toEqual(['/tasks/1?from=my-matters', '/tasks/2?from=my-matters']);
+    expect(el(h).querySelector('[data-group=overdue] [data-also-tag]')!.textContent).toContain(
+      'No assignee',
+    );
+    expect(el(h).querySelector('[data-group=unassigned] [data-count]')!.textContent).toContain('6');
+    expect(el(h).querySelector('[data-group=unassigned] [data-repeated]')!.textContent).toContain(
+      '1 also listed under Overdue',
+    );
+  });
+
+  it('says why a matter is flagged, in words in the row (PV-08)', async () => {
+    const h = await open('/my-matters');
+    const words = Array.from(el(h).querySelectorAll('[data-flag-reason]')).map((e) =>
+      e.textContent!.trim(),
+    );
+    expect(words).toContain('4 overdue');
+    expect(words).toContain('no open tasks');
+  });
+
   it('says so when nothing needs attention, with no manager-related item', async () => {
     const h = await open('/my-matters');
     api['getMyMattersAttention'].mockReturnValue(

@@ -325,10 +325,8 @@ export class MyMattersPage {
     return MM_TABS.includes(t as MmTab) ? (t as MmTab) : 'overview';
   });
   protected readonly tabList: MfTab[] = MM_TABS.map((key) => ({ key, label: TAB_LABELS[key] }));
-  /** The Dates control belongs to the two tabs that list deadlines. */
-  protected readonly datesApply = computed(
-    () => this.tab() === 'overview' || this.tab() === 'deadlines',
-  );
+  /** The Dates control belongs to the Deadlines tab (PV-08: the filter bar is one row on Overview; Upcoming deadlines there has its own range choice). */
+  protected readonly datesApply = computed(() => this.tab() === 'deadlines');
   protected readonly datesHint = computed(() =>
     this.tab() === 'deadlines' ? HINT_DEADLINES : HINT_OVERVIEW,
   );
