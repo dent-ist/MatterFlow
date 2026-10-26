@@ -42,6 +42,7 @@ const GROUP_TITLES: Record<string, string> = {
         label="Needs my attention"
         [options]="typeChoices.options()"
         [types]="pref.value().types"
+        [focused]="pref.focused()"
         [sort]="pref.value().sort"
         [dir]="pref.value().dir"
         (typesChange)="pref.setTypes($event)"

@@ -90,6 +90,7 @@ export function todayText(clock: Clock, zone: string): string {
         label="Upcoming deadlines"
         [options]="typeChoices.options()"
         [types]="pref.value().types"
+        [focused]="pref.focused()"
         [sort]="pref.value().sort"
         [dir]="pref.value().dir"
         (typesChange)="pref.setTypes($event)"

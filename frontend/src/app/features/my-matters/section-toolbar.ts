@@ -226,6 +226,9 @@ let nextId = 0;
           </button>
         </span>
       }
+      @if (focused()) {
+        <span class="st__hint" data-focus-note>From your Focus</span>
+      }
       @if (chosen().length > 0) {
         <ul class="st__chips" [attr.aria-label]="'Chosen task types'" data-chips>
           @for (o of chosen(); track o.id) {
@@ -264,6 +267,8 @@ export class SectionToolbar {
   readonly dir = input<SectionDir>('asc');
   /** False for a section that is only filtered (the deadline calendar and the matter groups). */
   readonly sorts = input(true);
+  /** The chosen types are the person's Focus (the section has no filter of its own): said next to the chips (PV-07). */
+  readonly focused = input(false);
 
   readonly typesChange = output<number[]>();
   readonly sortChange = output<string>();

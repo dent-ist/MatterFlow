@@ -66,6 +66,7 @@ import { TextField } from '../../../shared/ui/text-field';
 import { TitleArea } from '../../../shared/ui/title-area';
 import { cardText } from './type-card-text';
 import { reusableAnswers } from './last-answers';
+import { MyMattersFocus } from '../../my-matters/focus';
 import { recentTypeIds, rememberMatter, rememberType } from '../../../shared/tasks/recent-choices';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 
@@ -212,6 +213,19 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (this.typeQuery().trim() !== '') return [];
     const usable = this.usableChoices();
     return recentTypeIds(this.auth.profile()?.userId ?? 0)
+      .map((id) => usable.find((c) => c.type.id === id))
+      .filter((c): c is TypeChoice => !!c);
+  });
+  private readonly focus = inject(MyMattersFocus);
+  /**
+   * The person's Focus (PM v2, PV-07): the task types they picked on My Matters, first in the chooser as one-click buttons. Only types that can
+   * still be used, none while a search is typed. A type that is also recently used shows in both rows.
+   */
+  protected readonly focusChoices = computed(() => {
+    if (this.typeQuery().trim() !== '') return [];
+    const usable = this.usableChoices();
+    return this.focus
+      .types()
       .map((id) => usable.find((c) => c.type.id === id))
       .filter((c): c is TypeChoice => !!c);
   });
@@ -457,6 +471,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
   }
 
   constructor() {
+    this.focus.ensure();
     void this.load();
 
     // An error is never hidden: the collapsed section opens when one of its fields has a problem.

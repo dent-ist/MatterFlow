@@ -50,13 +50,22 @@ describe('section prefs (#857)', () => {
     }
 
     beforeEach(() => {
-      views.cached.mockReset().mockReturnValue({ types: [4], sort: 'due', dir: 'desc' });
+      views.cached
+        .mockReset()
+        .mockImplementation((s: string) =>
+          s === 'my-matters.focus' ? null : { types: [4], sort: 'due', dir: 'desc' },
+        );
       views.load.mockReset().mockResolvedValue(null);
       views.save.mockReset();
     });
 
     it('starts from the cached state and ignores the sort for a filter-only section', () => {
-      expect(make({}).value()).toEqual({ types: [4], sort: 'due', dir: 'desc' });
+      expect(make({}).value()).toEqual({
+        types: [4],
+        sort: 'due',
+        dir: 'desc',
+        allTypes: false,
+      });
     });
 
     it('drops the sort when the section has none', () => {
@@ -75,6 +84,47 @@ describe('section prefs (#857)', () => {
         types: [2, 3],
         sort: 'due',
         dir: 'desc',
+        allTypes: false,
+      });
+    });
+
+    describe('with a Focus (PV-07)', () => {
+      const focusTypes = [8, 9];
+      function withFocus(query: Record<string, string[]> = {}, cached: object | null = null) {
+        views.cached.mockImplementation((s: string) =>
+          s === 'my-matters.focus' ? { types: focusTypes } : cached,
+        );
+        return make(query);
+      }
+
+      it('applies the Focus where the section has no filter of its own', () => {
+        const pref = withFocus();
+        expect(pref.value().types).toEqual(focusTypes);
+        expect(pref.focused()).toBe(true);
+      });
+
+      it('keeps the own filter, from the address or from what was remembered', () => {
+        expect(withFocus({ type: ['7'] }).value().types).toEqual([7]);
+        TestBed.resetTestingModule();
+        const pref = withFocus({}, { types: [4], sort: '', dir: 'asc' });
+        expect(pref.value().types).toEqual([4]);
+        expect(pref.focused()).toBe(false);
+      });
+
+      it('"All types" in a section ignores the Focus there and is remembered', () => {
+        const pref = withFocus();
+        pref.showAll();
+        expect(pref.value().types).toEqual([]);
+        expect(pref.focused()).toBe(false);
+        expect(views.save).toHaveBeenLastCalledWith(
+          'my-matters.attention',
+          expect.objectContaining({ types: [], allTypes: true }),
+        );
+        pref.setTypes([3]);
+        expect(views.save).toHaveBeenLastCalledWith(
+          'my-matters.attention',
+          expect.objectContaining({ types: [3], allTypes: false }),
+        );
       });
     });
 
@@ -84,7 +134,7 @@ describe('section prefs (#857)', () => {
       expect(pref.value().types).toEqual([]);
       pref.setSort('type');
       pref.setDir('asc');
-      expect(pref.value()).toEqual({ types: [], sort: 'type', dir: 'asc' });
+      expect(pref.value()).toEqual({ types: [], sort: 'type', dir: 'asc', allTypes: false });
       expect(views.save).toHaveBeenCalledTimes(3);
     });
   });

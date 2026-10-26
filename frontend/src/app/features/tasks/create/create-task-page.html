@@ -59,6 +59,23 @@
               published request form and workflow.
             </p>
           } @else {
+            @if (focusChoices().length > 0) {
+              <div class="ct__recent" role="group" aria-labelledby="ct-focus-h" data-focus-types>
+                <h3 id="ct-focus-h" class="ct__recent-h">Your Focus</h3>
+                @for (c of focusChoices(); track c.type.id) {
+                  <button
+                    type="button"
+                    class="mf-btn ct__recent-btn"
+                    [attr.data-focus-type]="c.type.name"
+                    [attr.title]="c.type.description || null"
+                    (click)="chooseType(c.type.id)"
+                  >
+                    <mf-task-type-icon [iconKey]="c.type.iconKey" />
+                    <span>{{ c.type.name }}</span>
+                  </button>
+                }
+              </div>
+            }
             @if (recentChoices().length > 0) {
               <div class="ct__recent" role="group" aria-labelledby="ct-recent-h" data-recent-types>
                 <h3 id="ct-recent-h" class="ct__recent-h">Recently used</h3>

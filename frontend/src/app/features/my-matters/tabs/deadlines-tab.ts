@@ -271,6 +271,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
         label="Deadlines"
         [options]="typeChoices.options()"
         [types]="pref.value().types"
+        [focused]="pref.focused()"
         [sorts]="false"
         (typesChange)="pref.setTypes($event)"
       />

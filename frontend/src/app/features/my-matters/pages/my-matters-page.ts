@@ -17,6 +17,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
+import { FocusChip, FocusControl } from '../focus-control';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
 import { NewTaskControl } from '../new-task-control';
 import {
@@ -100,6 +101,8 @@ function storage(): Storage | null {
     ActivityPanel,
     AttentionPanel,
     DeadlinesPanel,
+    FocusChip,
+    FocusControl,
     HealthPanel,
     MyMattersFilterBar,
     MyMattersStrip,
@@ -196,6 +199,7 @@ function storage(): Storage | null {
           update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
         "
       />
+      <mf-mm-focus mfActions />
       <mf-mm-new-task mfActions />
     </mf-page-header>
 
@@ -210,6 +214,8 @@ function storage(): Storage | null {
       (clientName)="clientName.set($event)"
       (managerName)="managerName.set($event)"
     />
+
+    <mf-mm-focus-chip />
 
     <mf-mm-strip [filters]="filters()" [clientName]="clientName()" [managerName]="managerName()" />
 

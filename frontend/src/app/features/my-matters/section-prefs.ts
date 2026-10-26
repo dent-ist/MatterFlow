@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { ViewStateService } from '../../core/views/view-state.service';
 import { ViewState, ViewSurface, mergeViewState } from '../../core/views/view-state';
+import { MyMattersFocus } from './focus';
 
 export type SectionDir = 'asc' | 'desc';
 
@@ -13,9 +14,11 @@ export type SectionPref = {
   types: number[];
   sort: string;
   dir: SectionDir;
+  /** The person chose "All types" while a Focus was set: this section ignores the Focus (PV-07). */
+  allTypes: boolean;
 };
 
-export const DEFAULT_PREF: SectionPref = { types: [], sort: '', dir: 'asc' };
+export const DEFAULT_PREF: SectionPref = { types: [], sort: '', dir: 'asc', allTypes: false };
 
 /** The sort choices of a section; the key is the API's `sort` value. */
 export const SECTION_SORTS: readonly { value: string; label: string }[] = [
@@ -38,6 +41,7 @@ export function prefFromState(state: ViewState | null | undefined): Partial<Sect
   }
   if (typeof state['sort'] === 'string' && SORT_KEYS.has(state['sort'])) out.sort = state['sort'];
   if (state['dir'] === 'asc' || state['dir'] === 'desc') out.dir = state['dir'];
+  if (typeof state['allTypes'] === 'boolean') out.allTypes = state['allTypes'];
   return out;
 }
 
@@ -58,6 +62,8 @@ export function typesFromAddress(values: readonly string[]): number[] | null {
  */
 export function sectionPref(surface: ViewSurface, options: { sort: boolean }) {
   const views = inject(ViewStateService);
+  const focus = inject(MyMattersFocus);
+  focus.ensure();
   const route = inject(ActivatedRoute);
   const query = toSignal(route.queryParamMap, { initialValue: route.snapshot.queryParamMap });
   const stored = signal<SectionPref>(
@@ -76,30 +82,46 @@ export function sectionPref(surface: ViewSurface, options: { sort: boolean }) {
   });
 
   const address = computed(() => typesFromAddress(query().getAll('type')));
+  /** The section's own filter: the address, else what was remembered. Empty means "none of its own". */
+  const own = computed<number[]>(() => (!touched() ? address() : null) ?? stored().types);
+  /** The Focus applies where the section has no filter of its own and the person did not choose "All types" here. */
+  const focused = computed(
+    () => own().length === 0 && !stored().allTypes && focus.types().length > 0,
+  );
   const value = computed<SectionPref>(() => {
     const base = stored();
-    const types = !touched() ? address() : null;
     return {
-      types: types ?? base.types,
+      types: focused() ? focus.types() : own(),
       sort: options.sort ? base.sort : '',
       dir: base.dir,
+      allTypes: base.allTypes,
     };
   });
 
   const update = (change: Partial<SectionPref>): void => {
     touched.set(true);
-    const next = { ...stored(), types: value().types, ...change };
+    const next = { ...stored(), types: own(), ...change };
     stored.set(next);
-    views.save(surface, { types: next.types, sort: next.sort, dir: next.dir });
+    views.save(surface, {
+      types: next.types,
+      sort: next.sort,
+      dir: next.dir,
+      allTypes: next.allTypes,
+    });
   };
+  // Choosing types makes the filter the section's own; choosing none while a Focus is set means "All types" here.
+  const choose = (types: number[]): void =>
+    update({ types, allTypes: types.length === 0 && focus.types().length > 0 });
 
   return {
     value,
     /** True while the types shown come from the address, not from the remembered state. */
     fromAddress: computed(() => !touched() && address() !== null),
-    setTypes: (types: number[]) => update({ types }),
+    /** True while the types shown are the Focus (the section has no filter of its own). */
+    focused,
+    setTypes: choose,
     setSort: (sort: string) => update({ sort }),
     setDir: (dir: SectionDir) => update({ dir }),
-    showAll: () => update({ types: [] }),
+    showAll: () => choose([]),
   };
 }
