@@ -6,7 +6,8 @@
 #   frontend/e2e/run-local.sh [playwright args...]        e.g. frontend/e2e/run-local.sh -g SCN-015
 #
 # Environment (all optional):
-#   E2E_API_PORT=5190        port of the API / app (http://127.0.0.1:$E2E_API_PORT)
+#   E2E_API_PORT=5190        port of the API / app (http://127.0.0.1:$E2E_API_PORT). If it is already in use the script stops with a message
+#                            (it never reuses a stack somebody else started). When not given, the first free port from 5190 up is chosen and printed.
 #   E2E_SKIP_BUILD=1         reuse artifacts/e2e-publish from an earlier run (skips npm build and dotnet publish)
 #   E2E_KEEP_STACK=1         leave SQL and the API running after the tests (prints how to stop them)
 #   E2E_RID=linux-x64        runtime identifier used for the publish
@@ -19,7 +20,20 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
-api_port="${E2E_API_PORT:-5190}"
+# Is something listening on 127.0.0.1:$1? (bash /dev/tcp; no ss/lsof needed)
+port_in_use() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+if [ -n "${E2E_API_PORT:-}" ]; then
+  api_port="$E2E_API_PORT"
+  if port_in_use "$api_port"; then
+    echo "ERROR: port $api_port is already in use (another stack or agent?). The readiness check would pass against that listener, so the run was refused." >&2
+    echo "       Pick a free port: E2E_API_PORT=<port> $0 ..., or leave E2E_API_PORT unset to get a free one." >&2
+    exit 2
+  fi
+else
+  api_port=5190
+  while port_in_use "$api_port"; do api_port=$((api_port + 1)); done
+  echo "==> E2E_API_PORT not set: using free port $api_port"
+fi
 rid="${E2E_RID:-linux-x64}"
 publish_dir="$root/artifacts/e2e-publish"
 sql_name="mf-e2e-sql-$$"

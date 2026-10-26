@@ -25,7 +25,7 @@ npm run e2e -- -g SCN-015        # any Playwright argument goes through (grep, -
 
 | Variable | Effect |
 |---|---|
-| `E2E_API_PORT` | Port of the app and API (default 5190). Use another port when something else already listens there. |
+| `E2E_API_PORT` | Port of the app and API. When it is set and something already listens on it, the script stops at once with a message (it used to pass the readiness check against the other listener and silently test someone else's stack). When it is not set, the first free port from 5190 up is chosen and printed. Parallel agents: give each its own port. |
 | `E2E_SKIP_BUILD=1` | Reuse `artifacts/e2e-publish` (skips the npm build and the publish). Saves about a minute when only tests changed. |
 | `E2E_SQL_CONTAINER`, `E2E_SQL_PASSWORD` | Set by the script for the tests: the name of its SQL Server container and the `sa` password. Used by `Seeder.legacyTextTask` (one `UPDATE` that turns a task's description back into old-format plain text); those tests skip themselves when the variables are missing (a stack not started by `run-local.sh`). |
 | `E2E_KEEP_STACK=1` | Leave the container and API running; the script prints how to stop them. Useful with `npm run e2e:run` while writing tests. |
