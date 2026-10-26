@@ -17,6 +17,7 @@ public class RowVersionRulesTests
         "SetPrimaryPodRequest", // sets a flag on a pod membership row; last write wins by design
         "SetUserPodsRequest", // replaces membership rows (no row of its own to version); concurrency is the optional expectedPodIds check
         "ReorderRequest", // reorders a list; the order is the whole payload
+        "SaveRememberedViewRequest", // the automatic remembered state of a screen (one row per person and surface); last write wins by design
     ];
 
     private static IEnumerable<Type> RequestTypes()

@@ -102,3 +102,21 @@ internal sealed class UserWorkHourConfiguration : IEntityTypeConfiguration<UserW
         b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).HasConstraintName("FK_UserWorkHour_User");
     }
 }
+
+internal sealed class UserViewConfiguration : IEntityTypeConfiguration<UserView>
+{
+    public void Configure(EntityTypeBuilder<UserView> b)
+    {
+        b.ToTable("UserView");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("UserViewId");
+        b.Property(x => x.Surface).HasMaxLength(40).IsUnicode(false).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(80);
+        b.Property(x => x.StateJson).HasMaxLength(4000).IsRequired();
+        b.Property(x => x.CreatedAtUtc).HasColumnName("CreatedAt").HasColumnType("datetime2(3)");
+        b.Property(x => x.ModifiedAtUtc).HasColumnName("ModifiedAt").HasColumnType("datetime2(3)");
+        b.Property(x => x.RowVersion).IsRowVersion().IsRequired();
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).HasConstraintName("FK_UserView_User");
+        b.HasIndex(x => new { x.UserId, x.Surface, x.Name }).IsUnique().HasDatabaseName("UQ_UserView_Name");
+    }
+}
