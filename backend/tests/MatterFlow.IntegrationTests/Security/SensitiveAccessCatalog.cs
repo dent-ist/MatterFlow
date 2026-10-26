@@ -104,6 +104,7 @@ public static class SensitiveAccessCatalog
         ["POST api/v1/on-hold-reasons"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
         ["PUT api/v1/on-hold-reasons/{id:int}"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
         ["PUT api/v1/on-hold-reasons/order"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
+        ["GET api/v1/my-matters/breakdown"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/breakdown?scope=all", "api/v1/my-matters/breakdown?scope=all&view=types"]),
         ["GET api/v1/me/notification-preferences"] = new(AccessKind.Neutral, IdKind.None, "people, pods and availability: no matter data (swept)", ["api/v1/me/notification-preferences"]),
         ["GET api/v1/me/notifications"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/me/notifications?pageSize=100"]),
         ["GET api/v1/me/notifications/poll"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/me/notifications/poll?initial=true"]),

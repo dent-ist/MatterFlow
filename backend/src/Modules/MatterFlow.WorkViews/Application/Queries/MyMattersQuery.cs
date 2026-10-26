@@ -171,3 +171,31 @@ public sealed class MarkActivitySeenRequest
     [Range(1, long.MaxValue)]
     public long? UpToEventId { get; init; }
 }
+
+/// <summary>The Breakdown (PM v2, #861): the common parameters plus the view, the status, the type filter and the matter paging.</summary>
+public sealed class MyMattersBreakdownQuery : MyMattersQuery
+{
+    public const int DefaultPageSize = 50;
+
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "view", "status", "taskTypeId", "page", "pageSize"];
+
+    /// <summary><c>matrix</c> (default): one row per matter with a cell per task type and the totals. <c>types</c>: only the per task type totals ("all matters").</summary>
+    [FromQuery(Name = "view"), StringLength(10)]
+    public string? View { get; init; }
+
+    /// <summary><c>open</c> (default: New, In Progress and On Hold) or <c>onHold</c> (only the tasks On Hold).</summary>
+    [FromQuery(Name = "status"), StringLength(10)]
+    public string? Status { get; init; }
+
+    /// <summary>Only these task types (repeatable). A type with no task in the scope is not a column.</summary>
+    [FromQuery(Name = "taskTypeId")]
+    public int[]? TaskTypeId { get; init; }
+
+    /// <summary>1-based page of matters (50 per page, sorted by overdue, then open tasks).</summary>
+    [FromQuery(Name = "page"), Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
+
+    /// <summary>Matters per page (default 50, max 50).</summary>
+    [FromQuery(Name = "pageSize"), Range(1, 50)]
+    public int PageSize { get; init; } = DefaultPageSize;
+}

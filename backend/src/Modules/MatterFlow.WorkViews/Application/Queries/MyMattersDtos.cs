@@ -397,3 +397,85 @@ public sealed record MyMattersTrends(
     [property: Required] IReadOnlyList<string> Limitations,
     [property: Required] IReadOnlyList<MyMattersTrendWeek> Points,
     [property: Required] MyMattersTrendNow Now);
+
+/// <summary>
+/// One task type of the Breakdown: a column of the matrix, with its totals over <b>all</b> the matters of the scope (not just the page).
+/// </summary>
+/// <param name="TargetDays">The type's target turnaround in calendar days; null = none.</param>
+/// <param name="Open">Open tasks of the type (the counted status set of the call).</param>
+/// <param name="Overdue">Of those, overdue in the viewer's zone.</param>
+/// <param name="OnHold">Of those, On Hold.</param>
+/// <param name="AtRisk">Of those, At risk (<see cref="AtRiskRules"/>).</param>
+/// <param name="AvgDaysDone">Average calendar days from creation to completion of the tasks of this type completed in the last 90 days (one decimal); null when none completed.</param>
+/// <param name="DoneCount">How many tasks that average is over.</param>
+/// <param name="Query">The Task Queue query that lists the open tasks counted in <c>Open</c>.</param>
+/// <param name="OverdueQuery">The Task Queue query for the <c>Overdue</c> number.</param>
+public sealed record BreakdownType(
+    [property: Required] int TaskTypeId,
+    [property: Required] string Name,
+    [property: Required] string IconKey,
+    string? ColourKey,
+    int? TargetDays,
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] int OnHold,
+    [property: Required] int AtRisk,
+    double? AvgDaysDone,
+    [property: Required] int DoneCount,
+    [property: Required] string Query,
+    [property: Required] string OverdueQuery);
+
+/// <summary>One cell of the matrix: the tasks of one type on one matter. Cells with no open task are left out.</summary>
+/// <param name="Query">The Task Queue query that lists exactly the <c>Open</c> tasks of the cell.</param>
+/// <param name="OverdueQuery">The Task Queue query for the <c>Overdue</c> number of the cell.</param>
+public sealed record BreakdownCell(
+    [property: Required] int TaskTypeId,
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] int OnHold,
+    [property: Required] int AtRisk,
+    [property: Required] string Query,
+    [property: Required] string OverdueQuery);
+
+/// <summary>One matter row of the matrix: its totals (the row total) and the cells for the types it has tasks of.</summary>
+public sealed record BreakdownRow(
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] string ClientName,
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] int OnHold,
+    [property: Required] int AtRisk,
+    [property: Required] IReadOnlyList<BreakdownCell> Cells);
+
+/// <summary>The figures over every matter of the scope and every type: they equal the strip counts and the Task Queue counts of the linked queries.</summary>
+public sealed record BreakdownTotals(
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] int OnHold,
+    [property: Required] int AtRisk,
+    [property: Required] string Query,
+    [property: Required] string OverdueQuery);
+
+/// <summary>
+/// The Breakdown (PM v2, #861): open work per matter and task type. <c>Types</c> are the columns (at most 40, the types with the most open tasks; <c>TypeTotal</c> says how many types have open tasks), with the totals of
+/// the whole scope; <c>Rows</c> are one page of matters sorted by overdue, then open tasks (empty with <c>view=types</c>); <c>Totals</c> and the type totals are over all matters, not the page.
+/// </summary>
+/// <param name="View"><c>matrix</c> or <c>types</c>.</param>
+/// <param name="Status"><c>open</c> or <c>onHold</c>: which tasks are counted.</param>
+/// <param name="MatterTotal">How many matters have at least one counted task (the rows are paged 50 at a time).</param>
+/// <param name="AvgWindowDays">The window of <c>AvgDaysDone</c>: 90.</param>
+public sealed record MyMattersBreakdown(
+    [property: Required] string TimeZone,
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] string View,
+    [property: Required] string Status,
+    [property: Required] IReadOnlyList<BreakdownType> Types,
+    [property: Required] int TypeTotal,
+    [property: Required] IReadOnlyList<BreakdownRow> Rows,
+    [property: Required] int MatterTotal,
+    [property: Required] int Page,
+    [property: Required] int PageSize,
+    [property: Required] BreakdownTotals Totals,
+    [property: Required] int AvgWindowDays);

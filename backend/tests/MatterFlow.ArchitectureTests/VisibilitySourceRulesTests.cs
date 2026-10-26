@@ -53,6 +53,7 @@ public class VisibilitySourceRulesTests
         ["MyMattersTrendsService.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope); counts and instants only",
         ["MyMattersTaskFacts.cs"] = "type, priority, age and hold facts of the few task ids a My Matters call already returned (loaded by id)",
         ["SectionSorts.cs"] = "a one-row lookup of the matter reference as a sort key of tasks that are already in the scope's visible set",
+        ["MyMattersBreakdownService.cs"] = "names of the page's matters, which are in the scope (visible by construction)",
         ["MyMattersSinceLastVisitService.cs"] = "names of the scope's matters (visible by construction) for the few items shown",
         ["MyMattersWorkloadService.cs"] = "names of the scope's matters (visible by construction) for the per-person split",
         ["MyMattersScope.cs"] = "tasks of the scope's matters, which are visible by construction (IManagedMatterScope)",
