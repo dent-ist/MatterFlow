@@ -100,6 +100,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     const all = [
       'Name',
       'Default workflow',
+      'Target (days)',
       'Request form',
       'Workflows',
       'Open tasks',
@@ -113,8 +114,8 @@ test.describe('Task Types rows and columns (#371)', () => {
       [1100, all.filter((h) => h !== 'Open tasks')],
       [1000, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
       [900, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
-      [768, ['Name', 'Default workflow', 'Status', 'Actions']],
-      [640, ['Name', 'Default workflow', 'Status', 'Actions']],
+      [768, ['Name', 'Default workflow', 'Target (days)', 'Status', 'Actions']],
+      [640, ['Name', 'Default workflow', 'Target (days)', 'Status', 'Actions']],
     ];
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
