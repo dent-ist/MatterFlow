@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(57);
+        codes.Count.ShouldBe(58);
     }
 
     [Fact]

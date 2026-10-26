@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { AssetTypesClient } from '../../../api/generated/api-client';
+import { AssetTypesClient, FormsClient } from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -32,7 +32,15 @@ describe('assetTypeTabOf', () => {
 
 describe('AssetTypeRecordPage', () => {
   let fixture: ComponentFixture<AssetTypeRecordPage>;
-  let api: Record<'getAssetType' | 'createAssetType' | 'updateAssetType', Mock>;
+  let api: Record<
+    | 'getAssetType'
+    | 'createAssetType'
+    | 'updateAssetType'
+    | 'setAssetTypeSizeField'
+    | 'reindexAssetType',
+    Mock
+  >;
+  let forms: Record<'findFormDefinition' | 'getPublishedFormVersion', Mock>;
   let navigate: Mock;
   const el = (): HTMLElement => fixture.nativeElement;
   const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
@@ -61,11 +69,28 @@ describe('AssetTypeRecordPage', () => {
         .fn()
         .mockReturnValue(ok(anAssetType({ assetTypeId: 9, name: 'Data Room' }))),
       updateAssetType: vi.fn().mockReturnValue(ok(anAssetType({ name: 'Document Bundle' }))),
+      setAssetTypeSizeField: vi
+        .fn()
+        .mockReturnValue(ok(anAssetType({ sizeFieldKey: 'volume_gb', sizeUnit: 'GB' }))),
+      reindexAssetType: vi.fn().mockReturnValue(ok({ assetsProcessed: 3 })),
+    };
+    forms = {
+      findFormDefinition: vi.fn().mockReturnValue(ok({ formDefinitionId: 31 })),
+      getPublishedFormVersion: vi.fn().mockReturnValue(
+        ok({
+          fields: [
+            { key: 'format', label: 'Format', control: 'SELECT' },
+            { key: 'volume_gb', label: 'Volume (GB)', control: 'NUMBER' },
+            { key: 'pages', label: 'Pages', control: 'NUMBER' },
+          ],
+        }),
+      ),
     };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: '**', children: [] }]),
         { provide: AssetTypesClient, useValue: api },
+        { provide: FormsClient, useValue: forms },
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
       ],
     });
@@ -272,6 +297,92 @@ describe('AssetTypeRecordPage', () => {
     it('has no Activity button without Audit.View', async () => {
       await open('4', undefined, ['AssetType.Manage']);
       expect(el().querySelector('[data-action="activity"]')).toBeNull();
+    });
+  });
+
+  describe('the Size card (epic #851, issue #867)', () => {
+    const sizeField = (): HTMLSelectElement => q<HTMLSelectElement>('[data-size-field]');
+    const sizeUnit = (): HTMLSelectElement => q<HTMLSelectElement>('[data-size-unit]');
+    const pick = async (select: HTMLSelectElement, value: string): Promise<void> => {
+      select.value = value;
+      select.dispatchEvent(new Event('change'));
+      await settle(fixture);
+    };
+
+    it('offers only the number fields of the published form and suggests the unit from the key', async () => {
+      await open('4', 'fields');
+      expect(Array.from(sizeField().options).map((o) => o.textContent!.trim())).toEqual([
+        'None',
+        'Volume (GB)',
+        'Pages',
+      ]);
+      expect(q<HTMLButtonElement>('[data-size-save]').disabled).toBe(true);
+      await pick(sizeField(), 'volume_gb');
+      expect(sizeUnit().value).toBe('GB');
+      await pick(sizeField(), 'pages');
+      expect(sizeUnit().value).toBe('GB'); // an already chosen unit is kept
+      expect(q<HTMLButtonElement>('[data-size-save]').disabled).toBe(false);
+    });
+
+    it('saves the field and unit with the row version and shows the saved choice', async () => {
+      await open('4', 'fields');
+      await pick(sizeField(), 'volume_gb');
+      q<HTMLButtonElement>('[data-size-save]').click();
+      await settle(fixture);
+      expect(api.setAssetTypeSizeField).toHaveBeenCalledWith(4, {
+        sizeFieldKey: 'volume_gb',
+        sizeUnit: 'GB',
+        rowVersion: 'TTTT',
+      });
+      expect(sizeField().value).toBe('volume_gb');
+      expect(q<HTMLButtonElement>('[data-size-save]').disabled).toBe(true);
+    });
+
+    it('clears the designation when None is chosen', async () => {
+      await open('4', 'fields', undefined, published({ sizeFieldKey: 'pages', sizeUnit: 'Items' }));
+      expect(sizeField().value).toBe('pages');
+      await pick(sizeField(), '');
+      expect(sizeUnit().value).toBe('');
+      q<HTMLButtonElement>('[data-size-save]').click();
+      await settle(fixture);
+      expect(api.setAssetTypeSizeField).toHaveBeenCalledWith(4, {
+        sizeFieldKey: undefined,
+        sizeUnit: undefined,
+        rowVersion: 'TTTT',
+      });
+    });
+
+    it('shows the server message for a refused field', async () => {
+      await open('4', 'fields');
+      api.setAssetTypeSizeField.mockReturnValue(
+        apiError(400, {
+          title: 'Bad Request',
+          status: 400,
+          code: 'VALIDATION_FAILED',
+          errors: {
+            sizeFieldKey: [{ code: 'INVALID', message: 'The size field must be a number field.' }],
+          },
+        }),
+      );
+      await pick(sizeField(), 'volume_gb');
+      q<HTMLButtonElement>('[data-size-save]').click();
+      await settle(fixture);
+      expect(q('[data-size-error]').textContent).toContain('must be a number field');
+    });
+
+    it('rebuilds the index and says how many assets were read', async () => {
+      await open('4', 'fields');
+      q<HTMLButtonElement>('[data-reindex]').click();
+      await settle(fixture);
+      expect(api.reindexAssetType).toHaveBeenCalledWith(4);
+      expect(el().textContent).toContain('Index rebuilt for 3 assets.');
+    });
+
+    it('asks to publish the fields first when the type has no published form', async () => {
+      await open('4', 'fields', undefined, published({ publishedFormVersionNo: undefined }));
+      expect(el().querySelector('[data-size-field]')).toBeNull();
+      expect(q('[data-size-unavailable]').textContent).toContain('Publish the fields first');
+      expect(forms.findFormDefinition).not.toHaveBeenCalled();
     });
   });
 

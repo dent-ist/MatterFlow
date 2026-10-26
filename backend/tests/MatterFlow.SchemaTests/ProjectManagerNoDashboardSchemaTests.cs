@@ -79,11 +79,12 @@ public class ProjectManagerNoDashboardSchemaTests(SqlServerFixture sql)
         grants.ShouldNotContain("Dashboard.View");
         grants.ShouldNotContain("Dashboard.ViewSummary");
         grants.ShouldNotContain("Dashboard.ViewSwimlane");
-        grants.Count.ShouldBe(Codes().Length - 3);
+        grants.ShouldContain("Asset.Dispose"); // script 46 (epic #851) gave the starter role the permission to dispose assets
+        grants.Count.ShouldBe(Codes().Length - 3 + 1);
         (await ReadAsync(cs, "SELECT Description FROM dbo.Role WHERE Name = N'Project Manager'")).ShouldBe(["Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters."]);
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource()); // nothing left to apply: the runner is idempotent too
-        (await GrantsAsync(cs, "Project Manager")).Count.ShouldBe(Codes().Length - 3);
+        (await GrantsAsync(cs, "Project Manager")).Count.ShouldBe(Codes().Length - 3 + 1);
     }
 
     [Fact]

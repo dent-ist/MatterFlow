@@ -355,4 +355,28 @@ public class FormRulesEdgeCaseTests
             new FormIndexEntry("asset", ValueNumber: 42m),
         ]);
     }
+
+    [Fact]
+    public void Asset_forms_index_every_number_and_select_field_but_other_non_filterable_fields_stay_out()
+    {
+        var schema = Schema("""
+            [{"key":"size_gb","control":"NUMBER"},
+             {"key":"kind","control":"SELECT","options":[{"key":"a"},{"key":"b"}]},
+             {"key":"flag","control":"CHECKBOX"},
+             {"key":"note","control":"TEXT"},
+             {"key":"pages","control":"NUMBER","isFilterable":true}]
+            """);
+        var result = Run(schema, """{"size_gb":3.5,"kind":"b","flag":true,"note":"x","pages":7}""");
+        result.Errors.ShouldBeEmpty();
+
+        FormIndexExtractor.Extract(schema, result.Normalized, alwaysIndexNumberAndSelect: true).ShouldBe(
+        [
+            new FormIndexEntry("size_gb", ValueNumber: 3.5m),
+            new FormIndexEntry("kind", ValueText: "b"),
+            new FormIndexEntry("pages", ValueNumber: 7m),
+        ]);
+
+        // Without the rule only the filterable field is indexed (unchanged behaviour for every other owner).
+        FormIndexExtractor.Extract(schema, result.Normalized).ShouldBe([new FormIndexEntry("pages", ValueNumber: 7m)]);
+    }
 }

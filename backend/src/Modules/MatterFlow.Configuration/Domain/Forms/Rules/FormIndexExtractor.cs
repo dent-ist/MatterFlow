@@ -27,8 +27,10 @@ public static class FormIndexExtractor
     /// Extracts index entries for every <see cref="FormFieldDefinition.IsFilterable"/> input field that has a value in
     /// <paramref name="normalizedValues"/>, in display order (options in selected order). Values should come from
     /// <see cref="FormEvaluationResult.Normalized"/>; a value whose JSON type does not fit its control is skipped.
+    /// With <paramref name="alwaysIndexNumberAndSelect"/> every NUMBER and SELECT input field is indexed whether or not it is filterable
+    /// (the rule for asset forms, so size aggregates and group-by never fall back to scanning the stored JSON; epic #851, issue #867).
     /// </summary>
-    public static IReadOnlyList<FormIndexEntry> Extract(FormSchema schema, FormValues normalizedValues)
+    public static IReadOnlyList<FormIndexEntry> Extract(FormSchema schema, FormValues normalizedValues, bool alwaysIndexNumberAndSelect = false)
     {
         ArgumentNullException.ThrowIfNull(schema);
         ArgumentNullException.ThrowIfNull(normalizedValues);
@@ -37,7 +39,8 @@ public static class FormIndexExtractor
         foreach (var field in schema.Fields)
         {
             var def = field.Definition;
-            if (!def.IsFilterable || !def.Control.IsInput() || !normalizedValues.TryGetValue(def.Key, out var value))
+            var indexed = def.IsFilterable || (alwaysIndexNumberAndSelect && def.Control is FormControl.Number or FormControl.Select);
+            if (!indexed || !def.Control.IsInput() || !normalizedValues.TryGetValue(def.Key, out var value))
             {
                 continue;
             }

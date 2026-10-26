@@ -48,6 +48,12 @@ public sealed record SeedAssetType
     public string? Naming { get; init; }
 
     public List<SeedField> Fields { get; init; } = [];
+
+    /// <summary>Key of the NUMBER field that is the default size of the type (epic #851); empty: none.</summary>
+    public string? SizeField { get; init; }
+
+    /// <summary>Its unit: B, KB, MB, GB, TB or Items.</summary>
+    public string? SizeUnit { get; init; }
 }
 
 public sealed record SeedStep

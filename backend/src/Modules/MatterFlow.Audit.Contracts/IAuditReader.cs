@@ -34,4 +34,11 @@ public interface IAuditReader
 
     /// <summary>The newest event of one type scoped to a Task (for example who made the last status change); null when there is none.</summary>
     Task<AuditRecord?> LatestForTaskAsync(long taskId, string eventType, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The events of one type written about one object (for example the disposition changes of an Asset), newest first, at most <paramref name="limit"/> (200 at most). Only the events
+    /// the caller may see (the sensitive-matter rule of the audit trail). The default is empty, so existing implementations keep working.
+    /// </summary>
+    Task<IReadOnlyList<AuditRecord>> ListForObjectAsync(string objectType, string objectId, string eventType, int limit, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<AuditRecord>>([]);
 }

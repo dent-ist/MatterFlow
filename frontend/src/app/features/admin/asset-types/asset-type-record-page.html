@@ -137,6 +137,88 @@
               </p>
             </section>
           }
+          @if (assetType(); as t) {
+            <section class="at__card at__card--fields" aria-labelledby="at-size" data-size-card>
+              <h2 id="at-size">Size</h2>
+              @if (noFields()) {
+                <p class="at__hint" data-size-unavailable>
+                  Publish the fields first, then choose which number field is the size.
+                </p>
+              } @else {
+                <p class="at__hint">
+                  The number field that means the size of an asset of this type, and its unit. The
+                  Data tab and the asset reports use it by default; a project manager can pick
+                  another field there. Values already saved are never changed.
+                </p>
+                <div class="at__size">
+                  <div class="at__size-field">
+                    <label class="at__label" for="at-size-field">Size field</label>
+                    <select
+                      id="at-size-field"
+                      class="mf-control"
+                      data-size-field
+                      [disabled]="sizeBusy()"
+                      (change)="pickSizeField($any($event.target).value)"
+                    >
+                      <option value="" [selected]="sizeKey() === ''">None</option>
+                      @for (f of numberFields(); track f.key) {
+                        <option [value]="f.key" [selected]="sizeKey() === f.key">
+                          {{ f.label }}
+                        </option>
+                      }
+                    </select>
+                  </div>
+                  <div class="at__size-field">
+                    <label class="at__label" for="at-size-unit">Unit</label>
+                    <select
+                      id="at-size-unit"
+                      class="mf-control"
+                      data-size-unit
+                      [disabled]="sizeBusy() || sizeKey() === ''"
+                      (change)="sizeUnit.set($any($event.target).value); sizeError.set('')"
+                    >
+                      <option value="" [selected]="sizeUnit() === ''">Choose a unit</option>
+                      @for (u of sizeUnits; track u) {
+                        <option [value]="u" [selected]="sizeUnit() === u">{{ u }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+                @if (numberFields().length === 0) {
+                  <p class="at__hint" data-size-no-numbers>
+                    The published form has no number field yet.
+                  </p>
+                }
+                @if (sizeError()) {
+                  <p class="at__error" role="alert" data-size-error>{{ sizeError() }}</p>
+                }
+                <div class="at__size-actions">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--primary"
+                    [disabled]="sizeBusy() || !sizeDirty()"
+                    (click)="saveSize()"
+                    data-size-save
+                  >
+                    Save size field
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    [disabled]="sizeBusy()"
+                    (click)="reindex()"
+                    data-reindex
+                  >
+                    Rebuild the index
+                  </button>
+                </div>
+                <p class="at__hint">
+                  Rebuild the index after the rules for indexing change; it only re-reads saved
+                  values and is safe to repeat.
+                </p>
+              }
+            </section>
+          }
         }
         @case ('assets') {
           @if (assetType(); as t) {

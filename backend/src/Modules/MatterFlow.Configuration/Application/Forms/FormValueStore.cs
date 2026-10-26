@@ -59,7 +59,7 @@ internal sealed class FormValueStore(DbContext db, FormSchemaLoader loader, IAud
             Mode = options.Mode,
             ExistingValues = existing,
             ValidateOnly = validateOnly,
-        });
+        }, alwaysIndexNumberAndSelect: ownerKind == FormValueOwnerKind.Asset);
         result = await FormReferenceChecks.ApplyAsync(referenceValidators, form, result, validateOnly, options.References, cancellationToken);
         if (result.ToError() is { } invalid)
         {

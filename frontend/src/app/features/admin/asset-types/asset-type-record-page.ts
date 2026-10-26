@@ -12,7 +12,12 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { AssetTypeResponse, AssetTypesClient } from '../../../api/generated/api-client';
+import {
+  AssetTypeResponse,
+  AssetTypesClient,
+  FormOwnerKind,
+  FormsClient,
+} from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, shortTitleText } from '../../../core/title/page-title';
@@ -59,6 +64,15 @@ export function assetTypeTabOf(
   return 'overview';
 }
 
+/** The units of a size field: B to TB add up after conversion, Items (files, pages, documents) never mix with bytes. */
+export const SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'Items'] as const;
+
+/** A first guess for the unit from the field key (`volume_gb` is GB); the person can change it. */
+export function suggestUnit(key: string): string {
+  const match = /_(b|kb|mb|gb|tb)$/i.exec(key);
+  return match ? match[1].toUpperCase() : 'Items';
+}
+
 interface Model {
   name: string;
   description: string;
@@ -101,6 +115,7 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   readonly tab = input<string | undefined>(undefined);
 
   private readonly api = inject(AssetTypesClient);
+  private readonly forms = inject(FormsClient);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly leave = inject(LeaveConfirmService);
@@ -126,6 +141,20 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly announcement = signal('');
   protected readonly activityOpen = signal(false);
   protected readonly deactivateOpen = signal(false);
+
+  /** Size (epic #851): the NUMBER fields of the published form, the chosen default size field and unit, and the state of the two actions. */
+  protected readonly numberFields = signal<{ key: string; label: string }[]>([]);
+  protected readonly sizeKey = signal('');
+  protected readonly sizeUnit = signal('');
+  protected readonly sizeBusy = signal(false);
+  protected readonly sizeError = signal('');
+  protected readonly sizeUnits = SIZE_UNITS;
+  protected readonly sizeDirty = computed(() => {
+    const t = this.assetType();
+    return (
+      !!t && (this.sizeKey() !== (t.sizeFieldKey ?? '') || this.sizeUnit() !== (t.sizeUnit ?? ''))
+    );
+  });
 
   protected readonly limits = ADMIN_FIELD_LIMITS;
   protected readonly isNew = computed(() => this.id() === undefined);
@@ -261,8 +290,97 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       (t) => {
         this.assetType.set(t);
         this.apply(t ? this.modelOf(t) : { ...EMPTY });
+        this.sizeKey.set(t?.sizeFieldKey ?? '');
+        this.sizeUnit.set(t?.sizeUnit ?? '');
+        if (t) void this.loadNumberFields(t);
       },
     );
+  }
+
+  /** The NUMBER fields of the published form, the choices for the size field. A type without a published form has none. */
+  private async loadNumberFields(t: AssetTypeResponse): Promise<void> {
+    this.numberFields.set([]);
+    if (t.publishedFormVersionNo === undefined || t.publishedFormVersionNo === null) return;
+    try {
+      const definition = await firstValueFrom(
+        this.forms.findFormDefinition(FormOwnerKind.AssetType, t.assetTypeId),
+      );
+      const version = await firstValueFrom(
+        this.forms.getPublishedFormVersion(definition.formDefinitionId),
+      );
+      this.numberFields.set(
+        version.fields
+          .filter((f) => f.control === 'NUMBER')
+          .map((f) => ({ key: f.key, label: f.label })),
+      );
+    } catch {
+      // The size card then offers no field; the rest of the page is unaffected.
+      this.numberFields.set([]);
+    }
+  }
+
+  protected pickSizeField(key: string): void {
+    this.sizeKey.set(key);
+    if (!key) {
+      this.sizeUnit.set('');
+    } else if (!this.sizeUnit()) {
+      this.sizeUnit.set(suggestUnit(key));
+    }
+    this.sizeError.set('');
+  }
+
+  protected async saveSize(): Promise<void> {
+    const t = this.assetType();
+    if (!t || this.sizeBusy()) return;
+    if (this.sizeKey() && !this.sizeUnit()) {
+      this.sizeError.set('Choose the unit of the size field.');
+      return;
+    }
+    this.sizeBusy.set(true);
+    this.sizeError.set('');
+    try {
+      const updated = await firstValueFrom(
+        this.api.setAssetTypeSizeField(t.assetTypeId, {
+          sizeFieldKey: this.sizeKey() || undefined,
+          sizeUnit: this.sizeUnit() || undefined,
+          rowVersion: t.rowVersion,
+        }),
+      );
+      this.assetType.set(updated);
+      this.sizeKey.set(updated.sizeFieldKey ?? '');
+      this.sizeUnit.set(updated.sizeUnit ?? '');
+      this.announcement.set(updated.sizeFieldKey ? 'Size field saved.' : 'Size field cleared.');
+      this.notify.success(updated.sizeFieldKey ? 'Size field saved.' : 'Size field cleared.');
+    } catch (e) {
+      const errors = serverFormErrors(e);
+      if (errors.conflict) this.conflict.set(true);
+      else
+        this.sizeError.set(
+          errors.fields['sizeFieldKey'] ??
+            errors.fields['sizeUnit'] ??
+            (e instanceof Error ? e.message : 'Couldn’t save the size field. Try again.'),
+        );
+    } finally {
+      this.sizeBusy.set(false);
+    }
+  }
+
+  /** Rebuilds the filter index of this type's assets from their saved values (safe to repeat). */
+  protected async reindex(): Promise<void> {
+    const t = this.assetType();
+    if (!t || this.sizeBusy()) return;
+    this.sizeBusy.set(true);
+    this.sizeError.set('');
+    try {
+      const result = await firstValueFrom(this.api.reindexAssetType(t.assetTypeId));
+      const message = `Index rebuilt for ${result.assetsProcessed} ${result.assetsProcessed === 1 ? 'asset' : 'assets'}.`;
+      this.announcement.set(message);
+      this.notify.success(message);
+    } catch (e) {
+      this.sizeError.set(e instanceof Error ? e.message : 'Couldn’t rebuild the index. Try again.');
+    } finally {
+      this.sizeBusy.set(false);
+    }
   }
 
   protected retry(): void {

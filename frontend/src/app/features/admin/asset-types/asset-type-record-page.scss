@@ -84,3 +84,26 @@
     padding-left: var(--mf-s5);
   }
 }
+
+.at__size {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--mf-s3);
+  width: 100%;
+}
+
+.at__size-field {
+  display: grid;
+  gap: var(--mf-s1);
+  min-width: 0;
+}
+
+.at__label {
+  font-weight: 600;
+}
+
+.at__size-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+}

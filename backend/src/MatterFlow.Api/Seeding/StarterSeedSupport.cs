@@ -151,6 +151,12 @@ public static class StarterFormBuilder
     /// <summary>The label of the seeded life-cycle select of an Asset Type form (key <c>asset_status</c>).</summary>
     public const string AssetLifecycleLabel = "Lifecycle";
 
+    /// <summary>
+    /// Help text of the Lifecycle field (epic #851): it is the stage of this kind of asset, set by people and read by no rule. The retention state of the record is the
+    /// Disposition of the asset itself (Active, Inactive, Pending disposition, Disposed), which is separate.
+    /// </summary>
+    public const string AssetLifecycleHelp = "The stage of this kind of asset, for example Planned or Archived. It is only a label. The retention state of the record is its Disposition, which is set separately.";
+
     public static IReadOnlyList<FormFieldModel> BuildAssetType(SeedAssetType type)
     {
         var fields = new List<FormFieldModel>();
@@ -161,6 +167,7 @@ public static class StarterFormBuilder
                 Key = "asset_status",
                 Label = AssetLifecycleLabel,
                 Control = "SELECT",
+                HelpText = AssetLifecycleHelp,
                 Options = [.. type.StatusValues.Select(v => new FormOptionModel { Key = Slug(v), Label = v })],
             });
         }

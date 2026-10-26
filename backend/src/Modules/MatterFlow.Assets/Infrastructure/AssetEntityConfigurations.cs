@@ -13,6 +13,8 @@ internal sealed class AssetTypeConfiguration : IEntityTypeConfiguration<AssetTyp
         b.Property(x => x.Description).HasMaxLength(500);
         b.HasIndex(x => x.Name).IsUnique().HasDatabaseName("UQ_AssetType_Name");
         b.HasIndex(x => new { x.SortOrder, x.Name }).HasDatabaseName("IX_AssetType_Sort");
+        b.Property(x => x.SizeFieldKey).HasMaxLength(64).IsUnicode(false);
+        b.Property(x => x.SizeUnit).HasMaxLength(10).IsUnicode(false);
     }
 }
 
@@ -32,5 +34,16 @@ internal sealed class AssetConfiguration : IEntityTypeConfiguration<Asset>
         b.Property(x => x.DispositionChangedAtUtc).HasColumnName("DispositionChangedAt");
         b.Property(x => x.DispositionNote).HasMaxLength(500);
         b.HasIndex(x => new { x.MatterId, x.AssetTypeId, x.DispositionCode }).HasDatabaseName("IX_Asset_Matter_Disposition");
+    }
+}
+
+internal sealed class AssetReportConfiguration : IEntityTypeConfiguration<AssetReport>
+{
+    public void Configure(EntityTypeBuilder<AssetReport> b)
+    {
+        b.ToTable("AssetReport");
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.Property(x => x.DefinitionJson).HasMaxLength(4000).IsRequired();
+        b.HasIndex(x => new { x.OwnerUserId, x.Name }).IsUnique().HasDatabaseName("UQ_AssetReport_OwnerName");
     }
 }

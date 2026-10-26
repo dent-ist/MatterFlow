@@ -28,7 +28,7 @@ internal sealed class FormSubmissionValidator(FormSchemaLoader loader, IEnumerab
     }
 
     /// <summary>The evaluation shared by the validator and the value store.</summary>
-    internal static FormSubmissionResult Evaluate(LoadedForm form, IReadOnlyDictionary<string, JsonElement> submitted, FormSubmissionOptions options)
+    internal static FormSubmissionResult Evaluate(LoadedForm form, IReadOnlyDictionary<string, JsonElement> submitted, FormSubmissionOptions options, bool alwaysIndexNumberAndSelect = false)
     {
         var schema = form.Schema;
         var inputKeys = schema.Definitions.Where(d => d.Control.IsInput()).Select(d => d.Key).ToHashSet(StringComparer.Ordinal);
@@ -92,7 +92,7 @@ internal sealed class FormSubmissionValidator(FormSchemaLoader loader, IEnumerab
             }
         }
 
-        var index = FormIndexExtractor.Extract(schema, FormValues.From(normalized.Where(p => inputKeys.Contains(p.Key))))
+        var index = FormIndexExtractor.Extract(schema, FormValues.From(normalized.Where(p => inputKeys.Contains(p.Key))), alwaysIndexNumberAndSelect)
             .Select(e => new FormIndexValue(e.FieldKey, e.ValueText, e.ValueNumber, e.ValueDate, e.ValueDateTime, e.ValueBool))
             .ToList();
 

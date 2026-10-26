@@ -130,6 +130,9 @@ public static class Permissions
 
         /// <summary>Link assets to tasks.</summary>
         public const string Link = "Asset.Link";
+
+        /// <summary>Move assets to Pending disposition or Disposed (Active and Inactive need only <c>Asset.Edit</c>).</summary>
+        public const string Dispose = "Asset.Dispose";
     }
 
     /// <summary>Pod permissions.</summary>
@@ -289,6 +292,7 @@ public static class Permissions
         Asset.Create,
         Asset.Edit,
         Asset.Link,
+        Asset.Dispose,
         Pod.View,
         Pod.Manage,
         Pod.ManageMembers,

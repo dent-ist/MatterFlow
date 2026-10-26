@@ -686,6 +686,8 @@
         "Archived",
         "Deleted"
       ],
+      "sizeField": "size_gb",
+      "sizeUnit": "GB",
       "naming": "Display Name follows the firm convention: `#####-##### - Short matter name` (e.g. `00343-00012 - Smith v Acme`).",
       "fields": [
         {
@@ -890,6 +892,10 @@
         "Returned",
         "Destroyed"
       ],
+      "sizeField": "file_count",
+      "sizeUnit": "Items",
+      "sizeField": "capacity_gb",
+      "sizeUnit": "GB",
       "naming": "Display Name = firm media label, e.g. `00343-00012-M003` (matter ref + sequence). Label the physical item the same way.",
       "fields": [
         {
@@ -1138,6 +1144,8 @@
         "Superseded",
         "Disposed"
       ],
+      "sizeField": "volume_gb",
+      "sizeUnit": "GB",
       "naming": "Display Name = `#####-##### - Custodian or source - collection date` (e.g. `00343-00012 - Jones mailbox - 2026-09-14`).",
       "fields": [
         {
@@ -1326,6 +1334,8 @@
         "Superseded / re-produced",
         "Clawed back"
       ],
+      "sizeField": "page_count",
+      "sizeUnit": "Items",
       "naming": "Display Name = `#####-##### - PROD###` (e.g. `00343-00012 - PROD004`). Volume names match the cover letter.",
       "fields": [
         {

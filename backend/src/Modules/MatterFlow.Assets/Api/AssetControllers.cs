@@ -20,6 +20,9 @@ internal static class AssetPolicies
     public const string AssetEdit = Prefix + Permissions.Asset.Edit;
     public const string AssetTypeManage = Prefix + Permissions.AssetType.Manage;
 
+    /// <summary>Change a disposition: <c>Asset.Edit</c> or <c>Asset.Dispose</c>; the service then asks for the permission the target state needs (Pending disposition and Disposed need <c>Asset.Dispose</c>).</summary>
+    public const string AssetDisposition = Prefix + Permissions.Asset.Edit + "|" + Permissions.Asset.Dispose;
+
     /// <summary>Read Asset Types: <c>Asset.View</c> or <c>AssetType.Manage</c> (the Asset Types administration works without <c>Asset.View</c>).</summary>
     public const string AssetTypeRead = Prefix + Permissions.Asset.View + "|" + Permissions.AssetType.Manage;
 }
@@ -73,6 +76,22 @@ public class AssetTypesController(AssetTypeService types) : ControllerBase
     [ProducesResponseType<AssetTypeResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> Update(int assetTypeId, [FromBody] UpdateAssetTypeRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await types.UpdateAsync(assetTypeId, request, cancellationToken));
+
+    /// <summary>
+    /// Sets or clears the default size field and unit of an Asset Type (a NUMBER field of the published form; B, KB, MB, GB, TB or Items). Stored values are not rewritten.
+    /// </summary>
+    [HttpPut("{assetTypeId:int}/size-field", Name = "SetAssetTypeSizeField")]
+    [Authorize(Policy = AssetPolicies.AssetTypeManage)]
+    [ProducesResponseType<AssetTypeResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> SetSizeField(int assetTypeId, [FromBody] SetAssetTypeSizeFieldRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await types.SetSizeFieldAsync(assetTypeId, request, cancellationToken));
+
+    /// <summary>Rebuilds the filter index of all assets of the type from their stored values (idempotent). Needed after the indexing rule changes; the API also fills missing rows at startup.</summary>
+    [HttpPost("{assetTypeId:int}/reindex", Name = "ReindexAssetType")]
+    [Authorize(Policy = AssetPolicies.AssetTypeManage)]
+    [ProducesResponseType<AssetTypeReindexResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Reindex(int assetTypeId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await types.ReindexAsync(assetTypeId, cancellationToken));
 }
 
 /// <summary>Assets: Matter-owned records Tasks work on. Never deleted; deactivate instead.</summary>
@@ -99,7 +118,7 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
     /// Lists Assets, usually of one Matter (<c>matterId</c>). <c>q</c> searches the display name, the Asset Type name and the external
     /// reference. The column filters <c>name</c>, <c>externalReference</c> (fragments of that column only), <c>matter</c> (fragment of the Matter
     /// reference, the typed pair such as <c>343-12</c>, or the Matter name) and <c>assetTypeId</c> (repeatable: any of the given Asset Types) combine with AND. Sort: displayName (default),
-    /// assetType, createdAt, matter (the Matter reference, then the name) and linkedTaskCount (the number of linked Tasks; a constant without <c>Task.View</c>). The counts <c>linkedTaskCount</c> and <c>openLinkedTaskCount</c> are null without <c>Task.View</c>.
+    /// assetType, createdAt, matter (the Matter reference, then the name), linkedTaskCount (the number of linked Tasks; a constant without <c>Task.View</c>), disposition (Active, Inactive, Pending disposition, Disposed) and size (bytes of the type's size field; Items and assets without a value last). <c>disposition</c> (repeatable) keeps the given dispositions and <c>inactiveLinked=true</c> the assets that are not Active but still linked to an open task. The counts <c>linkedTaskCount</c> and <c>openLinkedTaskCount</c> are null without <c>Task.View</c>.
     /// </summary>
     [HttpGet(Name = "ListAssets")]
     [Authorize(Policy = AssetPolicies.AssetView)]
@@ -147,10 +166,96 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
     public async Task<IActionResult> Update(int assetId, [FromBody] UpdateAssetRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await assets.UpdateAsync(assetId, request, cancellationToken));
 
-    /// <summary>Deactivates or reactivates an Asset. History is kept; there is no delete.</summary>
+    /// <summary>
+    /// Moves an Asset to Active, Inactive, Pending disposition or Disposed, with a note (required for Disposed). Pending disposition and Disposed need <c>Asset.Dispose</c>; Active and Inactive
+    /// need <c>Asset.Edit</c>; Disposed is final except for a correction back to Inactive by a holder of <c>Asset.Dispose</c> with a note. Open linked tasks do not block it (the screen states the impact).
+    /// </summary>
+    [HttpPut("{assetId:int}/disposition", Name = "ChangeAssetDisposition")]
+    [Authorize(Policy = AssetPolicies.AssetDisposition)]
+    [ProducesResponseType<AssetResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> ChangeDisposition(int assetId, [FromBody] ChangeAssetDispositionRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await assets.ChangeDispositionAsync(assetId, request, cancellationToken));
+
+    /// <summary>Moves up to 100 Assets to one disposition. Each Asset is its own change; the response lists every Asset with its outcome (no failure is hidden).</summary>
+    [HttpPost("disposition", Name = "BulkChangeAssetDisposition")]
+    [Authorize(Policy = AssetPolicies.AssetDisposition)]
+    [ProducesResponseType<BulkAssetDispositionResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> BulkChangeDisposition([FromBody] BulkChangeAssetDispositionRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await assets.BulkChangeDispositionAsync(request, cancellationToken));
+
+    /// <summary>The disposition changes of an Asset (who, when, from, to, note), newest first, readable with <c>Asset.View</c> without the audit browser.</summary>
+    [HttpGet("{assetId:int}/disposition-history", Name = "GetAssetDispositionHistory")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetDispositionHistoryResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> DispositionHistory(int assetId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await assets.DispositionHistoryAsync(assetId, cancellationToken));
+
+    /// <summary>Deactivates or reactivates an Asset (Active or Inactive; the same as changing the disposition to one of those). History is kept; there is no delete.</summary>
     [HttpPost("{assetId:int}/active", Name = "SetAssetActive")]
     [Authorize(Policy = AssetPolicies.AssetEdit)]
     [ProducesResponseType<AssetResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> SetActive(int assetId, [FromBody] SetAssetActiveRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await assets.SetActiveAsync(assetId, request, cancellationToken));
+}
+
+/// <summary>
+/// Saved asset reports of the built-in report builder (epic #851): personal definitions (name, asset type, measure, number field, group-by). Everything needs
+/// <c>Asset.View</c>; a report is visible only to its owner (another person's id is a 404). Running a report is a separate step that applies the viewer's
+/// matter visibility.
+/// </summary>
+[ApiController]
+[Route("api/v1/asset-reports")]
+public class AssetReportsController(AssetReportService reports) : ControllerBase
+{
+    /// <summary>Lists the caller's saved reports by name (at most 50).</summary>
+    [HttpGet(Name = "ListAssetReports")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<IReadOnlyList<AssetReportResponse>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> List(CancellationToken cancellationToken) =>
+        this.ToActionResult(await reports.ListAsync(cancellationToken));
+
+    /// <summary>What the report builder can offer for an asset type (number fields, group-by choices, the default size field); without <c>assetTypeId</c> for all asset types.</summary>
+    [HttpGet("fields", Name = "GetAssetReportFields")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetReportFieldsResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Fields([FromQuery] int? assetTypeId, CancellationToken cancellationToken)
+    {
+        if (ListFilters.UnknownFilter(Request, ["assetTypeId"]) is { } unknown)
+            return this.Problem(unknown);
+
+        return this.ToActionResult(await reports.FieldsAsync(assetTypeId, cancellationToken));
+    }
+
+    /// <summary>Gets one of the caller's saved reports.</summary>
+    [HttpGet("{assetReportId:int}", Name = "GetAssetReport")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetReportResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Get(int assetReportId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await reports.GetAsync(assetReportId, cancellationToken));
+
+    /// <summary>Saves a report (name unique per person, at most 50 reports, definition version 1 and at most 4 KB).</summary>
+    [HttpPost(Name = "CreateAssetReport")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetReportResponse>(StatusCodes.Status201Created, "application/json")]
+    public async Task<IActionResult> Create([FromBody] CreateAssetReportRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(
+            await reports.CreateAsync(request, cancellationToken),
+            r => CreatedAtRoute("GetAssetReport", new { assetReportId = r.AssetReportId }, r));
+
+    /// <summary>Renames a saved report and replaces its definition.</summary>
+    [HttpPut("{assetReportId:int}", Name = "UpdateAssetReport")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType<AssetReportResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Update(int assetReportId, [FromBody] UpdateAssetReportRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await reports.UpdateAsync(assetReportId, request, cancellationToken));
+
+    /// <summary>Deletes a saved report (only the definition; no asset is touched).</summary>
+    [HttpDelete("{assetReportId:int}", Name = "DeleteAssetReport")]
+    [Authorize(Policy = AssetPolicies.AssetView)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(int assetReportId, CancellationToken cancellationToken)
+    {
+        var result = await reports.DeleteAsync(assetReportId, cancellationToken);
+        return result.IsFailure ? this.Problem(result.Error!) : NoContent();
+    }
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using MatterFlow.Assets.Domain;
 
 namespace MatterFlow.Assets.Application;
 
@@ -18,6 +19,8 @@ namespace MatterFlow.Assets.Application;
 /// <param name="FieldCount">Fields of the published version of the type's form (#627); null when no version is published.</param>
 /// <param name="PublishedAtUtc">When that version was published (UTC); null when none is published.</param>
 /// <param name="DraftVersionNo">Number of the open draft of the form; null when there is none.</param>
+/// <param name="SizeFieldKey">Key of the NUMBER field of the published form that means size (the default for the Data tab and reports); null when none is designated.</param>
+/// <param name="SizeUnit">Unit of that field: B, KB, MB, GB, TB or Items; null together with <paramref name="SizeFieldKey"/>.</param>
 public sealed record AssetTypeResponse(
     [property: Required] int AssetTypeId,
     [property: Required] string Name,
@@ -32,7 +35,9 @@ public sealed record AssetTypeResponse(
     DateTime? ModifiedAtUtc,
     int? FieldCount = null,
     DateTime? PublishedAtUtc = null,
-    int? DraftVersionNo = null);
+    int? DraftVersionNo = null,
+    string? SizeFieldKey = null,
+    string? SizeUnit = null);
 
 /// <summary>Creates an Asset Type (and its empty field form).</summary>
 public sealed class CreateAssetTypeRequest
@@ -138,7 +143,13 @@ public sealed class AssetListQuery : AssetListQueryBase
     [StringLength(10)]
     public string? Role { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q", "name", "externalReference", "matter", "matterManagedByMe", "role"];
+    /// <summary>Only Assets with one of these dispositions (repeat the parameter: <c>disposition=ACTIVE&amp;disposition=PENDING_DISPOSITION</c>); an unknown code is a 400.</summary>
+    public string[]? Disposition { get; init; }
+
+    /// <summary>True: only Assets that are not Active but still linked to an open task (the warning of the Data tab); needs <c>Task.View</c> (400 without it). False is the same as leaving it out.</summary>
+    public bool? InactiveLinked { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "assetTypeId", "isActive", "q", "name", "externalReference", "matter", "matterManagedByMe", "role", "disposition", "inactiveLinked"];
 }
 
 /// <summary>Asset picker lookup filters (always inside one Matter).</summary>
@@ -178,6 +189,12 @@ public sealed class AssetLookupQuery
 /// <param name="ModifiedAtUtc">When the Asset was last changed (UTC), if ever.</param>
 /// <param name="LinkedTaskCount">Every Task linked to the Asset. Null, not 0, when the viewer lacks <c>Task.View</c>; a 0 is a real 0.</param>
 /// <param name="OpenLinkedTaskCount">Of those, the Tasks that are New, In Progress or On Hold (the Task Queue's open states). Null without <c>Task.View</c>.</param>
+/// <param name="SizeValue">The value of the type's designated size field; null when the type has none or the asset has no value.</param>
+/// <param name="SizeUnit">Its unit (B, KB, MB, GB, TB or Items); null when <paramref name="SizeValue"/> is.</param>
+/// <param name="SizeBytes">The size in bytes for the size family (1 KB = 1024 B); null for Items and when there is no size.</param>
+/// <param name="DispositionCode">ACTIVE, INACTIVE, PENDING_DISPOSITION or DISPOSED; <paramref name="IsActive"/> is true exactly when it is ACTIVE.</param>
+/// <param name="DispositionChangedAtUtc">When the disposition last changed (UTC); null when it never did.</param>
+/// <param name="InactiveLinked">True when the asset is not Active but still linked to an open task (a warning, not a rule); null without <c>Task.View</c>.</param>
 public sealed record AssetListItem(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -193,7 +210,13 @@ public sealed record AssetListItem(
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc,
     int? LinkedTaskCount = null,
-    int? OpenLinkedTaskCount = null);
+    int? OpenLinkedTaskCount = null,
+    decimal? SizeValue = null,
+    string? SizeUnit = null,
+    long? SizeBytes = null,
+    [property: Required] string DispositionCode = "ACTIVE",
+    DateTime? DispositionChangedAtUtc = null,
+    bool? InactiveLinked = null);
 
 /// <summary>An Asset with its type-specific values.</summary>
 /// <param name="AssetId">Internal id.</param>
@@ -217,6 +240,14 @@ public sealed record AssetListItem(
 /// <param name="LinkedTaskCount">Every Task linked to the Asset. Null, not 0, when the viewer lacks <c>Task.View</c>; a 0 is a real 0.</param>
 /// <param name="OpenLinkedTaskCount">Of those, the Tasks that are New, In Progress or On Hold (the Task Queue's open states). Null without <c>Task.View</c>.</param>
 /// <param name="MatterCanOpen">False when the caller sees this Asset only through a task assigned to them and may not open its (sensitive) Matter: the screen shows the Matter as plain text with no link.</param>
+/// <param name="SizeValue">The value of the type's designated size field; null when the type has none or the asset has no value.</param>
+/// <param name="SizeUnit">Its unit (B, KB, MB, GB, TB or Items); null when <paramref name="SizeValue"/> is.</param>
+/// <param name="SizeBytes">The size in bytes for the size family (1 KB = 1024 B); null for Items and when there is no size.</param>
+/// <param name="DispositionCode">ACTIVE, INACTIVE, PENDING_DISPOSITION or DISPOSED; <paramref name="IsActive"/> is true exactly when it is ACTIVE.</param>
+/// <param name="DispositionChangedAtUtc">When the disposition last changed (UTC); null when it never did.</param>
+/// <param name="DispositionChangedByName">Who changed it; null when it never changed or the person is unknown.</param>
+/// <param name="DispositionNote">The note given with the last change, if any.</param>
+/// <param name="InactiveLinked">True when the asset is not Active but still linked to an open task (a warning, not a rule); null without <c>Task.View</c>.</param>
 public sealed record AssetResponse(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -238,7 +269,35 @@ public sealed record AssetResponse(
     DateTime? ModifiedAtUtc,
     int? LinkedTaskCount = null,
     int? OpenLinkedTaskCount = null,
-    [property: Required] bool MatterCanOpen = true);
+    [property: Required] bool MatterCanOpen = true,
+    decimal? SizeValue = null,
+    string? SizeUnit = null,
+    long? SizeBytes = null,
+    [property: Required] string DispositionCode = "ACTIVE",
+    DateTime? DispositionChangedAtUtc = null,
+    string? DispositionChangedByName = null,
+    string? DispositionNote = null,
+    bool? InactiveLinked = null);
+
+/// <summary>Sets or clears the default size field of an Asset Type.</summary>
+public sealed class SetAssetTypeSizeFieldRequest
+{
+    /// <summary>Key of a NUMBER field of the type's published form; null (with a null unit) clears the designation.</summary>
+    [StringLength(64)]
+    public string? SizeFieldKey { get; init; }
+
+    /// <summary>B, KB, MB, GB, TB or Items.</summary>
+    [StringLength(10)]
+    public string? SizeUnit { get; init; }
+
+    /// <summary>The <c>rowVersion</c> last read.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
+
+/// <summary>Outcome of rebuilding the filter index of one Asset Type's values.</summary>
+/// <param name="AssetsProcessed">Number of assets whose values were re-read and re-indexed.</param>
+public sealed record AssetTypeReindexResponse([property: Required] int AssetsProcessed);
 
 /// <summary>An Asset offered by a picker.</summary>
 /// <param name="AssetId">Internal id.</param>
@@ -320,3 +379,73 @@ public sealed class SetAssetActiveRequest
     [Required]
     public string RowVersion { get; init; } = string.Empty;
 }
+
+/// <summary>Moves an Asset to another disposition. Pending disposition and Disposed need <c>Asset.Dispose</c>; Active and Inactive need <c>Asset.Edit</c>.</summary>
+public sealed class ChangeAssetDispositionRequest
+{
+    /// <summary>ACTIVE, INACTIVE, PENDING_DISPOSITION or DISPOSED.</summary>
+    [Required, StringLength(20)]
+    public string DispositionCode { get; init; } = string.Empty;
+
+    /// <summary>Why (max 500). Required for DISPOSED and for moving a disposed asset back to INACTIVE.</summary>
+    [StringLength(AssetDispositionRules.MaxNoteLength)]
+    public string? Note { get; init; }
+
+    /// <summary>The <c>rowVersion</c> last read.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
+
+/// <summary>Moves several Assets (of any matters the caller sees) to one disposition. Each Asset is an ordinary single change with its own rules and transaction.</summary>
+public sealed class BulkChangeAssetDispositionRequest
+{
+    public const int MaxAssets = 100;
+
+    [Required, MinLength(1), MaxLength(MaxAssets)]
+    public List<int> AssetIds { get; init; } = [];
+
+    [Required, StringLength(20)]
+    public string DispositionCode { get; init; } = string.Empty;
+
+    [StringLength(AssetDispositionRules.MaxNoteLength)]
+    public string? Note { get; init; }
+}
+
+/// <summary>The outcome of one Asset of a bulk change. <c>Code</c> is null when it worked or was already in that state.</summary>
+/// <param name="AssetId">The Asset.</param>
+/// <param name="Ok">True when the Asset is now in the requested disposition.</param>
+/// <param name="Changed">True when this request changed it (false when it already was there).</param>
+/// <param name="Code">NOT_FOUND, NOTE_REQUIRED, DISPOSED_IS_FINAL, PERMISSION_DENIED or CONCURRENCY_CONFLICT when it failed.</param>
+/// <param name="Message">English detail; not part of the contract.</param>
+public sealed record BulkAssetDispositionResult(
+    [property: Required] int AssetId,
+    [property: Required] bool Ok,
+    [property: Required] bool Changed,
+    string? Code,
+    string? Message);
+
+/// <summary>The per-Asset results in request order, the counts and the one correlation id that groups every audit entry of the batch. There is no undo: reverse it with another change.</summary>
+public sealed record BulkAssetDispositionResponse(
+    [property: Required] Guid CorrelationId,
+    [property: Required] int Changed,
+    [property: Required] int Unchanged,
+    [property: Required] int Failed,
+    [property: Required] IReadOnlyList<BulkAssetDispositionResult> Results);
+
+/// <summary>One disposition change of an Asset.</summary>
+/// <param name="AuditEventId">Event id; the list is newest first.</param>
+/// <param name="OccurredAtUtc">When (UTC).</param>
+/// <param name="ActorName">Who changed it; null for the system.</param>
+/// <param name="FromCode">The disposition before.</param>
+/// <param name="ToCode">The disposition after.</param>
+/// <param name="Note">The note given, if any.</param>
+public sealed record AssetDispositionChange(
+    [property: Required] long AuditEventId,
+    [property: Required] DateTime OccurredAtUtc,
+    string? ActorName,
+    [property: Required] string FromCode,
+    [property: Required] string ToCode,
+    string? Note);
+
+/// <summary>The disposition history of an Asset, newest first (at most 100); readable with <c>Asset.View</c>, without the audit browser.</summary>
+public sealed record AssetDispositionHistoryResponse([property: Required] IReadOnlyList<AssetDispositionChange> Items);

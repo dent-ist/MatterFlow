@@ -54,5 +54,6 @@ public static class ModuleComposition
         await services.SeedIdentityAsync(cancellationToken);
         await services.SeedConfigurationAsync(cancellationToken);
         await services.SeedStarterConfigurationAsync(cancellationToken);
+        await services.ReindexAssetValuesAsync(cancellationToken);
     }
 }

@@ -162,6 +162,11 @@
       "description": "Link assets to tasks"
     },
     {
+      "code": "Asset.Dispose",
+      "group": "Assets",
+      "description": "Move assets to Pending disposition or Disposed"
+    },
+    {
       "code": "Pod.View",
       "group": "Organization",
       "description": "View pods"

@@ -35,6 +35,7 @@ export const PERMISSIONS = [
   'Asset.Create',
   'Asset.Edit',
   'Asset.Link',
+  'Asset.Dispose',
   'Pod.View',
   'Pod.Manage',
   'Pod.ManageMembers',

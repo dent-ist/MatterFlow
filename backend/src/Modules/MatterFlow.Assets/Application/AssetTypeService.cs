@@ -9,7 +9,13 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.Assets.Application;
 
 /// <summary>Asset Type administration. Creating a type also creates its (empty, unpublished) field form definition.</summary>
-public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms, IPermissionChecker permissions, AssetAccess access)
+public sealed class AssetTypeService(
+    DbContext db,
+    IFormDefinitionResolver forms,
+    IPermissionChecker permissions,
+    AssetAccess access,
+    IFormFieldCatalog fields,
+    IFormIndexMaintenance indexMaintenance)
 {
     public static readonly string[] SortFields = ["sortOrder", "name", "createdAt"];
 
@@ -142,6 +148,62 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
         return await GetAsync(id, ct);
     }
 
+    /// <summary>
+    /// Designates (or clears) the default size field and unit of an Asset Type. The key must be a NUMBER field of the published form; no stored value is
+    /// rewritten. The change is audited like any other field of the type.
+    /// </summary>
+    public async Task<Result<AssetTypeResponse>> SetSizeFieldAsync(int id, SetAssetTypeSizeFieldRequest request, CancellationToken ct)
+    {
+        var type = await db.Set<AssetType>().SingleOrDefaultAsync(t => t.Id == id, ct);
+        if (type is null)
+            return AssetSupport.NotFound("Asset type");
+
+        var version = AssetSupport.CheckRowVersion(type.RowVersion, request.RowVersion);
+        if (version.IsFailure)
+            return version.Error!;
+
+        var key = AssetSupport.Clean(request.SizeFieldKey);
+        var unit = AssetSupport.Clean(request.SizeUnit);
+        if (key is null != unit is null)
+            return Error.Validation(key is null ? "sizeFieldKey" : "sizeUnit", "REQUIRED", "Choose the size field and the unit together, or neither.");
+
+        if (key is not null)
+        {
+            if (!AssetSize.IsKnownUnit(unit))
+                return Error.Validation("sizeUnit", "INVALID", $"The unit must be one of {string.Join(", ", AssetSize.Units)}.");
+
+            var published = await fields.GetPublishedFieldsAsync(FormOwnerKind.AssetType, id, ct);
+            if (!published.Any(f => f.IsNumber && string.Equals(f.Key, key, StringComparison.Ordinal)))
+                return Error.Validation("sizeFieldKey", "INVALID", "The size field must be a number field of the published form of this asset type.");
+        }
+
+        type.SizeFieldKey = key;
+        type.SizeUnit = unit;
+        AssetSupport.TrackOriginalRowVersion(db, type, request.RowVersion);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return AssetSupport.ConcurrencyError();
+        }
+
+        return await GetAsync(id, ct);
+    }
+
+    /// <summary>Rebuilds the filter index of every asset of the type from its stored values (idempotent; safe to repeat).</summary>
+    public async Task<Result<AssetTypeReindexResponse>> ReindexAsync(int id, CancellationToken ct)
+    {
+        if (!await db.Set<AssetType>().AsNoTracking().AnyAsync(t => t.Id == id, ct))
+            return AssetSupport.NotFound("Asset type");
+
+        var definitionId = await forms.FindDefinitionIdAsync(FormOwnerKind.AssetType, id, ct);
+        var processed = definitionId is { } definition ? await indexMaintenance.ReindexAsync(FormValueOwnerKind.Asset, definition, ct) : 0;
+        return new AssetTypeReindexResponse(processed);
+    }
+
     /// <summary>The Asset count of each type (one grouped statement), or null when the viewer may not see Assets, so the responses carry null instead of a made-up 0.</summary>
     private async Task<Dictionary<int, int>?> AssetCountsAsync(IReadOnlyCollection<int> typeIds, CancellationToken ct)
     {
@@ -171,7 +233,9 @@ public sealed class AssetTypeService(DbContext db, IFormDefinitionResolver forms
             AssetSupport.Utc(type.ModifiedAtUtc),
             form?.PublishedVersionNo is null ? null : form.PublishedFieldCount,
             AssetSupport.Utc(form?.PublishedAtUtc),
-            form?.DraftVersionNo);
+            form?.DraftVersionNo,
+            type.SizeFieldKey,
+            type.SizeUnit);
 
     private async Task<int?> FindIdByNameAsync(string name, int? exceptId, CancellationToken ct) =>
         await db.Set<AssetType>().AsNoTracking()

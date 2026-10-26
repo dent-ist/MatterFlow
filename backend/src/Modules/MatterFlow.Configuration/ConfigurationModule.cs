@@ -42,6 +42,10 @@ public static class ConfigurationModule
         services.AddScoped<IFormSubmissionValidator, FormSubmissionValidator>();
         services.AddScoped<IFormReferenceValidator, UserReferenceValidator>();
         services.AddScoped<IFormValueStore, FormValueStore>();
+        services.AddScoped<FormIndexService>();
+        services.AddScoped<IFormIndexReader>(sp => sp.GetRequiredService<FormIndexService>());
+        services.AddScoped<IFormFieldCatalog>(sp => sp.GetRequiredService<FormIndexService>());
+        services.AddScoped<IFormIndexMaintenance>(sp => sp.GetRequiredService<FormIndexService>());
         services.AddScoped<FormAdminService>();
         return services;
     }

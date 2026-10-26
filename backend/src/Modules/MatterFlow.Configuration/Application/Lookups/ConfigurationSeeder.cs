@@ -112,4 +112,16 @@ public static class ConfigurationSeederExtensions
         await using var scope = services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<ConfigurationSeeder>().SeedAsync(ct);
     }
+
+    /// <summary>
+    /// Fills the typed index for asset values saved before NUMBER and SELECT asset fields were always indexed (epic #851, issue #867). Idempotent: only value sets
+    /// without any index row are rewritten. Call after the seeds, inside the same startup lock.
+    /// </summary>
+    public static async Task ReindexAssetValuesAsync(this IServiceProvider services, CancellationToken ct = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var count = await scope.ServiceProvider.GetRequiredService<MatterFlow.Configuration.Contracts.Forms.IFormIndexMaintenance>().ReindexMissingAsync(MatterFlow.Configuration.Contracts.Forms.FormValueOwnerKind.Asset, ct);
+        if (count > 0)
+            scope.ServiceProvider.GetRequiredService<ILogger<ConfigurationSeeder>>().LogInformation("Filter index rebuilt for {Count} asset value sets.", count);
+    }
 }

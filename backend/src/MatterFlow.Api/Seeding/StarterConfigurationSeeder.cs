@@ -352,6 +352,8 @@ public sealed class StarterConfigurationSeeder(
             if (existing.TryGetValue(type.Name, out var id))
             {
                 var completion = await SeedFormAsync(FormOwnerKind.AssetType, id, fields, dryRun, ct);
+                if (!dryRun && !completion.Failed)
+                    await SeedSizeFieldAsync(id, type, ct);
                 report.Add(KindAssetType, type.Name, Outcome(completion), completion.Error);
                 continue;
             }
@@ -370,8 +372,26 @@ public sealed class StarterConfigurationSeeder(
             }
 
             var seeded = await SeedFormAsync(FormOwnerKind.AssetType, created.Value.AssetTypeId, fields, dryRun, ct);
+            if (!seeded.Failed)
+                await SeedSizeFieldAsync(created.Value.AssetTypeId, type, ct);
             report.Add(KindAssetType, type.Name, seeded.Failed ? SeedOutcome.Failed : SeedOutcome.Created, seeded.Error);
         }
+    }
+
+    /// <summary>
+    /// The default size field and unit of a seeded type (epic #851, issue #867). Only set while the type has none, so an administrator's choice is never
+    /// overwritten on the next start; a refusal (for example the field is not in the published form) leaves the type without a default.
+    /// </summary>
+    private async Task SeedSizeFieldAsync(int assetTypeId, SeedAssetType type, CancellationToken ct)
+    {
+        if (type.SizeField is not { Length: > 0 } key || type.SizeUnit is not { Length: > 0 } unit)
+            return;
+
+        var current = await assetTypes.GetAsync(assetTypeId, ct);
+        if (current.IsFailure || current.Value.SizeFieldKey is not null)
+            return;
+
+        _ = await assetTypes.SetSizeFieldAsync(assetTypeId, new SetAssetTypeSizeFieldRequest { SizeFieldKey = key, SizeUnit = unit, RowVersion = current.Value.RowVersion }, ct);
     }
 
     private async Task<Dictionary<string, int>> ListAllAssetTypesAsync(CancellationToken ct)

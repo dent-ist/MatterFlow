@@ -51,12 +51,12 @@ public static class StarterRoles
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Matter.ViewSensitive, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage]),
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers]),
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, Permissions.Asset.Dispose]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
             [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,
