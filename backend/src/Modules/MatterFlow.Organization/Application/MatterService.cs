@@ -159,12 +159,16 @@ public sealed class MatterService(
             ? await taskCounts.ForKeysAsync(TaskCountScope.Matter, [.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, TaskCountRow>();
         var people = await ManagersAsync(items.Select(r => r.Matter), ct);
+        IReadOnlyDictionary<int, MatterStateCounts> states = canCount
+            ? await taskCounts.MatterStatesAsync([.. items.Select(r => r.Matter.Id)], ct)
+            : new Dictionary<int, MatterStateCounts>();
         return OrganizationSupport.Page(
             items.Select(r => ToResponse(
                 r,
                 !canCount ? null : joinCounts ? r.Open : byMatter.GetValueOrDefault(r.Matter.Id)?.Open ?? 0,
                 !canCount ? null : joinCounts ? r.Overdue : byMatter.GetValueOrDefault(r.Matter.Id)?.Overdue ?? 0,
-                people)).ToList(),
+                people,
+                states: canCount ? (states.GetValueOrDefault(r.Matter.Id) ?? new MatterStateCounts(0, 0)) : null)).ToList(),
             total,
             page);
     }
@@ -628,7 +632,8 @@ public sealed class MatterService(
         int? overdueTaskCount,
         IReadOnlyDictionary<int, MatterManagerResponse> people,
         CustomFieldView? view = null,
-        IReadOnlyList<string>? dropped = null) => new(
+        IReadOnlyList<string>? dropped = null,
+        MatterStateCounts? states = null) => new(
         r.Matter.Id,
         r.Matter.ClientId,
         r.Matter.ClientNumber.Value,
@@ -650,7 +655,9 @@ public sealed class MatterService(
         dropped ?? [],
         OrganizationSupport.Encode(r.Matter.RowVersion),
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
-        OrganizationSupport.Utc(r.Matter.ModifiedAtUtc));
+        OrganizationSupport.Utc(r.Matter.ModifiedAtUtc),
+        states?.OnHold,
+        states?.AtRisk);
 
     private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
         userId is { } id ? people.GetValueOrDefault(id) : null;

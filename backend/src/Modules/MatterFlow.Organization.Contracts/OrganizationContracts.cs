@@ -111,6 +111,9 @@ public enum TaskCountScope
     Project,
 }
 
+/// <summary>How many open Tasks of a Matter are On Hold and how many are At risk (PM v2, #881).</summary>
+public sealed record MatterStateCounts(int OnHold, int AtRisk);
+
 /// <summary>Open and overdue Task counts of one Client, Matter or Project (a record with no open Task has no row).</summary>
 public sealed class TaskCountRow
 {
@@ -152,6 +155,9 @@ public interface IOrganizationTaskCounts
     /// <summary>The counts of the given keys (a page of ids) in one grouped statement; keys with no open Task are absent.</summary>
     Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default);
 
+    /// <summary>On hold and At risk counts of the given Matters (PM v2, #881), by the same predicates as the Task Queue; a Matter with neither is absent.</summary>
+    Task<IReadOnlyDictionary<int, MatterStateCounts>> MatterStatesAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default);
+
     /// <summary>The five strip numbers of one record, computed in one statement.</summary>
     Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default);
 
@@ -184,6 +190,9 @@ public sealed class NoTasksOrganizationTaskCounts : IOrganizationTaskCounts
 
     public Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<int, TaskCountRow>>(new Dictionary<int, TaskCountRow>());
+
+    public Task<IReadOnlyDictionary<int, MatterStateCounts>> MatterStatesAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<int, MatterStateCounts>>(new Dictionary<int, MatterStateCounts>());
 
     public Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default) =>
         Task.FromResult(new TaskStripCounts(0, 0, 0, 0, 0));

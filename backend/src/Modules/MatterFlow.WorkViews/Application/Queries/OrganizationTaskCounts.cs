@@ -31,6 +31,23 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
         return rows.ToDictionary(r => r.Key);
     }
 
+    public async Task<IReadOnlyDictionary<int, MatterStateCounts>> MatterStatesAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(matterIds);
+        if (matterIds.Count == 0)
+            return new Dictionary<int, MatterStateCounts>();
+
+        var ids = matterIds.Distinct().ToList();
+        var tasks = db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.MatterId));
+        var onHold = await tasks.Where(t => t.Status == TaskStatusCode.OnHold)
+            .GroupBy(t => t.MatterId).Select(g => new { g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
+        var atRisk = await AtRiskRules.Where(tasks, db, Now())
+            .GroupBy(t => t.MatterId).Select(g => new { g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
+        var hold = onHold.ToDictionary(r => r.Key, r => r.Count);
+        var risk = atRisk.ToDictionary(r => r.Key, r => r.Count);
+        return hold.Keys.Union(risk.Keys).ToDictionary(k => k, k => new MatterStateCounts(hold.GetValueOrDefault(k), risk.GetValueOrDefault(k)));
+    }
+
     public async Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default)
     {
         var queueClock = Now();

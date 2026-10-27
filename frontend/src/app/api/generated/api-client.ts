@@ -18972,6 +18972,8 @@ export interface MatterOverview {
     assets: MatterOverviewAssets | undefined;
     activity: MyMattersActivityItem[] | undefined;
     health: MatterOverviewHealth | undefined;
+    types?: MatterOverviewType[] | undefined;
+    holdReasons?: MatterOverviewHoldReason[] | undefined;
 
     [key: string]: any;
 }
@@ -19035,6 +19037,16 @@ export interface MatterOverviewHealth {
     [key: string]: any;
 }
 
+export interface MatterOverviewHoldReason {
+    onHoldReasonId: number;
+    name: string;
+    count: number;
+    oldestDays: number;
+    query: string;
+
+    [key: string]: any;
+}
+
 export interface MatterOverviewManager {
     userId: number;
     displayName: string;
@@ -19086,6 +19098,19 @@ export interface MatterOverviewTaskCounts {
     [key: string]: any;
 }
 
+export interface MatterOverviewType {
+    taskTypeId: number;
+    name: string;
+    iconKey: string;
+    colourKey: string | undefined;
+    open: number;
+    overdue: number;
+    query: string;
+    overdueQuery: string;
+
+    [key: string]: any;
+}
+
 export interface MatterResponse {
     matterId: number;
     clientId: number;
@@ -19109,6 +19134,8 @@ export interface MatterResponse {
     rowVersion: string;
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
+    onHoldTaskCount?: number | undefined;
+    atRiskTaskCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -19553,6 +19580,7 @@ export interface NotificationItem {
     createdUtc: string;
     readUtc: string | undefined;
     isRead: boolean;
+    groupKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -20342,6 +20370,14 @@ export interface SearchHit {
     isActive: boolean;
     status: string | undefined;
     inMyMatters?: boolean | undefined;
+    taskTypeName?: string | undefined;
+    taskTypeIconKey?: string | undefined;
+    taskTypeColourKey?: string | undefined;
+    dueDate?: string | undefined;
+    dueAtUtc?: string | undefined;
+    disposition?: string | undefined;
+    sizeValue?: number | undefined;
+    sizeUnit?: string | undefined;
 
     [key: string]: any;
 }

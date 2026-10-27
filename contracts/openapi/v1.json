@@ -17912,6 +17912,24 @@
                 "$ref": "#/components/schemas/MatterOverviewHealth"
               }
             ]
+          },
+          "types": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewType"
+            }
+          },
+          "holdReasons": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MatterOverviewHoldReason"
+            }
           }
         }
       },
@@ -18122,6 +18140,36 @@
           }
         }
       },
+      "MatterOverviewHoldReason": {
+        "required": [
+          "onHoldReasonId",
+          "name",
+          "count",
+          "oldestDays",
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "onHoldReasonId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldestDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
       "MatterOverviewManager": {
         "required": [
           "userId",
@@ -18286,6 +18334,51 @@
           }
         }
       },
+      "MatterOverviewType": {
+        "required": [
+          "taskTypeId",
+          "name",
+          "iconKey",
+          "colourKey",
+          "open",
+          "overdue",
+          "query",
+          "overdueQuery"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "iconKey": {
+            "type": "string"
+          },
+          "colourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "open": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "query": {
+            "type": "string"
+          },
+          "overdueQuery": {
+            "type": "string"
+          }
+        }
+      },
       "MatterResponse": {
         "required": [
           "matterId",
@@ -18422,6 +18515,20 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "onHoldTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "atRiskTaskCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -20114,6 +20221,12 @@
           },
           "isRead": {
             "type": "boolean"
+          },
+          "groupKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -22847,6 +22960,57 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "taskTypeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskTypeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "disposition": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sizeValue": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "sizeUnit": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }

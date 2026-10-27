@@ -60,8 +60,8 @@ interface Cell {
     td > mf-filter-control + mf-filter-control {
       margin-top: var(--mf-s1);
     }
-    /* Two filters of one column (Sensitive beside Status): stacked on a narrow window, side by side with a floor of their own on a wide
-       one, so the cell never depends on what the rows hold. */
+    /* Two filters of one column (Sensitive beside Status): stacked on a window up to 1499 px, side by side with a floor of their own on a wide
+       one, so the cell never depends on what the rows hold. Side by side they took 16rem from Name and Client at 1366 px (PM v2, #881). */
     .cfr-pair {
       display: grid;
       gap: var(--mf-s1);
@@ -71,7 +71,7 @@ interface Cell {
     .cfr-pair > mf-filter-control {
       min-width: 0;
     }
-    @media (min-width: 1100px) {
+    @media (min-width: 1500px) {
       .cfr-pair {
         grid-template-columns: 6rem minmax(9.5rem, 1fr);
         min-width: 16rem;

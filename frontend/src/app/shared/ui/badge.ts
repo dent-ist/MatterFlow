@@ -112,10 +112,12 @@ export class ActiveBadge {
     icon="pi-lock"
     title="Sensitive matter"
     [describedBy]="describedBy()"
-    >Sensitive</mf-badge
+    ><span [class.mf-sr-only]="compact()">Sensitive</span></mf-badge
   >`,
 })
 export class SensitiveBadge {
+  /** The lock alone, with the word for assistive technology and the tooltip: for a name cell that has no room for the text (the Matters list, PM v2 #881). */
+  readonly compact = input(false);
   /** The id of the sentence that explains the flag (the header's note), so a screen reader hears it with the badge. */
   readonly describedBy = input<string | null>(null);
 }

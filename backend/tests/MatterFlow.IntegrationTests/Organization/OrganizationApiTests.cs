@@ -298,6 +298,13 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
         detail.GetProperty("isActive").GetBoolean().ShouldBeTrue();
         detail.GetProperty("openTaskCount").GetInt32().ShouldBe(3, "the detail's count comes from the shared Task counts (#258); the guard only blocks the deactivation");
         detail.GetProperty("overdueTaskCount").GetInt32().ShouldBe(1);
+
+        // The list adds the On hold and At risk counts (PM v2, #881); the detail leaves them out.
+        var list = await OkAsync(await As(DatabaseApiFactory.AdminAccount, withTasks).GetAsync("/api/v1/matters"));
+        var row = list.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("matterId").GetInt32() == id);
+        row.GetProperty("onHoldTaskCount").GetInt32().ShouldBe(2);
+        row.GetProperty("atRiskTaskCount").GetInt32().ShouldBe(1);
+        (!detail.TryGetProperty("onHoldTaskCount", out var onHoldOnDetail) || onHoldOnDetail.ValueKind == System.Text.Json.JsonValueKind.Null).ShouldBeTrue();
     }
 
     private sealed class FixedGuard : IMatterTaskGuard
@@ -311,6 +318,9 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         public Task<IReadOnlyDictionary<int, TaskCountRow>> ForKeysAsync(TaskCountScope scope, IReadOnlyCollection<int> keys, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<int, TaskCountRow>>(keys.ToDictionary(k => k, k => new TaskCountRow { Key = k, Open = 3, Overdue = 1 }));
+
+        public Task<IReadOnlyDictionary<int, MatterStateCounts>> MatterStatesAsync(IReadOnlyCollection<int> matterIds, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<int, MatterStateCounts>>(matterIds.ToDictionary(k => k, _ => new MatterStateCounts(2, 1)));
 
         public Task<TaskStripCounts> StripAsync(TaskCountScope scope, int key, CancellationToken cancellationToken = default) => Task.FromResult(new TaskStripCounts(3, 1, 0, 0, 0));
 

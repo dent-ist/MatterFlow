@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -13,10 +14,12 @@ import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
+  AssetDataMatterRow,
   MatterManagerItem,
   MatterManagersClient,
   MatterResponse,
   MattersClient,
+  MyMattersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { QuietRequests } from '../../../core/http/interceptors';
@@ -55,6 +58,14 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
+import {
+  MatterColumnsMenu,
+  MatterExtraColumn,
+  MatterExtraColumnChoice,
+  loadExtraColumns,
+  saveExtraColumns,
+} from '../ui/matter-columns-menu';
+import { assetsParams, sizeText } from '../../my-matters/data-model';
 
 /** Below this width the Client column (the least informative one) leaves the table (#266). */
 const CLIENT_COLUMN_MIN_PX = 900;
@@ -79,6 +90,10 @@ const BONES: Record<string, string> = {
   secondaryManager: '9rem',
   openTasks: '3rem',
   overdue: '3rem',
+  onHold: '3rem',
+  atRisk: '3rem',
+  dataSize: '5rem',
+  pending: '3rem',
   status: '5rem',
   actions: '2rem',
 };
@@ -115,6 +130,7 @@ const BONES: Record<string, string> = {
     CopyButton,
     RowLink,
     MatterManagersDialog,
+    MatterColumnsMenu,
     ScopeSwitch,
     ActionMenu,
     AddCommentDialog,
@@ -142,6 +158,33 @@ const BONES: Record<string, string> = {
     .ml-pm {
       overflow-wrap: anywhere;
     }
+    /* Name and Client are the springs of the table (PM v2, #881): a floor of their own, so the fixed columns and the filter row never squeeze them to "Demo Emp...". */
+    /* The reference keeps the room its filter needs ("Matter reference" in full). */
+    .pg-table td.ml-ref {
+      min-width: 10.5rem;
+    }
+    .pg-table td.ml-name {
+      width: 32%;
+      min-width: 10.5rem;
+    }
+    .pg-table td.ml-client {
+      width: 17%;
+      min-width: 7rem;
+    }
+    .ml-namecell mf-sensitive-badge {
+      flex: none;
+    }
+    .ml-fact {
+      white-space: nowrap;
+    }
+    .ml-muted {
+      color: var(--mf-text-muted);
+    }
+    .ml-fact a {
+      color: var(--mf-link);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
     .ml-actions {
       width: 3.25rem;
       text-align: right;
@@ -165,6 +208,14 @@ const BONES: Record<string, string> = {
           [canAll]="scope.canAll()"
           (scopeChange)="scope.set($event)"
         />
+        @if (!phone() && extraChoices().length > 0) {
+          <mf-matter-columns-menu
+            mfActions
+            [choices]="extraChoices()"
+            [selected]="extras()"
+            (changed)="setExtras($event)"
+          />
+        }
         @if (canAssign() && !phone()) {
           <button
             mfActions
@@ -417,6 +468,20 @@ const BONES: Record<string, string> = {
                         Overdue
                       </th>
                     }
+                    @if (showExtra('onHold')) {
+                      <th scope="col" class="pg-num" data-col-head="onHold">On hold</th>
+                    }
+                    @if (showExtra('atRisk')) {
+                      <th scope="col" class="pg-num" data-col-head="atRisk">At risk</th>
+                    }
+                    @if (showExtra('dataSize')) {
+                      <th scope="col" class="pg-num" data-col-head="dataSize">Data size</th>
+                    }
+                    @if (showExtra('pending')) {
+                      <th scope="col" class="pg-num" data-col-head="pending">
+                        Pending disposition
+                      </th>
+                    }
                     <th scope="col">Status</th>
                     @if (tableActions()) {
                       <th scope="col" class="ml-actions"><span class="pg-sr">Actions</span></th>
@@ -476,11 +541,11 @@ const BONES: Record<string, string> = {
                           />
                         </td>
                       }
-                      <td>
+                      <td class="ml-ref">
                         <mf-matter-ref [value]="m.matterRef" [rowStop]="true" />
                       </td>
-                      <td>
-                        <div class="pg-namecell">
+                      <td class="ml-name">
+                        <div class="pg-namecell ml-namecell">
                           <a
                             class="pg-link pg-name"
                             [routerLink]="['/matters', m.matterId]"
@@ -490,12 +555,12 @@ const BONES: Record<string, string> = {
                             >{{ m.name }}</a
                           >
                           @if (m.isSensitive) {
-                            <mf-sensitive-badge />
+                            <mf-sensitive-badge [compact]="true" />
                           }
                         </div>
                       </td>
                       @if (showClient()) {
-                        <td>
+                        <td class="ml-client">
                           @if (clientLink()) {
                             <a
                               class="pg-link pg-name"
@@ -540,6 +605,65 @@ const BONES: Record<string, string> = {
                             [name]="m.name"
                             [count]="m.overdueTaskCount ?? 0"
                           />
+                        </td>
+                      }
+                      @if (showExtra('onHold')) {
+                        <td class="pg-num ml-fact" data-cell="onHold">
+                          @if ((m.onHoldTaskCount ?? 0) > 0) {
+                            <a
+                              routerLink="/tasks"
+                              [queryParams]="{ matter: m.matterId, status: ['ON_HOLD'] }"
+                              [attr.aria-label]="m.onHoldTaskCount + ' on hold in ' + m.name"
+                              >{{ m.onHoldTaskCount }}</a
+                            >
+                          } @else {
+                            <span class="ml-muted" aria-label="0 on hold">0</span>
+                          }
+                        </td>
+                      }
+                      @if (showExtra('atRisk')) {
+                        <td class="pg-num ml-fact" data-cell="atRisk">
+                          @if ((m.atRiskTaskCount ?? 0) > 0) {
+                            <a
+                              routerLink="/tasks"
+                              [queryParams]="{
+                                matter: m.matterId,
+                                status: ['NEW', 'IN_PROGRESS'],
+                                atRisk: 'true',
+                              }"
+                              [attr.aria-label]="m.atRiskTaskCount + ' at risk in ' + m.name"
+                              >{{ m.atRiskTaskCount }}</a
+                            >
+                          } @else {
+                            <span class="ml-muted" aria-label="0 at risk">0</span>
+                          }
+                        </td>
+                      }
+                      @if (showExtra('dataSize')) {
+                        <td class="pg-num ml-fact" data-cell="dataSize">
+                          {{ dataSize(m.matterId) }}
+                        </td>
+                      }
+                      @if (showExtra('pending')) {
+                        <td class="pg-num ml-fact" data-cell="pending">
+                          @if (dataRow(m.matterId); as d) {
+                            @if (d.counts.pendingDisposition > 0) {
+                              <a
+                                routerLink="/assets"
+                                [queryParams]="pendingParams(d)"
+                                [attr.aria-label]="
+                                  d.counts.pendingDisposition + ' pending disposition in ' + m.name
+                                "
+                                >{{ d.counts.pendingDisposition }}</a
+                              >
+                            } @else {
+                              <span class="ml-muted" aria-label="0 pending disposition">0</span>
+                            }
+                          } @else {
+                            <span class="ml-muted" [attr.title]="dataNote()">{{
+                              dataReady() ? '0' : '–'
+                            }}</span>
+                          }
                         </td>
                       }
                       <td>
@@ -602,7 +726,47 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   private readonly wideForSecondary = viewportAtLeast(SECONDARY_COLUMN_MIN_PX);
   private readonly wideForPrimary = viewportAtLeast(PRIMARY_COLUMN_MIN_PX);
   private readonly managersApi = inject(MatterManagersClient);
+  /** The Data API client is asked for only when a Data size or Pending disposition column is shown, so it is looked up then, not at construction. */
+  private readonly injector = inject(Injector);
   private readonly quiet = inject(QuietRequests);
+
+  /**
+   * The optional columns (PM v2, #881): On hold and At risk need Task.View, Data size and Pending disposition need Asset.View. The default set shows none;
+   * the choice is remembered in this browser.
+   */
+  protected readonly extraChoices = computed((): MatterExtraColumnChoice[] => [
+    ...(this.counts()
+      ? [
+          { key: 'onHold' as const, label: 'On hold' },
+          { key: 'atRisk' as const, label: 'At risk' },
+        ]
+      : []),
+    // The numbers come from the Data API, which is for people who manage matters and may see tasks and assets (My Matters' own rule).
+    ...(this.canData()
+      ? [
+          { key: 'dataSize' as const, label: 'Data size' },
+          { key: 'pending' as const, label: 'Pending disposition' },
+        ]
+      : []),
+  ]);
+  private readonly canData = computed(
+    () =>
+      this.auth.has('Asset.View') &&
+      this.auth.has('Task.View') &&
+      (this.auth.has('Matter.BeManager') || this.auth.has('Matter.AssignManagers')),
+  );
+  protected readonly extras = signal<readonly MatterExtraColumn[]>(
+    loadExtraColumns(['onHold', 'atRisk', 'dataSize', 'pending']),
+  );
+  /** The columns shown now: the chosen ones the viewer may have, never on a phone (cards) . */
+  private readonly shownExtras = computed(() => {
+    const allowed = new Set(this.extraChoices().map((c) => c.key));
+    return this.phone() ? [] : this.extras().filter((k) => allowed.has(k));
+  });
+  /** The Data API's rows by matter (the sizes and pending counts of the page; loaded only while one of the two columns is shown). */
+  private readonly dataRows = signal<ReadonlyMap<number, AssetDataMatterRow>>(new Map());
+  protected readonly dataReady = signal(false);
+  private dataScope: 'mine' | 'all' = 'mine';
 
   /** The people who can be named a project manager (the filter's choices); empty until loaded, and when the lookup fails. */
   private readonly managers = signal<readonly MatterManagerItem[]>([]);
@@ -643,6 +807,36 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly emptyText = computed(() =>
     this.scope.mine() ? 'You do not manage any matter yet.' : '',
   );
+  protected showExtra(key: MatterExtraColumn): boolean {
+    return this.shownExtras().includes(key);
+  }
+
+  protected setExtras(columns: readonly MatterExtraColumn[]): void {
+    this.extras.set(columns);
+    saveExtraColumns(columns);
+  }
+
+  protected dataRow(matterId: number): AssetDataMatterRow | undefined {
+    return this.dataRows().get(matterId);
+  }
+
+  /** "640 GB", "No assets" (a matter the data covers but that holds none), or an en dash when the figure is not known to this view. */
+  protected dataSize(matterId: number): string {
+    const row = this.dataRows().get(matterId);
+    if (row) return sizeText(row.counts.size) || '–';
+    return '–';
+  }
+
+  protected dataNote(): string {
+    return this.dataReady()
+      ? 'No assets recorded for this matter in this view.'
+      : 'Not available for this matter in this view.';
+  }
+
+  protected pendingParams(row: AssetDataMatterRow) {
+    return assetsParams(row.query, this.dataScope, 'pending');
+  }
+
   protected readonly showPrimary = computed(() => this.wideForPrimary());
   protected readonly showSecondary = computed(() => this.wideForSecondary());
   protected readonly allSelected = computed(
@@ -702,6 +896,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     ...(this.showPrimary() ? ['primaryManager'] : []),
     ...(this.showSecondary() ? ['secondaryManager'] : []),
     ...(this.counts() ? ['openTasks', 'overdue'] : []),
+    ...this.shownExtras(),
     'status',
     ...(this.tableActions() ? ['actions'] : []),
   ]);
@@ -772,6 +967,12 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       this.rows();
       untracked(() => this.selected.set(this.emptySelection));
     });
+    // Data size and Pending disposition come from the Data API (the same numbers as My Matters > Data), asked for only while one of the two columns is shown.
+    effect(() => {
+      const needed = this.shownExtras().some((k) => k === 'dataSize' || k === 'pending');
+      const scope = this.scope.mine() ? 'mine' : this.scope.canAll() ? 'all' : 'mine';
+      untracked(() => void this.loadData(needed, scope));
+    });
     registerTableSkip({ copyButton: true });
     restoreRowFocus('matters', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
@@ -783,6 +984,26 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
 
   protected override listFilters() {
     return this.filters;
+  }
+
+  private dataTurn = 0;
+
+  private async loadData(needed: boolean, scope: 'mine' | 'all'): Promise<void> {
+    const mine = ++this.dataTurn;
+    if (!needed) return;
+    this.dataScope = scope;
+    try {
+      const res = await firstValueFrom(
+        this.quiet.run(() => this.injector.get(MyMattersClient).getMyMattersData(scope)),
+      );
+      if (mine !== this.dataTurn) return;
+      this.dataRows.set(new Map(res.matters.map((r) => [r.matterId, r])));
+      this.dataReady.set(true);
+    } catch {
+      if (mine !== this.dataTurn) return;
+      this.dataRows.set(new Map());
+      this.dataReady.set(false);
+    }
   }
 
   /** A project manager column filter: a select of the eligible people with "None" (nobody in that place) after the leading "Any". */

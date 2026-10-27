@@ -4,6 +4,7 @@ import {
   MatterManagersClient,
   MatterResponse,
   MattersClient,
+  MyMattersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -26,6 +27,7 @@ const BOB = { userId: 12, displayName: 'Bob Roe', isActive: true };
 describe('MattersListPage', () => {
   let api: { listMatters: ReturnType<typeof vi.fn>; setMatterManagers: ReturnType<typeof vi.fn> };
   let managers: { lookupMatterManagers: ReturnType<typeof vi.fn> };
+  let myMatters: { getMyMattersData: ReturnType<typeof vi.fn> };
   let writeText: ReturnType<typeof vi.fn>;
   let query: ReturnType<typeof fakeQuery>;
   let navigate: ReturnType<typeof vi.fn>;
@@ -45,8 +47,39 @@ describe('MattersListPage', () => {
         isActive: false,
       }),
     ],
+    columns: string[] = [],
   ) {
     localStorage.clear();
+    if (columns.length > 0) localStorage.setItem('mf.matters.columns', JSON.stringify(columns));
+    const counts = {
+      assets: 19,
+      active: 16,
+      inactive: 1,
+      pendingDisposition: 2,
+      disposed: 0,
+      size: [{ unit: 'GB', value: 640.2, assets: 15 }],
+    };
+    myMatters = {
+      getMyMattersData: vi.fn().mockReturnValue(
+        ok({
+          totals: counts,
+          matters: [
+            {
+              matterId: 7,
+              matterRef: '00343-00012',
+              matterName: 'Merger Review',
+              clientName: 'Acme Corp',
+              matterIsActive: true,
+              counts,
+              query: 'matterId=7&matterManagedByMe=true',
+            },
+          ],
+          types: [],
+          warnings: {},
+          scopeQuery: '',
+        }),
+      ),
+    };
     api = {
       listMatters: vi.fn().mockReturnValue(ok(pageOfMatters(...matters))),
       setMatterManagers: vi.fn().mockImplementation((id: number) => ok(aMatter({ matterId: id }))),
@@ -69,6 +102,7 @@ describe('MattersListPage', () => {
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MattersClient, useValue: api },
         { provide: MatterManagersClient, useValue: managers },
+        { provide: MyMattersClient, useValue: myMatters },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
@@ -95,6 +129,79 @@ describe('MattersListPage', () => {
     rows[0].querySelector('button')!.click();
     await settle(fixture);
     expect(writeText).toHaveBeenCalledWith('00343-00012');
+  });
+
+  it('offers On hold, At risk, Data size and Pending disposition as optional columns, none by default, remembered in this browser (PM v2, #881)', async () => {
+    const plain = await create(['Matter.View', 'Task.View', 'Asset.View', 'Matter.BeManager']);
+    const heads = () =>
+      Array.from(plain.nativeElement.querySelectorAll('thead th')).map((t) =>
+        (t as HTMLElement).textContent!.trim(),
+      );
+    expect(heads()).not.toContain('On hold');
+    expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
+
+    (plain.nativeElement.querySelector('[data-matter-columns]') as HTMLButtonElement).click();
+    plain.detectChanges();
+    const root: HTMLElement = plain.nativeElement;
+    const boxes = Array.from(
+      root.querySelectorAll<HTMLInputElement>('[data-matter-columns-panel] input'),
+    );
+    expect(boxes.map((b) => b.getAttribute('data-column'))).toEqual([
+      'onHold',
+      'atRisk',
+      'dataSize',
+      'pending',
+    ]);
+    boxes[0].checked = true;
+    boxes[0].dispatchEvent(new Event('change'));
+    await settle(plain);
+    expect(heads()).toContain('On hold');
+    expect(JSON.parse(localStorage.getItem('mf.matters.columns')!)).toEqual(['onHold']);
+  });
+
+  it('shows the counts of the chosen columns, and the size and pending count from the Data API', async () => {
+    const fixture = await create(
+      ['Matter.View', 'Task.View', 'Asset.View', 'Matter.BeManager'],
+      {},
+      [aMatter({ onHoldTaskCount: 3, atRiskTaskCount: 0 })],
+      ['onHold', 'atRisk', 'dataSize', 'pending'],
+    );
+    const row = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
+    expect(myMatters.getMyMattersData).toHaveBeenCalledWith('mine');
+    expect(row.querySelector('[data-cell=onHold] a')!.textContent!.trim()).toBe('3');
+    expect(row.querySelector('[data-cell=onHold] a')!.getAttribute('href')).toContain(
+      'status=ON_HOLD',
+    );
+    expect(row.querySelector('[data-cell=atRisk] a')).toBeNull();
+    expect(row.querySelector('[data-cell=atRisk]')!.textContent!.trim()).toBe('0');
+    expect(row.querySelector('[data-cell=dataSize]')!.textContent!.trim()).toBe('640.2 GB');
+    expect(row.querySelector('[data-cell=pending] a')!.textContent!.trim()).toBe('2');
+    expect(row.querySelector('[data-cell=pending] a')!.getAttribute('href')).toContain(
+      'status=pending',
+    );
+  });
+
+  it('leaves out the columns a permission hides: no On hold without Task.View, no Data size without Asset.View', async () => {
+    // Asset.View and Task.View without the right to manage matters: the Data API would answer 403, so those two columns are not offered either.
+    const noManage = await create(['Matter.View', 'Task.View', 'Asset.View'], {}, [aMatter()]);
+    (noManage.nativeElement.querySelector('[data-matter-columns]') as HTMLButtonElement).click();
+    noManage.detectChanges();
+    const offered: HTMLElement = noManage.nativeElement;
+    expect(
+      Array.from(offered.querySelectorAll('[data-matter-columns-panel] input')).map((b) =>
+        b.getAttribute('data-column'),
+      ),
+    ).toEqual(['onHold', 'atRisk']);
+    TestBed.resetTestingModule();
+    const fixture = await create(
+      ['Matter.View'],
+      {},
+      [aMatter()],
+      ['onHold', 'atRisk', 'dataSize', 'pending'],
+    );
+    expect(fixture.nativeElement.querySelector('[data-matter-columns]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-col-head]')).toBeNull();
+    expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
   });
 
   it('flags sensitive matters in the list', async () => {

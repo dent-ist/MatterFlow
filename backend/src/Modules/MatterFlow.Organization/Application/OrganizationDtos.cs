@@ -105,6 +105,8 @@ public sealed class ChangeNumberRequest
 /// <param name="RowVersion">Concurrency token (base64).</param>
 /// <param name="CreatedAtUtc">When the Matter was created (UTC).</param>
 /// <param name="ModifiedAtUtc">When the Matter was last changed (UTC), if ever.</param>
+/// <param name="OnHoldTaskCount">Open Tasks that are On Hold (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
+/// <param name="AtRiskTaskCount">Open Tasks that are At risk by the rule of the Task Queue (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
 public sealed record MatterResponse(
     [property: Required] int MatterId,
     [property: Required] int ClientId,
@@ -127,7 +129,9 @@ public sealed record MatterResponse(
     [property: Required] IReadOnlyList<string> DroppedFields,
     [property: Required] string RowVersion,
     [property: Required] DateTime CreatedAtUtc,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    int? OnHoldTaskCount = null,
+    int? AtRiskTaskCount = null);
 
 /// <summary>A matter's project manager as lists and headers show them.</summary>
 /// <param name="UserId">User id.</param>
