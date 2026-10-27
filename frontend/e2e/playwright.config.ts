@@ -43,5 +43,15 @@ export default defineConfig({
       args: process.env['E2E_NO_SANDBOX'] ? ['--no-sandbox'] : [],
     },
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  projects: [
+    // The branding spec changes the application name and icon for everybody (epic #850), so it runs alone after the rest of the suite.
+    { name: 'chromium', testIgnore: '**/app-settings.spec.ts', use: { browserName: 'chromium' } },
+    {
+      name: 'branding',
+      testMatch: '**/app-settings.spec.ts',
+      dependencies: ['chromium'],
+      fullyParallel: false,
+      use: { browserName: 'chromium' },
+    },
+  ],
 });

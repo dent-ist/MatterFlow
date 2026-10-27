@@ -387,3 +387,33 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
     private Task<List<AuditEvent>> AuditAsync() =>
         _factory.WithDbAsync(db => db.Set<AuditEvent>().AsNoTracking().Where(a => a.ObjectType == "AppSetting").OrderBy(a => a.Id).ToListAsync());
 }
+
+/// <summary>
+/// The production sign-in provider is Windows/Negotiate. IIS decides whether an unauthenticated browser request reaches the application at all
+/// (deploy/web.config opens exactly /api/v1/branding to anonymous requests); this class proves the application side of that decision: with the
+/// Windows provider an anonymous request to the two public branding endpoints is served, while every protected endpoint still answers a Negotiate challenge.
+/// </summary>
+[Collection(SqlServerCollection.Name)]
+public sealed class BrandingWindowsProviderTests(SqlServerFixture sql)
+{
+    [Fact]
+    public async Task With_the_Windows_provider_the_public_branding_endpoints_answer_anonymous_requests_and_nothing_else_does()
+    {
+        await using var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { ExtraSettings = [("Auth:Provider", "Windows")] };
+        var client = factory.CreateClient();
+
+        var branding = await client.GetAsync("/api/v1/branding");
+        branding.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await branding.Content.ReadAsStringAsync()).ShouldContain("\"appName\":\"MatterFlow\"");
+        branding.Headers.Contains("WWW-Authenticate").ShouldBeFalse();
+        (await client.GetAsync("/api/v1/branding/icon")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        foreach (var path in new[] { "/api/v1/me", "/api/v1/admin/settings/branding", "/api/v1/priorities", "/api/v1/tasks" })
+        {
+            var response = await client.GetAsync(path);
+            response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized, path);
+            response.Headers.WwwAuthenticate.Select(h => h.Scheme).ShouldContain("Negotiate", path);
+        }
+    }
+}
+
