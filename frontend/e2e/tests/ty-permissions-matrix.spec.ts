@@ -498,7 +498,8 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
         );
         if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
         const tabLinks = await page.locator('#mf-main [role="tab"]').count();
-        if (mine && other ? tabLinks !== 2 : tabLinks !== 0)
+        // Two tabs for Priority and Status; a third, On-hold reasons (#876), for whoever holds OnHoldReason.Manage (the System Admin does).
+        if (mine && other ? tabLinks < 2 || tabLinks > 3 : tabLinks !== 0)
           problems.push(`${url}: ${tabLinks} tab links for Priority=${canPr}, Status=${canSl}`);
         // The page lists its rows, so the data loaded (not an empty error state).
         await expect(page.locator('#mf-main table tbody tr').first(), `${url}: rows`).toBeVisible();

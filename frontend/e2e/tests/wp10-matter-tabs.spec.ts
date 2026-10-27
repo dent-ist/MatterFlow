@@ -328,9 +328,10 @@ test.describe('WP10 matter tabs', () => {
       const dashes = page.locator('mf-matter-assets [data-none]');
       await expect(dashes).toHaveCount(3);
       await expect(dashes.first()).toHaveAttribute('aria-hidden', 'true');
-      await expect(
-        page.locator('mf-matter-assets tbody tr:not(.gb-state) td:nth-child(3)').first(),
-      ).toContainText('None');
+      // The External reference cell reads "None" for a screen reader; the Size column (#883) now sits before it, so the row is checked, not a fixed column.
+      await expect(page.locator('mf-matter-assets tbody tr:not(.gb-state)').first()).toContainText(
+        'None',
+      );
       // No New asset button in the tab; the 44 px rows hold.
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
       const heights = await rows.evaluateAll((rs) =>

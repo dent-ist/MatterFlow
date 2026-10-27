@@ -342,11 +342,17 @@ test.describe('WP2 matter reference on one line (#252)', () => {
         cell: 'tbody mf-matter-ref .mf-ref',
         phoneCell: '[data-card-matter] .rc-ref',
       },
-      { name: 'assets-list', url: `/assets?name=${w.tag}`, cell: 'tbody mf-matter-ref .mf-ref' },
+      {
+        name: 'assets-list',
+        url: `/assets?name=${w.tag}`,
+        cell: 'tbody mf-matter-ref .mf-ref',
+      },
     ];
     for (const [width, height] of [SIZES[2], SIZES[3], SIZES[0], SIZES[1]]) {
       await page.setViewportSize({ width, height });
       for (const t of tables) {
+        // The Assets list is a card list on a phone, and its card shows the matter in a text line, not as a reference cell (#866).
+        if (width < 640 && t.name === 'assets-list') continue;
         await page.goto(t.url);
         // Below 640 px the three record lists are cards (WP12) with the reference in the mono `rc-ref`; Assets stays a table.
         const selector = width < 640 && t.phoneCell ? t.phoneCell : t.cell;

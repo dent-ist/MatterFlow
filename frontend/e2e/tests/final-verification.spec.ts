@@ -156,7 +156,13 @@ test.describe('Final verification (#240)', () => {
           const rows = Array.from(scope.querySelectorAll<HTMLElement>('[data-task]'));
           const norm = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
           return {
-            titles: rows.map((r) => norm(r.querySelector('td[data-col="title"]')?.textContent)),
+            // The task type badge (PM v2, #854) sits in the Title cell and carries its own accessible name; the title is what remains without it.
+            titles: rows.map((r) => {
+              const cell = r.querySelector('td[data-col="title"]')?.cloneNode(true) as
+                HTMLElement | undefined;
+              cell?.querySelectorAll('mf-task-type-badge').forEach((b) => b.remove());
+              return norm(cell?.textContent);
+            }),
             heights: rows.map((r) => Math.round(r.getBoundingClientRect().height)),
             spill: rows.flatMap((r) =>
               Array.from(r.querySelectorAll<HTMLElement>('td'))

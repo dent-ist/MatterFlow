@@ -74,7 +74,7 @@ const COLUMNS = [
 const BONES: Record<(typeof COLUMNS)[number], string> = {
   name: '12rem',
   defaultWorkflow: '9rem',
-  target: '2rem',
+  target: '5rem', // as wide as its header ("Target (days)"), so the loaded table does not shift
   form: '5rem',
   workflows: '1.5rem',
   openTasks: '1.5rem',
@@ -160,19 +160,23 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly phone = phoneCards();
   /**
    * The optional columns drop in a fixed order as the window narrows, so the grid never scrolls sideways and the row menu stays in view
-   * (#374): Open tasks below 1280 px, Workflows (the count) below 1100 px, then Request form below 900 px; Name, Default workflow and
+   * (#374): Open tasks below 1280 px, Workflows (the count) below 1100 px, then Request form below 900 px, then Target below 768 px; Name, Default workflow and
    * Status stay. The open Task count is null in the API without Task.View, so that column is not there for a person without it.
    */
+  private readonly targetRoom = viewportAtLeast(768);
   private readonly formRoom = viewportAtLeast(900);
   private readonly workflowsRoom = viewportAtLeast(1100);
   private readonly tasksRoom = viewportAtLeast(1280);
   protected readonly canViewTasks = computed(() => this.auth.has('Task.View'));
+  /** The Target column (#853) drops below 768 px, after the Request form: at 640 px it made the table 57 px wider than its box; the target stays in the row's accessible summary and on the record. */
+  protected readonly targetShown = this.targetRoom;
   protected readonly formRoomShown = this.formRoom;
   protected readonly workflowsShown = this.workflowsRoom;
   protected readonly tasksShown = computed(() => this.tasksRoom() && this.canViewTasks());
   protected readonly columns = computed<readonly string[]>(() =>
     COLUMNS.filter(
       (c) =>
+        (c !== 'target' || this.targetRoom()) &&
         (c !== 'form' || this.formRoom()) &&
         (c !== 'workflows' || this.workflowsRoom()) &&
         (c !== 'openTasks' || this.tasksShown()),

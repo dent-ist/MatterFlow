@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -457,7 +458,8 @@ test.describe('Swimlane accessibility (WP9a)', () => {
 
   test('axe reports no aria-prohibited-attr, not even as "needs review"', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
-    const file = process.env['E2E_AXE_PATH']!;
+    const file =
+      process.env['E2E_AXE_PATH'] ?? createRequire(__filename).resolve('axe-core/axe.min.js');
     for (const query of [
       '&group=none',
       '&group=priority',

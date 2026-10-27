@@ -157,6 +157,9 @@ export function turnaroundText(
       list-style: none;
     }
     .bd__card {
+      /* A card may be narrower than its longest word (a 100-character matter or type name): it wraps inside the phone instead of widening the page (PV-38). */
+      min-width: 0;
+      overflow-wrap: anywhere;
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);

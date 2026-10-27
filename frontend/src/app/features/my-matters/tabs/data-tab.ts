@@ -93,6 +93,8 @@ function plural(n: number, one: string, many: string): string {
     }
     .dt__field {
       display: grid;
+      /* One column that may shrink: an asset type with a very long name must not make the select, and the page, wider than a phone (PV-38). */
+      grid-template-columns: minmax(0, 1fr);
       gap: 2px;
       min-width: 0;
     }

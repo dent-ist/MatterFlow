@@ -4,7 +4,7 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
 
 /**
  * WP-AD3 #593: the Labels page on the admin list shell: crumb Administration > Labels, title, one-line description per tab, counted tabs
- * Priorities (n) and Status labels (n) with the arrow keys, the "Skip to table" first Tab stop, one tab and no tab strip for a person with
+ * Priorities (n), Status labels (n) and On-hold reasons (n) with the arrow keys, the "Skip to table" first Tab stop, one tab and no tab strip for a person with
  * one permission. Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad3-labels).
  */
 test.describe('the Labels page on the admin list shell (#593)', () => {
@@ -58,6 +58,8 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     await expect(tabs).toHaveText([
       new RegExp(`Priorities \\(${active}\\)$`),
       /Status labels \(5\)$/,
+      // The third tab came with PM v2 (#876); its count moves when the on-hold reason specs add reasons, so only its shape is fixed here.
+      /On-hold reasons \(\d+\)$/,
     ]);
     await expect(tabs.first()).toHaveAttribute('aria-label', `Priorities, ${active} active`);
     await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
@@ -81,10 +83,10 @@ test.describe('the Labels page on the admin list shell (#593)', () => {
     await expect(page).toHaveURL(/\/admin\/priorities$/);
     await expect(page).toHaveTitle('Labels: Priorities - MatterFlow');
     await page.keyboard.press('End');
-    await expect(page).toHaveURL(/\/admin\/status-labels$/);
+    await expect(page).toHaveURL(/\/admin\/on-hold-reasons$/);
     await expect(page.locator('[role="tabpanel"]')).toHaveAttribute(
       'aria-labelledby',
-      'labels-tab-status-labels',
+      'labels-tab-on-hold-reasons',
     );
   });
 

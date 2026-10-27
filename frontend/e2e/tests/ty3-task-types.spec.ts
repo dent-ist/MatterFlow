@@ -94,7 +94,7 @@ test.describe('Task Types rows and columns (#371)', () => {
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
-  test('the columns drop in a fixed order: Open tasks below 1280, Workflows below 1100, Request form below 900', async ({
+  test('the columns drop in a fixed order: Open tasks below 1280, Workflows below 1100, Request form below 900, Target below 768', async ({
     page,
   }) => {
     const all = [
@@ -115,7 +115,8 @@ test.describe('Task Types rows and columns (#371)', () => {
       [1000, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
       [900, all.filter((h) => h !== 'Open tasks' && h !== 'Workflows')],
       [768, ['Name', 'Default workflow', 'Target (days)', 'Status', 'Actions']],
-      [640, ['Name', 'Default workflow', 'Target (days)', 'Status', 'Actions']],
+      // Target (days) drops last of the optional columns (PM v2 #853): at 640 px it made the table wider than its box.
+      [640, ['Name', 'Default workflow', 'Status', 'Actions']],
     ];
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });

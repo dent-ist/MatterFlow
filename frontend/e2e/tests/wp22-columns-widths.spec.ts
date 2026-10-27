@@ -239,7 +239,7 @@ test.describe('Columns panel groups (#230)', () => {
     const legends = page.locator('[data-columns-group] legend');
     await expect(legends).toHaveText(['Task', 'Where', 'Who', 'When', 'State']);
     const boxes = page.locator('[data-columns-group] input[type=checkbox]');
-    await expect(boxes).toHaveCount(20);
+    await expect(boxes).toHaveCount(21); // PM v2 added the Task type column (#855)
     await expect(page.locator('[data-columns-group] input[type=checkbox]:disabled')).toHaveCount(2);
     await expect(page.locator('[data-columns-group="Task"]')).toContainText('(always shown)');
     // The whole list is reachable: the scroll area scrolls and the footer stays in view.

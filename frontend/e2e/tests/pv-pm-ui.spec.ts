@@ -280,6 +280,7 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
       'Overview',
       'Deadlines',
       'Breakdown',
+      'Data', // PM v2 (#870): needs Asset.View, which the Project Manager role holds
       'Activity',
       'Trends',
     ]);

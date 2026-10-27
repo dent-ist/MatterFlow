@@ -245,11 +245,13 @@ test.describe('Dashboard actions and click-through', () => {
     await page.goto('/dashboard?tab=trends');
     const plot = page.locator('[data-plot]');
     await plot.focus();
-    await expect(page.locator('[data-tip]')).toContainText('created');
-    await expect(page.locator('[data-tip]')).toContainText('Today so far');
+    // The navigation rail also uses data-tip for its labels; the chart's tooltip is the one inside the plot's panel.
+    const tip = page.locator('main [data-tip]');
+    await expect(tip).toContainText('created');
+    await expect(tip).toContainText('Today so far');
     await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-readout]')).toContainText('completed');
-    await expect(page.locator('[data-tip]')).not.toContainText('Today so far');
+    await expect(tip).not.toContainText('Today so far');
   });
 
   test('a technician has the Summary tab only, with the unassigned queue (no other tabs)', async ({

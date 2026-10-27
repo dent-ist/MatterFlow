@@ -1,0 +1,2114 @@
+[
+ {
+  "size": "1366x768",
+  "shot": "01-my-matters-overview",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "01b-my-matters-overview-full",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "01c-section-type-filter-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "01d-focus-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "02-my-matters-deadlines",
+  "url": "/my-matters?tab=deadlines",
+  "overflowPx": 0,
+  "title": "My Matters: Deadlines - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1745
+ },
+ {
+  "size": "1366x768",
+  "shot": "03-my-matters-breakdown",
+  "url": "/my-matters?tab=breakdown",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1009
+ },
+ {
+  "size": "1366x768",
+  "shot": "03c-my-matters-data",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1593
+ },
+ {
+  "size": "1366x768",
+  "shot": "04-my-matters-activity",
+  "url": "/my-matters?tab=activity",
+  "overflowPx": 0,
+  "title": "My Matters: Activity - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1966
+ },
+ {
+  "size": "1366x768",
+  "shot": "05-my-matters-trends",
+  "url": "/my-matters?tab=trends",
+  "overflowPx": 0,
+  "title": "My Matters: Trends - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 829
+ },
+ {
+  "size": "1366x768",
+  "shot": "03b-my-matters-breakdown-per-type",
+  "url": "/my-matters?tab=breakdown&bview=types",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2190
+ },
+ {
+  "size": "1366x768",
+  "shot": "03d-my-matters-data-volume-table",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1783
+ },
+ {
+  "size": "1366x768",
+  "shot": "06-matters-list",
+  "url": "/matters?scope=mine",
+  "overflowPx": 0,
+  "title": "Matters - MatterFlow",
+  "h1": "Matters",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "07-matter-overview",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "07b-matter-overview-full",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "08-matter-tasks",
+  "url": "/matters/133?tab=tasks",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Tasks - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "09-matter-assets",
+  "url": "/matters/133?tab=assets",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Assets - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "10-matter-projects",
+  "url": "/matters/133?tab=projects",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Projects - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "11-task-queue",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "11b-task-queue-export-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "11c-task-queue-views-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "11d-task-queue-on-hold-with-reason",
+  "url": "/tasks?status=ON_HOLD",
+  "overflowPx": 0,
+  "title": "Task Queue: On hold - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "12-assets-list",
+  "url": "/assets?scope=mine",
+  "overflowPx": 0,
+  "title": "Assets - MatterFlow",
+  "h1": "Assets",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "13-asset-record",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "13b-asset-disposition-dialog",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "14-report-builder",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 823
+ },
+ {
+  "size": "1366x768",
+  "shot": "14b-report-result-table",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1093
+ },
+ {
+  "size": "1366x768",
+  "shot": "14c-report-pie",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1116
+ },
+ {
+  "size": "1366x768",
+  "shot": "15-clients-list",
+  "url": "/clients?scope=mine",
+  "overflowPx": 0,
+  "title": "Clients - MatterFlow",
+  "h1": "Clients",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "16-projects-list",
+  "url": "/projects?scope=mine",
+  "overflowPx": 0,
+  "title": "Projects - MatterFlow",
+  "h1": "Projects",
+  "tabs": [],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "17-search-results",
+  "url": "/search?q=review",
+  "overflowPx": 0,
+  "title": "Search results: All - MatterFlow",
+  "h1": "Search results",
+  "tabs": [
+   "All (98)",
+   "Matters (4)",
+   "Clients (0)",
+   "Tasks (91)",
+   "Projects (3)",
+   "Assets (0)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "18-notification-bell",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "19-notifications-page",
+  "url": "/notifications",
+  "overflowPx": 0,
+  "title": "Notifications - MatterFlow",
+  "h1": "Notifications",
+  "tabs": [],
+  "scrollHeight": 1023
+ },
+ {
+  "size": "1366x768",
+  "shot": "20-menu",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3118
+ },
+ {
+  "size": "1366x768",
+  "shot": "21-admin-task-types",
+  "url": "/admin/task-types",
+  "overflowPx": 0,
+  "title": "Task Types - MatterFlow",
+  "h1": "Task Types",
+  "tabs": [
+   "Task Types (79)",
+   "Workflows (74)",
+   "Workflow Steps (175)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "22-admin-task-type-edit",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 958
+ },
+ {
+  "size": "1366x768",
+  "shot": "22b-admin-task-type-edit-full",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 958
+ },
+ {
+  "size": "1366x768",
+  "shot": "23-admin-on-hold-reasons",
+  "url": "/admin/on-hold-reasons",
+  "overflowPx": 0,
+  "title": "Labels: On-hold reasons - MatterFlow",
+  "h1": "Labels",
+  "tabs": [
+   "Priorities (4)",
+   "Status labels (5)",
+   "On-hold reasons (4)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1366x768",
+  "shot": "24-admin-asset-types",
+  "url": "/admin/asset-types",
+  "overflowPx": 0,
+  "title": "Asset Types - MatterFlow",
+  "h1": "Asset Types",
+  "tabs": [
+   "Asset Types (31)",
+   "Link Roles (4)"
+  ],
+  "scrollHeight": 768
+ },
+ {
+  "size": "1920x1080",
+  "shot": "01-my-matters-overview",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "01b-my-matters-overview-full",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "01c-section-type-filter-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "01d-focus-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "02-my-matters-deadlines",
+  "url": "/my-matters?tab=deadlines",
+  "overflowPx": 0,
+  "title": "My Matters: Deadlines - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1745
+ },
+ {
+  "size": "1920x1080",
+  "shot": "03-my-matters-breakdown",
+  "url": "/my-matters?tab=breakdown",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "03c-my-matters-data",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1545
+ },
+ {
+  "size": "1920x1080",
+  "shot": "04-my-matters-activity",
+  "url": "/my-matters?tab=activity",
+  "overflowPx": 0,
+  "title": "My Matters: Activity - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1966
+ },
+ {
+  "size": "1920x1080",
+  "shot": "05-my-matters-trends",
+  "url": "/my-matters?tab=trends",
+  "overflowPx": 0,
+  "title": "My Matters: Trends - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "03b-my-matters-breakdown-per-type",
+  "url": "/my-matters?tab=breakdown&bview=types",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2174
+ },
+ {
+  "size": "1920x1080",
+  "shot": "03d-my-matters-data-volume-table",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1735
+ },
+ {
+  "size": "1920x1080",
+  "shot": "06-matters-list",
+  "url": "/matters?scope=mine",
+  "overflowPx": 0,
+  "title": "Matters - MatterFlow",
+  "h1": "Matters",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "07-matter-overview",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "07b-matter-overview-full",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "08-matter-tasks",
+  "url": "/matters/133?tab=tasks",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Tasks - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "09-matter-assets",
+  "url": "/matters/133?tab=assets",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Assets - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "10-matter-projects",
+  "url": "/matters/133?tab=projects",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Projects - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "11-task-queue",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "11b-task-queue-export-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "11c-task-queue-views-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "11d-task-queue-on-hold-with-reason",
+  "url": "/tasks?status=ON_HOLD",
+  "overflowPx": 0,
+  "title": "Task Queue: On hold - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "12-assets-list",
+  "url": "/assets?scope=mine",
+  "overflowPx": 0,
+  "title": "Assets - MatterFlow",
+  "h1": "Assets",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "13-asset-record",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "13b-asset-disposition-dialog",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "14-report-builder",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "14b-report-result-table",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1093
+ },
+ {
+  "size": "1920x1080",
+  "shot": "14c-report-pie",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1116
+ },
+ {
+  "size": "1920x1080",
+  "shot": "15-clients-list",
+  "url": "/clients?scope=mine",
+  "overflowPx": 0,
+  "title": "Clients - MatterFlow",
+  "h1": "Clients",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "16-projects-list",
+  "url": "/projects?scope=mine",
+  "overflowPx": 0,
+  "title": "Projects - MatterFlow",
+  "h1": "Projects",
+  "tabs": [],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "17-search-results",
+  "url": "/search?q=review",
+  "overflowPx": 0,
+  "title": "Search results: All - MatterFlow",
+  "h1": "Search results",
+  "tabs": [
+   "All (98)",
+   "Matters (4)",
+   "Clients (0)",
+   "Tasks (91)",
+   "Projects (3)",
+   "Assets (0)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "18-notification-bell",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "19-notifications-page",
+  "url": "/notifications",
+  "overflowPx": 0,
+  "title": "Notifications - MatterFlow",
+  "h1": "Notifications",
+  "tabs": [],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "20-menu",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3043
+ },
+ {
+  "size": "1920x1080",
+  "shot": "21-admin-task-types",
+  "url": "/admin/task-types",
+  "overflowPx": 0,
+  "title": "Task Types - MatterFlow",
+  "h1": "Task Types",
+  "tabs": [
+   "Task Types (79)",
+   "Workflows (74)",
+   "Workflow Steps (175)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "22-admin-task-type-edit",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "22b-admin-task-type-edit-full",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1085
+ },
+ {
+  "size": "1920x1080",
+  "shot": "23-admin-on-hold-reasons",
+  "url": "/admin/on-hold-reasons",
+  "overflowPx": 0,
+  "title": "Labels: On-hold reasons - MatterFlow",
+  "h1": "Labels",
+  "tabs": [
+   "Priorities (4)",
+   "Status labels (5)",
+   "On-hold reasons (4)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "1920x1080",
+  "shot": "24-admin-asset-types",
+  "url": "/admin/asset-types",
+  "overflowPx": 0,
+  "title": "Asset Types - MatterFlow",
+  "h1": "Asset Types",
+  "tabs": [
+   "Asset Types (31)",
+   "Link Roles (4)"
+  ],
+  "scrollHeight": 1080
+ },
+ {
+  "size": "768x1024",
+  "shot": "01-my-matters-overview",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "01b-my-matters-overview-full",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "01c-section-type-filter-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "01d-focus-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "02-my-matters-deadlines",
+  "url": "/my-matters?tab=deadlines",
+  "overflowPx": 0,
+  "title": "My Matters: Deadlines - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1777
+ },
+ {
+  "size": "768x1024",
+  "shot": "03-my-matters-breakdown",
+  "url": "/my-matters?tab=breakdown",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1041
+ },
+ {
+  "size": "768x1024",
+  "shot": "03c-my-matters-data",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2175
+ },
+ {
+  "size": "768x1024",
+  "shot": "04-my-matters-activity",
+  "url": "/my-matters?tab=activity",
+  "overflowPx": 0,
+  "title": "My Matters: Activity - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2008
+ },
+ {
+  "size": "768x1024",
+  "shot": "05-my-matters-trends",
+  "url": "/my-matters?tab=trends",
+  "overflowPx": 0,
+  "title": "My Matters: Trends - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 1029
+ },
+ {
+  "size": "768x1024",
+  "shot": "03b-my-matters-breakdown-per-type",
+  "url": "/my-matters?tab=breakdown&bview=types",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2566
+ },
+ {
+  "size": "768x1024",
+  "shot": "03d-my-matters-data-volume-table",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2365
+ },
+ {
+  "size": "768x1024",
+  "shot": "06-matters-list",
+  "url": "/matters?scope=mine",
+  "overflowPx": 0,
+  "title": "Matters - MatterFlow",
+  "h1": "Matters",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "07-matter-overview",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "07b-matter-overview-full",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "08-matter-tasks",
+  "url": "/matters/133?tab=tasks",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Tasks - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "09-matter-assets",
+  "url": "/matters/133?tab=assets",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Assets - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "10-matter-projects",
+  "url": "/matters/133?tab=projects",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Projects - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "11-task-queue",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "11b-task-queue-export-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "11c-task-queue-views-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "11d-task-queue-on-hold-with-reason",
+  "url": "/tasks?status=ON_HOLD",
+  "overflowPx": 0,
+  "title": "Task Queue: On hold - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "12-assets-list",
+  "url": "/assets?scope=mine",
+  "overflowPx": 0,
+  "title": "Assets - MatterFlow",
+  "h1": "Assets",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "13-asset-record",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "13b-asset-disposition-dialog",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "14-report-builder",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1029
+ },
+ {
+  "size": "768x1024",
+  "shot": "14b-report-result-table",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1232
+ },
+ {
+  "size": "768x1024",
+  "shot": "14c-report-pie",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1255
+ },
+ {
+  "size": "768x1024",
+  "shot": "15-clients-list",
+  "url": "/clients?scope=mine",
+  "overflowPx": 0,
+  "title": "Clients - MatterFlow",
+  "h1": "Clients",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "16-projects-list",
+  "url": "/projects?scope=mine",
+  "overflowPx": 0,
+  "title": "Projects - MatterFlow",
+  "h1": "Projects",
+  "tabs": [],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "17-search-results",
+  "url": "/search?q=review",
+  "overflowPx": 0,
+  "title": "Search results: All - MatterFlow",
+  "h1": "Search results",
+  "tabs": [
+   "All (98)",
+   "Matters (4)",
+   "Clients (0)",
+   "Tasks (91)",
+   "Projects (3)",
+   "Assets (0)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "18-notification-bell",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "19-notifications-page",
+  "url": "/notifications",
+  "overflowPx": 0,
+  "title": "Notifications - MatterFlow",
+  "h1": "Notifications",
+  "tabs": [],
+  "scrollHeight": 1113
+ },
+ {
+  "size": "768x1024",
+  "shot": "20-menu",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3552
+ },
+ {
+  "size": "768x1024",
+  "shot": "21-admin-task-types",
+  "url": "/admin/task-types",
+  "overflowPx": 0,
+  "title": "Task Types - MatterFlow",
+  "h1": "Task Types",
+  "tabs": [
+   "Task Types (79)",
+   "Workflows (74)",
+   "Workflow Steps (175)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "22-admin-task-type-edit",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1029
+ },
+ {
+  "size": "768x1024",
+  "shot": "22b-admin-task-type-edit-full",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1029
+ },
+ {
+  "size": "768x1024",
+  "shot": "23-admin-on-hold-reasons",
+  "url": "/admin/on-hold-reasons",
+  "overflowPx": 0,
+  "title": "Labels: On-hold reasons - MatterFlow",
+  "h1": "Labels",
+  "tabs": [
+   "Priorities (4)",
+   "Status labels (5)",
+   "On-hold reasons (4)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "768x1024",
+  "shot": "24-admin-asset-types",
+  "url": "/admin/asset-types",
+  "overflowPx": 0,
+  "title": "Asset Types - MatterFlow",
+  "h1": "Asset Types",
+  "tabs": [
+   "Asset Types (31)",
+   "Link Roles (4)"
+  ],
+  "scrollHeight": 1024
+ },
+ {
+  "size": "375x812",
+  "shot": "01-my-matters-overview",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "01b-my-matters-overview-full",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "01c-section-type-filter-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "01d-focus-open",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "02-my-matters-deadlines",
+  "url": "/my-matters?tab=deadlines",
+  "overflowPx": 0,
+  "title": "My Matters: Deadlines - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2682
+ },
+ {
+  "size": "375x812",
+  "shot": "03-my-matters-breakdown",
+  "url": "/my-matters?tab=breakdown",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3670
+ },
+ {
+  "size": "375x812",
+  "shot": "03c-my-matters-data",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3100
+ },
+ {
+  "size": "375x812",
+  "shot": "04-my-matters-activity",
+  "url": "/my-matters?tab=activity",
+  "overflowPx": 0,
+  "title": "My Matters: Activity - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 4296
+ },
+ {
+  "size": "375x812",
+  "shot": "05-my-matters-trends",
+  "url": "/my-matters?tab=trends",
+  "overflowPx": 0,
+  "title": "My Matters: Trends - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 2077
+ },
+ {
+  "size": "375x812",
+  "shot": "03b-my-matters-breakdown-per-type",
+  "url": "/my-matters?tab=breakdown&bview=types",
+  "overflowPx": 0,
+  "title": "My Matters: Breakdown - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 6316
+ },
+ {
+  "size": "375x812",
+  "shot": "03d-my-matters-data-volume-table",
+  "url": "/my-matters?tab=data",
+  "overflowPx": 0,
+  "title": "My Matters: Data - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 3494
+ },
+ {
+  "size": "375x812",
+  "shot": "06-matters-list",
+  "url": "/matters?scope=mine",
+  "overflowPx": 0,
+  "title": "Matters - MatterFlow",
+  "h1": "Matters",
+  "tabs": [],
+  "scrollHeight": 914
+ },
+ {
+  "size": "375x812",
+  "shot": "07-matter-overview",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 4967
+ },
+ {
+  "size": "375x812",
+  "shot": "07b-matter-overview-full",
+  "url": "/matters/133",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Overview - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 4967
+ },
+ {
+  "size": "375x812",
+  "shot": "08-matter-tasks",
+  "url": "/matters/133?tab=tasks",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Tasks - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 1459
+ },
+ {
+  "size": "375x812",
+  "shot": "09-matter-assets",
+  "url": "/matters/133?tab=assets",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Assets - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 812
+ },
+ {
+  "size": "375x812",
+  "shot": "10-matter-projects",
+  "url": "/matters/133?tab=projects",
+  "overflowPx": 0,
+  "title": "90001-80001 Demo Smith v. Acme: Projects - MatterFlow",
+  "h1": "90001-80001Demo Smith v. AcmeActive",
+  "tabs": [
+   "Overview",
+   "Tasks (17)",
+   "Projects (1)",
+   "Assets (5)"
+  ],
+  "scrollHeight": 812
+ },
+ {
+  "size": "375x812",
+  "shot": "11-task-queue",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 7784
+ },
+ {
+  "size": "375x812",
+  "shot": "11b-task-queue-export-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 7784
+ },
+ {
+  "size": "375x812",
+  "shot": "11c-task-queue-views-menu",
+  "url": "/tasks?scope=mine",
+  "overflowPx": 0,
+  "title": "Task Queue - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 7784
+ },
+ {
+  "size": "375x812",
+  "shot": "11d-task-queue-on-hold-with-reason",
+  "url": "/tasks?status=ON_HOLD",
+  "overflowPx": 0,
+  "title": "Task Queue: On hold - MatterFlow",
+  "h1": "Task Queue",
+  "tabs": [],
+  "scrollHeight": 8720
+ },
+ {
+  "size": "375x812",
+  "shot": "12-assets-list",
+  "url": "/assets?scope=mine",
+  "overflowPx": 0,
+  "title": "Assets - MatterFlow",
+  "h1": "Assets",
+  "tabs": [],
+  "scrollHeight": 2604
+ },
+ {
+  "size": "375x812",
+  "shot": "13-asset-record",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1273
+ },
+ {
+  "size": "375x812",
+  "shot": "13b-asset-disposition-dialog",
+  "url": "/assets/67",
+  "overflowPx": 0,
+  "title": "90001-80001 - Demo Smith v. Acme: Details - MatterFlow",
+  "h1": "90001-80001 - Demo Smith v. AcmeActive",
+  "tabs": [
+   "Details",
+   "Linked tasks (0)"
+  ],
+  "scrollHeight": 1273
+ },
+ {
+  "size": "375x812",
+  "shot": "14-report-builder",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1077
+ },
+ {
+  "size": "375x812",
+  "shot": "14b-report-result-table",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1358
+ },
+ {
+  "size": "375x812",
+  "shot": "14c-report-pie",
+  "url": "/assets/reports",
+  "overflowPx": 0,
+  "title": "Assets: Reports - MatterFlow",
+  "h1": "Asset reports",
+  "tabs": [],
+  "scrollHeight": 1500
+ },
+ {
+  "size": "375x812",
+  "shot": "15-clients-list",
+  "url": "/clients?scope=mine",
+  "overflowPx": 0,
+  "title": "Clients - MatterFlow",
+  "h1": "Clients",
+  "tabs": [],
+  "scrollHeight": 812
+ },
+ {
+  "size": "375x812",
+  "shot": "16-projects-list",
+  "url": "/projects?scope=mine",
+  "overflowPx": 0,
+  "title": "Projects - MatterFlow",
+  "h1": "Projects",
+  "tabs": [],
+  "scrollHeight": 812
+ },
+ {
+  "size": "375x812",
+  "shot": "17-search-results",
+  "url": "/search?q=review",
+  "overflowPx": 0,
+  "title": "Search results: All - MatterFlow",
+  "h1": "Search results",
+  "tabs": [
+   "All (98)",
+   "Matters (4)",
+   "Clients (0)",
+   "Tasks (91)",
+   "Projects (3)",
+   "Assets (0)"
+  ],
+  "scrollHeight": 1541
+ },
+ {
+  "size": "375x812",
+  "shot": "18-notification-bell",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "19-notifications-page",
+  "url": "/notifications",
+  "overflowPx": 0,
+  "title": "Notifications - MatterFlow",
+  "h1": "Notifications",
+  "tabs": [],
+  "scrollHeight": 1722
+ },
+ {
+  "size": "375x812",
+  "shot": "20-menu",
+  "url": "/my-matters",
+  "overflowPx": 0,
+  "title": "My Matters - MatterFlow",
+  "h1": "My Matters",
+  "tabs": [
+   "Overview",
+   "Deadlines",
+   "Breakdown",
+   "Data",
+   "Activity",
+   "Trends"
+  ],
+  "scrollHeight": 8350
+ },
+ {
+  "size": "375x812",
+  "shot": "21-admin-task-types",
+  "url": "/admin/task-types",
+  "overflowPx": 0,
+  "title": "Task Types - MatterFlow",
+  "h1": "Task Types",
+  "tabs": [
+   "Task Types (79)",
+   "Workflows (74)",
+   "Workflow Steps (175)"
+  ],
+  "scrollHeight": 2447
+ },
+ {
+  "size": "375x812",
+  "shot": "22-admin-task-type-edit",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1160
+ },
+ {
+  "size": "375x812",
+  "shot": "22b-admin-task-type-edit-full",
+  "url": "/admin/task-types/12",
+  "overflowPx": 0,
+  "title": "Access Request - MatterFlow",
+  "h1": "Access RequestActive",
+  "tabs": [
+   "Overview",
+   "Workflows (2)",
+   "Request form"
+  ],
+  "scrollHeight": 1160
+ },
+ {
+  "size": "375x812",
+  "shot": "23-admin-on-hold-reasons",
+  "url": "/admin/on-hold-reasons",
+  "overflowPx": 0,
+  "title": "Labels: On-hold reasons - MatterFlow",
+  "h1": "Labels",
+  "tabs": [
+   "Priorities (4)",
+   "Status labels (5)",
+   "On-hold reasons (4)"
+  ],
+  "scrollHeight": 812
+ },
+ {
+  "size": "375x812",
+  "shot": "24-admin-asset-types",
+  "url": "/admin/asset-types",
+  "overflowPx": 0,
+  "title": "Asset Types - MatterFlow",
+  "h1": "Asset Types",
+  "tabs": [
+   "Asset Types (31)",
+   "Link Roles (4)"
+  ],
+  "scrollHeight": 3099
+ }
+]

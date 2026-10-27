@@ -80,10 +80,11 @@ test.describe('WP10 hold reason and colours', () => {
         const chip = heldRow.locator('[data-hold-chip]');
         await expect(chip).toBeVisible();
         await expect(chip).toContainText(REASON);
-        await expect(chip).toHaveAttribute('title', REASON);
+        // The tooltip is the hold sentence (how long, since when; #877) and then the reason.
+        await expect(chip).toHaveAttribute('title', new RegExp(`${REASON}$`));
         await expect(longRow.locator('[data-hold-chip]')).toHaveAttribute(
           'title',
-          'y'.repeat(200) + '...',
+          new RegExp(`${'y'.repeat(200)}\\.\\.\\.$`),
         );
         await expect(page.locator('[data-hold-hint]')).toHaveCount(0);
         await expect(page.getByText('Waiting: ')).toHaveCount(0);
@@ -95,7 +96,10 @@ test.describe('WP10 hold reason and colours', () => {
         const mark = heldRow.locator('[data-hold-mark]');
         await expect(mark).toHaveAttribute('aria-label', 'On hold');
         await expect(heldRow.locator('[data-hold-reason]')).toHaveText(REASON);
-        await expect(heldRow.locator('[data-col="status"] > div')).toHaveAttribute('title', REASON);
+        await expect(heldRow.locator('[data-col="status"] > div')).toHaveAttribute(
+          'title',
+          new RegExp(`${REASON}$`),
+        );
         // The pill is the grey one and the title is not dimmed.
         const pill = heldRow.locator('[data-status="ON_HOLD"]');
         expect(await css(pill, 'background-color')).toBe('rgb(169, 176, 187)');
@@ -104,7 +108,7 @@ test.describe('WP10 hold reason and colours', () => {
 
         await expect(longRow.locator('[data-col="status"] > div')).toHaveAttribute(
           'title',
-          'y'.repeat(200) + '...',
+          new RegExp(`${'y'.repeat(200)}\\.\\.\\.$`),
         );
 
         // #210: the reason (and the 200-character one) never makes the row taller than 44 px.

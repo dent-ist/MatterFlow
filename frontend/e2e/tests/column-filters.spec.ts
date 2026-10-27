@@ -11,8 +11,17 @@ test.describe('Column filters on the Assets screen', () => {
   const filter = (page: Page, column: string) =>
     page.getByRole('textbox', { name: `Filter by ${column}` });
   const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
-  const names = (page: Page) => page.locator('tbody tr[data-asset-id] a.mf-name');
+  // A table row above 640 px, a card (a list named Assets, one name link per item) on a phone.
+  const names = (page: Page) =>
+    page
+      .locator('tbody tr[data-asset-id] a.mf-name')
+      .or(page.getByRole('list', { name: 'Assets' }).getByRole('link'));
   const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
+  // The Assets filter row opens by default since the list chrome of #499, and its Status column is the Disposition column since PM v2 (#864, #883; the `status` address key stays).
+  const setRow = async (page: Page, open: boolean) => {
+    if ((await toggle(page).getAttribute('aria-pressed')) !== String(open))
+      await toggle(page).click();
+  };
 
   async function seedSet(
     seed: {
@@ -37,14 +46,14 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(filter(page, 'Name')).toHaveValue(token);
     await expect(page.locator('[data-filter-chips]')).toHaveCount(0);
 
-    await toggle(page).click();
+    await setRow(page, false);
     await expect(filter(page, 'Name')).toHaveCount(0);
     const chips = page.getByRole('list', { name: 'Active filters' });
     await expect(chips.getByRole('listitem')).toHaveCount(2);
     await expect(chips).toContainText(`Name: ${token}`);
-    await expect(chips).toContainText('Status: All');
+    await expect(chips).toContainText('Disposition: All');
 
-    await page.getByRole('button', { name: 'Remove filter Status: All' }).click();
+    await page.getByRole('button', { name: 'Remove filter Disposition: All' }).click();
     await expect(page).not.toHaveURL(/status=/);
     await expect(chips.getByRole('listitem')).toHaveCount(1);
     await expect(names(page)).toHaveText([`Alpha ${token}`, `Beta ${token}`, `Gamma ${token}`]);
@@ -62,7 +71,7 @@ test.describe('Column filters on the Assets screen', () => {
     const token = uid();
     await seedSet(seed, token);
     await page.goto('/assets');
-    await toggle(page).click();
+    await setRow(page, true);
     const live = page.locator('[data-filter-live]');
     await expect(live).toHaveAttribute('aria-live', 'polite');
     await expect(live).toHaveText('');
@@ -82,13 +91,13 @@ test.describe('Column filters on the Assets screen', () => {
     const token = uid();
     await seedSet(seed, token);
     await page.goto('/assets');
-    await toggle(page).focus();
-    await page.keyboard.press('Enter'); // opens the row
+    await setRow(page, true);
     await expect(filter(page, 'Name')).toBeVisible();
+    await toggle(page).focus();
 
     // From the Filters button: header sort buttons first, then the controls of the row in column order.
     const order: string[] = [];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 16; i++) {
       await page.keyboard.press('Tab');
       order.push(
         await page.evaluate(
@@ -105,7 +114,7 @@ test.describe('Column filters on the Assets screen', () => {
     expect(at('Filter by Type')).toBeGreaterThan(at('Filter by Name'));
     expect(at('Filter by Matter')).toBeGreaterThan(at('Filter by Type'));
     expect(at('Filter by External reference')).toBeGreaterThan(at('Filter by Matter'));
-    expect(at('Filter by Status')).toBeGreaterThan(at('Filter by External reference'));
+    expect(at('Filter by Disposition')).toBeGreaterThan(at('Filter by External reference'));
 
     // Enter applies a half-typed value at once; Esc clears the filled box and keeps focus there.
     await filter(page, 'Name').fill(`gamma ${token}`);
@@ -124,6 +133,7 @@ test.describe('Column filters on the Assets screen', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/assets');
+    await setRow(page, false);
     await expect(toggle(page)).toHaveAttribute('aria-pressed', 'false');
     await page.keyboard.press('/');
     await expect(filter(page, 'Name')).toBeFocused();
@@ -145,9 +155,10 @@ test.describe('Column filters on the Assets screen', () => {
     await toggle(page).click();
     await expect(sheet(page)).toBeVisible();
     await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
-    for (const column of ['Name', 'Matter', 'External reference', 'Status']) {
+    for (const column of ['Name', 'Matter', 'External reference']) {
       await expect(sheet(page).getByLabel(`Filter by ${column}`)).toBeVisible();
     }
+    await expect(sheet(page).getByLabel(/^Filter by (Status|Disposition)$/)).toBeVisible();
     // Type is a multi-select: its checkbox group sits in the sheet.
     await expect(sheet(page).locator('.ms-group')).toBeVisible();
     // 44 px targets.
@@ -192,7 +203,7 @@ test.describe('Column filters on the Assets screen', () => {
     const overflows = await page
       .getByRole('region', { name: 'Assets list, scrollable' })
       .evaluate((e) => e.scrollWidth > e.clientWidth);
-    await toggle(page).click();
+    if (overflows) await toggle(page).click();
     if (overflows) {
       await expect(sheet(page)).toBeVisible();
       await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
@@ -214,7 +225,7 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(line).toBeHidden(); // not on screen
     await page.emulateMedia({ media: 'print' });
     await expect(line).toBeVisible();
-    await expect(line).toHaveText(`Filters: Name ${token}, Status Active`);
+    await expect(line).toHaveText(`Filters: Name ${token}, Disposition Active`);
     await expect(toggle(page)).toBeHidden();
     await expect(page.locator('tr.mf-filter-row')).toBeHidden();
     await page.emulateMedia({ media: 'screen' });
@@ -234,9 +245,10 @@ test.describe('Column filters on the Assets screen', () => {
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/assets');
     await expect(names(page).first()).toBeVisible();
+    await setRow(page, false);
     expect(await axeViolations(page)).toEqual([]); // row closed
 
-    await toggle(page).click();
+    await setRow(page, true);
     await expect(filter(page, 'Name')).toBeVisible();
     expect(await axeViolations(page)).toEqual([]); // row open
 

@@ -125,7 +125,9 @@
             >
               Default workflow
             </th>
-            <th scope="col" class="num" data-target-col>Target (days)</th>
+            @if (targetShown()) {
+              <th scope="col" class="num" data-target-col>Target (days)</th>
+            }
             @if (formRoomShown()) {
               <th
                 mfSort="form"
@@ -230,14 +232,16 @@
                   }
                 }
               </td>
-              <td class="num" data-target>
-                @if (t.targetDays !== undefined && t.targetDays !== null) {
-                  {{ t.targetDays }}
-                } @else {
-                  <span class="muted" aria-hidden="true">-</span>
-                  <span class="sr-only">No target</span>
-                }
-              </td>
+              @if (targetShown()) {
+                <td class="num" data-target>
+                  @if (t.targetDays !== undefined && t.targetDays !== null) {
+                    {{ t.targetDays }}
+                  } @else {
+                    <span class="muted" aria-hidden="true">-</span>
+                    <span class="sr-only">No target</span>
+                  }
+                </td>
+              }
               @if (formRoomShown()) {
                 <td data-form-status class="tt-nowrap">
                   {{ formStatus(t) }}

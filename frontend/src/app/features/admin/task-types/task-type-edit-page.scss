@@ -35,6 +35,8 @@
 
 .edit {
   display: grid;
+  /* One column that may shrink below its content: a 100-character name in the colour preview must not widen the form past a phone (PV-38). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mf-s5);
   box-sizing: border-box;
   max-width: 720px;
@@ -51,6 +53,7 @@
 
 .field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--mf-s1);
   margin-bottom: var(--mf-s3);
 
