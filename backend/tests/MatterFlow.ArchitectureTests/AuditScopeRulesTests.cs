@@ -55,6 +55,7 @@ public class AuditScopeRulesTests
     /// <summary>Files whose explicit audit entries legitimately carry no matter: administration records (identity, configuration, workflow definitions, clients) and the matter-created event, which the Data layer scopes by its object id.</summary>
     private static readonly Dictionary<string, int> UnscopedEntries = new()
     {
+        ["AppSettingsService.cs"] = 2, // SETTINGS_BRANDING_* (epic #850): application name and icon changes and reset; metadata and hash, no matter data
         ["FormDefinitionResolver.cs"] = 1,
         ["FormAdminService.cs"] = 6,
         ["FormValueStore.cs"] = 1, // FORM_VALUES_DROPPED: field keys only (residual listed in README section 4, SM-13)

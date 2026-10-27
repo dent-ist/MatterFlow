@@ -5,6 +5,11 @@
   ],
   "tables": [
     {
+      "name": "AppSetting",
+      "access": "deny",
+      "reason": "Application settings (name and icon today); not report data."
+    },
+    {
       "name": "AppUser",
       "access": "allow",
       "reason": "Business data that reports may read."

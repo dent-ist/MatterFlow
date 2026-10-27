@@ -287,6 +287,11 @@
       "description": "Run the reports assigned to your roles, keep personal views and download the result as CSV"
     },
     {
+      "code": "Settings.Manage",
+      "group": "Administration",
+      "description": "Change application settings (name and icon)"
+    },
+    {
       "code": "Audit.View",
       "group": "Oversight",
       "description": "Browse the audit log"

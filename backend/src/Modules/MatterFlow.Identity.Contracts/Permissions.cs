@@ -249,6 +249,13 @@ public static class Permissions
         public const string Run = "Report.Run";
     }
 
+    /// <summary>Application settings permissions (epic #850).</summary>
+    public static class Settings
+    {
+        /// <summary>Change application settings (name and icon).</summary>
+        public const string Manage = "Settings.Manage";
+    }
+
     /// <summary>Audit permissions.</summary>
     public static class Audit
     {
@@ -316,6 +323,7 @@ public static class Permissions
         Report.Manage,
         Report.Assign,
         Report.Run,
+        Settings.Manage,
         Audit.View,
     ];
 }

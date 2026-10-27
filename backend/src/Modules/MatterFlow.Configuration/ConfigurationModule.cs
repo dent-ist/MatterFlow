@@ -1,6 +1,7 @@
 using MatterFlow.Configuration.Application;
 using MatterFlow.Configuration.Application.Forms;
 using MatterFlow.Configuration.Application.Lookups;
+using MatterFlow.Configuration.Application.Settings;
 using MatterFlow.Configuration.Application.TaskTypes;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
@@ -33,6 +34,8 @@ public static class ConfigurationModule
         services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
         services.AddScoped<TaskTypeService>();
         services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
+        services.AddSingleton<AppSettingsCache>();
+        services.AddScoped<AppSettingsService>();
         services.AddScoped<ConfigurationSeeder>();
         // Forms (architecture 7). Compiled schemas of immutable versions are cached for the life of the process.
         services.AddSingleton<FormSchemaCache>();
