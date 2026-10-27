@@ -21,31 +21,37 @@ import {
 } from '../../api/generated/api-client';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { ColumnFilterRow } from '../filters/column-filter-row';
-import { statusDef } from '../filters/common-defs';
+import {
+  ASSET_STATUS_OPTIONS,
+  assetStatusQuery,
+  parseAssetStatusKey,
+  type AssetStatusKey,
+} from '../filters/asset-status-filter';
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
-import { ActiveBadge } from './badge';
+import { Badge } from './badge';
+import { dispositionOf } from '../../features/assets/disposition/asset-disposition';
+import { formatSize } from '../../features/assets/disposition/asset-size';
 import { SortHeader } from './data-table';
 import { registerTableSkip } from './row-nav';
 import { ScrollArea } from './fixed-page';
 import { GridBody } from './grid-body';
-import { isActiveParam, parseStatus } from './list-helpers';
 import { ServerListPage } from './list-query';
 import { Pager } from './pager';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
-const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
+const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const;
 
 /**
  * The Assets tab of a Matter (UX S08, S06): the same inline column filters as the Assets screen (Name, Type, External reference, Status
- * with Active by default; `name`, `typeId`, `extref`, `status` in the URL), all server-side, with sorting and paging, for the 200 to 300
+ * with Active by default; `name`, `typeId`, `extref`, `status` in the URL; the Disposition and the Size of each asset are columns, PM v2 #883), all server-side, with sorting and paging, for the 200 to 300
  * assets a Matter can hold. Creating an asset starts from here with the Matter prefilled and locked.
  */
 @Component({
   selector: 'mf-matter-assets',
   imports: [
-    ActiveBadge,
+    Badge,
     RouterLink,
     Button,
     HasPermissionDirective,
@@ -86,8 +92,25 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
               >
                 Type
               </th>
+              <th
+                class="pg-num"
+                mfSort="size"
+                [firstDesc]="true"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Size
+              </th>
               <th scope="col">External reference</th>
-              <th scope="col">Status</th>
+              <th
+                mfSort="disposition"
+                [sort]="sort()"
+                [defaultSort]="defaultSort"
+                (sorted)="setSort($event)"
+              >
+                Disposition
+              </th>
             </tr>
             @if (filters.rowVisible()) {
               <tr
@@ -105,7 +128,7 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
             [state]="state()"
             [empty]="rows().length === 0"
             [filtered]="filters.activeCount() > 0"
-            [columns]="4"
+            [columns]="5"
             (retry)="load()"
             (clear)="clear()"
             [hidden]="hiddenCount()"
@@ -132,6 +155,14 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
                   >
                 </td>
                 <td>{{ a.assetTypeName }}</td>
+                <td class="pg-num ma-size" data-size>
+                  @if (sizeText(a); as size) {
+                    {{ size }}
+                  } @else {
+                    <span class="pg-muted" aria-hidden="true">–</span
+                    ><span class="mf-sr-only">No size</span>
+                  }
+                </td>
                 <td class="pg-mono">
                   @if (a.externalReference) {
                     {{ a.externalReference }}
@@ -140,8 +171,19 @@ const COLUMNS = ['name', 'type', 'externalReference', 'status'] as const;
                     ><span class="mf-sr-only">None</span>
                   }
                 </td>
-                <td>
-                  <mf-active-badge [active]="a.isActive" />
+                <td data-status>
+                  @if (a.dispositionCode === 'ACTIVE') {
+                    <mf-badge tone="success" icon="pi-check-circle" data-disposition-badge
+                      >Active</mf-badge
+                    >
+                  } @else {
+                    <mf-badge
+                      [tone]="dispositionOf(a.dispositionCode).tone"
+                      [icon]="dispositionOf(a.dispositionCode).icon"
+                      data-disposition-badge
+                      >{{ dispositionOf(a.dispositionCode).label }}</mf-badge
+                    >
+                  }
                 </td>
               </tr>
             }
@@ -191,7 +233,14 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       options: this.typeOptions(),
     },
     { key: 'extref', label: 'External reference', column: 'externalReference', type: 'text' },
-    statusDef(),
+    {
+      key: 'status',
+      label: 'Disposition',
+      column: 'status',
+      type: 'select',
+      options: ASSET_STATUS_OPTIONS,
+      default: 'active',
+    },
   ]);
 
   protected readonly filters: ListFilters = new ListFilters({
@@ -234,7 +283,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   protected override fetch() {
     return this.list(
-      isActiveParam(parseStatus(this.filters.text('status'))),
+      parseAssetStatusKey(this.filters.text('status')),
       this.pageNumber(),
       this.pageSize(),
     );
@@ -242,10 +291,20 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   /** The inactive assets the default Active hides, under the same other filters (so "Assets (6)" and 5 rows tell why). */
   protected override fetchHidden() {
-    return parseStatus(this.filters.text('status')) === 'active' ? this.list(false, 1, 1) : null;
+    return parseAssetStatusKey(this.filters.text('status')) === 'active'
+      ? this.list('notactive', 1, 1)
+      : null;
   }
 
-  private list(isActive: boolean | undefined, page: number, size: number) {
+  protected dispositionOf = dispositionOf;
+
+  /** "412 GB", "26,400 Items" or an empty string when the asset has no size. */
+  protected sizeText(a: AssetListItem): string {
+    return formatSize(a.sizeValue, a.sizeUnit);
+  }
+
+  private list(status: AssetStatusKey, page: number, size: number) {
+    const { isActive, disposition } = assetStatusQuery(status);
     const typeIds = this.filters
       .list('typeId')
       .map(Number)
@@ -261,7 +320,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
         undefined,
         undefined,
         undefined,
-        undefined,
+        disposition,
         undefined,
         page,
         size,

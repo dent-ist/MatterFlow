@@ -26,7 +26,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     return { world, busy, idle };
   }
 
-  test('Linked tasks: the open count is a plain number with the total as tooltip, 0 for an idle asset, sortable, and absent without Task.View (#498)', async ({
+  test('Linked tasks: open / all linked as text ("3 / 3") with the words as tooltip, 0 / 0 for an idle asset, sortable, and absent without Task.View (#498, #883)', async ({
     page,
     seed,
     personas,
@@ -40,8 +40,9 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(cell(busy.assetId)).toContainText('3 open of 3 linked tasks');
     await expect(cell(busy.assetId).locator('[title]')).toHaveAttribute(
       'title',
-      '3 linked in total',
+      '3 open of 3 linked tasks',
     );
+    await expect(cell(busy.assetId).locator('[aria-hidden="true"]')).toHaveText('3 / 3');
     await expect(cell(idle.assetId)).toContainText('0 open of 0 linked tasks');
     await expect(cell(busy.assetId).locator('a')).toHaveCount(0);
     const box = (await page.locator(`tr[data-asset-id="${busy.assetId}"]`).boundingBox())!;

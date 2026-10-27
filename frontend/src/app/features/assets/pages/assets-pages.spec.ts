@@ -495,7 +495,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       });
     });
 
-    it('shows the open linked tasks as a number with the total as tooltip, sorted by it, only with Task.View (A2, #498)', async () => {
+    it('shows the open and all linked tasks as "4 / 19" with the words as tooltip, sorted by it, only with Task.View (A2, #498, #883)', async () => {
       await create(['Asset.View', 'Task.View']);
       assets.listAssets.mockReturnValue(
         ok(
@@ -520,15 +520,17 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         'Disposition',
       ]);
       const cell = rowOf(9)!.querySelector('td[data-linked]')!;
-      expect(cell.querySelector('[aria-hidden="true"]')?.textContent).toBe('4');
-      expect(cell.querySelector('[title]')?.getAttribute('title')).toBe('19 linked in total');
+      expect(cell.querySelector('[aria-hidden="true"]')?.textContent).toBe('4 / 19');
+      expect(cell.querySelector('[title]')?.getAttribute('title')).toBe(
+        '4 open of 19 linked tasks',
+      );
       expect(cell.querySelector('.mf-sr-only')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
         '4 open of 19 linked tasks',
       );
       // Plain text, also at 0: no link to an empty list (the Task Queue cannot filter by asset).
       expect(rowOf(9)!.querySelector('td[data-linked] a')).toBeNull();
       expect(rowOf(10)!.querySelector('td[data-linked] [aria-hidden="true"]')?.textContent).toBe(
-        '0',
+        '0 / 0',
       );
       // The first click on a count sorts the busiest asset first.
       const header = Array.from(el().querySelectorAll('thead th')).find((t) =>

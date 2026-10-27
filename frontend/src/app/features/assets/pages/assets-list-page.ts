@@ -52,6 +52,12 @@ import {
 } from '../disposition/asset-disposition-dialog';
 import { DispositionCode, dispositionOf } from '../disposition/asset-disposition';
 import { formatSize } from '../disposition/asset-size';
+import {
+  ASSET_STATUS_OPTIONS as STATUS_OPTIONS,
+  AssetStatusKey as StatusKey,
+  assetStatusQuery as statusQuery,
+  parseAssetStatusKey as parseStatusKey,
+} from '../../../shared/filters/asset-status-filter';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -65,41 +71,6 @@ const COLUMNS = [
   'status',
 ] as const;
 type Column = (typeof COLUMNS)[number];
-
-/** The Disposition filter (the `status` address key stays, so old links keep working). Active is the default. The address also accepts `notactive` (the three other states together, as the warning link uses); it has no entry in the list, because the longest label sets the width of the column and the grid must still fit at 640 px. */
-const STATUS_OPTIONS: readonly FilterOption[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'disposed', label: 'Disposed' },
-  { value: 'all', label: 'All' },
-];
-
-type StatusKey = 'active' | 'notactive' | 'inactive' | 'pending' | 'disposed' | 'all';
-
-function parseStatusKey(value: string | null | undefined): StatusKey {
-  return value === 'notactive' || STATUS_OPTIONS.some((o) => o.value === value)
-    ? (value as StatusKey)
-    : 'active';
-}
-
-/** What each choice asks the API for: `isActive` for Active and Not active, the disposition for the single states. */
-function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string[] } {
-  switch (key) {
-    case 'active':
-      return { isActive: true };
-    case 'notactive':
-      return { isActive: false };
-    case 'inactive':
-      return { disposition: ['INACTIVE'] };
-    case 'pending':
-      return { disposition: ['PENDING_DISPOSITION'] };
-    case 'disposed':
-      return { disposition: ['DISPOSED'] };
-    default:
-      return {};
-  }
-}
 
 /**
  * Global Assets list (UX S08): 44 px rows on the admin grid, one inline filter per filterable column (a second header row, open from 640 px;
@@ -189,6 +160,13 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
     .as-disposition {
       padding-inline: var(--mf-s1);
       white-space: nowrap;
+    }
+    /* The Disposition filter is a select in this column: from 768 px it keeps room for "Disposed" and "Inactive" instead of being squeezed to "Act" (PM v2, #883). */
+    @media (min-width: 768px) {
+      th.as-disposition,
+      td.as-disposition {
+        min-width: 8rem;
+      }
     }
     .as-warn {
       display: block;
@@ -398,7 +376,7 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
                         [attr.data-drop]="drop.linkedTasks"
                         (sorted)="setSort($event)"
                       >
-                        Linked tasks
+                        <span title="Open of all linked tasks">Linked tasks</span>
                       </th>
                     }
                     <th class="as-refcell" scope="col" [attr.data-drop]="drop.externalReference">
@@ -495,12 +473,17 @@ function statusQuery(key: StatusKey): { isActive?: boolean; disposition?: string
                       </td>
                       @if (tasksShown()) {
                         <td class="mf-cell-num" [attr.data-drop]="drop.linkedTasks" data-linked>
-                          <!-- The open count is the number; the total is the tooltip (the words are for a screen reader). -->
+                          <!-- "2 / 5": open of all linked (PM v2, #883); the words are for a screen reader, the tooltip says it in full. -->
                           <span
-                            [attr.title]="(a.linkedTaskCount ?? 0) + ' linked in total'"
-                            [class.as-zero]="!a.openLinkedTaskCount"
+                            [attr.title]="
+                              (a.openLinkedTaskCount ?? 0) +
+                              ' open of ' +
+                              (a.linkedTaskCount ?? 0) +
+                              ' linked tasks'
+                            "
+                            [class.as-zero]="!a.linkedTaskCount"
                             aria-hidden="true"
-                            >{{ a.openLinkedTaskCount ?? 0 }}</span
+                            >{{ a.openLinkedTaskCount ?? 0 }} / {{ a.linkedTaskCount ?? 0 }}</span
                           >
                           <span class="mf-sr-only"
                             >{{ a.openLinkedTaskCount ?? 0 }} open of
