@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
@@ -79,6 +80,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     MatterOverviewSections,
     AddCommentDialog,
     MatterManagersDialog,
+    NgTemplateOutlet,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -93,6 +95,22 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     .md-link {
       min-height: 0;
       padding: 0 var(--mf-s2);
+    }
+    /* The compact summary above the overview (PM v2, #882): state, flag and creation date on one line, the rest behind "Details". */
+    .md-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s3);
+      margin-bottom: var(--mf-s3);
+    }
+    .md-details {
+      max-width: 70ch;
+      margin-bottom: var(--mf-s3);
+    }
+    /* The Overview's sections use the width of the page (the column of 70 characters is for the details list and the custom fields). */
+    .pg-details[data-matter-overview] {
+      max-width: none;
     }
   `,
   template: `
@@ -130,15 +148,15 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                 @if (m.primaryManager || m.secondaryManager) {
                   Project manager:
                   @if (m.primaryManager; as p) {
-                    <span data-primary-manager>{{ p.displayName }}</span>
-                    <span class="pg-muted">(primary)</span>
+                    <span data-primary-manager>{{ p.displayName }}</span
+                    >{{ ' ' }}<span class="pg-muted">(primary)</span>
                   }
                   @if (m.primaryManager && m.secondaryManager) {
                     ,
                   }
                   @if (m.secondaryManager; as sc) {
-                    <span data-secondary-manager>{{ sc.displayName }}</span>
-                    <span class="pg-muted">(secondary)</span>
+                    <span data-secondary-manager>{{ sc.displayName }}</span
+                    >{{ ' ' }}<span class="pg-muted">(secondary)</span>
                   }
                   @if (canAssign()) {
                     <button
@@ -195,6 +213,32 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                   <div class="mf-scroll-area" mfScrollArea="Matter overview" data-details-tab>
                     <div class="pg-details" data-matter-overview>
                       <h2 class="pg-sr">Overview</h2>
+                      <div class="md-summary" data-matter-summary>
+                        <mf-active-badge [active]="m.isActive" />
+                        @if (m.isSensitive) {
+                          <mf-sensitive-badge />
+                        }
+                        <span class="pg-muted">Created {{ m.createdAtUtc | mfDate }}</span>
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text md-link"
+                          data-details-toggle
+                          aria-controls="matter-details-block"
+                          [attr.aria-expanded]="detailsOpen()"
+                          (click)="detailsOpen.set(!detailsOpen())"
+                        >
+                          Details
+                          <i
+                            [class]="detailsOpen() ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                      </div>
+                      @if (detailsOpen()) {
+                        <div id="matter-details-block" class="md-details" data-details-block>
+                          <ng-container *ngTemplateOutlet="detailsBody" />
+                        </div>
+                      }
                       <mf-matter-overview
                         [matterId]="m.matterId"
                         [reload]="healthReload()"
@@ -202,39 +246,41 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                         (openAssets)="select('assets')"
                         (openActivity)="setActivityOpen(true)"
                       />
-                      <dl class="pg-dl">
-                        <dt>Client</dt>
-                        <dd data-client-value>
-                          @if (canLinkClient()) {
-                            <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                              ><span class="pg-mono">{{ m.clientNumber }}</span>
-                              {{ m.clientName }}</a
-                            >
-                          } @else {
-                            <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
+                      <ng-template #detailsBody>
+                        <dl class="pg-dl">
+                          <dt>Client</dt>
+                          <dd data-client-value>
+                            @if (canLinkClient()) {
+                              <a class="pg-link" [routerLink]="['/clients', m.clientId]"
+                                ><span class="pg-mono">{{ m.clientNumber }}</span>
+                                {{ m.clientName }}</a
+                              >
+                            } @else {
+                              <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
+                            }
+                          </dd>
+                          <dt>Status</dt>
+                          <dd><mf-active-badge [active]="m.isActive" /></dd>
+                          <dt>Sensitive</dt>
+                          <dd data-sensitive-value>
+                            @if (m.isSensitive) {
+                              <mf-sensitive-badge /> <span class="pg-muted">Restricted access</span>
+                            } @else {
+                              No
+                            }
+                          </dd>
+                          <dt>Created</dt>
+                          <dd>{{ m.createdAtUtc | mfDate }}</dd>
+                          @if (m.modifiedAtUtc) {
+                            <dt>Last changed</dt>
+                            <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
                           }
-                        </dd>
-                        <dt>Status</dt>
-                        <dd><mf-active-badge [active]="m.isActive" /></dd>
-                        <dt>Sensitive</dt>
-                        <dd data-sensitive-value>
-                          @if (m.isSensitive) {
-                            <mf-sensitive-badge /> <span class="pg-muted">Restricted access</span>
-                          } @else {
-                            No
-                          }
-                        </dd>
-                        <dt>Created</dt>
-                        <dd>{{ m.createdAtUtc | mfDate }}</dd>
-                        @if (m.modifiedAtUtc) {
-                          <dt>Last changed</dt>
-                          <dd>{{ m.modifiedAtUtc | mfDate }}</dd>
-                        }
-                      </dl>
-                      <mf-custom-fields-view
-                        [versionId]="m.formVersionId"
-                        [values]="m.formValues ?? {}"
-                      />
+                        </dl>
+                        <mf-custom-fields-view
+                          [versionId]="m.formVersionId"
+                          [values]="m.formValues ?? {}"
+                        />
+                      </ng-template>
                     </div>
                   </div>
                 }
@@ -409,6 +455,11 @@ export class MatterDetailPage {
   );
   protected readonly toggleOpen = signal(false);
   protected readonly managersOpen = signal(false);
+  /** The "Details" disclosure of the Overview (client, status, sensitivity, dates and the custom fields); closed until opened. */
+  protected readonly detailsOpen = signal(
+    // A viewer who gets none of the overview sections (no Task.View and no Asset.View) sees the details at once: there is nothing else on the tab.
+    !(this.auth.has('Task.View') || this.auth.has('Asset.View')),
+  );
   protected readonly healthReload = signal(0);
   /** The quick action "Add comment" (epic #758): the dialog that posts to one of the matter's open tasks. */
   protected readonly commentOpen = signal(false);

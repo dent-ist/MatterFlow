@@ -5,6 +5,7 @@ import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { pmFixtures } from '../support/pm-fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { toasts } from '../support/toasts';
+import { openMatterDetails } from '../support/matter-details';
 
 /**
  * The matter record Overview, enriched, and the quick actions per matter (epic #758, WP-PX5: #782 and #783), against the real API. Each test builds
@@ -149,6 +150,7 @@ test.describe('Matter Overview: the matter at a glance', () => {
     await expect(section(page, 'health')).toBeVisible();
     await expect(section(page, 'health').locator('[data-flag]')).toContainText('Green');
     expect(await page.locator('main').innerText()).not.toMatch(FORBIDDEN);
+    await openMatterDetails(page); // the details list is behind the Details disclosure (PM v2, #882)
     await expect(page.locator('[data-matter-overview] .pg-dl')).toBeVisible();
     await expect(page.getByRole('tab')).toHaveText([/Overview/, /Tasks/, /Projects/, /Assets/]);
   });

@@ -2,7 +2,11 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { MatterOverview, MatterOverviewClient } from '../../../api/generated/api-client';
+import {
+  MatterOverview,
+  MatterOverviewClient,
+  MyMattersClient,
+} from '../../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
@@ -119,6 +123,44 @@ function overview(over: Partial<MatterOverview> = {}): MatterOverview {
         { code: 'UNASSIGNED', count: 1, query: 'matter=7&unassigned=true' },
       ],
     },
+    types: [
+      {
+        taskTypeId: 2,
+        name: 'Production (Outgoing)',
+        iconKey: 'send',
+        colourKey: 'blue',
+        open: 6,
+        overdue: 2,
+        query: 'matter=7&status=NEW&type=2',
+        overdueQuery: 'matter=7&status=NEW&type=2&overdue=true',
+      },
+      {
+        taskTypeId: 3,
+        name: 'Intake',
+        iconKey: 'inbox',
+        colourKey: undefined,
+        open: 4,
+        overdue: 0,
+        query: 'matter=7&status=NEW&type=3',
+        overdueQuery: 'matter=7&status=NEW&type=3&overdue=true',
+      },
+    ],
+    holdReasons: [
+      {
+        onHoldReasonId: 5,
+        name: 'Waiting for client data',
+        count: 2,
+        oldestDays: 6,
+        query: 'matter=7&status=ON_HOLD&onHoldReason=5',
+      },
+      {
+        onHoldReasonId: 0,
+        name: 'No reason given',
+        count: 1,
+        oldestDays: 0,
+        query: 'matter=7&status=ON_HOLD&onHoldReason=0',
+      },
+    ],
     ...over,
   };
 }
@@ -142,17 +184,76 @@ class Host {
 
 describe('MatterOverviewSections (the enriched Overview, epic #758)', () => {
   let api: { getMatterOverview: ReturnType<typeof vi.fn> };
+  let myMatters: {
+    getMyMattersData: ReturnType<typeof vi.fn>;
+    getMyMattersDataVolume: ReturnType<typeof vi.fn>;
+  };
 
   async function create(
     response: unknown,
-    permissions: Permission[] = ['Task.View', 'Asset.View'],
+    permissions: Permission[] = ['Task.View', 'Asset.View', 'Matter.BeManager'],
   ) {
     api = { getMatterOverview: vi.fn().mockReturnValue(response) };
+    const counts = {
+      assets: 19,
+      active: 16,
+      inactive: 1,
+      pendingDisposition: 2,
+      disposed: 0,
+      size: [{ unit: 'GB', value: 640.2, assets: 15 }],
+    };
+    myMatters = {
+      getMyMattersData: vi.fn().mockReturnValue(
+        of({
+          totals: counts,
+          matters: [
+            {
+              matterId: 7,
+              matterRef: '90001-80001',
+              matterName: 'Merger',
+              clientName: 'Acme',
+              matterIsActive: true,
+              counts,
+              query: 'matterId=7&matterManagedByMe=true',
+            },
+          ],
+          types: [],
+          warnings: {
+            inactiveLinked: { assets: 0, query: '' },
+            awaitingDisposition: { assets: 2, query: '' },
+          },
+          scopeQuery: '',
+        }),
+      ),
+      getMyMattersDataVolume: vi.fn().mockReturnValue(
+        of({
+          units: ['GB'],
+          limitation: 'Derived.',
+          points: [
+            {
+              month: '2026-09',
+              assets: 10,
+              held: [{ unit: 'GB', value: 400, assets: 10 }],
+              added: [],
+              removed: [],
+            },
+            {
+              month: '2026-10',
+              assets: 19,
+              held: [{ unit: 'GB', value: 640.2, assets: 15 }],
+              added: [],
+              removed: [],
+            },
+          ],
+        }),
+      ),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: MatterOverviewClient, useValue: api },
+        { provide: MyMattersClient, useValue: myMatters },
       ],
     });
     await TestBed.inject(AuthStore).ensureLoaded();
@@ -200,6 +301,70 @@ describe('MatterOverviewSections (the enriched Overview, epic #758)', () => {
     );
     expect(section(f, 'assets')!.textContent).toContain('Linked assets (14)');
     expect(section(f, 'activity')!.textContent).toContain('Dana moved "Privilege log" to On Hold');
+  });
+
+  it('shows the task types with open and overdue as links, and the tasks on hold by reason (PM v2, #882)', async () => {
+    const f = await create(of(overview()));
+    const rows = Array.from(section(f, 'types')!.querySelectorAll('[data-type-row]'));
+    expect(rows.map((r) => r.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+      'Production (Outgoing) 6 open , 2 overdue',
+      'Intake 4 open',
+    ]);
+    expect(rows[0].querySelector('a.mo__link')!.getAttribute('href')).toContain('type=2');
+    expect(rows[0].querySelector('a.mo__over')!.getAttribute('href')).toContain('overdue=true');
+    const holds = Array.from(section(f, 'holds')!.querySelectorAll('[data-hold-reason]'));
+    expect(
+      holds.map(
+        (r) =>
+          `${r.querySelector('a')!.textContent!.trim()} | ${r.querySelector('.mo__fact')!.textContent!.trim()}`,
+      ),
+    ).toEqual(['Waiting for client data | 2 tasks, longest 6 days', 'No reason given | 1 task']);
+    expect(holds[0].querySelector('a')!.getAttribute('href')).toContain('onHoldReason=5');
+  });
+
+  it('leaves the types and the hold reasons out when there are none', async () => {
+    const f = await create(of(overview({ types: [], holdReasons: [] })));
+    expect(section(f, 'types')).toBeNull();
+    expect(section(f, 'holds')).toBeNull();
+  });
+
+  it('shows the Data block from the Data API with the asset counts, the size and the pending count, and the chart from the volume endpoint', async () => {
+    const f = await create(of(overview()));
+    // The block asks for its numbers once the overview has arrived, and the chart once the matter's row is in.
+    for (let i = 0; i < 3; i++) {
+      await f.whenStable();
+      f.detectChanges();
+    }
+    const block = section(f, 'data')!;
+    expect(myMatters.getMyMattersData).toHaveBeenCalledWith('mine');
+    expect(myMatters.getMyMattersDataVolume).toHaveBeenCalledWith(
+      'mine',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      7,
+      12,
+    );
+    expect(block.querySelector('[data-data-assets]')!.textContent).toContain('19');
+    expect(block.querySelector('[data-data-size]')!.textContent).toContain('640.2 GB');
+    expect(block.querySelector('[data-data-pending]')!.textContent).toContain('2');
+    expect(block.querySelector('[data-data-pending]')!.getAttribute('href')).toContain(
+      'status=pending',
+    );
+    expect(block.querySelector('[data-data-chart-note]')).not.toBeNull();
+  });
+
+  it('has no Data block without Asset.View, and none for a matter the Data API does not list', async () => {
+    const f = await create(of(overview({ assets: undefined })), ['Task.View', 'Matter.BeManager']);
+    expect(section(f, 'data')).toBeNull();
+    expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
+    // Asset.View and Task.View but no right to manage matters: the Data API would answer 403, so nothing is asked for.
+    TestBed.resetTestingModule();
+    const g = await create(of(overview()), ['Task.View', 'Asset.View']);
+    expect(section(g, 'assets')).not.toBeNull();
+    expect(section(g, 'data')).toBeNull();
+    expect(myMatters.getMyMattersData).not.toHaveBeenCalled();
   });
 
   it('opens the Assets tab and the activity drawer from its links', async () => {

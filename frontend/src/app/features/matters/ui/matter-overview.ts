@@ -4,6 +4,7 @@ import {
   MatterOverviewClient,
   MatterOverviewDeadline,
   MatterOverviewHealth,
+  MatterOverviewHoldReason,
   MatterOverviewPerson,
   MatterOverviewReason,
   MyMattersActivityItem,
@@ -13,6 +14,8 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { StillLoading } from '../../../shared/ui/still-loading';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
+import { MatterDataBlock } from './matter-data-block';
 import { activityTime, awayText, dayHeading, dueDay } from '../../my-matters/facts';
 import { queryToParams } from '../../my-matters/my-matters-filters';
 import { panelLoader } from '../../my-matters/panel-loader';
@@ -53,7 +56,7 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
  */
 @Component({
   selector: 'mf-matter-overview',
-  imports: [ErrorReference, RouterLink, StillLoading],
+  imports: [ErrorReference, MatterDataBlock, RouterLink, StillLoading, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -116,6 +119,10 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       align-self: center;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
+    }
+    .mo__over {
+      color: var(--mf-due-overdue);
+      font-weight: 700;
     }
     .mo__flag {
       margin: 0 0 var(--mf-s2);
@@ -216,6 +223,14 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
     .mo__error p {
       margin: 0;
     }
+    /* From 1280 px the sections sit in three columns, so the task types, the holds and the data (PM v2, #882) do not push the deadlines, the people and the
+       activity down; the recent activity spans all three. */
+    @media (min-width: 1280px) {
+      .mo,
+      .mo__sk {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
     @media (max-width: 767.98px) {
       .mo,
       .mo__sk {
@@ -309,6 +324,39 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
                   </ul>
                 </section>
               }
+              @if (d.types; as types) {
+                @if (types.length > 0) {
+                  <section class="mo__card" aria-labelledby="mo-types" data-section="types">
+                    <h3 class="mo__title" id="mo-types">Task types</h3>
+                    <ul class="mo__list">
+                      @for (t of types; track t.taskTypeId) {
+                        <li class="mo__row" data-type-row>
+                          <a class="mo__link" routerLink="/tasks" [queryParams]="params(t.query)">
+                            <mf-task-type-badge
+                              variant="wide"
+                              [name]="t.name"
+                              [iconKey]="t.iconKey"
+                              [colourKey]="t.colourKey"
+                            />
+                          </a>
+                          <span class="mo__fact">
+                            {{ t.open }} open
+                            @if (t.overdue > 0) {
+                              ,
+                              <a
+                                class="mo__over"
+                                routerLink="/tasks"
+                                [queryParams]="params(t.overdueQuery)"
+                                >{{ t.overdue }} overdue</a
+                              >
+                            }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                }
+              }
               @if (d.deadlines; as dl) {
                 <section class="mo__card" aria-labelledby="mo-deadlines" data-section="deadlines">
                   <h3 class="mo__title" id="mo-deadlines">Next deadlines</h3>
@@ -377,6 +425,26 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
                     }
                   }
                 </section>
+              }
+              @if (hasAssets()) {
+                <mf-matter-data-block [matterId]="matterId()" [reload]="reload()" />
+              }
+              @if (d.holdReasons; as holds) {
+                @if (holds.length > 0) {
+                  <section class="mo__card" aria-labelledby="mo-holds" data-section="holds">
+                    <h3 class="mo__title" id="mo-holds">On hold by reason</h3>
+                    <ul class="mo__list">
+                      @for (h of holds; track h.onHoldReasonId) {
+                        <li class="mo__row" data-hold-reason>
+                          <a class="mo__link" routerLink="/tasks" [queryParams]="params(h.query)">{{
+                            h.name
+                          }}</a>
+                          <span class="mo__fact">{{ holdWords(h) }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                }
               }
               @if (d.assets; as a) {
                 <section class="mo__card" aria-labelledby="mo-assets" data-section="assets">
@@ -476,6 +544,8 @@ export class MatterOverviewSections {
   );
 
   protected readonly data = computed(() => this.loader.data());
+  /** The Data block needs Asset.View (the overview's own assets section is null without it). */
+  protected readonly hasAssets = computed(() => this.data()?.assets != null);
   protected readonly words = reasonWords;
   protected readonly text = activityText;
 
@@ -498,6 +568,14 @@ export class MatterOverviewSections {
   protected due(t: MatterOverviewDeadline): string {
     const day = dueDay(t, this.zone);
     return day ? dayHeading(day) : 'No date';
+  }
+
+  /** "3 tasks, longest 6 days" (the longest on hold, in whole days). */
+  protected holdWords(h: MatterOverviewHoldReason): string {
+    const tasks = h.count === 1 ? '1 task' : `${h.count} tasks`;
+    return h.oldestDays > 0
+      ? `${tasks}, longest ${h.oldestDays === 1 ? '1 day' : `${h.oldestDays} days`}`
+      : tasks;
   }
 
   protected load(p: MatterOverviewPerson): string {

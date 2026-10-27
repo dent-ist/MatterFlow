@@ -128,6 +128,13 @@ describe('MatterDetailPage', () => {
       t.textContent!.trim().startsWith(label),
     )!;
 
+  /** The Overview's Details disclosure is closed until opened (PM v2, #882). */
+  async function openDetails(): Promise<void> {
+    const toggle = el().querySelector<HTMLButtonElement>('[data-details-toggle]');
+    if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+    await settle(fixture);
+  }
+
   /** The tab lives in the address (`?tab=`); the router binds it to the page input, so tests set the input. */
   async function openTab(key: string | undefined): Promise<void> {
     fixture.componentRef.setInput('tab', key);
@@ -191,6 +198,8 @@ describe('MatterDetailPage', () => {
     ).toEqual(['Overview', 'Tasks', 'Projects (1)']); // Assets needs Asset.View
     // The first tab (Overview) is selected on open and loads no task list.
     expect(tab('Overview').getAttribute('aria-selected')).toBe('true');
+    // Without Task.View and Asset.View the Overview has no sections, so the details are open at once.
+    expect(el().querySelector('[data-details-tab] dl')).not.toBeNull();
     expect(el().querySelector('[data-details-tab] dl')?.textContent).toContain('Acme Corp');
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
     // Without Task.View the Tasks tab says so and loads nothing.
@@ -273,6 +282,7 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('aside')).toBeNull();
     const panel = el().querySelector('[role=tabpanel]')!;
     expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-details');
+    await openDetails();
     const overview = panel.querySelector('[data-details-tab]')!;
     const rows = Array.from(overview.querySelectorAll('dt')).map((t) => t.textContent!.trim());
     // The reference, the matter number and the name are in the header: not a row again.
@@ -286,6 +296,27 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('mf-tabs')!.textContent).not.toMatch(/Activity/);
     // Activity is a header button that opens the drawer.
     expect(el().querySelector('[data-page-actions]')!.textContent).toContain('Activity');
+  });
+
+  it('keeps a compact summary above the Overview and the rest behind a Details disclosure; the primary manager has a space before the bracket (PM v2, #882)', async () => {
+    await create(
+      ['Matter.View', 'Matter.AssignManagers', 'Task.View'],
+      aMatter({ primaryManager: { userId: 3, displayName: 'Test User 03', isActive: true } }),
+    );
+    const summary = el().querySelector('[data-matter-summary]')!;
+    expect(summary.textContent).toContain('Active');
+    expect(summary.textContent).toContain('Created');
+    const toggle = summary.querySelector<HTMLButtonElement>('[data-details-toggle]')!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(el().querySelector('[data-details-block]')).toBeNull();
+    toggle.click();
+    await settle(fixture);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(el().querySelector('[data-details-block] dl')).not.toBeNull();
+    // "Test User 03 (primary)": the text between the name and the bracket is one space.
+    expect(el().querySelector('[data-managers]')!.textContent!.replace(/\s+/g, ' ')).toContain(
+      'Test User 03 (primary)',
+    );
   });
 
   it('shows each count once: the Overview has no strip of its own, the header strip carries all six counts (#816)', async () => {
@@ -318,11 +349,13 @@ describe('MatterDetailPage', () => {
     expect(matters.getMatterSummary).not.toHaveBeenCalled();
     expect(el().querySelector('[data-strip]')).toBeNull();
     expect(el().querySelector('[role=alert]')).toBeNull();
+    await openDetails();
     expect(el().querySelector('[data-details-tab] dl')).not.toBeNull();
   });
 
   it('shows the client as plain text without Client.View', async () => {
     await create(['Matter.View']);
+    await openDetails();
     expect(el().querySelector('[data-client-value] a')).toBeNull();
     expect(el().querySelector('[data-client-value]')!.textContent).toContain('Acme Corp');
     expect(el().querySelector('[data-client] a')).toBeNull();
@@ -447,7 +480,7 @@ describe('MatterDetailPage', () => {
     // New asset lives in the header overflow now (#274); the tab has no button of its own while it lists assets.
     expect(buttonByLabel(el(), 'New asset')).toBeUndefined();
     expect(grid.querySelector('[data-new-asset], [data-empty-new-asset]')).toBeNull();
-    // The standalone search box and status select are gone: Name, Type, External reference and Status are column filters.
+    // The standalone search box and status select are gone: Name, Type, External reference and Disposition are column filters.
     expect(grid.querySelector('#matter-asset-search, #matter-asset-status')).toBeNull();
     expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
@@ -455,7 +488,7 @@ describe('MatterDetailPage', () => {
     for (const name of ['Name', 'External reference'])
       expect(grid.querySelector(`input[aria-label="Filter by ${name}"]`), name).not.toBeNull();
     expect(
-      grid.querySelector<HTMLSelectElement>('select[aria-label="Filter by Status"]')!.value,
+      grid.querySelector<HTMLSelectElement>('select[aria-label="Filter by Disposition"]')!.value,
     ).toBe('active');
     expect(grid.querySelector('[aria-label^="Filter by Type"]')).not.toBeNull();
 
@@ -514,7 +547,11 @@ describe('MatterDetailPage', () => {
         b.getAttribute('data-action'),
       ),
     ).toEqual(['edit', 'activity', 'create-task']);
-    expect(el().querySelector('[data-details-tab] button:not(mf-copy-button button)')).toBeNull();
+    expect(
+      el().querySelector(
+        '[data-details-tab] button:not(mf-copy-button button):not([data-details-toggle])',
+      ),
+    ).toBeNull();
     const menu = await openOverflow(fixture);
     expect(
       Array.from(menu!.querySelectorAll('[role=menuitem]')).map((b) =>
@@ -770,7 +807,7 @@ describe('MatterDetailPage', () => {
         ),
       );
       await openTab('assets');
-      const cells = el().querySelectorAll('mf-matter-assets tbody tr td:nth-child(3)');
+      const cells = el().querySelectorAll('mf-matter-assets tbody tr td:nth-child(4)');
       expect(cells[0].textContent!.replace(/\s+/g, ' ').trim()).toBe('–None');
       expect(cells[0].querySelector('[data-none]')?.getAttribute('aria-hidden')).toBe('true');
       expect(cells[1].textContent!.trim()).toBe('WS-1');

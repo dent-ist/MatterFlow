@@ -21,7 +21,7 @@ import { ChartFormat, ChartRow, plainFormat } from './chart-types';
           <span>Highest {{ fmt(max()) }}</span>
           <span>Now {{ fmt(last()) }}</span>
         </div>
-        <ul class="cc__cols" aria-hidden="true">
+        <ul class="cc__cols" aria-hidden="true" [style.height]="chartHeight()">
           @for (row of rows(); track $index) {
             <li class="cc__col" data-column [attr.title]="row.label + ': ' + fmt(row.value)">
               <span class="cc__bar" [style.height.%]="height(row.value)"></span>
@@ -115,6 +115,10 @@ export class ColumnChart {
   /** What the values count ("GB", "Items"), for the summary sentence. */
   readonly unit = input('');
   readonly format = input<ChartFormat>(plainFormat);
+  /** The height of the columns (a CSS length); the default is the Data tab's. A small chart in a card passes less. */
+  readonly chartHeight = input('9rem');
+  /** The last sentence of the summary; a chart with no table beside it passes an empty one. */
+  readonly tableHint = input('The table has every month.');
 
   protected readonly colour = TYPE_STYLES[0].color;
   protected readonly max = computed(() => Math.max(0, ...this.rows().map((r) => r.value)));
@@ -131,8 +135,8 @@ export class ColumnChart {
     const unit = this.unit() ? ` ${this.unit()}` : '';
     return (
       `${this.heading()}: from ${first.label} (${this.fmt(first.value)}${unit}) to ${end.label} ` +
-      `(${this.fmt(end.value)}${unit}); highest ${peak.label} (${this.fmt(peak.value)}${unit}). ` +
-      'The table has every month.'
+      `(${this.fmt(end.value)}${unit}); highest ${peak.label} (${this.fmt(peak.value)}${unit}).` +
+      (this.tableHint() ? ` ${this.tableHint()}` : '')
     );
   });
 

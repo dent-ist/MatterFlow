@@ -52,6 +52,25 @@ public sealed class MatterOverviewTests(SqlServerFixture sql) : MyMattersTestBas
         foreach (var r in reasons.Take(3))
             (await TotalAsync(A, "task-queue", r.GetProperty("query").GetString()!)).ShouldBe(r.GetProperty("count").GetInt32(), r.GetProperty("code").GetString());
 
+        // PM v2 (#882): the open tasks by task type and the tasks on hold by reason; each row's query lists exactly the tasks it counts.
+        var types = o.GetProperty("types").EnumerateArray().ToList();
+        types.Sum(t => t.GetProperty("open").GetInt32()).ShouldBe(counts.GetProperty("open").GetInt32());
+        types.Sum(t => t.GetProperty("overdue").GetInt32()).ShouldBe(1);
+        foreach (var t in types)
+        {
+            t.GetProperty("name").GetString().ShouldNotBeNullOrWhiteSpace();
+            (await TotalAsync(A, "task-queue", t.GetProperty("query").GetString()!)).ShouldBe(t.GetProperty("open").GetInt32(), "type " + t.GetProperty("name").GetString());
+            (await TotalAsync(A, "task-queue", t.GetProperty("overdueQuery").GetString()!)).ShouldBe(t.GetProperty("overdue").GetInt32(), "overdue of " + t.GetProperty("name").GetString());
+        }
+
+        var holds = o.GetProperty("holdReasons").EnumerateArray().ToList();
+        holds.Sum(h => h.GetProperty("count").GetInt32()).ShouldBe(counts.GetProperty("onHold").GetInt32());
+        foreach (var h in holds)
+        {
+            h.GetProperty("oldestDays").GetInt32().ShouldBeGreaterThanOrEqualTo(0);
+            (await TotalAsync(A, "task-queue", h.GetProperty("query").GetString()!)).ShouldBe(h.GetProperty("count").GetInt32(), "hold reason " + h.GetProperty("name").GetString());
+        }
+
         // The same flag and reasons as the health table of My Matters.
         var row = (await Mine($"health?pageSize=100")).GetProperty("items").EnumerateArray().Single(i => i.GetProperty("matterId").GetInt32() == M1);
         row.GetProperty("flag").GetString().ShouldBe("RED");

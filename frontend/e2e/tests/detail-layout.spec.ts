@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { openMatterDetails } from '../support/matter-details';
 
 /** The Client, Matter and Project detail pages: Client and Matter have Details as their first tab, Project has Tasks (n) and Details tabs (WP4); the Activity drawer (docs/ux/detail-layout). */
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
@@ -113,6 +114,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
       'aria-selected',
       'true',
     );
+    await openMatterDetails(page); // the facts are behind the Details disclosure (PM v2, #882)
     await expect(page.getByRole('tabpanel')).toContainText(world.client.name);
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
@@ -136,6 +138,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     await expect(page.getByRole('tab')).toHaveText([/Overview/, /Tasks/, /Projects/, /Assets/]);
     await expect(panel(page)).toHaveCount(0);
+    await openMatterDetails(page); // the facts are behind the Details disclosure (PM v2, #882)
     const details = page.getByRole('tabpanel');
     await expect(details).toContainText('Sensitive');
     await expect(details).toContainText(world.client.name);

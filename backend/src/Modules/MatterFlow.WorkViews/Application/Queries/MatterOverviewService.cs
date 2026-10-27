@@ -1,5 +1,6 @@
 using System.Globalization;
 using MatterFlow.Assets.Contracts;
+using MatterFlow.Configuration.Domain;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Identity.Domain;
 using MatterFlow.Organization.Domain;
@@ -163,7 +164,46 @@ public sealed class MatterOverviewService(
                 n.AssignedUserId,
                 n.AssignedUserId is { } uid && users.TryGetValue(uid, out var assignee) ? assignee.DisplayName : null))]);
 
-        return new MatterOverview(queueClock.ZoneId, now, matterHeader, taskCounts, deadlines, people, await AssetsAsync(matterId, ct), await ActivityAsync(matterId, me, queueClock, now, ct), health);
+        var (types, holdReasons) = await TypesAndHoldsAsync(tasks, overdue, matterPart, now, ct);
+        return new MatterOverview(queueClock.ZoneId, now, matterHeader, taskCounts, deadlines, people, await AssetsAsync(matterId, ct), await ActivityAsync(matterId, me, queueClock, now, ct), health, types, holdReasons);
+    }
+
+    /// <summary>The open tasks of the matter by task type and the tasks On Hold by reason (PM v2, #882): two grouped statements plus the names, over the same visible tasks as everything else here.</summary>
+    private async Task<(IReadOnlyList<MatterOverviewType>, IReadOnlyList<MatterOverviewHoldReason>)> TypesAndHoldsAsync(
+        IQueryable<WorkTask> tasks, System.Linq.Expressions.Expression<Func<WorkTask, bool>> overdue, string matterPart, DateTime now, CancellationToken ct)
+    {
+        var open = tasks.Where(TaskQueueRules.Open);
+        var byType = await open.GroupBy(t => t.TaskTypeId)
+            .Select(g => new { TypeId = g.Key, Open = g.Count(), Overdue = g.AsQueryable().Count(overdue) }).ToListAsync(ct);
+        var typeIds = byType.Select(t => t.TypeId).ToList();
+        var typeInfo = typeIds.Count == 0
+            ? []
+            : await db.Set<TaskType>().AsNoTracking().Where(t => typeIds.Contains(t.Id)).Select(t => new { t.Id, t.Name, t.IconKey, t.ColourKey }).ToDictionaryAsync(t => t.Id, ct);
+        var types = byType
+            .Select(t =>
+            {
+                var info = typeInfo.GetValueOrDefault(t.TypeId);
+                var typeParam = "type=" + t.TypeId.ToString(CultureInfo.InvariantCulture);
+                return new MatterOverviewType(t.TypeId, info?.Name ?? string.Empty, info?.IconKey ?? "file-text", info?.ColourKey, t.Open, t.Overdue,
+                    DashboardRules.Open(matterPart, typeParam, "sort=type"), DashboardRules.Open(matterPart, typeParam, "overdue=true", "sort=due"));
+            })
+            .OrderByDescending(t => t.Open).ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.TaskTypeId).ToList();
+
+        var holds = await tasks.Where(t => t.Status == TaskStatusCode.OnHold).GroupBy(t => t.OnHoldReasonId ?? 0)
+            .Select(g => new { ReasonId = g.Key, Count = g.Count(), Since = g.Min(t => t.StatusChangedAtUtc) }).ToListAsync(ct);
+        var reasonIds = holds.Where(h => h.ReasonId > 0).Select(h => h.ReasonId).ToList();
+        var reasonNames = reasonIds.Count == 0
+            ? []
+            : await db.Set<OnHoldReason>().AsNoTracking().Where(r => reasonIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.Name, ct);
+        var reasons = holds
+            .Select(h => new MatterOverviewHoldReason(
+                h.ReasonId,
+                h.ReasonId == 0 ? "No reason given" : reasonNames.GetValueOrDefault(h.ReasonId, "Reason " + h.ReasonId.ToString(CultureInfo.InvariantCulture)),
+                h.Count,
+                Math.Max(0, (int)(now - DateTime.SpecifyKind(h.Since, DateTimeKind.Utc)).TotalDays),
+                DashboardRules.Status(TaskStatusCode.OnHold, matterPart, "onHoldReason=" + h.ReasonId.ToString(CultureInfo.InvariantCulture), "sort=" + TaskQueueRules.SortOnHoldSince)))
+            .OrderByDescending(r => r.Count).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        return (types, reasons);
     }
 
     private async Task<MatterOverviewAssets?> AssetsAsync(int matterId, CancellationToken ct)

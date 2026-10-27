@@ -7,6 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
+import { openMatterDetails } from '../support/matter-details';
 
 /**
  * Clients UX epic, WP7 (#263 Matter Overview, #264 task summary strip above the Matter and Project Tasks grids, #265 Project column).
@@ -256,7 +257,8 @@ test.describe('WP7: Matter Overview (#263)', () => {
     ).toEqual(['Open 10', 'Overdue 2', 'Due soon 1', 'ASAP 1', 'Unassigned 10', 'On hold 1']);
     await expect(header.locator('[data-strip-item="overdue"] .pi')).toBeVisible();
 
-    // The reference, the matter number and the name are in the header; the rows are the rest.
+    // The reference, the matter number and the name are in the header; the rows are the rest (behind the Details disclosure, PM v2 #882).
+    await openMatterDetails(page);
     expect((await overview.locator('dt').allTextContents()).map((t) => t.trim())).toEqual([
       'Client',
       'Status',
@@ -625,6 +627,7 @@ test.describe('WP7: strip numbers equal the Task Queue totals behind each link a
       await page.setViewportSize({ width: w, height: h });
       await page.goto(mUrl(data.a));
       await ready(page);
+      await openMatterDetails(page); // behind the Details disclosure when the Overview has other sections (PM v2, #882)
       await expect(page.locator('[data-matter-overview] dl')).toBeVisible();
       await expect(page.locator('[data-strip]')).toHaveCount(0);
       await expect(page.locator('[role=alert]')).toHaveCount(0);

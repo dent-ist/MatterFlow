@@ -78,9 +78,30 @@ public sealed record MatterOverviewReason([property: Required] string Code, [pro
 /// <summary>The same flag and reasons as the My Matters health table (Red, Amber, Green); who manages the matter never enters it.</summary>
 public sealed record MatterOverviewHealth([property: Required] string Flag, [property: Required] IReadOnlyList<MatterOverviewReason> Reasons, [property: Required] int AmberDueDays, [property: Required] int StuckOnHoldDays);
 
+/// <summary>One task type of the matter's open tasks (PM v2, #882): how many are open and how many overdue, with the Task Queue queries that list them.</summary>
+public sealed record MatterOverviewType(
+    [property: Required] int TaskTypeId,
+    [property: Required] string Name,
+    [property: Required] string IconKey,
+    string? ColourKey,
+    [property: Required] int Open,
+    [property: Required] int Overdue,
+    [property: Required] string Query,
+    [property: Required] string OverdueQuery);
+
+/// <summary>One reason the matter's tasks are on hold (PM v2, #882): how many, how long the longest has been on hold, and the Task Queue query. <c>OnHoldReasonId</c> 0 is "no reason given".</summary>
+public sealed record MatterOverviewHoldReason(
+    [property: Required] int OnHoldReasonId,
+    [property: Required] string Name,
+    [property: Required] int Count,
+    [property: Required] int OldestDays,
+    [property: Required] string Query);
+
 /// <summary>
 /// The matter record Overview in one round trip (epic #758, PX-11). A section the caller may not use is null, not an empty list: the task sections need <c>Task.View</c>, the assets need <c>Asset.View</c>.
 /// </summary>
+/// <param name="Types">The open tasks by task type (PM v2, #882), most open first; null without <c>Task.View</c>.</param>
+/// <param name="HoldReasons">The tasks On Hold by structured reason (PM v2, #882), most first; null without <c>Task.View</c>.</param>
 /// <param name="Activity">The last ten events of the last 90 days (task created, status changed, reassigned, commented, manager changed), newest first; never moves the unread marker.</param>
 public sealed record MatterOverview(
     [property: Required] string TimeZone,
@@ -91,4 +112,6 @@ public sealed record MatterOverview(
     MatterOverviewPeople? People,
     MatterOverviewAssets? Assets,
     IReadOnlyList<MyMattersActivityItem>? Activity,
-    MatterOverviewHealth? Health);
+    MatterOverviewHealth? Health,
+    IReadOnlyList<MatterOverviewType>? Types = null,
+    IReadOnlyList<MatterOverviewHoldReason>? HoldReasons = null);

@@ -3,6 +3,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { openMatterDetails } from '../support/matter-details';
 
 /**
  * Matter and Client detail pages (#244): Details is the first tab and the default, the old right-hand Details panel is gone, the
@@ -55,6 +56,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     const panel = page.getByRole('tabpanel');
     await expect(panel).toHaveAttribute('id', 'matter-panel');
     await expect(panel).toHaveAttribute('aria-labelledby', 'matter-tab-details');
+    // The facts are behind the Details disclosure (PM v2, #882).
+    await openMatterDetails(page);
     // The reference, the number and the name are in the header, not rows again (WP7).
     await expect(panel.getByText('Matter reference')).toHaveCount(0);
     await expect(panel.locator('dl')).not.toContainText(world.matter.name);

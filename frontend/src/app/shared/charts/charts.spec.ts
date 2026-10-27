@@ -226,6 +226,24 @@ describe('ColumnChart', () => {
     );
   });
 
+  it('keeps the table sentence by default, can drop it, and takes a smaller height for a card (PM v2, #882)', async () => {
+    const fixture = await make([row('Jan', 10), row('Feb', 30)]);
+    const summary = () =>
+      (fixture.nativeElement.querySelector('[data-columns-summary]') as HTMLElement).textContent!;
+    expect(summary()).toContain('The table has every month.');
+    expect((fixture.nativeElement.querySelector('.cc__cols') as HTMLElement).style.height).toBe(
+      '9rem',
+    );
+    fixture.componentRef.setInput('tableHint', '');
+    fixture.componentRef.setInput('chartHeight', '3.5rem');
+    await settle(fixture);
+    expect(summary()).not.toContain('table');
+    expect(summary().endsWith('.')).toBe(true);
+    expect((fixture.nativeElement.querySelector('.cc__cols') as HTMLElement).style.height).toBe(
+      '3.5rem',
+    );
+  });
+
   it('draws nothing but says so when every value is zero or there are no months', async () => {
     const zero = await make([row('Jan', 0), row('Feb', 0)]);
     expect((zero.nativeElement.querySelector('.cc__bar') as HTMLElement).style.height).toBe('0%');
