@@ -10,6 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { BrandingService } from '../../../core/branding/branding.service';
 import { APP_ENV } from '../../../core/config/app-env';
 import { defaultLandingPath } from '../../../core/auth/guards';
 import { sameIdentity } from '../../../shared/layout/same-identity';
@@ -27,6 +28,7 @@ import { TitleIcon } from '../../../shared/ui/page-header';
 })
 export class AccessPendingPage implements AfterViewInit {
   protected readonly auth = inject(AuthStore);
+  protected readonly brand = inject(BrandingService);
   private readonly router = inject(Router);
   protected readonly helpContact = inject(APP_ENV).helpContact;
   private readonly heading = viewChild<ElementRef<HTMLElement>>('heading');

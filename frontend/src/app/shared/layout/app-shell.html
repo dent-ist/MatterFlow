@@ -18,8 +18,19 @@
   >
     <i class="pi pi-bars" aria-hidden="true"></i>
   </button>
-  <a class="mf-logo" routerLink="/" aria-label="MatterFlow home"
-    ><img class="mf-logo__mark" src="favicon.svg" alt="" width="28" height="28" />MatterFlow</a
+  <a
+    class="mf-logo"
+    routerLink="/"
+    [attr.aria-label]="brand.appName() + ' home'"
+    data-testid="app-logo"
+    ><img
+      class="mf-logo__mark"
+      [src]="brand.markSrc()"
+      alt=""
+      width="28"
+      height="28"
+      (error)="brand.markFailed()"
+    /><span class="mf-logo__name" data-app-name>{{ brand.appName() }}</span></a
   >
 
   @if (canSearch()) {

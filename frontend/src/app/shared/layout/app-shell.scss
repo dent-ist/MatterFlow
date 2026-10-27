@@ -50,23 +50,6 @@
   min-height: var(--mf-header-h);
 }
 
-.mf-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--mf-s2);
-  font-size: var(--mf-fs-h3);
-  font-weight: 600;
-  color: var(--mf-primary);
-  text-decoration: none;
-}
-
-.mf-logo__mark {
-  display: block;
-  flex: none;
-  width: 28px;
-  height: 28px;
-}
-
 .mf-search-spacer {
   flex: 1;
 }

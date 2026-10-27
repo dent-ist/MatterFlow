@@ -1,5 +1,5 @@
 <main class="mf-pending">
-  <p class="mf-brand">MatterFlow</p>
+  <p class="mf-brand">{{ brand.appName() }}</p>
 
   @if (auth.isDisabled()) {
     <h1 #heading tabindex="-1"><mf-title-icon icon="pi pi-lock" />Your account is disabled</h1>
@@ -18,7 +18,7 @@
       <p>
         You're signed in as <strong>{{ p.displayName }}</strong
         >{{ accountNote(p.displayName, p.windowsAccount) }}. An administrator needs to give you a
-        role before you can use MatterFlow.
+        role before you can use {{ brand.appName() }}.
         @if (p.registeredAtUtc) {
           Registered {{ p.registeredAtUtc | mfDate }}.
         }

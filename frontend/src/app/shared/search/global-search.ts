@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import type { SearchGroup, SearchHit } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { BrandingService } from '../../core/branding/branding.service';
 import {
   SEARCH_COPY,
   SEARCH_ERROR_MESSAGE,
@@ -70,7 +71,7 @@ interface DisplayGroup {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'onDocumentClick($event)', '(focusout)': 'onFocusOut($event)' },
   template: `
-    <div class="mf-gs" role="search" aria-label="Search MatterFlow">
+    <div class="mf-gs" role="search" [attr.aria-label]="'Search ' + brand.appName()">
       <i class="pi pi-search" aria-hidden="true"></i>
       <input
         #box
@@ -472,6 +473,7 @@ export class GlobalSearch {
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
+  protected readonly brand = inject(BrandingService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** Set on the first search (loaded lazily with the API client, which the initial bundle must not carry). */
   private readonly lookups = signal<LookupStore | null>(null);
@@ -533,8 +535,12 @@ export class GlobalSearch {
   });
 
   protected readonly searchedIn = computed(() => searchedInLine(this.searched()));
-  protected readonly boxName = computed(() => searchBoxName((c) => this.auth.has(c)));
-  protected readonly boxPlaceholder = computed(() => searchBoxPlaceholder((c) => this.auth.has(c)));
+  protected readonly boxName = computed(() =>
+    searchBoxName((c) => this.auth.has(c), this.brand.appName()),
+  );
+  protected readonly boxPlaceholder = computed(() =>
+    searchBoxPlaceholder((c) => this.auth.has(c), this.brand.appName()),
+  );
 
   /** The phone sheet (below 640 px): fixed under the box, as high as the visible viewport allows, so the footer stays above the on-screen keyboard. */
   protected readonly panelStyle = computed(() => {

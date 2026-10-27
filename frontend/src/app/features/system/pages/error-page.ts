@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { BrandingService } from '../../../core/branding/branding.service';
 import { ErrorRequest } from '../../../core/auth/guards';
 import { Connectivity } from '../../../core/http/connectivity';
 import { ErrorReference } from '../../../shared/ui/error-reference';
@@ -57,6 +58,7 @@ import { StatePage } from '../../../shared/ui/state-page';
 })
 export class ErrorPage {
   private readonly auth = inject(AuthStore);
+  private readonly brand = inject(BrandingService);
   private readonly request = inject(ErrorRequest);
 
   private readonly connectivity = inject(Connectivity);
@@ -65,7 +67,7 @@ export class ErrorPage {
   protected readonly reason = computed(() =>
     this.connectivity.signInFailed()
       ? "We couldn't verify your sign-in. Reload the page to try again."
-      : 'MatterFlow could not load your account.',
+      : `${this.brand.appName()} could not load your account.`,
   );
   protected readonly retrying = signal(false);
   /** Retry was pressed and the account still could not be loaded. */

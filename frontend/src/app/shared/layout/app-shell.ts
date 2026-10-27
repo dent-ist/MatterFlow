@@ -23,6 +23,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { Button } from 'primeng/button';
 import { AuthStore } from '../../core/auth/auth.store';
+import { BrandingService } from '../../core/branding/branding.service';
 import { PendingUsersStore } from '../../core/identity-admin/pending-users.store';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
@@ -85,6 +86,7 @@ const PHONE_QUERY = '(max-width: 639px)';
 })
 export class AppShell {
   protected readonly auth = inject(AuthStore);
+  protected readonly brand = inject(BrandingService);
   protected readonly pendingUsers = inject(PendingUsersStore);
   /** True while a fixed-header grid page is on screen: the main area then does not scroll (only the grid does). */
   protected readonly layout = inject(ShellLayout);

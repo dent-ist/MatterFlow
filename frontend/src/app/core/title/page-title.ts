@@ -2,16 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
-export const APP_NAME = 'MatterFlow';
+import { DEFAULT_APP_NAME, appName } from '../branding/branding';
 
-/** `<page> - MatterFlow`; the bare app name when there is no page name. */
-export function documentTitle(page: string | null | undefined): string {
-  const name = page?.trim();
-  return name ? `${name} - ${APP_NAME}` : APP_NAME;
+/** The built-in name; the name in force comes from the branding setting (epic #850), see `appName()`. */
+export const APP_NAME = DEFAULT_APP_NAME;
+
+/** `<page> - <Application name>`; the bare application name when there is no page name. A pure function of the page and the name. */
+export function documentTitle(page: string | null | undefined, name: string = appName()): string {
+  const text = page?.trim();
+  return text ? `${text} - ${name}` : name;
 }
 
 /**
- * Document-title rule (S21): `<Page or record>: <Tab or view> - MatterFlow`. `pageTab` builds the first part for a page with tabs or
+ * Document-title rule (S21): `<Page or record>: <Tab or view> - <Application name>`. `pageTab` builds the first part for a page with tabs or
  * views (`Users: Roles`, `Task Types: New workflow`: a create or edit page keeps its section first); `recordTitle` does the same for a
  * record. A route sets its title only through these helpers or a plain page name, never with a hyphen between page and tab (the
  * hyphen is only the one before the app name); a not-found title says "not found" (`recordStateTitle`).

@@ -8,6 +8,7 @@ import {
   model,
   signal,
 } from '@angular/core';
+import { BrandingService } from '../../core/branding/branding.service';
 import { FRIENDLY_ZONES, localTimeIn } from '../../core/availability/availability-edit';
 import { Clock, browserTimeZoneOrNull } from '../../core/time/clock';
 
@@ -73,9 +74,12 @@ const OTHER = '__other__';
     </p>
     <p class="tz__help" id="av-tz-note" data-tz-note>
       @if (isBrowser()) {
-        It is your browser's time zone, the one dates and times elsewhere in MatterFlow use.
+        It is your browser's time zone, the one dates and times elsewhere in
+        {{ brand.appName() }} use.
       } @else {
-        Dates and times elsewhere in MatterFlow use your browser's time zone ({{ browser }}).
+        Dates and times elsewhere in {{ brand.appName() }} use your browser's time zone ({{
+          browser
+        }}).
       }
     </p>
     <p class="mf-sr-only" role="status" aria-live="polite" data-tz-live>{{ announce() }}</p>
@@ -109,6 +113,7 @@ export class TimeZoneSelect {
   readonly invalid = input(false);
 
   private readonly clock = inject(Clock);
+  protected readonly brand = inject(BrandingService);
   protected readonly friendly = FRIENDLY_ZONES;
   protected readonly browser = browserTimeZoneOrNull() ?? 'UTC';
   /** The person asked for "Other zones...", or the value is a zone the select does not list. */

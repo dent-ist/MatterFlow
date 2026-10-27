@@ -1,0 +1,27 @@
+/*
+ * The application mark and name in the header (epic #850). Global rather than in app-shell.scss only to keep that component stylesheet under its
+ * 5 kB budget. The name is the administrator's text (up to 40 characters): it is cut with an ellipsis instead of widening the header.
+ */
+.mf-logo {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0; /* a long name is cut with an ellipsis, not wider than the header */
+  gap: var(--mf-s2);
+  font-size: var(--mf-fs-h3);
+  font-weight: 600;
+  color: var(--mf-primary);
+  text-decoration: none;
+}
+
+.mf-logo__mark {
+  display: block;
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.mf-logo__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

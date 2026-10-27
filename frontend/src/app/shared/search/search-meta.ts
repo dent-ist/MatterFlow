@@ -1,4 +1,5 @@
 import { Permission } from '../../core/auth/permissions';
+import { appName } from '../../core/branding/branding';
 
 /** The searchable object types, as the API names them. */
 export type SearchType = 'matter' | 'client' | 'task' | 'project' | 'asset';
@@ -48,14 +49,20 @@ export function searchBoxWords(has: (code: Permission) => boolean): string[] {
 }
 
 /** The accessible name of the header box: `Search clients, matters, tasks, assets` for everyone who may search all, shorter otherwise (#465). */
-export function searchBoxName(has: (code: Permission) => boolean): string {
+export function searchBoxName(
+  has: (code: Permission) => boolean,
+  name: string = appName(),
+): string {
   const words = searchBoxWords(has);
-  return words.length === 0 ? 'Search MatterFlow' : `Search ${words.join(', ')}`;
+  return words.length === 0 ? `Search ${name}` : `Search ${words.join(', ')}`;
 }
 
 /** The placeholder: the name plus the shortcut hint, which stays exactly as it was. */
-export function searchBoxPlaceholder(has: (code: Permission) => boolean): string {
-  return `${searchBoxName(has)}... (Ctrl+K)`;
+export function searchBoxPlaceholder(
+  has: (code: Permission) => boolean,
+  name: string = appName(),
+): string {
+  return `${searchBoxName(has, name)}... (Ctrl+K)`;
 }
 
 /**

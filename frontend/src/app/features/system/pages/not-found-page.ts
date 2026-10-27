@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { BrandingService } from '../../../core/branding/branding.service';
 import { landingLink } from '../../../core/auth/guards';
 import { StatePage } from '../../../shared/ui/state-page';
 
@@ -31,7 +32,7 @@ import { StatePage } from '../../../shared/ui/state-page';
           class="mf-control nf__input"
           type="search"
           aria-label="Search clients, matters, tasks, assets"
-          placeholder="Search MatterFlow"
+          [attr.placeholder]="'Search ' + brand.appName()"
           data-not-found-search
         />
         <button type="submit" class="mf-btn">Search</button>
@@ -62,6 +63,7 @@ import { StatePage } from '../../../shared/ui/state-page';
 export class NotFoundPage {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
+  protected readonly brand = inject(BrandingService);
   protected readonly link = computed(() => landingLink(this.auth));
 
   /** The address that was asked for (what the router shows); nothing when /404 was opened directly. */

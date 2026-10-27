@@ -7,6 +7,7 @@ import {
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BrandingService } from '../../core/branding/branding.service';
 import { LandingLink } from '../../core/auth/guards';
 import { TitleIcon } from './page-header';
 
@@ -42,7 +43,7 @@ import { TitleIcon } from './page-header';
         <div class="sp__secondary" data-state-secondary><ng-content select="[mfSecondary]" /></div>
       </div>
     </section>
-    <p class="sp__brand" data-state-brand>MatterFlow</p>
+    <p class="sp__brand" data-state-brand>{{ brand.appName() }}</p>
   `,
   styles: `
     :host {
@@ -115,6 +116,7 @@ import { TitleIcon } from './page-header';
   `,
 })
 export class StatePage {
+  protected readonly brand = inject(BrandingService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   constructor() {
