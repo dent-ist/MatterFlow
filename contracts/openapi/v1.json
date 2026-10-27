@@ -12937,7 +12937,16 @@
               "INTERNAL_ERROR",
               "TOO_MANY_REQUESTS",
               "QUERY_TIMEOUT",
-              "METHOD_NOT_ALLOWED"
+              "METHOD_NOT_ALLOWED",
+              "BRANDING_NAME_REQUIRED",
+              "BRANDING_NAME_TOO_LONG",
+              "BRANDING_NAME_INVALID_CHARS",
+              "BRANDING_ICON_TOO_LARGE",
+              "BRANDING_ICON_TYPE_UNSUPPORTED",
+              "BRANDING_ICON_NOT_SQUARE",
+              "BRANDING_ICON_TOO_SMALL",
+              "BRANDING_ICON_UNSAFE",
+              "BRANDING_ICON_CORRUPT"
             ],
             "type": "string",
             "description": "Stable machine-readable error code."

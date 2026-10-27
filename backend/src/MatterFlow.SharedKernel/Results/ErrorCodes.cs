@@ -94,6 +94,35 @@ public static class ErrorCodes
     public const string QueryTimeout = "QUERY_TIMEOUT";
     public const string MethodNotAllowed = "METHOD_NOT_ALLOWED";
 
+    // ---- Application settings: branding (epic #850, design docs/ux/app-settings/README.md section 5)
+
+    /// <summary>The application name is empty.</summary>
+    public const string BrandingNameRequired = "BRANDING_NAME_REQUIRED";
+
+    /// <summary>The application name is longer than 40 characters.</summary>
+    public const string BrandingNameTooLong = "BRANDING_NAME_TOO_LONG";
+
+    /// <summary>The application name contains &lt;, &gt;, a control or a bidirectional/format character.</summary>
+    public const string BrandingNameInvalidChars = "BRANDING_NAME_INVALID_CHARS";
+
+    /// <summary>The icon is larger than 256 KB (or, for a PNG, more than 1024 pixels wide).</summary>
+    public const string BrandingIconTooLarge = "BRANDING_ICON_TOO_LARGE";
+
+    /// <summary>The icon is not a PNG, SVG or ICO file (decided by content, never by file name).</summary>
+    public const string BrandingIconTypeUnsupported = "BRANDING_ICON_TYPE_UNSUPPORTED";
+
+    /// <summary>The icon is not square.</summary>
+    public const string BrandingIconNotSquare = "BRANDING_ICON_NOT_SQUARE";
+
+    /// <summary>A PNG or ICO icon is smaller than 64 x 64 pixels.</summary>
+    public const string BrandingIconTooSmall = "BRANDING_ICON_TOO_SMALL";
+
+    /// <summary>An SVG icon contains something outside the allow-list (script, external reference, ...). It is rejected, never rewritten.</summary>
+    public const string BrandingIconUnsafe = "BRANDING_ICON_UNSAFE";
+
+    /// <summary>The icon file is truncated or inconsistent.</summary>
+    public const string BrandingIconCorrupt = "BRANDING_ICON_CORRUPT";
+
     /// <summary>Every code, in declaration order. Used to emit the OpenAPI enum.</summary>
     public static IReadOnlyList<string> All { get; } =
         typeof(ErrorCodes)
