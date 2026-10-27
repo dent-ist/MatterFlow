@@ -20,7 +20,8 @@ public static class SearchTypes
 /// reference), <c>Label</c> the name or title, <c>Secondary</c> a short context line. <c>Path</c> is the app route to open it. Projects, Tasks and
 /// Assets carry their Matter's reference, name and sensitivity (addendum O: sensitive Matters are badged, never hidden). <c>InMyMatters</c> (epic #758): true when the
 /// Matter (for a Client: one of its Matters) is managed by the caller as Primary or Secondary, false when not, null for a caller who holds no <c>Matter.BeManager</c>. It
-/// only labels a result: search stays global and no result is left out or moved because of it.
+/// only labels a result: search stays global and no result is left out or moved because of it. PM v2 (#885): a Task hit also carries its task type and due date (<c>DueDate</c>
+/// null = ASAP), an Asset hit its disposition code and size (<c>SizeValue</c> in <c>SizeUnit</c>, null when its type has no size field or it has no value); read for the page of hits only.
 /// </summary>
 public sealed record SearchHit(
     [property: Required] string Type,
@@ -34,7 +35,15 @@ public sealed record SearchHit(
     string? MatterName,
     [property: Required] bool IsActive,
     string? Status,
-    bool? InMyMatters = null);
+    bool? InMyMatters = null,
+    string? TaskTypeName = null,
+    string? TaskTypeIconKey = null,
+    string? TaskTypeColourKey = null,
+    DateOnly? DueDate = null,
+    DateTime? DueAtUtc = null,
+    string? Disposition = null,
+    decimal? SizeValue = null,
+    string? SizeUnit = null);
 
 /// <summary>
 /// The hits of one type, best first and capped; <c>HasMore</c> says the cap cut off further matches. <c>Total</c> is how many records of the type match

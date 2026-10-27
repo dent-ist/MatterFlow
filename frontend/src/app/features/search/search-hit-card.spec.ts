@@ -164,7 +164,8 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
     const card = cards(
       create([{ ...task, matterRef: undefined, matterName: undefined, status: 'NEW' }]),
     )[0];
-    expect(meta(card)!.textContent!.trim()).toBe('TSK-1042');
+    // An open task with no date says ASAP after the reference (PM v2, #885); nothing else, and no separator.
+    expect(meta(card)!.textContent!.trim()).toBe('TSK-1042, ASAP');
     expect(card.querySelector('.rc-sep')).toBeNull();
     const bare = cards(
       create([{ ...asset, secondary: undefined, matterRef: undefined, matterName: undefined }]),
@@ -227,5 +228,28 @@ describe('SearchHitCard (one card for all five hit types, #472)', () => {
       (c) => c.querySelector('[data-other-matter]')?.textContent?.trim() ?? null,
     );
     expect(labels).toEqual([null, ', Other matter', null]);
+  });
+
+  it('shows the task type badge and the due fact of a task, and the disposition and size of an asset (PM v2, #885)', () => {
+    const late = cards(
+      create([
+        {
+          ...task,
+          status: 'IN_PROGRESS',
+          dueDate: '2000-01-02',
+          taskTypeName: 'Production (Outgoing)',
+          taskTypeIconKey: 'send',
+        },
+      ]),
+    )[0];
+    expect(late.querySelector('[data-type-badge]')!.getAttribute('aria-label')).toBe(
+      'Task type: Production (Outgoing)',
+    );
+    expect(late.querySelector('[data-card-extra]')!.textContent).toContain('Overdue Jan 2, 2000');
+    const stored = cards(
+      create([{ ...asset, disposition: 'PENDING_DISPOSITION', sizeValue: 5.5, sizeUnit: 'GB' }]),
+    )[0];
+    expect(stored.textContent).toContain('Pending disposition');
+    expect(stored.querySelector('[data-card-extra]')!.textContent).toContain('5.5 GB');
   });
 });

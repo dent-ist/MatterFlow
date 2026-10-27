@@ -74,7 +74,8 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
         'Name',
         'Type',
         'Matter number',
-        'Status',
+        'Size',
+        'Disposition',
       ]);
       await expect(rows.first().locator('a')).toHaveCount(1);
       await expect(rows.first()).not.toContainText('https://');

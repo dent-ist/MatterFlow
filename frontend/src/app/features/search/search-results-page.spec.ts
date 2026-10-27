@@ -321,7 +321,7 @@ describe('SearchResultsPage', () => {
       Array.from(sections(el)[i].querySelectorAll('th')).map((th) => th.textContent!.trim());
     expect(heads(0)).toEqual(['Number', 'Name', 'Client', 'Status']);
     expect(heads(1)).toEqual(['Number', 'Name', 'Status']);
-    expect(heads(2)).toEqual(['Ref', 'Title', 'Matter', 'Status']);
+    expect(heads(2)).toEqual(['Ref', 'Title', 'Type', 'Matter', 'Due', 'Status']);
     // The name is the only link of the row; the number is text.
     const links = sections(el)[0].querySelectorAll('[data-hit-row] a');
     expect(links.length).toBe(1);

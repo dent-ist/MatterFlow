@@ -43,7 +43,7 @@ describe('mf-search-grid (#468, #469, #470)', () => {
         }),
       ],
     });
-    expect(heads(el)).toEqual(['Name', 'Type', 'Matter number', 'Status']);
+    expect(heads(el)).toEqual(['Name', 'Type', 'Matter number', 'Size', 'Disposition']);
     const row = el.querySelector('[data-hit-row]')!;
     expect(row.textContent).not.toContain('https://');
     expect(row.getAttribute('title')).toBe(url);

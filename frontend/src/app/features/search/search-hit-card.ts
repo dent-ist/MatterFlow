@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { SearchHit } from '../../api/generated/api-client';
 import { SuggestionLines, suggestionLines } from '../../shared/search/search-meta';
-import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
+import { ActiveBadge, Badge, SensitiveBadge } from '../../shared/ui/badge';
+import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
+import { dispositionOf } from '../assets/disposition/asset-disposition';
+import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { RecordCard } from '../../shared/ui/record-card-list';
 import { StatusBadge } from '../../shared/ui/status-badge';
 import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
@@ -38,7 +42,7 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
  */
 @Component({
   selector: 'mf-search-hit-card',
-  imports: [RecordCard, ActiveBadge, SensitiveBadge, StatusBadge],
+  imports: [RecordCard, ActiveBadge, Badge, SensitiveBadge, StatusBadge, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // The record card is the grid item of the list's `<li>`; this wrapper adds no box.
   host: { style: 'display: contents' },
@@ -54,6 +58,15 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
       padding-left: var(--mf-s2);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
+    }
+    .hc-extra {
+      flex: none;
+      padding-left: var(--mf-s2);
+      white-space: nowrap;
+    }
+    .hc-over {
+      color: var(--mf-due-overdue);
+      font-weight: 700;
     }
     .hc-context {
       overflow: hidden;
@@ -72,16 +85,32 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
       @if (hit().type === 'matter' && hit().isSensitive) {
         <mf-sensitive-badge mfCardBadges />
       }
+      @if (hit().taskTypeName; as typeName) {
+        <mf-task-type-badge
+          mfCardBadges
+          [name]="typeName"
+          [iconKey]="hit().taskTypeIconKey"
+          [colourKey]="hit().taskTypeColourKey"
+        />
+      }
       @if (hit().status; as status) {
         <mf-status-badge mfCardBadges [code]="status" />
       }
-      @if (!hit().status) {
+      @if (hit().disposition; as code) {
+        <mf-badge
+          mfCardBadges
+          [tone]="dispositionOf(code).tone"
+          [icon]="dispositionOf(code).icon"
+          >{{ dispositionOf(code).label }}</mf-badge
+        >
+      } @else if (!hit().status) {
         <mf-active-badge mfCardBadges [active]="hit().isActive" />
       }
       @if (
         lines().reference ||
         lines().context.length > 0 ||
         lines().lock ||
+        extra() ||
         hit().inMyMatters === false
       ) {
         <p mfCardMeta class="rc-line" data-card-meta [attr.title]="lines().tooltip">
@@ -104,6 +133,11 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
               lines().context.join(' · ')
             }}</span>
           }
+          @if (extra(); as fact) {
+            <span class="hc-extra" data-card-extra [class.hc-over]="overdue()"
+              ><span class="mf-sr-only">, </span>{{ fact }}</span
+            >
+          }
           @if (hit().inMyMatters === false) {
             <span class="hc-other" data-other-matter
               ><span class="mf-sr-only">, </span>Other matter</span
@@ -119,7 +153,15 @@ export class SearchHitCard {
 
   readonly hit = input.required<SearchHit>();
 
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
+  protected readonly dispositionOf = dispositionOf;
+
   protected readonly lines = computed(() => hitCardLines(this.hit()));
+  /** The due fact of a task ("Due Oct 27") or the size of an asset ("412 GB"), after the context (PM v2, #885). */
+  private readonly due = computed(() => hitDueText(this.hit(), this.clock.now(), this.zone));
+  protected readonly overdue = computed(() => hitIsOverdue(this.due()));
+  protected readonly extra = computed(() => this.due() || hitSizeText(this.hit()));
   protected readonly task = computed(() => this.hit().type === 'task');
   protected readonly rowKey = computed(() => hitRowKey(this.hit()));
 }

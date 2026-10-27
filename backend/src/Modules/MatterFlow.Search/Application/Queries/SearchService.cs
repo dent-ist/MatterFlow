@@ -2,6 +2,8 @@ using System.Data;
 using System.Linq.Expressions;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
+using MatterFlow.Configuration.Contracts.Forms;
+using MatterFlow.Configuration.Domain;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Identity;
@@ -21,7 +23,7 @@ namespace MatterFlow.Search.Application.Queries;
 /// searched only when the caller holds its View permission. Matching is number-aware (padded or unpadded) and every row carries the relevance tier it
 /// matched at (<see cref="SearchRanking"/>); hits sort by tier, then a stable per-type key. User text only ever reaches SQL as an escaped LIKE parameter.
 /// </summary>
-public sealed class SearchService(DbContext db, IPermissionChecker permissions, IMatterVisibility visibility, IEnumerable<IAssetTaskLinkReader> assetLinks, IManagedMatterScope managed)
+public sealed class SearchService(DbContext db, IPermissionChecker permissions, IMatterVisibility visibility, IEnumerable<IAssetTaskLinkReader> assetLinks, IManagedMatterScope managed, IFormIndexReader formIndex)
 {
     private static readonly IReadOnlyDictionary<string, string> ViewPermission = new Dictionary<string, string>
     {
@@ -391,11 +393,24 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
     {
         var page = TaskRanked(term, filter).OrderBy(r => r.Rank).ThenByDescending(r => r.Item.Id).Skip(skip).Take(take);
         var rows = await PageWithLabelAsync(page, r => r.Item.MatterId, clientKey: false, ct);
+        // Type and due date of the page's tasks: one small statement for the page, not part of the ranked statement (PM v2, #885; the ranking and the paging are untouched).
+        var taskIds = rows.Select(x => x.Item.Item.Id).ToList();
+        var facts = taskIds.Count == 0
+            ? []
+            : await (from t in db.Set<WorkTask>().AsNoTracking().Where(t => taskIds.Contains(t.Id))
+                     join ty in db.Set<TaskType>().AsNoTracking() on t.TaskTypeId equals ty.Id
+                     select new { t.Id, t.DueDate, t.DueAtUtc, ty.Name, ty.IconKey, ty.ColourKey })
+                .ToDictionaryAsync(x => x.Id, ct);
         return
         [
-            .. rows.Select(x => new SearchHit(
-                SearchTypes.Task, x.Item.Item.Id, x.Item.Item.Number, x.Item.Item.Title, x.Item.Item.Requestor, $"/tasks/{x.Item.Item.Id}",
-                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, true, x.Item.Item.Status.ToCode(), x.Mine)),
+            .. rows.Select(x =>
+            {
+                var f = facts.GetValueOrDefault(x.Item.Item.Id);
+                return new SearchHit(
+                    SearchTypes.Task, x.Item.Item.Id, x.Item.Item.Number, x.Item.Item.Title, x.Item.Item.Requestor, $"/tasks/{x.Item.Item.Id}",
+                    x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, true, x.Item.Item.Status.ToCode(), x.Mine,
+                    f?.Name, f?.IconKey, f?.ColourKey, f?.DueDate, f?.DueAtUtc is { } at ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : null);
+            }),
         ];
     }
 
@@ -455,12 +470,53 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
         await PrepareAssetsAsync(ct);
         var page = AssetRanked(term, filter).OrderBy(r => r.Rank).ThenBy(r => r.Item.Name).ThenBy(r => r.Item.Id).Skip(skip).Take(take);
         var rows = await PageWithLabelAsync(page, r => r.Item.MatterId, clientKey: false, ct);
+        var (dispositions, sizes) = await AssetFactsAsync([.. rows.Select(x => (x.Item.Item.Id, x.Item.Item.AssetTypeId))], ct);
         return
         [
             .. rows.Select(x => new SearchHit(
                 SearchTypes.Asset, x.Item.Item.Id, x.Item.Item.ExternalReference, x.Item.Item.Name, x.Item.Item.TypeName, $"/assets/{x.Item.Item.Id}",
-                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, x.Item.Item.IsActive, null, x.Mine)),
+                x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, x.Item.Item.IsActive, null, x.Mine,
+                Disposition: dispositions.GetValueOrDefault(x.Item.Item.Id),
+                SizeValue: sizes.TryGetValue(x.Item.Item.Id, out var size) ? size.Value : null,
+                SizeUnit: sizes.TryGetValue(x.Item.Item.Id, out var unitSize) ? unitSize.Unit : null)),
         ];
+    }
+
+    /// <summary>Disposition code and size (the value of the type's designated size field and its unit) of the page's assets, in two small statements (PM v2, #885).</summary>
+    private async Task<(Dictionary<int, string> Dispositions, Dictionary<int, (decimal Value, string Unit)> Sizes)> AssetFactsAsync(IReadOnlyCollection<(int AssetId, int TypeId)> assets, CancellationToken ct)
+    {
+        var dispositions = new Dictionary<int, string>();
+        var sizes = new Dictionary<int, (decimal Value, string Unit)>();
+        if (assets.Count == 0)
+            return (dispositions, sizes);
+
+        var ids = assets.Select(a => a.AssetId).ToList();
+        foreach (var row in await db.Set<Asset>().AsNoTracking().Where(a => ids.Contains(a.Id)).Select(a => new { a.Id, a.DispositionCode }).ToListAsync(ct))
+            dispositions[row.Id] = row.DispositionCode;
+
+        var typeIds = assets.Select(a => a.TypeId).Distinct().ToList();
+        var types = await db.Set<AssetType>().AsNoTracking()
+            .Where(t => typeIds.Contains(t.Id) && t.SizeFieldKey != null && t.SizeUnit != null)
+            .Select(t => new { t.Id, Key = t.SizeFieldKey!, Unit = t.SizeUnit! })
+            .ToListAsync(ct);
+        if (types.Count == 0)
+            return (dispositions, sizes);
+
+        var byType = types.ToDictionary(t => t.Id);
+        var sizedIds = assets.Where(a => byType.ContainsKey(a.TypeId)).Select(a => (long)a.AssetId).ToList();
+        var keys = types.Select(t => t.Key).Distinct().ToList();
+        var values = (await formIndex.Rows(FormValueOwnerKind.Asset)
+                .Where(r => sizedIds.Contains(r.OwnerId) && keys.Contains(r.FieldKey) && r.ValueNumber != null)
+                .Select(r => new { r.OwnerId, r.FieldKey, Value = r.ValueNumber!.Value })
+                .ToListAsync(ct))
+            .GroupBy(r => (r.OwnerId, r.FieldKey)).ToDictionary(g => g.Key, g => g.First().Value);
+        foreach (var (assetId, typeId) in assets)
+        {
+            if (byType.TryGetValue(typeId, out var type) && values.TryGetValue((assetId, type.Key), out var value))
+                sizes[assetId] = (value, type.Unit);
+        }
+
+        return (dispositions, sizes);
     }
 
     /// <summary>The matters the caller may see as a whole (sensitive-matter rule, mode M; every matter while the go-live switch is off).</summary>

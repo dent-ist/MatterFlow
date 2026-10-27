@@ -210,6 +210,20 @@ public sealed class GlobalSearchApiTests(SqlServerFixture sql)
         Group(await d.SearchAsync("decoy file"), "asset")!.Value.GetProperty("items")[0].GetProperty("isSensitive").GetBoolean().ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task Pm_v2_885_task_hits_carry_the_task_type_and_asset_hits_the_disposition()
+    {
+        var d = await DataAsync();
+        var asset = Group(await d.SearchAsync("beta custodian"), "asset")!.Value.GetProperty("items")[0];
+        asset.GetProperty("disposition").GetString().ShouldBe("ACTIVE");
+
+        var task = Group(await d.SearchAsync(d.BetaTaskNumber), "task")!.Value.GetProperty("items").EnumerateArray().Single(t => t.GetProperty("id").GetInt64() == d.BetaTaskId);
+        task.GetProperty("taskTypeName").GetString().ShouldNotBeNullOrWhiteSpace();
+        task.GetProperty("taskTypeIconKey").GetString().ShouldNotBeNullOrWhiteSpace();
+        // The extra facts never change what is found or in which order: same hits, same order with the fields left out of the comparison.
+        task.GetProperty("path").GetString().ShouldBe($"/tasks/{d.BetaTaskId}");
+    }
+
     [Theory]
     [InlineData("100%", "Rate 100% [Final]_Set")]
     [InlineData("100% [", "Rate 100% [Final]_Set")]

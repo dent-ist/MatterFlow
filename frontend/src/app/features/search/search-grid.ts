@@ -1,8 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import type { SearchHit } from '../../api/generated/api-client';
 import { highlightParts, SearchType } from '../../shared/search/search-meta';
-import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
+import { ActiveBadge, Badge, SensitiveBadge } from '../../shared/ui/badge';
+import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
+import { dispositionOf } from '../assets/disposition/asset-disposition';
+import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { LoadState } from '../../shared/ui/data-table';
 import { GridBody } from '../../shared/ui/grid-body';
 import { MatterRef } from '../../shared/ui/matter-ref';
@@ -13,7 +17,18 @@ import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
 import { SearchHitCard, hitRowKey } from './search-hit-card';
 
 /** The kinds of cell the grid knows; each type picks its columns from them. */
-type CellKind = 'ref' | 'name' | 'client' | 'matter' | 'matterNumber' | 'assetType' | 'status';
+type CellKind =
+  | 'ref'
+  | 'name'
+  | 'client'
+  | 'matter'
+  | 'matterNumber'
+  | 'assetType'
+  | 'status'
+  | 'taskType'
+  | 'due'
+  | 'size'
+  | 'disposition';
 
 interface Column {
   kind: CellKind;
@@ -46,7 +61,9 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
   task: [
     { kind: 'ref', heading: 'Ref', bone: '5rem', cls: 'sg-ref' },
     { kind: 'name', heading: 'Title', bone: '16rem' },
+    { kind: 'taskType', heading: 'Type', bone: '2rem' },
     { kind: 'matter', heading: 'Matter', bone: '9rem' },
+    { kind: 'due', heading: 'Due', bone: '5rem', cls: 'sg-due' },
     STATUS,
   ],
   project: [
@@ -58,7 +75,8 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     { kind: 'name', heading: 'Name', bone: '16rem' },
     { kind: 'assetType', heading: 'Type', bone: '6rem' },
     { kind: 'matterNumber', heading: 'Matter number', bone: '6rem' },
-    STATUS,
+    { kind: 'size', heading: 'Size', bone: '4rem', cls: 'sg-size' },
+    { kind: 'disposition', heading: 'Disposition', bone: '5rem' },
   ],
   mixed: [
     { kind: 'ref', heading: 'Number', bone: '5rem', cls: 'sg-ref' },
@@ -90,6 +108,8 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     SearchHitCard,
     SensitiveBadge,
     StatusBadge,
+    Badge,
+    TaskTypeBadge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
@@ -129,6 +149,14 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     td.sg-ref {
       width: 1%;
       white-space: nowrap;
+    }
+    td.sg-due,
+    td.sg-size {
+      white-space: nowrap;
+    }
+    .sg-over {
+      color: var(--mf-due-overdue);
+      font-weight: 700;
     }
     mark {
       background: transparent;
@@ -261,6 +289,47 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                         }
                       </td>
                     }
+                    @case ('taskType') {
+                      <td [attr.data-cell]="col.kind">
+                        @if (hit.taskTypeName) {
+                          <mf-task-type-badge
+                            [name]="hit.taskTypeName"
+                            [iconKey]="hit.taskTypeIconKey"
+                            [colourKey]="hit.taskTypeColourKey"
+                          />
+                        }
+                      </td>
+                    }
+                    @case ('due') {
+                      <td class="sg-due" [attr.data-cell]="col.kind">
+                        @if (dueText(hit); as due) {
+                          <span [class.sg-over]="isOverdue(due)">{{ due }}</span>
+                        }
+                      </td>
+                    }
+                    @case ('size') {
+                      <td class="sg-size" [attr.data-cell]="col.kind">
+                        @if (sizeText(hit); as size) {
+                          {{ size }}
+                        } @else {
+                          <span class="pg-muted" aria-hidden="true">&ndash;</span>
+                          <span class="mf-sr-only">No size</span>
+                        }
+                      </td>
+                    }
+                    @case ('disposition') {
+                      <td [attr.data-cell]="col.kind">
+                        @if (hit.disposition; as code) {
+                          <mf-badge
+                            [tone]="dispositionOf(code).tone"
+                            [icon]="dispositionOf(code).icon"
+                            >{{ dispositionOf(code).label }}</mf-badge
+                          >
+                        } @else {
+                          <mf-active-badge [active]="hit.isActive" />
+                        }
+                      </td>
+                    }
                     @case ('status') {
                       <td [attr.data-cell]="col.kind">
                         @if (hit.status) {
@@ -302,6 +371,15 @@ export class SearchGrid {
   protected readonly bones = computed(() => this.columns().map((c) => c.bone));
 
   protected readonly rowKey = hitRowKey;
+  protected readonly dispositionOf = dispositionOf;
+  protected readonly isOverdue = hitIsOverdue;
+  protected readonly sizeText = hitSizeText;
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
+
+  protected dueText(hit: SearchHit): string {
+    return hitDueText(hit, this.clock.now(), this.zone);
+  }
 
   protected parts(text: string) {
     return highlightParts(text, this.query());
