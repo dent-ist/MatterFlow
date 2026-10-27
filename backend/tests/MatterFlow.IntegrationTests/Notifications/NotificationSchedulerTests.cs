@@ -89,6 +89,9 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
     /// <summary>The create-path events that making the test tasks produces (event 1 to the assignee, event 5 to the matter managers): not what these tests are about.</summary>
     private static readonly string[] CreatePathEvents = ["TaskAssigned", "MatterTaskCreated"];
 
+    /// <summary>The scheduled notices name the task type after the matter (PM v2, #884); the harness world's type is "Data Processing".</summary>
+    private const string TaskType = "Data Processing";
+
     /// <summary>The scheduled notifications (the create-path rows that making the test tasks produces are left out).</summary>
     private Task<List<Notification>> RowsAsync(int? recipient = null, string? type = null) =>
         _factory.WithDbAsync(db => db.Set<Notification>().AsNoTracking()
@@ -212,14 +215,14 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         ann.ActorUserId.ShouldBeNull();
         ann.ObjectId.ShouldBe(TaskId(task));
         var late = Today.DayNumber - due.DayNumber;
-        ann.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12");
+        ann.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12 ({TaskType})");
 
         foreach (var manager in new[] { _boId, _cyId })
         {
             var row = (await RowsAsync(manager)).ShouldHaveSingleItem();
             row.EventType.ShouldBe("MatterTaskOverdue");
             row.DedupeKey.ShouldBe($"overdue:{TaskId(task)}:{Iso(due)}");
-            row.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12");
+            row.Message.ShouldBe($"Overdue by {late} day{(late == 1 ? string.Empty : "s")} - {number} \"Review privilege log\" on Merger Review 12 ({TaskType})");
         }
 
         (await RunAsync()).Created.Values.Sum().ShouldBe(0);
@@ -242,8 +245,8 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
 
         var rows = await RowsAsync(_annId, "TaskDue");
         rows.Count.ShouldBe(2);
-        rows.Single(r => r.ObjectId == TaskId(today)).Message.ShouldBe($"Due today - {TaskNumber(today)} \"Due today\" on Merger Review 12");
-        rows.Single(r => r.ObjectId == TaskId(tomorrow)).Message.ShouldBe($"Due tomorrow - {TaskNumber(tomorrow)} \"Due tomorrow\" on Merger Review 12");
+        rows.Single(r => r.ObjectId == TaskId(today)).Message.ShouldBe($"Due today - {TaskNumber(today)} \"Due today\" on Merger Review 12 ({TaskType})");
+        rows.Single(r => r.ObjectId == TaskId(tomorrow)).Message.ShouldBe($"Due tomorrow - {TaskNumber(tomorrow)} \"Due tomorrow\" on Merger Review 12 ({TaskType})");
         rows.ShouldAllBe(r => r.DedupeKey.StartsWith("soon:"));
     }
 
@@ -327,7 +330,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         var rows = await RowsAsync(type: "MatterTaskStalled");
         rows.Count.ShouldBe(2);
         rows.ShouldAllBe(r => r.DedupeKey.StartsWith("unassigned:") && r.ObjectId == TaskId(task) && r.ActorUserId == null);
-        rows[0].Message.ShouldBe($"Unassigned for 3 days - {TaskNumber(task)} \"Orphan\" on Merger Review 12");
+        rows[0].Message.ShouldBe($"Unassigned for 3 days - {TaskNumber(task)} \"Orphan\" on Merger Review 12 ({TaskType})");
 
         await RunAsync();
         (await RowsAsync(type: "MatterTaskStalled")).Count.ShouldBe(2); // idempotent
@@ -379,7 +382,7 @@ public sealed class NotificationSchedulerTests(SqlServerFixture sql) : IAsyncLif
         row.RecipientUserId.ShouldBe(_boId);
         row.ObjectId.ShouldBe(TaskId(held));
         row.DedupeKey.ShouldStartWith("hold:");
-        row.Message.ShouldBe($"On hold for 6 days - {TaskNumber(held)} \"Held\" on Merger Review 12");
+        row.Message.ShouldBe($"On hold for 6 days - {TaskNumber(held)} \"Held\" on Merger Review 12 ({TaskType})");
         await RunAsync();
         (await RowsAsync(type: "MatterTaskStalled")).Count.ShouldBe(1);
     }

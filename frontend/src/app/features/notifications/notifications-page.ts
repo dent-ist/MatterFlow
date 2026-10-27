@@ -18,7 +18,15 @@ import { badgeText } from '../../shared/layout/notification-bell';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Pager } from '../../shared/ui/pager';
 import { NotificationStore } from './notification-store';
-import { absoluteTime, notificationLink, relativeTime } from './notification-text';
+import {
+  NotificationGroup,
+  absoluteTime,
+  groupLink,
+  groupNotifications,
+  groupSummary,
+  notificationLink,
+  relativeTime,
+} from './notification-text';
 
 const PAGE_SIZES = [25, 50, 100] as const;
 
@@ -59,6 +67,7 @@ type Filter = 'all' | 'unread';
         type="button"
         class="mf-btn npg__toggle"
         data-filter="unread"
+        title="Unread notifications. The overdue notices of one day count once."
         [attr.aria-pressed]="filter() === 'unread'"
         (click)="setFilter('unread')"
       >
@@ -101,31 +110,104 @@ type Filter = 'all' | 'unread';
             </p>
           } @else {
             <ul class="npg__list" data-page-list>
-              @for (item of items(); track item.id) {
-                <li>
-                  <a
-                    class="npg__row"
-                    data-notification-item
-                    [class.npg__row--unread]="!item.isRead"
-                    [routerLink]="link(item)"
-                    [title]="item.message"
-                    (click)="open(item)"
-                  >
-                    <span class="npg__dot" aria-hidden="true"></span>
-                    <span class="npg__message">
-                      @if (!item.isRead) {
-                        <span class="mf-sr-only">Unread: </span>
-                      }
-                      {{ item.message }}</span
+              @for (entry of entries(); track entry.kind === 'group' ? entry.key : entry.item.id) {
+                @if (entry.kind === 'group') {
+                  <li data-notification-group-item>
+                    <div class="npg__group">
+                      <a
+                        class="npg__row"
+                        data-notification-group
+                        [class.npg__row--unread]="entry.unread > 0"
+                        [routerLink]="groupTarget(entry).commands"
+                        [queryParams]="groupTarget(entry).queryParams"
+                        [title]="summary(entry)"
+                        (click)="openGroup(entry)"
+                      >
+                        <span class="npg__dot" aria-hidden="true"></span>
+                        <span class="npg__message">
+                          @if (entry.unread > 0) {
+                            <span class="mf-sr-only">Unread: </span>
+                          }
+                          {{ summary(entry) }}
+                          <span class="npg__count">({{ entry.items.length }} notices)</span></span
+                        >
+                        <time
+                          class="npg__time"
+                          [attr.datetime]="entry.newestUtc"
+                          [title]="absolute(entry.newestUtc)"
+                          >{{ relative(entry.newestUtc) }}</time
+                        >
+                      </a>
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text npg__toggle-group"
+                        data-group-toggle
+                        [attr.aria-expanded]="isOpen(entry.key)"
+                        [attr.aria-controls]="'npg-group-' + entry.key"
+                        (click)="toggleGroup(entry.key)"
+                      >
+                        {{ isOpen(entry.key) ? 'Hide' : 'Show' }} the {{ entry.items.length }}
+                        notices
+                      </button>
+                    </div>
+                    @if (isOpen(entry.key)) {
+                      <ul class="npg__sub" [id]="'npg-group-' + entry.key" data-group-items>
+                        @for (item of entry.items; track item.id) {
+                          <li>
+                            <a
+                              class="npg__row"
+                              data-notification-item
+                              [class.npg__row--unread]="!item.isRead"
+                              [routerLink]="link(item)"
+                              [title]="item.message"
+                              (click)="open(item)"
+                            >
+                              <span class="npg__dot" aria-hidden="true"></span>
+                              <span class="npg__message">
+                                @if (!item.isRead) {
+                                  <span class="mf-sr-only">Unread: </span>
+                                }
+                                {{ item.message }}</span
+                              >
+                              <time
+                                class="npg__time"
+                                [attr.datetime]="item.createdUtc"
+                                [title]="absolute(item.createdUtc)"
+                                >{{ relative(item.createdUtc) }}</time
+                              >
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </li>
+                } @else {
+                  @let item = entry.item;
+                  <li>
+                    <a
+                      class="npg__row"
+                      data-notification-item
+                      [class.npg__row--unread]="!item.isRead"
+                      [routerLink]="link(item)"
+                      [title]="item.message"
+                      (click)="open(item)"
                     >
-                    <time
-                      class="npg__time"
-                      [attr.datetime]="item.createdUtc"
-                      [title]="absolute(item.createdUtc)"
-                      >{{ relative(item.createdUtc) }}</time
-                    >
-                  </a>
-                </li>
+                      <span class="npg__dot" aria-hidden="true"></span>
+                      <span class="npg__message">
+                        @if (!item.isRead) {
+                          <span class="mf-sr-only">Unread: </span>
+                        }
+                        {{ item.message }}</span
+                      >
+                      <time
+                        class="npg__time"
+                        [attr.datetime]="item.createdUtc"
+                        [title]="absolute(item.createdUtc)"
+                        >{{ relative(item.createdUtc) }}</time
+                      >
+                    </a>
+                  </li>
+                }
               }
             </ul>
           }
@@ -207,6 +289,32 @@ type Filter = 'all' | 'unread';
       min-width: 0;
       overflow-wrap: anywhere;
     }
+    .npg__group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .npg__group > .npg__row {
+      flex: 1 1 20rem;
+      min-width: 0;
+    }
+    .npg__toggle-group {
+      flex: none;
+      margin-right: var(--mf-s3);
+    }
+    .npg__count {
+      color: var(--mf-text-muted);
+      font-weight: 400;
+    }
+    .npg__sub {
+      margin: 0;
+      padding: 0 0 0 var(--mf-s4);
+      list-style: none;
+      border-top: 1px solid var(--mf-border);
+    }
+    .npg__sub li + li {
+      border-top: 1px solid var(--mf-border);
+    }
     .npg__time {
       flex: none;
       color: var(--mf-text-muted);
@@ -274,6 +382,11 @@ export class NotificationsPage {
   protected readonly items = signal<readonly NotificationItem[]>([]);
   protected readonly total = signal(0);
   protected readonly announcement = signal('');
+  /** The overdue notices of one day and kind are one entry; "Show the n notices" opens a group up (PM v2, #884). Display only: nothing is merged on the server. */
+  protected readonly entries = computed(() => groupNotifications(this.items()));
+  protected readonly summary = groupSummary;
+  protected readonly groupTarget = groupLink;
+  private readonly opened = signal<ReadonlySet<string>>(new Set());
   protected readonly unreadLabel = computed(() => badgeText(this.store.unreadCount()));
   private loadedOnce = false;
   private requestId = 0;
@@ -339,6 +452,21 @@ export class NotificationsPage {
   protected async markAll(): Promise<void> {
     await this.store.markAllRead();
     await this.load();
+  }
+
+  protected isOpen(key: string): boolean {
+    return this.opened().has(key);
+  }
+
+  protected toggleGroup(key: string): void {
+    const next = new Set(this.opened());
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    this.opened.set(next);
+  }
+
+  protected openGroup(group: NotificationGroup<NotificationItem>): void {
+    void this.store.markGroupRead(group.items);
   }
 
   protected open(item: NotificationItem): void {

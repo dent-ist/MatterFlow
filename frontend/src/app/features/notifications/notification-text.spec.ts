@@ -1,6 +1,10 @@
 import {
+  NotificationLike,
   absoluteTime,
   announcementText,
+  groupLink,
+  groupNotifications,
+  groupSummary,
   notificationLink,
   relativeTime,
 } from './notification-text';
@@ -50,5 +54,63 @@ describe('notification text', () => {
     for (const [event, { kind, opens }] of Object.entries(events)) {
       expect(notificationLink({ objectKind: kind, objectId: 11 }), event).toEqual([opens, 11]);
     }
+  });
+
+  describe('grouping the overdue notices (PM v2, #884)', () => {
+    function n(id: number, over: Partial<NotificationLike> = {}): NotificationLike {
+      return {
+        objectKind: 'Task',
+        objectId: 100 + id,
+        message: `Overdue by 2 days - TSK-${id} "T" on M`,
+        createdUtc: '2026-10-22T14:00:00Z',
+        isRead: false,
+        groupKey: 'overdue:2026-10-22:manager',
+        matterId: id % 3,
+        ...over,
+      };
+    }
+
+    it('makes one group of the notices that share a key, at the place of the newest, and leaves the others alone', () => {
+      const other = n(9, { groupKey: null, matterId: 1 });
+      const entries = groupNotifications([n(1), other, n(2), n(3, { isRead: true })]);
+      expect(entries.map((e) => e.kind)).toEqual(['group', 'single']);
+      const group = entries[0];
+      if (group.kind !== 'group') throw new Error('expected a group');
+      expect(group.items).toHaveLength(3);
+      expect(group.unread).toBe(2);
+      expect(group.tasks).toBe(3);
+      expect(group.matters).toBe(3);
+      expect(group.manager).toBe(true);
+    });
+
+    it('keeps a lone overdue notice as it is (a group needs two)', () => {
+      expect(groupNotifications([n(1)]).map((e) => e.kind)).toEqual(['single']);
+    });
+
+    it('keeps different days and different recipients apart', () => {
+      const entries = groupNotifications([
+        n(1),
+        n(2),
+        n(3, { groupKey: 'overdue:2026-10-21:manager' }),
+        n(4, { groupKey: 'overdue:2026-10-21:manager' }),
+        n(5, { groupKey: 'overdue:2026-10-22:assignee' }),
+      ]);
+      expect(entries.map((e) => e.kind)).toEqual(['group', 'group', 'single']);
+    });
+
+    it('words the summary reason first and the link by who the tasks are for', () => {
+      expect(groupSummary({ manager: true, tasks: 13, matters: 3 })).toBe(
+        'Overdue - 13 tasks on 3 matters',
+      );
+      expect(groupSummary({ manager: false, tasks: 1, matters: 1 })).toBe(
+        'Overdue - 1 of your task on 1 matter',
+      );
+      expect(groupLink({ manager: true }).queryParams).toEqual({
+        managedByMe: 'true',
+        overdue: 'true',
+        status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
+      });
+      expect(groupLink({ manager: false }).commands).toEqual(['/my-work']);
+    });
   });
 });

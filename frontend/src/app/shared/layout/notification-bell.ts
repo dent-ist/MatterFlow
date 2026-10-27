@@ -19,6 +19,9 @@ export function badgeText(count: number): string {
   return count > 99 ? '99+' : String(count);
 }
 
+/** The tooltip of the bell: what its number counts. */
+export const COUNT_NOTE = 'Unread notifications. The overdue notices of one day count once.';
+
 /** The bell's accessible name: "Notifications, 3 unread", "Notifications, more than 99 unread" (README section 10). */
 export function bellName(count: number): string {
   return `Notifications, ${count > 99 ? 'more than 99' : count} unread`;
@@ -43,6 +46,7 @@ export function bellName(count: number): string {
       aria-haspopup="dialog"
       [attr.aria-expanded]="open()"
       [attr.aria-label]="name()"
+      [attr.title]="count() > 0 ? countNote : null"
       (click)="toggle()"
     >
       <i class="pi pi-bell" aria-hidden="true"></i>
@@ -109,6 +113,8 @@ export class NotificationBell {
   protected readonly count = computed(() => this.store()?.unreadCount() ?? 0);
   protected readonly badge = computed(() => badgeText(this.count()));
   protected readonly name = computed(() => bellName(this.count()));
+  /** What the number counts (PM v2, #884): the overdue notices of one day are one entry, as the panel and the page list them. */
+  protected readonly countNote = COUNT_NOTE;
   protected readonly announcement = computed(() => this.store()?.announcement() ?? '');
 
   constructor() {

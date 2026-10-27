@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using MatterFlow.Notifications.Contracts;
 using MatterFlow.Notifications.Domain;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Paging;
@@ -76,7 +77,7 @@ public sealed class NotificationService
         var userId = _user.UserId!.Value;
         var rows = Mine(userId);
         var latestId = await rows.MaxAsync(n => (long?)n.Id, ct) ?? 0;
-        var unread = await rows.Where(n => n.ReadUtc == null).OrderByDescending(n => n.Id).Take(UnreadCap).CountAsync(ct);
+        var unread = await UnreadEntriesAsync(rows, ct);
         var prefs = await _db.Set<NotificationPreference>().AsNoTracking()
             .Where(p => p.UserId == userId)
             .GroupBy(_ => 1)
@@ -135,7 +136,40 @@ public sealed class NotificationService
     }
 
     private static NotificationItem ToItem(Notification n) =>
-        new(n.Id, n.EventType, n.ObjectKind, n.ObjectId, n.MatterId, n.Message, Utc(n.CreatedUtc), n.ReadUtc is null ? null : Utc(n.ReadUtc.Value), n.ReadUtc is not null);
+        new(n.Id, n.EventType, n.ObjectKind, n.ObjectId, n.MatterId, n.Message, Utc(n.CreatedUtc), n.ReadUtc is null ? null : Utc(n.ReadUtc.Value), n.ReadUtc is not null, GroupKeyOf(n.EventType, n.DedupeKey, n.CreatedUtc));
+
+    private const string ManagerOverdue = nameof(NotificationEventType.MatterTaskOverdue);
+    private const string AssigneeDue = nameof(NotificationEventType.TaskDue);
+    private const string OverduePrefix = "overdue:";
+
+    /// <summary>The group of an overdue notice (the day it was created and who it is for); null for every other notice. Pure.</summary>
+    internal static string? GroupKeyOf(string eventType, string dedupeKey, DateTime createdUtc) =>
+        eventType == ManagerOverdue
+            ? OverduePrefix + createdUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ":manager"
+            : eventType == AssigneeDue && dedupeKey.StartsWith(OverduePrefix, StringComparison.Ordinal)
+                ? OverduePrefix + createdUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ":assignee"
+                : null;
+
+    /// <summary>
+    /// The bell's number (PM v2, #884): every unread notice counts once, except that the unread overdue notices of one day and kind count as one entry,
+    /// because the bell and the list show them as one group. At most <see cref="UnreadCap"/>.
+    /// </summary>
+    private async Task<int> UnreadEntriesAsync(IQueryable<Notification> rows, CancellationToken ct)
+    {
+        var unread = rows.Where(n => n.ReadUtc == null);
+        var single = await unread
+            .Where(n => !(n.EventType == ManagerOverdue || (n.EventType == AssigneeDue && n.DedupeKey.StartsWith(OverduePrefix))))
+            .OrderByDescending(n => n.Id).Take(UnreadCap).CountAsync(ct);
+        var overdue = await unread
+            .Where(n => n.EventType == ManagerOverdue || (n.EventType == AssigneeDue && n.DedupeKey.StartsWith(OverduePrefix)))
+            .OrderByDescending(n => n.Id).Take(GroupScan)
+            .Select(n => new { n.EventType, n.DedupeKey, n.CreatedUtc }).ToListAsync(ct);
+        var groups = overdue.Select(n => GroupKeyOf(n.EventType, n.DedupeKey, n.CreatedUtc)).Distinct().Count();
+        return Math.Min(UnreadCap, single + groups);
+    }
+
+    /// <summary>The most unread overdue notices read to find the groups (a PM can hold hundreds after a long leave).</summary>
+    private const int GroupScan = 2000;
 
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
 

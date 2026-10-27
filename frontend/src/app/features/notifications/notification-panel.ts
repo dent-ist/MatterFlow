@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  computed,
   afterNextRender,
   effect,
   inject,
@@ -12,10 +13,19 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { NotificationItem } from '../../api/generated/api-client';
 import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { NotificationStore } from './notification-store';
-import { absoluteTime, notificationLink, relativeTime } from './notification-text';
+import {
+  NotificationGroup,
+  absoluteTime,
+  groupLink,
+  groupNotifications,
+  groupSummary,
+  notificationLink,
+  relativeTime,
+} from './notification-text';
 
 /** Below this width (px) the panel is a full-width sheet under the header (README 4.3). */
 const PHONE_MAX = 639;
@@ -78,33 +88,67 @@ const GAP = 4;
               </p>
             } @else {
               <ul class="np__list" data-panel-list>
-                @for (item of store.recent(); track item.id) {
-                  <li>
-                    <a
-                      class="np__item"
-                      data-notification-item
-                      [class.np__item--unread]="!item.isRead"
-                      [routerLink]="link(item)"
-                      [title]="item.message"
-                      (click)="choose(item)"
-                    >
-                      <span class="np__dot" aria-hidden="true"></span>
-                      <span class="np__text">
-                        <span class="np__message">
-                          @if (!item.isRead) {
-                            <span class="mf-sr-only">Unread: </span>
-                          }
-                          {{ item.message }}</span
-                        >
-                        <time
-                          class="np__time"
-                          [attr.datetime]="item.createdUtc"
-                          [title]="absolute(item.createdUtc)"
-                          >{{ relative(item.createdUtc) }}</time
-                        >
-                      </span>
-                    </a>
-                  </li>
+                @for (
+                  entry of entries();
+                  track entry.kind === 'group' ? entry.key : entry.item.id
+                ) {
+                  @if (entry.kind === 'group') {
+                    <li>
+                      <a
+                        class="np__item"
+                        data-notification-group
+                        [class.np__item--unread]="entry.unread > 0"
+                        [routerLink]="groupTarget(entry).commands"
+                        [queryParams]="groupTarget(entry).queryParams"
+                        [title]="summary(entry)"
+                        (click)="chooseGroup(entry)"
+                      >
+                        <span class="np__dot" aria-hidden="true"></span>
+                        <span class="np__text">
+                          <span class="np__message">
+                            @if (entry.unread > 0) {
+                              <span class="mf-sr-only">Unread: </span>
+                            }
+                            {{ summary(entry) }}</span
+                          >
+                          <time
+                            class="np__time"
+                            [attr.datetime]="entry.newestUtc"
+                            [title]="absolute(entry.newestUtc)"
+                            >{{ entry.items.length }} notices, {{ relative(entry.newestUtc) }}</time
+                          >
+                        </span>
+                      </a>
+                    </li>
+                  } @else {
+                    @let item = entry.item;
+                    <li>
+                      <a
+                        class="np__item"
+                        data-notification-item
+                        [class.np__item--unread]="!item.isRead"
+                        [routerLink]="link(item)"
+                        [title]="item.message"
+                        (click)="choose(item)"
+                      >
+                        <span class="np__dot" aria-hidden="true"></span>
+                        <span class="np__text">
+                          <span class="np__message">
+                            @if (!item.isRead) {
+                              <span class="mf-sr-only">Unread: </span>
+                            }
+                            {{ item.message }}</span
+                          >
+                          <time
+                            class="np__time"
+                            [attr.datetime]="item.createdUtc"
+                            [title]="absolute(item.createdUtc)"
+                            >{{ relative(item.createdUtc) }}</time
+                          >
+                        </span>
+                      </a>
+                    </li>
+                  }
                 }
               </ul>
             }
@@ -261,6 +305,11 @@ export class NotificationPanel {
   /** `true` when focus should go back to the bell (Esc, Close), `false` after following a link. */
   readonly closed = output<boolean>();
 
+  /** The overdue notices of one day and kind are one entry (PM v2, #884); display only. */
+  protected readonly entries = computed(() => groupNotifications(this.store.recent()));
+  protected readonly summary = groupSummary;
+  protected readonly groupTarget = groupLink;
+
   protected readonly sheet = signal(false);
   protected readonly top = signal(0);
   protected readonly right = signal(0);
@@ -314,6 +363,11 @@ export class NotificationPanel {
   protected choose(item: { id: number; isRead: boolean }): void {
     void this.store.markRead(item);
     // After the link's own click handler has run (closing at once would destroy it first).
+    setTimeout(() => this.close(false));
+  }
+
+  protected chooseGroup(group: NotificationGroup<NotificationItem>): void {
+    void this.store.markGroupRead(group.items);
     setTimeout(() => this.close(false));
   }
 

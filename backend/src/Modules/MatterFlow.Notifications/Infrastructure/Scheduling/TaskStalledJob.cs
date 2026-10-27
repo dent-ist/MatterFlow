@@ -17,6 +17,9 @@ public sealed class StalledTaskRow
 
     public string MatterName { get; set; } = string.Empty;
 
+    /// <summary>The task type's name, shown in the message (PM v2 #884).</summary>
+    public string? TaskTypeName { get; set; }
+
     public int? PrimaryManagerId { get; set; }
 
     public int? SecondaryManagerId { get; set; }
@@ -48,12 +51,13 @@ public sealed class TaskStalledJob(DbContext db, ScheduledNotificationWriter wri
             var rows = await db.Database.SqlQuery<StalledTaskRow>(
                     $"""
                     SELECT TOP ({NotificationRules.CandidateBatch})
-                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName,
+                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName, tt.Name AS TaskTypeName,
                            CASE WHEN pm.IsActive = 1 THEN m.PrimaryManagerId END AS PrimaryManagerId,
                            CASE WHEN sm.IsActive = 1 THEN m.SecondaryManagerId END AS SecondaryManagerId,
                            COALESCE(a.LastChange, t.CreatedAt) AS SinceUtc
                     FROM dbo.Task t
                     JOIN dbo.Matter m ON m.MatterId = t.MatterId
+                    LEFT JOIN dbo.TaskType tt ON tt.TaskTypeId = t.TaskTypeId
                     LEFT JOIN dbo.AppUser pm ON pm.UserId = m.PrimaryManagerId
                     LEFT JOIN dbo.AppUser sm ON sm.UserId = m.SecondaryManagerId
                     OUTER APPLY (SELECT MAX(e.OccurredAtUtc) AS LastChange FROM dbo.AuditEvent e WHERE e.TaskId = t.TaskId AND e.EventType = 'TASK_ASSIGNED') a
@@ -82,12 +86,13 @@ public sealed class TaskStalledJob(DbContext db, ScheduledNotificationWriter wri
             var rows = await db.Database.SqlQuery<StalledTaskRow>(
                     $"""
                     SELECT TOP ({NotificationRules.CandidateBatch})
-                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName,
+                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName, tt.Name AS TaskTypeName,
                            CASE WHEN pm.IsActive = 1 THEN m.PrimaryManagerId END AS PrimaryManagerId,
                            CASE WHEN sm.IsActive = 1 THEN m.SecondaryManagerId END AS SecondaryManagerId,
                            t.StatusChangedAt AS SinceUtc
                     FROM dbo.Task t
                     JOIN dbo.Matter m ON m.MatterId = t.MatterId
+                    LEFT JOIN dbo.TaskType tt ON tt.TaskTypeId = t.TaskTypeId
                     LEFT JOIN dbo.AppUser pm ON pm.UserId = m.PrimaryManagerId
                     LEFT JOIN dbo.AppUser sm ON sm.UserId = m.SecondaryManagerId
                     WHERE t.StatusCode = 'ON_HOLD'
@@ -121,7 +126,7 @@ public sealed class TaskStalledJob(DbContext db, ScheduledNotificationWriter wri
         JobContext context,
         int thresholdDays,
         string keyPrefix,
-        Func<string, string, string, int, string> message)
+        Func<string, string, string, int, string?, string> message)
     {
         var today = context.Today;
         var actions = new List<IReadOnlyList<NotificationRequest>>();
@@ -145,7 +150,7 @@ public sealed class TaskStalledJob(DbContext db, ScheduledNotificationWriter wri
                     row.TaskId,
                     row.MatterId,
                     null,
-                    message(row.TaskNumber, row.Title, row.MatterName, days),
+                    message(row.TaskNumber, row.Title, row.MatterName, days, row.TaskTypeName),
                     keyPrefix + since.Ticks.ToString(CultureInfo.InvariantCulture),
                     managers),
             ]);

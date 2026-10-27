@@ -48,6 +48,16 @@ public class NotificationSchedulerPlanTests
     }
 
     [Fact]
+    public void The_task_type_travels_into_the_overdue_text_of_both_recipients()
+    {
+        var row = Due("2026-10-19", assignee: 7, primary: 5);
+        row.TaskTypeName = "Production";
+        var action = TaskDueJob.Plan([row], Context).Single();
+        action.Count.ShouldBe(2);
+        action.Select(a => a.Message).ShouldAllBe(m => m == "Overdue by 3 days - TSK-42 \"Review\" on Acme v. Smith (Production)");
+    }
+
+    [Fact]
     public void Due_today_and_tomorrow_are_soon_the_day_after_is_nothing()
     {
         TaskDueJob.Plan([Due("2026-10-22")], Context).Single().Single().Message.ShouldBe("Due today - TSK-42 \"Review\" on Acme v. Smith");

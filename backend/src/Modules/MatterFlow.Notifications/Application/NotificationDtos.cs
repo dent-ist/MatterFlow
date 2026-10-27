@@ -12,6 +12,7 @@ namespace MatterFlow.Notifications.Application;
 /// <param name="CreatedUtc">When it was created (UTC).</param>
 /// <param name="ReadUtc">When it was read (UTC); null while unread.</param>
 /// <param name="IsRead">True when read.</param>
+/// <param name="GroupKey">Set on the overdue notices (PM v2, #884): <c>overdue:yyyy-MM-dd:manager</c> (the matter's managers) or <c>overdue:yyyy-MM-dd:assignee</c>, the day they were created (UTC). Notices that share a key are shown as one group; nothing is merged or removed, every notice stays readable and markable. Null for every other notice.</param>
 public sealed record NotificationItem(
     long Id,
     string EventType,
@@ -21,7 +22,8 @@ public sealed record NotificationItem(
     string Message,
     DateTime CreatedUtc,
     DateTime? ReadUtc,
-    bool IsRead);
+    bool IsRead,
+    string? GroupKey = null);
 
 /// <summary>A page of the caller's notifications for objects they may view now.</summary>
 /// <param name="Items">The page, newest first.</param>
@@ -31,7 +33,7 @@ public sealed record NotificationItem(
 public sealed record NotificationListResponse(IReadOnlyList<NotificationItem> Items, int TotalCount, int Page, int PageSize);
 
 /// <summary>The 30-second poll result.</summary>
-/// <param name="UnreadCount">Visible unread notifications, counted over the newest 100 (the client shows 99+).</param>
+/// <param name="UnreadCount">Visible unread entries, at most 100 (the client shows 99+). An entry is one notification, except that the unread overdue notices of one <c>GroupKey</c> count once, as the bell and the list show them (PM v2, #884).</param>
 /// <param name="LatestId">Highest visible notification id; the client's next <c>sinceId</c>.</param>
 /// <param name="Items">Visible notifications newer than <c>sinceId</c>, newest first, at most 20; empty for <c>initial=true</c>.</param>
 public sealed record NotificationPollResponse(int UnreadCount, long LatestId, IReadOnlyList<NotificationItem> Items);

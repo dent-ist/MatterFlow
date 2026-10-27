@@ -18,6 +18,9 @@ public sealed class DueTaskRow
 
     public string MatterName { get; set; } = string.Empty;
 
+    /// <summary>The task type's name, shown in the message (PM v2 #884).</summary>
+    public string? TaskTypeName { get; set; }
+
     /// <summary>The assignee when that person is active; null when unassigned or disabled.</summary>
     public int? AssigneeId { get; set; }
 
@@ -52,13 +55,14 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
             var rows = await db.Database.SqlQuery<DueTaskRow>(
                     $"""
                     SELECT TOP ({NotificationRules.CandidateBatch})
-                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName,
+                           t.TaskId, t.TaskNumber, t.Title, t.MatterId, m.Name AS MatterName, tt.Name AS TaskTypeName,
                            CASE WHEN au.IsActive = 1 THEN t.AssignedUserId END AS AssigneeId,
                            t.DueDate, t.DueAtUtc,
                            CASE WHEN pm.IsActive = 1 THEN m.PrimaryManagerId END AS PrimaryManagerId,
                            CASE WHEN sm.IsActive = 1 THEN m.SecondaryManagerId END AS SecondaryManagerId
                     FROM dbo.Task t
                     JOIN dbo.Matter m ON m.MatterId = t.MatterId
+                    LEFT JOIN dbo.TaskType tt ON tt.TaskTypeId = t.TaskTypeId
                     LEFT JOIN dbo.AppUser au ON au.UserId = t.AssignedUserId
                     LEFT JOIN dbo.AppUser pm ON pm.UserId = m.PrimaryManagerId
                     LEFT JOIN dbo.AppUser sm ON sm.UserId = m.SecondaryManagerId
@@ -104,8 +108,8 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
                     row.MatterId,
                     null,
                     overdue
-                        ? NotificationMessages.TaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today)
-                        : NotificationMessages.TaskDueSoon(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today),
+                        ? NotificationMessages.TaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today, row.TaskTypeName)
+                        : NotificationMessages.TaskDueSoon(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today, row.TaskTypeName),
                     (overdue ? "overdue:" : "soon:") + day,
                     [assignee]));
             }
@@ -121,7 +125,7 @@ public sealed class TaskDueJob(DbContext db, ScheduledNotificationWriter writer)
                         row.TaskId,
                         row.MatterId,
                         null,
-                        NotificationMessages.MatterTaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today),
+                        NotificationMessages.MatterTaskOverdue(row.TaskNumber, row.Title, row.MatterName, row.DueDate, today, row.TaskTypeName),
                         $"overdue:{row.TaskId.ToString(CultureInfo.InvariantCulture)}:{day}",
                         managers));
                 }

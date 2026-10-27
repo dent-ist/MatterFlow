@@ -210,6 +210,30 @@ export class NotificationStore {
     void this.pollNow();
   }
 
+  /**
+   * Marks every unread notice of a group read (the group counts once in the bell, so the badge drops by one), tells the server for each, then reads the
+   * count again.
+   */
+  async markGroupRead(items: readonly Pick<NotificationItem, 'id' | 'isRead'>[]): Promise<void> {
+    const unread = items.filter(
+      (i) => !i.isRead && !this._recent().find((r) => r.id === i.id)?.isRead,
+    );
+    if (unread.length === 0) return;
+    const ids = new Set(unread.map((i) => i.id));
+    this._unread.update((n) => Math.max(0, n - 1));
+    this._recent.update((list) => list.map((i) => (ids.has(i.id) ? asRead(i) : i)));
+    await Promise.all(
+      unread.map(async (i) => {
+        try {
+          await this.quiet.run(() => firstValueFrom(this.client.markNotificationRead(i.id)));
+        } catch {
+          /* the next poll and list show the truth */
+        }
+      }),
+    );
+    void this.pollNow();
+  }
+
   async markAllRead(): Promise<void> {
     this._unread.set(0);
     this._recent.update((list) => list.map(asRead));

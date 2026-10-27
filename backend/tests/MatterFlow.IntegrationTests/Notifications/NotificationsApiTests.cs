@@ -47,7 +47,7 @@ public sealed class NotificationsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
 
-    private async Task<long> SeedAsync(int recipient, string message, string kind = "Task", long? objectId = null, bool read = false, string type = "TaskAssigned", string? key = null)
+    private async Task<long> SeedAsync(int recipient, string message, string kind = "Task", long? objectId = null, bool read = false, string type = "TaskAssigned", string? key = null, DateTime? created = null)
     {
         return await _factory.WithDbAsync(async db =>
         {
@@ -60,7 +60,7 @@ public sealed class NotificationsApiTests(SqlServerFixture sql) : IAsyncLifetime
                 MatterId = _w.MatterId,
                 Message = message,
                 DedupeKey = key ?? Guid.NewGuid().ToString("N"),
-                CreatedUtc = DateTime.UtcNow.AddMinutes(-1),
+                CreatedUtc = created ?? DateTime.UtcNow.AddMinutes(-1),
                 ReadUtc = read ? DateTime.UtcNow : null,
             };
             db.Set<Notification>().Add(row);
@@ -248,6 +248,40 @@ public sealed class NotificationsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var ids = body.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetInt64()).ToArray();
         ids.ShouldBe(ids.OrderByDescending(x => x).ToArray());
         ids[0].ShouldBe(body.GetProperty("latestId").GetInt64());
+    }
+
+    [Fact]
+    public async Task The_overdue_notices_of_one_day_are_one_group_and_one_entry_of_the_unread_count()
+    {
+        var day = new DateTime(2026, 10, 22, 14, 0, 0, DateTimeKind.Utc);
+        var ids = new List<long>();
+        for (var i = 0; i < 5; i++)
+            ids.Add(await SeedAsync(_annId, $"Overdue by 3 days - TSK-{i} \"T\" on M (Intake)", type: "MatterTaskOverdue", key: $"overdue:{i}:2026-10-19", created: day.AddMinutes(i)));
+        // The assignee kind is its own group; an overdue notice of another day is its own; a due-soon notice and an assignment are no group at all.
+        var own1 = await SeedAsync(_annId, "Overdue - TSK-8", type: "TaskDue", key: "overdue:2026-10-19", created: day);
+        var own2 = await SeedAsync(_annId, "Overdue - TSK-9", type: "TaskDue", key: "overdue:2026-10-20", created: day.AddMinutes(1));
+        var otherDay = await SeedAsync(_annId, "Overdue by 4 days - TSK-6", type: "MatterTaskOverdue", key: "overdue:6:2026-10-18", created: day.AddDays(1));
+        await SeedAsync(_annId, "Due tomorrow - TSK-7", type: "TaskDue", key: "soon:2026-10-23", created: day);
+        await SeedAsync(_annId, "Assigned to you - TSK-1", created: day);
+
+        var list = await OkAsync(await _ann.GetAsync(List + "?pageSize=50"));
+        var keys = list.GetProperty("items").EnumerateArray().ToDictionary(i => i.GetProperty("id").GetInt64(), i => i.TryGetProperty("groupKey", out var g) && g.ValueKind == JsonValueKind.String ? g.GetString() : null);
+        ids.ForEach(id => keys[id].ShouldBe("overdue:2026-10-22:manager"));
+        keys[own1].ShouldBe("overdue:2026-10-22:assignee");
+        keys[own2].ShouldBe("overdue:2026-10-22:assignee");
+        keys[otherDay].ShouldBe("overdue:2026-10-23:manager");
+        keys.Values.Count(k => k is null).ShouldBe(2);
+
+        // 10 notices, 5 entries: the manager group, the assignee group, the other day, the due-soon notice and the assignment.
+        (await OkAsync(await _ann.GetAsync(Poll + "?initial=true"))).GetProperty("unreadCount").GetInt32().ShouldBe(5);
+
+        // Reading one notice of a group leaves the group unread; reading the whole group takes one entry off. Nothing was deleted.
+        (await _ann.PostAsync($"{List}/{ids[0]}/read", null)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await OkAsync(await _ann.GetAsync(Poll + "?initial=true"))).GetProperty("unreadCount").GetInt32().ShouldBe(5);
+        foreach (var id in ids.Skip(1))
+            (await _ann.PostAsync($"{List}/{id}/read", null)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await OkAsync(await _ann.GetAsync(Poll + "?initial=true"))).GetProperty("unreadCount").GetInt32().ShouldBe(4);
+        (await OkAsync(await _ann.GetAsync(List + "?pageSize=50"))).GetProperty("totalCount").GetInt32().ShouldBe(10);
     }
 
     [Fact]
