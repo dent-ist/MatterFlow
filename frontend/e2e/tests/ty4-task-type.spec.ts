@@ -568,7 +568,10 @@ test.describe('Task Type record page', () => {
       await search.fill(b.token);
       await expect(search).toHaveAttribute('role', 'combobox');
       // The first entry is the one that can be added; one arrow down reaches the disabled "No published version" entry.
+      await expect(search).toHaveAttribute('aria-activedescendant', /-opt-0$/);
       await page.keyboard.press('ArrowDown');
+      // The view updates after the key (change detection runs after the event): wait for the arrow to take effect before reading the option.
+      await expect(search).toHaveAttribute('aria-activedescendant', /-opt-1$/);
       const active = await search.getAttribute('aria-activedescendant');
       const option = page.locator(`#${active}`);
       await expect(option).toHaveAttribute('aria-disabled', 'true');

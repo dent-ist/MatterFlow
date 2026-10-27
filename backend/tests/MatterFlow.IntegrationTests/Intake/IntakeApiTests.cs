@@ -194,6 +194,10 @@ public sealed class IntakeApiTests(SqlServerFixture sql) : IAsyncLifetime
         var html = string.Concat(Enumerable.Repeat("<div>", 30_000)) + "payload";
         var eml = "From: A <a@x.test>\r\nSubject: hostile\r\nContent-Type: text/html\r\n\r\n" + html + "\r\n";
 
+        // A first request to a fresh host pays for the start of the pipeline (sign-in, permissions, JIT: about 7 s when this test runs alone),
+        // which says nothing about hostile input; a harmless upload warms it first so the stopwatch measures the 30,000 tags only.
+        (await As().PostAsync(Url, Upload(Encoding.ASCII.GetBytes("From: A <a@x.test>\r\nSubject: warm\r\nContent-Type: text/plain\r\n\r\nhello\r\n"), "warm.eml"))).StatusCode.ShouldBe(HttpStatusCode.OK);
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var response = await As().PostAsync(Url, Upload(Encoding.ASCII.GetBytes(eml), "hostile.eml"));
         stopwatch.Stop();

@@ -509,7 +509,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await expect(page.locator('[data-width-row="matter"] [data-width-input]')).toHaveValue('144');
     await row.getByRole('button', { name: 'Widen Matter Name' }).click();
     await expect(field).toHaveValue('168');
-    expect(await width(page, 'matterName')).toBe(168);
+    await expect.poll(() => width(page, 'matterName')).toBe(168);
     await field.fill('50');
     await field.press('Enter');
     await expect(field).toHaveValue('112');
@@ -518,10 +518,12 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await expect(field).toHaveValue('360');
     // Fit: the long matter name fits, and the number is not clipped.
     await row.getByRole('button', { name: 'Fit Matter Name to content' }).click();
+    // The field shows the fitted width after the view updates (it showed the old 360 when read at once).
+    await expect(field).not.toHaveValue('360');
     const fitted = Number(await field.inputValue());
     expect(fitted).toBeGreaterThanOrEqual(112);
     expect(fitted).toBeLessThanOrEqual(360);
-    expect(await width(page, 'matterName')).toBe(fitted);
+    await expect.poll(() => width(page, 'matterName')).toBe(fitted);
     await page.keyboard.press('Escape');
     await expect(columnsButton(page)).toBeFocused();
     const clipped = await page.evaluate(() =>
@@ -544,7 +546,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     expect(Object.values(widths)[0]).toEqual({ matterName: fitted });
     await page.reload();
     await expect(page.locator('[data-task]').first()).toBeVisible();
-    expect(await width(page, 'matterName')).toBe(fitted);
+    await expect.poll(() => width(page, 'matterName')).toBe(fitted);
 
     // Header menu from the keyboard: Shift+F10 on the sort button, Widen, Reset, Hide (the live region names the column).
     await sortButton(page, 'matterName').focus();
@@ -556,13 +558,13 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await menu.locator('[data-item="reset"]').focus();
     await page.keyboard.press('Enter');
     await expect(menu).toHaveCount(0);
-    expect(await width(page, 'matterName')).toBe(160);
+    await expect.poll(() => width(page, 'matterName')).toBe(160);
     await expect(page.locator('[data-width-note]')).toHaveText('Matter Name column 160 pixels');
     await sortButton(page, 'matterName').focus();
     await page.keyboard.press('Shift+F10');
     await menu.locator('[data-item="widen"]').focus();
     await page.keyboard.press('Enter');
-    expect(await width(page, 'matterName')).toBe(168);
+    await expect.poll(() => width(page, 'matterName')).toBe(168);
     // The drag handle: double-click fits, a drag resizes.
     const handle = page.locator('thead .wt-resize[data-resize="matterName"]');
     await handle.dblclick();
