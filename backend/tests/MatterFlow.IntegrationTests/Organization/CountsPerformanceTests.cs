@@ -99,13 +99,14 @@ public abstract class CountsPerformanceTestsBase(SqlServerFixture sql, ITestOutp
         }
 
         // A page of 100 in the default order: one more grouped read for the page's ids, with a bounded IN list (it never groups the whole table).
+        // The Matters list adds two more of the same kind since PM v2 (PV-30, #881): the On hold and At risk counts of the page's matters, so three.
         foreach (var list in new[] { "clients", "matters", "projects" })
         {
             var (median, statements, page) = await MeasureAsync(http, $"/api/v1/{list}?pageSize=100");
             page.GetProperty("items").GetArrayLength().ShouldBe(100, list);
             median.ShouldBeLessThan(ListBudgetMs, list);
             statements.ShouldBeLessThan(12, list);
-            _commands.Snapshot().Count(c => c.Contains("GROUP BY", StringComparison.OrdinalIgnoreCase) && c.Contains("IN (", StringComparison.OrdinalIgnoreCase)).ShouldBe(1, list);
+            _commands.Snapshot().Count(c => c.Contains("GROUP BY", StringComparison.OrdinalIgnoreCase) && c.Contains("IN (", StringComparison.OrdinalIgnoreCase)).ShouldBe(list == "matters" ? 3 : 1, list);
         }
 
         foreach (var url in new[] { $"/api/v1/clients/{_clientId}/summary", $"/api/v1/matters/{_matterId}/summary", $"/api/v1/projects/{_projectId}/summary" })
