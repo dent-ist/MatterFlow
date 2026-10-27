@@ -391,7 +391,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
 /// <summary>
 /// The production sign-in provider is Windows/Negotiate. IIS decides whether an unauthenticated browser request reaches the application at all
 /// (deploy/web.config opens exactly /api/v1/branding to anonymous requests); this class proves the application side of that decision: with the
-/// Windows provider an anonymous request to the two public branding endpoints is served, while every protected endpoint still answers a Negotiate challenge.
+/// Windows provider (on a real Kestrel server, because the Negotiate handler cannot run in TestServer) an anonymous request to the two public branding endpoints is served, while every protected endpoint still answers a Negotiate challenge.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class BrandingWindowsProviderTests(SqlServerFixture sql)
@@ -400,6 +400,8 @@ public sealed class BrandingWindowsProviderTests(SqlServerFixture sql)
     public async Task With_the_Windows_provider_the_public_branding_endpoints_answer_anonymous_requests_and_nothing_else_does()
     {
         await using var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { ExtraSettings = [("Auth:Provider", "Windows")] };
+        factory.UseKestrel(0); // the Negotiate handler needs a real server connection; TestServer cannot run it
+        factory.StartServer();
         var client = factory.CreateClient();
 
         var branding = await client.GetAsync("/api/v1/branding");
