@@ -72,11 +72,9 @@ public class BrandingController(BrandingService branding) : ControllerBase
 
     private static string ETagOf(string version) => "\"" + version + "\"";
 
-    private static bool Matches(HttpRequest request, string etag)
-    {
-        var values = request.GetTypedHeaders().IfNoneMatch;
-        return values.Any(v => v.Tag == "*" || string.Equals(v.Tag.Value, etag, StringComparison.Ordinal) || string.Equals(v.Tag.Value?.TrimStart('W', '/'), etag, StringComparison.Ordinal));
-    }
+    /// <summary>True when <c>If-None-Match</c> names this version (a weak tag counts too, as the comparison for <c>304</c> is weak) or is <c>*</c>.</summary>
+    private static bool Matches(HttpRequest request, string etag) =>
+        request.GetTypedHeaders().IfNoneMatch.Any(v => v.Tag == "*" || string.Equals(v.Tag.Value, etag, StringComparison.Ordinal));
 }
 
 /// <summary>

@@ -123,6 +123,12 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
             return request;
         }
 
+        var weak = new HttpRequestMessage(HttpMethod.Get, "/api/v1/branding");
+        weak.Headers.TryAddWithoutValidation("If-None-Match", "W/" + etag);
+        (await _anonymous.SendAsync(weak)).StatusCode.ShouldBe(HttpStatusCode.NotModified); // a weak tag matches too
+        var any = new HttpRequestMessage(HttpMethod.Get, "/api/v1/branding");
+        any.Headers.TryAddWithoutValidation("If-None-Match", "*");
+        (await _anonymous.SendAsync(any)).StatusCode.ShouldBe(HttpStatusCode.NotModified);
         var notModified = await _anonymous.SendAsync(Conditional());
         notModified.StatusCode.ShouldBe(HttpStatusCode.NotModified);
         Directives(notModified).ShouldBe(["max-age=60", "must-revalidate", "public"]);
