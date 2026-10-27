@@ -84,6 +84,15 @@ public sealed class PersonaWalk
         ];
     }
 
+    /// <summary>
+    /// The access matrix with the go-live switch off (<c>Features:SensitiveMatterAccess=false</c>): the sensitive-matter rule is not applied, so everybody who holds the permissions sees
+    /// every matter, task, project and asset (README 12.2: the suite passes with the switch on and off, each against its own matrix).
+    /// </summary>
+    public IReadOnlyList<WalkPersona> PersonasWithTheRuleOff() =>
+    [
+        .. Personas().Select(p => p with { Matters = [.. _ids.Matters], Tasks = [.. _ids.Tasks], Projects = [.. _ids.Projects], Assets = [.. _ids.Assets], HeaderOnlyMatters = [] }),
+    ];
+
     private IEnumerable<(int Matter, int Project)> ProjectMatters() =>
     [
         (_u.N1, _u.World.ProjectId), (_u.N1, _u.PN1), (_u.S1, _u.PS1), (_u.S2, _u.PS2), (_u.S3, _u.PS3),
@@ -96,17 +105,35 @@ public sealed class PersonaWalk
     {
         foreach (var persona in personas)
         {
-            foreach (var (key, entry) in SensitiveAccessCatalog.All.Where(kv => kv.Key.StartsWith("GET ", StringComparison.Ordinal)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            foreach (var (key, entry) in SensitiveAccessCatalog.All.Where(kv => IsWalked(kv.Key, kv.Value)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
                 await WalkEntryAsync(persona, key, entry);
         }
 
         var anonymous = new WalkPersona("P6a unauthenticated", _u.H.Factory.CreateClient(), [], [], [], [], []);
         var noPerm = new WalkPersona("P6b no permission", _u.NoPermClient, [], [], [], [], []);
-        foreach (var (key, entry) in SensitiveAccessCatalog.All.Where(kv => kv.Key.StartsWith("GET ", StringComparison.Ordinal) && kv.Value.Kind != AccessKind.Open))
+        foreach (var (key, entry) in SensitiveAccessCatalog.All.Where(kv => IsWalked(kv.Key, kv.Value) && kv.Value.Kind != AccessKind.Open))
         {
-            await WalkAnonymousAsync(anonymous, key, entry);
+            if (key.StartsWith("GET ", StringComparison.Ordinal))
+                await WalkAnonymousAsync(anonymous, key, entry);
             await WalkEntryAsync(noPerm, key, entry);
         }
+    }
+
+    /// <summary>
+    /// Every classified GET is walked. A POST is walked only when it is a read in disguise (a request body too big for a query string, like running an asset report) and the
+    /// catalog gives it calls, written <c>url|json body</c> (README 12.2, epic #851 PV-37).
+    /// </summary>
+    public static bool IsWalked(string key, AccessEntry entry) =>
+        key.StartsWith("GET ", StringComparison.Ordinal) || (key.StartsWith("POST ", StringComparison.Ordinal) && entry.Calls.Length > 0 && entry.Kind is not (AccessKind.Write or AccessKind.Open));
+
+    private async Task<HttpResponseMessage> SendAsync(WalkPersona persona, string key, string url)
+    {
+        if (!key.StartsWith("POST ", StringComparison.Ordinal))
+            return await persona.Client.GetAsync("/" + url);
+
+        var split = url.IndexOf('|', StringComparison.Ordinal);
+        var content = new StringContent(url[(split + 1)..], System.Text.Encoding.UTF8, "application/json");
+        return await persona.Client.PostAsync("/" + url[..split], content);
     }
 
     private IEnumerable<string> Expand(string template)
@@ -187,7 +214,7 @@ public sealed class PersonaWalk
         {
             foreach (var url in Expand(template))
             {
-                var response = await persona.Client.GetAsync("/" + url);
+                var response = await SendAsync(persona, key, url);
                 Requests++;
                 var body = await ReadAsync(response);
                 if (entry.Kind == AccessKind.Gated)
@@ -195,8 +222,28 @@ public sealed class PersonaWalk
                 else
                     CheckStatus(persona, key, url, response);
 
+                if (response.IsSuccessStatusCode && key.EndsWith("asset-reports/run", StringComparison.Ordinal))
+                    CheckReportRows(persona, key, url, body);
+
                 await SweepAsync(persona, key, url, response, body);
             }
+        }
+    }
+
+    /// <summary>
+    /// A report grouped by matter has one row per matter, keyed by the matter id (a number in a string): every row must be a matter the persona may see. Reports follow the matter rule,
+    /// so an assignee of a task on a hidden matter gets no row for it either.
+    /// </summary>
+    private void CheckReportRows(WalkPersona persona, string key, string url, string body)
+    {
+        using var doc = JsonDocument.Parse(body);
+        if (!url.Contains("\"groupBy\":\"matter\"", StringComparison.Ordinal) || !doc.RootElement.TryGetProperty("rows", out var rows))
+            return;
+
+        foreach (var row in rows.EnumerateArray())
+        {
+            if (int.TryParse(row.GetProperty("key").GetString(), out var matter) && _ids.Matters.Contains(matter) && !persona.Matters.Contains(matter))
+                _violations.Add($"{persona.Name}: {key} has a row for matter {matter}, which the persona may not see ({url})");
         }
     }
 

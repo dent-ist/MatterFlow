@@ -115,6 +115,22 @@ async function openBell(w: Walker): Promise<void> {
   await w.page.keyboard.press('Escape');
 }
 
+/** PM v2 (PV-37): runs the report builder grouped by matter and by client, so the answers and the table are scanned like every other screen. */
+async function runReports(w: Walker): Promise<void> {
+  await w.visit('/assets/reports', { allowErrors: true });
+  if ((await w.page.locator('[data-run]').count()) === 0) return;
+  for (const group of ['matter', 'client', 'disposition']) {
+    await w.page.locator('[data-group]').selectOption(group);
+    await w.page.locator('[data-run]').click();
+    await w.page
+      .locator('[data-result-table], [data-result-empty], [data-result-error]')
+      .first()
+      .waitFor();
+    await w.settle();
+    await w.collect(`report grouped by ${group}`);
+  }
+}
+
 async function walk(
   u: SensitiveUniverse,
   who: Exclude<PersonaKey, 'admin'>,
@@ -133,6 +149,12 @@ async function walk(
     '/pods/work',
     '/my-matters',
     '/my-matters?scope=all',
+    // PM v2 (epic #851, PV-37): the Breakdown and Data tabs, in the default and the All matters scope, and Trends.
+    '/my-matters?tab=breakdown',
+    '/my-matters?tab=breakdown&scope=all',
+    '/my-matters?tab=data',
+    '/my-matters?tab=data&scope=all',
+    '/my-matters?tab=trends&scope=all',
     '/matters',
     '/projects',
     '/assets',
@@ -149,6 +171,7 @@ async function walk(
     // The list pages a person's roles do not open answer with a page that says so; only the ones they may open must be free of failing calls.
     await w.visit(path, { allowErrors: noLists || path.startsWith('/admin') });
   }
+  if (!noLists) await runReports(w);
   await w.visit(`/search?q=ZZSENS-${u.tag}`, { allowErrors: noLists });
   await w.visit(`/search?q=Control-${u.tag}`, { allowErrors: noLists });
   await w.visit('/tasks', { allowErrors: noLists });

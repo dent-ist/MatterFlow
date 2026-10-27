@@ -25,7 +25,7 @@ public sealed class SensitivePersonaWalkTests(SqlServerFixture sql)
             walk.Violations.ShouldBeEmpty(string.Join(Environment.NewLine, walk.Violations.Take(40)));
             walk.Requests.ShouldBeGreaterThan(500);
 
-            var walkable = SensitiveAccessCatalog.All.Where(kv => kv.Key.StartsWith("GET ", StringComparison.Ordinal) && kv.Value.Kind != AccessKind.Open
+            var walkable = SensitiveAccessCatalog.All.Where(kv => PersonaWalk.IsWalked(kv.Key, kv.Value) && kv.Value.Kind != AccessKind.Open
                 && !kv.Key.Contains("api/v1/test/", StringComparison.Ordinal) && (kv.Value.Calls.Length > 0 || !kv.Key.Contains('{', StringComparison.Ordinal))).Select(kv => kv.Key).ToList();
             foreach (var key in walkable)
             {
