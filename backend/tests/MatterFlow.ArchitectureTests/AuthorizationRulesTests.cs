@@ -16,7 +16,7 @@ namespace MatterFlow.ArchitectureTests;
 public class AuthorizationRulesTests
 {
     /// <summary>Actions that may be anonymous. Health checks are mapped as endpoints (not controllers) and are anonymous by registration.</summary>
-    private static readonly HashSet<string> AnonymousAllowList = ["SystemController.Ping"];
+    private static readonly HashSet<string> AnonymousAllowList = ["SystemController.Ping", "BrandingController.Get", "BrandingController.GetIcon"]; // branding: the application name and icon are public (epic #850)
 
     /// <summary>Actions that any active (even Access Pending) user may call.</summary>
     private static readonly HashSet<string> AuthenticatedOnlyAllowList = ["MeController.Get"];

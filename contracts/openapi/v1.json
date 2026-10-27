@@ -1423,6 +1423,240 @@
         }
       }
     },
+    "/api/v1/branding": {
+      "get": {
+        "tags": [
+          "Branding"
+        ],
+        "operationId": "GetBranding",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingView"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/branding/icon": {
+      "get": {
+        "tags": [
+          "Branding"
+        ],
+        "operationId": "GetBrandingIcon",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { },
+              "image/png": { },
+              "image/svg+xml": { },
+              "image/x-icon": { }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "content": {
+              "application/json": { },
+              "image/png": { },
+              "image/svg+xml": { },
+              "image/x-icon": { }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/svg+xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/x-icon": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/branding": {
+      "get": {
+        "tags": [
+          "SettingsBranding"
+        ],
+        "operationId": "GetBrandingSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/branding/name": {
+      "put": {
+        "tags": [
+          "SettingsBranding"
+        ],
+        "operationId": "SetBrandingName",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBrandingNameRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBrandingNameRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBrandingNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SettingsBranding"
+        ],
+        "operationId": "ResetBrandingName",
+        "parameters": [
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/settings/branding/icon": {
+      "put": {
+        "tags": [
+          "SettingsBranding"
+        ],
+        "operationId": "SetBrandingIcon",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file",
+                  "rowVersion"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The icon: PNG, SVG or ICO, square, at most 256 KB.",
+                    "format": "binary"
+                  },
+                  "rowVersion": {
+                    "type": "string",
+                    "description": "The icon's row version from the last read; empty when no custom icon existed."
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingAdminView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SettingsBranding"
+        ],
+        "operationId": "ResetBrandingIcon",
+        "parameters": [
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandingAdminView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/forms": {
       "post": {
         "tags": [
@@ -14740,6 +14974,148 @@
           }
         }
       },
+      "BrandingAdminView": {
+        "required": [
+          "appName",
+          "defaultAppName",
+          "appNameIsCustom",
+          "appNameRowVersion",
+          "iconUrl",
+          "iconKind",
+          "iconContentType",
+          "iconBytes",
+          "iconRowVersion",
+          "version",
+          "updatedAtUtc",
+          "updatedBy",
+          "limits"
+        ],
+        "type": "object",
+        "properties": {
+          "appName": {
+            "type": "string"
+          },
+          "defaultAppName": {
+            "type": "string"
+          },
+          "appNameIsCustom": {
+            "type": "boolean"
+          },
+          "appNameRowVersion": {
+            "type": "string"
+          },
+          "iconUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iconKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iconContentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iconBytes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "iconRowVersion": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "updatedAtUtc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "limits": {
+            "$ref": "#/components/schemas/BrandingLimits"
+          }
+        }
+      },
+      "BrandingLimits": {
+        "required": [
+          "appNameMaxLength",
+          "iconMaxBytes",
+          "iconMinPixels",
+          "iconMaxPngPixels",
+          "iconTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "appNameMaxLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iconMaxBytes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iconMinPixels": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iconMaxPngPixels": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "iconTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BrandingView": {
+        "required": [
+          "appName",
+          "iconUrl",
+          "iconKind",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "appName": {
+            "type": "string"
+          },
+          "iconUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iconKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
       "BreakdownCell": {
         "required": [
           "taskTypeId",
@@ -23111,6 +23487,21 @@
           }
         }
       },
+      "SetBrandingNameRequest": {
+        "required": [
+          "appName",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "appName": {
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "SetMatterManagersRequest": {
         "required": [
           "rowVersion"
@@ -28058,6 +28449,12 @@
     },
     {
       "name": "AssetLinkRoles"
+    },
+    {
+      "name": "Branding"
+    },
+    {
+      "name": "SettingsBranding"
     },
     {
       "name": "Forms"

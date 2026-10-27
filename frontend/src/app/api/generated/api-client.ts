@@ -2141,6 +2141,461 @@ export class AssetLinkRolesClient implements IAssetLinkRolesClient {
     }
 }
 
+export interface IBrandingClient {
+    /**
+     * @return OK
+     */
+    getBranding(): Observable<BrandingView>;
+    /**
+     * @return OK
+     */
+    getBrandingIcon(): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class BrandingClient implements IBrandingClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getBranding(): Observable<BrandingView> {
+        let url_ = this.baseUrl + "/api/v1/branding";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetBranding(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetBranding(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingView>;
+        }));
+    }
+
+    protected processGetBranding(response: HttpResponseBase): Observable<BrandingView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingView;
+            return _observableOf(result200);
+            }));
+        } else if (status === 304) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Modified", status, _responseText, _headers);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getBrandingIcon(): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/branding/icon";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetBrandingIcon(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetBrandingIcon(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processGetBrandingIcon(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 304) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Modified", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface ISettingsBrandingClient {
+    /**
+     * @return OK
+     */
+    getBrandingSettings(): Observable<BrandingAdminView>;
+    /**
+     * @return OK
+     */
+    setBrandingName(body: SetBrandingNameRequest): Observable<BrandingAdminView>;
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetBrandingName(rowVersion?: string | undefined): Observable<BrandingAdminView>;
+    /**
+     * @param file (optional) The icon: PNG, SVG or ICO, square, at most 256 KB.
+     * @param rowVersion (optional) The icon's row version from the last read; empty when no custom icon existed.
+     * @return OK
+     */
+    setBrandingIcon(file?: FileParameter | undefined, rowVersion?: string | undefined): Observable<BrandingAdminView>;
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetBrandingIcon(rowVersion?: string | undefined): Observable<BrandingAdminView>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class SettingsBrandingClient implements ISettingsBrandingClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getBrandingSettings(): Observable<BrandingAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/branding";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetBrandingSettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetBrandingSettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingAdminView>;
+        }));
+    }
+
+    protected processGetBrandingSettings(response: HttpResponseBase): Observable<BrandingAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setBrandingName(body: SetBrandingNameRequest): Observable<BrandingAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/branding/name";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetBrandingName(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetBrandingName(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingAdminView>;
+        }));
+    }
+
+    protected processSetBrandingName(response: HttpResponseBase): Observable<BrandingAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetBrandingName(rowVersion?: string | undefined): Observable<BrandingAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/branding/name?";
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processResetBrandingName(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processResetBrandingName(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingAdminView>;
+        }));
+    }
+
+    protected processResetBrandingName(response: HttpResponseBase): Observable<BrandingAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param file (optional) The icon: PNG, SVG or ICO, square, at most 256 KB.
+     * @param rowVersion (optional) The icon's row version from the last read; empty when no custom icon existed.
+     * @return OK
+     */
+    setBrandingIcon(file?: FileParameter | undefined, rowVersion?: string | undefined): Observable<BrandingAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/branding/icon";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (file === null || file === undefined)
+            throw new globalThis.Error("The parameter 'file' cannot be null.");
+        else
+            content_.append("file", file.data, file.fileName ? file.fileName : "file");
+        if (rowVersion === null || rowVersion === undefined)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else
+            content_.append("rowVersion", rowVersion.toString());
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetBrandingIcon(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetBrandingIcon(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingAdminView>;
+        }));
+    }
+
+    protected processSetBrandingIcon(response: HttpResponseBase): Observable<BrandingAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return OK
+     */
+    resetBrandingIcon(rowVersion?: string | undefined): Observable<BrandingAdminView> {
+        let url_ = this.baseUrl + "/api/v1/admin/settings/branding/icon?";
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processResetBrandingIcon(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processResetBrandingIcon(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<BrandingAdminView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<BrandingAdminView>;
+        }));
+    }
+
+    protected processResetBrandingIcon(response: HttpResponseBase): Observable<BrandingAdminView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BrandingAdminView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface IFormsClient {
     /**
      * @return OK
@@ -18057,6 +18512,43 @@ export interface AuditSearchPage {
     [key: string]: any;
 }
 
+export interface BrandingAdminView {
+    appName: string;
+    defaultAppName: string;
+    appNameIsCustom: boolean;
+    appNameRowVersion: string;
+    iconUrl: string | undefined;
+    iconKind: string | undefined;
+    iconContentType: string | undefined;
+    iconBytes: number | undefined;
+    iconRowVersion: string;
+    version: string;
+    updatedAtUtc: string | undefined;
+    updatedBy: string | undefined;
+    limits: BrandingLimits;
+
+    [key: string]: any;
+}
+
+export interface BrandingLimits {
+    appNameMaxLength: number;
+    iconMaxBytes: number;
+    iconMinPixels: number;
+    iconMaxPngPixels: number;
+    iconTypes: string[];
+
+    [key: string]: any;
+}
+
+export interface BrandingView {
+    appName: string;
+    iconUrl: string | undefined;
+    iconKind: string | undefined;
+    version: string;
+
+    [key: string]: any;
+}
+
 export interface BreakdownCell {
     taskTypeId: number;
     open: number;
@@ -20408,6 +20900,13 @@ export interface SetAssetActiveRequest {
 export interface SetAssetTypeSizeFieldRequest {
     sizeFieldKey?: string | undefined;
     sizeUnit?: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetBrandingNameRequest {
+    appName: string;
     rowVersion: string;
 
     [key: string]: any;

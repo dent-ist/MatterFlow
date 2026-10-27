@@ -124,7 +124,10 @@ public sealed class PersonaWalk
     /// catalog gives it calls, written <c>url|json body</c> (README 12.2, epic #851 PV-37).
     /// </summary>
     public static bool IsWalked(string key, AccessEntry entry) =>
-        key.StartsWith("GET ", StringComparison.Ordinal) || (key.StartsWith("POST ", StringComparison.Ordinal) && entry.Calls.Length > 0 && entry.Kind is not (AccessKind.Write or AccessKind.Open));
+        (key.StartsWith("GET ", StringComparison.Ordinal) && !IsPublicBranding(key)) || (key.StartsWith("POST ", StringComparison.Ordinal) && entry.Calls.Length > 0 && entry.Kind is not (AccessKind.Write or AccessKind.Open));
+
+    /// <summary>The public application name and icon (epic #850) are readable by anyone and hold no matter data; BrandingApiTests walks them.</summary>
+    private static bool IsPublicBranding(string key) => key is "GET api/v1/branding" or "GET api/v1/branding/icon";
 
     private async Task<HttpResponseMessage> SendAsync(WalkPersona persona, string key, string url)
     {

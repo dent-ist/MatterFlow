@@ -10,7 +10,8 @@ namespace MatterFlow.Api.Http;
 /// <c>Referrer-Policy: no-referrer</c>, a <c>Permissions-Policy</c> that switches the powerful features off, and
 /// <c>Cross-Origin-Opener-Policy: same-origin</c>.</item>
 /// <item><c>Cache-Control: no-store</c> on <c>/api</c>: lists of users, audit events and forms must not sit in a browser or proxy cache
-/// (except a response that itself says <c>private, no-cache</c>, the revalidated notification poll).</item>
+/// (except a response that itself says <c>private, no-cache</c>, the revalidated notification poll, and the public branding responses under
+/// <c>/api/v1/branding</c>, which say <c>public</c> with a <c>max-age</c> so the icon and name are cacheable; epic #850).</item>
 /// </list>
 /// HSTS is added by the host (<c>UseHsts</c>) outside Development.
 /// </summary>
@@ -32,14 +33,22 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
     public const string PermissionsPolicy =
         "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()";
 
+    /// <summary>The only API paths whose responses may set their own public cache header (the application name and icon, readable without signing in).</summary>
+    public const string PublicBrandingPath = "/api/v1/branding";
+
     public Task InvokeAsync(HttpContext context)
     {
+        var isBranding = context.Request.Path.StartsWithSegments(PublicBrandingPath, StringComparison.OrdinalIgnoreCase);
         var isApi = context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
         var isSwagger = context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase);
         context.Response.OnStarting(() =>
         {
             var headers = context.Response.Headers;
-            headers["Content-Security-Policy"] = isApi ? ApiContentSecurityPolicy : isSwagger ? SwaggerContentSecurityPolicy : AppContentSecurityPolicy;
+            // An SVG icon brings its own sandboxing policy; it is kept only on the branding path and only when it really sandboxes.
+            var ownPolicy = headers.ContentSecurityPolicy.ToString();
+            headers["Content-Security-Policy"] = isBranding && ownPolicy.Contains("sandbox", StringComparison.Ordinal)
+                ? ownPolicy
+                : isApi ? ApiContentSecurityPolicy : isSwagger ? SwaggerContentSecurityPolicy : AppContentSecurityPolicy;
             headers["X-Content-Type-Options"] = "nosniff";
             headers["X-Frame-Options"] = "DENY";
             headers["Referrer-Policy"] = "no-referrer";
@@ -50,9 +59,18 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
                 // One exception: an endpoint may ask for "private, no-cache" (store, but revalidate every time) so that an ETag works; the notification
                 // poll does, because it is called every 30 seconds and almost always unchanged. Shared caches may still never keep it.
                 var own = headers.CacheControl.ToString();
-                if (!(own.Contains("private", StringComparison.OrdinalIgnoreCase) && own.Contains("no-cache", StringComparison.OrdinalIgnoreCase)))
+                var revalidated = own.Contains("private", StringComparison.OrdinalIgnoreCase) && own.Contains("no-cache", StringComparison.OrdinalIgnoreCase);
+                // The narrow exception for the public branding paths: a successful (or 304) response that itself says "public, max-age=...".
+                var publicBranding = isBranding
+                    && context.Response.StatusCode is StatusCodes.Status200OK or StatusCodes.Status304NotModified
+                    && own.Contains("public", StringComparison.OrdinalIgnoreCase)
+                    && own.Contains("max-age=", StringComparison.OrdinalIgnoreCase);
+                if (!revalidated && !publicBranding)
                     headers["Cache-Control"] = "no-store";
-                headers["Pragma"] = "no-cache";
+                if (!publicBranding)
+                    headers["Pragma"] = "no-cache";
+                else
+                    headers.Remove("Pragma");
             }
 
             return Task.CompletedTask;

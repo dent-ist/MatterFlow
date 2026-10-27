@@ -1,3 +1,4 @@
+using MatterFlow.Configuration.Api;
 using MatterFlow.Configuration.Application;
 using MatterFlow.Configuration.Application.Forms;
 using MatterFlow.Configuration.Application.Lookups;
@@ -36,6 +37,8 @@ public static class ConfigurationModule
         services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
         services.AddSingleton<AppSettingsCache>();
         services.AddScoped<AppSettingsService>();
+        services.AddScoped<BrandingService>();
+        services.AddBrandingOpenApi();
         services.AddScoped<ConfigurationSeeder>();
         // Forms (architecture 7). Compiled schemas of immutable versions are cached for the life of the process.
         services.AddSingleton<FormSchemaCache>();
