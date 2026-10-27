@@ -221,6 +221,10 @@
 }
 
 .ct__card-name {
+  min-width: 0;
+  max-width: 100%;
+  /* A task type name can be 100 characters with no space in it: it wraps inside the card instead of widening the page. */
+  overflow-wrap: anywhere;
   font-weight: 600;
   font-size: var(--mf-fs-lg);
 }
@@ -294,6 +298,11 @@
   gap: var(--mf-s2);
   min-height: 44px;
   max-width: 100%;
+}
+
+.ct__recent-btn > span:not([class]) {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* "Same as my last task of this type" (#819). */

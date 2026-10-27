@@ -223,7 +223,7 @@ test.describe('PM v2 final gate', () => {
     await openReport();
     expect(await sliceTransition(), 'pie hover transition without the preference').not.toBe('0s');
   });
-  test('very long names (a 99-character asset type, matter and task type, one unbroken word) do not widen a phone page on Breakdown, Data or the report builder', async ({
+  test('very long names (a 99-character asset type, matter and task type, one unbroken word) do not widen a phone page on Breakdown, Data, the report builder or the Create task chooser', async ({
     seed,
     personas,
     asUser,
@@ -247,7 +247,13 @@ test.describe('PM v2 final gate', () => {
     });
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
-    for (const url of ['/my-matters?tab=breakdown', '/my-matters?tab=data', '/assets/reports']) {
+    // The Create task chooser lists every task type, so the long one must not widen it either (it did, once other specs had left such a type).
+    for (const url of [
+      '/my-matters?tab=breakdown',
+      '/my-matters?tab=data',
+      '/assets/reports',
+      '/tasks/new',
+    ]) {
       await page.goto(url);
       await page.waitForLoadState('networkidle');
       const overflow = await page.evaluate(
