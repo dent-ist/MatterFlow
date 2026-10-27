@@ -265,6 +265,12 @@ export const ADMIN_ROUTES: Routes = [
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
   },
   {
+    // Application settings (epic #850): the Branding section (application name and icon). The title is `Settings: Branding - <name>`.
+    ...lazyGuarded('settings', pageTab('Settings', 'Branding'), 'Settings.Manage', () =>
+      import('./settings/settings-page').then((m) => m.SettingsPage),
+    ),
+  },
+  {
     path: 'reports/new',
     title: 'New report',
     canActivate: [permissionGuard('Report.Manage')],

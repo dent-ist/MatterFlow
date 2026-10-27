@@ -162,6 +162,7 @@ const TABLE: Row[] = [
   ADMIN('reports', 'Reports: Assignments - MatterFlow', { query: { tab: 'assignments' } }),
   ADMIN('reports', 'Reports: Settings - MatterFlow', { query: { tab: 'health' } }),
   ADMIN('audit', 'Audit Logs - MatterFlow'),
+  ADMIN('settings', 'Settings: Branding - MatterFlow'),
   {
     set: 'task-types',
     routes: TASK_TYPE_ROUTES[0].children ?? [],

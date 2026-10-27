@@ -205,4 +205,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     path: '/admin/audit',
     permissions: ['Audit.View'],
   },
+  {
+    // Application settings (epic #850): today the Branding section (application name and icon).
+    label: 'Settings',
+    icon: 'pi pi-cog',
+    path: '/admin/settings',
+    permissions: ['Settings.Manage'],
+  },
 ];
