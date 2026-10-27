@@ -11,7 +11,7 @@ organization (clients, matters, projects with custom fields), configuration (pri
 types), the forms and custom-field engine, assets, the full Task module (creation including from an email, lifecycle, assignment, workflow steps with
 bulk-complete, comments, asset links, activity), Task Queue / My Work / Pod Work / Dashboard, global and advanced search, the audit log browser, and
 production hosting (the API serves the Angular build on one origin). Hardening is under way: two security reviews with fixes, two exploratory UAT
-rounds, an end-to-end suite and CI. Still to do: a performance pass with realistic data and a rehearsal on a domain-joined IIS server (see
+rounds, an end-to-end suite and CI. **PM v2 (epic #851)** is built: task type badges, filters, sort and Focus in My Matters, the Breakdown and Data tabs, asset disposition and size, the asset report builder, on-hold reasons, At risk, export and saved views; final verification in `docs/qa/pm-v2-final-verification.md`, operations in `docs/runbook.md` section 15. Still to do: a performance pass with realistic data and a rehearsal on a domain-joined IIS server (see
 `docs/runbook.md` section 9). The phase plan is in `docs/architecture.md` section 18; QA reports are in `docs/qa/`.
 
 ## Repository layout
@@ -136,7 +136,7 @@ $env:SEED_TASKS = 50; npm run seed:demo         # or as environment variables (P
 
 ```bash
 # Linux / macOS
-npm run seed:demo -- --dry-run                  # only reads the system and prints the plan
+npm run seed:demo -- --dry-run                  # only reads the system and prints the plan (PM v2 #868: it also gives task types colours and targets, asset types a size field, some assets a disposition and held tasks a reason)
 SEED_API=http://localhost:5080 npm run seed:demo
 ```
 
@@ -201,7 +201,7 @@ falling back to `ConnectionStrings:Default`; the application uses `ConnectionStr
 | `nightly.yml` | daily and manual | Full backend suite with coverage plus frontend tests and build. |
 | `codeql.yml` | push to `dev`, weekly | CodeQL for C# and JavaScript/TypeScript. |
 | `publish.yml` | push to `dev`, manual | Builds the deployable package (`deploy/publish.sh`, win-x64) and uploads it as the artifact `matterflow-publish-<sha>`. |
-| `e2e.yml` | manual, nightly, PRs labelled `e2e` | Playwright end-to-end suite (`frontend/e2e`, 109 spec files and about 920 tests: SCN-001..020, the work lists, the Dashboard and the UX epics) against SQL Server in Docker and the real API; traces and screenshots are uploaded on failure. Run locally with `cd frontend && npm run e2e` (see `docs/qa/e2e.md`). |
+| `e2e.yml` | manual, nightly, PRs labelled `e2e` | Playwright end-to-end suite (`frontend/e2e`, 302 spec files and 2,981 tests: SCN-001..020, the work lists, the Dashboard and the UX epics) against SQL Server in Docker and the real API; traces and screenshots are uploaded on failure. Run locally with `cd frontend && npm run e2e` (see `docs/qa/e2e.md`). |
 
 `.github/dependabot.yml` opens weekly grouped (minor/patch) updates for NuGet, npm and GitHub Actions.
 

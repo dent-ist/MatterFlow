@@ -176,6 +176,11 @@ async function discover(admin) {
     admin.get('/api/v1/task-types'),
     admin.getAll('/api/v1/asset-types'),
   ]);
+  // PM v2 (epic #851): the admin list of on-hold reasons; older servers have none, then tasks are put on hold with the comment only.
+  const onHoldReasons = await admin
+    .get('/api/v1/on-hold-reasons')
+    .then((list) => (Array.isArray(list) ? list : (list.items ?? [])).filter((r) => r.isActive))
+    .catch(() => []);
   const usableTypes = taskTypes.filter((t) => t.isActive && t.isUsable);
   if (usableTypes.length === 0) {
     fail(
@@ -203,6 +208,7 @@ async function discover(admin) {
     priorities: activePriorities,
     taskTypes: usableTypes,
     assetTypes: assetTypes.filter((a) => a.isActive),
+    onHoldReasons,
   };
 }
 
@@ -752,6 +758,99 @@ async function reportSensitive(admin, ctx) {
   );
 }
 
+// ---------------------------------------------------------------------------------------------------------------------------------
+// PM v2 (epic #851, issue #868): what the Breakdown, Data and report screens need to show something. Idempotent and polite: it only fills what is
+// still empty (a task type without colour and target, an asset type without a designated size field, assets that are all still Active) and never
+// overwrites what an administrator chose.
+
+const PALETTE = ['blue', 'teal', 'green', 'amber', 'orange', 'violet', 'rose', 'indigo', 'slate', 'red'];
+const TARGET_DAYS = [3, null, 5, 7, null, 2, 10, null, 4, null];
+
+async function ensureTaskTypeColours(admin, ctx, opts, summary) {
+  summary.typesStyled = 0;
+  let n = 0;
+  for (const type of ctx.taskTypes) {
+    const i = n++;
+    if (type.colourKey || type.targetDays) continue;
+    summary.typesStyled++;
+    if (opts.dryRun) continue;
+    const fresh = await admin.get(`/api/v1/task-types/${type.id}`);
+    await admin.put(`/api/v1/task-types/${type.id}`, {
+      name: fresh.name,
+      description: fresh.description ?? null,
+      isActive: fresh.isActive,
+      eligibleWorkflowIds: fresh.eligibleWorkflowIds,
+      defaultWorkflowDefinitionId: fresh.defaultWorkflowDefinitionId ?? null,
+      iconKey: fresh.iconKey,
+      colourKey: PALETTE[i % PALETTE.length],
+      targetDays: TARGET_DAYS[i % TARGET_DAYS.length],
+      rowVersion: fresh.rowVersion,
+    });
+  }
+}
+
+/** The number field that means "size" of an asset type, and its unit: a key or label with gb, mb or tb, else the first number field counted in Items. */
+function pickSizeField(schema) {
+  const numbers = (schema.fields ?? []).filter((f) => f.control === 'NUMBER');
+  if (numbers.length === 0) return null;
+  const text = (f) => `${f.key} ${f.label ?? ''}`;
+  const sized = numbers.find((f) => /\b(size|gb|mb|tb|volume)\b|_gb|_mb|_tb/i.test(text(f))) ?? numbers[0];
+  const unit = /gb/i.test(text(sized)) ? 'GB' : /tb/i.test(text(sized)) ? 'TB' : /mb/i.test(text(sized)) ? 'MB' : 'Items';
+  return { key: sized.key, unit };
+}
+
+async function ensureAssetSizes(admin, ctx, opts, summary) {
+  summary.sizeFields = 0;
+  for (const type of ctx.assetTypes) {
+    if (!type.publishedFormVersionId || type.sizeFieldKey) continue;
+    const field = pickSizeField(await admin.get(`/api/v1/forms/versions/${type.publishedFormVersionId}/schema`));
+    if (!field) continue;
+    summary.sizeFields++;
+    if (opts.dryRun) continue;
+    const fresh = await admin.get(`/api/v1/asset-types/${type.assetTypeId}`);
+    await admin.put(`/api/v1/asset-types/${type.assetTypeId}/size-field`, {
+      sizeFieldKey: field.key,
+      sizeUnit: field.unit,
+      rowVersion: fresh.rowVersion,
+    });
+  }
+}
+
+async function ensureDispositions(admin, ctx, opts, summary) {
+  summary.dispositions = 0;
+  const assets = [];
+  for (const [matterId] of ctx.assetPool) assets.push(...(await admin.getAll(`/api/v1/assets?matterId=${matterId}`)));
+  assets.sort((a, b) => a.assetId - b.assetId);
+  if (assets.length === 0 || assets.some((a) => a.dispositionCode && a.dispositionCode !== 'ACTIVE')) return; // already shaped (or by hand)
+  const plan = [
+    [3, 'INACTIVE', null],
+    [6, 'PENDING_DISPOSITION', 'Matter wrapped up; waiting for the retention sign-off'],
+    [9, 'DISPOSED', 'Destroyed with the client\'s written approval'],
+  ];
+  for (let i = 0; i < assets.length; i++) {
+    const pick = plan.find(([mod]) => i % 10 === mod);
+    if (!pick) continue;
+    summary.dispositions++;
+    if (opts.dryRun) continue;
+    const fresh = await admin.get(`/api/v1/assets/${assets[i].assetId}`);
+    await admin.put(`/api/v1/assets/${assets[i].assetId}/disposition`, {
+      dispositionCode: pick[1],
+      note: pick[2],
+      rowVersion: fresh.rowVersion,
+    });
+  }
+}
+
+async function ensurePmV2(admin, ctx, opts, summary) {
+  await ensureTaskTypeColours(admin, ctx, opts, summary);
+  await ensureAssetSizes(admin, ctx, opts, summary);
+  await ensureDispositions(admin, ctx, opts, summary);
+  log(
+    `Task types styled (colour, target days): ${summary.typesStyled}. Asset types given a size field: ${summary.sizeFields}. Assets moved off Active: ${summary.dispositions}. ` +
+      `On-hold reasons in use for held tasks: ${ctx.onHoldReasons.length}.`,
+  );
+}
+
 async function pool(items, width, job) {
   let next = 0;
   const workers = Array.from({ length: Math.min(width, items.length) }, async () => {
@@ -894,6 +993,10 @@ async function runTask(plan, env, partial) {
             rowVersion: t.rowVersion,
             status: 'ON_HOLD',
             comment: plan.holdReason,
+            // PM v2 (#851): the structured reason, so the demo shows "on hold by reason"; chosen by position, so it does not disturb the random sequence.
+            ...(ctx.onHoldReasons.length > 0
+              ? { onHoldReasonId: ctx.onHoldReasons[plan.k % ctx.onHoldReasons.length].id }
+              : {}),
           }),
       );
       break;
@@ -1066,6 +1169,8 @@ async function main() {
   await ensureOrganization(admin, ctx, opts, summary);
   step('Project managers');
   await ensureManagers(admin, ctx, opts, summary);
+  step('PM v2: task type colours and targets, asset sizes and dispositions');
+  await ensurePmV2(admin, ctx, opts, summary);
 
   step('Tasks');
   const matterIds = ctx.matters.map((m) => m.matterId).filter((id) => id !== null);

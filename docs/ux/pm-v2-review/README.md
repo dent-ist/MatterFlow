@@ -2,7 +2,7 @@
 
 Date 2026-10-26, base `origin/dev` at `325f203`. Extends `docs/ux/pm-experience/` (epic #758, #813 to #821 fixed; Workload removed, #826; Recent activity shows five rows, #827) and `docs/ux/pm-review/` (epic #667). Nothing from those is redone. Decisions: `docs/requirements/decisions-addendum.md` section AN. Plan: `delivery-plan.md`. Issues: epic #851 and its children (table in section 15).
 
-**Nothing is implemented by this work.** It is a review, a design and a backlog.
+**Status 2026-10-27: everything in this review is built** (epic #851). The sections below are the review and design as written before the work; the screens as built are in `after/` (same walk, four sizes, `walkthrough-after.mjs`, facts in `after/walkthrough-after.json`) and the verification is `docs/qa/pm-v2-final-verification.md`. Findings F-01 to F-26 and their fixes are ticked there.
 
 ## 0. Method
 

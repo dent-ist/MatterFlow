@@ -1,6 +1,6 @@
 # PM v2: delivery plan (epic #851)
 
-Design: `README.md` (this folder). Decisions: `docs/requirements/decisions-addendum.md` section AN. Status: **planned; HIGHEST priority to start** (owner order: 1. this epic, 2. combined verification then merge to main, 3. Application settings #850, 4. Impersonation #828, 5. Reports #671).
+Design: `README.md` (this folder). Decisions: `docs/requirements/decisions-addendum.md` section AN. Status: **built 2026-10-27, final verification in `docs/qa/pm-v2-final-verification.md`** (was: planned; HIGHEST priority to start) (owner order: 1. this epic, 2. combined verification then merge to main, 3. Application settings #850, 4. Impersonation #828, 5. Reports #671).
 
 ## 1. Dependencies
 
