@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Globalization;
 using MatterFlow.Assets.Application;
 using MatterFlow.Assets.Domain;
@@ -35,8 +36,10 @@ public sealed class AssetReportRunService(
         {
             return await RunCoreAsync(definition, limit.Token);
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (Exception ex) when (ex is OperationCanceledException or DbException && limit.IsCancellationRequested && !ct.IsCancellationRequested)
         {
+            // SQL Server reports a statement cancelled by the time limit as a SqlException ("Operation cancelled by user"), not as an OperationCanceledException; both mean
+            // the ten seconds ran out (the caller's own cancellation is excluded above and passes through).
             return Error.Conflict(TimeoutCode, $"The report took longer than {TimeoutSeconds} seconds. Narrow it to one asset type or fewer matters.");
         }
     }

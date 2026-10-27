@@ -115,3 +115,48 @@ Within the 10 percent allowance in all three. Note for the owner: a global searc
 **Against the target (p95 under 500 ms at 100,000 assets and 100,000 index rows).** Six of eight shapes are at 71 to 417 ms. The two shapes that join both the number and the select value (a Sum or Average grouped by a select field) were **504 and 524 ms** in the last run and 681 to 843 ms in an earlier run made while three browser suites were running: they are at the target on this loaded machine, not clearly under it, and the quiet-machine figure was not measured. If it matters, the two cheap levers are one statement for the count and the sum together (today two statements read the same assets) and `OPTION (MAXDOP 4)` for the two-join shape; neither is done. The 10-second run limit is in code (`AssetReportRunService.TimeoutSeconds`, a 409 `REPORT_TIMEOUT` with advice) and has no automated test.
 
 The page (`/assets/reports`) adds one request per action (Run, Save, Open) and one `GET /asset-reports/fields` per asset type choice; the CSV is built in the browser from the table on screen. Its chunk is 52.6 kB (about 13 kB gzip), loaded only when the route opens; the initial bundle does not change (641.21 kB before and after).
+
+## PM v2 (epic #851, issue #887, PV-36)
+
+`MyMattersPerformanceTests` (partial class, file `MyMattersPerformancePmV2Tests.cs`) was extended on the same data as above (200 matters, 24,000 tasks, 100,000 assets, about 100,000 audit events) plus **100,000 assets of one type with a published form (a NUMBER "size_gb" and a SELECT "platform") and the designated size, which is 200,000 `CustomFieldIndex` asset rows** (twice the 100,000 the issue names), 12 task types, 5 on-hold reasons and one in twelve open tasks On Hold with a reason. Three tests: the budget test (22 calls for each of pm50 with 25,000 assets, `heavy` with 72,500 and an administrator on All matters with 100,000), a constant number of statements (5, 50 and 145 matters), and the plan test (the typed index is read by seeks, no statement contains `JSON_VALUE`, and a person with five matters reads `Task` by seeks on every My Matters call). Like the tests above they fail at twice the budget, and write the numbers and the plans to the output.
+
+**Measured on a quiet machine** (2026-10-27, load average under 1 before the run, 4 cores, SQL Server 2022 in Docker, API in process; 15 warm runs, p95 in ms; cold = first call). Budget: Breakdown and Data 300 ms, a report run 500 ms.
+
+| Call | pm50 (25,000 assets) | heavy (72,500) | All matters (100,000) | Statements |
+|---|---|---|---|---|
+| Breakdown, matrix (first page) | 107 (cold 354) | 117 | 132 | 10 to 11 |
+| Breakdown, per task type | 39 | 75 | 60 | 4 to 5 |
+| Breakdown, on hold only | 38 | 51 | 50 | 10 to 11 |
+| Data | 114 | 278 | 264 | 6 |
+| Data, size field of one type | 107 | 275 | 305 | 9 |
+| Data volume (24 months) | 227 | **453** | 311 | 4 |
+| Report: count by disposition | 26 | 77 | 80 | 7 |
+| Report: sum of size by disposition | 105 | 224 | 291 | 8 |
+| Report: sum of size by matter | 138 | 265 | 321 | 9 |
+| Report: sum of size by client | 105 | 291 | 323 | 9 |
+| Report: count by a select field | 74 | 169 | 55 | 7 |
+| Report: average of size by a select field | 213 | **522** | 250 | 8 |
+| Report: sum of size by a select field, Active only | 204 | 433 | 351 | 8 |
+| Report: sum by asset type (all types) | 83 | 224 | 348 | 3 |
+| My Matters attention, type filter and sort by type | 48 | 98 | 140 | 12 to 13 |
+| My Matters deadlines, type filter, sort by age | 24 | 39 | 34 | 9 to 10 |
+| Summary (with At risk) | 28 | 70 | 115 | 3 to 4 |
+| Task Queue, At risk / On hold sorted by due | 88 / 52 | 94 / 42 | 90 / 46 | 7 |
+| My views | 4 | 3 | 2 | 1 |
+| Task Queue export, 1,700 on-hold tasks (CSV) | 549 | 602 | 566 | 102 (17 pages of 100) |
+
+**Result against the budget.** Breakdown, every Data call except one, and every report shape except one are inside the budget for all three people. Two calls are over it on this machine: the **Data volume chart for the person with 72,500 assets (453 ms against 300)** and the **average of a size grouped by a select field for the same person (522 ms against 500)**; the All matters person is at 311 and 250 ms. Cold first calls are 300 to 500 ms for the two-join shapes (EF compilation included, budget 800 ms). The export is a file of up to 10,000 rows, not a screen, and has no list budget; 1,700 rows take about half a second.
+
+**What the plans said, and what was changed (script 47).** Before the script the plan test failed on 19 findings:
+1. Every report grouped by a SELECT field, and the Sum or Average by a select field, read the **whole clustered index of `CustomFieldIndex`** (a scan, 1,928 pages for a person with 2,500 assets) because the aggregate joins "OwnerKind = ASSET and FieldKey = x" on the owner id without naming the form definition and reads `ValueText` on a left join: the existing `IX_CFI_Number` and `IX_CFI_Text` start with `(OwnerKind, FormDefinitionId, FieldKey)` (a seek only on the OwnerKind prefix, which is every asset value of every field) and the filtered `IX_CFI_Text` (`ValueText IS NOT NULL`) cannot serve a left join. The volume chart read the clustered index by key lookups for the same reason.
+2. For a person with five matters, the My Matters attention call with a **task type filter** scanned `IX_Task_AssignedUser` (every task of every assignee) for the strip counts instead of seeking the five matters, because `IX_Task_Matter (MatterId, StatusCode)` does not carry `TaskTypeId`.
+
+`47-pm-v2-performance-indexes.sql` adds `IX_CFI_Kind_Field_Owner (OwnerKind, FieldKey, OwnerId) INCLUDE (ValueNumber, ValueText)` (one field of the typed index by a seek, for a number and a select alike, covering) and `IX_Task_Matter_Type (MatterId, TaskTypeId, StatusCode) INCLUDE (DueDate, DueAtUtc, DueSortKey, AssignedUserId, AssignedPodId, StatusChangedAt, CreatedAt, OnHoldReasonId, PriorityId)` (the Breakdown and the type filter are seeks on the managed matters; the delivery plan named this index). After it the plans read `Index Seek CustomFieldIndex.IX_CFI_Kind_Field_Owner` and `Index Seek Asset.IX_Asset_Matter_Disposition` for every report and Data shape (a select count for the person with 2,500 assets: 824 pages, one statement; the average: 2,316 pages, two statements), no statement contains `JSON_VALUE`, and no My Matters call scans `Task` for the person with five matters. Under load (average 12) the same shapes had been 508 to 705 ms for the two-join reports; the quiet figures above are the ones to quote. The Task Queue, which lists every task a person may see, still scans an index for a person with few matters, as before; the plan test holds only the My Matters reads to "seeks".
+
+Also changed on the way: the Data tab read the scoped assets four times (by matter, by type, and the size twice); it now reads them twice (one statement by matter, type and disposition, one by matter, type and unit) and derives the per matter and per type figures from those cells; 8 statements became 6 (437 ms p95 for the 72,500-asset person on a loaded machine before, 278 ms on the quiet machine after; the two figures are not from the same conditions, the statement count is the comparable fact).
+
+**Volume snapshot fallback: decided not to build one.** The monthly volume is derived from the creation and disposition instants of the scoped assets (four grouped statements). At 100,000 assets it is 227, 453 and 311 ms; only the 72,500-asset case exceeds the 300 ms budget, and it is a chart on a tab that is opened a few times a day. A snapshot table (`MatterDailyStats`-like) would be the next step if the volume grows tenfold or the 453 ms matters; two cheaper levers come first: one statement for the created counts and sizes together (today two statements read the same assets), and a filter of the window to 24 months for the counts as well as the sizes.
+
+**Levers not pulled** (no need on this evidence): one statement for the count and the sum of a report (today two statements read the same assets; it would remove about 40 percent of the two-join shapes) and `OPTION (MAXDOP 4)` for them.
+
+**The 10 second limit of a report run now has a test and a fix.** `A_report_that_takes_longer_than_ten_seconds_answers_409_REPORT_TIMEOUT...` holds an exclusive lock on `dbo.Asset` from another session so the aggregate waits; before the fix the answer was **500 INTERNAL_ERROR** (SQL Server reports a statement cancelled by the time limit as a `SqlException` "Operation cancelled by user", not as an `OperationCanceledException`, so the 409 handler never ran). `AssetReportRunService` now treats both as the time limit when its own limit fired and the caller did not cancel; the saved-report run is cut off the same way, and the next run works once the lock is gone. Seeding note for the test class: the guard triggers `TR_Asset_Guard` and `TR_Task_Immutable` compare the inserted and deleted images row by row and made a 100,000-row update take minutes, so the seeding step disables them for its one set-based update and enables them again.

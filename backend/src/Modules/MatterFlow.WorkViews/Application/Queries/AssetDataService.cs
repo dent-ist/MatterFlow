@@ -41,14 +41,21 @@ public sealed class AssetDataService(
         // A type that has no size field contributes assets but no size (the join finds nothing).
         var measured = source.FieldKey is null && source.AssetTypeId is not null ? new AssetMeasureSource(source.AssetTypeId, "\u0001none", string.Empty) : source;
 
-        var byMatter = await assets.GroupBy(a => new { a.MatterId, a.DispositionCode }).Select(g => new { g.Key.MatterId, g.Key.DispositionCode, Count = g.Count() }).ToListAsync(ct);
-        var byType = await assets.GroupBy(a => new { a.AssetTypeId, a.DispositionCode }).Select(g => new { g.Key.AssetTypeId, g.Key.DispositionCode, Count = g.Count() }).ToListAsync(ct);
+        // Two statements over the scoped assets, not four: one grouped by matter, type and disposition and one grouped by matter, type and unit; the per matter and per type figures are
+        // sums of those cells (at most matters x types x four states rows). Every aggregate reads the assets of the scope once (PV-36: measured at 100,000 assets).
+        var cells = await assets.GroupBy(a => new { a.MatterId, a.AssetTypeId, a.DispositionCode })
+            .Select(g => new { g.Key.MatterId, g.Key.AssetTypeId, g.Key.DispositionCode, Count = g.Count() }).ToListAsync(ct);
+        var byMatter = cells.GroupBy(c => (c.MatterId, c.DispositionCode)).Select(g => new { g.Key.MatterId, g.Key.DispositionCode, Count = g.Sum(c => c.Count) }).ToList();
+        var byType = cells.GroupBy(c => (c.AssetTypeId, c.DispositionCode)).Select(g => new { g.Key.AssetTypeId, g.Key.DispositionCode, Count = g.Sum(c => c.Count) }).ToList();
         var valued = aggregates.Valued(assets, measured);
-        var sizeByMatter = await valued.GroupBy(v => new { v.Asset.MatterId, v.Unit }).Select(g => new { g.Key.MatterId, g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
-        var sizeByType = await valued.GroupBy(v => new { v.Asset.AssetTypeId, v.Unit }).Select(g => new { g.Key.AssetTypeId, g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
+        var sizeCells = await valued.GroupBy(v => new { v.Asset.MatterId, v.Asset.AssetTypeId, v.Unit })
+            .Select(g => new { g.Key.MatterId, g.Key.AssetTypeId, g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
+        var sizeByMatter = sizeCells.GroupBy(c => (c.MatterId, c.Unit)).Select(g => new { g.Key.MatterId, g.Key.Unit, Sum = g.Sum(c => c.Sum), Valued = g.Sum(c => c.Valued) }).ToList();
+        var sizeByType = sizeCells.GroupBy(c => (c.AssetTypeId, c.Unit)).Select(g => new { g.Key.AssetTypeId, g.Key.Unit, Sum = g.Sum(c => c.Sum), Valued = g.Sum(c => c.Valued) }).ToList();
 
+        var matterIds = cells.Select(c => c.MatterId).Distinct().ToList();
         var matters = await (from m in db.Set<Matter>().AsNoTracking()
-                             where assets.Select(a => a.MatterId).Contains(m.Id)
+                             where matterIds.Contains(m.Id)
                              join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
                              select new { m.Id, m.MatterRef, m.Name, ClientName = c.Name, m.IsActive }).ToListAsync(ct);
         var typeIds = byType.Select(r => r.AssetTypeId).Distinct().ToList();

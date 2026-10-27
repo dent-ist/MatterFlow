@@ -1,7 +1,10 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MatterFlow.IntegrationTests.Fixtures;
+using MatterFlow.WorkViews.Application.Queries;
+using Microsoft.Data.SqlClient;
 using Shouldly;
 using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 
@@ -12,6 +15,7 @@ namespace MatterFlow.IntegrationTests.Assets;
 public sealed class AssetReportRunApiTests(SqlServerFixture sql) : IAsyncLifetime
 {
     private DatabaseApiFactory _factory = null!;
+    private string _connectionString = null!;
     private PmScopeFixture _fx = null!;
     private AssetTestKit _kit = null!;
     private int _gbType;
@@ -19,7 +23,8 @@ public sealed class AssetReportRunApiTests(SqlServerFixture sql) : IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
+        _connectionString = await sql.CreateDatabaseAsync();
+        _factory = new DatabaseApiFactory(_connectionString);
         _fx = await PmScopeFixture.BuildAsync(_factory);
         _kit = new AssetTestKit(_factory);
         _gbType = (await _kit.CreateTypeAsync("Workspace")).GetProperty("assetTypeId").GetInt32();
@@ -163,6 +168,45 @@ public sealed class AssetReportRunApiTests(SqlServerFixture sql) : IAsyncLifetim
         var many = await RunAsync(_fx.PmMany, Def(null, "count", "matter"));
         many.GetProperty("hiddenGroups").GetInt32().ShouldBe(0);
         many.GetProperty("rows").GetArrayLength().ShouldBe(2); // many01 and many02 hold the fixture's assets
+    }
+
+    [Fact]
+    public async Task A_report_that_takes_longer_than_ten_seconds_answers_409_REPORT_TIMEOUT_with_advice_and_the_next_run_works()
+    {
+        // The engine's limit (issue #873, PV-36): another session holds an exclusive lock on the asset table, so the aggregate statement waits. The test database runs without
+        // READ_COMMITTED_SNAPSHOT, so the reader is blocked until the ten seconds are up; the run is cancelled, the person gets a 409 with the advice, and nothing stays running.
+        AssetReportRunService.TimeoutSeconds.ShouldBe(10);
+        AssetReportRunService.TimeoutCode.ShouldBe("REPORT_TIMEOUT");
+        var blocker = new SqlConnection(_connectionString);
+        await blocker.OpenAsync();
+        var held = (SqlTransaction)await blocker.BeginTransactionAsync();
+        try
+        {
+            await using (var hold = new SqlCommand("SELECT TOP (1) AssetId FROM dbo.Asset WITH (TABLOCKX, HOLDLOCK)", blocker, held))
+                await hold.ExecuteScalarAsync();
+
+            var watch = Stopwatch.StartNew();
+            var response = await _fx.PmFew.PostAsJsonAsync("/api/v1/asset-reports/run", Def(_gbType, "sum", "matter"));
+            watch.Stop();
+
+            var problem = await AssetTestKit.ProblemAsync(response, HttpStatusCode.Conflict, AssetReportRunService.TimeoutCode);
+            problem.GetProperty("detail").GetString()!.ShouldContain("Narrow it to one asset type or fewer matters");
+            watch.Elapsed.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromSeconds(9.5));
+            watch.Elapsed.ShouldBeLessThan(TimeSpan.FromSeconds(25));
+
+            // A saved report is cut off the same way.
+            var created = await OkAsync(await _fx.PmFew.PostAsJsonAsync("/api/v1/asset-reports", new { name = "Slow", definition = Def(_gbType, "count", "matter") }), HttpStatusCode.Created);
+            await AssetTestKit.ProblemAsync(await _fx.PmFew.GetAsync($"/api/v1/asset-reports/{created.GetProperty("assetReportId").GetInt32()}/run"), HttpStatusCode.Conflict, AssetReportRunService.TimeoutCode);
+        }
+        finally
+        {
+            await held.RollbackAsync();
+            await held.DisposeAsync();
+            await blocker.DisposeAsync();
+        }
+
+        // Once the lock is gone the same report answers normally (the time limit is per run, not a state).
+        Cell((await RunAsync(_fx.PmFew, Def(_gbType, "sum", "matter"))).GetProperty("totals"), 1).ShouldBe(60m);
     }
 
     private static int AssetReportCap() => MatterFlow.WorkViews.Application.Queries.AssetReportRunService.MaxGroups;

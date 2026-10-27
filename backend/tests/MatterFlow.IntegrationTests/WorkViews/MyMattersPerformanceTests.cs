@@ -21,7 +21,7 @@ namespace MatterFlow.IntegrationTests.WorkViews;
 /// manages a normal share of the matters.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
-public sealed class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputHelper output) : IAsyncLifetime
+public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITestOutputHelper output) : IAsyncLifetime
 {
     private const int MatterCount = 200;
     private const int OpenTasks = 20_000;
