@@ -7,6 +7,7 @@ import {
   permissionGuard,
 } from './core/auth/guards';
 import { AppShell } from './shared/layout/app-shell';
+import { ADMIN_NAV_ITEMS } from './shared/layout/nav-items';
 
 /**
  * Route tree (architecture section 3/12): Access Pending and Error sit outside the shell (no
@@ -110,23 +111,9 @@ export const routes: Routes = [
       },
       {
         path: 'admin',
-        canActivate: [
-          permissionGuard(
-            'User.View',
-            'User.Manage',
-            'Role.Manage',
-            'Pod.Manage',
-            'Pod.ManageMembers',
-            'TaskType.Manage',
-            'Workflow.Manage',
-            'AssetType.Manage',
-            'CustomField.Manage',
-            'Priority.Manage',
-            'StatusLabel.Manage',
-            'Audit.View',
-            'Report.Manage',
-          ),
-        ],
+        // Anyone who may open any Administration menu item gets in; each child route has its own permission guard. One list (the menu's), so a new
+        // item (Settings, epic #850) can never be shown in the menu and then refused here.
+        canActivate: [permissionGuard(...ADMIN_NAV_ITEMS.flatMap((item) => item.permissions))],
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
       },
       {

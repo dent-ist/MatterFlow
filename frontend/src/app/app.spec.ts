@@ -190,6 +190,19 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     ]);
   });
 
+  it('lets a person who holds only Settings.Manage into Administration (epic #850)', async () => {
+    configure('technician');
+    const stub = TestBed.inject(MeApi) as StubMeApi;
+    stub.scenarios['technician'] = {
+      ...stub.scenarios['technician'],
+      permissions: ['Settings.Manage'],
+    };
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/admin/settings');
+    expect(TestBed.inject(Router).url).toBe('/admin/settings');
+    expect(navLabels(document.body)).toEqual(['Settings']);
+  });
+
   it('sends a user without the permission to the 403 page', async () => {
     const { router, harness } = await open('technician', '/admin/users');
     expect(router.url).toBe('/403');
