@@ -180,6 +180,7 @@ describe('branding (epic #850, BR-04)', () => {
       vi.stubGlobal('fetch', fetchMock);
       const result = await loadBranding();
       expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/branding');
+      expect(fetchMock.mock.calls[0][1].cache).toBe('no-cache'); // revalidate on every page load
       expect(result).toEqual(CUSTOM);
       expect(currentBranding()).toEqual(CUSTOM);
       expect(document.title).toBe('Smith & Co');

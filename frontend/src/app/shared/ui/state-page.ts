@@ -80,6 +80,7 @@ import { TitleIcon } from './page-header';
     }
     .sp__reason {
       margin: 0 0 var(--mf-s3);
+      overflow-wrap: anywhere;
       color: var(--mf-text-muted);
     }
     .sp__detail:empty {
@@ -107,6 +108,7 @@ import { TitleIcon } from './page-header';
     }
     .sp__brand {
       margin: var(--mf-s4) 0 0;
+      overflow-wrap: anywhere; /* the administrator's application name, up to 40 characters */
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       font-weight: 600;

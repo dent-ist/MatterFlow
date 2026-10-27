@@ -6,6 +6,8 @@
   border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius-lg);
   box-shadow: var(--mf-shadow-1);
+  /* The application name is the administrator's text (up to 40 characters, no spaces needed): it wraps instead of widening the page. */
+  overflow-wrap: anywhere;
 }
 
 .mf-brand {

@@ -136,8 +136,11 @@ export async function loadBranding(): Promise<Branding> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    // `no-cache`: ask the server on every page load (a cheap 304 while nothing changed) instead of trusting the 60 second browser copy, so
+    // an administrator who just saved never sees the old name come back after a reload, and nobody waits a minute for a change.
     const response = await fetch(ENDPOINT, {
       headers: { Accept: 'application/json' },
+      cache: 'no-cache',
       signal: controller.signal,
     });
     if (response.ok) {
