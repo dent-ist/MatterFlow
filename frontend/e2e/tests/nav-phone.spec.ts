@@ -166,7 +166,7 @@ test.describe('Phone navigation (below 640 px)', () => {
     // The Administration group is in the panel, with its heading, and keeps its permissions rule.
     await menu.click();
     await expect(page.getByRole('list', { name: 'Administration' }).getByRole('link')).toHaveCount(
-      7,
+      8,
     );
     await page.getByRole('button', { name: 'Close menu' }).click();
     await expect(nav).toBeHidden();

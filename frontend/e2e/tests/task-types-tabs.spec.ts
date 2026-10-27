@@ -16,7 +16,7 @@ test.describe('Task Types page: one menu item, three tabs (Task Types, Workflows
     const workflow = await seed.workflow({ name: `Nav workflow ${uid()}` });
     const type = await seed.taskType({ name: `Nav type ${uid()}`, workflows: [workflow] });
     await page.goto('/dashboard');
-    await expect(adminMenu(page).getByRole('link')).toHaveCount(7);
+    await expect(adminMenu(page).getByRole('link')).toHaveCount(8);
     await expect(
       adminMenu(page).getByRole('link', { name: 'Task Types', exact: true }),
     ).toHaveCount(1);
