@@ -16,6 +16,7 @@
 7. [Workflow configuration and instances](#7-workflow-configuration-and-instances)
 8. [Audit and Comments](#8-audit-and-comments)
 9. [Cross-entity invariants](#9-cross-entity-invariants)
+   - [9a. Application settings](#9a-application-settings-epic-850-script-48)
 10. [Index summary and query patterns](#10-index-summary-and-query-patterns)
 11. [Addendum compliance checklist](#11-addendum-compliance-checklist)
 
@@ -749,6 +750,12 @@ Permissions (`13-security-hardening.sql`, security review SEC-04): the database 
 | I-20 | Soft-deleted comments are retained; edits keep revisions | `IsDeleted` flag; `TaskCommentRevision` append-only |
 
 ---
+
+## 9a. Application settings (epic #850, script 48)
+
+| Entity | Notes |
+|---|---|
+| AppSetting | PK `SettingKey` (VARCHAR(100), `Branding.AppName`, `Branding.Icon`); `ValueText` NVARCHAR(1000) NULL; `ValueBinary` VARBINARY(MAX) NULL with CHECK `DATALENGTH <= 262144`; `ContentType` VARCHAR(100) and `ContentSha256` BINARY(32) (set together with the binary value, CHECK `CK_AppSetting_Binary`); `UpdatedAtUtc` DATETIME2(3); `UpdatedByUserId` FK `AppUser`; `RowVersion`. No seed row: a missing row means "the default in code". Denied for `mf_report_reader`; `mf_app` may read, insert, update and delete (Reset deletes the row). Audited by explicit events `SETTINGS_BRANDING_*` (never the bytes). |
 
 ## 10. Index summary and query patterns
 

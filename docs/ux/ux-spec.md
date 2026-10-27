@@ -1374,6 +1374,18 @@ The server decides who sees a sensitive matter (managers, holders of `Matter.Vie
 - **Caches.** Anything a screen keeps about the signed-in person (lookups, referenced names, the bell's items) is emptied when `/me` returns another person or a restricted account (`SessionReset`); nothing about a matter is written to the browser's storage.
 - **Verified by** the Playwright specs `sensitive-leak-scan` (six personas walk the screens; the page, its storage and every API answer are searched for the text of records the person may not see) and `sensitive-ui` (marking flow, Roles warning, header without link, access ending on the next request, axe at 1366x768, 1920x1080, 768x1024 and 375x812); see `docs/qa/e2e.md`.
 
+### S27 Settings: Branding (epic #850; design `docs/ux/app-settings/README.md`, decisions section AM)
+
+Route `/admin/settings` (lazy), left-rail item **Settings** (`pi pi-cog`, Administration section), for the permission `Settings.Manage`; a person without it gets no item and the standard 403 page. Title `Settings: Branding - <Application name>`. Nothing here adds or changes a keyboard shortcut (#420).
+
+- **Page.** Header "Administration > Settings", H1 "Settings", one tab "Branding" (the strip is there for later sections), one form card, Cancel and Save changes in a footer that is sticky on phones. No dialog.
+- **Application name.** Text field with the "n / 40" counter, help "Shown in the header, the browser tab and the sign-in page.", "Reset to default" beside it. `&` is allowed; `<` and `>` are refused by the server with the message under the field.
+- **Application icon.** A 64 px thumbnail, the rule "PNG, SVG or ICO, square, at least 64 x 64 pixels, up to 256 KB." (the numbers come from the server), the button **Choose file...** (a real button; Enter opens the chooser), "Reset to default", and the chosen file as "name, size". A file over the limit is refused at once with "The icon is larger than 256 KB."; the server decides everything else by content and its message sits under the field (`aria-describedby`).
+- **Preview.** Browser tab (`Matters: Overview - <name>`) and header (icon and name), updated while typing and choosing; decorative (`aria-hidden`) with a screen-reader sentence "Header will read: <name>". The name is always text, never HTML. The icon always sits next to the name (no icon-only logo).
+- **Save.** Name first, then icon; a failed field keeps the rest of the form, shows an error summary (role alert, focused) and the message under the field. A conflict (someone else saved) shows "Someone else changed the branding while you were editing." with **Reload latest**. Success: the toast "Saved. Other users see it the next time they load the page." and the header, title and tab icon of this tab change at once. Reset to default only fills the form; Save then sends the reset.
+- **Header and pages.** The name replaces the constant "MatterFlow" in the header, the 403, 404 and error pages, Access Pending, the search boxes and the time zone help text; a long name (40 characters) is cut with an ellipsis in the header and never widens the page, down to 320 px.
+- **Dark theme.** The icon is shown as uploaded on the header background of the current theme (no light chip, owner decision Q3): upload an icon that works on both. The browser-tab colour stays fixed (Q5).
+
 ---
 
 ## 7. Component inventory (reusable Angular components)
@@ -2030,6 +2042,15 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S26-4 Creating a sensitive matter without a project manager (and without `Matter.ViewSensitive`) shows the server's sentence beside the checkbox, not a toast.
 - [ ] UAT-S26-5 The Roles screen shows the warning on `Matter.ViewSensitive`; a manager who is removed, or an assignee whose task is reassigned, loses the matter on the next request (also the bell).
 - [ ] UAT-S26-6 axe 0 at 1366, 1920, 768 and 375 px on the dialog, the matter form with the refusal, the Roles editor, the assignee's task page and the Matters list; no new shortcut.
+
+### S27 Settings: Branding (epic #850)
+- [ ] UAT-S27-1 As a System Administrator: Administration shows **Settings**; the page opens with the tab title "Settings: Branding - MatterFlow", the name field shows MatterFlow with "10 / 40", Save changes is off until something changes.
+- [ ] UAT-S27-2 Type a new name and choose a PNG, SVG or ICO file: the preview of the tab and the header follows; Save shows the toast "Saved. Other users see it the next time they load the page."; after a reload the header, the tab title and the tab icon show the new name and icon; another person sees it on their next page load (within about two minutes).
+- [ ] UAT-S27-3 A file with a script in an SVG, a text file called logo.png and a file over 256 KB are each refused with a message under the icon field; the name `<b>x</b>` is refused under the name field; nothing is stored.
+- [ ] UAT-S27-4 Reset to default for each field fills MatterFlow and the built-in icon without saving; Save then restores them everywhere (header, title, tab icon, 403/404/error pages).
+- [ ] UAT-S27-5 A person without the permission has no Settings item and sees the 403 page at `/admin/settings`.
+- [ ] UAT-S27-6 A 40 character name never causes a sideways scroll (320, 375, 768, 1366, 1920 px) and is cut with an ellipsis in the header; axe 0 on the page with errors, a chosen file and the longest name; the keyboard alone completes the form; no new shortcut.
+- [ ] UAT-S27-7 On the Windows server: `curl.exe -i https://<host>/api/v1/branding` without credentials returns 200, `/api/v1/me` returns 401 (runbook section 9).
 
 ---
 

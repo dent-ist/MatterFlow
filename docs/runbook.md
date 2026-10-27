@@ -162,6 +162,7 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 3. **Authentication** (site level): *Windows Authentication* Enabled, *Anonymous Authentication* Disabled. These switches are locked at server level
    by default; set them in IIS Manager (writes `applicationHost.config`) or unlock the section once; `web.config` carries the same intent.
    Under Windows Authentication > Providers, `Negotiate` must come first (then `NTLM`). Do not enable *Basic*.
+   **One exception, shipped in `web.config`:** Anonymous Authentication is switched on for exactly the path `/api/v1/branding` (the public application name and icon, section 16), so the browser's tab icon and the sign-in and error pages work before or without a Windows credential. Windows Authentication stays on for that path too. The same section lock applies: unlock `anonymousAuthentication` once, or set it for that path in IIS Manager (site > `api` > `v1` > `branding` > Authentication).
 4. Optional HTTP redirect: uncomment the URL Rewrite rule in `web.config`. HSTS from the API only takes effect over HTTPS.
 5. Leave IIS compression alone: `web.config` turns static and dynamic compression off because the API compresses its text assets.
 6. Request limits: `maxAllowedContentLength` is 12582912 bytes (12 MB, the email upload ceiling) in `web.config`; the API caps every other request body at 2 MB itself.
@@ -183,7 +184,7 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 | `/health/live` | 200 `Healthy` as long as the process runs; no dependency checks. Also lists the notification scheduler (section 6.1): 200 `Degraded` when it has not completed a run for 30 minutes. |
 | `/health/ready` | 200 `{"status":"ready"}` when the database is reachable with the application connection and `dbo.SchemaMigration` lists every script embedded in this build as applied successfully. Otherwise 503 `{"status":"not_ready","reason":"..."}` with one of: `database_not_configured`, `database_unreachable`, `migrations_pending`, `migration_failed`. No server names, messages or stack traces. |
 
-Both are exempt from the app's own authorization (anonymous at the API level). On IIS they are behind Windows authentication like everything else, so an external
+Both are exempt from the app's own authorization (anonymous at the API level). On IIS they are behind Windows authentication like everything else (the one anonymous path is `/api/v1/branding`, section 16), so an external
 monitor needs a domain account (or `curl --negotiate`). Ship the Windows Event Log and the application log to the firm's monitoring and alert on 503 from `/health/ready`
 for more than a few minutes.
 
@@ -263,6 +264,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Negotiate sign-in:** from a domain-joined PC in the Intranet zone, Edge and Chrome open the site without a credential prompt and show the user's own name top right (`KE\sam`).
       On the same PC `klist` shows a ticket for `HTTP/<host>` (Kerberos; if only NTLM works, the SPN is missing). A PC outside the domain gets a prompt or 401, never an anonymous session.
 - [ ] **Anonymous off:** `curl.exe -i https://<host>/api/v1/system/ping` without credentials returns 401, not 200.
+- [ ] **Branding path only (section 16):** without credentials `curl.exe -i https://<host>/api/v1/branding` returns 200 with `Cache-Control: public, max-age=60, must-revalidate` and an `ETag`; `curl.exe -i https://<host>/api/v1/branding/icon` returns 404 until an icon is set; `curl.exe -i https://<host>/api/v1/admin/settings/branding` and `/api/v1/me` return 401. If the first is 401, the `<location path="api/v1/branding">` block of `web.config` was not applied (locked section, or an edited `web.config` that was not merged): the application still works, only the browser tab icon and the name on the error pages fall back to the built-in ones.
 - [ ] **First admin:** `ke\kekim` becomes System Admin at the first sign-in and sees Administration; a second account lands on Access Pending.
 - [ ] **AllowedHosts:** the site answers on its real name; an unlisted name (IP address, alias) answers 400.
 - [ ] **Audit protection:** the app starts with the `mf_app` login; temporarily running it as a `db_owner` login makes startup fail with the audit message (then restore).
@@ -432,3 +434,22 @@ What changed for a Project Manager and where it lives. Design `docs/ux/pm-v2-rev
 | 400 `ON_HOLD_REASON_REQUIRED` | `Tasks:OnHoldReasonRequired` is on and the status change had no reason. |
 | 400 `EXPORT_TOO_LARGE` | More than 10,000 tasks match; narrow the filters. |
 | A Project Manager cannot choose Pending disposition or Disposed | The role lacks `Asset.Dispose` (see Upgrade). |
+
+## 16. Application name and icon (epic #850)
+
+What the person who runs the system should know. Design `docs/ux/app-settings/README.md`, decisions `docs/requirements/decisions-addendum.md` section AM, tests `frontend/e2e/tests/app-settings.spec.ts` and `BrandingApiTests`.
+
+**Where to change it.** Administration > Settings > Branding (`/admin/settings`), for System Administrators and for any role that holds the permission `Settings.Manage` (assign it on the Roles screen). The page changes the **application name** (1 to 40 characters, no `<` or `>`; `&` is allowed) and the **application icon** (PNG, SVG or ICO, square, at least 64 x 64 pixels for PNG and ICO, at most 256 KB; the type is decided by the file's content, not its name). "Reset to default" goes back to `MatterFlow` and the built-in icon. Nothing changes until Save. An SVG that contains scripts, links, embedded images, styles or anything else outside a short list of drawing elements is **refused, never cleaned up**; export a plain SVG instead.
+
+**What it changes.** The name shows in the header (next to the icon), the browser tab title (`<Page>: <Tab> - <name>`), the sign-in-failed, 403, 404 and error pages, the Access Pending page, the search boxes and the time zone help text. The icon is the header mark and the tab icon; an `apple-touch-icon` is set only for a PNG. Not changed on purpose: technical names (the `X-MatterFlow-Client` header, database and namespace names), the browser-tab colour (`theme-color`) and the e-mail, export and report outputs (there are none that print the name today; **any future output that prints the application name must read it from the settings service, `BrandingService`, never from a constant**).
+
+**How long until people see it.** The page asks the server for the name and the icon on every page load and always revalidates with the `ETag` (a small `304` while nothing changed), so the browser's own 60 second copy is not used by the app (it still serves other clients and proxies). The server keeps a 30 second copy of the settings: the web node that saved shows the change **at once**, other nodes **within 30 seconds**. So everybody has the new name and icon on their next page load, **within about 30 seconds**; a page that is already open keeps the old name until it is reloaded (no push). The icon address carries the version (`?v=...`), so a changed icon is a new address and is fetched at once, but a browser keeps its **tab icon** (favicon) on its own schedule: if the tab still shows the old icon, hard reload (Ctrl+F5) or close and reopen the tab; in the worst case some browsers keep it for a day.
+
+**IIS and anonymous access.** Only `/api/v1/branding` (the name and the icon, nothing else) is reachable without a Windows credential; `web.config` enables Anonymous Authentication for that one path (section 5.5 step 3) and a unit test (`WebConfigTests`) fails if any other path is opened. The application side is tested with the production sign-in provider (`BrandingWindowsProviderTests`: anonymous requests to the two branding endpoints are served, every other endpoint answers a Negotiate challenge). If the IIS setting cannot be applied, nothing breaks: the header and pages still show the custom name and icon (the app sends credentials), only the browser tab icon and the name on pages shown before sign-in fall back to the built-in ones.
+
+**Audit.** Every change is in the audit log as `SETTINGS_BRANDING_NAME_CHANGED` (old and new text), `SETTINGS_BRANDING_ICON_CHANGED` (content type, size and SHA-256, never the picture) and `SETTINGS_BRANDING_RESET`, object type `AppSetting`.
+
+**Reset in SQL** (for example if a wrong name locked someone's view, or before restoring a backup elsewhere): `DELETE dbo.AppSetting WHERE SettingKey LIKE 'Branding.%';` The defaults return at once on this node and within 30 seconds on others. The table has no seed row: an empty table is the normal state of a new installation. The report login cannot read the table.
+
+**Upgrade.** Script 48 (`48-app-settings.sql`) adds the permission and the table; it changes no existing row. Deploy order: scripts, API, web. Until an administrator saves, nothing looks different. Rollback: reset on the page or by the SQL above.
+
