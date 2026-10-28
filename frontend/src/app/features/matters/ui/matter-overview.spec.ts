@@ -340,10 +340,11 @@ describe('MatterOverviewSections (the enriched Overview, epic #758)', () => {
     expect(myMatters.getMyMattersDataVolume).toHaveBeenCalledWith(
       'mine',
       undefined,
+      [7],
       undefined,
       undefined,
       undefined,
-      7,
+      undefined,
       12,
     );
     expect(block.querySelector('[data-data-assets]')!.textContent).toContain('19');

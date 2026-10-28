@@ -1,6 +1,7 @@
 using System.Globalization;
 using MatterFlow.Assets.Contracts;
 using MatterFlow.Assets.Domain;
+using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Organization.Domain;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Time;
@@ -16,50 +17,56 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// </summary>
 public sealed class AssetDataService(
     DbContext db,
-    AssetScopeResolver scopes,
+    AssetSelectionResolver selections,
     AssetAggregates aggregates,
-    AssetMeasureResolver measures,
+    IFormFieldCatalog fieldCatalog,
     IEnumerable<IAssetTaskLinkReader> links,
     IClock clock)
 {
     public async Task<Result<AssetDataResponse>> GetAsync(AssetDataQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var resolved = scopes.Resolve(query.Scope, query.Role);
+        var resolved = await selections.ResolveAsync(query.Scope, query.Role, query.MatterIds, query.AssetTypeIds, query.SizeFields, query.From, query.To, ct);
         if (resolved.IsFailure)
             return resolved.Error!;
 
-        var scope = resolved.Value;
-        var assets = scope.Assets();
-        var measure = await measures.ResolveAsync(assets, query.AssetTypeId, query.SizeField, query.SizeUnit, ct);
-        if (measure.IsFailure)
-            return measure.Error!;
+        var selection = resolved.Value;
+        var scope = selection.Scope;
+        var assets = selection.Assets;
 
-        assets = measure.Value.Assets;
-        var source = measure.Value.Source;
-
-        // A type that has no size field contributes assets but no size (the join finds nothing).
-        var measured = source.FieldKey is null && source.AssetTypeId is not null ? new AssetMeasureSource(source.AssetTypeId, "\u0001none", string.Empty) : source;
-
-        // Two statements over the scoped assets, not four: one grouped by matter, type and disposition and one grouped by matter, type and unit; the per matter and per type figures are
-        // sums of those cells (at most matters x types x four states rows). Every aggregate reads the assets of the scope once (PV-36: measured at 100,000 assets).
+        // Two statements over the selected assets, not four: one grouped by matter, type and disposition and one grouped by matter, type, disposition and unit; the per matter and per type
+        // figures are sums of those cells (at most matters x types x four states rows). Every aggregate reads the assets of the selection once (PV-36: measured at 100,000 assets).
         var cells = await assets.GroupBy(a => new { a.MatterId, a.AssetTypeId, a.DispositionCode })
             .Select(g => new { g.Key.MatterId, g.Key.AssetTypeId, g.Key.DispositionCode, Count = g.Count() }).ToListAsync(ct);
         var byMatter = cells.GroupBy(c => (c.MatterId, c.DispositionCode)).Select(g => new { g.Key.MatterId, g.Key.DispositionCode, Count = g.Sum(c => c.Count) }).ToList();
         var byType = cells.GroupBy(c => (c.AssetTypeId, c.DispositionCode)).Select(g => new { g.Key.AssetTypeId, g.Key.DispositionCode, Count = g.Sum(c => c.Count) }).ToList();
-        var valued = aggregates.Valued(assets, measured);
-        var sizeCells = await valued.GroupBy(v => new { v.Asset.MatterId, v.Asset.AssetTypeId, v.Unit })
-            .Select(g => new { g.Key.MatterId, g.Key.AssetTypeId, g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
+        var valued = aggregates.Valued(assets, selection.Plan);
+        var sizeCells = await valued.GroupBy(v => new { v.Asset.MatterId, v.Asset.AssetTypeId, v.Asset.DispositionCode, v.Unit })
+            .Select(g => new { g.Key.MatterId, g.Key.AssetTypeId, g.Key.DispositionCode, g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
         var sizeByMatter = sizeCells.GroupBy(c => (c.MatterId, c.Unit)).Select(g => new { g.Key.MatterId, g.Key.Unit, Sum = g.Sum(c => c.Sum), Valued = g.Sum(c => c.Valued) }).ToList();
         var sizeByType = sizeCells.GroupBy(c => (c.AssetTypeId, c.Unit)).Select(g => new { g.Key.AssetTypeId, g.Key.Unit, Sum = g.Sum(c => c.Sum), Valued = g.Sum(c => c.Valued) }).ToList();
+        var sizeByTypeStatus = sizeCells.GroupBy(c => (c.AssetTypeId, c.DispositionCode, c.Unit)).Select(g => new { g.Key.AssetTypeId, g.Key.DispositionCode, g.Key.Unit, Sum = g.Sum(c => c.Sum), Valued = g.Sum(c => c.Valued) }).ToList();
 
         var matterIds = cells.Select(c => c.MatterId).Distinct().ToList();
         var matters = await (from m in db.Set<Matter>().AsNoTracking()
                              where matterIds.Contains(m.Id)
                              join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
                              select new { m.Id, m.MatterRef, m.Name, ClientName = c.Name, m.IsActive }).ToListAsync(ct);
+
+        // The matters that were asked for and that the caller may see: the scope's own matter list (already limited to what the caller may see) narrowed to the ids asked for.
+        var selected = new List<AssetDataSelectedMatter>();
+        if (selection.MatterIds.Count > 0)
+        {
+            var asked = selection.MatterIds.ToArray();
+            selected = [.. (await scope.Matters.Where(m => asked.Contains(m.Id)).Select(m => new { m.Id, m.MatterRef, m.Name }).ToListAsync(ct))
+                .OrderBy(m => m.MatterRef, StringComparer.Ordinal).Select(m => new AssetDataSelectedMatter(m.Id, m.MatterRef, m.Name))];
+        }
+
         var typeIds = byType.Select(r => r.AssetTypeId).Distinct().ToList();
         var types = await db.Set<AssetType>().AsNoTracking().Where(t => typeIds.Contains(t.Id)).Select(t => new { t.Id, t.Name, t.SizeFieldKey, t.SizeUnit }).ToListAsync(ct);
+        var published = types.Count == 0
+            ? new Dictionary<int, IReadOnlyList<FormFieldInfo>>()
+            : new Dictionary<int, IReadOnlyList<FormFieldInfo>>(await fieldCatalog.GetPublishedFieldsAsync(FormOwnerKind.AssetType, [.. typeIds], ct));
 
         // One decision for the whole response: a single unit stays as it is, several units are shown per unit with the size family in GB.
         var units = sizeByType.Select(r => r.Unit).Distinct().ToList();
@@ -109,15 +116,35 @@ public sealed class AssetDataService(
 
         var typeRows = types
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(t => new AssetDataTypeRow(
-                t.Id,
-                t.Name,
-                Counts(
-                    [.. byType.Where(r => r.AssetTypeId == t.Id).Select(r => (r.DispositionCode, r.Count))],
-                    sizeByType.Where(r => r.AssetTypeId == t.Id).Select(r => (r.Unit, r.Sum, r.Valued))),
-                source.AssetTypeId == t.Id && source.FieldKey is not null ? source.FieldKey : t.SizeFieldKey,
-                source.AssetTypeId == t.Id && source.FieldKey is not null ? source.Unit : t.SizeUnit,
-                scope.AssetsQuery("assetTypeId=" + t.Id.ToString(CultureInfo.InvariantCulture))))
+            .Select(t =>
+            {
+                var fields = published.GetValueOrDefault(t.Id) ?? [];
+                string LabelOf(string key) => fields.FirstOrDefault(f => f.Key == key)?.Label ?? Humanize(key);
+                var chosen = selection.Plan.Fields.Where(f => f.AssetTypeId == t.Id).ToList();
+                IReadOnlyList<AssetDataMeasure> measures = chosen.Count > 0
+                    ? [.. chosen.Select(f => new AssetDataMeasure(f.FieldKey!, LabelOf(f.FieldKey!), f.Unit!))]
+                    : t.SizeFieldKey is { } key && t.SizeUnit is { } unit ? [new AssetDataMeasure(key, LabelOf(key), unit)] : [];
+                IReadOnlyList<AssetDataNumberField> numberFields =
+                [
+                    .. fields.Where(f => f.IsNumber).Select(f => new AssetDataNumberField(f.Key, f.Label, f.Key == t.SizeFieldKey, f.Key == t.SizeFieldKey ? t.SizeUnit : null)),
+                ];
+                IReadOnlyList<AssetDispositionSize> dispositionSizes =
+                [
+                    .. sizeByTypeStatus.Where(r => r.AssetTypeId == t.Id).GroupBy(r => r.DispositionCode)
+                        .OrderBy(g => g.Key, StringComparer.Ordinal)
+                        .Select(g => new AssetDispositionSize(g.Key, Size(g.Select(r => (r.Unit, r.Sum, r.Valued))))),
+                ];
+                return new AssetDataTypeRow(
+                    t.Id,
+                    t.Name,
+                    Counts(
+                        [.. byType.Where(r => r.AssetTypeId == t.Id).Select(r => (r.DispositionCode, r.Count))],
+                        sizeByType.Where(r => r.AssetTypeId == t.Id).Select(r => (r.Unit, r.Sum, r.Valued))),
+                    scope.AssetsQuery("assetTypeId=" + t.Id.ToString(CultureInfo.InvariantCulture)),
+                    measures,
+                    numberFields,
+                    dispositionSizes);
+            })
             .ToList();
 
         var totals = Counts(
@@ -125,7 +152,14 @@ public sealed class AssetDataService(
             sizeByMatter.Select(r => (r.Unit, r.Sum, r.Valued)));
 
         var warnings = await WarningsAsync(assets, scope, ct);
-        return new AssetDataResponse(totals, matterRows, typeRows, warnings, unitsWarning, scope.AssetsQuery());
+        return new AssetDataResponse(totals, matterRows, typeRows, warnings, unitsWarning, scope.AssetsQuery(), selected);
+    }
+
+    /// <summary>A field key as words when its label is not known: <c>volume_gb</c> becomes <c>Volume gb</c>.</summary>
+    private static string Humanize(string key)
+    {
+        var words = key.Replace('_', ' ').Replace('-', ' ').Trim();
+        return words.Length == 0 ? key : char.ToUpperInvariant(words[0]) + words[1..];
     }
 
     private async Task<AssetDataWarnings> WarningsAsync(IQueryable<Asset> assets, AssetScope scope, CancellationToken ct)

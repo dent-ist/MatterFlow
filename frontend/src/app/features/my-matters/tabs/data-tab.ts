@@ -2,6 +2,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -13,41 +14,65 @@ import {
 import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
-  AssetDataCounts,
-  AssetDataMatterRow,
   AssetDataTypeRow,
+  AssetUnitValue,
   AssetTypeResponse,
-  AssetReportsClient,
   AssetTypesClient,
+  MattersClient,
   MyMattersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { QuietRequests } from '../../../core/http/interceptors';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { ViewStateService } from '../../../core/views/view-state.service';
+import { ChartPanel } from '../../../shared/charts/chart-panel';
+import { ChartKind, ChartRow } from '../../../shared/charts/chart-types';
 import { ColumnChart } from '../../../shared/charts/column-chart';
-import { Badge } from '../../../shared/ui/badge';
-import { matterLinkOf } from '../../../shared/ui/matter-link';
 import {
   RecordCard,
   RecordCardDef,
   RecordCardList,
   phoneCards,
 } from '../../../shared/ui/record-card-list';
+import { StatTile } from '../../../shared/ui/stat-tile';
 import { formatSize } from '../../assets/disposition/asset-size';
+import { DataPeriodControl, PeriodChoice } from '../data/data-period';
+import { DataPick, PickOption } from '../data/data-pick';
+import { DataSizePick, sizeGroups } from '../data/data-size-pick';
+import { DataStatus, VolumeRow, sizeText, volumeChartRows, volumeRows } from '../data-model';
 import {
-  DataStatus,
-  SIZE_UNITS,
-  VolumeRow,
-  assetsParams,
-  sizeText,
-  volumeChartRows,
-  volumeRows,
-} from '../data-model';
+  DEFAULT_SELECTION,
+  DataSelection,
+  DataView,
+  SizeChoice,
+  fromRemembered,
+  hasExplicitSelection,
+  isEverything,
+  listIsExact,
+  listParams,
+  parseSelection,
+  parseStatus,
+  parseView,
+  rememberedOf,
+  selectionArgs,
+  selectionToParams,
+  sizeOf,
+  countOf,
+  typeChartRows,
+  unitsOf,
+} from '../data-selection';
+import { ManagedMatters } from '../managed-matters';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
+import { todayText } from '../panels/calendar-panel';
 
 const COUNT = new Intl.NumberFormat('en-US');
-const MONTH_CHOICES = [12, 24, 36] as const;
+/** The months the volume looks back over; the period of the selection narrows the assets, not this window. */
+const VOLUME_MONTHS = 24;
+/** How many matters one look into the matter list asks for. */
+const MATTER_PAGE = 50;
 
 /** The four disposition columns of a table or card, in the order of a record's life. */
 const DISPOSITION_COLUMNS: readonly {
@@ -58,9 +83,26 @@ const DISPOSITION_COLUMNS: readonly {
 }[] = [
   { key: 'active', status: 'active', label: 'Active', noun: 'active' },
   { key: 'inactive', status: 'inactive', label: 'Inactive', noun: 'inactive' },
-  { key: 'pendingDisposition', status: 'pending', label: 'Pending', noun: 'pending disposition' },
+  {
+    key: 'pendingDisposition',
+    status: 'pending',
+    label: 'Pending disposition',
+    noun: 'pending disposition',
+  },
   { key: 'disposed', status: 'disposed', label: 'Disposed', noun: 'disposed' },
 ];
+
+/** One headline tile of the Data Area. */
+interface DataTile {
+  key: string;
+  label: string;
+  value: string;
+  unit: string;
+  note: string;
+  muted: boolean;
+  /** The status a press filters the grid to; null: not a button. */
+  status: DataStatus | null;
+}
 
 function plural(n: number, one: string, many: string): string {
   return `${COUNT.format(n)} ${n === 1 ? one : many}`;
@@ -78,14 +120,18 @@ function plural(n: number, one: string, many: string): string {
 @Component({
   selector: 'mf-mm-data-tab',
   imports: [
-    Badge,
+    ChartPanel,
     ColumnChart,
+    DataPeriodControl,
+    DataPick,
+    DataSizePick,
     PanelBox,
     RecordCard,
     RecordCardDef,
     RecordCardList,
     RouterLink,
     Segmented,
+    StatTile,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
@@ -94,6 +140,7 @@ function plural(n: number, one: string, many: string): string {
       gap: var(--mf-s3);
       min-width: 0;
     }
+    /* The selection bar: Matters, Asset types, Size fields, Period, left to right; on a phone one under the other. */
     .dt__controls {
       display: flex;
       flex-wrap: wrap;
@@ -103,7 +150,7 @@ function plural(n: number, one: string, many: string): string {
     }
     .dt__field {
       display: grid;
-      /* One column that may shrink: an asset type with a very long name must not make the select, and the page, wider than a phone (PV-38). */
+      /* One column that may shrink: a very long name must not make a control, and the page, wider than a phone (PV-38). */
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;
       min-width: 0;
@@ -115,41 +162,48 @@ function plural(n: number, one: string, many: string): string {
     .dt__field select {
       max-width: 100%;
     }
+    .dt__info {
+      min-width: 32px;
+      padding-inline: var(--mf-s2);
+    }
+    .dt__rule {
+      margin: 0 0 var(--mf-s3);
+      padding: var(--mf-s2) var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface-alt, var(--mf-surface));
+    }
+    .dt__rule p {
+      margin: 0 0 var(--mf-s1);
+    }
+    .dt__rule p:last-child {
+      margin-bottom: 0;
+    }
     .dt__note {
       margin: 0 0 var(--mf-s3);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .dt__note--tight {
-      margin: var(--mf-s2) 0 0;
-    }
-    .dt__h3 {
-      margin: var(--mf-s3) 0 var(--mf-s1);
-      font-size: var(--mf-fs-md);
-      font-weight: 700;
-    }
-    .dt__warn {
+    /* The headline numbers: tiles that stand out, a row of six on a desktop, two across on a phone. */
+    .dt__tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+      gap: var(--mf-s2);
       margin: 0 0 var(--mf-s3);
       padding: 0;
       list-style: none;
-      display: grid;
-      gap: var(--mf-s1);
     }
-    .dt__warn li {
+    .dt__tiles li {
+      min-width: 0;
+    }
+    /* Amber is for "at risk" only (issue #918): a warning about assets is neutral text with its icon. */
+    .dt__warn {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface-alt, var(--mf-surface));
+      margin: 0 0 var(--mf-s3);
     }
-    /* Amber is for "at risk" only (issue #918): a warning about assets is neutral text with its icon. */
-    .dt__warn .pi {
-      color: var(--mf-text);
-    }
-    .dt__warn a,
     .dt__show {
       display: inline-flex;
       align-items: center;
@@ -157,32 +211,15 @@ function plural(n: number, one: string, many: string): string {
       color: var(--mf-link);
       text-decoration: underline;
     }
-    .dt__strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s2) var(--mf-s4, 1.5rem);
-      margin: 0 0 var(--mf-s3);
-      padding: 0;
-    }
-    .dt__strip div {
+    .dt__area {
       min-width: 0;
     }
-    .dt__strip dt {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .dt__strip dd {
-      margin: 0;
-      font-size: var(--mf-fs-lg);
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .dt__strip dd a {
-      display: inline-block;
-      min-width: 24px;
-      min-height: 24px;
-      color: var(--mf-link);
-      text-decoration: underline;
+    .dt__filter {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin: 0 0 var(--mf-s2);
     }
     .dt__scroll {
       max-width: 100%;
@@ -208,18 +245,19 @@ function plural(n: number, one: string, many: string): string {
     .dt__table tbody th {
       font-weight: 400;
     }
-    .dt__table tfoot th,
-    .dt__table tfoot td {
-      border-top: 2px solid var(--mf-border-strong);
-      font-weight: 700;
-    }
     .dt__table .num {
       text-align: right;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
-    .dt__table td a,
-    .dt__table th a {
+    .dt__unit {
+      display: block;
+    }
+    /* A zero says "none": quiet. */
+    .dt__zero {
+      color: var(--mf-text-muted);
+    }
+    .dt__table td a {
       display: inline-block;
       min-width: 24px;
       min-height: 24px;
@@ -227,16 +265,9 @@ function plural(n: number, one: string, many: string): string {
       color: var(--mf-link);
       text-decoration: underline;
     }
-    .dt__client,
     .dt__muted {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-    }
-    .dt__client {
-      display: block;
-    }
-    .dt__closed {
-      margin-left: var(--mf-s1);
     }
     .dt__chips {
       display: flex;
@@ -264,15 +295,22 @@ function plural(n: number, one: string, many: string): string {
       margin: 0;
     }
     @media (max-width: 639.98px) {
+      .dt__controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+      }
       .dt__controls select,
-      .dt__empty .mf-btn {
+      .dt__empty .mf-btn,
+      .dt__clear {
         min-height: 44px;
       }
+      .dt__info,
       .dt__show {
         min-height: 44px;
       }
-      .dt__controls .dt__field {
-        flex: 1 1 100%;
+      .dt__tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   `,
@@ -286,75 +324,114 @@ function plural(n: number, one: string, many: string): string {
       (retry)="loader.load()"
     >
       @if (!bare()) {
-        <div class="dt__controls" data-data-controls>
-          <div class="dt__field">
-            <label for="dt-type">Asset type</label>
-            <select
-              id="dt-type"
-              class="mf-control"
-              data-data-type
-              (change)="pickType($any($event.target).value)"
-            >
-              <option value="" [selected]="typeId() === null">All asset types</option>
-              @for (t of types(); track t.assetTypeId) {
-                <option [value]="t.assetTypeId" [selected]="t.assetTypeId === typeId()">
-                  {{ t.name }}
-                </option>
-              }
-            </select>
-          </div>
-          @if (typeId() !== null) {
-            <div class="dt__field">
-              <label for="dt-field">Size field</label>
-              <select
-                id="dt-field"
-                class="mf-control"
-                data-data-field
-                (change)="pickField($any($event.target).value)"
-              >
-                <option value="" [selected]="!fieldKey()">{{ defaultLabel() }}</option>
-                @for (f of numberFields(); track f.key) {
-                  <option [value]="f.key" [selected]="f.key === fieldKey()">
-                    {{ f.label }} ({{ f.key }})
-                  </option>
-                }
-              </select>
-            </div>
-            @if (needsUnit()) {
-              <div class="dt__field">
-                <label for="dt-unit">Unit of this field</label>
-                <select
-                  id="dt-unit"
-                  class="mf-control"
-                  data-data-unit
-                  (change)="pickUnit($any($event.target).value)"
-                >
-                  <option value="" [selected]="!unit()">Choose a unit</option>
-                  @for (u of units; track u) {
-                    <option [value]="u" [selected]="u === unit()">{{ u }}</option>
-                  }
-                </select>
-              </div>
-            }
-          }
-        </div>
+        <button
+          mfPanelActions
+          type="button"
+          class="mf-btn dt__info"
+          data-how
+          aria-label="How these numbers are made"
+          aria-controls="dt-info"
+          [attr.aria-expanded]="infoOpen()"
+          (click)="infoOpen.set(!infoOpen())"
+          (keydown.escape)="infoOpen.set(false)"
+        >
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+        </button>
       }
-      @if (needsUnit() && !unit()) {
-        <p class="dt__note" data-unit-needed>
-          Choose the unit of this field to measure it. Until then the size is the asset type's
-          default.
-        </p>
+      @if (!bare()) {
+        <div class="dt__controls" data-data-controls role="group" aria-label="What the Data shows">
+          @if (showMatters()) {
+            <mf-data-pick
+              label="Matters"
+              allText="All matters"
+              one="matter"
+              many="matters"
+              data-pick-matters
+              [options]="matterOptions()"
+              [chosen]="chosenMatters()"
+              [selected]="selection().matterIds"
+              [searchable]="true"
+              [remote]="true"
+              [loading]="mattersLoading()"
+              [wide]="cards()"
+              (opened)="loadMatters('')"
+              (query)="searchMatters($event)"
+              (changed)="pickMatters($event)"
+            />
+          }
+          @if (showTypes()) {
+            <mf-data-pick
+              label="Asset types"
+              allText="All asset types"
+              one="asset type"
+              many="asset types"
+              data-pick-types
+              [options]="typeOptions()"
+              [chosen]="typeOptions()"
+              [selected]="selection().typeIds"
+              [searchable]="typeOptions().length > 8"
+              [wide]="cards()"
+              (changed)="pickTypes($event)"
+            />
+          }
+          @if (showSizes()) {
+            <mf-data-size-pick
+              data-pick-sizes
+              [types]="sizeRows()"
+              [choices]="selection().sizeFields"
+              [wide]="cards()"
+              (changed)="pickSizes($event)"
+            />
+          }
+          <mf-data-period
+            data-pick-period
+            [period]="selection().period"
+            [from]="selection().from"
+            [to]="selection().to"
+            (changed)="pickPeriod($event)"
+          />
+        </div>
+        @if (infoOpen()) {
+          <div class="dt__rule" id="dt-info" data-info>
+            <p>
+              The numbers are the assets added in the period you chose, on the matters and asset
+              types you chose. Nothing chosen means all of them.
+            </p>
+            <p data-info-size>
+              Size is the number field chosen for each asset type:
+              @for (t of data()?.types ?? []; track t.assetTypeId; let last = $last) {
+                {{ t.name }} ({{ measured(t) }}){{ last ? '.' : ';' }}
+              }
+              An asset without a value adds nothing. Sizes in different units are never added
+              together; B, KB, MB, GB and TB are added up and shown in GB.
+            </p>
+            @if (!exactRows()) {
+              <p data-info-links>
+                With several matters or a period, the numbers do not open the Assets list: it cannot
+                show exactly those assets.
+              </p>
+            }
+            @if (showVolume()) {
+              <p data-info-volume>{{ volume.data()?.limitation }}</p>
+            }
+          </div>
+        }
       }
       @if (filters().clientId !== null || filters().managerId !== null) {
         <p class="dt__note" data-filters-note>
-          The Client and Project manager filters do not apply to Data. Choose a matter in the table.
+          The Client and Project manager filters do not apply to Data. Use Matters above.
         </p>
       }
 
       @if (data(); as d) {
         @if (d.totals.assets === 0) {
           <div class="dt__empty" data-empty>
-            @if (filters().scope === 'all') {
+            @if (!everything()) {
+              <p data-no-match>No assets match this selection.</p>
+              <button type="button" class="mf-btn" data-clear-selection (click)="clearSelection()">
+                Clear the selection
+              </button>
+            } @else if (filters().scope === 'all') {
               <p>There are no assets on these matters yet.</p>
             } @else {
               <p>There are no assets on the matters you manage yet.</p>
@@ -366,320 +443,226 @@ function plural(n: number, one: string, many: string): string {
             }
           </div>
         } @else {
-          <section aria-labelledby="dt-warn-h" data-warnings>
-            <h3 class="dt__h3" id="dt-warn-h">Warnings ({{ warningCount() }})</h3>
-            @if (warningCount() === 0) {
-              <p class="dt__note" data-no-warnings>
-                <i class="pi pi-check-circle" aria-hidden="true"></i>
-                No warnings: no asset that is not active is linked to an open task, and none waits
-                for disposition.
-              </p>
-            } @else {
-              <ul class="dt__warn">
-                @if (d.warnings.inactiveLinked.assets > 0) {
-                  <li data-warning="inactive-linked">
-                    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                    <span>{{ inactiveLinkedText(d.warnings.inactiveLinked.assets) }}</span>
-                    <a
-                      class="dt__show"
-                      routerLink="/assets"
-                      [queryParams]="link(d.warnings.inactiveLinked.query)"
-                      [attr.aria-label]="
-                        'Show the ' +
-                        plural(d.warnings.inactiveLinked.assets, 'asset', 'assets') +
-                        ' that are not active but still linked to open tasks, in the Assets list'
-                      "
-                      >Show</a
-                    >
-                  </li>
-                }
-                @if (d.warnings.awaitingDisposition.assets > 0) {
-                  <li data-warning="awaiting-disposition">
-                    <i class="pi pi-clock" aria-hidden="true"></i>
-                    <span>{{ awaitingText(d.warnings.awaitingDisposition) }}</span>
-                    <a
-                      class="dt__show"
-                      routerLink="/assets"
-                      [queryParams]="link(d.warnings.awaitingDisposition.query)"
-                      [attr.aria-label]="
-                        'Show the ' +
-                        plural(d.warnings.awaitingDisposition.assets, 'asset', 'assets') +
-                        ' that wait for disposition, in the Assets list'
-                      "
-                      >Show</a
-                    >
-                  </li>
-                }
-              </ul>
+          <ul class="dt__tiles" data-tiles aria-label="Totals of this selection">
+            @for (t of tiles(); track t.key) {
+              <li>
+                <mf-stat-tile
+                  [attr.data-tile]="t.key"
+                  [value]="t.value"
+                  [unit]="t.unit"
+                  [label]="t.label"
+                  [note]="t.note"
+                  [muted]="t.muted"
+                  [pressable]="t.status !== null"
+                  [pressed]="t.status !== null && t.status === status()"
+                  (pick)="pickStatus(t.status)"
+                />
+              </li>
             }
-          </section>
+          </ul>
 
-          <dl class="dt__strip" data-totals>
-            <div>
-              <dt>Assets</dt>
-              <dd>
+          @if (d.warnings.inactiveLinked.assets > 0) {
+            <p class="dt__warn" data-warning="inactive-linked">
+              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+              <span>{{ inactiveLinkedText(d.warnings.inactiveLinked.assets) }}</span>
+              @if (exactWhole()) {
                 <a
+                  class="dt__show"
                   routerLink="/assets"
-                  [queryParams]="link(d.scopeQuery, 'all')"
-                  data-total-assets
-                  >{{ count(d.totals.assets) }}</a
+                  [queryParams]="link(d.warnings.inactiveLinked.query)"
+                  [attr.aria-label]="
+                    'Show the ' +
+                    plural(d.warnings.inactiveLinked.assets, 'asset', 'assets') +
+                    ' that are not active but still linked to open tasks, in the Assets list'
+                  "
+                  >Show</a
                 >
-              </dd>
-            </div>
-            <div>
-              <dt>Size</dt>
-              <dd data-total-size>{{ size(d.totals) }}</dd>
-            </div>
-            @for (c of columns; track c.key) {
-              <div>
-                <dt>{{ c.label }}</dt>
-                <dd>{{ count(d.totals[c.key]) }}</dd>
-              </div>
-            }
-          </dl>
-          @if (d.unitsWarning) {
-            <p class="dt__note" data-units-warning>
-              <i class="pi pi-info-circle" aria-hidden="true"></i> {{ d.unitsWarning }}
+              }
             </p>
           }
 
-          <h3 class="dt__h3" id="dt-matters-h">By matter</h3>
-          @if (cards()) {
-            <mf-record-card-list
-              state="ready"
-              noun="matters"
-              label="Assets by matter"
-              [empty]="false"
-              data-matter-cards
-            >
-              <ng-template [mfRecordCard]="d.matters" let-m>
-                <mf-record-card
-                  [name]="m.matterRef + ' ' + m.matterName"
-                  [link]="matterLink(m) ?? ['/assets']"
-                  [queryParams]="matterQuery(m)"
-                  list="my-matters-data"
-                  [rowKey]="m.matterId"
+          <section class="dt__area" data-data-area aria-label="Assets by asset type">
+            @if (status(); as s) {
+              <p class="dt__filter" data-status-filter>
+                Showing {{ statusWord(s) }} assets only.
+                <button
+                  type="button"
+                  class="mf-btn dt__clear"
+                  data-clear-status
+                  (click)="pickStatus(null)"
                 >
-                  <span mfCardBadges>
-                    @if (!m.matterIsActive) {
-                      <mf-badge tone="neutral" icon="pi-lock">Closed</mf-badge>
-                    }
-                  </span>
-                  <ng-container mfCardMeta>
-                    <p class="rc-line">
-                      <span class="rc-text">{{ m.clientName }}</span>
-                    </p>
-                    <p class="rc-line" data-card-numbers>
-                      <span class="rc-text"
-                        >{{ plural(m.counts.assets, 'asset', 'assets') }}
-                        {{ sizePart(m.counts) }}</span
-                      >
-                    </p>
-                  </ng-container>
-                  <ng-container mfCardCounts>
-                    <ul class="dt__chips">
-                      @for (c of columns; track c.key) {
-                        @if (m.counts[c.key] > 0) {
-                          <li>
-                            <a
-                              routerLink="/assets"
-                              [queryParams]="link(m.query, c.status)"
-                              [attr.aria-label]="cellName(m.counts[c.key], c.noun, m.matterRef)"
-                              >{{ c.label }} {{ count(m.counts[c.key]) }}</a
-                            >
-                          </li>
-                        }
-                      }
-                    </ul>
-                  </ng-container>
-                </mf-record-card>
-              </ng-template>
-            </mf-record-card-list>
-          } @else {
-            <div class="dt__scroll" role="region" aria-label="Assets by matter" tabindex="0">
-              <table class="dt__table" data-matters-table>
-                <caption class="mf-sr-only">
-                  Assets by matter: how many, how much data and in what state.
-                  {{
-                    scopeWords()
-                  }}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Matter</th>
-                    <th scope="col" class="num">Assets</th>
-                    <th scope="col" class="num">Size</th>
-                    @for (c of columns; track c.key) {
-                      <th scope="col" class="num">{{ c.label }}</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (m of d.matters; track m.matterId) {
-                    <tr data-matter-row>
-                      <th scope="row">
-                        @if (matterLink(m); as l) {
-                          <a [routerLink]="l" [queryParams]="matterQuery(m)"
-                            >{{ m.matterRef }} {{ m.matterName }}</a
+                  Show all
+                </button>
+              </p>
+            }
+            <mf-chart-panel
+              heading="Assets by asset type"
+              labelHeader="Asset type"
+              [valueHeader]="valueHeader()"
+              [rows]="chartData()"
+              [unit]="measureUnit()"
+              [format]="chartFormat()"
+              [customTable]="true"
+              [kind]="view()"
+              (kindChange)="setView($event)"
+              emptyText="Nothing to show."
+            >
+              @if (view() !== 'table' && measureOptions().length > 1) {
+                <div
+                  mfChartControls
+                  mfSegmented
+                  role="group"
+                  aria-label="The chart shows"
+                  data-chart-measure
+                >
+                  @for (m of measureOptions(); track m) {
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      [attr.data-measure]="m"
+                      [attr.aria-pressed]="m === measureShown()"
+                      (click)="measure.set(m)"
+                    >
+                      {{ m === 'assets' ? 'Assets' : 'Size in ' + m }}
+                    </button>
+                  }
+                </div>
+              }
+              @if (cards()) {
+                <mf-record-card-list
+                  state="ready"
+                  noun="asset types"
+                  label="Assets by asset type"
+                  [empty]="false"
+                  data-type-cards
+                >
+                  <ng-template [mfRecordCard]="d.types" let-t>
+                    <mf-record-card
+                      [name]="t.name"
+                      [link]="['/assets']"
+                      [queryParams]="link(t.query, 'all')"
+                      list="my-matters-data-types"
+                      [rowKey]="t.assetTypeId"
+                    >
+                      <ng-container mfCardMeta>
+                        <p class="rc-line" data-card-numbers>
+                          <span class="rc-text"
+                            >{{ plural(shownCount(t), 'asset', 'assets') }}
+                            {{ sizePart(shownSize(t)) }}</span
                           >
-                        } @else {
-                          {{ m.matterRef }} {{ m.matterName }}
-                        }
-                        @if (!m.matterIsActive) {
-                          <span class="dt__muted dt__closed">(closed)</span>
-                        }
-                        <span class="dt__client">{{ m.clientName }}</span>
-                      </th>
-                      <td class="num">
-                        <a
-                          routerLink="/assets"
-                          [queryParams]="link(m.query, 'all')"
-                          [attr.aria-label]="cellName(m.counts.assets, 'asset', m.matterRef)"
-                          >{{ count(m.counts.assets) }}</a
-                        >
-                      </td>
-                      <td class="num">{{ size(m.counts) }}</td>
-                      @for (c of columns; track c.key) {
-                        <td class="num">
-                          @if (m.counts[c.key] > 0) {
-                            <a
-                              routerLink="/assets"
-                              [queryParams]="link(m.query, c.status)"
-                              [attr.aria-label]="cellName(m.counts[c.key], c.noun, m.matterRef)"
-                              >{{ count(m.counts[c.key]) }}</a
-                            >
-                          } @else {
-                            0
-                          }
-                        </td>
+                        </p>
+                      </ng-container>
+                      @if (!status()) {
+                        <ng-container mfCardCounts>
+                          <ul class="dt__chips">
+                            @for (c of columns; track c.key) {
+                              @if (t.counts[c.key] > 0) {
+                                <li>
+                                  @if (exactRows()) {
+                                    <a
+                                      routerLink="/assets"
+                                      [queryParams]="link(t.query, c.status)"
+                                      [attr.aria-label]="cellName(t.counts[c.key], c.noun, t.name)"
+                                      >{{ c.label }} {{ count(t.counts[c.key]) }}</a
+                                    >
+                                  } @else {
+                                    <span>{{ c.label }} {{ count(t.counts[c.key]) }}</span>
+                                  }
+                                </li>
+                              }
+                            }
+                          </ul>
+                        </ng-container>
                       }
-                    </tr>
-                  }
-                </tbody>
-                <tfoot>
-                  <tr data-matters-total>
-                    <th scope="row">
-                      {{ filters().scope === 'all' ? 'All matters' : 'All my matters' }}
-                    </th>
-                    <td class="num">{{ count(d.totals.assets) }}</td>
-                    <td class="num">{{ size(d.totals) }}</td>
-                    @for (c of columns; track c.key) {
-                      <td class="num">{{ count(d.totals[c.key]) }}</td>
-                    }
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          }
-
-          <h3 class="dt__h3" id="dt-types-h">By asset type</h3>
-          @if (cards()) {
-            <mf-record-card-list
-              state="ready"
-              noun="asset types"
-              label="Assets by asset type"
-              [empty]="false"
-              data-type-cards
-            >
-              <ng-template [mfRecordCard]="d.types" let-t>
-                <mf-record-card
-                  [name]="t.name"
-                  [link]="['/assets']"
-                  [queryParams]="link(t.query, 'all')"
-                  list="my-matters-data-types"
-                  [rowKey]="t.assetTypeId"
+                    </mf-record-card>
+                  </ng-template>
+                </mf-record-card-list>
+              } @else {
+                <div
+                  class="dt__scroll"
+                  role="region"
+                  aria-label="Assets by asset type"
+                  tabindex="0"
                 >
-                  <ng-container mfCardMeta>
-                    <p class="rc-line" data-card-numbers>
-                      <span class="rc-text"
-                        >{{ plural(t.counts.assets, 'asset', 'assets') }}
-                        {{ sizePart(t.counts) }}</span
-                      >
-                    </p>
-                    <p class="rc-line">
-                      <span class="rc-text">{{ measured(t) }}</span>
-                    </p>
-                  </ng-container>
-                  <ng-container mfCardCounts>
-                    <ul class="dt__chips">
-                      @for (c of columns; track c.key) {
-                        @if (t.counts[c.key] > 0) {
-                          <li>
-                            <a
-                              routerLink="/assets"
-                              [queryParams]="link(t.query, c.status)"
-                              [attr.aria-label]="cellName(t.counts[c.key], c.noun, t.name)"
-                              >{{ c.label }} {{ count(t.counts[c.key]) }}</a
-                            >
-                          </li>
-                        }
-                      }
-                    </ul>
-                  </ng-container>
-                </mf-record-card>
-              </ng-template>
-            </mf-record-card-list>
-          } @else {
-            <div class="dt__scroll" role="region" aria-label="Assets by asset type" tabindex="0">
-              <table class="dt__table" data-types-table>
-                <caption class="mf-sr-only">
-                  Assets by asset type, with the size field each is measured by.
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Asset type</th>
-                    <th scope="col" class="num">Assets</th>
-                    <th scope="col" class="num">Size</th>
-                    <th scope="col">Measured by</th>
-                    @for (c of columns; track c.key) {
-                      <th scope="col" class="num">{{ c.label }}</th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (t of d.types; track t.assetTypeId) {
-                    <tr data-type-row>
-                      <th scope="row">{{ t.name }}</th>
-                      <td class="num">
-                        <a
-                          routerLink="/assets"
-                          [queryParams]="link(t.query, 'all')"
-                          [attr.aria-label]="cellName(t.counts.assets, 'asset', t.name)"
-                          >{{ count(t.counts.assets) }}</a
-                        >
-                      </td>
-                      <td class="num">{{ size(t.counts) }}</td>
-                      <td class="dt__muted">{{ measured(t) }}</td>
-                      @for (c of columns; track c.key) {
-                        <td class="num">
-                          @if (t.counts[c.key] > 0) {
-                            <a
-                              routerLink="/assets"
-                              [queryParams]="link(t.query, c.status)"
-                              [attr.aria-label]="cellName(t.counts[c.key], c.noun, t.name)"
-                              >{{ count(t.counts[c.key]) }}</a
-                            >
-                          } @else {
-                            0
+                  <table class="dt__table" data-types-table>
+                    <caption class="mf-sr-only">
+                      Assets by asset type: how many, how much data and in what state.
+                      {{
+                        scopeWords()
+                      }}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Asset type</th>
+                        <th scope="col" class="num">
+                          {{ status() ? statusLabel(status()!) : 'Assets' }}
+                        </th>
+                        <th scope="col" class="num">Size</th>
+                        @if (!status()) {
+                          @for (c of tableColumns(); track c.key) {
+                            <th scope="col" class="num">{{ c.label }}</th>
                           }
-                        </td>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (t of d.types; track t.assetTypeId) {
+                        <tr data-type-row>
+                          <th scope="row">{{ t.name }}</th>
+                          <td class="num" [class.dt__zero]="shownCount(t) === 0">
+                            @if (exactRows() && shownCount(t) > 0) {
+                              <a
+                                routerLink="/assets"
+                                [queryParams]="link(t.query, status() ?? 'all')"
+                                [attr.aria-label]="
+                                  cellName(
+                                    shownCount(t),
+                                    status() ? statusNoun(status()!) : 'asset',
+                                    t.name
+                                  )
+                                "
+                                >{{ count(shownCount(t)) }}</a
+                              >
+                            } @else {
+                              {{ count(shownCount(t)) }}
+                            }
+                          </td>
+                          <td class="num" data-size-cell>
+                            @for (s of shownSize(t); track s.unit) {
+                              <span class="dt__unit">{{ sizeOne(s) }}</span>
+                            } @empty {
+                              <span class="dt__muted">No size</span>
+                            }
+                          </td>
+                          @if (!status()) {
+                            @for (c of tableColumns(); track c.key) {
+                              <td class="num" [class.dt__zero]="t.counts[c.key] === 0">
+                                @if (exactRows() && t.counts[c.key] > 0) {
+                                  <a
+                                    routerLink="/assets"
+                                    [queryParams]="link(t.query, c.status)"
+                                    [attr.aria-label]="cellName(t.counts[c.key], c.noun, t.name)"
+                                    >{{ count(t.counts[c.key]) }}</a
+                                  >
+                                } @else {
+                                  {{ count(t.counts[c.key]) }}
+                                }
+                              </td>
+                            }
+                          }
+                        </tr>
                       }
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-          <p class="dt__note dt__note--tight">
-            Size is the number field each asset type is measured by (set on the asset type). Assets
-            without a value add nothing to the size. Each number opens the Assets list with exactly
-            those assets.
-          </p>
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </mf-chart-panel>
+          </section>
         }
       }
     </mf-mm-panel>
 
-    @if (!bare()) {
+    @if (showVolume()) {
       <mf-mm-panel
         name="data-volume"
         title="Data volume over time"
@@ -688,43 +671,12 @@ function plural(n: number, one: string, many: string): string {
         (retry)="volume.load()"
       >
         <div class="dt__controls" data-volume-controls>
-          <div class="dt__field">
-            <label for="dv-matter">Matter</label>
-            <select
-              id="dv-matter"
-              class="mf-control"
-              data-volume-matter
-              (change)="pickMatter($any($event.target).value)"
-            >
-              <option value="" [selected]="matterId() === null">
-                {{ filters().scope === 'all' ? 'All matters' : 'All my matters' }}
-              </option>
-              @for (m of data()?.matters ?? []; track m.matterId) {
-                <option [value]="m.matterId" [selected]="m.matterId === matterId()">
-                  {{ m.matterRef }} {{ m.matterName }}
-                </option>
-              }
-            </select>
-          </div>
-          <div class="dt__field">
-            <label for="dv-months">Period</label>
-            <select
-              id="dv-months"
-              class="mf-control"
-              data-volume-months
-              (change)="pickMonths($any($event.target).value)"
-            >
-              @for (n of monthChoices; track n) {
-                <option [value]="n" [selected]="n === months()">Last {{ n }} months</option>
-              }
-            </select>
-          </div>
           @if (volumeUnits().length > 1) {
             <div class="dt__field">
               <label for="dv-unit">Unit</label>
               <select
                 id="dv-unit"
-                class="mf-control"
+                class="mf-control mf-control--compact"
                 data-volume-unit
                 (change)="volumeUnit.set($any($event.target).value)"
               >
@@ -738,7 +690,7 @@ function plural(n: number, one: string, many: string): string {
             <button
               type="button"
               class="mf-btn"
-              data-show-chart
+              data-volume-as-chart
               [attr.aria-pressed]="!asTable()"
               (click)="asTable.set(false)"
             >
@@ -747,7 +699,7 @@ function plural(n: number, one: string, many: string): string {
             <button
               type="button"
               class="mf-btn"
-              data-show-table
+              data-volume-as-table
               [attr.aria-pressed]="asTable()"
               (click)="asTable.set(true)"
             >
@@ -756,15 +708,9 @@ function plural(n: number, one: string, many: string): string {
           </div>
         </div>
         @if (volume.data(); as v) {
-          @if (v.units.length > 1 && v.unitsWarning) {
-            <p class="dt__note" data-volume-units-warning>
-              <i class="pi pi-info-circle" aria-hidden="true"></i> {{ v.unitsWarning }}
-            </p>
-          }
           @if (!hasVolume()) {
             <p class="dt__muted" data-volume-empty>
-              No size is recorded for the assets in this view, so there is no volume to show. Set a
-              size field on the asset type.
+              No size is recorded for the assets in this view, so there is no volume to show.
             </p>
           } @else if (asTable()) {
             <div class="dt__scroll" role="region" aria-label="Data volume by month" tabindex="0">
@@ -811,10 +757,6 @@ function plural(n: number, one: string, many: string): string {
               <p class="dt__muted" role="status">Loading the chart</p>
             }
           }
-          <p class="dt__note dt__note--tight" data-volume-limit>{{ v.limitation }}</p>
-          <p class="dt__note dt__note--tight">
-            The size held leaves out disposed assets; the table above counts them.
-          </p>
         }
       </mf-mm-panel>
     }
@@ -828,96 +770,83 @@ export class DataTab {
 
   private readonly api = inject(MyMattersClient);
   private readonly typesApi = inject(AssetTypesClient);
-  private readonly reportsApi = inject(AssetReportsClient);
+  private readonly mattersApi = inject(MattersClient);
+  private readonly views = inject(ViewStateService);
+  private readonly quiet = inject(QuietRequests);
   private readonly auth = inject(AuthStore);
+  private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
+  private readonly managed = inject(ManagedMatters, { optional: true });
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly query = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
   protected readonly cards = phoneCards();
   protected readonly columns = DISPOSITION_COLUMNS;
-  protected readonly units = SIZE_UNITS;
-  protected readonly monthChoices = MONTH_CHOICES;
   protected readonly plural = plural;
   protected readonly fmtFn = (v: number): string => this.fmt(v);
 
-  /** The size override of this view, in the address: `?dataType=&dataField=&dataUnit=`. */
-  protected readonly typeId = computed<number | null>(() => {
-    const n = Number(this.query().get('dataType'));
-    return Number.isInteger(n) && n > 0 ? n : null;
-  });
-  protected readonly fieldKey = computed(() =>
-    this.typeId() === null ? '' : (this.query().get('dataField') ?? ''),
-  );
-  protected readonly unit = computed(() => {
-    const u = this.query().get('dataUnit') ?? '';
-    return (SIZE_UNITS as readonly string[]).includes(u) ? u : '';
-  });
-  protected readonly types = signal<AssetTypeResponse[]>([]);
-  protected readonly numberFields = signal<{ key: string; label: string }[]>([]);
-  private readonly selectedType = computed(
-    () => this.types().find((t) => t.assetTypeId === this.typeId()) ?? null,
-  );
-  /** A field other than the type's default needs its unit. */
-  protected readonly needsUnit = computed(
-    () => this.fieldKey() !== '' && this.fieldKey() !== this.selectedType()?.sizeFieldKey,
-  );
-  protected readonly defaultLabel = computed(() => {
-    const t = this.selectedType();
-    return t?.sizeFieldKey
-      ? `Default: ${t.sizeFieldKey} (${t.sizeUnit ?? 'no unit'})`
-      : 'Default: this type has no size field';
-  });
+  /** What was remembered for this person (the browser's copy at first, the server's once it answers); the address wins over it. */
+  private readonly remembered = signal(fromRemembered(this.views.cached('my-matters.data')));
 
-  /** What the Data request measures: the type's default, or a chosen field with its unit once both are chosen. */
-  private readonly measure = computed(() => {
-    const type = this.typeId();
-    if (type === null) return { type: undefined, field: undefined, unit: undefined };
-    const field = this.fieldKey();
-    if (!field) return { type, field: undefined, unit: undefined };
-    if (!this.needsUnit()) return { type, field, unit: undefined };
-    return this.unit()
-      ? { type, field, unit: this.unit() }
-      : { type, field: undefined, unit: undefined };
-  });
+  /** The four choices of the selection bar: the address when it says anything, else what was remembered. */
+  protected readonly selection = computed<DataSelection>(() =>
+    hasExplicitSelection(this.query()) ? parseSelection(this.query()) : this.remembered().selection,
+  );
+  protected readonly view = computed<DataView>(() =>
+    hasExplicitSelection(this.query()) ? parseView(this.query()) : this.remembered().view,
+  );
+  protected readonly status = computed(() => parseStatus(this.query()));
+  protected readonly everything = computed(() => isEverything(this.selection()));
 
-  protected readonly matterId = signal<number | null>(null);
-  protected readonly months = signal<number>(12);
-  protected readonly asTable = signal(false);
-  protected readonly volumeUnit = signal('');
+  private today(): string {
+    return todayText(this.clock, this.zone);
+  }
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.measure()],
+    () => [this.filters(), this.selection()],
     () => {
       const a = commonArgs(this.filters());
-      const m = this.measure();
-      return this.api.getMyMattersData(a.scope, a.role, m.type, m.field, m.unit);
-    },
-  );
-  protected readonly data = computed(() => this.loader.data());
-  /** No asset on these matters at all (and no asset type chosen): one muted line, no controls (issue #920). */
-  protected readonly bare = computed(
-    () => !!this.data() && this.data()!.totals.assets === 0 && this.typeId() === null,
-  );
-
-  protected readonly volume = panelLoader(
-    () => [this.filters(), this.measure(), this.matterId(), this.months()],
-    () => {
-      const a = commonArgs(this.filters());
-      const m = this.measure();
-      return this.api.getMyMattersDataVolume(
+      const s = selectionArgs(this.selection(), this.today());
+      return this.api.getMyMattersData(
         a.scope,
         a.role,
-        m.type,
-        m.field,
-        m.unit,
-        this.matterId() ?? undefined,
-        this.months(),
+        s.matterIds,
+        s.assetTypeIds,
+        s.sizeFields,
+        s.from,
+        s.to,
       );
     },
   );
+  protected readonly data = computed(() => this.loader.data());
+  /** No asset on these matters at all and nothing chosen: one muted line, no controls (issue #920). */
+  protected readonly bare = computed(
+    () => !!this.data() && this.data()!.totals.assets === 0 && this.everything(),
+  );
+
+  protected readonly volume = panelLoader(
+    () => [this.filters(), this.selection()],
+    () => {
+      const a = commonArgs(this.filters());
+      const s = selectionArgs(this.selection(), this.today());
+      return this.api.getMyMattersDataVolume(
+        a.scope,
+        a.role,
+        s.matterIds,
+        s.assetTypeIds,
+        s.sizeFields,
+        s.from,
+        s.to,
+        VOLUME_MONTHS,
+      );
+    },
+  );
+  protected readonly asTable = signal(false);
+  protected readonly volumeUnit = signal('');
   protected readonly volumeUnits = computed(() => this.volume.data()?.units ?? []);
   protected readonly unitShown = computed(() => {
     const units = this.volumeUnits();
@@ -937,37 +866,73 @@ export class DataTab {
     return (w?.inactiveLinked.assets ? 1 : 0) + (w?.awaitingDisposition.assets ? 1 : 0);
   });
 
+  // ---- the choices of the bar
+
+  protected readonly types = signal<AssetTypeResponse[]>([]);
+  protected readonly typeOptions = computed<PickOption[]>(() =>
+    this.types().map((t) => ({ id: t.assetTypeId, label: t.name })),
+  );
+  protected readonly showTypes = computed(
+    () => this.types().length > 1 || this.selection().typeIds.length > 0,
+  );
+
+  /** Matters are not offered to a person who manages exactly one (there is nothing to choose). */
+  protected readonly showMatters = computed(
+    () =>
+      this.selection().matterIds.length > 0 ||
+      !(this.filters().scope === 'mine' && this.managed?.only()),
+  );
+  protected readonly matterOptions = signal<PickOption[]>([]);
+  protected readonly mattersLoading = signal(false);
+  /** Names of matters seen so far (the list, the answers), so a ticked matter keeps its name. */
+  private readonly matterNames = signal<ReadonlyMap<number, PickOption>>(new Map());
+  protected readonly chosenMatters = computed<PickOption[]>(() => {
+    const names = this.matterNames();
+    const fromAnswer = new Map(
+      (this.data()?.selectedMatters ?? []).map((m) => [
+        m.matterId,
+        { id: m.matterId, label: `${m.matterRef} ${m.matterName}` },
+      ]),
+    );
+    return this.selection().matterIds.map(
+      (id) => fromAnswer.get(id) ?? names.get(id) ?? { id, label: `Matter ${id}` },
+    );
+  });
+
+  /** The type rows seen so far that offer a choice of size fields; a type that a period or a matter leaves out of the answer stays choosable. */
+  private readonly knownRows = signal<readonly AssetDataTypeRow[]>([]);
+  protected readonly sizeRows = computed(() => this.knownRows());
+  protected readonly showSizes = computed(
+    () => sizeGroups(this.knownRows()).length > 0 || this.selection().sizeFields.length > 0,
+  );
+
   constructor() {
     void this.loadTypes();
-    // The chosen type's number fields are the choices for the size field.
-    effect(() => {
-      const id = this.typeId();
-      untracked(() => void this.loadFields(id));
+    // The server's remembered choices replace the browser's copy, unless the address already says something.
+    void this.views.load('my-matters.data').then((state) => {
+      if (state) this.remembered.set(fromRemembered(state));
     });
-    // A matter of the other scope is not in this one: the chart goes back to all of them.
+    // The rows that offer size fields are kept across answers; a change of scope starts them over.
     effect(() => {
-      this.filters(); // a change of scope (or any filter) drops the chosen matter
-      untracked(() => this.matterId.set(null));
+      this.filters();
+      untracked(() => {
+        this.knownRows.set([]);
+        this.matterOptions.set([]);
+      });
     });
-  }
-
-  private fieldsTurn = 0;
-
-  private async loadFields(id: number | null): Promise<void> {
-    const mine = ++this.fieldsTurn;
-    if (id === null) {
-      this.numberFields.set([]);
-      return;
-    }
-    try {
-      // The report builder's field list (Asset.View): the number fields of the published form, no form administration needed.
-      const fields = await firstValueFrom(this.reportsApi.getAssetReportFields(id));
-      if (mine !== this.fieldsTurn) return;
-      this.numberFields.set(fields.numberFields.map((f) => ({ key: f.key, label: f.label })));
-    } catch {
-      // A type without a published form has no number fields; the size is then the type's default.
-      if (mine === this.fieldsTurn) this.numberFields.set([]);
-    }
+    effect(() => {
+      const rows = this.data()?.types;
+      if (!rows) return;
+      untracked(() =>
+        this.knownRows.update((known) => {
+          const merged = new Map(known.map((r) => [r.assetTypeId, r]));
+          for (const r of rows)
+            if (r.numberFields.some((f) => !f.isDefault)) merged.set(r.assetTypeId, r);
+          return [...merged.values()];
+        }),
+      );
+    });
+    this.destroyRef.onDestroy(() => clearTimeout(this.searchTimer));
   }
 
   private async loadTypes(): Promise<void> {
@@ -977,9 +942,116 @@ export class DataTab {
       );
       this.types.set(page.items);
     } catch {
-      this.types.set([]); // the size override is then not offered; the tab still works
+      this.types.set([]); // the asset type choice is then not offered; the tab still works
     }
   }
+
+  // ---- matters: asked for from the server as the person types (a manager of many matters, or All matters)
+
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
+  private matterTurn = 0;
+
+  protected searchMatters(text: string): void {
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => void this.loadMatters(text), 250);
+  }
+
+  protected async loadMatters(text: string): Promise<void> {
+    const mine = ++this.matterTurn;
+    const f = this.filters();
+    const me = this.auth.profile()?.userId;
+    const byRole =
+      f.scope === 'mine'
+        ? f.role === 'primary'
+          ? { primary: me }
+          : f.role === 'secondary'
+            ? { secondary: me }
+            : { managed: true }
+        : { manager: f.managerId ?? undefined };
+    this.mattersLoading.set(true);
+    try {
+      const page = await this.quiet.run(() =>
+        firstValueFrom(
+          this.mattersApi.listMatters(
+            text.trim() || undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            'primary' in byRole ? byRole.primary : undefined,
+            'secondary' in byRole ? byRole.secondary : undefined,
+            'manager' in byRole ? byRole.manager : undefined,
+            'managed' in byRole ? true : undefined,
+            undefined,
+            undefined,
+            undefined,
+            1,
+            MATTER_PAGE,
+            undefined,
+          ),
+        ),
+      );
+      if (mine !== this.matterTurn) return;
+      const options = page.items.map((m) => ({
+        id: m.matterId,
+        label: `${m.matterRef} ${m.name}`,
+        hint: m.clientName,
+      }));
+      this.matterOptions.set(options);
+      this.matterNames.update((known) => {
+        const next = new Map(known);
+        for (const o of options) next.set(o.id, o);
+        return next;
+      });
+    } catch {
+      if (mine === this.matterTurn) this.matterOptions.set([]);
+    } finally {
+      if (mine === this.matterTurn) this.mattersLoading.set(false);
+    }
+  }
+
+  // ---- changes: the address is the truth, and the choice is remembered for next time
+
+  private go(queryParams: Params): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams,
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  private choose(next: DataSelection): void {
+    this.go(selectionToParams(next));
+    this.views.save('my-matters.data', rememberedOf(next, this.view()));
+  }
+
+  protected pickMatters(ids: number[]): void {
+    this.choose({ ...this.selection(), matterIds: ids });
+  }
+
+  protected pickTypes(ids: number[]): void {
+    // A size field of a type that is no longer chosen goes with it.
+    const sizeFields = ids.length
+      ? this.selection().sizeFields.filter((c) => ids.includes(c.typeId))
+      : this.selection().sizeFields;
+    this.choose({ ...this.selection(), typeIds: ids, sizeFields });
+  }
+
+  protected pickSizes(sizeFields: SizeChoice[]): void {
+    this.choose({ ...this.selection(), sizeFields });
+  }
+
+  protected pickPeriod(p: PeriodChoice): void {
+    this.choose({ ...this.selection(), period: p.period, from: p.from, to: p.to });
+  }
+
+  protected clearSelection(): void {
+    this.choose(DEFAULT_SELECTION);
+  }
+
+  // ---- words and links
 
   protected inactiveLinkedText(n: number): string {
     return `${plural(n, 'asset is', 'assets are')} not active but still linked to open tasks.`;
@@ -999,18 +1071,20 @@ export class DataTab {
     return formatSize(n, '');
   }
 
-  protected size(c: AssetDataCounts): string {
-    return sizeText(c.size) || 'No size';
+  protected sizeOne(u: AssetUnitValue): string {
+    return formatSize(u.value, u.unit);
   }
 
-  /** The size in a card's line: ", 640.2 GB" or nothing. */
-  protected sizePart(c: AssetDataCounts): string {
-    const s = sizeText(c.size);
-    return s ? `. ${s}` : '';
+  /** The size in a card's line: ". 640.2 GB" or nothing; units are listed one after the other, never added. */
+  protected sizePart(size: readonly AssetUnitValue[]): string {
+    const s = sizeText(size);
+    return s ? `. ${s.replace(/ \+ /g, '; ')}` : '';
   }
 
   protected measured(t: AssetDataTypeRow): string {
-    return t.sizeFieldKey ? `${t.sizeFieldKey} (${t.sizeUnit ?? 'no unit'})` : 'No size field set';
+    return t.measures.length
+      ? t.measures.map((m) => `${m.label} (${m.unit})`).join(', ')
+      : 'No size field set';
   }
 
   protected scopeWords(): string {
@@ -1030,44 +1104,148 @@ export class DataTab {
 
   /** The Assets list address for a query the API handed out (see `assetsParams`). */
   protected link(query: string, status: DataStatus | null = null): Params {
-    return assetsParams(query, this.filters().scope, status);
+    return listParams(query, this.filters().scope, this.selection(), status);
   }
 
-  protected matterLink(m: AssetDataMatterRow): ['/matters', number] | null {
-    return matterLinkOf(this.auth, m.matterId);
+  // ---- the grid, the chart and the tiles of the status filter
+
+  protected readonly infoOpen = signal(false);
+
+  /** Whether a count may be a link: the Assets list can show one matter and no period. */
+  protected readonly exactRows = computed(() => listIsExact(this.selection()));
+  protected readonly exactWhole = computed(() => listIsExact(this.selection(), true));
+
+  /** What the bar or pie measures: the number of assets or one unit of size (units are never added together). */
+  protected readonly measure = signal('assets');
+  protected readonly measureOptions = computed(() => {
+    const d = this.data();
+    return d ? ['assets', ...unitsOf(d)] : ['assets'];
+  });
+  protected readonly measureShown = computed(() =>
+    this.measureOptions().includes(this.measure()) ? this.measure() : 'assets',
+  );
+  protected readonly measureUnit = computed(() => this.measureShown());
+  protected readonly valueHeader = computed(() =>
+    this.measureShown() === 'assets' ? 'Assets' : `Size (${this.measureShown()})`,
+  );
+  protected readonly chartFormat = computed(() => {
+    const m = this.measureShown();
+    return m === 'assets' ? (v: number) => COUNT.format(v) : (v: number) => formatSize(v, m);
+  });
+  protected readonly chartData = computed<ChartRow[]>(() => {
+    const d = this.data();
+    if (!d) return [];
+    const exact = this.exactRows();
+    const status = this.status();
+    return typeChartRows(d, this.measureShown(), status, (t) =>
+      exact ? { commands: ['/assets'], queryParams: this.link(t.query, status ?? 'all') } : null,
+    );
+  });
+
+  /** The Inactive column appears only when some asset is inactive. */
+  protected readonly tableColumns = computed(() =>
+    DISPOSITION_COLUMNS.filter(
+      (c) => c.key !== 'inactive' || (this.data()?.totals.inactive ?? 0) > 0,
+    ),
+  );
+
+  protected shownCount(t: AssetDataTypeRow): number {
+    return countOf(t.counts, this.status());
   }
 
-  protected matterQuery(m: AssetDataMatterRow): Params {
-    return this.matterLink(m) ? { tab: 'assets' } : this.link(m.query, 'all');
+  protected shownSize(t: AssetDataTypeRow): AssetUnitValue[] {
+    return sizeOf(t, this.status()).filter((s) => s.assets > 0);
   }
 
-  private go(queryParams: Params): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams,
-      queryParamsHandling: 'merge',
-    });
+  protected statusLabel(s: DataStatus): string {
+    return DISPOSITION_COLUMNS.find((c) => c.status === s)?.label ?? 'Assets';
   }
 
-  protected pickType(value: string): void {
-    this.go({ dataType: value || null, dataField: null, dataUnit: null });
+  /** "pending disposition" as a noun for a link's name. */
+  protected statusNoun(s: DataStatus): string {
+    return DISPOSITION_COLUMNS.find((c) => c.status === s)?.noun ?? 'asset';
   }
 
-  protected pickField(value: string): void {
-    this.go({ dataField: value || null, dataUnit: null });
+  protected statusWord(s: DataStatus): string {
+    return this.statusNoun(s);
   }
 
-  protected pickUnit(value: string): void {
-    this.go({ dataUnit: value || null });
+  protected setView(kind: ChartKind): void {
+    this.go({ dv: kind === 'table' ? null : kind, dp: this.selection().period });
+    this.views.save('my-matters.data', rememberedOf(this.selection(), kind));
   }
 
-  protected pickMatter(value: string): void {
-    const id = Number(value);
-    this.matterId.set(Number.isInteger(id) && id > 0 ? id : null);
+  protected pickStatus(status: DataStatus | null): void {
+    this.go({ dstatus: status === null || status === this.status() ? null : status });
   }
 
-  protected pickMonths(value: string): void {
-    const n = Number(value);
-    if ((MONTH_CHOICES as readonly number[]).includes(n)) this.months.set(n);
-  }
+  /** The volume over time is drawn only when assets were added over at least three different months: before that it would be a flat line (README, Q9). */
+  protected readonly showVolume = computed(
+    () =>
+      this.volume.state() === 'ready' &&
+      (this.volume.data()?.points.filter((p) => p.assetsAdded > 0).length ?? 0) >= 3,
+  );
+
+  /**
+   * The headline numbers: total assets, total size (one tile per unit when units meet, so they are never added together), then the four states. A status
+   * tile with something in it is a button that filters the grid; a zero is muted and quiet.
+   */
+  protected readonly tiles = computed<DataTile[]>(() => {
+    const d = this.data();
+    if (!d) return [];
+    const t = d.totals;
+    const sizes = t.size.filter((s) => s.assets > 0);
+    const out: DataTile[] = [
+      {
+        key: 'assets',
+        label: 'Total assets',
+        value: this.count(t.assets),
+        unit: '',
+        note: '',
+        muted: t.assets === 0,
+        status: null,
+      },
+    ];
+    if (sizes.length <= 1) {
+      const one = sizes[0];
+      out.push({
+        key: 'size',
+        label: 'Total size',
+        value: one ? this.fmt(one.value) : 'None',
+        unit: one?.unit ?? '',
+        note: one ? '' : 'no size recorded',
+        muted: !one,
+        status: null,
+      });
+    } else {
+      for (const u of sizes) {
+        out.push({
+          key: `size-${u.unit}`,
+          label: `Total size in ${u.unit}`,
+          value: this.fmt(u.value),
+          unit: '',
+          note: '',
+          muted: false,
+          status: null,
+        });
+      }
+    }
+    const oldest = d.warnings.awaitingDisposition.oldestDays;
+    for (const c of DISPOSITION_COLUMNS) {
+      const n = t[c.key];
+      out.push({
+        key: c.status,
+        label: c.label,
+        value: this.count(n),
+        unit: '',
+        note:
+          c.status === 'pending' && n > 0 && oldest !== undefined
+            ? `oldest ${plural(oldest, 'day', 'days')}`
+            : '',
+        muted: n === 0,
+        status: n > 0 || this.status() === c.status ? c.status : null,
+      });
+    }
+    return out;
+  });
 }

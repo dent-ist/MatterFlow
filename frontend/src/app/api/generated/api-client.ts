@@ -14200,23 +14200,26 @@ export interface IMyMattersClient {
     /**
      * @param scope (optional) 
      * @param role (optional) 
-     * @param assetTypeId (optional) 
-     * @param sizeField (optional) 
-     * @param sizeUnit (optional) 
+     * @param matterIds (optional) 
+     * @param assetTypeIds (optional) 
+     * @param sizeFields (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @return OK
      */
-    getMyMattersData(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined): Observable<AssetDataResponse>;
+    getMyMattersData(scope?: string | undefined, role?: string | undefined, matterIds?: number[] | undefined, assetTypeIds?: number[] | undefined, sizeFields?: string[] | undefined, from?: string | undefined, to?: string | undefined): Observable<AssetDataResponse>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
-     * @param assetTypeId (optional) 
-     * @param sizeField (optional) 
-     * @param sizeUnit (optional) 
-     * @param matterId (optional) 
+     * @param matterIds (optional) 
+     * @param assetTypeIds (optional) 
+     * @param sizeFields (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param months (optional) 
      * @return OK
      */
-    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined, matterId?: number | undefined, months?: number | undefined): Observable<AssetVolumeResponse>;
+    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, matterIds?: number[] | undefined, assetTypeIds?: number[] | undefined, sizeFields?: string[] | undefined, from?: string | undefined, to?: string | undefined, months?: number | undefined): Observable<AssetVolumeResponse>;
     /**
      * @param days (optional) 
      * @param groupBy (optional) 
@@ -14760,12 +14763,14 @@ export class MyMattersClient implements IMyMattersClient {
     /**
      * @param scope (optional) 
      * @param role (optional) 
-     * @param assetTypeId (optional) 
-     * @param sizeField (optional) 
-     * @param sizeUnit (optional) 
+     * @param matterIds (optional) 
+     * @param assetTypeIds (optional) 
+     * @param sizeFields (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @return OK
      */
-    getMyMattersData(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined): Observable<AssetDataResponse> {
+    getMyMattersData(scope?: string | undefined, role?: string | undefined, matterIds?: number[] | undefined, assetTypeIds?: number[] | undefined, sizeFields?: string[] | undefined, from?: string | undefined, to?: string | undefined): Observable<AssetDataResponse> {
         let url_ = this.baseUrl + "/api/v1/my-matters/data?";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
@@ -14775,18 +14780,26 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'role' cannot be null.");
         else if (role !== undefined)
             url_ += "role=" + encodeURIComponent("" + role) + "&";
-        if (assetTypeId === null)
-            throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
-        else if (assetTypeId !== undefined)
-            url_ += "assetTypeId=" + encodeURIComponent("" + assetTypeId) + "&";
-        if (sizeField === null)
-            throw new globalThis.Error("The parameter 'sizeField' cannot be null.");
-        else if (sizeField !== undefined)
-            url_ += "sizeField=" + encodeURIComponent("" + sizeField) + "&";
-        if (sizeUnit === null)
-            throw new globalThis.Error("The parameter 'sizeUnit' cannot be null.");
-        else if (sizeUnit !== undefined)
-            url_ += "sizeUnit=" + encodeURIComponent("" + sizeUnit) + "&";
+        if (matterIds === null)
+            throw new globalThis.Error("The parameter 'matterIds' cannot be null.");
+        else if (matterIds !== undefined)
+            matterIds && matterIds.forEach(item => { url_ += "matterIds=" + encodeURIComponent("" + item) + "&"; });
+        if (assetTypeIds === null)
+            throw new globalThis.Error("The parameter 'assetTypeIds' cannot be null.");
+        else if (assetTypeIds !== undefined)
+            assetTypeIds && assetTypeIds.forEach(item => { url_ += "assetTypeIds=" + encodeURIComponent("" + item) + "&"; });
+        if (sizeFields === null)
+            throw new globalThis.Error("The parameter 'sizeFields' cannot be null.");
+        else if (sizeFields !== undefined)
+            sizeFields && sizeFields.forEach(item => { url_ += "sizeFields=" + encodeURIComponent("" + item) + "&"; });
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -14835,14 +14848,15 @@ export class MyMattersClient implements IMyMattersClient {
     /**
      * @param scope (optional) 
      * @param role (optional) 
-     * @param assetTypeId (optional) 
-     * @param sizeField (optional) 
-     * @param sizeUnit (optional) 
-     * @param matterId (optional) 
+     * @param matterIds (optional) 
+     * @param assetTypeIds (optional) 
+     * @param sizeFields (optional) 
+     * @param from (optional) 
+     * @param to (optional) 
      * @param months (optional) 
      * @return OK
      */
-    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, assetTypeId?: number | undefined, sizeField?: string | undefined, sizeUnit?: string | undefined, matterId?: number | undefined, months?: number | undefined): Observable<AssetVolumeResponse> {
+    getMyMattersDataVolume(scope?: string | undefined, role?: string | undefined, matterIds?: number[] | undefined, assetTypeIds?: number[] | undefined, sizeFields?: string[] | undefined, from?: string | undefined, to?: string | undefined, months?: number | undefined): Observable<AssetVolumeResponse> {
         let url_ = this.baseUrl + "/api/v1/my-matters/data/volume?";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
@@ -14852,22 +14866,26 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'role' cannot be null.");
         else if (role !== undefined)
             url_ += "role=" + encodeURIComponent("" + role) + "&";
-        if (assetTypeId === null)
-            throw new globalThis.Error("The parameter 'assetTypeId' cannot be null.");
-        else if (assetTypeId !== undefined)
-            url_ += "assetTypeId=" + encodeURIComponent("" + assetTypeId) + "&";
-        if (sizeField === null)
-            throw new globalThis.Error("The parameter 'sizeField' cannot be null.");
-        else if (sizeField !== undefined)
-            url_ += "sizeField=" + encodeURIComponent("" + sizeField) + "&";
-        if (sizeUnit === null)
-            throw new globalThis.Error("The parameter 'sizeUnit' cannot be null.");
-        else if (sizeUnit !== undefined)
-            url_ += "sizeUnit=" + encodeURIComponent("" + sizeUnit) + "&";
-        if (matterId === null)
-            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
-        else if (matterId !== undefined)
-            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
+        if (matterIds === null)
+            throw new globalThis.Error("The parameter 'matterIds' cannot be null.");
+        else if (matterIds !== undefined)
+            matterIds && matterIds.forEach(item => { url_ += "matterIds=" + encodeURIComponent("" + item) + "&"; });
+        if (assetTypeIds === null)
+            throw new globalThis.Error("The parameter 'assetTypeIds' cannot be null.");
+        else if (assetTypeIds !== undefined)
+            assetTypeIds && assetTypeIds.forEach(item => { url_ += "assetTypeIds=" + encodeURIComponent("" + item) + "&"; });
+        if (sizeFields === null)
+            throw new globalThis.Error("The parameter 'sizeFields' cannot be null.");
+        else if (sizeFields !== undefined)
+            sizeFields && sizeFields.forEach(item => { url_ += "sizeFields=" + encodeURIComponent("" + item) + "&"; });
+        if (from === null)
+            throw new globalThis.Error("The parameter 'from' cannot be null.");
+        else if (from !== undefined)
+            url_ += "from=" + encodeURIComponent("" + from) + "&";
+        if (to === null)
+            throw new globalThis.Error("The parameter 'to' cannot be null.");
+        else if (to !== undefined)
+            url_ += "to=" + encodeURIComponent("" + to) + "&";
         if (months === null)
             throw new globalThis.Error("The parameter 'months' cannot be null.");
         else if (months !== undefined)
@@ -18090,6 +18108,23 @@ export interface AssetDataMatterRow {
     [key: string]: any;
 }
 
+export interface AssetDataMeasure {
+    key: string;
+    label: string;
+    unit: string;
+
+    [key: string]: any;
+}
+
+export interface AssetDataNumberField {
+    key: string;
+    label: string;
+    isDefault: boolean;
+    unit: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface AssetDataResponse {
     totals: AssetDataCounts;
     matters: AssetDataMatterRow[];
@@ -18097,6 +18132,15 @@ export interface AssetDataResponse {
     warnings: AssetDataWarnings;
     unitsWarning: string | undefined;
     scopeQuery: string;
+    selectedMatters: AssetDataSelectedMatter[];
+
+    [key: string]: any;
+}
+
+export interface AssetDataSelectedMatter {
+    matterId: number;
+    matterRef: string;
+    matterName: string;
 
     [key: string]: any;
 }
@@ -18105,9 +18149,10 @@ export interface AssetDataTypeRow {
     assetTypeId: number;
     name: string;
     counts: AssetDataCounts;
-    sizeFieldKey: string | undefined;
-    sizeUnit: string | undefined;
     query: string;
+    measures: AssetDataMeasure[];
+    numberFields: AssetDataNumberField[];
+    dispositionSizes: AssetDispositionSize[];
 
     [key: string]: any;
 }
@@ -18140,6 +18185,13 @@ export interface AssetDispositionChange {
 
 export interface AssetDispositionHistoryResponse {
     items: AssetDispositionChange[];
+
+    [key: string]: any;
+}
+
+export interface AssetDispositionSize {
+    disposition: string;
+    size: AssetUnitValue[];
 
     [key: string]: any;
 }
@@ -18377,6 +18429,7 @@ export interface AssetUnitValue {
 export interface AssetVolumePoint {
     month: string;
     assets: number;
+    assetsAdded: number;
     held: AssetUnitValue[];
     added: AssetUnitValue[];
     removed: AssetUnitValue[];

@@ -9,9 +9,9 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>
 /// Data volume over time (epic #851, issue #871): the cumulative size of the scope's assets by the month they were created, with disposed assets leaving at the month their
 /// disposition changed. Derived from the assets and the typed index with four SQL aggregates; there is no snapshot table, and the response says so. The scope is that of the Data tab
-/// (<see cref="AssetScopeResolver"/>), so the sensitive-matter rule and the manager scope apply, and the last month's held size plus the disposed size equals the Data tab's total.
+/// (<see cref="AssetSelectionResolver"/>), so the sensitive-matter rule and the manager scope apply, and the last month's held size plus the disposed size equals the Data tab's total.
 /// </summary>
-public sealed class AssetVolumeService(AssetScopeResolver scopes, AssetAggregates aggregates, AssetMeasureResolver measures, IClock clock)
+public sealed class AssetVolumeService(AssetSelectionResolver selections, AssetAggregates aggregates, IClock clock)
 {
     public const int DefaultMonths = 24;
 
@@ -21,18 +21,12 @@ public sealed class AssetVolumeService(AssetScopeResolver scopes, AssetAggregate
     public async Task<Result<AssetVolumeResponse>> GetAsync(AssetVolumeQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var resolved = scopes.Resolve(query.Scope, query.Role, query.MatterId is { } matterId ? [matterId] : null);
-        if (resolved.IsFailure)
-            return resolved.Error!;
+        var selection = await selections.ResolveAsync(query.Scope, query.Role, query.MatterIds, query.AssetTypeIds, query.SizeFields, query.From, query.To, ct);
+        if (selection.IsFailure)
+            return selection.Error!;
 
-        var measure = await measures.ResolveAsync(resolved.Value.Assets(), query.AssetTypeId, query.SizeField, query.SizeUnit, ct);
-        if (measure.IsFailure)
-            return measure.Error!;
-
-        var assets = measure.Value.Assets;
-        var source = measure.Value.Source;
-        var measured = source.FieldKey is null && source.AssetTypeId is not null ? new AssetMeasureSource(source.AssetTypeId, "\u0001none", string.Empty) : source;
-        var valued = aggregates.Valued(assets, measured);
+        var assets = selection.Value.Assets;
+        var valued = aggregates.Valued(assets, selection.Value.Plan);
         var disposed = AssetDisposition.Disposed;
 
         var createdCounts = await assets.GroupBy(a => new { a.CreatedAtUtc.Year, a.CreatedAtUtc.Month }).Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() }).ToListAsync(ct);
@@ -91,6 +85,7 @@ public sealed class AssetVolumeService(AssetScopeResolver scopes, AssetAggregate
             points.Add(new AssetVolumePoint(
                 string.Create(CultureInfo.InvariantCulture, $"{m / 12:0000}-{m % 12 + 1:00}"),
                 heldAssets,
+                createdBy.GetValueOrDefault(m),
                 [.. units.Select(u => new AssetUnitValue(u, heldSum[u], heldValued[u]))],
                 Row(added),
                 Row(removed)));

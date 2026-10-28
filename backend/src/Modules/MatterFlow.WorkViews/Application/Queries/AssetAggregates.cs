@@ -77,6 +77,36 @@ public sealed class AssetAggregates(DbContext db, IFormIndexReader index)
                select new ValuedAsset { Asset = a, Unit = t.SizeUnit!, Value = i.ValueNumber!.Value };
     }
 
+    /// <summary>
+    /// The assets that have a value of a measured number field, for a plan of the Data Area: the chosen fields of the types that named some, and the default size field of every other
+    /// type (one statement; the parts are joined to the typed index by seeks).
+    /// </summary>
+    public IQueryable<ValuedAsset> Valued(IQueryable<Asset> assets, AssetMeasurePlan plan)
+    {
+        var numbers = index.Rows(FormValueOwnerKind.Asset).Where(i => i.ValueNumber != null);
+        var overridden = plan.OverriddenTypes.ToArray();
+        var types = db.Set<AssetType>().AsNoTracking().Where(t => t.SizeFieldKey != null && t.SizeUnit != null);
+        if (overridden.Length > 0)
+            types = types.Where(t => !overridden.Contains(t.Id));
+
+        var valued = from a in assets
+                     join t in types on a.AssetTypeId equals t.Id
+                     join i in numbers on new { Id = (long)a.Id, Key = t.SizeFieldKey! } equals new { Id = i.OwnerId, Key = i.FieldKey }
+                     select new ValuedAsset { Asset = a, Unit = t.SizeUnit!, Value = i.ValueNumber!.Value };
+        foreach (var field in plan.Fields)
+        {
+            var key = field.FieldKey!;
+            var unit = field.Unit ?? string.Empty;
+            var typeId = field.AssetTypeId;
+            valued = valued.Concat(
+                from a in assets.Where(a => a.AssetTypeId == typeId)
+                join i in numbers.Where(i => i.FieldKey == key) on (long)a.Id equals i.OwnerId
+                select new ValuedAsset { Asset = a, Unit = unit, Value = i.ValueNumber!.Value });
+        }
+
+        return valued;
+    }
+
     /// <summary>The assets per group (one statement).</summary>
     public async Task<List<AssetCountRow>> CountsAsync(IQueryable<Asset> assets, AssetGroupKind kind, string? fieldKey, CancellationToken ct)
     {

@@ -164,10 +164,11 @@ export class MatterDataBlock {
       this.api.getMyMattersDataVolume(
         'mine',
         undefined,
+        [this.matterId()],
         undefined,
         undefined,
         undefined,
-        this.matterId(),
+        undefined,
         MONTHS,
       ),
     { enabled: () => this.allowed() && this.row() !== null },

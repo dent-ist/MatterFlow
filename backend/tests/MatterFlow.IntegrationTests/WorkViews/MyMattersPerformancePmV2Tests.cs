@@ -11,7 +11,7 @@ namespace MatterFlow.IntegrationTests.WorkViews;
 
 /// <summary>
 /// PM v2 (epic #851, issue #887, PV-36): the Breakdown, Data, volume, asset report, section and export reads against the harness size of this class (200 matters, 24,000 tasks,
-/// 100,000 assets) plus <b>200,000 <c>CustomFieldIndex</c> asset rows</b> (twice the 100,000 the plan names: a number "size_gb" and a select "platform" per asset, as a published
+/// 100,000 assets) plus <b>300,000 <c>CustomFieldIndex</c> asset rows</b> (three times the 100,000 the plan names: two numbers, "size_gb" (GB) and "copies" (Items), and a select "platform" per asset, as a published
 /// form with a designated size field produces), twelve task types and five on-hold reasons. Plan budget: p95 300 ms for Breakdown and Data, 500 ms for a report run; like the rest of
 /// the class the tests fail at twice that so a shared build machine does not make them flaky, and write the real numbers and plans to the output (recorded in
 /// docs/ux/pm-review/performance.md). Plans: the typed index is read by seeks only, no statement contains JSON_VALUE, and the Task table is read by seeks for a manager of few matters.
@@ -20,6 +20,7 @@ public sealed partial class MyMattersPerformanceTests
 {
     private const int BreakdownDataBudgetMs = 300;
     private const int ReportBudgetMs = 500;
+    private const int DataSelectionBudgetMs = 600; // the heavy shapes of the Data Area (issue #931): the budget the owner accepted on 2026-10-27 for 70,000 assets and more
     private const int ExportBudgetMs = 1500; // a file of up to 10,000 rows (17 pages here): no list budget applies, a download is not a screen
     private const int CeilingFactor = 2;
 
@@ -46,6 +47,7 @@ public sealed partial class MyMattersPerformanceTests
         await kit.PublishFormAsync(
             _workspaceType,
             AssetTestKit.Field("size_gb", "NUMBER"),
+            AssetTestKit.Field("copies", "NUMBER"),
             AssetTestKit.Field("platform", "SELECT", """ "options":[{"key":"prod","label":"prod"},{"key":"test","label":"test"},{"key":"dev","label":"dev"},{"key":"archive","label":"archive"},{"key":"staging","label":"staging"}]"""));
         var definition = (await OkAsync(await _h.Admin.GetAsync($"/api/v1/forms/by-owner?ownerKind=AssetType&ownerId={_workspaceType}"))).GetProperty("formDefinitionId").GetInt32();
         var current = await OkAsync(await _h.Admin.GetAsync($"/api/v1/asset-types/{_workspaceType}"));
@@ -56,7 +58,7 @@ public sealed partial class MyMattersPerformanceTests
             db.Database.SetCommandTimeout(600);
             await db.Database.ExecuteSqlRawAsync(PmV2SeedSql(_workspaceType, definition));
         });
-        (await _h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.CustomFieldIndex WHERE OwnerKind = 'ASSET'")).ShouldBe(200_000);
+        (await _h.ScalarAsync("SELECT COUNT(*) AS [Value] FROM dbo.CustomFieldIndex WHERE OwnerKind = 'ASSET'")).ShouldBe(300_000);
         _factory.InvalidateAll();
         _pmV2Seeded = true;
     }
@@ -72,6 +74,8 @@ public sealed partial class MyMattersPerformanceTests
                 WHERE DisplayName LIKE N'Perf asset %';
                 INSERT dbo.CustomFieldIndex (OwnerKind, OwnerId, FormDefinitionId, FieldKey, ValueNumber)
                 SELECT 'ASSET', AssetId, {definition}, 'size_gb', CAST((AssetId % 500) + 1 AS DECIMAL(19, 4)) FROM dbo.Asset WHERE AssetTypeId = {workspaceType};
+                INSERT dbo.CustomFieldIndex (OwnerKind, OwnerId, FormDefinitionId, FieldKey, ValueNumber)
+                SELECT 'ASSET', AssetId, {definition}, 'copies', CAST((AssetId % 7) + 1 AS DECIMAL(19, 4)) FROM dbo.Asset WHERE AssetTypeId = {workspaceType};
                 INSERT dbo.CustomFieldIndex (OwnerKind, OwnerId, FormDefinitionId, FieldKey, ValueText)
                 SELECT 'ASSET', AssetId, {definition}, 'platform', CASE AssetId % 5 WHEN 0 THEN N'prod' WHEN 1 THEN N'test' WHEN 2 THEN N'dev' WHEN 3 THEN N'archive' ELSE N'staging' END FROM dbo.Asset WHERE AssetTypeId = {workspaceType};
 
@@ -94,6 +98,8 @@ public sealed partial class MyMattersPerformanceTests
     private enum PmV2Kind
     {
         BreakdownOrData,
+        /// <summary>The Data Area with a selection (matters, period, several size fields): the heavy shapes of issue #931, accepted at 600 ms p95 at 70,000 assets and more (owner, 2026-10-27).</summary>
+        DataSelection,
         Report,
         Queue,
         Other,
@@ -117,8 +123,14 @@ public sealed partial class MyMattersPerformanceTests
             Get("breakdown (per task type)", PmV2Kind.BreakdownOrData, "/api/v1/my-matters/breakdown?view=types" + s),
             Get("breakdown (on hold only)", PmV2Kind.BreakdownOrData, "/api/v1/my-matters/breakdown?status=onHold" + s),
             Get("data", PmV2Kind.BreakdownOrData, "/api/v1/my-matters/data" + q),
-            Get("data (size field of one type)", PmV2Kind.BreakdownOrData, $"/api/v1/my-matters/data?assetTypeId={_workspaceType}&sizeField=size_gb&sizeUnit=GB" + s),
+            Get("data (size field of one type)", PmV2Kind.BreakdownOrData, $"/api/v1/my-matters/data?assetTypeIds={_workspaceType}&sizeFields={_workspaceType}:size_gb" + s),
             Get("data volume (24 months)", PmV2Kind.BreakdownOrData, "/api/v1/my-matters/data/volume" + q),
+            new("data (20 matters chosen)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data?" + Chosen(http, scope, matters: 20))),
+            new("data (period of one year)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data?" + Chosen(http, scope, period: true))),
+            new("data (two size fields, GB and Items)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data?" + Chosen(http, scope, fields: true))),
+            new("data (everything chosen)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data?" + Chosen(http, scope, matters: 20, period: true, fields: true))),
+            new("data volume (20 matters, two size fields)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data/volume?" + Chosen(http, scope, matters: 20, fields: true))),
+            new("data volume (period, 60 months)", PmV2Kind.DataSelection, http => http.GetAsync("/api/v1/my-matters/data/volume?months=60&" + Chosen(http, scope, period: true))),
             Post("report: count by disposition", ReportDefinition(_workspaceType, scope: Scope(scope))),
             Post("report: sum of size by disposition", ReportDefinition(_workspaceType, "sum", numberField: "size_gb", scope: Scope(scope))),
             Post("report: sum of size by matter", ReportDefinition(_workspaceType, "sum", "matter", "size_gb", Scope(scope))),
@@ -135,6 +147,37 @@ public sealed partial class MyMattersPerformanceTests
             Get("task queue: export (CSV, 1,700 on-hold tasks)", PmV2Kind.Queue, "/api/v1/task-queue/export?format=csv&status=ON_HOLD"),
             Get("my views", PmV2Kind.Other, "/api/v1/me/views"),
         ];
+    }
+
+    private readonly Dictionary<HttpClient, int[]> _chosenMatters = [];
+
+    /// <summary>Reads, for each client, the ids of up to 20 matters in its own scope (the Data call itself says which they are), so the "matters chosen" shapes are inside the scope.</summary>
+    private async Task PrepareChosenAsync(params (HttpClient Client, string Scope)[] clients)
+    {
+        foreach (var (client, scope) in clients)
+        {
+            var data = await OkAsync(await client.GetAsync("/api/v1/my-matters/data" + (scope.Length == 0 ? string.Empty : "?scope=" + scope)));
+            _chosenMatters[client] = [.. data.GetProperty("matters").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32()).Take(20)];
+        }
+    }
+
+    /// <summary>The query string of a Data Area selection: some matters, a one-year period, and two size fields of the workspace type (GB, and Items).</summary>
+    private string Chosen(HttpClient http, string scope, int matters = 0, bool period = false, bool fields = false)
+    {
+        var parts = new List<string>();
+        if (scope.Length > 0)
+            parts.Add("scope=" + scope);
+        if (matters > 0 && _chosenMatters.TryGetValue(http, out var ids))
+            parts.AddRange(ids.Take(matters).Select(i => "matterIds=" + i));
+        if (period)
+        {
+            var today = DateTime.UtcNow.Date;
+            parts.Add($"from={today.AddYears(-1):yyyy-MM-dd}&to={today:yyyy-MM-dd}");
+        }
+
+        if (fields)
+            parts.Add($"sizeFields={_workspaceType}:size_gb&sizeFields={_workspaceType}:copies:Items");
+        return string.Join('&', parts);
     }
 
     private static string Scope(string scope) => scope.Length == 0 ? "mine" : scope;
@@ -179,18 +222,20 @@ public sealed partial class MyMattersPerformanceTests
         response.IsSuccessStatusCode.ShouldBeTrue($"{call.Name}: {(int)response.StatusCode} {body[..Math.Min(body.Length, 300)]}");
     }
 
-    private static int BudgetOf(PmV2Call call) => call.Name.Contains("export", StringComparison.Ordinal) ? ExportBudgetMs : call.Kind switch { PmV2Kind.Report => ReportBudgetMs, _ => BreakdownDataBudgetMs };
+    private static int BudgetOf(PmV2Call call) => call.Name.Contains("export", StringComparison.Ordinal) ? ExportBudgetMs : call.Kind switch { PmV2Kind.Report => ReportBudgetMs, PmV2Kind.DataSelection => DataSelectionBudgetMs, _ => BreakdownDataBudgetMs };
 
     [Fact]
-    public async Task Breakdown_data_volume_and_the_reports_stay_within_the_budget_at_100000_assets_and_200000_index_rows()
+    public async Task Breakdown_data_volume_and_the_reports_stay_within_the_budget_at_100000_assets_and_300000_index_rows()
     {
         await SeedPmV2Async();
         await LoadTypeIdsAsync();
         foreach (var client in new[] { _pm50, _heavy })
             await OkAsync(await client.GetAsync("/api/v1/my-matters/activity"));
 
+        var admin = AdminAll();
+        await PrepareChosenAsync((_pm50, string.Empty), (_heavy, string.Empty), (admin, "all"));
         var failures = new List<string>();
-        foreach (var (who, client, scope) in new[] { ("pm50 (50 matters, 25,000 assets)", _pm50, string.Empty), ("heavy (145 matters, 72,500 assets)", _heavy, string.Empty), ("administrator, All matters (100,000 assets)", AdminAll(), "all") })
+        foreach (var (who, client, scope) in new[] { ("pm50 (50 matters, 25,000 assets)", _pm50, string.Empty), ("heavy (145 matters, 72,500 assets)", _heavy, string.Empty), ("administrator, All matters (100,000 assets)", admin, "all") })
         {
             output.WriteLine($"--- {who}");
             foreach (var call in PmV2Calls(scope))
@@ -214,6 +259,7 @@ public sealed partial class MyMattersPerformanceTests
         foreach (var client in new[] { _pm5, _pm50, _heavy })
             await OkAsync(await client.GetAsync("/api/v1/my-matters/activity"));
 
+        await PrepareChosenAsync((_pm5, string.Empty), (_pm50, string.Empty), (_heavy, string.Empty));
         var small = PmV2Calls(string.Empty);
         for (var i = 0; i < small.Length; i++)
         {
@@ -238,6 +284,7 @@ public sealed partial class MyMattersPerformanceTests
     {
         await SeedPmV2Async();
         await LoadTypeIdsAsync();
+        await PrepareChosenAsync((_pm5, string.Empty), (_pm50, string.Empty), (_heavy, string.Empty));
         var failures = new List<string>();
         foreach (var (who, client, strictTasks) in new[] { ("pm5", _pm5, true), ("pm50", _pm50, false), ("heavy", _heavy, false) })
         {

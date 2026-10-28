@@ -9840,29 +9840,51 @@
             }
           },
           {
-            "name": "assetTypeId",
+            "name": "matterIds",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
-            "name": "sizeField",
+            "name": "assetTypeIds",
             "in": "query",
             "schema": {
-              "maxLength": 64,
-              "minLength": 0,
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
-            "name": "sizeUnit",
+            "name": "sizeFields",
             "in": "query",
             "schema": {
-              "maxLength": 10,
-              "minLength": 0,
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           }
         ],
@@ -9906,37 +9928,51 @@
             }
           },
           {
-            "name": "assetTypeId",
+            "name": "matterIds",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
-            "name": "sizeField",
+            "name": "assetTypeIds",
             "in": "query",
             "schema": {
-              "maxLength": 64,
-              "minLength": 0,
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
-            "name": "sizeUnit",
+            "name": "sizeFields",
             "in": "query",
             "schema": {
-              "maxLength": 10,
-              "minLength": 0,
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
-            "name": "matterId",
+            "name": "from",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
             }
           },
           {
@@ -13314,6 +13350,51 @@
           }
         }
       },
+      "AssetDataMeasure": {
+        "required": [
+          "key",
+          "label",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "AssetDataNumberField": {
+        "required": [
+          "key",
+          "label",
+          "isDefault",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AssetDataResponse": {
         "required": [
           "totals",
@@ -13321,7 +13402,8 @@
           "types",
           "warnings",
           "unitsWarning",
-          "scopeQuery"
+          "scopeQuery",
+          "selectedMatters"
         ],
         "type": "object",
         "properties": {
@@ -13351,6 +13433,32 @@
           },
           "scopeQuery": {
             "type": "string"
+          },
+          "selectedMatters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetDataSelectedMatter"
+            }
+          }
+        }
+      },
+      "AssetDataSelectedMatter": {
+        "required": [
+          "matterId",
+          "matterRef",
+          "matterName"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterRef": {
+            "type": "string"
+          },
+          "matterName": {
+            "type": "string"
           }
         }
       },
@@ -13359,9 +13467,10 @@
           "assetTypeId",
           "name",
           "counts",
-          "sizeFieldKey",
-          "sizeUnit",
-          "query"
+          "query",
+          "measures",
+          "numberFields",
+          "dispositionSizes"
         ],
         "type": "object",
         "properties": {
@@ -13375,20 +13484,26 @@
           "counts": {
             "$ref": "#/components/schemas/AssetDataCounts"
           },
-          "sizeFieldKey": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "sizeUnit": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "query": {
             "type": "string"
+          },
+          "measures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetDataMeasure"
+            }
+          },
+          "numberFields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetDataNumberField"
+            }
+          },
+          "dispositionSizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetDispositionSize"
+            }
           }
         }
       },
@@ -13480,6 +13595,24 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AssetDispositionChange"
+            }
+          }
+        }
+      },
+      "AssetDispositionSize": {
+        "required": [
+          "disposition",
+          "size"
+        ],
+        "type": "object",
+        "properties": {
+          "disposition": {
+            "type": "string"
+          },
+          "size": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssetUnitValue"
             }
           }
         }
@@ -14429,6 +14562,7 @@
         "required": [
           "month",
           "assets",
+          "assetsAdded",
           "held",
           "added",
           "removed"
@@ -14439,6 +14573,10 @@
             "type": "string"
           },
           "assets": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assetsAdded": {
             "type": "integer",
             "format": "int32"
           },

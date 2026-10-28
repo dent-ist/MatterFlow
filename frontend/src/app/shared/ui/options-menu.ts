@@ -82,6 +82,11 @@ import {
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-2, 0 4px 14px rgb(0 0 0 / 0.18));
     }
+    /* A menu that opens under a control at the left of a bar (the Data Area's selection bar) grows to the right, so it never leaves the screen. */
+    .om--start .om__panel {
+      right: auto;
+      left: 0;
+    }
     /* A menu that holds whole controls (the phone's header menu): as wide as the screen allows, so a full-width switch fits. */
     .om--wide .om__panel {
       grid-template-columns: minmax(0, 1fr);
@@ -97,7 +102,13 @@ import {
     }
   `,
   template: `
-    <details #details data-options [class.om--wide]="wide()" (toggle)="toggled($event)">
+    <details
+      #details
+      data-options
+      [class.om--wide]="wide()"
+      [class.om--start]="align() === 'start'"
+      (toggle)="toggled($event)"
+    >
       <summary
         class="om__summary"
         data-options-trigger
@@ -131,6 +142,8 @@ export class OptionsMenu {
   readonly icon = input('pi-sliders-h');
   /** The accessible name when the default sentence does not fit ("Focus, 2 task types set"); it must start with the visible words. */
   readonly triggerName = input('');
+  /** Which edge of the button the popover lines up with: the right edge (default, the menu grows to the left) or the left edge (a control at the start of a bar). */
+  readonly align = input<'end' | 'start'>('end');
   /** The popover is as wide as the screen allows (it holds whole controls, such as a full-width switch). */
   readonly wide = input(false);
   /** The popover was opened (a menu that works from a draft starts the draft here). */

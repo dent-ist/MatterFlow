@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { Segmented } from '../ui/segmented';
 import { BarChart } from './bar-chart';
 import { TYPE_STYLES } from './chart-palette';
 import { ChartTable } from './chart-table';
@@ -16,16 +17,15 @@ export const MAX_BARS = 25;
  */
 @Component({
   selector: 'mf-chart-panel',
-  imports: [BarChart, ChartTable, PieChart],
+  imports: [BarChart, ChartTable, PieChart, Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="panel" data-chart-panel>
       <div class="bar-row">
-        <div class="group" role="group" aria-label="Show the result as">
+        <div mfSegmented class="group" role="group" aria-label="Show the result as">
           <button
             type="button"
             class="mf-btn"
-            [class.mf-btn--primary]="kind() === 'table'"
             [attr.aria-pressed]="kind() === 'table'"
             (click)="kind.set('table')"
             data-show-table
@@ -35,18 +35,6 @@ export const MAX_BARS = 25;
           <button
             type="button"
             class="mf-btn"
-            [class.mf-btn--primary]="kind() === 'pie'"
-            [attr.aria-pressed]="kind() === 'pie'"
-            [disabled]="!chartable()"
-            (click)="kind.set('pie')"
-            data-show-pie
-          >
-            Pie
-          </button>
-          <button
-            type="button"
-            class="mf-btn"
-            [class.mf-btn--primary]="kind() === 'bar'"
             [attr.aria-pressed]="kind() === 'bar'"
             [disabled]="!chartable()"
             (click)="kind.set('bar')"
@@ -54,7 +42,19 @@ export const MAX_BARS = 25;
           >
             Bar
           </button>
+          <button
+            type="button"
+            class="mf-btn"
+            [attr.aria-pressed]="kind() === 'pie'"
+            [disabled]="!chartable()"
+            (click)="kind.set('pie')"
+            data-show-pie
+          >
+            Pie
+          </button>
         </div>
+        <!-- What the page adds to the toolbar (the Data Area's "chart shows" switch). -->
+        <ng-content select="[mfChartControls]" />
         @if (!chartable() && rows().length > 0) {
           <p class="note" data-chart-unavailable>
             Charts need values of zero or more and at least one value above zero. The table shows
@@ -138,11 +138,6 @@ export const MAX_BARS = 25;
         flex-wrap: wrap;
         align-items: center;
         gap: var(--mf-s2) var(--mf-s3);
-      }
-      .group {
-        display: inline-flex;
-        flex-wrap: wrap;
-        gap: var(--mf-s1);
       }
       .note {
         margin: 0;

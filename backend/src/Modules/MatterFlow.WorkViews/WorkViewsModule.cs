@@ -37,6 +37,7 @@ public static class WorkViewsModule
         services.AddScoped<AssetAggregates>();
         services.AddScoped<AssetDataService>();
         services.AddScoped<AssetMeasureResolver>();
+        services.AddScoped<AssetSelectionResolver>();
         services.AddScoped<AssetVolumeService>();
         services.AddScoped<AssetReportRunService>();
         services.RemoveAll<IOrganizationTaskCounts>();

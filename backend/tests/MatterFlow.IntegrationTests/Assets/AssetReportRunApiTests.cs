@@ -214,7 +214,7 @@ public sealed class AssetReportRunApiTests(SqlServerFixture sql) : IAsyncLifetim
     [Fact]
     public async Task Reports_and_the_data_tab_agree_on_the_same_assets()
     {
-        var data = await OkAsync(await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?assetTypeId={_gbType}"));
+        var data = await OkAsync(await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?assetTypeIds={_gbType}"));
         var report = await RunAsync(_fx.PmFew, Def(_gbType, "sum", "matter"));
         data.GetProperty("totals").GetProperty("assets").GetInt32().ShouldBe(report.GetProperty("assets").GetInt32());
         data.GetProperty("totals").GetProperty("size")[0].GetProperty("value").GetDecimal().ShouldBe(Cell(report.GetProperty("totals"), 1)!.Value);

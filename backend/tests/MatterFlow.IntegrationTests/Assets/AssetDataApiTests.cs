@@ -134,7 +134,7 @@ public sealed class AssetDataApiTests(SqlServerFixture sql) : IAsyncLifetime
         await _kit.CreateAssetAsync(m2, gbType, "WS without size");
 
         // Only GB: a single unit stays as it is and there is no warning.
-        var gbOnly = await DataAsync(_fx.PmFew, $"?assetTypeId={gbType}");
+        var gbOnly = await DataAsync(_fx.PmFew, $"?assetTypeIds={gbType}");
         gbOnly.GetProperty("unitsWarning").ValueKind.ShouldBe(JsonValueKind.Null);
         var gbTotal = gbOnly.GetProperty("totals").GetProperty("size").EnumerateArray().Single();
         gbTotal.GetProperty("unit").GetString().ShouldBe("GB");
@@ -148,18 +148,126 @@ public sealed class AssetDataApiTests(SqlServerFixture sql) : IAsyncLifetime
         sizes["GB"].ShouldBe(19.5m);
         sizes["Items"].ShouldBe(12000m);
         var types = both.GetProperty("types").EnumerateArray().ToDictionary(t => t.GetProperty("name").GetString()!);
-        types["Workspace"].GetProperty("sizeFieldKey").GetString().ShouldBe("size_gb");
+        types["Workspace"].GetProperty("measures").EnumerateArray().Single().GetProperty("key").GetString().ShouldBe("size_gb");
         types["Workspace"].GetProperty("counts").GetProperty("assets").GetInt32().ShouldBe(4);
 
         // The PM overrides the size field of one type in the view: MB field of the same type.
-        var overridden = await DataAsync(_fx.PmFew, $"?assetTypeId={gbType}&sizeField=other_mb&sizeUnit=MB");
+        var overridden = await DataAsync(_fx.PmFew, $"?assetTypeIds={gbType}&sizeFields={gbType}:other_mb:MB");
         var mb = overridden.GetProperty("totals").GetProperty("size").EnumerateArray().Single();
         mb.GetProperty("unit").GetString().ShouldBe("MB");
         mb.GetProperty("value").GetDecimal().ShouldBe(2048m);
 
-        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data?sizeField=size_gb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // needs the type
-        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?assetTypeId={gbType}&sizeField=nope&sizeUnit=GB")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?assetTypeId={gbType}&sizeField=other_mb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // unit missing
+        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data?sizeFields=size_gb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // not typeId:key
+        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?sizeFields={gbType}:nope:GB")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?sizeFields={gbType}:other_mb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // unit missing
+        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?sizeFields={gbType}:other_mb:parsecs")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data?assetTypeIds=999999")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data?from=2026-05-02&to=2026-05-01")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Matters_asset_types_and_a_period_narrow_every_number_and_a_matter_outside_the_scope_is_left_out_without_a_word()
+    {
+        var gbType = (await _kit.CreateTypeAsync("Workspace")).GetProperty("assetTypeId").GetInt32();
+        var itemType = (await _kit.CreateTypeAsync("Production")).GetProperty("assetTypeId").GetInt32();
+        await _kit.PublishFormAsync(gbType, AssetTestKit.Field("size_gb", "NUMBER"), AssetTestKit.Field("other_mb", "NUMBER"));
+        await _kit.PublishFormAsync(itemType, AssetTestKit.Field("pages", "NUMBER"));
+        await SetSizeAsync(gbType, "size_gb", "GB");
+        await SetSizeAsync(itemType, "pages", "Items");
+
+        var m1 = _fx.Matters["few1"];
+        var m2 = _fx.Matters["few2"];
+        var b1 = _fx.Assets["few1"].Count; // the fixture's own assets (no size); the test adds three to PmFew's matters and one elsewhere
+        var b2 = _fx.Assets["few2"].Count;
+        var b3 = _fx.Assets.TryGetValue("primaryOnly", out var primaryOnly) ? primaryOnly.Count : 0;
+        var elsewhere = _fx.Matters["primaryOnly"]; // PmFew does not manage it
+        await _kit.CreateAssetAsync(m1, gbType, "WS 1", """{"size_gb":10,"other_mb":2048}""");
+        var ws2 = (await _kit.CreateAssetAsync(m2, gbType, "WS 2", """{"size_gb":4}""")).GetProperty("assetId").GetInt32();
+        await _kit.CreateAssetAsync(m2, itemType, "Prod 1", """{"pages":12000}""");
+        await _kit.CreateAssetAsync(elsewhere, gbType, "Not mine", """{"size_gb":999}""");
+
+        static int Assets(JsonElement data) => data.GetProperty("totals").GetProperty("assets").GetInt32();
+        static int[] Selected(JsonElement data) => [.. data.GetProperty("selectedMatters").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32()).Order()];
+
+        // Nothing chosen: everything of the scope. Several matters, one matter, a type: each narrows the same call.
+        Assets(await DataAsync(_fx.PmFew)).ShouldBe(b1 + b2 + 3);
+        Selected(await DataAsync(_fx.PmFew)).ShouldBeEmpty();
+        var both = await DataAsync(_fx.PmFew, $"?matterIds={m1}&matterIds={m2}");
+        Assets(both).ShouldBe(b1 + b2 + 3);
+        Selected(both).ShouldBe(new[] { m1, m2 }.Order());
+        var one = await DataAsync(_fx.PmFew, $"?matterIds={m2}");
+        Assets(one).ShouldBe(b2 + 2);
+        one.GetProperty("matters").GetArrayLength().ShouldBe(1);
+        var typed = await DataAsync(_fx.PmFew, $"?matterIds={m2}&assetTypeIds={itemType}");
+        Assets(typed).ShouldBe(1);
+        typed.GetProperty("types").EnumerateArray().Single().GetProperty("name").GetString().ShouldBe("Production");
+        Assets(await DataAsync(_fx.PmFew, $"?assetTypeIds={gbType}&assetTypeIds={itemType}")).ShouldBe(3);
+
+        // A matter the person does not manage, and one that does not exist, are left out: no total, no row, no name, no error.
+        var withForeign = await DataAsync(_fx.PmFew, $"?matterIds={m1}&matterIds={elsewhere}&matterIds=2147000001");
+        Assets(withForeign).ShouldBe(b1 + 1);
+        Selected(withForeign).ShouldBe([m1]);
+        withForeign.GetRawText().ShouldNotContain("Not mine");
+        var onlyForeign = await DataAsync(_fx.PmFew, $"?matterIds={elsewhere}");
+        Assets(onlyForeign).ShouldBe(0);
+        onlyForeign.GetProperty("matters").GetArrayLength().ShouldBe(0);
+        onlyForeign.GetProperty("types").GetArrayLength().ShouldBe(0);
+        Selected(onlyForeign).ShouldBeEmpty();
+        (await DataAsync(_fx.PmFew, "?matterIds=2147000001")).GetRawText().ShouldBe(onlyForeign.GetRawText()); // a hidden matter answers like a missing one
+        Assets(await DataAsync(_fx.PmNone, $"?matterIds={m1}")).ShouldBe(0); // nothing visible at all
+        (await DataAsync(_fx.Director, $"?scope=all&matterIds={elsewhere}")).GetProperty("totals").GetProperty("assets").GetInt32().ShouldBe(b3 + 1); // a person who may see it does
+        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data?matterIds=abc")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // The period is when the assets were added (today, here): it narrows counts and sizes; a start after the end is refused.
+        var today = DateTime.UtcNow.Date;
+        Assets(await DataAsync(_fx.PmFew, $"?from={today.AddDays(-1):yyyy-MM-dd}&to={today.AddDays(1):yyyy-MM-dd}")).ShouldBe(b1 + b2 + 3);
+        Assets(await DataAsync(_fx.PmFew, $"?from={today.AddDays(1):yyyy-MM-dd}")).ShouldBe(0);
+        Assets(await DataAsync(_fx.PmFew, $"?to={today.AddDays(-1):yyyy-MM-dd}")).ShouldBe(0);
+        Assets(await DataAsync(_fx.PmFew, $"?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}")).ShouldBe(b1 + b2 + 3); // the last day is included
+
+        // Two size fields of one type: both count, MB and GB are added up and shown in GB; the other type keeps its own default.
+        var fields = await DataAsync(_fx.PmFew, $"?sizeFields={gbType}:size_gb&sizeFields={gbType}:other_mb:MB");
+        var sizes = fields.GetProperty("totals").GetProperty("size").EnumerateArray().ToDictionary(x => x.GetProperty("unit").GetString()!, x => x.GetProperty("value").GetDecimal());
+        sizes["GB"].ShouldBe(16m); // 10 + 4 + 2048 MB (2 GB)
+        sizes["Items"].ShouldBe(12000m);
+        var workspace = fields.GetProperty("types").EnumerateArray().Single(t => t.GetProperty("name").GetString() == "Workspace");
+        workspace.GetProperty("measures").EnumerateArray().Select(x => x.GetProperty("key").GetString()).Order().ShouldBe(["other_mb", "size_gb"]);
+        workspace.GetProperty("numberFields").EnumerateArray().Select(x => x.GetProperty("key").GetString()).Order().ShouldBe(["other_mb", "size_gb"]);
+        workspace.GetProperty("numberFields").EnumerateArray().Single(x => x.GetProperty("isDefault").GetBoolean()).GetProperty("key").GetString().ShouldBe("size_gb");
+        // A size field of a type that is not among the chosen types is ignored; a field must be a number field of the type's published form.
+        Assets(await DataAsync(_fx.PmFew, $"?assetTypeIds={itemType}&sizeFields={gbType}:size_gb")).ShouldBe(1);
+        (await _fx.PmFew.GetAsync($"/api/v1/my-matters/data?sizeFields={itemType}:size_gb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // The size of one disposition is in the type row, so a view of one status can show its own size.
+        await SetAsync(ws2, "INACTIVE");
+        var byStatus = (await DataAsync(_fx.PmFew)).GetProperty("types").EnumerateArray().Single(t => t.GetProperty("name").GetString() == "Workspace").GetProperty("dispositionSizes").EnumerateArray()
+            .ToDictionary(x => x.GetProperty("disposition").GetString()!, x => x.GetProperty("size").EnumerateArray().Single().GetProperty("value").GetDecimal());
+        byStatus["INACTIVE"].ShouldBe(4m);
+        byStatus["ACTIVE"].ShouldBe(10m);
+    }
+
+    [Fact]
+    public async Task The_volume_follows_the_same_selection()
+    {
+        var type = (await _kit.CreateTypeAsync("Workspace")).GetProperty("assetTypeId").GetInt32();
+        await _kit.PublishFormAsync(type, AssetTestKit.Field("size_gb", "NUMBER"));
+        await SetSizeAsync(type, "size_gb", "GB");
+        var m1 = _fx.Matters["few1"];
+        var m2 = _fx.Matters["few2"];
+        await _kit.CreateAssetAsync(m1, type, "WS 1", """{"size_gb":10}""");
+        await _kit.CreateAssetAsync(m2, type, "WS 2", """{"size_gb":4}""");
+
+        static decimal Held(JsonElement v) => v.GetProperty("points").EnumerateArray().Last().GetProperty("held").EnumerateArray().Single().GetProperty("value").GetDecimal();
+        static int Added(JsonElement v) => v.GetProperty("points").EnumerateArray().Last().GetProperty("assetsAdded").GetInt32();
+        var all = await OkAsync(await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?months=2"));
+        Held(all).ShouldBe(14m);
+        Added(all).ShouldBe(_fx.Assets["few1"].Count + _fx.Assets["few2"].Count + 2);
+        var chosen = await OkAsync(await _fx.PmFew.GetAsync($"/api/v1/my-matters/data/volume?months=2&matterIds={m2}&matterIds={_fx.Matters["primaryOnly"]}"));
+        Held(chosen).ShouldBe(4m);
+        Added(chosen).ShouldBe(_fx.Assets["few2"].Count + 1);
+        var today = DateTime.UtcNow.Date;
+        var later = await OkAsync(await _fx.PmFew.GetAsync($"/api/v1/my-matters/data/volume?months=2&from={today.AddDays(1):yyyy-MM-dd}"));
+        later.GetProperty("points").EnumerateArray().All(p => p.GetProperty("assets").GetInt32() == 0).ShouldBeTrue();
     }
 
     private async Task SetSizeAsync(int typeId, string key, string unit)

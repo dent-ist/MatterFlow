@@ -374,10 +374,15 @@ test.describe('Asset report builder (PM v2)', () => {
     await press('[data-run]');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-summary]')).toContainText('3 assets in 1 group');
-    await press('[data-show-pie]');
+    // One toggle pattern (#919): the pressed button (Table) is the group's one Tab stop; the arrow keys move between Table, Bar and Pie.
+    await press('[data-show-table]');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('[data-show-pie]')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('mf-pie-chart')).toBeVisible();
-    await press('[data-show-table]');
+    await page.keyboard.press('Home');
+    await expect(page.locator('[data-show-table]')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-result-table]')).toBeVisible();
   });

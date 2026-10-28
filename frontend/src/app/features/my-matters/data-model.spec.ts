@@ -58,6 +58,7 @@ describe('volume rows', () => {
     {
       month: '2026-09',
       assets: 2,
+      assetsAdded: 2,
       held: [unit('GB', 10), unit('Items', 100)],
       added: [unit('GB', 10), unit('Items', 100)],
       removed: [unit('GB', 0, 0), unit('Items', 0, 0)],
@@ -65,6 +66,7 @@ describe('volume rows', () => {
     {
       month: '2026-10',
       assets: 2,
+      assetsAdded: 0,
       held: [unit('GB', 7), unit('Items', 100)],
       added: [unit('GB', 0, 0), unit('Items', 0, 0)],
       removed: [unit('GB', 3), unit('Items', 0, 0)],

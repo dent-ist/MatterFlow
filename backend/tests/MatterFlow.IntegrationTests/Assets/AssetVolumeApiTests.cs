@@ -78,8 +78,8 @@ public sealed class AssetVolumeApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         // A window shorter than the history carries the earlier months into its first point; one matter narrows the line.
         (await VolumeAsync(_fx.PmFew, "?months=1")).GetProperty("points").EnumerateArray().Select(p => Held(p)).ShouldBe([17m]);
-        (await VolumeAsync(_fx.PmFew, $"?months=1&matterId={m1}")).GetProperty("points").EnumerateArray().Select(p => Held(p)).ShouldBe([15m]);
-        (await VolumeAsync(_fx.PmFew, "?months=3&assetTypeId=" + type)).GetProperty("points").GetArrayLength().ShouldBe(3);
+        (await VolumeAsync(_fx.PmFew, $"?months=1&matterIds={m1}")).GetProperty("points").EnumerateArray().Select(p => Held(p)).ShouldBe([15m]);
+        (await VolumeAsync(_fx.PmFew, "?months=3&assetTypeIds=" + type)).GetProperty("points").GetArrayLength().ShouldBe(3);
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public sealed class AssetVolumeApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?bogus=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?months=0")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?months=61")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?sizeField=size_gb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await _fx.PmFew.GetAsync("/api/v1/my-matters/data/volume?sizeFields=size_gb")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await _fx.PmNoTaskView.GetAsync("/api/v1/my-matters/data/volume")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 }

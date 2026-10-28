@@ -210,7 +210,7 @@ test.describe('PM v2 final gate', () => {
     expect(await animations(), 'Breakdown').toBe(0);
     await page.goto('/my-matters?tab=data');
     await expect(page.locator('[data-panel="data"] [data-loading]')).toHaveCount(0);
-    await expect(page.locator('[data-panel="data-volume"] [data-loading]')).toHaveCount(0);
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     expect(await animations(), 'Data tab').toBe(0);
     await openReport();
     expect(await animations(), 'report chart').toBe(0);

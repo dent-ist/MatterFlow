@@ -105,6 +105,44 @@ public sealed class SensitivePmV2Tests(SqlServerFixture sql)
             data.GetProperty("matters").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32()).Order().ShouldBe(visibleMatters.Order(), name + ": data matters");
             NoHiddenSentinel(u, visibleMatters, dataBody, name + ": data");
 
+            // The selection of the Data Area: asking for every matter, or only for the hidden ones, never counts or names a matter the persona may not see.
+            var every = new[] { u.N1, u.S1, u.S2, u.S3 };
+            var asked = string.Join('&', every.Select(m => "matterIds=" + m));
+            var chosenResponse = await persona.Client.GetAsync($"/api/v1/my-matters/data?scope=all&{asked}");
+            var chosenBody = await chosenResponse.Content.ReadAsStringAsync();
+            chosenResponse.StatusCode.ShouldBe(HttpStatusCode.OK, name + chosenBody);
+            var chosen = JsonDocument.Parse(chosenBody).RootElement;
+            chosen.GetProperty("totals").GetProperty("assets").GetInt32().ShouldBe(expectedAssets, name + ": data with every matter asked for");
+            chosen.GetProperty("selectedMatters").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32()).Order().ShouldBe(visibleMatters.Order(), name + ": selected matters");
+            NoHiddenSentinel(u, visibleMatters, chosenBody, name + ": data with matter ids");
+
+            var hiddenOnly = every.Where(m => !visibleMatters.Contains(m)).ToArray();
+            if (hiddenOnly.Length > 0)
+            {
+                var hiddenAsked = string.Join('&', hiddenOnly.Select(m => "matterIds=" + m));
+                var hiddenResponse = await persona.Client.GetAsync($"/api/v1/my-matters/data?scope=all&{hiddenAsked}");
+                var hiddenBody = await hiddenResponse.Content.ReadAsStringAsync();
+                hiddenResponse.StatusCode.ShouldBe(HttpStatusCode.OK, name + ": hidden ids are not an error " + hiddenBody);
+                var hidden = JsonDocument.Parse(hiddenBody).RootElement;
+                hidden.GetProperty("totals").GetProperty("assets").GetInt32().ShouldBe(0, name + ": hidden ids in a total");
+                hidden.GetProperty("matters").GetArrayLength().ShouldBe(0, name + ": hidden ids as a row");
+                hidden.GetProperty("types").GetArrayLength().ShouldBe(0, name + ": hidden ids as a type row");
+                hidden.GetProperty("selectedMatters").GetArrayLength().ShouldBe(0, name + ": hidden ids named");
+                NoHiddenSentinel(u, visibleMatters, hiddenBody, name + ": data with hidden ids only");
+
+                // The same answer as for ids that do not exist: nothing tells a hidden matter from a missing one.
+                var missingResponse = await persona.Client.GetAsync("/api/v1/my-matters/data?scope=all&matterIds=2147000001&matterIds=2147000002");
+                missingResponse.StatusCode.ShouldBe(HttpStatusCode.OK, name);
+                (await missingResponse.Content.ReadAsStringAsync()).ShouldBe(hiddenBody, name + ": hidden ids answer like ids that do not exist");
+                var hiddenVolume = await OkAsync(await persona.Client.GetAsync($"/api/v1/my-matters/data/volume?scope=all&{hiddenAsked}"));
+                hiddenVolume.GetProperty("points").EnumerateArray().All(p => p.GetProperty("assets").GetInt32() == 0 && p.GetProperty("assetsAdded").GetInt32() == 0).ShouldBeTrue(name + ": hidden ids in the volume");
+            }
+
+            var chosenVolume = await persona.Client.GetAsync($"/api/v1/my-matters/data/volume?scope=all&{asked}");
+            var chosenVolumeBody = await chosenVolume.Content.ReadAsStringAsync();
+            chosenVolume.StatusCode.ShouldBe(HttpStatusCode.OK, name + chosenVolumeBody);
+            NoHiddenSentinel(u, visibleMatters, chosenVolumeBody, name + ": volume with matter ids");
+
             var volumeResponse = await persona.Client.GetAsync("/api/v1/my-matters/data/volume?scope=all");
             var volumeBody = await volumeResponse.Content.ReadAsStringAsync();
             volumeResponse.StatusCode.ShouldBe(HttpStatusCode.OK, name + volumeBody);
