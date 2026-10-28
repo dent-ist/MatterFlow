@@ -51,6 +51,8 @@ interface GridConfig {
   surface: string;
   /** "View all N tasks that need attention". */
   allName: string;
+  /** The same for exactly one task ("View all 1 task that needs attention"). */
+  allNameOne: string;
   nothing: string;
   nothingInFocus: string;
 }
@@ -67,6 +69,7 @@ const CONFIG: Readonly<Record<GridKind, GridConfig>> = {
     exportName: 'needs-my-attention',
     surface: 'my-matters.attention',
     allName: 'tasks that need attention',
+    allNameOne: 'task that needs attention',
     nothing: 'Nothing needs your attention.',
     nothingInFocus: 'Nothing in your Focus needs your attention.',
   },
@@ -81,6 +84,7 @@ const CONFIG: Readonly<Record<GridKind, GridConfig>> = {
     exportName: 'next-7-days',
     surface: 'my-matters.deadlines',
     allName: 'tasks due in the next 7 days',
+    allNameOne: 'task due in the next 7 days',
     nothing: 'Nothing is due in the next 7 days.',
     nothingInFocus: 'Nothing in your Focus is due in the next 7 days.',
   },
@@ -174,7 +178,9 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
             data-view-all
             routerLink="/tasks"
             [queryParams]="allParams()"
-            [attr.aria-label]="'View all ' + total() + ' ' + cfg().allName"
+            [attr.aria-label]="
+              'View all ' + total() + ' ' + (total() === 1 ? cfg().allNameOne : cfg().allName)
+            "
             >View all {{ total() }}</a
           >
         }

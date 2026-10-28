@@ -54,7 +54,9 @@ async function collectUi(page: Page, fx: PmFixtures): Promise<Omit<Facts, 'api'>
 
   await page.goto('/my-matters');
   await page.waitForLoadState('networkidle');
-  const tabs = (await page.locator('[role=tab]').allInnerTexts()).map((t) => t.trim());
+  const tabs = (await page.locator('[role=tab]').allInnerTexts()).map((t) =>
+    t.trim().replace(/\s+\d+$/, ''),
+  );
 
   await page.goto(`/matters/${fx.m.primary.matterId}`);
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
@@ -92,7 +94,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients', 'Projects', 'My Work'];
-const FOUR_TABS = ['Overview', 'Deadlines', 'Breakdown', 'Data', 'Activity', 'Trends']; // the Data tab (#870) is offered with Asset.View
+const FOUR_TABS = ['Overview', 'Breakdown', 'Data', 'Activity', 'Trends']; // the Data tab (#870) is offered with Asset.View
 
 test.describe('Permission matrix of the Project Manager views', () => {
   test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, four tabs, the full Overview and header menu, every endpoint', async ({

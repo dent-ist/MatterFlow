@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { openHeaderOptions } from '../support/mm-header';
 import { mmWorld } from '../support/my-matters-fixtures';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -164,16 +165,22 @@ test.describe('My Matters section toolbar (#857)', () => {
     await page.goto('/my-matters');
     const rows = page.locator('[data-panel="attention"] a.wt-title');
     await expect(rows).toHaveCount(3);
-    await page.locator('[data-types-trigger]').first().click();
-    await page.locator(`[data-type-option="${second.id}"]`).first().check();
+    // The task-type choice is the Focus, inside the one Options menu of the title row (batch 3, #894): the checklist, Save, a chip that removes it.
+    await openHeaderOptions(page);
+    await page.locator(`[data-focus-option="${second.id}"]`).check();
+    await page.locator('[data-focus-save]').click();
     await expect(rows).toHaveCount(1);
-    await expect(page.locator('[data-chip]').first()).toContainText(second.name);
+    await expect(page.locator('[data-focus-chip]').first()).toContainText(second.name);
     await page.reload();
     await expect(rows).toHaveCount(1);
-    await page.locator('[data-clear-all]').first().click();
+    await page.locator('[data-focus-chip] button').click();
     await expect(rows).toHaveCount(3);
-    // The ranked list has no sort of its own: the ranking is the order (#905).
-    await expect(page.locator('[data-panel="attention"] [data-sort]')).toHaveCount(0);
+    // The grids are sortable by their headings (#929): the active heading says so.
+    await expect(
+      page.locator(
+        '[data-panel="attention"] th[aria-sort="ascending"], [data-panel="attention"] th[aria-sort="descending"]',
+      ),
+    ).toHaveCount(1);
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');

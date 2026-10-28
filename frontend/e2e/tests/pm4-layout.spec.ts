@@ -64,7 +64,7 @@ test.describe('My Matters on a phone and a tablet', () => {
       expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(43.5);
     }
     // The first screen (375x812) shows the whole strip and the heading of the first panel; Needs my attention starts in it.
-    const attention = (await page.locator('[data-panel=attention] h2').boundingBox())!;
+    const attention = (await page.locator('[data-panel=attention] h2.mmp__title').boundingBox())!;
     expect(attention.y + attention.height).toBeLessThanOrEqual(812);
     expect(box.y + box.height).toBeLessThanOrEqual(812);
     // The one-line description would only be cut off: it is kept for screen readers and takes no room.

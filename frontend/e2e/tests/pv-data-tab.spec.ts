@@ -101,7 +101,7 @@ test.describe('My Matters: Data tab (PM v2)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await open(page);
     await expect(page).toHaveTitle('My Matters: Data - MatterFlow');
-    await expect(page.getByRole('tab')).toContainText(['Overview', 'Deadlines', 'Data']);
+    await expect(page.getByRole('tab')).toContainText(['Overview', 'Breakdown', 'Data']);
 
     // The tiles: the value first in every name, the unit once, a zero muted and not a button.
     await expect(page.getByRole('group', { name: '4 total assets' })).toBeVisible();
@@ -309,7 +309,7 @@ test.describe('My Matters: Data tab (PM v2)', () => {
     const ids = [d.assets.a1, d.assets.a2, d.assets.a3].map((a) => a.assetId);
     ids.forEach((id, i) =>
       seed.sql(
-        `DISABLE TRIGGER dbo.TR_Asset_Guard ON dbo.Asset; UPDATE dbo.Asset SET CreatedAtUtc = DATEADD(MONTH, -${i + 1}, SYSUTCDATETIME()) WHERE AssetId = ${id}; ENABLE TRIGGER dbo.TR_Asset_Guard ON dbo.Asset;`,
+        `DISABLE TRIGGER dbo.TR_Asset_Guard ON dbo.Asset; UPDATE dbo.Asset SET CreatedAt = DATEADD(MONTH, -${i + 1}, SYSUTCDATETIME()) WHERE AssetId = ${id}; ENABLE TRIGGER dbo.TR_Asset_Guard ON dbo.Asset;`,
       ),
     );
     const page = await asUser(d.w.pm.username);
@@ -354,7 +354,9 @@ test.describe('My Matters: Data tab (PM v2)', () => {
     await expect(page.locator('#mm-tab-data')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-no-match]')).toContainText('No assets match this selection');
     await expect(page.locator('[data-panel="data"]')).not.toContainText(d.matterA.name);
-    await expect(page.locator('[data-panel="data"]')).not.toContainText(d.token);
+    // Nothing of the matters or their assets (the asset TYPE catalogue is shared configuration and is listed for anybody who may see assets).
+    await expect(page.locator('[data-panel="data"]')).not.toContainText(d.matterB.name);
+    await expect(page.locator('[data-panel="data"]')).not.toContainText(`Alpha ${d.token}`);
     await expect(page.getByRole('group', { name: /total assets/ })).toHaveCount(0);
   });
 

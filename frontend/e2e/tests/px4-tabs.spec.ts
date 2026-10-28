@@ -62,9 +62,9 @@ test.describe('My Matters: the tab shell', () => {
     await expect(tab(page, 'breakdown')).toBeFocused();
 
     // Keyboard only, with the keys the app has: Right and Left move between tabs, Home goes to Overview.
-    await tab(page, 'overview').focus();
+    await tab(page, 'breakdown').focus();
     await page.keyboard.press('ArrowRight');
-    await expect(tab(page, 'breakdown')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'data')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     expect(page.url()).not.toContain('tab=');
@@ -397,7 +397,7 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     expect(overdue.x + overdue.width).toBeLessThanOrEqual(375);
     expect(overdue.y + overdue.height).toBeLessThanOrEqual(812);
     // Needs my attention starts in the first screen.
-    const attention = (await panel(page, 'attention').locator('h2').boundingBox())!;
+    const attention = (await panel(page, 'attention').locator('h2.mmp__title').boundingBox())!;
     expect(attention.y + attention.height).toBeLessThanOrEqual(812);
     expect(await axeViolations(page), 'phone').toEqual([]);
     await noHorizontalScroll(page);

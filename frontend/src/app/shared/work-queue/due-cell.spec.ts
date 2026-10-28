@@ -13,6 +13,7 @@ import { DueCell } from './due-cell';
     [layout]="layout()"
     [wasDue]="wasDue()"
     [atRisk]="atRisk()"
+    [dateless]="dateless()"
   />`,
 })
 class Host {
@@ -21,6 +22,7 @@ class Host {
   readonly layout = signal<'two-line' | 'inline'>('two-line');
   readonly wasDue = signal(false);
   readonly atRisk = signal(false);
+  readonly dateless = signal(false);
 }
 
 describe('DueCell (#209)', () => {
@@ -140,5 +142,27 @@ describe('DueCell At risk (PM v2, #878)', () => {
     expect(
       render(true, { dueDate: '2026-10-30' }, 'COMPLETED').querySelector('[data-at-risk]'),
     ).toBeNull();
+  });
+
+  it('dateless: an overdue cell keeps only "Overdue 4d" (the date stays in the tooltip); other cells keep their date', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: USER_TIME_ZONE, useValue: 'America/New_York' },
+        { provide: Clock, useValue: { now: () => new Date('2026-10-14T16:00:00Z') } },
+      ],
+    });
+    const f = TestBed.createComponent(Host);
+    f.componentInstance.layout.set('inline');
+    f.componentInstance.dateless.set(true);
+    f.componentInstance.due.set({ dueDate: '2026-10-10' });
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('time')).toBeNull();
+    expect(el.querySelector('.dc-l2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Overdue 4d');
+    expect(el.querySelector('.dc')!.getAttribute('title')).toContain('Oct 10');
+    f.componentInstance.due.set({ dueDate: '2026-10-20' });
+    f.detectChanges();
+    expect(el.querySelector('time')).not.toBeNull();
   });
 });

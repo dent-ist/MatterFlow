@@ -481,7 +481,7 @@ function plural(n: number, one: string, many: string): string {
             </p>
           }
 
-          <section class="dt__area" data-data-area aria-label="Assets by asset type">
+          <section class="dt__area" data-data-area>
             @if (status(); as s) {
               <p class="dt__filter" data-status-filter>
                 Showing {{ statusWord(s) }} assets only.

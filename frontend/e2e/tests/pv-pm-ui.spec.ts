@@ -251,7 +251,7 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      const heading = page.locator('[data-panel="attention"] h2');
+      const heading = page.locator('[data-panel="attention"] h2.mmp__title');
       await expect(heading).toBeVisible();
       const box = await heading.boundingBox();
       expect(

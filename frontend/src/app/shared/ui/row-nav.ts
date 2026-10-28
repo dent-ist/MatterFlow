@@ -180,10 +180,28 @@ export function restoreRowFocus(
         }
         link.focus({ preventScroll: true });
         link.scrollIntoView({ block: 'nearest' });
+        // A page that holds its body back for a moment (visibility: hidden, My Matters) cannot take the focus yet: try again briefly, as long as the person has
+        // not moved the focus themselves (a Tab or a click ends the attempts).
+        if (document.activeElement !== link) retryFocus(list, key);
       },
       { injector },
     );
   });
+}
+
+/** Up to 2.5 seconds of short retries to put the focus back on a row link that was not focusable yet. */
+function retryFocus(list: string, key: string, attempt = 0): void {
+  if (attempt >= 25) return;
+  setTimeout(() => {
+    const active = document.activeElement;
+    // Something other than the page itself has the focus now: the person moved it, leave it.
+    if (active && active !== document.body) return;
+    const link = rowLink(list, key);
+    if (!link) return;
+    link.focus({ preventScroll: true });
+    if (document.activeElement === link) link.scrollIntoView({ block: 'nearest' });
+    else retryFocus(list, key, attempt + 1);
+  }, 100);
 }
 
 /**

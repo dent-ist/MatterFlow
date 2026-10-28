@@ -92,7 +92,7 @@ test.describe('My Matters: keyboard', () => {
       /View all/,
       /Options for Needs my attention/,
       /Keyboard overdue/,
-      /All deadlines/,
+      /View all \d+ tasks? due in the next 7 days/, // the Next 7 days grid's own link (the Deadlines tab is gone, #929)
       /How the matters are ordered/,
       /Keyboard alpha/,
       /More actions for/,
