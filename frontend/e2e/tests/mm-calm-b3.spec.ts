@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { openHeaderOptions } from '../support/mm-header';
 import { mmWorld } from '../support/my-matters-fixtures';
 import { pmSolo, pmThree } from '../support/pm-fixtures';
 import { SIZES } from '../support/screens';
@@ -126,7 +127,7 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     await page.goto('/my-matters');
     await settled(page);
     await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(2);
-    await page.locator('[data-focus] [data-options-trigger]').click();
+    await openHeaderOptions(page);
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
     await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(1);

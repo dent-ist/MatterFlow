@@ -79,7 +79,9 @@ test.describe('My Matters: keyboard', () => {
     await expect(page.locator('[data-health-row]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
-      /My matters/, // one Tab stop for the scope switch: the pressed button (the arrow keys reach All matters, issue #919)
+      /Options for My Matters/, // the title row's one Options menu: the scope switch and the Focus are inside it (issue #900)
+      /^button: New task$/,
+      /Matter for New task/, // the chooser of the matter New task uses (several matters)
       /Client/,
       /I am/,
       /^button: \d+ overdue$/,

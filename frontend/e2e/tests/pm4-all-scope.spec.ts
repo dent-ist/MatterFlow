@@ -1,6 +1,7 @@
 import { Api } from '../support/api';
 import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { expect, test } from '../support/fixtures';
+import { openHeaderOptions } from '../support/mm-header';
 
 /**
  * Scope "All matters" and manager assignment (epic #667, #701): the switch exists only for holders of Matter.AssignManagers, re-runs every panel
@@ -38,6 +39,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-strip-open]')).toContainText('1 open');
     await expect(page.locator('[data-scope=mine]')).toHaveAttribute('aria-pressed', 'true');
 
+    await openHeaderOptions(page);
     await page.locator('[data-scope=all]').click();
     await expect(page).toHaveURL(/scope=all/);
     await expect(page.locator('[data-scope=all]')).toHaveAttribute('aria-pressed', 'true');
@@ -85,6 +87,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-mm-strip]')).toHaveAttribute('aria-label', /project manager/);
     await expect(page.locator('[data-filter=role]')).toBeVisible();
     // Back to My matters clears the manager and the scope.
+    await openHeaderOptions(page);
     await page.locator('[data-scope=mine]').click();
     await expect(page).not.toHaveURL(/scope=all|managerId/);
     await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '1 overdue');

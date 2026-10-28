@@ -1164,7 +1164,7 @@ describe('MyMattersPage', () => {
       );
     });
 
-    it('several clients and both roles: Client and Role are offered, the create menu is the small "Task on a matter"', async () => {
+    it('several clients and both roles: Client and Role are offered, the header has New task and its Matter chooser', async () => {
       const h = await open('/my-matters', undefined, undefined, [
         matter(5, 2, 'primary'),
         matter(6, 3, 'secondary'),
@@ -1172,9 +1172,13 @@ describe('MyMattersPage', () => {
       expect(el(h).querySelector('[data-mm-filters]')).not.toBeNull();
       expect(el(h).querySelector('#mm-client')).not.toBeNull();
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
-      expect(el(h).querySelector('[data-header-new-task]')!.textContent).toContain(
-        'Task on a matter',
-      );
+      const create = el(h).querySelector('[data-header-new-task]')!;
+      expect(create.querySelector('[data-new-task-go]')!.textContent!.trim()).toBe('New task');
+      // The chooser only picks the matter for New task (no page filter): "Matter: choose" until one is picked or was used last.
+      expect(create.textContent).toContain('Matter: choose');
+      // The scope switch and the Focus checklist are inside the one Options menu of the title row.
+      expect(el(h).querySelectorAll('[data-header-options]').length).toBe(1);
+      expect(el(h).querySelector('[data-header-options] [data-focus-inline]')).not.toBeNull();
       expect(TestBed.inject(CreateTaskContext).matterId()).toBeNull();
     });
 

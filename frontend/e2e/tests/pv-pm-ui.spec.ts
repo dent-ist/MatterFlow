@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { openHeaderOptions } from '../support/mm-header';
 import { mmWorld } from '../support/my-matters-fixtures';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -199,7 +200,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     const rows = page.locator('[data-panel="attention"] [data-attention-row]');
     await expect(rows).toHaveCount(3);
 
-    await page.locator('[data-focus] [data-options-trigger]').click();
+    await openHeaderOptions(page);
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
     await expect(page.locator('[data-focus-chip]')).toContainText(`Focus: ${second.name}`);
@@ -226,14 +227,8 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      // On a phone the Focus is inside the one Options menu of the title row (issue #922).
-      await page
-        .locator(
-          size.width < 640
-            ? '[data-header-options] [data-options-trigger]'
-            : '[data-focus] [data-options-trigger]',
-        )
-        .click();
+      // The Focus is inside the one Options menu of the title row at every width (issues #922, #900).
+      await page.locator('[data-header-options] [data-options-trigger]').click();
       await expect(page.locator('[data-focus-save]')).toBeVisible();
       await noSidewaysScroll(page, `Focus at ${size.name}`);
       await clean(page, `Focus open at ${size.name}`);

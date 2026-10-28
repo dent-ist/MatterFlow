@@ -4,6 +4,7 @@ import {
   afterNextRender,
   computed,
   effect,
+  signal,
   input,
   inject,
   Injector,
@@ -23,14 +24,19 @@ import {
 /** How many matters the menu lists; "Another matter" opens Create task with its own matter search for the rest. */
 const MENU_MAX = 25;
 
+/** How many characters of the matter's name the chooser's button shows. */
+const CHOOSER_NAME_MAX = 24;
+
 /**
- * "New task" in the header of My Matters (issue #814): adding work starts on the first screen, not 2,000 px down in Matter health. With a matter
- * the person used last (and still manages) the main button is "New task for <that matter>" and one click opens Create task with the matter
- * fixed; "Other matter" lists the matters they manage (their last one first) and "Another matter" opens Create task to search all of them.
- * Create task returns to this page (`returnTo`, only an address on /my-matters is accepted there) and the focus comes back to this control.
- * Nothing is drawn without Task.Create or when the person manages no active matter, and (issue #904) not for exactly one matter either: the shell's
- * "Create task" is then the one create button and opens Create task with that matter filled in (the page tells the shell, see `CreateTaskContext`).
- * With several matters the menu is one small "+ Task on a matter".
+ * "New task" in the header of My Matters (issues #814, #900): adding work starts on the first screen, not 2,000 px down in Matter health. The main button
+ * says "New task" and nothing else; with several matters a second control, "Matter: <name>", is the chooser of the matter the button uses (the one the
+ * person used last, and still manages, to begin with). The chooser ONLY picks the matter for New task: it is not a page filter and changes nothing else
+ * (owner decision Q6). "New task" opens Create task with that matter fixed (without a chosen matter Create task has its own matter search); "Another
+ * matter..." at the end of the chooser opens Create task to search all of them. Create task returns to this page (`returnTo`, only an address on
+ * /my-matters is accepted there) and the focus comes back to this control. Nothing is drawn without Task.Create or when the person manages no active
+ * matter, and (issue #904) not for exactly one matter either: the shell's "Create task" is then the one create button and opens Create task with that matter
+ * filled in (the page tells the shell, see `CreateTaskContext`), so a one-matter person has no chooser. On a phone the matters are listed inside the
+ * title row's Options menu (`inline`); each opens Create task at once.
  */
 @Component({
   selector: 'mf-mm-new-task',
@@ -133,34 +139,28 @@ const MENU_MAX = 25;
       }
     } @else if (shown()) {
       <div class="nt" data-header-new-task>
-        @if (last(); as l) {
-          <button
-            type="button"
-            class="mf-btn mf-btn--primary nt__go"
-            data-new-task-last
-            [attr.aria-label]="'New task for ' + l.matterRef + ' ' + l.name"
-            [attr.title]="'New task for ' + l.matterRef + ' ' + l.name"
-            (click)="open(l.matterId)"
-          >
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            <span class="nt__text">New task for {{ l.matterRef }}</span>
-          </button>
-          <mf-action-menu
-            label="Choose the matter for a new task"
-            triggerText="Other matter"
-            align="start"
-            [floating]="true"
-            [items]="items()"
-          />
-        } @else {
-          <mf-action-menu
-            label="Choose the matter for a new task"
-            triggerText="+ Task on a matter"
-            align="start"
-            [floating]="true"
-            [items]="items()"
-          />
-        }
+        <button
+          type="button"
+          class="mf-btn mf-btn--primary nt__go"
+          data-new-task-go
+          [attr.aria-label]="
+            chosen() ? 'New task for ' + chosen()!.matterRef + ' ' + chosen()!.name : 'New task'
+          "
+          [attr.title]="
+            chosen() ? 'New task for ' + chosen()!.matterRef + ' ' + chosen()!.name : null
+          "
+          (click)="open(chosen()?.matterId ?? null)"
+        >
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          <span class="nt__text">New task</span>
+        </button>
+        <mf-action-menu
+          label="Matter for New task"
+          [triggerText]="chooserText()"
+          align="start"
+          [floating]="true"
+          [items]="chooserItems()"
+        />
       </div>
     }
   `,
@@ -178,14 +178,48 @@ export class NewTaskControl {
     () => this.auth.has('Task.Create') && this.matters().length > 0 && this.managed.only() === null,
   );
 
-  /** The matter used last, when the person still manages it and it is active. */
-  protected readonly last = computed(() => {
-    const id = lastMatterId(this.auth.profile()?.userId ?? 0);
+  /** The matter the person picked in the chooser this visit (`undefined`: not yet, the one used last counts). */
+  private readonly picked = signal<number | null | undefined>(undefined);
+
+  /** The matter New task uses: the one picked in the chooser, else the one used last, when the person still manages it and it is active. */
+  protected readonly chosen = computed(() => {
+    const picked = this.picked();
+    const id = picked !== undefined ? picked : lastMatterId(this.auth.profile()?.userId ?? 0);
     return id === null ? null : (this.matters().find((m) => m.matterId === id) ?? null);
   });
 
+  /** "Matter: <name>" (cut when long; the full name is in the list), or "Matter: choose" before one is picked. */
+  protected readonly chooserText = computed(() => {
+    const m = this.chosen();
+    if (!m) return 'Matter: choose';
+    return `Matter: ${m.name.length > CHOOSER_NAME_MAX ? `${m.name.slice(0, CHOOSER_NAME_MAX - 1)}\u2026` : m.name}`;
+  });
+
+  /** The chooser: each matter only becomes the one New task uses (nothing opens), then Another matter opens Create task with its own search. */
+  protected readonly chooserItems = computed<MenuAction[]>(() => {
+    const rows = this.matters().map<MenuAction>((m) => ({
+      id: `matter-${m.matterId}`,
+      label: `${m.matterRef} ${m.name}`,
+      icon: m.matterId === this.chosen()?.matterId ? 'pi-check' : 'pi-briefcase',
+      current: m.matterId === this.chosen()?.matterId,
+      run: () => {
+        this.picked.set(m.matterId);
+        rememberMatter(this.auth.profile()?.userId ?? 0, m.matterId);
+      },
+    }));
+    rows.push({
+      id: 'another',
+      label: 'Another matter...',
+      icon: 'pi-search',
+      separated: true,
+      run: () => this.open(null),
+    });
+    return rows;
+  });
+
+  /** The phone's list: each matter opens Create task at once (the person's last one first). */
   protected readonly items = computed<MenuAction[]>(() => {
-    const lastId = this.last()?.matterId;
+    const lastId = this.chosen()?.matterId;
     const ordered = [...this.matters()].sort(
       (a, b) => Number(b.matterId === lastId) - Number(a.matterId === lastId),
     );
@@ -214,11 +248,11 @@ export class NewTaskControl {
         if (takeFocusReturn() && shown) {
           afterNextRender(
             () =>
-              document
-                .querySelector<HTMLElement>(
-                  '[data-header-new-task] [data-new-task-last], [data-header-new-task] [data-overflow], [data-header-options] [data-options-trigger]',
-                )
-                ?.focus(),
+              // New task itself (wide screens); on a phone the title row's Options menu holds the matters.
+              (
+                document.querySelector<HTMLElement>('[data-header-new-task] [data-new-task-go]') ??
+                document.querySelector<HTMLElement>('[data-header-options] [data-options-trigger]')
+              )?.focus(),
             { injector: this.injector },
           );
         }

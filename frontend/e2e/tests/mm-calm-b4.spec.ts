@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { openHeaderOptions } from '../support/mm-header';
 import { pmSolo, pmThree } from '../support/pm-fixtures';
 import { SIZES } from '../support/screens';
 
@@ -31,6 +32,8 @@ test.describe('One toggle pattern (#919)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
+    // The scope switch is inside the title row's one Options menu (issue #900).
+    await openHeaderOptions(page);
     const group = page.locator('[data-scope-switch]');
     await expect(group).toHaveAttribute('aria-label', 'Scope');
     const mine = group.locator('[data-scope=mine]');
@@ -82,6 +85,7 @@ test.describe('One toggle pattern (#919)', () => {
     }
     // "All matters" belongs to the scope switch only.
     await page.goto('/my-matters?tab=breakdown');
+    await openHeaderOptions(page);
     await expect(page.getByRole('button', { name: 'All matters', exact: true })).toHaveCount(1);
     // Deadlines: List / Calendar sit behind Options and are the same component.
     await page.goto('/my-matters?tab=deadlines');
@@ -91,22 +95,33 @@ test.describe('One toggle pattern (#919)', () => {
     expect(await view.locator('button').allInnerTexts()).toEqual(['List', 'Calendar']);
   });
 
-  test('Focus is the same menu as every Options button', async ({ seed, personas, asUser }) => {
+  test('the title row has one Options menu, built like every other Options button, and the Focus is inside it', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
     const p = await pmSolo(seed, personas, 'b4c');
     const page = await asUser(p.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const focus = page.locator('[data-focus] [data-options-trigger]');
-    await expect(focus).toContainText('Focus');
-    expect(await focus.evaluate((e) => Math.round(e.getBoundingClientRect().height))).toBe(32);
+    // No Focus button of its own: one Options button in the title row (issue #900).
+    await expect(page.locator('[data-header-options] [data-options-trigger]')).toHaveCount(1);
+    await expect(
+      page.locator('mf-page-header').getByRole('button', { name: /^Focus/ }),
+    ).toHaveCount(0);
+    const header = page.locator('[data-header-options] [data-options-trigger]');
+    await expect(header).toContainText('Options');
+    expect(await header.evaluate((e) => Math.round(e.getBoundingClientRect().height))).toBe(32);
     const options = page.locator('[data-panel=attention] [data-options-trigger]');
     expect(
       await options.evaluate((e) => Math.round(e.getBoundingClientRect().height)),
     ).toBeLessThanOrEqual(32);
-    expect(await focus.evaluate((e) => getComputedStyle(e).borderRadius)).toBe(
+    expect(await header.evaluate((e) => getComputedStyle(e).borderRadius)).toBe(
       await options.evaluate((e) => getComputedStyle(e).borderRadius),
     );
+    await header.click();
+    await expect(page.locator('[data-header-options] [data-focus-inline]')).toBeVisible();
   });
 
   for (const size of SIZES) {

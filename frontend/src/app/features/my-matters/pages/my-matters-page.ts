@@ -22,7 +22,7 @@ import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MyMattersFocus } from '../focus';
-import { FocusChip, FocusControl } from '../focus-control';
+import { FocusChip, FocusControl, ScopeChip } from '../focus-control';
 import { MyMattersActiveFilters } from '../my-matters-active-filters';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
 import { ManagedMatters } from '../managed-matters';
@@ -93,8 +93,9 @@ function storage(): Storage | null {
 }
 
 /**
- * My Matters (epic #667, README 6): the Project Manager's home. A strip of count chips, one "what changed" line (only when something that needs a decision changed), Needs my
- * attention (one ranked list of five), Upcoming deadlines and, for several matters, a compact list of the matters (epic #893). The events are on the Activity tab. Each part
+ * My Matters (epic #667, README 6): the Project Manager's home. A strip of count chips, Needs my attention (one ranked list of five),
+ * Next 7 days (three rows) and, for several matters, a compact list of the matters (epic #893). "Since your last visit" and the events are on the Activity tab, whose
+ * badge carries the number of changes. Each part
  * loads and fails on its own. The matters are "mine" (primary or secondary manager) by default, a default view and not a limit on access; with `Matter.AssignManagers` the scope can be
  * All matters. The filters (client, role, dates, scope, project manager) live in the address, so Back restores them; the last filters are also remembered per person in the browser
  * as a convenience. One scrolling page, no nested scroll boxes. Different from the department Dashboard: it answers "what is on fire on my matters", not "how is the department
@@ -115,6 +116,7 @@ function storage(): Storage | null {
     NewTaskControl,
     OptionsMenu,
     PageHeader,
+    ScopeChip,
     ScopeSwitch,
     SincePanel,
     SkipLinks,
@@ -160,7 +162,7 @@ function storage(): Storage | null {
       margin: 0 0 var(--mf-s3);
       color: var(--mf-text-muted);
     }
-    /* Held, not removed: the body is laid out but not painted, so what changes while it is held (the bar, the "since" line, the lists) moves nothing the person sees,
+    /* Held, not removed: the body is laid out but not painted, so what changes while it is held (the bar, the lists) moves nothing the person sees,
        and showing it moves nothing either. */
     .mm__hold {
       visibility: hidden;
@@ -223,9 +225,9 @@ function storage(): Storage | null {
   `,
   template: `
     <mf-page-header heading="My Matters" [description]="description()">
-      <!-- A phone (issue #922): the title row is the title, Filters (only when there is something to filter) and one Options menu holding the
-           scope, the Focus and New task, so the first screen shows tasks. A block projects into the header only with ONE root element, so each
-           piece has its own condition. -->
+      <!-- ONE Options menu in the title row at every width (issues #900, #922): the scope switch and the Focus checklist live in it (and, on a phone, the
+           matters for a new task), so the title row is the title, Options and New task. New task stays outside it, always in sight. A block projects into the
+           header only with ONE root element, so each piece has its own condition. -->
       @if (phone()) {
         <mf-mm-filter-bar
           mfActions
@@ -237,14 +239,15 @@ function storage(): Storage | null {
           (managerName)="managerName.set($event)"
         />
       }
-      @if (phone()) {
-        <mf-options-menu
-          mfActions
-          data-header-options
-          label="My Matters"
-          [wide]="true"
-          [active]="headerActive()"
-        >
+      <mf-options-menu
+        mfActions
+        data-header-options
+        label="My Matters"
+        [wide]="true"
+        [active]="headerActive()"
+        (opened)="focusList.reset()"
+      >
+        @if (canAll()) {
           <div data-options-pick>
             <mf-scope-switch
               [scope]="filters().scope"
@@ -256,32 +259,19 @@ function storage(): Storage | null {
               "
             />
           </div>
-          <mf-mm-focus [inline]="true" />
+        }
+        <mf-mm-focus #focusList />
+        @if (phone()) {
           <mf-mm-new-task [inline]="true" />
-        </mf-options-menu>
-      }
-      @if (!phone()) {
-        <mf-scope-switch
-          mfActions
-          [scope]="filters().scope"
-          [canAll]="canAll()"
-          allLabel="All matters"
-          [description]="scopeText()"
-          (scopeChange)="
-            update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
-          "
-        />
-      }
-      @if (!phone()) {
-        <mf-mm-focus mfActions />
-      }
+        }
+      </mf-options-menu>
       @if (!phone()) {
         <mf-mm-new-task mfActions />
       }
     </mf-page-header>
 
     <!-- Everything under the title row waits for the two answers that decide whether something is drawn above it (the matters, for the Client / Role bar, and the
-         "since" line), for at most HOLD_MS: the lists then appear in one step and nothing moves (issue #921, layout shift under 0.05). -->
+         lists), for at most HOLD_MS: the lists then appear in one step and nothing moves (issue #921, layout shift under 0.05). -->
     <div class="mm__body" [class.mm__hold]="hold()" data-mm-body>
       @if (phone()) {
         <mf-mm-active-filters
@@ -316,6 +306,10 @@ function storage(): Storage | null {
           />
         }
         <mf-mm-focus-chip />
+        <mf-mm-scope-chip
+          [scope]="filters().scope"
+          (back)="update({ scope: 'mine', managerId: null })"
+        />
         <mf-mm-strip
           [filters]="filters()"
           [clientName]="clientName()"
@@ -476,7 +470,7 @@ export class MyMattersPage {
   private readonly waited = signal(false);
   /**
    * The body of the page is held back (laid out, not painted) while the first answers are on their way, for at most {@link HOLD_MS}: the matters (they decide
-   * whether the Client / Role bar is drawn) and every request of the page (the "since" line, the lists, the strip). Everything then appears in one step, and
+   * whether the Client / Role bar is drawn) and every request of the page (the lists, the strip, the Activity badge). Everything then appears in one step, and
    * nothing is drawn first and moved by a later answer (issue #921, layout shift under 0.05). A slow server shows the skeleton after the hold, as before.
    */
   protected readonly hold = computed(

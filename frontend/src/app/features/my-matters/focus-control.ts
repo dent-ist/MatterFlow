@@ -5,12 +5,11 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
-  viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { OptionsMenu } from '../../shared/ui/options-menu';
 import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
 import { MyMattersFocus } from './focus';
 import { SectionTypes, TypeOption } from './section-types';
@@ -22,13 +21,13 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
 }
 
 /**
- * The Focus button of My Matters (PM v2, PV-07 #858) and, once a Focus is set, its chip. "Focus" opens a checklist of the task types with Save and
- * Clear; the choice is kept per person and stays until it is changed (`MyMattersFocus`). The chip names the types and has a remove button that
- * clears the Focus everywhere. It is the shared Options menu under the name Focus (issue #919), so it opens, closes and takes the keyboard like every other menu.
+ * The Focus checklist of My Matters (PM v2, PV-07 #858): a checklist of the task types with Save and Clear; the choice is kept per person and stays until it
+ * is changed (`MyMattersFocus`). Since issue #900 it is not a button of its own but a part of the title row's one Options menu (with the scope switch), and the
+ * chip below names the types in force and has a remove button that clears the Focus everywhere.
  */
 @Component({
   selector: 'mf-mm-focus',
-  imports: [NgTemplateOutlet, OptionsMenu, TaskTypeBadge],
+  imports: [NgTemplateOutlet, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -75,29 +74,11 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
     }
   `,
   template: `
-    @if (inline()) {
-      <!-- Inside another menu (the phone's header menu): the checklist itself, no second popover. -->
-      <div class="fc__inline" role="group" aria-labelledby="fc-inline-h" data-focus-inline>
-        <p class="fc__title" id="fc-inline-h">Focus</p>
-        <ng-container *ngTemplateOutlet="panel" />
-      </div>
-    } @else {
-      <!-- The same menu as every Options button (issue #919), under its own name; its number is how many task types are set. -->
-      <mf-options-menu
-        #menu
-        label="Focus task types"
-        text="Focus"
-        icon="pi-bullseye"
-        [active]="focus.types().length"
-        [triggerName]="
-          focus.types().length > 0 ? 'Focus, ' + focus.types().length + ' task types set' : 'Focus'
-        "
-        (opened)="opened()"
-        data-focus
-      >
-        <ng-container *ngTemplateOutlet="panel" />
-      </mf-options-menu>
-    }
+    <!-- Always inside the title row's Options menu (issue #900): the checklist itself, with a heading, no popover of its own. -->
+    <div class="fc__inline" role="group" aria-labelledby="fc-inline-h" data-focus data-focus-inline>
+      <p class="fc__title" id="fc-inline-h">Focus</p>
+      <ng-container *ngTemplateOutlet="panel" />
+    </div>
     <ng-template #panel>
       <div data-focus-panel>
         <p class="fc__hint">
@@ -134,7 +115,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
             type="button"
             class="mf-btn mf-btn--primary"
             data-focus-save
-            [attr.data-options-pick]="inline() ? '' : null"
+            data-options-pick
             (click)="save()"
           >
             Save
@@ -143,7 +124,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
             type="button"
             class="mf-btn"
             data-focus-clear
-            [attr.data-options-pick]="inline() ? '' : null"
+            data-options-pick
             (click)="clearAll()"
           >
             Clear
@@ -156,23 +137,20 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
 export class FocusControl {
   protected readonly focus = inject(MyMattersFocus);
   protected readonly options = inject(SectionTypes);
-  private readonly menu = viewChild<OptionsMenu>('menu');
-  /** Drawn inside another menu (the phone's header menu): the checklist alone, with a heading, no popover of its own. */
-  readonly inline = input(false);
   protected readonly draft = signal<number[]>([]);
 
   constructor() {
     this.options.ensure();
     this.focus.ensure();
-    // Inline there is no "opened" moment: the draft follows the saved Focus.
+    // The checklist lives in the Options menu, which has no "opened" moment: the draft follows the saved Focus.
     effect(() => {
       const saved = this.focus.types();
-      if (this.inline()) untracked(() => this.draft.set([...saved]));
+      untracked(() => this.draft.set([...saved]));
     });
   }
 
-  /** Opening starts from the saved Focus, so a closed-without-saving panel never keeps a half choice. */
-  protected opened(): void {
+  /** The Options menu was opened: it starts from the saved Focus, so a menu closed without saving never keeps a half choice. */
+  reset(): void {
     this.draft.set([...this.focus.types()]);
   }
 
@@ -183,13 +161,11 @@ export class FocusControl {
 
   protected save(): void {
     this.focus.set(this.draft());
-    this.menu()?.closeAndReturn();
   }
 
   protected clearAll(): void {
     this.focus.clear();
     this.draft.set([]);
-    this.menu()?.closeAndReturn();
   }
 }
 
@@ -256,4 +232,63 @@ export class FocusChip {
     this.options.ensure();
     this.focus.ensure();
   }
+}
+
+/** The chip beside the Focus chip while the page shows All matters (issue #900: the scope switch is inside Options, so what is in force must stay in sight). */
+@Component({
+  selector: 'mf-mm-scope-chip',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    :host {
+      display: block;
+      margin: 0 0 var(--mf-s2);
+    }
+    :host(:empty) {
+      display: none;
+    }
+    .fc__chip {
+      display: inline-flex;
+      gap: var(--mf-s1);
+      align-items: center;
+      padding: 0 var(--mf-s1) 0 var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: 999px;
+      background: var(--mf-surface-alt);
+      font-size: var(--mf-fs-sm);
+    }
+    .fc__x {
+      min-width: 24px;
+      min-height: 24px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+    @media (max-width: 639.98px) {
+      .fc__x {
+        min-width: 44px;
+        min-height: 44px;
+      }
+    }
+  `,
+  template: `
+    @if (scope() === 'all') {
+      <span class="fc__chip" data-scope-chip>
+        <span>Showing all matters</span>
+        <button
+          type="button"
+          class="fc__x"
+          data-scope-back
+          aria-label="Show only the matters I manage"
+          (click)="back.emit()"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </span>
+    }
+  `,
+})
+export class ScopeChip {
+  readonly scope = input<'mine' | 'all'>('mine');
+  readonly back = output<void>();
 }

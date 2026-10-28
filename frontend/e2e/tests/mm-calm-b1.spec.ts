@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { openHeaderOptions } from '../support/mm-header';
 import { mmWorld } from '../support/my-matters-fixtures';
 import { pmSolo, pmThree } from '../support/pm-fixtures';
 import { SIZES } from '../support/screens';
@@ -111,7 +112,9 @@ test.describe('Title block (#904)', () => {
       await expect(create).toBeVisible();
       // (The Matter health table has its own "New task for ..." button per matter row until #908 removes that table for one matter.)
       await expect(
-        page.locator('mf-page-header').getByRole('button', { name: /New task|Task on a matter/ }),
+        page
+          .locator('mf-page-header')
+          .getByRole('button', { name: /New task|Matter for New task/ }),
       ).toHaveCount(0);
 
       await noSideways(page);
@@ -123,7 +126,7 @@ test.describe('Title block (#904)', () => {
     });
   }
 
-  test('several matters: the shell button plus one small "+ Task on a matter"; no description line on any tab', async ({
+  test('several matters: the shell button plus New task and its Matter chooser; no description line on any tab', async ({
     seed,
     personas,
     asUser,
@@ -141,7 +144,8 @@ test.describe('Title block (#904)', () => {
     await expect(page.getByRole('button', { name: 'Create task' })).toHaveCount(1);
     const menu = page.locator('[data-header-new-task]');
     await expect(menu).toBeVisible();
-    await expect(menu).toContainText('Task on a matter');
+    await expect(menu.getByRole('button', { name: /^New task/ })).toBeVisible();
+    await expect(menu).toContainText('Matter:');
     // The scope switch carries what the sentence used to say.
     await expect(page.locator('[data-scope-switch]')).toHaveAttribute(
       'title',
@@ -158,6 +162,7 @@ test.describe('Title block (#904)', () => {
     await page.goto('/my-matters');
     const group = page.locator('[data-scope-switch]');
     await expect(group).toHaveAttribute('title', /manage as primary or secondary project manager/);
+    await openHeaderOptions(page);
     await page.getByRole('button', { name: 'All matters', exact: true }).click();
     await expect(group).toHaveAttribute('title', /All active matters, whoever manages them/);
     expect(await drawn(page, '[data-page-description]')).toBe(0);
