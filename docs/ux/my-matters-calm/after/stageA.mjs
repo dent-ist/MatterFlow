@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { launch, ctx, BASE, settle, VIEWS } from './lib.mjs';
 import { measure } from './metrics.mjs';
-const OUT = path.dirname(fileURLToPath(import.meta.url));
+const OUT = process.env.MF_OUT ?? path.dirname(fileURLToPath(import.meta.url));
 const personas = process.argv[2] ? process.argv[2].split(',') : ['pm1', 'pm3'];
 const TABS = process.argv[3] ? process.argv[3].split(',') : ['overview', 'deadlines', 'breakdown', 'data', 'activity', 'trends'];
 const file = path.join(OUT, 'metrics.json');

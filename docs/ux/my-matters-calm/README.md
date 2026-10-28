@@ -451,3 +451,42 @@ Dependencies are in `delivery-plan.md`.
 * Numbers: `before/metrics.json`; scripts: `before/metrics.mjs`, `before/stageA.mjs`, `before/lib.mjs`.
 
 Limits of this review: the demo data are generated (names "Test User nn", demo matters), the at-risk and hold ages were set with SQL on the throwaway database, one browser (Chromium), no screen-reader run (the issues keep the existing axe gate and ask for accessible names), pm3 has only four matters (a 40-matter PM would make Matter health and Breakdown taller, which strengthens #908 and #911).
+
+## 8. Result after Release 2 ("Calm details") and the calm budget
+
+Measured on the real app with the demo data (`npm run seed:demo -- --tasks 150 --seed 7 --aged` on a fresh database), the same two people (pm1: one matter, pm3: three matters), the same script (`after/stageA.mjs`, `after/metrics.mjs`) and the "reach" and "seen" method: only controls a person can reach (closed popovers, skip links and the shell's own controls left out) and words a person sees (closed popovers, the screen-reader-only sentence left out) inside the first screen. **The baseline was measured again with the same method** on the build of `e2dd52e` (the base of the review) and the same demo data (`after/metrics-baseline-remeasured.json`), so the old counts of this README (84 controls, 384 words), which counted hidden things, are not mixed with the new ones.
+
+| 1366x768, Overview | Baseline (same method) | After batch 4 | **After Release 2** | Target | Met? |
+|---|---|---|---|---|---|
+| First task row, one matter / three matters | 569 / 569 px | 257 / 297 | **233 / 273 px** | about 250 / 270, 300 at most | yes |
+| Controls reached on the first screen, one matter | 45 | 30 | **24** | about 25 | yes |
+| Controls reached on the first screen, three matters | 47 | 39 | **36** | about 25 | **no** |
+| Words seen on the first screen, one matter | 191 | 146 | **122** | about 120 to 150 | yes |
+| Words seen on the first screen, three matters | 213 | 246 | **218** | about 120 to 150 | **no** |
+| Page height, one matter / three matters | 1,996 / 2,513 px | 773 / 894 | **773 / 798 px** | about 700 / 1,100 | yes |
+| Repeated task ids | 6 / 7 | 0 | **0** | none | yes |
+
+| 375x812 phone, Overview | Baseline | After batch 4 | **After Release 2** | Target | Met? |
+|---|---|---|---|---|---|
+| First task row | 1,021 / 1,069 px | 326 / 326 | **278 / 278 px** | 420 | yes |
+| Controls reached / words seen (one matter) | 25 / 75 | 22 / 102 | **19 / 96** | | |
+| Controls reached / words seen (three matters) | 26 / 79 | 21 / 110 | **19 / 100** | | |
+
+Why the three-matter person is not at 25 and 120 to 150: the first screen now holds MORE of the page (the first task row moved from 569 to 273 px, so Needs my attention, Next 7 days and all three matter rows fit), so it carries more words than the baseline (218 against 213) even though every part got shorter. What is left on it (36 controls): the header (Options, New task, Matter chooser = 3), Client and Role (2), the strip (6), the tabs (6), Needs my attention (View all, Options, 5 rows = 7), Next 7 days (All deadlines, 3 rows = 4), and the Matters list (All matters, the info button and three rows with their menu = 8). The matter name stays on every row (owner decision, Cut 4 not chosen), which is about 4 words on each of the 8 rows. Cuts that remain if the owner wants the number: the Matters list below the fold (a Matters section that starts under the first screen), the row menus of the Matters list (New task is also in the header chooser), the Export Options of Needs my attention (into the header Options).
+
+The first thing the three-second test shows at 1366x768 is "5 overdue  2 at risk" in large red and amber type under the title (`after/pm3-overview-1366x768.png`); the owner names what they see first (acceptance of #918).
+
+### The calm budget (#924)
+
+`frontend/e2e/tests/mm-calm-budget.spec.ts` measures the first screen (the same function as `metrics.mjs`, `frontend/e2e/support/calm-metrics.ts`) for both people at 1366x768 and 375x812 on a busy fixture (five late tasks, three due soon) and fails, printing the measured numbers, when a budget is passed. It runs in 20 seconds.
+
+| Budget (Overview) | One matter, 1366x768 | Three matters, 1366x768 | Phone (both) | Why |
+|---|---|---|---|---|
+| First task row | 300 px | 300 px | 420 px | the issue's numbers; measured 233, 273, 278 |
+| Controls on the first screen | 25 | 37 | 22 | one matter: the issue's 25 (measured 25); three matters: measured 36 plus one, the number is a ceiling and the 25 stays open; phone measured 20 |
+| Words on the first screen | 150 | 215 | 110 | one matter: the issue's 150 (measured 125); three matters: measured 207; phone measured 93 to 99 |
+| A task id twice on the Overview | none | none | none | measured 0 |
+
+The Deadlines and Activity tabs are not rebuilt yet (Release 3), so they get a ratchet at their measured numbers plus about 5 percent (Deadlines: row 400 / 430 px, controls 30 / 22, words 125 / 90; Activity: row 400 / 560 px, controls 42 / 27, words 215 / 90, desktop / phone). Release 3 lowers them.
+
+Screenshots of every tab at four widths for both people are in `after/` under the file names of `before/`; `after/listControls.mjs` lists the controls of a screen (where a budget goes); the numbers of each batch are kept in `after/metrics-batch*.json`.
