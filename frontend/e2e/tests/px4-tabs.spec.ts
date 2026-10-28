@@ -27,6 +27,7 @@ test.describe('My Matters: the tab shell', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'shell');
     const m = await w.matter('Alpha');
+    await w.matter('Beta', w.other, w.pm); // Primary on one, Secondary on the other: the Role filter is offered
     await w.task(m, { dueDate: inDays(3) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
@@ -53,7 +54,7 @@ test.describe('My Matters: the tab shell', () => {
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
     await tab(page, 'trends').click();
     await expect(panel(page, 'trends')).toBeVisible();
-    await expect(page.locator('[data-filter=range]')).toBeHidden(); // the dates belong to Overview and Deadlines (kept in place, unseen)
+    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // the dates belong to the Deadlines tab (#906)
 
     // Back returns to the earlier tab and puts focus on its tab.
     await page.goBack();
@@ -202,11 +203,11 @@ test.describe('My Matters: Deadlines', () => {
     await expect(tabPanel.locator('[data-matter-group]').first()).toContainText('(3)');
     await expect(tabPanel.locator('[data-deadline-row]')).toHaveCount(4);
     // 2 weeks leaves out the task due in 20 days.
-    await tabPanel.locator('[data-range="2w"]').click();
+    await page.locator('#mm-range').selectOption('2w'); // the Dates control of the tab (#906: the 2 / 4 week buttons are gone)
     await expect(page).toHaveURL(/range=2w/);
     await expect(tabPanel.locator('[data-deadline-row]')).toHaveCount(3);
     await expect(tabPanel.locator('[data-matter-group]').first()).toContainText('(2)');
-    await tabPanel.locator('[data-range="4w"]').click();
+    await page.locator('#mm-range').selectOption('4w');
 
     // The calendar: week rows, today in words, a count per day that opens the Task Queue with the same tasks.
     await tabPanel.locator('[data-view="calendar"]').click();

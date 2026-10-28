@@ -1,14 +1,17 @@
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { inDays, mmWorld } from '../support/my-matters-fixtures';
+import { pmThree } from '../support/pm-fixtures';
 import { expect, test } from '../support/fixtures';
 import { SIZES } from '../support/screens';
 
 /**
  * My Matters layout stability (issues #824, #825).
  *
- * #824: every control of the filter row (Client, Role, Dates, Clear filters) has the same height and the same top and bottom edge, at the
- * four widths (on a phone the controls are in the Filters sheet).
+ * #824: every control of the filter row (Client, Role, Clear filters) has the same height and the same top and bottom edge, at the
+ * four widths (on a phone the controls are in the Filters sheet); the Dates controls of the Deadlines tab (#906) are as high as one another.
+ * The Client and Role controls are only drawn for a person whose matters have several clients and both roles, so these tests use the
+ * three-matter persona (`pmThree`).
  * #825: the tab strip stays at exactly the same top (y) on all four tabs: with data and with none, while loading, with an error, after a
  * reload and on a deep link.
  */
@@ -79,13 +82,11 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       personas,
       asUser,
     }) => {
-      const w = await mmWorld(seed, personas, `fh${size.width}`);
-      const a = await w.matter('Height alpha');
-      await w.task(a, { dueDate: inDays(2) });
-      const page = await asUser(w.pm.username);
+      const p = await pmThree(seed, personas, `fh${size.width}`);
+      const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
 
-      // Overview: Client, Role, Dates and Clear filters (a non-default role makes Clear filters appear).
+      // Overview: Client, Role and Clear filters (a non-default role makes Clear filters appear).
       await page.goto('/my-matters?role=primary');
       const phone = size.width < 640;
       let scope = page.locator('body');
@@ -95,40 +96,31 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       }
       await expect(scope.locator('#mm-client')).toBeVisible();
       await expect(scope.locator('[data-clear-filters]')).toBeVisible();
+      const prefix = phone ? '[role=dialog] ' : '';
       const row = async (): Promise<Measure[]> => [
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-client`, 'Client'),
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-role`, 'Role'),
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-range`, 'Dates'),
-        await measure(
-          page,
-          `${phone ? '[role=dialog] ' : ''}[data-clear-filters]`,
-          'Clear filters',
-        ),
+        await measure(page, `${prefix}#mm-client`, 'Client'),
+        await measure(page, `${prefix}#mm-role`, 'Role'),
+        await measure(page, `${prefix}[data-clear-filters]`, 'Clear filters'),
       ];
       await still(page);
       const all = await row();
       // Controls beside each other share their bottom edge; on a phone they are stacked, so only the heights have to agree.
       for (const m of all) expect(m.height, `${m.tag} height`).toBeCloseTo(all[0].height, 1);
       if (!phone) expectSameBox(all, `${size.width} px (row)`);
+      if (phone) await page.getByRole('button', { name: 'Show results' }).click();
 
-      // The same with the custom range's From / To.
+      // The Dates controls live in the Deadlines tab (they are never in the bar): one height, also with the custom range's From / To.
       await page.goto(`/my-matters?tab=deadlines&role=primary&range=custom`);
-      if (phone) {
-        await page.locator('[data-filters-open]').click();
-      }
-      await expect(scope.locator('#mm-from')).toBeVisible();
+      await expect(page.locator('#mm-from')).toBeVisible();
+      await expect(page.locator('[data-mm-filters] #mm-range')).toHaveCount(0);
       await still(page);
-      const withDates = [
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-role`, 'Role'),
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-from`, 'From'),
-        await measure(page, `${phone ? '[role=dialog] ' : ''}#mm-to`, 'To'),
-        await measure(
-          page,
-          `${phone ? '[role=dialog] ' : ''}[data-clear-filters]`,
-          'Clear filters',
-        ),
+      const dates = [
+        await measure(page, '#mm-range', 'Dates'),
+        await measure(page, '#mm-from', 'From'),
+        await measure(page, '#mm-to', 'To'),
       ];
-      expectSameBox(withDates, `${size.width} px (custom dates)`);
+      for (const m of dates) expect(m.height, `${m.tag} height`).toBeCloseTo(dates[0].height, 1);
+      if (!phone) expectSameBox(dates, `${size.width} px (custom dates)`);
 
       await noHorizontalScroll(page);
       if (axeAvailable()) {
@@ -141,17 +133,15 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       personas,
       asUser,
     }) => {
-      const w = await mmWorld(seed, personas, `fc${size.width}`);
-      const a = await w.matter('Chosen alpha');
-      await w.task(a, { dueDate: inDays(2) });
-      const page = await asUser(w.pm.username);
+      const p = await pmThree(seed, personas, `fc${size.width}`);
+      const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       const phone = size.width < 640;
       if (phone) await page.locator('[data-filters-open]').click();
       const prefix = phone ? '[role=dialog] ' : '';
       const input = page.locator(`${prefix}#mm-client`);
-      await input.fill('0');
+      await input.fill(p.clients[0].name.slice(0, 12));
       await page.locator(`${prefix}[role=option]`).first().click();
       await expect(page.locator(`${prefix}[data-chosen]`)).toBeVisible();
       await still(page);
@@ -315,10 +305,13 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
     }
 
     // Within one situation the strip is where it is on every tab. (An error alert above the strip is part of the strip's own situation and
-    // is on every tab alike, so it is compared among the error cases only.)
+    // is on every tab alike, so it is compared among the error cases only. A person with nothing at all has no strip of zeros once the summary
+    // is in (#920), so "loading" and "loaded" are two situations.)
+    const only = (prefix: string) => new Map([...loadTops].filter(([k]) => k.startsWith(prefix)));
     for (const [name, tops] of [
       ['empty', emptyTops],
-      ['loading and loaded', loadTops],
+      ['loading', only('loading')],
+      ['loaded', only('loaded')],
       ['error', errorTops],
     ] as const) {
       const first = [...tops.values()][0];

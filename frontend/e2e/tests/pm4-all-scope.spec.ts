@@ -140,7 +140,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-scope]')).toHaveCount(0);
     await expect(page.getByRole('combobox', { name: 'Project manager' })).toHaveCount(0);
     await expect(page.locator('[data-set-managers]')).toHaveCount(0);
-    await expect(strip(page, 'matters')).toHaveText('0');
+    await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing to count: no strip of zeros (#920)
     expect(forbidden).toEqual([]);
     const api = await Api.as(plain.username);
     for (const path of ['scope=all', 'scope=mine&managerId=1']) {

@@ -219,6 +219,8 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
     `,
   ],
   template: `
+    <!-- The tab's one range control stays when the tab is empty: a different range (a custom one) can show something. -->
+    <mf-mm-dates [filters]="filters()" (filterChange)="filterChange.emit($event)" />
     <mf-mm-panel
       name="deadlines-tab"
       title="Deadlines"
@@ -248,9 +250,6 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
             Calendar
           </button>
         </div>
-      }
-      @if (!bare()) {
-        <mf-mm-dates [filters]="filters()" (filterChange)="filterChange.emit($event)" />
       }
       @if (!bare()) {
         <mf-mm-section-toolbar

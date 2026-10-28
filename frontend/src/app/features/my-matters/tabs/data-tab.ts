@@ -679,142 +679,145 @@ function plural(n: number, one: string, many: string): string {
       }
     </mf-mm-panel>
 
-    <mf-mm-panel
-      name="data-volume"
-      title="Data volume over time"
-      [state]="volume.state()"
-      [busy]="volume.busy()"
-      (retry)="volume.load()"
-    >
-      <div class="dt__controls" data-volume-controls>
-        <div class="dt__field">
-          <label for="dv-matter">Matter</label>
-          <select
-            id="dv-matter"
-            class="mf-control"
-            data-volume-matter
-            (change)="pickMatter($any($event.target).value)"
-          >
-            <option value="" [selected]="matterId() === null">
-              {{ filters().scope === 'all' ? 'All matters' : 'All my matters' }}
-            </option>
-            @for (m of data()?.matters ?? []; track m.matterId) {
-              <option [value]="m.matterId" [selected]="m.matterId === matterId()">
-                {{ m.matterRef }} {{ m.matterName }}
-              </option>
-            }
-          </select>
-        </div>
-        <div class="dt__field">
-          <label for="dv-months">Period</label>
-          <select
-            id="dv-months"
-            class="mf-control"
-            data-volume-months
-            (change)="pickMonths($any($event.target).value)"
-          >
-            @for (n of monthChoices; track n) {
-              <option [value]="n" [selected]="n === months()">Last {{ n }} months</option>
-            }
-          </select>
-        </div>
-        @if (volumeUnits().length > 1) {
+    @if (!bare()) {
+      <mf-mm-panel
+        name="data-volume"
+        title="Data volume over time"
+        [state]="volume.state()"
+        [busy]="volume.busy()"
+        (retry)="volume.load()"
+      >
+        <div class="dt__controls" data-volume-controls>
           <div class="dt__field">
-            <label for="dv-unit">Unit</label>
+            <label for="dv-matter">Matter</label>
             <select
-              id="dv-unit"
+              id="dv-matter"
               class="mf-control"
-              data-volume-unit
-              (change)="volumeUnit.set($any($event.target).value)"
+              data-volume-matter
+              (change)="pickMatter($any($event.target).value)"
             >
-              @for (u of volumeUnits(); track u) {
-                <option [value]="u" [selected]="u === unitShown()">{{ u }}</option>
+              <option value="" [selected]="matterId() === null">
+                {{ filters().scope === 'all' ? 'All matters' : 'All my matters' }}
+              </option>
+              @for (m of data()?.matters ?? []; track m.matterId) {
+                <option [value]="m.matterId" [selected]="m.matterId === matterId()">
+                  {{ m.matterRef }} {{ m.matterName }}
+                </option>
               }
             </select>
           </div>
-        }
-        <div class="dt__toggle" role="group" aria-label="Show the volume as">
-          <button
-            type="button"
-            class="mf-btn"
-            data-show-chart
-            [attr.aria-pressed]="!asTable()"
-            (click)="asTable.set(false)"
-          >
-            Chart
-          </button>
-          <button
-            type="button"
-            class="mf-btn"
-            data-show-table
-            [attr.aria-pressed]="asTable()"
-            (click)="asTable.set(true)"
-          >
-            Show as table
-          </button>
-        </div>
-      </div>
-      @if (volume.data(); as v) {
-        @if (v.units.length > 1 && v.unitsWarning) {
-          <p class="dt__note" data-volume-units-warning>
-            <i class="pi pi-info-circle" aria-hidden="true"></i> {{ v.unitsWarning }}
-          </p>
-        }
-        @if (!hasVolume()) {
-          <p class="dt__muted" data-volume-empty>
-            No size is recorded for the assets in this view, so there is no volume to show. Set a
-            size field on the asset type.
-          </p>
-        } @else if (asTable()) {
-          <div class="dt__scroll" role="region" aria-label="Data volume by month" tabindex="0">
-            <table class="dt__table" data-volume-table>
-              <caption class="mf-sr-only">
-                Data volume by month, in
-                {{
-                  unitShown()
-                }}: the size held at the end of each month and what came in and went out during it.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Month</th>
-                  <th scope="col" class="num">Assets held</th>
-                  <th scope="col" class="num">Size held ({{ unitShown() }})</th>
-                  <th scope="col" class="num">Added</th>
-                  <th scope="col" class="num">Disposed</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (r of volumeTable(); track r.month) {
-                  <tr>
-                    <th scope="row">{{ r.label }}</th>
-                    <td class="num">{{ count(r.assets) }}</td>
-                    <td class="num">{{ fmt(r.held) }}</td>
-                    <td class="num">{{ fmt(r.added) }}</td>
-                    <td class="num">{{ fmt(r.removed) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+          <div class="dt__field">
+            <label for="dv-months">Period</label>
+            <select
+              id="dv-months"
+              class="mf-control"
+              data-volume-months
+              (change)="pickMonths($any($event.target).value)"
+            >
+              @for (n of monthChoices; track n) {
+                <option [value]="n" [selected]="n === months()">Last {{ n }} months</option>
+              }
+            </select>
           </div>
-        } @else {
-          @defer (on immediate) {
-            <mf-column-chart
-              heading="Size held at the end of each month"
-              [rows]="chartRows()"
-              [unit]="unitShown()"
-              [format]="fmtFn"
-              emptyText="Nothing to show."
-            />
-          } @placeholder {
-            <p class="dt__muted" role="status">Loading the chart</p>
+          @if (volumeUnits().length > 1) {
+            <div class="dt__field">
+              <label for="dv-unit">Unit</label>
+              <select
+                id="dv-unit"
+                class="mf-control"
+                data-volume-unit
+                (change)="volumeUnit.set($any($event.target).value)"
+              >
+                @for (u of volumeUnits(); track u) {
+                  <option [value]="u" [selected]="u === unitShown()">{{ u }}</option>
+                }
+              </select>
+            </div>
           }
+          <div class="dt__toggle" role="group" aria-label="Show the volume as">
+            <button
+              type="button"
+              class="mf-btn"
+              data-show-chart
+              [attr.aria-pressed]="!asTable()"
+              (click)="asTable.set(false)"
+            >
+              Chart
+            </button>
+            <button
+              type="button"
+              class="mf-btn"
+              data-show-table
+              [attr.aria-pressed]="asTable()"
+              (click)="asTable.set(true)"
+            >
+              Show as table
+            </button>
+          </div>
+        </div>
+        @if (volume.data(); as v) {
+          @if (v.units.length > 1 && v.unitsWarning) {
+            <p class="dt__note" data-volume-units-warning>
+              <i class="pi pi-info-circle" aria-hidden="true"></i> {{ v.unitsWarning }}
+            </p>
+          }
+          @if (!hasVolume()) {
+            <p class="dt__muted" data-volume-empty>
+              No size is recorded for the assets in this view, so there is no volume to show. Set a
+              size field on the asset type.
+            </p>
+          } @else if (asTable()) {
+            <div class="dt__scroll" role="region" aria-label="Data volume by month" tabindex="0">
+              <table class="dt__table" data-volume-table>
+                <caption class="mf-sr-only">
+                  Data volume by month, in
+                  {{
+                    unitShown()
+                  }}: the size held at the end of each month and what came in and went out during
+                  it.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Month</th>
+                    <th scope="col" class="num">Assets held</th>
+                    <th scope="col" class="num">Size held ({{ unitShown() }})</th>
+                    <th scope="col" class="num">Added</th>
+                    <th scope="col" class="num">Disposed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of volumeTable(); track r.month) {
+                    <tr>
+                      <th scope="row">{{ r.label }}</th>
+                      <td class="num">{{ count(r.assets) }}</td>
+                      <td class="num">{{ fmt(r.held) }}</td>
+                      <td class="num">{{ fmt(r.added) }}</td>
+                      <td class="num">{{ fmt(r.removed) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            @defer (on immediate) {
+              <mf-column-chart
+                heading="Size held at the end of each month"
+                [rows]="chartRows()"
+                [unit]="unitShown()"
+                [format]="fmtFn"
+                emptyText="Nothing to show."
+              />
+            } @placeholder {
+              <p class="dt__muted" role="status">Loading the chart</p>
+            }
+          }
+          <p class="dt__note dt__note--tight" data-volume-limit>{{ v.limitation }}</p>
+          <p class="dt__note dt__note--tight">
+            The size held leaves out disposed assets; the table above counts them.
+          </p>
         }
-        <p class="dt__note dt__note--tight" data-volume-limit>{{ v.limitation }}</p>
-        <p class="dt__note dt__note--tight">
-          The size held leaves out disposed assets; the table above counts them.
-        </p>
-      }
-    </mf-mm-panel>
+      </mf-mm-panel>
+    }
   `,
 })
 export class DataTab {

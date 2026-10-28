@@ -70,6 +70,8 @@ test.describe('My Matters: keyboard', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'kb1');
     const a = await w.matter('Keyboard alpha');
+    await w.matter('Keyboard beta', w.other, w.pm); // Secondary here: the Role filter is offered
+    await w.matterInOtherClient('Keyboard gamma'); // a second client: the Client filter is offered
     await w.task(a, { dueDate: '2000-01-01', title: 'Keyboard overdue' });
     await w.task(a, { dueDate: inDays(3), title: 'Keyboard soon' });
     const page = await asUser(w.pm.username);
@@ -102,7 +104,10 @@ test.describe('My Matters: keyboard', () => {
     test.info().annotations.push({ type: 'tab-stops', description: stops.join(' > ') });
 
     // Enter on the New task button opens Create task with the matter; Escape-free: Back returns.
-    await page.getByRole('button', { name: /^New task for/ }).focus();
+    await page
+      .getByRole('button', { name: /^New task for/ })
+      .first()
+      .focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/tasks\/new\?matterId=/);
     await page.goBack();
@@ -144,6 +149,7 @@ test.describe('My Matters: keyboard', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'kb2');
     await w.matter('Shortcut alpha');
+    await w.matterInOtherClient('Shortcut beta'); // a second client: the Client filter is offered
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.locator('[data-health-row]').first()).toBeVisible();

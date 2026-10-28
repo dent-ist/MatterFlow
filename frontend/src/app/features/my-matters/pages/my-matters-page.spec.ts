@@ -1071,7 +1071,7 @@ describe('MyMattersPage', () => {
         [matter(5, 2, 'primary'), matter(6, 3, 'secondary')],
       );
       const panel = el(h).querySelector('[data-panel=deadlines-tab]')!;
-      expect(panel.querySelector('#mm-range')).not.toBeNull();
+      expect(el(h).querySelector('[data-mm-tabpanel] #mm-range')).not.toBeNull();
       expect(el(h).querySelector('[data-mm-filters] #mm-range')).toBeNull();
       expect(panel.querySelector('[data-range]')).toBeNull(); // the old 2 / 4 week buttons
     });

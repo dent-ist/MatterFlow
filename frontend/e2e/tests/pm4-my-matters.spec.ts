@@ -116,7 +116,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await expect(cell(page, 'matters').locator('strong')).toHaveText('2');
     await expect(page.locator('[data-chosen]')).toContainText(w.world.client.name);
     await page.goto('/my-matters?clientId=99999999');
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('0');
+    await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing counted: no strip of zeros (#920)
     await expect(page.locator('[data-panel=health] [data-empty-kind=filtered]')).toContainText(
       'No matters match these filters.',
     );
@@ -142,10 +142,9 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await expect(page.locator('[data-panel=health]')).toContainText(
       'Ask a director to assign you.',
     );
-    await expect(page.locator('[data-panel=attention] [data-empty]')).toContainText(
-      'Nothing needs your attention.',
-    );
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('0');
+    // Nothing else is drawn: no strip of zeros, no empty cards (#920).
+    await expect(page.locator('[data-mm-strip]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=attention]')).toBeHidden();
     await page.locator('[data-to-my-work]').click();
     await expect(page).toHaveURL(/\/my-work/);
   });

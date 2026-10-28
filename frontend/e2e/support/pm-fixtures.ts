@@ -295,7 +295,7 @@ async function personaWorld(
   // Three clients for the three-matter persona (the Client filter is then offered); one for the solo persona.
   const clients: PmClient[] = [];
   const makeClient = async (name: string): Promise<Json> => {
-    const c = await seed.client({ name: `${name} ${label} ${token}` });
+    const c = await seed.client({ name: `${name} ${token}` });
     clients.push({ clientId: c.clientId, clientNumber: c.clientNumber, name: c.name });
     return c;
   };
@@ -309,9 +309,9 @@ async function personaWorld(
   };
   const matters: PmMatter[] = [];
   if (three) {
-    const c1 = await makeClient('Persona client one');
-    const c2 = await makeClient('Persona client two');
-    const c3 = await makeClient('Persona client three');
+    const c1 = await makeClient('Alpha');
+    const c2 = await makeClient('Beta');
+    const c3 = await makeClient('Gamma');
     const one = await seed.matter({
       client: c1,
       number: '00001',
@@ -333,7 +333,7 @@ async function personaWorld(
       await manage(tri, other, pm),
     );
   } else {
-    const c1 = await makeClient('Persona client solo');
+    const c1 = await makeClient('Solo');
     const only = await seed.matter({
       client: c1,
       number: '00001',
@@ -361,7 +361,7 @@ async function personaWorld(
     taskType: world.taskType,
     workflow: world.workflow,
   });
-  const farOut = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  const farOut = new Date(Date.now() + 12 * 86_400_000).toISOString().slice(0, 10);
   const overdue = await seed.task(on(0), { title: `Overdue ${token}`, dueDate: '2000-01-01' });
   const unassigned = await seed.task(on(1), { title: `Unassigned ${token}`, dueDate: farOut });
   const hold = await seed.task(on(2), { title: `Held ${token}`, dueDate: farOut });

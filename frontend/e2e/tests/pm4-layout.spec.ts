@@ -36,7 +36,7 @@ test.describe('My Matters on a phone and a tablet', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'lay1');
     const a = await w.matter('Layout alpha');
-    await w.matter('Layout bravo', w.pm, w.other);
+    await w.matter('Layout bravo', w.other, w.pm); // Secondary here: the Role filter (and so the Filters button) is offered
     await w.task(a, { dueDate: '2000-01-01' });
     await w.task(a, { dueDate: inDays(2) });
     await w.task(a);

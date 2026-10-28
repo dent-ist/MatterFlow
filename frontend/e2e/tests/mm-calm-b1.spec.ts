@@ -45,6 +45,48 @@ const drawn = (page: Page, selector: string): Promise<number> =>
     }).length;
   }, selector);
 
+/** Answers "no events" to the activity calls and "nothing changed" to the since-last-visit call (setting a matter up leaves events behind). */
+const nothingRecent = async (page: Page, activity = true, since = true): Promise<void> => {
+  const now = new Date().toISOString();
+  if (activity)
+    await page.route('**/api/v1/my-matters/activity**', (route) =>
+      route.fulfill({
+        json: {
+          timeZone: 'America/New_York',
+          asOfUtc: now,
+          sinceUtc: now,
+          seenEventId: 0,
+          latestEventId: 0,
+          unreadCount: 0,
+          hasMore: false,
+          items: [],
+        },
+      }),
+    );
+  if (since)
+    await page.route('**/api/v1/my-matters/since-last-visit**', (route) => {
+      const none = { count: 0, query: '', target: 'activity' };
+      return route.fulfill({
+        json: {
+          timeZone: 'America/New_York',
+          asOfUtc: now,
+          sinceUtc: now,
+          hasMarker: true,
+          seenEventId: 0,
+          counts: {
+            newTasks: none,
+            completed: none,
+            becameOverdue: none,
+            reassigned: none,
+            putOnHold: none,
+            comments: none,
+          },
+          items: [],
+        },
+      });
+    });
+};
+
 test.describe('Title block (#904)', () => {
   for (const size of SIZES) {
     test(`one matter: no description line and exactly one create-task button at ${size.width} px`, async ({
@@ -66,7 +108,10 @@ test.describe('Title block (#904)', () => {
       const create = page.getByRole('button', { name: 'Create task' });
       await expect(create).toHaveCount(1);
       await expect(create).toBeVisible();
-      await expect(page.getByRole('button', { name: /New task|Task on a matter/ })).toHaveCount(0);
+      // (The Matter health table has its own "New task for ..." button per matter row until #908 removes that table for one matter.)
+      await expect(
+        page.locator('mf-page-header').getByRole('button', { name: /New task|Task on a matter/ }),
+      ).toHaveCount(0);
 
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
@@ -97,7 +142,10 @@ test.describe('Title block (#904)', () => {
     await expect(menu).toBeVisible();
     await expect(menu).toContainText('Task on a matter');
     // The scope switch carries what the sentence used to say.
-    await expect(page.locator('[data-scope-switch]')).toHaveCount(0); // a person without Matter.AssignManagers has no switch
+    await expect(page.locator('[data-scope-switch]')).toHaveAttribute(
+      'title',
+      /manage as primary or secondary project manager/,
+    );
   });
 
   test('the All matters switch says in its tooltip which matters are shown', async ({
@@ -109,7 +157,7 @@ test.describe('Title block (#904)', () => {
     await page.goto('/my-matters');
     const group = page.locator('[data-scope-switch]');
     await expect(group).toHaveAttribute('title', /manage as primary or secondary project manager/);
-    await page.getByRole('button', { name: 'All matters' }).click();
+    await page.getByRole('button', { name: 'All matters', exact: true }).click();
     await expect(group).toHaveAttribute('title', /All active matters, whoever manages them/);
     expect(await drawn(page, '[data-page-description]')).toBe(0);
   });
@@ -301,7 +349,7 @@ test.describe('Empty states are one line (#920)', () => {
     await expect(page.locator('[data-empty-kind]')).toHaveCount(0);
   });
 
-  test('a manager with matters but no work: one line says so, the four empty sections are gone', async ({
+  test('a manager with matters but no work and nothing recent: one line says so, the four empty sections are gone', async ({
     seed,
     personas,
     asUser,
@@ -310,6 +358,8 @@ test.describe('Empty states are one line (#920)', () => {
     await w.matter('Quiet matter');
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
+    // Setting up the matter left events behind (a manager was named): the page is quiet when there are none.
+    await nothingRecent(page);
     await page.goto('/my-matters');
     await settled(page);
     await expect(page.locator('[data-all-quiet]')).toHaveText(
@@ -352,16 +402,18 @@ test.describe('Empty states are one line (#920)', () => {
     await w.matter('No work at all');
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
+    await nothingRecent(page, true, false);
     for (const tab of ['deadlines', 'breakdown', 'data', 'activity'] as const) {
       await page.goto(url(tab));
       await settled(page, tab);
       await expect(page.locator('[data-mm-tabpanel] [data-empty]'), tab).toBeVisible();
       expect(
         await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input'),
+        // The Deadlines tab keeps its one range control: another range can show something.
         `${tab}: no controls`,
-      ).toBe(0);
+      ).toBe(tab === 'deadlines' ? 1 : 0);
       const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
-      expect(panel!.height, `${tab}: short`).toBeLessThan(200);
+      expect(panel!.height, `${tab}: short`).toBeLessThan(tab === 'deadlines' ? 260 : 200);
     }
   });
 });

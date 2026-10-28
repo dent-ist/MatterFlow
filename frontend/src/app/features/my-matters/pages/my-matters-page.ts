@@ -432,7 +432,11 @@ export class MyMattersPage {
       this.createContext.matterId.set(null);
     });
     // One managed matter: the shell's "Create task" is the one create button and opens Create task with that matter (issue #904).
-    effect(() => this.createContext.matterId.set(this.managed.only()?.matterId ?? null));
+    effect(() =>
+      this.createContext.matterId.set(
+        this.filters().scope === 'mine' ? (this.managed.only()?.matterId ?? null) : null,
+      ),
+    );
     effect(() => {
       const tab = this.tab();
       untracked(() => {

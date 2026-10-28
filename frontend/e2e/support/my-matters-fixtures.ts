@@ -19,6 +19,15 @@ export interface MmWorld {
   /** Another Project Manager, to be Secondary on matters. */
   other: Persona;
   matter(name: string, primary?: Persona | null, secondary?: Persona | null): Promise<MmMatter>;
+  /**
+   * A matter of a NEW client (so the person's matters belong to two or more clients and the Client filter is offered, #906). The default manager
+   * is the person; the matter number is the first of its own client.
+   */
+  matterInOtherClient(
+    name: string,
+    primary?: Persona | null,
+    secondary?: Persona | null,
+  ): Promise<MmMatter>;
   task(matter: MmMatter, overrides?: Json): Promise<Json>;
 }
 
@@ -52,6 +61,18 @@ export async function mmWorld(seed: Seeder, personas: Personas, label: string): 
         number: String(++next).padStart(5, '0'),
         name: `${name} ${label}`,
       });
+      if (primary || secondary) {
+        await seed.admin.put(`/api/v1/matters/${created.matterId}/managers`, {
+          primaryManagerId: primary?.userId ?? null,
+          secondaryManagerId: secondary?.userId ?? null,
+          rowVersion: created.rowVersion,
+        });
+      }
+      return { matterId: created.matterId, matterRef: created.matterRef, name: created.name };
+    },
+    async matterInOtherClient(name, primary = pm, secondary = null) {
+      const client = await seed.client({ name: `Other ${label} ${token}` });
+      const created = await seed.matter({ client, number: '00001', name: `${name} ${label}` });
       if (primary || secondary) {
         await seed.admin.put(`/api/v1/matters/${created.matterId}/managers`, {
           primaryManagerId: primary?.userId ?? null,
