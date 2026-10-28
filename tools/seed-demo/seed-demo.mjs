@@ -11,6 +11,7 @@
 import { Api, ApiError, Pacer, withRecheck } from './lib/http.mjs';
 import { createRng } from './lib/rng.mjs';
 import { FormFiller } from './lib/forms.mjs';
+import { choosablePool } from './lib/assets.mjs';
 import { ageDemoTasks, assertLocal, sqlFromOptions } from './lib/aged.mjs';
 import {
   CANCEL_REASONS,
@@ -493,10 +494,8 @@ async function ensureOrganization(admin, ctx, opts, summary) {
       continue;
     }
     const have = await admin.getAll(`/api/v1/assets?matterId=${matter.matterId}`);
-    ctx.assetPool.set(
-      matter.matterId,
-      have.map((a) => ({ assetId: a.assetId, assetTypeId: a.assetTypeId })),
-    );
+    // Only Active assets: a re-run finds the ones an earlier run moved off Active (ensureDispositions) and a task form refuses those.
+    ctx.assetPool.set(matter.matterId, choosablePool(have));
     const haveTypes = new Set(have.map((a) => a.assetTypeId));
     for (const type of types) {
       if (haveTypes.has(type.assetTypeId)) continue;
