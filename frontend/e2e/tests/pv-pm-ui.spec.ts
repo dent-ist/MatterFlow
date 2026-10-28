@@ -136,8 +136,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     const cell = page.locator('[data-strip-item="atRisk"]');
-    await expect(cell).toContainText('At risk');
-    await expect(cell).toContainText('1');
+    await expect(cell).toHaveAttribute('aria-label', '1 at risk');
     await cell.click();
     await expect(page).toHaveURL(/atRisk=true/);
     const row = page.locator(`tr[data-task="${risky.taskNumber}"]`);
@@ -197,7 +196,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const rows = page.locator('[data-group="overdue"] [data-attention-row]');
+    const rows = page.locator('[data-panel="attention"] [data-attention-row]');
     await expect(rows).toHaveCount(3);
 
     await page.locator('[data-focus-trigger]').click();
@@ -269,7 +268,9 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
     await page.goto('/my-matters');
     const rowsOfBoth = page.locator(`[data-attention-row][href^="/tasks/${both.taskId}"]`);
     await expect(rowsOfBoth).toHaveCount(1);
-    await expect(page.locator('[data-flag-reason]').first()).toContainText('overdue');
+    await expect(page.locator('[data-panel="attention"] [data-fact]').first()).toContainText(
+      'overdue',
+    );
     // The Dates control is on the Deadlines tab only.
     await expect(page.locator('[data-filter="range"]')).toBeHidden();
     await page.goto('/my-matters?tab=deadlines');

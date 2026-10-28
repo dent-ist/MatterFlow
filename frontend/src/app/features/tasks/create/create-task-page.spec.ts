@@ -887,9 +887,9 @@ describe('CreateTaskPage', () => {
       expect(args[8]).toEqual([1]); // creator: me
       expect(args[10]).toBe(7); // the matter
       expect(args[12]).toEqual([1]); // the type
-      expect(args[34]).toBe('created');
-      expect(args[35]).toBe('desc');
-      expect(args[37]).toBe(1);
+      expect(args[35]).toBe('created');
+      expect(args[36]).toBe('desc');
+      expect(args[38]).toBe(1);
       expect(none.el.querySelector('[data-use-last]')).toBeNull();
     });
 

@@ -15433,6 +15433,7 @@ export interface ITaskQueueClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -15440,7 +15441,7 @@ export interface ITaskQueueClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage>;
     /**
      * @param group (optional) 
      * @param q (optional) 
@@ -15475,6 +15476,7 @@ export interface ITaskQueueClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -15483,7 +15485,7 @@ export interface ITaskQueueClient {
      * @param format (optional) 
      * @return OK
      */
-    exportTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, format?: string | undefined): Observable<string>;
+    exportTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, format?: string | undefined): Observable<string>;
 }
 
 @Injectable({
@@ -15533,6 +15535,7 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -15540,7 +15543,7 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
+    getTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<TaskQueuePage> {
         let url_ = this.baseUrl + "/api/v1/task-queue?";
         if (group === null)
             throw new globalThis.Error("The parameter 'group' cannot be null.");
@@ -15674,6 +15677,10 @@ export class TaskQueueClient implements ITaskQueueClient {
             throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
         else if (atRisk !== undefined)
             url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (needsAttention === null)
+            throw new globalThis.Error("The parameter 'needsAttention' cannot be null.");
+        else if (needsAttention !== undefined)
+            url_ += "needsAttention=" + encodeURIComponent("" + needsAttention) + "&";
         if (onHoldReason === null)
             throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
         else if (onHoldReason !== undefined)
@@ -15773,6 +15780,7 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -15781,7 +15789,7 @@ export class TaskQueueClient implements ITaskQueueClient {
      * @param format (optional) 
      * @return OK
      */
-    exportTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, format?: string | undefined): Observable<string> {
+    exportTaskQueue(group?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, format?: string | undefined): Observable<string> {
         let url_ = this.baseUrl + "/api/v1/task-queue/export?";
         if (group === null)
             throw new globalThis.Error("The parameter 'group' cannot be null.");
@@ -15915,6 +15923,10 @@ export class TaskQueueClient implements ITaskQueueClient {
             throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
         else if (atRisk !== undefined)
             url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (needsAttention === null)
+            throw new globalThis.Error("The parameter 'needsAttention' cannot be null.");
+        else if (needsAttention !== undefined)
+            url_ += "needsAttention=" + encodeURIComponent("" + needsAttention) + "&";
         if (onHoldReason === null)
             throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
         else if (onHoldReason !== undefined)
@@ -16096,6 +16108,7 @@ export interface IMyWorkClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -16103,7 +16116,7 @@ export interface IMyWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage>;
 }
 
 @Injectable({
@@ -16157,6 +16170,7 @@ export class MyWorkClient implements IMyWorkClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -16164,7 +16178,7 @@ export class MyWorkClient implements IMyWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
+    getMyWork(view?: string | undefined, closedWindow?: string | undefined, assignedFrom?: string | undefined, group?: string | undefined, newSince?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<MyWorkPage> {
         let url_ = this.baseUrl + "/api/v1/my-work?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -16314,6 +16328,10 @@ export class MyWorkClient implements IMyWorkClient {
             throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
         else if (atRisk !== undefined)
             url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (needsAttention === null)
+            throw new globalThis.Error("The parameter 'needsAttention' cannot be null.");
+        else if (needsAttention !== undefined)
+            url_ += "needsAttention=" + encodeURIComponent("" + needsAttention) + "&";
         if (onHoldReason === null)
             throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
         else if (onHoldReason !== undefined)
@@ -16416,6 +16434,7 @@ export interface IPodWorkClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -16423,7 +16442,7 @@ export interface IPodWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage>;
 }
 
 @Injectable({
@@ -16474,6 +16493,7 @@ export class PodWorkClient implements IPodWorkClient {
      * @param role (optional) 
      * @param dueWithin (optional) 
      * @param atRisk (optional) 
+     * @param needsAttention (optional) 
      * @param onHoldReason (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
@@ -16481,7 +16501,7 @@ export class PodWorkClient implements IPodWorkClient {
      * @param pageSize (optional) 
      * @return OK
      */
-    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
+    getPodWork(podId?: number | undefined, view?: string | undefined, q?: string | undefined, status?: string[] | undefined, priority?: number[] | undefined, pod?: number[] | undefined, noPod?: boolean | undefined, assignee?: number[] | undefined, unassigned?: boolean | undefined, creator?: number[] | undefined, client?: number | undefined, matter?: number | undefined, project?: number | undefined, type?: number[] | undefined, workflow?: number[] | undefined, createdFrom?: string | undefined, createdTo?: string | undefined, dueFrom?: string | undefined, dueTo?: string | undefined, asap?: boolean | undefined, overdue?: boolean | undefined, requestor?: string | undefined, completedFrom?: string | undefined, completedTo?: string | undefined, matterText?: string | undefined, clientText?: string | undefined, projectText?: string | undefined, updatedFrom?: string | undefined, updatedTo?: string | undefined, managedByMe?: boolean | undefined, managerId?: number | undefined, role?: string | undefined, dueWithin?: number | undefined, atRisk?: boolean | undefined, needsAttention?: boolean | undefined, onHoldReason?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined): Observable<PodWorkPage> {
         let url_ = this.baseUrl + "/api/v1/pod-work?";
         if (podId === null)
             throw new globalThis.Error("The parameter 'podId' cannot be null.");
@@ -16619,6 +16639,10 @@ export class PodWorkClient implements IPodWorkClient {
             throw new globalThis.Error("The parameter 'atRisk' cannot be null.");
         else if (atRisk !== undefined)
             url_ += "atRisk=" + encodeURIComponent("" + atRisk) + "&";
+        if (needsAttention === null)
+            throw new globalThis.Error("The parameter 'needsAttention' cannot be null.");
+        else if (needsAttention !== undefined)
+            url_ += "needsAttention=" + encodeURIComponent("" + needsAttention) + "&";
         if (onHoldReason === null)
             throw new globalThis.Error("The parameter 'onHoldReason' cannot be null.");
         else if (onHoldReason !== undefined)
@@ -19709,13 +19733,6 @@ export interface MyMattersAttention {
     timeZone: string;
     asOfUtc: string;
     stuckOnHoldDays: number;
-    groups: MyMattersAttentionGroup[];
-
-    [key: string]: any;
-}
-
-export interface MyMattersAttentionGroup {
-    kind: string;
     total: number;
     query: string;
     items: MyMattersTaskItem[];
@@ -19816,6 +19833,7 @@ export interface MyMattersHealthRow {
     overdue: number;
     dueThisWeek: number;
     unassigned: number;
+    atRisk: number;
     percentComplete: number | undefined;
     nextDeadline: string | undefined;
     flag: string;
@@ -19847,6 +19865,7 @@ export interface MyMattersSinceCounts {
     reassigned: MyMattersSinceCount;
     putOnHold: MyMattersSinceCount;
     comments: MyMattersSinceCount;
+    newUnassigned: MyMattersSinceCount;
 
     [key: string]: any;
 }

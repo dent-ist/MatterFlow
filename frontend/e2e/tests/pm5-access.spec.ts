@@ -63,7 +63,7 @@ const FORBIDDEN_WORDS =
   /no project manager|without a (project )?manager|not managed|unmanaged|needs? a (project )?manager|missing (project )?manager|assign a (project )?manager|warning/i;
 
 test.describe('My Matters: keyboard', () => {
-  test('Tab visits the filters, the counts, the panels in reading order, the table and the row button, with the keys the app already has', async ({
+  test('Tab visits the filters, the chips, the panels in reading order, the matters list and the row menu, with the keys the app already has', async ({
     seed,
     personas,
     asUser,
@@ -77,37 +77,33 @@ test.describe('My Matters: keyboard', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.locator('[data-health-row]').first()).toBeVisible();
-    await expect(page.locator('[data-panel=activity] [data-activity-row]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
       /My matters/,
       /All matters/,
       /Client/,
       /Role/,
-      /Matters I manage/,
-      /Open tasks/,
-      /Overdue/,
-      /Due in 3 days/,
-      /Due in 7 days/,
-      /Unassigned/,
-      /On hold/,
+      /^button: \d+ overdue$/,
+      /^button: \d+ at risk$/,
+      /^button: \d+ unassigned$/,
+      /^button: \d+ on hold/,
+      /^button: \d+ due in 7 days$/,
+      /^button: \d+ open tasks$/,
       /Keyboard overdue/,
       /View all/,
       /2 wk/,
       /4 wk/,
-      /How is this decided/,
-      /Client$|Matter$|Open$/,
+      /How the matters are ordered/,
       /Keyboard alpha/,
-      /New task for/,
+      /More actions for/,
     ]);
     // Evidence for the review: the stops in order (written once per run to the test output).
     test.info().annotations.push({ type: 'tab-stops', description: stops.join(' > ') });
 
-    // Enter on the New task button opens Create task with the matter; Escape-free: Back returns.
-    await page
-      .getByRole('button', { name: /^New task for/ })
-      .first()
-      .focus();
+    // Enter on the row menu opens it, Enter on New task opens Create task with the matter; Back returns.
+    await page.locator('[data-health-row] [data-row-actions] button').first().focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menuitem', { name: '+ New task' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/tasks\/new\?matterId=/);
     await page.goBack();
@@ -121,18 +117,7 @@ test.describe('My Matters: keyboard', () => {
     await page.goBack();
     await expect(page.locator('[data-attention-row]').first()).toBeFocused();
 
-    // The sort buttons work with Enter and Space and say which way they sort.
-    const sort = page.locator('[data-panel=health] [data-sort=open]');
-    await sort.focus();
-    await page.keyboard.press('Enter');
-    await expect(
-      page.locator('[data-panel=health] th[aria-sort=ascending] [data-sort=open]'),
-    ).toBeVisible();
-    await page.keyboard.press('Space');
-    await expect(
-      page.locator('[data-panel=health] th[aria-sort=descending] [data-sort=open]'),
-    ).toBeVisible();
-    // "How is this decided?" opens and closes from the keyboard and keeps focus.
+    // The info button opens and closes the rule from the keyboard and keeps focus.
     const how = page.locator('[data-how]');
     await how.focus();
     await page.keyboard.press('Enter');
@@ -339,7 +324,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     });
     const page = await asUser(plain.username);
     const { refused, toastCount } = await visit(page, '/my-matters');
-    await expect(page.locator('[data-health-row]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no matters list (#908)
     await expect(page.locator('[data-scope]')).toHaveCount(0);
     expect(refused).toEqual([]);
     expect(toastCount).toBe(0);
@@ -379,14 +364,14 @@ test.describe('My Matters and the manager fields: who sees what', () => {
         expect(await toasts(page).count()).toBe(0);
       }
     }
-    // Where the orphan matter shows on My Matters it is Green with its own reason, never Red or Amber for lacking a manager.
+    // Where the orphan matter shows on My Matters it counts its own overdue task and nothing else: never a warning for lacking a manager.
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?scope=all&clientId=${w.world.client.clientId}`);
     const row = page.locator('[data-health-row]', { hasText: 'Orphan matter' });
     await expect(row).toBeVisible();
-    await expect(row.locator('[data-flag]')).toHaveText('Red'); // because of its overdue task, and for no other reason
-    await expect(row.locator('[data-flag-cell]')).toHaveAttribute('title', /a task is overdue/);
-    await expect(row.locator('[data-flag-cell]')).not.toHaveAttribute('title', /manager/i);
+    await expect(row.locator('[data-overdue]')).toHaveText('1 overdue'); // because of its overdue task, and for no other reason
+    await expect(row.locator('[data-at-risk], [data-unassigned]')).toHaveCount(1); // the task has no assignee: counted as such
+    await expect(row).not.toContainText(/manager/i);
     await shot(page, 'pm5-no-manager');
   });
 });

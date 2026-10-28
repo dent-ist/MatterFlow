@@ -412,13 +412,12 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 250);
     evidence('my-matters-overview', '1366', result);
     expectGoodStops('my matters', { stops: result.stops, left: true }, 6);
-    // The skip links are the first stops after the tab strip (#820): four links, each with a name and a visible focus.
+    // The skip links are the first stops after the tab strip (#820): three links (the events left the Overview, #909), each with a name and a visible focus.
     const tabAt = result.stops.findIndex((s) => s.role === 'tab');
-    expect(result.stops.slice(tabAt + 1, tabAt + 5).map((s) => s.name)).toEqual([
+    expect(result.stops.slice(tabAt + 1, tabAt + 4).map((s) => s.name)).toEqual([
       'Needs my attention',
       'Upcoming deadlines',
-      'Matter health',
-      'Recent activity',
+      'Matters',
     ]);
     expect(result.left, 'the whole page was walked').toBe(true);
     const tabStopsInStrip = result.stops.filter((s) => s.role === 'tab');

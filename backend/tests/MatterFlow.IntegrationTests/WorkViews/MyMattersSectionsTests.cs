@@ -40,11 +40,7 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
         }));
     }
 
-    private static JsonElement Group(JsonElement attention, string kind) => attention.GetProperty("groups").EnumerateArray().Single(g => g.GetProperty("kind").GetString() == kind);
-
-    private static List<string> GroupTitles(JsonElement group) => Titles(group.GetProperty("items"));
-
-    private static JsonElement Item(JsonElement group, string title) => group.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("title").GetString() == title);
+    private static JsonElement Item(JsonElement attention, string title) => attention.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("title").GetString() == title);
 
     [Fact]
     public async Task Items_carry_the_type_priority_status_age_hold_and_at_risk_facts()
@@ -57,7 +53,7 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
         H.Factory.InvalidateAll();
 
         var a = await Mine("attention");
-        var plain = Item(Group(a, "overdue"), "m1-overdue");
+        var plain = Item(a, "m1-overdue");
         plain.GetProperty("taskTypeName").GetString().ShouldBe("Data Processing");
         plain.GetProperty("taskTypeIconKey").GetString().ShouldBe("file-text");
         plain.GetProperty("taskTypeColourKey").GetString().ShouldBe("teal");
@@ -67,17 +63,23 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
         plain.GetProperty("onHold").ValueKind.ShouldBe(JsonValueKind.Null);
         plain.GetProperty("atRisk").GetBoolean().ShouldBeFalse(); // no target on the type
 
-        // An overdue task is not "at risk" (it is already late); a not-yet-late task that used 3 of 3 days is.
-        Item(Group(a, "overdue"), "prod-overdue").GetProperty("atRisk").GetBoolean().ShouldBeFalse();
-        var soon = Item(Group(a, "dueSoon"), "prod-soon");
+        // The Production tasks (the type filter keeps the five rows for them): an overdue task is not "at risk" (it is already late);
+        // a not-yet-late task that used 3 of 3 days is, and At risk is a reason with a row of its own (issue #905).
+        var p = await Mine($"attention?taskTypeId={_production}");
+        Item(p, "prod-overdue").GetProperty("atRisk").GetBoolean().ShouldBeFalse();
+        Item(p, "prod-overdue").GetProperty("factCode").GetString().ShouldBe("OVERDUE");
+        var soon = Item(p, "prod-soon");
         soon.GetProperty("atRisk").GetBoolean().ShouldBeTrue();
+        soon.GetProperty("factCode").GetString().ShouldBe("AT_RISK"); // before "unassigned", although it is unassigned and due in 2 days
         soon.GetProperty("taskTypeName").GetString().ShouldBe("Production");
         soon.GetProperty("taskTypeColourKey").GetString().ShouldBe("violet");
         soon.GetProperty("ageDays").GetInt32().ShouldBe(3);
+        Titles(p.GetProperty("items")).ShouldBe(["prod-overdue", "prod-soon", "prod-hold"]);
 
         // On hold: the days and (without a chosen reason) a null reason; an On Hold task is never at risk.
-        var hold = Item(Group(a, "stuckOnHold"), "prod-hold");
+        var hold = Item(p, "prod-hold");
         hold.GetProperty("statusCode").GetString().ShouldBe("ON_HOLD");
+        hold.GetProperty("factCode").GetString().ShouldBe("ON_HOLD_DAYS");
         hold.GetProperty("onHold").GetProperty("days").GetInt32().ShouldBe(9);
         hold.GetProperty("onHold").GetProperty("reasonName").ValueKind.ShouldBe(JsonValueKind.Null);
         hold.GetProperty("atRisk").GetBoolean().ShouldBeFalse();
@@ -94,20 +96,21 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
         await MakeAsync("prod-overdue", M1, new() { ["dueDate"] = "2001-01-01", ["taskTypeId"] = _production });
         await MakeAsync("prod-late-2", M2, new() { ["dueDate"] = "2001-02-01", ["taskTypeId"] = _production });
 
-        var all = Group(await Mine("attention"), "overdue");
-        all.GetProperty("total").GetInt32().ShouldBe(3);
+        var all = await Mine("attention");
+        all.GetProperty("total").GetInt32().ShouldBe(6); // three overdue, two unassigned and due soon, one long hold: each once
         all.GetProperty("totalUnfiltered").ValueKind.ShouldBe(JsonValueKind.Null);
 
-        var filtered = Group(await Mine($"attention?taskTypeId={_production}"), "overdue");
+        var filtered = await Mine($"attention?taskTypeId={_production}");
         filtered.GetProperty("total").GetInt32().ShouldBe(2);
-        filtered.GetProperty("totalUnfiltered").GetInt32().ShouldBe(3);
-        GroupTitles(filtered).ShouldBe(["prod-overdue", "prod-late-2"]);
-        (await TotalAsync(A, "task-queue", filtered.GetProperty("query").GetString()!)).ShouldBe(2);
+        filtered.GetProperty("totalUnfiltered").GetInt32().ShouldBe(6);
+        Titles(filtered.GetProperty("items")).ShouldBe(["prod-overdue", "prod-late-2"]);
+        var query = filtered.GetProperty("query").GetString()!;
+        query.ShouldContain($"type={_production}");
+        (await TotalAsync(A, "task-queue", query)).ShouldBe(2);
 
-        // Two types are an OR; the other groups follow the same filter.
+        // Two types are an OR.
         var both = await Mine($"attention?taskTypeId={_production}&taskTypeId={W.TaskTypeId}");
-        Group(both, "overdue").GetProperty("total").GetInt32().ShouldBe(3);
-        Group(await Mine($"attention?taskTypeId={_production}"), "unassigned").GetProperty("total").GetInt32().ShouldBe(2);
+        both.GetProperty("total").GetInt32().ShouldBe(6);
 
         // Deadlines: the same.
         await MakeAsync("prod-in3", M1, new() { ["dueDate"] = In(3), ["taskTypeId"] = _production });
@@ -120,25 +123,25 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
     }
 
     [Fact]
-    public async Task Sorting_is_done_on_the_server_by_type_priority_matter_and_age_in_either_direction_with_a_stable_tie_break()
+    public async Task Deadlines_are_sorted_on_the_server_by_type_priority_matter_and_age_in_either_direction_with_a_stable_tie_break()
     {
-        await MakeAsync("prod-a", M2, new() { ["dueDate"] = "2001-03-01", ["taskTypeId"] = _production });
-        await MakeAsync("prod-b", M1, new() { ["dueDate"] = "2001-04-01", ["taskTypeId"] = _production });
+        await MakeAsync("prod-a", M2, new() { ["dueDate"] = In(3), ["taskTypeId"] = _production });
+        await MakeAsync("prod-b", M1, new() { ["dueDate"] = In(4), ["taskTypeId"] = _production });
         await H.ExecuteAsync("UPDATE dbo.Task SET CreatedAt = DATEADD(day, -30, SYSUTCDATETIME()) WHERE Title = 'prod-b'");
         H.Factory.InvalidateAll();
 
-        // Natural order: oldest due first. By type: Data Processing before Production, ties by due date.
-        GroupTitles(Group(await Mine("attention"), "overdue")).ShouldBe(["m1-overdue", "prod-a", "prod-b"]);
-        GroupTitles(Group(await Mine("attention?sort=type"), "overdue")).ShouldBe(["m1-overdue", "prod-a", "prod-b"]);
-        GroupTitles(Group(await Mine("attention?sort=type&dir=desc"), "overdue")).ShouldBe(["prod-a", "prod-b", "m1-overdue"]);
+        // Natural order: soonest due first. By type: Data Processing before Production, ties by due date.
+        Titles((await Mine("deadlines")).GetProperty("items")).ShouldBe(["m1-soon", "prod-a", "prod-b", "m2-in5"]);
+        Titles((await Mine("deadlines?sort=type")).GetProperty("items")).ShouldBe(["m1-soon", "m2-in5", "prod-a", "prod-b"]);
+        Titles((await Mine("deadlines?sort=type&dir=desc")).GetProperty("items")).ShouldBe(["prod-a", "prod-b", "m1-soon", "m2-in5"]);
         // Matter reference (M1 before M2), age (oldest first), due descending.
-        GroupTitles(Group(await Mine("attention?sort=matter"), "overdue")).Last().ShouldBe("prod-a");
-        GroupTitles(Group(await Mine("attention?sort=age"), "overdue")).First().ShouldBe("prod-b");
-        GroupTitles(Group(await Mine("attention?sort=due&dir=desc"), "overdue")).ShouldBe(["prod-b", "prod-a", "m1-overdue"]);
-        GroupTitles(Group(await Mine("attention?sort=priority"), "overdue")).Count.ShouldBe(3);
+        Titles((await Mine("deadlines?sort=matter")).GetProperty("items")).Last().ShouldBe("m2-in5");
+        Titles((await Mine("deadlines?sort=age")).GetProperty("items")).First().ShouldBe("prod-b");
+        Titles((await Mine("deadlines?sort=due&dir=desc")).GetProperty("items")).ShouldBe(["m2-in5", "prod-b", "prod-a", "m1-soon"]);
+        Titles((await Mine("deadlines?sort=priority")).GetProperty("items")).Count.ShouldBe(4);
 
         // The View all link carries the filter and the sort.
-        Group(await Mine($"attention?sort=age&taskTypeId={_production}"), "overdue").GetProperty("query").GetString()!.ShouldContain("sort=age");
+        (await Mine($"deadlines?sort=age&taskTypeId={_production}")).GetProperty("query").GetString()!.ShouldContain("sort=age");
     }
 
     [Fact]

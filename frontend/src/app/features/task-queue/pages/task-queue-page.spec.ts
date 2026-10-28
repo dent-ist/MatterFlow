@@ -39,10 +39,10 @@ const ARG = {
   managerId: 29,
   role: 30,
   dueWithin: 31,
-  sort: 34,
-  dir: 35,
-  page: 36,
-  pageSize: 37,
+  sort: 35,
+  dir: 36,
+  page: 37,
+  pageSize: 38,
 };
 
 const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];

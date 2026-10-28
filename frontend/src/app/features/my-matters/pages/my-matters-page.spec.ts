@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { NEVER, Subject, of, throwError } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import {
   ClientsClient,
   MatterManagersClient,
@@ -50,37 +50,54 @@ const task = (id: number, over: object = {}) => ({
   ...over,
 });
 
-function health(items: object[] = [row(5, 'RED', ['OVERDUE'])]) {
+function health(items: object[] = [row(5, 4, 2, 1), row(6, 0, 0, 0)]) {
   return {
     items,
     total: items.length,
     page: 1,
-    pageSize: 50,
-    sort: 'nextDeadline',
-    dir: 'asc',
+    pageSize: 8,
+    sort: 'worst',
+    dir: 'desc',
     amberDueDays: 3,
     stuckOnHoldDays: 7,
     timeZone: 'America/New_York',
   };
 }
 
-function row(matterId: number, flag: string, reasons: string[]) {
+function row(matterId: number, overdue: number, atRisk: number, unassigned: number, clientId = 2) {
   return {
     matterId,
     matterRef: `9000${matterId}-80001`,
     matterName: `Matter ${matterId}`,
-    clientId: 2,
-    clientNumber: '00002',
-    clientName: 'Acme',
+    clientId,
+    clientNumber: `0000${clientId}`,
+    clientName: `Client ${clientId}`,
     open: 31,
-    overdue: 4,
+    overdue,
     dueThisWeek: 9,
-    unassigned: 1,
+    unassigned,
+    atRisk,
     percentComplete: 62,
     nextDeadline: '2026-10-26',
-    flag,
-    flagReasons: reasons,
+    flag: overdue > 0 ? 'RED' : 'GREEN',
+    flagReasons: overdue > 0 ? ['OVERDUE'] : ['NO_OPEN_TASKS'],
     query: `matter=${matterId}&status=NEW`,
+  };
+}
+
+/** The ranked Needs my attention answer (issue #905): one list, total counts each task once. */
+function attention(
+  items: object[] = [task(1), task(2, { factCode: 'NO_ASSIGNEE', factDays: undefined })],
+  total = 25,
+) {
+  return {
+    timeZone: 'x',
+    asOfUtc: 'x',
+    stuckOnHoldDays: 7,
+    total,
+    query:
+      'managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due',
+    items,
   };
 }
 
@@ -144,6 +161,11 @@ function since(empty = false) {
       reassigned: c(2, 'kind=REASSIGNED&unread=true'),
       putOnHold: c(1, 'kind=ON_HOLD&unread=true'),
       comments: c(3, 'kind=COMMENTED&unread=true'),
+      newUnassigned: c(
+        3,
+        'managedByMe=true&unassigned=true&createdFrom=2026-10-19&sort=created',
+        'taskQueue',
+      ),
     },
     items: empty
       ? []
@@ -282,24 +304,7 @@ describe('MyMattersPage', () => {
   ) {
     api = {
       getMyMattersSummary: vi.fn().mockReturnValue(of(summary())),
-      getMyMattersAttention: vi.fn().mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          stuckOnHoldDays: 7,
-          groups: [
-            { kind: 'overdue', total: 9, query: 'managedByMe=true&overdue=true', items: [task(1)] },
-            { kind: 'dueSoon', total: 0, query: 'q', items: [] },
-            {
-              kind: 'unassigned',
-              total: 6,
-              query: 'managedByMe=true&unassigned=true',
-              items: [task(2, { factCode: 'NO_ASSIGNEE', factDays: undefined })],
-            },
-            { kind: 'stuckOnHold', total: 0, query: 'q', items: [] },
-          ],
-        }),
-      ),
+      getMyMattersAttention: vi.fn().mockReturnValue(of(attention())),
       getMyMattersDeadlines: vi.fn().mockReturnValue(
         of({
           timeZone: 'x',
@@ -315,11 +320,7 @@ describe('MyMattersPage', () => {
           ],
         }),
       ),
-      getMyMattersHealth: vi
-        .fn()
-        .mockReturnValue(
-          of(health([row(5, 'RED', ['OVERDUE']), row(6, 'GREEN', ['NO_OPEN_TASKS'])])),
-        ),
+      getMyMattersHealth: vi.fn().mockReturnValue(of(health())),
       getMyMattersSinceLastVisit: vi.fn().mockReturnValue(of(since())),
       getMyMattersTrends: vi.fn().mockReturnValue(of(trends())),
       getMyMattersBreakdown: vi.fn().mockImplementation((view: string) => of(breakdown(view))),
@@ -380,33 +381,70 @@ describe('MyMattersPage', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows the eight strip cells as links to the lists they count', async () => {
+  it('shows five chips that are buttons opening the lists they count, then a muted open count (#902)', async () => {
     const h = await open('/my-matters');
-    const cells = Array.from(el(h).querySelectorAll<HTMLAnchorElement>('[data-strip-item]'));
-    expect(cells.map((c) => c.getAttribute('data-strip-item'))).toEqual([
-      'matters',
-      'open',
+    const chips = Array.from(el(h).querySelectorAll<HTMLButtonElement>('button[data-strip-item]'));
+    expect(chips.map((c) => c.getAttribute('data-strip-item'))).toEqual([
       'overdue',
       'atRisk',
-      'due3',
-      'due7',
       'unassigned',
       'onHold',
+      'due7',
+      'open',
     ]);
-    expect(cells[0].getAttribute('href')).toBe('/matters?mine=true');
-    expect(cells[2].getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&overdue=true&sort=due&dir=asc',
+    // The accessible name carries the count; the oldest hold is said with the on-hold chip (never before the count, #821).
+    expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
+      '9 overdue',
+      '5 at risk',
+      '6 unassigned',
+      '3 on hold, oldest 12 days',
+      '41 due in 7 days',
+      '212 open tasks',
+    ]);
+    expect(chips[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('9 overdue');
+    expect(chips[0].classList.contains('ms__chip--danger')).toBe(true);
+    expect(chips[1].classList.contains('ms__chip--warning')).toBe(true);
+    // "Matters I manage" and "Due in 3 days" are gone.
+    expect(el(h).querySelector('[data-strip-item=matters], [data-strip-item=due3]')).toBeNull();
+    expect(el(h).querySelector('[data-strip-open]')!.textContent).toContain(
+      '212 open on 14 matters',
     );
-    expect(cells[3].textContent?.replace(/\s+/g, ' ').trim()).toBe('At risk 5');
-    expect(cells[3].getAttribute('href')).toContain('atRisk=true');
-    expect(cells[1].getAttribute('href')).toContain('status=NEW&status=IN_PROGRESS&status=ON_HOLD');
-    // The label says what it counts; the age of the oldest hold is the tooltip, never before the count (#821).
-    expect(cells[7].textContent?.replace(/\s+/g, ' ').trim()).toBe('On hold 3');
-    expect(cells[7].getAttribute('title')).toBe('oldest 12 days');
-    expect(cells[4].textContent).toContain('17');
-    expect(el(h).querySelector('[data-strip]')!.getAttribute('aria-label')).toContain(
+    expect(el(h).querySelector('[data-mm-strip]')!.getAttribute('aria-label')).toContain(
       'your matters',
     );
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate');
+    chips[0].click();
+    expect(navigate).toHaveBeenCalledWith(['/tasks'], {
+      queryParams: { managedByMe: 'true', overdue: 'true', sort: 'due', dir: 'asc' },
+    });
+    chips[1].click();
+    expect(navigate.mock.calls[1][1]!.queryParams).toMatchObject({ atRisk: 'true' });
+    chips[5].click();
+    expect(navigate.mock.calls[2][1]!.queryParams!['status']).toEqual([
+      'NEW',
+      'IN_PROGRESS',
+      'ON_HOLD',
+    ]);
+  });
+
+  it('mutes a chip that counts nothing and keeps it reachable; only Overdue and At risk are loud, and only above zero', async () => {
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersSummary'].mockReturnValue(
+        of({
+          ...summary(),
+          overdue: count(0, 'managedByMe=true&overdue=true'),
+          atRisk: count(0, 'q'),
+        }),
+      );
+    });
+    const chip = (key: string) =>
+      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`)!;
+    expect(chip('overdue').classList.contains('ms__chip--zero')).toBe(true);
+    expect(chip('overdue').classList.contains('ms__chip--danger')).toBe(false);
+    expect(chip('overdue').disabled).toBe(false);
+    expect(chip('atRisk').classList.contains('ms__chip--warning')).toBe(false);
+    expect(chip('unassigned').classList.contains('ms__chip--zero')).toBe(false);
   });
 
   it('sends no date range to the strip and the other panels, only to Upcoming deadlines', async () => {
@@ -433,10 +471,10 @@ describe('MyMattersPage', () => {
       undefined,
     );
     expect(api['getMyMattersHealth']).toHaveBeenCalledWith(
-      undefined,
+      'worst',
       undefined,
       1,
-      50,
+      8,
       undefined,
       undefined,
       undefined,
@@ -472,71 +510,94 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('shows Needs my attention groups with View all links and rows that open the task', async () => {
+  it('shows Needs my attention as ONE ranked list: a reason on every row, one View all N, no group headings (#905)', async () => {
     const h = await open('/my-matters');
-    const groups = Array.from(el(h).querySelectorAll('[data-group]')).map((g) =>
-      g.getAttribute('data-group'),
-    );
-    expect(groups).toEqual(['overdue', 'unassigned']);
+    expect(el(h).querySelector('[data-group], [data-repeated], [data-also-tag]')).toBeNull();
+    const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
+    expect(rows).toHaveLength(2);
     const row1 = el(h).querySelector<HTMLAnchorElement>('[data-attention-row]')!;
     expect(row1.getAttribute('href')).toBe('/tasks/1?from=my-matters');
-    expect(el(h).querySelector('[data-fact]')!.textContent).toContain('3 d overdue');
-    expect(
-      el(h)
-        .querySelector<HTMLAnchorElement>('[data-group=overdue] [data-view-all]')!
-        .getAttribute('href'),
-    ).toBe('/tasks?managedByMe=true&overdue=true&sort=due&dir=asc');
+    // The link keeps the task, the matter and the reason in its name.
+    expect(row1.getAttribute('aria-label')).toBe('TSK-1 Task 1, 90001-80001 Merger, 3 d overdue');
+    expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
+      '3 d overdue',
+      'no assignee',
+    ]);
+    const all = el(h).querySelectorAll<HTMLAnchorElement>('[data-panel=attention] [data-view-all]');
+    expect(all).toHaveLength(1);
+    expect(all[0].textContent!.trim()).toBe('View all 25');
+    expect(all[0].getAttribute('href')).toBe(
+      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due',
+    );
+    // Not a sort, not a group: the ranking is the server's.
+    expect(el(h).querySelector('[data-panel=attention] [data-sort]')).toBeNull();
+    expect(api['getMyMattersAttention']).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
   });
 
-  it('shows a task once: an overdue task that is also unassigned is tagged in Overdue and not repeated, the counts stay true (PV-08)', async () => {
+  it('At risk is a row with its own reason, and an at-risk task due today still shows the At risk pill', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersAttention'].mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          stuckOnHoldDays: 7,
-          groups: [
-            { kind: 'overdue', total: 9, query: 'q', items: [task(1)] },
-            {
-              kind: 'unassigned',
-              total: 6,
-              query: 'q',
-              items: [
-                task(1, { factCode: 'NO_ASSIGNEE', factDays: undefined }),
-                task(2, { factCode: 'NO_ASSIGNEE', factDays: undefined }),
-              ],
-            },
-          ],
-        }),
+        of(
+          attention(
+            [
+              task(1, { factCode: 'AT_RISK', factDays: undefined, atRisk: true }),
+              task(2, { factCode: 'DUE_TODAY', factDays: 0, atRisk: true }),
+              task(3, {
+                factCode: 'ON_HOLD_DAYS',
+                factDays: 12,
+                onHold: { reasonName: 'Waiting', days: 12 },
+              }),
+            ],
+            3,
+          ),
+        ),
       );
     });
-    const rows = Array.from(el(h).querySelectorAll('[data-attention-row]')).map((r) =>
-      r.getAttribute('href'),
-    );
-    expect(rows).toEqual(['/tasks/1?from=my-matters', '/tasks/2?from=my-matters']);
-    expect(el(h).querySelector('[data-group=overdue] [data-also-tag]')!.textContent).toContain(
-      'No assignee',
-    );
-    expect(el(h).querySelector('[data-group=unassigned] [data-count]')!.textContent).toContain('6');
-    expect(el(h).querySelector('[data-group=unassigned] [data-repeated]')!.textContent).toContain(
-      '1 also listed under Overdue',
-    );
+    const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
+    expect(rows.map((r) => r.getAttribute('data-reason'))).toEqual([
+      'atRisk',
+      'dueToday',
+      'onHold',
+    ]);
+    expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
+      'at risk',
+      'due today',
+      'on hold 12 d',
+    ]);
+    expect(rows[0].querySelector('[data-at-risk]')).toBeNull(); // the reason says it already
+    expect(rows[1].querySelector('[data-at-risk]')).not.toBeNull();
+    expect(rows[2].querySelector('[data-hold-reason]')!.textContent).toContain('Waiting');
   });
 
-  it('says why a matter is flagged, in words in the row (PV-08)', async () => {
-    const h = await open('/my-matters');
-    const words = Array.from(el(h).querySelectorAll('[data-flag-reason]')).map((e) =>
-      e.textContent!.trim(),
+  it('leaves a task out of Upcoming deadlines when Needs my attention lists it: one task, once per screen (#905)', async () => {
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersAttention'].mockReturnValue(
+        of(attention([task(3, { factCode: 'DUE_TODAY', factDays: 0 })], 1)),
+      );
+    });
+    const ids = Array.from(el(h).querySelectorAll('a[href^="/tasks/"]')).map((a) =>
+      a.getAttribute('href'),
     );
-    expect(words).toContain('4 overdue');
-    expect(words).toContain('no open tasks');
+    expect(ids.filter((x) => x === '/tasks/3?from=my-matters')).toHaveLength(1);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(
+      el(h).querySelector('[data-panel=deadlines] [data-deadline-row]')!.getAttribute('href'),
+    ).toBe('/tasks/4?from=my-matters');
   });
 
   it('says so when nothing needs attention, with no manager-related item', async () => {
     const h = await open('/my-matters');
-    api['getMyMattersAttention'].mockReturnValue(
-      of({ timeZone: 'x', asOfUtc: 'x', stuckOnHoldDays: 7, groups: [] }),
-    );
+    api['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
     TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
@@ -571,65 +632,100 @@ describe('MyMattersPage', () => {
     expect(el(h).querySelector('[data-capped]')!.textContent).toContain('2 of 30');
   });
 
-  it('draws the health table: sortable headers, flag as text, a separate New task button, a matter link', async () => {
+  it('lists the matters as one-line rows, worst first: counts instead of a Red / Amber / Green word, one row menu (#908)', async () => {
     const h = await open('/my-matters');
-    const table = el(h).querySelector('[data-health-table]')!;
-    expect(table.querySelector('th[aria-sort=ascending] [data-sort=nextDeadline]')).not.toBeNull();
-    const first = table.querySelector('[data-health-row]')!;
+    const list = el(h).querySelector('[data-health-list]')!;
+    expect(list.getAttribute('aria-label')).toBe('Matters, worst first');
+    const rows = Array.from(list.querySelectorAll('[data-health-row]'));
+    expect(rows.map((r) => r.getAttribute('data-matter-id'))).toEqual(['5', '6']);
+    const first = rows[0];
     expect(first.querySelector('[data-matter-link]')!.getAttribute('href')).toBe('/matters/5');
-    expect(first.querySelector('[data-flag]')!.textContent).toContain('Red');
-    const button = first.querySelector<HTMLButtonElement>('[data-new-task]')!;
-    expect(button.getAttribute('aria-label')).toBe('New task for 90005-80001');
-    expect(button.closest('a')).toBeNull();
-    // the flag has its reasons in words for assistive technology and as a tooltip
-    expect(first.querySelector('[data-flag-cell]')!.getAttribute('title')).toBe(
-      'Red: a task is overdue',
+    const over = (r: Element) => r.querySelector<HTMLElement>('[data-overdue]')!;
+    expect(over(first).textContent!.replace(/\s+/g, ' ').trim()).toBe('4 overdue');
+    expect(over(first).classList.contains('mh__chip--danger')).toBe(true);
+    // Zero overdue is a muted chip, not a red one; at risk and unassigned appear only above zero.
+    expect(over(rows[1]).textContent!.replace(/\s+/g, ' ').trim()).toBe('0 overdue');
+    expect(over(rows[1]).classList.contains('mh__chip--danger')).toBe(false);
+    expect(first.querySelector('[data-at-risk]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '2 at risk',
     );
+    expect(first.querySelector('[data-unassigned]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '1 unassigned',
+    );
+    expect(rows[1].querySelector('[data-at-risk], [data-unassigned]')).toBeNull();
+    expect(first.querySelector('[data-next]')!.textContent).toContain('Next deadline');
+    expect(first.querySelector('[data-next]')!.textContent).toContain('next Oct 26');
+    // No flag words, no table, no per-row New task button; one menu per row.
+    expect(el(h).querySelector('[data-panel=health] [data-flag], [data-health-table]')).toBeNull();
+    expect(
+      el(h).querySelector('[data-panel=health] [data-sort], [data-panel=health] th'),
+    ).toBeNull();
+    expect(first.querySelector('[data-new-task]')).toBeNull();
+    expect(first.querySelectorAll('[data-row-actions] button')).toHaveLength(1);
+    // One client: no client name on the rows. The rule is in one place behind the info button.
+    expect(first.querySelector('[data-client]')).toBeNull();
+    expect(el(h).querySelector('[data-rule]')).toBeNull();
+    el(h).querySelector<HTMLButtonElement>('[data-how]')!.click();
+    h.detectChanges();
+    expect(el(h).querySelector('[data-rule]')!.textContent).toContain('Worst first');
+    expect(el(h).querySelector('[data-all-matters]')!.getAttribute('href')).toBe(
+      '/matters?mine=true',
+    );
+    expect(el(h).querySelector('[data-all-matters]')!.textContent).toContain('All matters (2)');
   });
 
-  it('opens Create task with the matter and the way back when New task is pressed', async () => {
+  it('names the client on a row only when the matters belong to two or more clients', async () => {
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersHealth'].mockReturnValue(of(health([row(5, 4, 0, 0, 2), row(6, 1, 0, 0, 3)])));
+    });
+    expect(
+      Array.from(el(h).querySelectorAll('[data-client]')).map((c) => c.textContent!.trim()),
+    ).toEqual(['Client 2', 'Client 3']);
+  });
+
+  it('draws no matters list for one matter: the strip names and links it (#908)', async () => {
+    const h = await open(
+      '/my-matters',
+      undefined,
+      (a) => {
+        a['getMyMattersHealth'].mockReturnValue(of(health([row(5, 4, 2, 1)])));
+        a['getMyMattersSummary'].mockReturnValue(
+          of({ ...summary(), matters: count(1, 'isActive=true&managedByMe=true') }),
+        );
+      },
+      [{ matterId: 5, clientId: 2, matterRef: '90005-80001', name: 'Matter 5' }],
+    );
+    expect(el(h).querySelector('[data-panel=health]')).toBeNull();
+    expect(el(h).querySelector('[data-health-list], [data-new-task]')).toBeNull();
+    const link = el(h).querySelector<HTMLAnchorElement>('[data-strip-matter]')!;
+    expect(link.getAttribute('href')).toBe('/matters/5');
+    expect(link.textContent).toContain('90005-80001 Matter 5');
+  });
+
+  it('opens Create task with the matter and the way back when New task is chosen in the row menu', async () => {
     const h = await open('/my-matters?role=primary');
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigate');
-    el(h).querySelector<HTMLButtonElement>('[data-new-task]')!.click();
+    el(h).querySelector<HTMLButtonElement>('[data-row-actions] button')!.click();
+    h.detectChanges();
+    el(h).querySelector<HTMLButtonElement>('[data-action=new-task]')!.click();
     expect(navigate).toHaveBeenCalledWith(['/tasks/new'], {
       queryParams: { matterId: 5, returnTo: '/my-matters?role=primary' },
     });
   });
 
-  it('hides New task without Task.Create (hidden, never disabled)', async () => {
+  it('has no New task in the row menu without Task.Create (absent, never disabled)', async () => {
     const h = await open('/my-matters', ['Matter.BeManager', 'Matter.View', 'Task.View']);
-    expect(el(h).querySelector('[data-new-task]')).toBeNull();
-  });
-
-  it('sorts from the header: the sort and direction go to the address and the API', async () => {
-    const h = await open('/my-matters');
-    el(h).querySelector<HTMLButtonElement>('[data-sort=open]')!.click();
-    await h.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/my-matters?sort=open');
-    expect(api['getMyMattersHealth']).toHaveBeenLastCalledWith(
-      'open',
-      'asc',
-      1,
-      50,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
-    el(h).querySelector<HTMLButtonElement>('[data-sort=open]')!.click();
-    await h.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/my-matters?sort=open&dir=desc');
+    el(h).querySelector<HTMLButtonElement>('[data-row-actions] button')!.click();
+    h.detectChanges();
+    expect(el(h).querySelector('[data-action=new-task]')).toBeNull();
+    expect(el(h).querySelector('[data-action=open-tasks]')).not.toBeNull();
   });
 
   it('shows a positive empty state for a manager with no matters, with a way to My Work', async () => {
-    const h = await open('/my-matters');
-    api['getMyMattersHealth'].mockReturnValue(of(health([])));
-    await TestBed.inject(Router).navigateByUrl('/my-matters?sort=open');
-    await h.fixture.whenStable();
-    h.detectChanges();
+    const h = await open('/my-matters', undefined, (a) =>
+      a['getMyMattersHealth'].mockReturnValue(of(health([]))),
+    );
     const empty = el(h).querySelector('[data-panel=health] [data-empty]')!;
     expect(empty.getAttribute('data-empty-kind')).toBe('none');
     expect(empty.textContent).toContain('You are not the project manager of any matter yet.');
@@ -645,12 +741,10 @@ describe('MyMattersPage', () => {
       'Matter.View',
       'Task.View',
     ];
-    const h = await open('/my-matters', permissions);
+    const h = await open('/my-matters', permissions, (a) =>
+      a['getMyMattersHealth'].mockReturnValue(of(health([]))),
+    );
     expect(el(h).querySelector('[data-scope=all]')).not.toBeNull();
-    api['getMyMattersHealth'].mockReturnValue(of(health([])));
-    await TestBed.inject(Router).navigateByUrl('/my-matters?sort=open');
-    await h.fixture.whenStable();
-    h.detectChanges();
     el(h).querySelector<HTMLButtonElement>('[data-panel=health] [data-show-all]')!.click();
     await h.fixture.whenStable();
     expect(TestBed.inject(Router).url).toContain('scope=all');
@@ -677,48 +771,12 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('shows unread events with the dot and the word, and Mark all as read moves them to read', async () => {
+  it('has no Recent activity on the Overview and never reads the events there: the Activity tab holds them (#909)', async () => {
     const h = await open('/my-matters');
-    const unread = el(h).querySelectorAll('[data-activity-row][data-unread=true]');
-    expect(unread).toHaveLength(1);
-    expect(unread[0].querySelector('[data-unread-word]')!.textContent).toBe('unread');
-    el(h).querySelector<HTMLButtonElement>('[data-mark-all-read]')!.click();
-    await h.fixture.whenStable();
-    h.detectChanges();
-    expect(api['markMyMattersActivitySeen']).toHaveBeenCalledWith({ upToEventId: 12 });
-    expect(el(h).querySelectorAll('[data-unread-word]')).toHaveLength(0);
-    expect(el(h).querySelector('[data-mark-all-read]')).toBeNull();
-  });
-
-  it('opening an unread event marks it read; viewing the panel never does', async () => {
-    const h = await open('/my-matters');
-    expect(api['markMyMattersActivitySeen']).not.toHaveBeenCalled();
-    el(h)
-      .querySelector<HTMLAnchorElement>(
-        '[data-activity-row][data-unread=true] [data-activity-link]',
-      )!
-      .click();
-    expect(api['markMyMattersActivitySeen']).toHaveBeenCalledWith({ upToEventId: 12 });
-  });
-
-  it('shows at most five events, one line each with the whole sentence as the tooltip, and "View all activity" opens the Activity tab (#827)', async () => {
-    const many = activity();
-    many.items = Array.from({ length: 8 }, (_, i) => ({
-      ...many.items[0],
-      eventId: 100 + i,
-      isUnread: false,
-    }));
-    const h = await open('/my-matters', undefined, (a) => {
-      a['getMyMattersActivity'].mockReturnValue(of(many));
-    });
-    expect(api['getMyMattersActivity'].mock.calls[0][0]).toBe(5);
-    expect(el(h).querySelectorAll('[data-activity-row]').length).toBeLessThanOrEqual(5);
-    const link = el(h).querySelector<HTMLAnchorElement>('[data-activity-link]')!;
-    expect(link.getAttribute('title')).toBe(link.textContent!.trim());
-    const all = el(h).querySelector<HTMLAnchorElement>('[data-view-all-activity]')!;
-    expect(all.textContent).toContain('View all activity');
-    expect(all.getAttribute('href')).toContain('tab=activity');
-    expect(el(h).querySelector('[data-show-all], [data-show-more]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=activity], [data-activity-row]')).toBeNull();
+    expect(el(h).textContent).not.toContain('Recent activity');
+    expect(api['getMyMattersActivity']).not.toHaveBeenCalled();
+    expect(el(h).textContent).not.toContain('commented on');
   });
 
   it('?tab=workload is Overview (the Workload tab was removed, #826)', async () => {
@@ -730,26 +788,21 @@ describe('MyMattersPage', () => {
     expect(el(h).querySelector('[data-panel=health]')).not.toBeNull();
   });
 
-  it('shows no comment text, only "commented on"', async () => {
-    const h = await open('/my-matters');
-    expect(el(h).textContent).toContain('Priya commented on "Review batch 4"');
-  });
-
   it('a failing panel shows its own error with Retry and leaves the others alone', async () => {
     const h = await open('/my-matters');
-    api['getMyMattersActivity'].mockReturnValue(throwError(() => new Error('boom')));
+    api['getMyMattersAttention'].mockReturnValue(throwError(() => new Error('boom')));
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(el(h).querySelector('[data-panel=activity] [data-panel-error]')).not.toBeNull();
-    expect(el(h).querySelector('[data-panel=health] [data-health-table]')).not.toBeNull();
-    api['getMyMattersActivity'].mockClear();
-    api['getMyMattersActivity'].mockReturnValue(of(activity()));
-    el(h).querySelector<HTMLButtonElement>('[data-panel=activity] [data-panel-retry]')!.click();
+    expect(el(h).querySelector('[data-panel=attention] [data-panel-error]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=health] [data-health-list]')).not.toBeNull();
+    api['getMyMattersAttention'].mockClear();
+    api['getMyMattersAttention'].mockReturnValue(of(attention()));
+    el(h).querySelector<HTMLButtonElement>('[data-panel=attention] [data-panel-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(api['getMyMattersActivity']).toHaveBeenCalledTimes(1);
-    expect(el(h).querySelector('[data-panel=activity] [data-activity-list]')).not.toBeNull();
+    expect(api['getMyMattersAttention']).toHaveBeenCalledTimes(1);
+    expect(el(h).querySelector('[data-panel=attention] [data-attention-list]')).not.toBeNull();
   });
 
   it('loads every panel on its own: a panel still waiting does not hold the others', async () => {
@@ -759,7 +812,7 @@ describe('MyMattersPage', () => {
     await h.fixture.whenStable();
     h.detectChanges();
     expect(el(h).querySelector('[data-panel=attention] [data-loading]')).toBeNull(); // keeps the previous numbers
-    expect(el(h).querySelector('[data-panel=activity] [data-activity-list]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=health] [data-health-list]')).not.toBeNull();
   });
 
   describe('tabs (epic #758, PX-18)', () => {
@@ -895,33 +948,71 @@ describe('MyMattersPage', () => {
     });
   });
 
-  describe('Since your last visit (epic #758, PX-19)', () => {
-    it('is one sentence of counts that are links, the top items and Mark as read', async () => {
+  describe('What changed: one line (epic #893, issues #909 and #895)', () => {
+    it('is one line of the four counts that need a decision, each a link, and Mark as read at its end', async () => {
       const h = await open('/my-matters');
-      const card = el(h).querySelector('[data-panel=since]')!;
-      const figures = Array.from(card.querySelectorAll('[data-since-figures] a')).map((a) =>
+      const line = el(h).querySelector('[data-panel=since]')!;
+      expect(line.getAttribute('aria-label')).toBe('Since your last visit');
+      const figures = Array.from(line.querySelectorAll('[data-since-figures] a')).map((a) =>
         a.textContent!.replace(/\s+/g, ' ').trim(),
       );
+      // Reassigned, comments and new tasks are not decisions: not counted here.
       expect(figures).toEqual([
-        '4 tasks became overdue',
-        '2 reassigned',
-        '7 completed',
+        '4 became overdue',
         '1 put on hold',
-        '3 comments',
+        '7 completed',
+        '3 new unassigned',
       ]);
-      expect(card.querySelector('[data-figure=becameOverdue]')!.getAttribute('href')).toContain(
+      expect(line.querySelector('[data-figure=becameOverdue]')!.getAttribute('href')).toContain(
         '/tasks?',
       );
-      expect(card.querySelector('[data-figure=reassigned]')!.getAttribute('href')).toContain(
+      expect(line.querySelector('[data-figure=newUnassigned]')!.getAttribute('href')).toContain(
+        'unassigned=true',
+      );
+      expect(line.querySelector('[data-figure=putOnHold]')!.getAttribute('href')).toContain(
         'tab=activity',
       );
-      expect(card.querySelectorAll('[data-since-item]')).toHaveLength(2);
-      expect(card.querySelector('[data-since-period]')!.textContent).toContain('Since Oct 19');
-      // Opening the page never moves the marker.
+      expect(line.querySelector('[data-since-period]')!.textContent).toContain(
+        'Since your last visit:',
+      );
+      expect(line.querySelector('[data-mark-read]')!.textContent).toContain('Mark as read');
+      // No event is listed on the Overview, and opening the page never moves the marker.
+      expect(line.querySelector('[data-since-item], [data-since-toggle]')).toBeNull();
       expect(api['markMyMattersActivitySeen']).not.toHaveBeenCalled();
     });
 
-    it('Mark as read moves the marker once, says so, and the other panels read again', async () => {
+    it('says the last 7 days when there is no marker yet', async () => {
+      const h = await open('/my-matters', undefined, (a) =>
+        a['getMyMattersSinceLastVisit'].mockReturnValue(of({ ...since(), hasMarker: false })),
+      );
+      expect(el(h).querySelector('[data-since-period]')!.textContent).toContain(
+        'In the last 7 days:',
+      );
+    });
+
+    it('draws nothing when none of the four changed, even if comments and reassignments did', async () => {
+      const h = await open('/my-matters', undefined, (a) => {
+        const s = since();
+        const zero = { count: 0, query: 'q', target: 'activity' };
+        a['getMyMattersSinceLastVisit'].mockReturnValue(
+          of({
+            ...s,
+            counts: {
+              ...s.counts,
+              becameOverdue: zero,
+              putOnHold: zero,
+              completed: zero,
+              newUnassigned: zero,
+            },
+          }),
+        );
+      });
+      expect(el(h).querySelector('[data-panel=since]')).toBeNull();
+      expect(el(h).querySelector('[data-mark-read]')).toBeNull();
+      expect(el(h).querySelector('mf-mm-since')!.textContent!.trim()).toBe('');
+    });
+
+    it('Mark as read moves the marker once, says so, and the line goes away', async () => {
       const h = await open('/my-matters');
       const before = api['getMyMattersSinceLastVisit'].mock.calls.length;
       api['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
@@ -933,24 +1024,10 @@ describe('MyMattersPage', () => {
       expect(api['markMyMattersActivitySeen']).toHaveBeenCalledTimes(1);
       expect(api['markMyMattersActivitySeen']).toHaveBeenCalledWith({});
       expect(api['getMyMattersSinceLastVisit'].mock.calls.length).toBe(before + 1);
-      expect(el(h).querySelector('[data-since-empty]')!.textContent).toContain(
-        'Nothing has changed since your last visit.',
+      expect(el(h).querySelector('[data-panel=since]')).toBeNull();
+      expect(el(h).querySelector('[data-since-announce]')!.textContent).toContain(
+        'Marked as read.',
       );
-      expect(el(h).querySelector('[data-mark-read]')).toBeNull();
-    });
-
-    it('waits for the summary before Recent activity asks (that read creates the marker on a first visit)', async () => {
-      const gate = new Subject<unknown>();
-      const h = await open('/my-matters', undefined, (a) => {
-        a['getMyMattersSinceLastVisit'].mockReturnValue(gate);
-      });
-      expect(api['getMyMattersActivity']).not.toHaveBeenCalled();
-      gate.next(since());
-      gate.complete();
-      await h.fixture.whenStable();
-      h.detectChanges();
-      await h.fixture.whenStable();
-      expect(api['getMyMattersActivity']).toHaveBeenCalled();
     });
   });
 
@@ -973,9 +1050,7 @@ describe('MyMattersPage', () => {
         role === 'secondary' ? { userId: 1, displayName: 'Me', isActive: true } : undefined,
     });
     const quiet = (a: Record<string, ReturnType<typeof vi.fn>>) => {
-      a['getMyMattersAttention'].mockReturnValue(
-        of({ timeZone: 'x', asOfUtc: 'x', stuckOnHoldDays: 7, groups: [] }),
-      );
+      a['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
       a['getMyMattersDeadlines'].mockReturnValue(
         of({
           timeZone: 'x',
@@ -989,7 +1064,6 @@ describe('MyMattersPage', () => {
         }),
       );
       a['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
-      a['getMyMattersActivity'].mockReturnValue(of({ ...activity(0), items: [], unreadCount: 0 }));
     };
 
     it('one matter: no filter bar, no create button of its own (the shell button starts with that matter), no sentence drawn', async () => {
@@ -1076,12 +1150,15 @@ describe('MyMattersPage', () => {
       expect(panel.querySelector('[data-range]')).toBeNull(); // the old 2 / 4 week buttons
     });
 
-    it('everything quiet: one line replaces the four empty sections, Matter health stays', async () => {
-      const h = await open('/my-matters', undefined, quiet, [matter(5, 2, 'primary')]);
+    it('everything quiet: one line replaces the empty sections, the matters list stays', async () => {
+      const h = await open('/my-matters', undefined, quiet, [
+        matter(5, 2, 'primary'),
+        matter(6, 2, 'primary'),
+      ]);
       expect(el(h).querySelector('[data-all-quiet]')!.textContent).toContain(
         'Nothing is late and nothing is due in the next 7 days.',
       );
-      for (const key of ['since', 'attention', 'deadlines', 'activity']) {
+      for (const key of ['attention', 'deadlines']) {
         expect(el(h).querySelector(`[data-panel=${key}]`)!.closest('.mm__off'), key).not.toBeNull();
       }
       expect(el(h).querySelector('[data-panel=health]')!.closest('.mm__off')).toBeNull();
@@ -1093,14 +1170,7 @@ describe('MyMattersPage', () => {
         undefined,
         (a) => {
           quiet(a);
-          a['getMyMattersAttention'].mockReturnValue(
-            of({
-              timeZone: 'x',
-              asOfUtc: 'x',
-              stuckOnHoldDays: 7,
-              groups: [{ kind: 'overdue', total: 1, query: 'q', items: [task(1)] }],
-            }),
-          );
+          a['getMyMattersAttention'].mockReturnValue(of(attention([task(1)], 1)));
         },
         [matter(5, 2, 'primary')],
       );

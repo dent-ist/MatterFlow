@@ -1,4 +1,3 @@
-import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,487 +11,323 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { MyMattersClient, MyMattersHealthRow } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
-import { ActionMenu } from '../../../shared/ui/action-menu';
-import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
-import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
-import { Badge, BadgeTone } from '../../../shared/ui/badge';
-import { Pager } from '../../../shared/ui/pager';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
-import {
-  RecordCard,
-  RecordCardDef,
-  RecordCardList,
-  phoneCards,
-} from '../../../shared/ui/record-card-list';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
-import { reasonText, shortDate } from '../facts';
-import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
+import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
+import { matterActionMenu } from '../../../shared/matter-actions/matter-actions';
+import { ActionMenu } from '../../../shared/ui/action-menu';
+import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { shortDate } from '../facts';
+import { MmFilters, commonArgs, mattersListParams } from '../my-matters-filters';
 import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
 
-export type HealthSort =
-  'nextDeadline' | 'client' | 'matter' | 'open' | 'overdue' | 'dueThisWeek' | 'unassigned' | 'flag';
-
-export const HEALTH_PAGE_SIZE = 50;
-
-const FLAGS: Record<string, { label: string; tone: BadgeTone; icon: string }> = {
-  RED: { label: 'Red', tone: 'danger', icon: 'pi-exclamation-circle' },
-  AMBER: { label: 'Amber', tone: 'warning', icon: 'pi-exclamation-triangle' },
-  GREEN: { label: 'Green', tone: 'success', icon: 'pi-check-circle' },
-};
-
-export { reasonText };
+/** The most matters the Overview lists; "All matters (N)" opens the Matters list for the rest. */
+export const MATTERS_SHOWN = 8;
 
 /**
- * Matter health (README 6.3): one row per matter in scope, the viewer sorts (nothing is ranked and the flag is not a default sort), server
- * paged at 50. The Matter cell is the link to the matter; "+ New task" is a separate button (never nested in the link) that opens Create
- * task with the matter fixed and returns here. The flag is text and icon first, colour second; "How is this decided?" spells the rule out.
- * Below 640 px the rows are cards with a full-width 44 px "+ New task". A matter with no manager never shows a warning anywhere.
+ * The matters of the Overview (README 6.3, epic #893 issue #908; it was "Matter health"). A person who manages ONE matter gets nothing here: the strip and the
+ * lists above already say everything about it, and the strip names and links the matter. With several matters it is a compact list, one line each, the worst
+ * first (most overdue, then most at risk, then most unassigned, then the soonest deadline; the server sorts): the matter's name (the client as small grey text only
+ * when the matters belong to two or more clients), an "N overdue" chip that is red only above zero (the number is the signal, there is no Red / Amber / Green word),
+ * an amber "N at risk" and "N unassigned" only above zero, and the next deadline. One "..." menu per row holds New task and the other quick actions. At most
+ * {@link MATTERS_SHOWN} rows; "All matters (N)" opens the Matters list. The rule is stated once, behind the info button. On a phone a row is a card of two lines.
+ * A matter with no manager never shows a warning anywhere.
  */
 @Component({
   selector: 'mf-mm-health',
-  imports: [
-    ActionMenu,
-    AddCommentDialog,
-    Badge,
-    NgTemplateOutlet,
-    PanelBox,
-    Pager,
-    RecordCard,
-    RecordCardDef,
-    RecordCardList,
-    RouterLink,
-    RowLink,
-  ],
+  imports: [ActionMenu, AddCommentDialog, PanelBox, RouterLink, RowLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[hidden]': 'single()' },
   styles: `
-    .hp__how {
-      margin: 0 0 var(--mf-s2);
-    }
-    .hp__rule {
-      margin: 0 0 var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface-alt, var(--mf-surface));
-    }
-    .hp__rule p {
-      margin: 0 0 var(--mf-s1);
-    }
-    .hp__rule p:last-child {
-      margin-bottom: 0;
-    }
-    .hp__scroll {
-      overflow-x: auto;
-    }
-    .hp__table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .hp__table th,
-    .hp__table td {
-      padding: var(--mf-s1) var(--mf-s2);
-      border-top: 1px solid var(--mf-border);
-      text-align: left;
-      vertical-align: middle;
-    }
-    .hp__table thead th {
-      border-top: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .hp__table .num {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-    .hp__sort {
-      display: inline-flex;
-      gap: var(--mf-s1);
-      align-items: center;
-      min-height: 24px;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
-    }
-    .hp__sort:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
-    }
-    .hp__sort .pi {
-      font-size: 0.75rem;
-    }
-    .hp__matter {
-      min-width: 12rem;
-    }
-    .hp__table td a {
-      display: inline-block;
-      min-width: 24px;
-      min-height: 24px;
-      line-height: 24px;
-    }
-    .hp__client {
-      color: var(--mf-text-muted);
-    }
-    .hp__fold {
-      display: none;
-      margin: 0;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-    }
-    .hp__empty {
+    .mh__empty {
       display: grid;
       gap: var(--mf-s2);
       justify-items: start;
       padding: var(--mf-s2) 0;
     }
-    .hp__empty p {
+    .mh__empty p {
       margin: 0;
     }
-    .hp__link {
+    .mh__muted {
+      color: var(--mf-text-muted);
+    }
+    .mh__link {
       color: var(--mf-link);
     }
-    @media (max-width: 639.98px) {
-      .hp__link {
-        display: inline-flex;
-        align-items: center;
-        min-height: 44px;
-      }
-      .hp__how .mf-btn {
-        min-height: 44px;
-      }
+    .mh__info {
+      min-width: 32px;
+      padding-inline: var(--mf-s2);
     }
-    .hp__muted {
-      color: var(--mf-text-muted);
+    .mh__rule {
+      margin: 0 0 var(--mf-s2);
+      padding: var(--mf-s2) var(--mf-s3);
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface-alt, var(--mf-surface));
     }
-    .hp__worst {
-      display: block;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
+    .mh__rule p {
+      margin: 0 0 var(--mf-s1);
     }
-    .hp__new {
+    .mh__rule p:last-child {
+      margin-bottom: 0;
+    }
+    .mh__list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .mh__row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto 8.5rem auto;
+      grid-template-areas: 'name counts next menu';
+      align-items: center;
+      column-gap: var(--mf-s3);
+      padding: var(--mf-s1) 0;
+      border-top: 1px solid var(--mf-border);
+    }
+    .mh__name {
+      grid-area: name;
+      display: flex;
+      align-items: baseline;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .mh__name a {
+      flex: 0 1 auto;
+      min-width: 0;
+      min-height: 24px;
+      overflow: hidden;
+      color: var(--mf-link);
+      line-height: 24px;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .hp__actions {
-      white-space: nowrap;
-    }
-    .hp__actions > * {
-      vertical-align: middle;
-    }
-    .hp__card-more {
-      flex: 0 0 auto;
-    }
-    .hp__why {
+    .mh__client {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    /* Tablet: Due this week and % complete move into the matter's row detail (README 9). */
-    @media (min-width: 640px) and (max-width: 1099.98px) {
-      .hp__col-wide,
-      .hp__col-client {
-        display: none;
-      }
-      .hp__table th,
-      .hp__table td {
-        padding-inline: 3px;
-      }
-      .hp__matter {
-        min-width: 7rem;
-      }
-      .hp__new {
-        padding-inline: var(--mf-s2);
-      }
-      .hp__fold {
-        display: block;
-      }
+    .mh__counts {
+      grid-area: counts;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--mf-s1);
+      justify-content: flex-end;
     }
-    .hp__cards {
-      display: block;
-    }
-    .hp__card-line {
-      margin: 0;
+    .mh__chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border);
+      border-radius: 999px;
       color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      line-height: 1.6;
+      white-space: nowrap;
     }
-    .hp__card-new {
-      flex: 1 0 100%;
-      min-height: 44px;
-      margin-top: var(--mf-s1);
+    .mh__chip strong {
+      margin-right: 0.25em;
+      font-variant-numeric: tabular-nums;
+    }
+    .mh__chip--danger {
+      border-color: var(--mf-danger);
+      background: var(--mf-danger-bg);
+      color: var(--mf-danger);
+      font-weight: 600;
+    }
+    .mh__chip--warning {
+      border-color: var(--mf-warning);
+      background: var(--mf-warning-bg);
+      color: var(--mf-warning);
+      font-weight: 600;
+    }
+    .mh__next {
+      grid-area: next;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .mh__menu {
+      grid-area: menu;
+    }
+    @media (max-width: 639.98px) {
+      /* A card of two lines: the matter and its menu, then the counts and the next deadline. */
+      .mh__row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          'name menu'
+          'counts next';
+        row-gap: var(--mf-s1);
+        padding: var(--mf-s2) 0;
+      }
+      .mh__name {
+        flex-wrap: wrap;
+        row-gap: 0;
+      }
+      .mh__name a {
+        display: inline-flex;
+        align-items: center;
+        flex: 1 1 100%;
+        min-height: 44px;
+        white-space: normal;
+      }
+      .mh__client {
+        flex: 1 1 100%;
+        margin-top: -10px;
+      }
+      .mh__counts {
+        justify-content: flex-start;
+      }
+      .mh__next {
+        align-self: center;
+      }
+      .mh__link,
+      .mh__empty .mf-btn,
+      .mh__info {
+        min-height: 44px;
+      }
+      .mh__link {
+        display: inline-flex;
+        align-items: center;
+      }
     }
   `,
   template: `
-    <mf-mm-panel
-      name="health"
-      title="Matter health"
-      [state]="loader.state()"
-      [busy]="loader.busy()"
-      [bare]="bare()"
-      (retry)="loader.load()"
-    >
-      @if (page(); as p) {
-        @if (p.total === 0) {
-          <div
-            class="hp__empty"
-            data-empty
-            [attr.data-empty-kind]="filtered() ? 'filtered' : 'none'"
+    @if (!single()) {
+      <mf-mm-panel
+        name="health"
+        title="Matters"
+        [state]="loader.state()"
+        [busy]="loader.busy()"
+        [bare]="bare()"
+        (retry)="loader.load()"
+      >
+        @if (several()) {
+          <a
+            mfPanelActions
+            class="mh__link"
+            data-all-matters
+            routerLink="/matters"
+            [queryParams]="allParams()"
+            [attr.aria-label]="'All matters, ' + total()"
+            >All matters ({{ total() }})</a
           >
-            @if (filtered()) {
-              <!-- The one "Clear filters" is in the filter bar (issue #920). -->
-              <p>No matters match these filters.</p>
-            } @else if (filters().scope === 'all') {
-              <p>There are no active matters.</p>
-            } @else {
-              <p data-no-matters>You are not the project manager of any matter yet.</p>
-              @if (canShowAll()) {
-                <button type="button" class="mf-btn" data-show-all (click)="showAll.emit()">
-                  Show all matters
-                </button>
-              } @else {
-                <p class="hp__muted">Ask a director to assign you.</p>
-              }
-              @if (canMyWork()) {
-                <a class="hp__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
-              }
-            }
-          </div>
-        } @else {
-          <p class="hp__how">
-            <button
-              type="button"
-              class="mf-btn mf-btn--text"
-              data-how
-              [attr.aria-expanded]="howOpen()"
-              aria-controls="mm-health-rule"
-              (click)="howOpen.set(!howOpen())"
+        }
+        @if (several()) {
+          <button
+            mfPanelActions
+            type="button"
+            class="mf-btn mh__info"
+            data-how
+            aria-label="How the matters are ordered"
+            aria-controls="mm-health-rule"
+            [attr.aria-expanded]="howOpen()"
+            (click)="howOpen.set(!howOpen())"
+            (keydown.escape)="howOpen.set(false)"
+          >
+            <i class="pi pi-info-circle" aria-hidden="true"></i>
+          </button>
+        }
+        @if (page(); as p) {
+          @if (p.total === 0) {
+            <div
+              class="mh__empty"
+              data-empty
+              [attr.data-empty-kind]="filtered() ? 'filtered' : 'none'"
             >
-              How is this decided?
-            </button>
-          </p>
-          @if (howOpen()) {
-            <div class="hp__rule" id="mm-health-rule" data-rule>
-              <p>
-                <strong>Red</strong>: at least one open task is overdue. <strong>Amber</strong>:
-                nothing is overdue, but an open task has nobody assigned, is due within
-                {{ p.amberDueDays }} days, or has been on hold for more than
-                {{ p.stuckOnHoldDays }} days. <strong>Green</strong>: none of those.
-              </p>
-              <p>
-                A matter with no open tasks is Green. Who manages a matter, or whether anybody does,
-                never changes the flag, and the flag does not rank matters.
-              </p>
-            </div>
-          }
-          @if (phone()) {
-            <div class="hp__cards">
-              <mf-record-card-list
-                state="ready"
-                noun="matters"
-                label="Matter health"
-                [empty]="false"
-              >
-                <ng-template [mfRecordCard]="p.items" let-r>
-                  <mf-record-card
-                    [name]="r.matterRef + ' ' + r.matterName"
-                    [link]="['/matters', r.matterId]"
-                    list="my-matters-health"
-                    [rowKey]="r.matterId"
-                  >
-                    <span mfCardBadges>
-                      <mf-badge [tone]="flag(r).tone" [icon]="flag(r).icon" data-flag>{{
-                        flag(r).label
-                      }}</mf-badge>
-                    </span>
-                    <ng-container mfCardMeta>
-                      <p class="rc-line">
-                        <span class="rc-text">{{ r.clientName }}</span>
-                      </p>
-                      <p class="rc-line">
-                        <span class="rc-text" data-flag-reason>{{ worst(r) }}</span>
-                      </p>
-                      <p class="rc-line" data-card-numbers>
-                        <span class="rc-text">{{ numbers(r) }}</span>
-                      </p>
-                      <p class="rc-line">
-                        <span class="rc-text">Next deadline: {{ next(r) }}</span>
-                      </p>
-                    </ng-container>
-                    <ng-container mfCardCounts>
-                      @if (canCreate()) {
-                        <button
-                          type="button"
-                          class="mf-btn hp__card-new"
-                          data-new-task
-                          [attr.aria-label]="'New task for ' + r.matterRef"
-                          (click)="newTask(r)"
-                        >
-                          <i class="pi pi-plus" aria-hidden="true"></i> New task
-                        </button>
-                      }
-                      <span class="hp__card-more" data-row-actions>
-                        <mf-action-menu
-                          [floating]="true"
-                          [label]="menus().get(r.matterId)!.label"
-                          [items]="menus().get(r.matterId)!.items"
-                        />
-                      </span>
-                    </ng-container>
-                  </mf-record-card>
-                </ng-template>
-              </mf-record-card-list>
+              @if (filtered()) {
+                <!-- The one "Clear filters" is in the filter bar (issue #920). -->
+                <p>No matters match these filters.</p>
+              } @else if (filters().scope === 'all') {
+                <p>There are no active matters.</p>
+              } @else {
+                <p data-no-matters>You are not the project manager of any matter yet.</p>
+                @if (canShowAll()) {
+                  <button type="button" class="mf-btn" data-show-all (click)="showAll.emit()">
+                    Show all matters
+                  </button>
+                } @else {
+                  <p class="mh__muted">Ask a director to assign you.</p>
+                }
+                @if (canMyWork()) {
+                  <a class="mh__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
+                }
+              }
             </div>
           } @else {
-            <div class="hp__scroll">
-              <table class="hp__table" data-health-table>
-                <caption class="mf-sr-only">
-                  Matter health,
-                  {{
-                    p.total
-                  }}
-                  matters, sorted by
-                  {{
-                    sortName()
-                  }}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col" class="hp__col-client" [attr.aria-sort]="ariaSort('client')">
-                      <ng-container
-                        *ngTemplateOutlet="head; context: { key: 'client', label: 'Client' }"
-                      />
-                    </th>
-                    <th scope="col" [attr.aria-sort]="ariaSort('matter')">
-                      <ng-container
-                        *ngTemplateOutlet="head; context: { key: 'matter', label: 'Matter' }"
-                      />
-                    </th>
-                    <th scope="col" class="num" [attr.aria-sort]="ariaSort('open')">
-                      <ng-container
-                        *ngTemplateOutlet="head; context: { key: 'open', label: 'Open' }"
-                      />
-                    </th>
-                    <th scope="col" class="num" [attr.aria-sort]="ariaSort('overdue')">
-                      <ng-container
-                        *ngTemplateOutlet="head; context: { key: 'overdue', label: 'Overdue' }"
-                      />
-                    </th>
-                    <th
-                      scope="col"
-                      class="num hp__col-wide"
-                      [attr.aria-sort]="ariaSort('dueThisWeek')"
+            @if (howOpen()) {
+              <div class="mh__rule" id="mm-health-rule" data-rule>
+                <p>
+                  Worst first: the matter with the most overdue tasks, then the most at risk, then
+                  the most unassigned, then the one with the soonest deadline.
+                </p>
+                <p>
+                  <strong>Overdue</strong>: an open task past its due date.
+                  <strong>At risk</strong>: an open task that has used at least 80 percent of its
+                  task type's target time. <strong>Unassigned</strong>: a task with nobody assigned.
+                  Who manages a matter, or whether anybody does, never changes the order.
+                </p>
+              </div>
+            }
+            <ul class="mh__list" aria-label="Matters, worst first" data-health-list>
+              @for (r of p.items; track r.matterId) {
+                <li class="mh__row" data-health-row [attr.data-matter-id]="r.matterId">
+                  <span class="mh__name">
+                    <a
+                      data-matter-link
+                      [routerLink]="['/matters', r.matterId]"
+                      mfRowLink="my-matters-health"
+                      [rowKey]="r.matterId"
+                      [attr.title]="r.matterRef + ' ' + r.matterName"
+                      >{{ r.matterRef }} {{ r.matterName }}</a
                     >
-                      <ng-container
-                        *ngTemplateOutlet="
-                          head;
-                          context: { key: 'dueThisWeek', label: 'Due this week' }
-                        "
-                      />
-                    </th>
-                    <th scope="col" class="num" [attr.aria-sort]="ariaSort('unassigned')">
-                      <ng-container
-                        *ngTemplateOutlet="
-                          head;
-                          context: { key: 'unassigned', label: 'Unassigned' }
-                        "
-                      />
-                    </th>
-                    <th scope="col" class="num hp__col-wide">% complete</th>
-                    <th scope="col" [attr.aria-sort]="ariaSort('nextDeadline')">
-                      <ng-container
-                        *ngTemplateOutlet="
-                          head;
-                          context: { key: 'nextDeadline', label: 'Next deadline' }
-                        "
-                      />
-                    </th>
-                    <th scope="col" [attr.aria-sort]="ariaSort('flag')">
-                      <ng-container
-                        *ngTemplateOutlet="head; context: { key: 'flag', label: 'Flag' }"
-                      />
-                    </th>
-                    <th scope="col"><span class="mf-sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (r of p.items; track r.matterId) {
-                    <tr data-health-row [attr.data-matter-id]="r.matterId">
-                      <td
-                        class="hp__client hp__col-client"
-                        [attr.title]="r.clientNumber + ' ' + r.clientName"
+                    @if (severalClients()) {
+                      <span class="mh__client" data-client>{{ r.clientName }}</span>
+                    }
+                  </span>
+                  <span class="mh__counts">
+                    <span
+                      class="mh__chip"
+                      [class.mh__chip--danger]="r.overdue > 0"
+                      data-overdue
+                      [attr.data-count]="r.overdue"
+                      ><strong>{{ r.overdue }}</strong> overdue</span
+                    >
+                    @if (r.atRisk > 0) {
+                      <span class="mh__chip mh__chip--warning" data-at-risk
+                        ><strong>{{ r.atRisk }}</strong> at risk</span
                       >
-                        {{ r.clientName }}
-                      </td>
-                      <td class="hp__matter">
-                        <a
-                          data-matter-link
-                          [routerLink]="['/matters', r.matterId]"
-                          mfRowLink="my-matters-health"
-                          [rowKey]="r.matterId"
-                          >{{ r.matterRef }} {{ r.matterName }}</a
-                        >
-                        <p class="hp__fold" data-fold>{{ folded(r) }}</p>
-                      </td>
-                      <td class="num">
-                        <a [routerLink]="['/tasks']" [queryParams]="params(r.query)">{{
-                          r.open
-                        }}</a>
-                      </td>
-                      <td class="num">{{ r.overdue }}</td>
-                      <td class="num hp__col-wide">{{ r.dueThisWeek }}</td>
-                      <td class="num">{{ r.unassigned }}</td>
-                      <td class="num hp__col-wide">{{ percent(r) }}</td>
-                      <td>{{ next(r) }}</td>
-                      <td>
-                        <span [attr.title]="why(r)" data-flag-cell>
-                          <mf-badge [tone]="flag(r).tone" [icon]="flag(r).icon" data-flag>{{
-                            flag(r).label
-                          }}</mf-badge>
-                          <span class="hp__worst" data-flag-reason>{{ worst(r) }}</span>
-                          <span class="mf-sr-only"> ({{ why(r) }})</span>
-                        </span>
-                      </td>
-                      <td class="hp__actions">
-                        @if (canCreate()) {
-                          <button
-                            type="button"
-                            class="mf-btn hp__new"
-                            data-new-task
-                            [attr.aria-label]="'New task for ' + r.matterRef"
-                            (click)="newTask(r)"
-                          >
-                            <i class="pi pi-plus" aria-hidden="true"></i> New task
-                          </button>
-                        }
-                        <span data-row-actions>
-                          <mf-action-menu
-                            [floating]="true"
-                            [label]="menus().get(r.matterId)!.label"
-                            [items]="menus().get(r.matterId)!.items"
-                          />
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-          @if (p.total > p.pageSize) {
-            <mf-pager
-              [page]="pageNumber()"
-              [pageSize]="p.pageSize"
-              [total]="p.total"
-              [edges]="false"
-              (pageChange)="pageChange.emit($event)"
-            />
+                    }
+                    @if (r.unassigned > 0) {
+                      <span class="mh__chip mh__chip--warning" data-unassigned
+                        ><strong>{{ r.unassigned }}</strong> unassigned</span
+                      >
+                    }
+                  </span>
+                  <span class="mh__next" data-next
+                    ><span class="mf-sr-only">Next deadline </span>{{ next(r) }}</span
+                  >
+                  <span class="mh__menu" data-row-actions>
+                    <mf-action-menu
+                      [floating]="true"
+                      [label]="menus().get(r.matterId)!.label"
+                      [items]="menus().get(r.matterId)!.items"
+                    />
+                  </span>
+                </li>
+              }
+            </ul>
           }
         }
-      }
-    </mf-mm-panel>
+      </mf-mm-panel>
+    }
     @if (commentRow(); as row) {
       <mf-add-comment-dialog
         [matterId]="row.matterId"
@@ -500,32 +335,12 @@ export { reasonText };
         [(visible)]="commentOpen"
       />
     }
-
-    <ng-template #head let-key="key" let-label="label">
-      <button type="button" class="hp__sort" [attr.data-sort]="key" (click)="sortBy(key)">
-        {{ label }}
-        @if (sortKey() === key) {
-          <i
-            class="pi"
-            [class.pi-arrow-up]="dir() === 'asc'"
-            [class.pi-arrow-down]="dir() === 'desc'"
-            aria-hidden="true"
-          ></i>
-        }
-      </button>
-    </ng-template>
   `,
 })
 export class HealthPanel {
   readonly filters = input.required<MmFilters>();
-  readonly sort = input<HealthSort | null>(null);
-  readonly dir = input<'asc' | 'desc'>('asc');
-  readonly pageNumber = input(1);
   /** The page's filters differ from the default (the empty state then offers Clear filters, not "ask a director"). */
   readonly filtered = input(false);
-  readonly sortChange = output<{ sort: HealthSort; dir: 'asc' | 'desc' }>();
-  readonly pageChange = output<number>();
-  readonly clearFilters = output<void>();
   readonly showAll = output<void>();
 
   private readonly api = inject(MyMattersClient);
@@ -533,18 +348,17 @@ export class HealthPanel {
   private readonly router = inject(Router);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
-  protected readonly phone = phoneCards();
   protected readonly howOpen = signal(false);
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.sort(), this.dir(), this.pageNumber()],
+    () => this.filters(),
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersHealth(
-        this.sort() ?? undefined,
-        this.sort() ? this.dir() : undefined,
-        this.pageNumber(),
-        HEALTH_PAGE_SIZE,
+        'worst',
+        undefined,
+        1,
+        MATTERS_SHOWN,
         a.scope,
         a.role,
         a.clientId,
@@ -556,9 +370,28 @@ export class HealthPanel {
   );
 
   private readonly states = inject(OverviewStates, { optional: true });
+  protected readonly page = computed(() => this.loader.data());
+  protected readonly total = computed(() => this.page()?.total ?? 0);
+  protected readonly several = computed(() => this.total() > 1);
+  /** One matter: nothing to compare, the panel is not drawn (the strip names and links it). */
+  protected readonly single = computed(
+    () => this.loader.state() === 'ready' && this.page()?.total === 1,
+  );
   /** No matter to list: a line (with what to do about it), no card (issue #920). */
   protected readonly bare = computed(
     () => this.loader.state() === 'ready' && (this.page()?.total ?? 1) === 0,
+  );
+  /** The client is named on a row only when the matters belong to two or more clients. */
+  protected readonly severalClients = computed(
+    () => new Set((this.page()?.items ?? []).map((r) => r.clientId)).size > 1,
+  );
+  protected readonly canShowAll = computed(() => this.auth.has('Matter.AssignManagers'));
+  protected readonly canMyWork = computed(() => this.auth.has('Task.View'));
+  /** The row whose "Add comment" is open (the dialog posts to one of that matter's open tasks). */
+  protected readonly commentRow = signal<MyMattersHealthRow | null>(null);
+  protected readonly commentOpen = signal(false);
+  protected readonly allParams = computed(() =>
+    mattersListParams(this.filters(), this.auth.profile()?.userId ?? 0),
   );
 
   constructor() {
@@ -578,81 +411,12 @@ export class HealthPanel {
     );
   }
 
-  protected readonly page = computed(() => this.loader.data());
-  protected readonly canCreate = computed(() => this.auth.has('Task.Create'));
-  /** The row whose "Add comment" is open (the dialog posts to one of that matter's open tasks). */
-  protected readonly commentRow = signal<MyMattersHealthRow | null>(null);
-  protected readonly commentOpen = signal(false);
-  protected readonly canShowAll = computed(() => this.auth.has('Matter.AssignManagers'));
-  protected readonly canMyWork = computed(() => this.auth.has('Task.View'));
-  /** The column the table is sorted by (the API's default is the next deadline). */
-  protected readonly sortKey = computed<HealthSort>(
-    () => (this.sort() ?? 'nextDeadline') as HealthSort,
-  );
-  protected readonly params = queryToParams;
-
-  protected sortName(): string {
-    return this.sortKey()
-      .replace(/([A-Z])/g, ' $1')
-      .toLowerCase();
-  }
-
-  protected ariaSort(key: HealthSort): 'ascending' | 'descending' | 'none' {
-    if (this.sortKey() !== key) return 'none';
-    return this.dir() === 'desc' ? 'descending' : 'ascending';
-  }
-
-  protected sortBy(key: HealthSort): void {
-    const same = this.sortKey() === key;
-    this.sortChange.emit({ sort: key, dir: same && this.dir() === 'asc' ? 'desc' : 'asc' });
-  }
-
-  protected flag(r: MyMattersHealthRow) {
-    return FLAGS[r.flag] ?? FLAGS['GREEN'];
-  }
-
-  /** The worst reason of the flag as words, with the number where there is one ("2 overdue"; "+1 more" when others apply): the row says why, not only a colour. */
-  protected worst(r: MyMattersHealthRow): string {
-    const [first, ...rest] = r.flagReasons;
-    const words: Record<string, string> = {
-      OVERDUE: `${r.overdue} overdue`,
-      UNASSIGNED: `${r.unassigned} unassigned`,
-      DUE_SOON: 'due soon',
-      LONG_HOLD: 'on hold a long time',
-      NO_OPEN_TASKS: 'no open tasks',
-    };
-    if (!first) return '';
-    return (words[first] ?? first) + (rest.length > 0 ? `, +${rest.length} more` : '');
-  }
-
-  protected why(r: MyMattersHealthRow): string {
-    const d = this.loader.data();
-    const reasons = r.flagReasons.map((c) =>
-      reasonText(c, d?.amberDueDays ?? 3, d?.stuckOnHoldDays ?? 7),
-    );
-    return `${this.flag(r).label}: ${reasons.join(', ')}`;
-  }
-
-  protected percent(r: MyMattersHealthRow): string {
-    return r.percentComplete === undefined || r.percentComplete === null
-      ? '-'
-      : `${r.percentComplete}%`;
-  }
-
   protected next(r: MyMattersHealthRow): string {
-    return shortDate(r.nextDeadline, calendarDayInZone(this.clock.now(), this.zone).year, 'none');
+    const when = shortDate(r.nextDeadline, calendarDayInZone(this.clock.now(), this.zone).year, '');
+    return when ? `next ${when}` : 'no deadline';
   }
 
-  protected folded(r: MyMattersHealthRow): string {
-    return `${r.clientName}. ${r.dueThisWeek} due this week, ${this.percent(r) === '-' ? 'no workflow steps' : this.percent(r) + ' complete'}.`;
-  }
-
-  protected numbers(r: MyMattersHealthRow): string {
-    return `${r.overdue} overdue . ${r.dueThisWeek} this week . ${r.unassigned} unassigned`;
-  }
-
-  /** The row's quick actions besides + New task, which keeps its button (epic #758, PX-25). */
-  /** Built once per page of rows, not on every change detection. */
+  /** The row's quick actions in one menu, New task first (it used to be a button of its own). Built once per answer, not on every change detection. */
   protected readonly menus = computed(
     () => new Map((this.page()?.items ?? []).map((r) => [r.matterId, this.buildMenu(r)] as const)),
   );
@@ -675,7 +439,6 @@ export class HealthPanel {
         openTasks: () =>
           void this.router.navigate(['/tasks'], { queryParams: { matter: r.matterId } }),
       },
-      ['newTask'],
     );
   }
 

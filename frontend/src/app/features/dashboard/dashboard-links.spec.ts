@@ -52,7 +52,7 @@ describe('queueArgsFor', () => {
     expect(args[0]).toBeUndefined(); // group (only the Task Queue page asks for due buckets)
     expect(args[2]).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']); // status
     expect(args[7]).toBe(true); // unassigned
-    expect(args.slice(34)).toEqual(['priorityAge', 'asc', 1, 8]);
+    expect(args.slice(35)).toEqual(['priorityAge', 'asc', 1, 8]);
   });
 
   it('carries overdue and the due-soon window', () => {

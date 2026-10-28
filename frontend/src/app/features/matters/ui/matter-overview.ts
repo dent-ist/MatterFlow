@@ -16,10 +16,9 @@ import { StillLoading } from '../../../shared/ui/still-loading';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { MatterDataBlock } from './matter-data-block';
-import { activityTime, awayText, dayHeading, dueDay } from '../../my-matters/facts';
+import { activityText, activityTime, awayText, dayHeading, dueDay } from '../../my-matters/facts';
 import { queryToParams } from '../../my-matters/my-matters-filters';
 import { panelLoader } from '../../my-matters/panel-loader';
-import { activityText } from '../../my-matters/panels/activity-panel';
 
 /** A reason of the health flag with its count, in words ("4 tasks are overdue"); the thresholds are the ones the API echoes. */
 export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): string {

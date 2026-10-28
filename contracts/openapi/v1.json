@@ -10753,6 +10753,13 @@
             }
           },
           {
+            "name": "needsAttention",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -11103,6 +11110,13 @@
           },
           {
             "name": "atRisk",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "needsAttention",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -11544,6 +11558,13 @@
             }
           },
           {
+            "name": "needsAttention",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -11902,6 +11923,13 @@
           },
           {
             "name": "atRisk",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "needsAttention",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -19235,7 +19263,9 @@
           "timeZone",
           "asOfUtc",
           "stuckOnHoldDays",
-          "groups"
+          "total",
+          "query",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -19249,26 +19279,6 @@
           "stuckOnHoldDays": {
             "type": "integer",
             "format": "int32"
-          },
-          "groups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MyMattersAttentionGroup"
-            }
-          }
-        }
-      },
-      "MyMattersAttentionGroup": {
-        "required": [
-          "kind",
-          "total",
-          "query",
-          "items"
-        ],
-        "type": "object",
-        "properties": {
-          "kind": {
-            "type": "string"
           },
           "total": {
             "type": "integer",
@@ -19618,6 +19628,7 @@
           "overdue",
           "dueThisWeek",
           "unassigned",
+          "atRisk",
           "percentComplete",
           "nextDeadline",
           "flag",
@@ -19659,6 +19670,10 @@
             "format": "int32"
           },
           "unassigned": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "atRisk": {
             "type": "integer",
             "format": "int32"
           },
@@ -19736,7 +19751,8 @@
           "becameOverdue",
           "reassigned",
           "putOnHold",
-          "comments"
+          "comments",
+          "newUnassigned"
         ],
         "type": "object",
         "properties": {
@@ -19756,6 +19772,9 @@
             "$ref": "#/components/schemas/MyMattersSinceCount"
           },
           "comments": {
+            "$ref": "#/components/schemas/MyMattersSinceCount"
+          },
+          "newUnassigned": {
             "$ref": "#/components/schemas/MyMattersSinceCount"
           }
         }

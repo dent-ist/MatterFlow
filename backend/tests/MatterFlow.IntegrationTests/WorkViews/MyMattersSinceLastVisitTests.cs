@@ -34,7 +34,14 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
         Count(answer, "newTasks").GetProperty("count").GetInt32().ShouldBe(8);
         Count(answer, "putOnHold").GetProperty("count").GetInt32().ShouldBe(2);
         Count(answer, "becameOverdue").GetProperty("count").GetInt32().ShouldBe(0); // m1-overdue fell due in 2000, long before the period
-        answer.GetProperty("counts").EnumerateObject().Select(p => p.Name).Order().ShouldBe(["becameOverdue", "comments", "completed", "newTasks", "putOnHold", "reassigned"]);
+        answer.GetProperty("counts").EnumerateObject().Select(p => p.Name).Order().ShouldBe(["becameOverdue", "comments", "completed", "newTasks", "newUnassigned", "putOnHold", "reassigned"]);
+
+        // New unassigned (issue #909): the open unassigned tasks created in the period (M1: four, M2: three; m4-ok is assigned); the link opens exactly those.
+        var newUnassigned = Count(answer, "newUnassigned");
+        newUnassigned.GetProperty("count").GetInt32().ShouldBe(7);
+        newUnassigned.GetProperty("target").GetString().ShouldBe("taskQueue");
+        newUnassigned.GetProperty("query").GetString()!.ShouldContain("unassigned=true");
+        (await TotalAsync(A, "task-queue", newUnassigned.GetProperty("query").GetString()!)).ShouldBe(7);
 
         // Asking again changes nothing, and no marker row appeared (the activity list creates it, this summary does not).
         await Mine("since-last-visit");
@@ -112,6 +119,12 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
         var overdue = Count(answer, "becameOverdue");
         overdue.GetProperty("target").GetString().ShouldBe("taskQueue");
         (await TotalAsync(A, "task-queue", overdue.GetProperty("query").GetString()!)).ShouldBe(1);
+
+        // New unassigned follows the period's time (the test moved the marker's time back two days, so the seeded tasks are in it too): six seeded open tasks nobody holds
+        // (m2-in5 is completed, m4-ok is assigned) and the two new ones; the link lists them.
+        var unassigned = Count(answer, "newUnassigned");
+        unassigned.GetProperty("count").GetInt32().ShouldBe(8);
+        (await TotalAsync(A, "task-queue", unassigned.GetProperty("query").GetString()!)).ShouldBe(8);
 
         // The items: the task that became overdue first, then the newest hold / reassignment.
         var items = answer.GetProperty("items").EnumerateArray().ToList();

@@ -4,8 +4,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 export const SKIP_PANELS: readonly { key: string; label: string }[] = [
   { key: 'attention', label: 'Needs my attention' },
   { key: 'deadlines', label: 'Upcoming deadlines' },
-  { key: 'health', label: 'Matter health' },
-  { key: 'activity', label: 'Recent activity' },
+  { key: 'health', label: 'Matters' },
 ];
 
 /**

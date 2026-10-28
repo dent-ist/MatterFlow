@@ -46,6 +46,8 @@ export interface QueueFilters {
   dueWithin: 3 | 7 | null;
   /** PM v2: only open tasks that are At risk (`atRisk=true`; the target-turnaround rule of the server). Link-only, a removable chip. */
   atRisk: boolean;
+  /** Issue #905: only open tasks that need attention (`needsAttention=true`): overdue, at risk, due today, unassigned and due within 7 days, or on hold more than 7 days. Link-only, a removable chip. */
+  needsAttention: boolean;
   /** PM v2: On Hold tasks with one of these on-hold reasons (`onHoldReason=<id>`, repeatable; `0` = no reason chosen). Link-only, a removable chip. */
   onHoldReason: number[];
 }
@@ -129,6 +131,7 @@ export function emptyFilters(): QueueFilters {
     role: '',
     dueWithin: null,
     atRisk: false,
+    needsAttention: false,
     onHoldReason: [],
   };
 }
@@ -251,6 +254,7 @@ export function parseQueueState(
       role: managerRole(params.get('role')),
       dueWithin: dueWithin(params.get('dueWithin')),
       atRisk: bool(params, 'atRisk') === true,
+      needsAttention: bool(params, 'needsAttention') === true,
       onHoldReason: reasonIds(params),
     },
     sort: sort && SORT_FIELDS.includes(sort) ? sort : null,
@@ -312,6 +316,7 @@ export function toQueryParams(
     role: f.role || null,
     dueWithin: f.dueWithin === null ? null : String(f.dueWithin),
     atRisk: f.atRisk ? 'true' : null,
+    needsAttention: f.needsAttention ? 'true' : null,
     onHoldReason: list(f.onHoldReason),
     sort: state.sort,
     dir: state.sort && state.dir ? state.dir : null,
@@ -363,6 +368,7 @@ export function filterCount(f: QueueFilters): number {
     f.role,
     f.dueWithin,
     f.atRisk,
+    f.needsAttention,
     f.onHoldReason.length,
   ].filter(Boolean).length;
 }
@@ -583,6 +589,7 @@ export function queueArgs(
   role: string | undefined,
   dueWithin: number | undefined,
   atRisk: boolean | undefined,
+  needsAttention: boolean | undefined,
   onHoldReason: number[] | undefined,
   sort: string | undefined,
   dir: string | undefined,
@@ -624,6 +631,7 @@ export function queueArgs(
     f.role || undefined,
     f.dueWithin ?? undefined,
     f.atRisk ? true : undefined,
+    f.needsAttention ? true : undefined,
     some(f.onHoldReason),
     state.sort ?? undefined,
     state.sort ? (state.dir ?? undefined) : undefined,

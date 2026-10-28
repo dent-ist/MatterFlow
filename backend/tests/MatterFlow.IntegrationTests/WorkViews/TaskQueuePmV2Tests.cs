@@ -95,6 +95,36 @@ public sealed class TaskQueuePmV2Tests(SqlServerFixture sql) : MyMattersTestBase
     }
 
     [Fact]
+    public async Task The_needs_attention_filter_is_the_union_of_overdue_at_risk_due_today_unassigned_soon_and_long_holds_each_task_once()
+    {
+        var type = await OkAsync(await H.Admin.GetAsync($"/api/v1/task-types/{_production}"));
+        await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/task-types/{_production}", new
+        {
+            name = type.GetProperty("name").GetString(),
+            iconKey = type.GetProperty("iconKey").GetString(),
+            colourKey = "violet",
+            targetDays = 5,
+            isActive = true,
+            eligibleWorkflowIds = type.GetProperty("eligibleWorkflowIds").EnumerateArray().Select(e => e.GetInt32()).ToArray(),
+            defaultWorkflowDefinitionId = type.GetProperty("defaultWorkflowDefinitionId").GetInt32(),
+            rowVersion = type.GetProperty("rowVersion").GetString(),
+        }));
+        // At risk (assigned, far due date, 9 of 5 days used), and a fresh one that is none of the five.
+        await MakeAsync("prod-old", M1, new() { ["dueDate"] = "2099-01-01", ["taskTypeId"] = _production, ["assignedUserId"] = Tech });
+        await MakeAsync("prod-fresh", M1, new() { ["dueDate"] = "2099-01-01", ["taskTypeId"] = _production, ["assignedUserId"] = Tech });
+        await H.ExecuteAsync("UPDATE dbo.Task SET CreatedAt = DATEADD(day, -9, SYSUTCDATETIME()) WHERE Title = 'prod-old'");
+        H.Factory.InvalidateAll();
+
+        // The base data: m1-overdue (also unassigned: once), m1-soon and m2-in5 (unassigned, due in 2 and 5 days), m1-hold (10 days on hold); m1-asap has no date, m2-far is far
+        // away, m2-hold is 2 days old, m4-ok is assigned and far away. prod-old is at risk.
+        TitlesOf(await QueueAsync("needsAttention=true")).Order().ShouldBe(["m1-hold", "m1-overdue", "m1-soon", "m2-in5", "prod-old"]);
+        // It combines with the other filters like any filter, and false is the same as leaving it out.
+        TitlesOf(await QueueAsync($"needsAttention=true&type={_production}")).ShouldBe(["prod-old"]);
+        (await QueueAsync("needsAttention=false")).Count.ShouldBeGreaterThan(5);
+        (await A.GetAsync("/api/v1/my-work?needsAttention=true")).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task Sorting_by_type_orders_by_the_type_name_in_either_direction()
     {
         await MakeAsync("prod-a", M1, new() { ["dueDate"] = "2099-02-01", ["taskTypeId"] = _production });

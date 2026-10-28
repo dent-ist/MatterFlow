@@ -318,6 +318,17 @@ export function queueFilterDefs(
       options: [{ value: 'true', label: 'At risk only' }],
       normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
     },
+    // Issue #905: the Overview's "View all" (overdue, at risk, due today, unassigned and due soon, on hold too long).
+    {
+      key: 'needsAttention',
+      label: 'Needs attention',
+      type: 'select',
+      param: 'needsAttention',
+      allLabel: 'Any',
+      bareChip: true,
+      options: [{ value: 'true', label: 'Needs attention only' }],
+      normalize: (v: string) => (v.toLowerCase() === 'true' ? 'true' : null),
+    },
     {
       key: 'onHoldReason',
       label: 'On-hold reason',
@@ -423,6 +434,7 @@ export function filtersToValues(f: QueueFilters): Record<string, FilterValue> {
     role: f.role,
     dueWithin: f.dueWithin === null ? '' : String(f.dueWithin),
     atRisk: f.atRisk ? 'true' : '',
+    needsAttention: f.needsAttention ? 'true' : '',
     onHoldReason: str(f.onHoldReason),
   };
 }

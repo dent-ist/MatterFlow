@@ -80,6 +80,7 @@ const nothingRecent = async (page: Page, activity = true, since = true): Promise
             reassigned: none,
             putOnHold: none,
             comments: none,
+            newUnassigned: none,
           },
           items: [],
         },
@@ -349,13 +350,14 @@ test.describe('Empty states are one line (#920)', () => {
     await expect(page.locator('[data-empty-kind]')).toHaveCount(0);
   });
 
-  test('a manager with matters but no work and nothing recent: one line says so, the four empty sections are gone', async ({
+  test('a manager with matters but no work and nothing recent: one line says so, the empty sections are gone', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'emq');
     await w.matter('Quiet matter');
+    await w.matter('Quiet matter two');
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     // Setting up the matter left events behind (a manager was named): the page is quiet when there are none.
@@ -365,11 +367,12 @@ test.describe('Empty states are one line (#920)', () => {
     await expect(page.locator('[data-all-quiet]')).toHaveText(
       'Nothing is late and nothing is due in the next 7 days.',
     );
-    for (const hidden of ['attention', 'deadlines', 'activity', 'since']) {
+    for (const hidden of ['attention', 'deadlines', 'since']) {
       await expect(page.locator(`[data-panel=${hidden}]`)).toBeHidden();
     }
-    // Matter health is still the list of matters.
+    // The matters list is still there (two matters), and no Recent activity is on the Overview any more (#909).
     await expect(page.locator('[data-panel=health]')).toBeVisible();
+    await expect(page.locator('[data-panel=activity]')).toHaveCount(0);
   });
 
   test('a section with nothing in it is one muted line when the others have work', async ({
@@ -434,7 +437,8 @@ test.describe('The held row keeps its title (#923)', () => {
       test.skip(!process.env['E2E_SQL_CONTAINER'], 'needs the SQL container to age the hold');
       const w = await mmWorld(seed, personas, `sq${size.width}`);
       const a = await w.matter('Squeeze alpha');
-      const reasonName = `Waiting for the other side to answer us ${size.width}`.padEnd(60, 'x');
+      const reasonName =
+        `Waiting for the other side ${Date.now().toString(36)} ${size.width}`.padEnd(60, 'x');
       const created = await admin.post('/api/v1/on-hold-reasons', { name: reasonName });
       const task = await w.task(a, { title: 'Relativity Workspace Setup' });
       await admin.post(`/api/v1/tasks/${task.taskId}/status`, {
@@ -450,7 +454,7 @@ test.describe('The held row keeps its title (#923)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      const group = page.locator('[data-group=stuckOnHold]');
+      const group = page.locator('[data-attention-item][data-reason=onHold]');
       await expect(group).toBeVisible();
       const link = group.locator('[data-attention-row]').first();
       await expect(link).toContainText(task.taskNumber);
@@ -465,8 +469,9 @@ test.describe('The held row keeps its title (#923)', () => {
         wide.chars,
         `the title is at least 12 characters wide (${wide.width}px)`,
       ).toBeGreaterThanOrEqual(12);
-      // The reason is all there, in its own part of the row.
-      await expect(group.locator('[data-fact]').first()).toContainText(reasonName);
+      // The reason is all there (the visible part may end in an ellipsis; the tooltip has it whole), the fixed column says how long.
+      await expect(group.locator('[data-hold-reason]')).toHaveText(reasonName);
+      await expect(group.locator('[data-fact]').first()).toHaveText('on hold 9 d');
       // The matter name is cut with an ellipsis and carries the whole text as its tooltip; the pill after it is not cut.
       const matter = group.locator('.pl__matter').first();
       await expect(matter).toHaveAttribute('title', /Squeeze alpha/);

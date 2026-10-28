@@ -73,7 +73,7 @@ public sealed class MyMattersHealthQuery : MyMattersQuery
 
     public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "sort", "dir", "page", "pageSize"];
 
-    /// <summary><c>nextDeadline</c> (default, soonest first, matters with none last), <c>client</c>, <c>matter</c>, <c>open</c>, <c>overdue</c>, <c>dueThisWeek</c>, <c>unassigned</c> or <c>flag</c>.</summary>
+    /// <summary><c>nextDeadline</c> (default, soonest first, matters with none last), <c>client</c>, <c>matter</c>, <c>open</c>, <c>overdue</c>, <c>dueThisWeek</c>, <c>unassigned</c>, <c>flag</c> or <c>worst</c> (most overdue, then most at risk, then most unassigned, then the soonest deadline; the Overview's compact list).</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
 

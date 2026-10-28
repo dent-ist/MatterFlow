@@ -23,7 +23,10 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
     public const string SortUnassigned = "unassigned";
     public const string SortFlag = "flag";
 
-    public static readonly IReadOnlyList<string> SortFields = [SortNextDeadline, SortClient, SortMatter, SortOpen, SortOverdue, SortDueThisWeek, SortUnassigned, SortFlag];
+    /// <summary>The worst matter first: most overdue, then most at risk, then most unassigned, then the soonest deadline (the Overview's compact list, epic #893).</summary>
+    public const string SortWorst = "worst";
+
+    public static readonly IReadOnlyList<string> SortFields = [SortNextDeadline, SortClient, SortMatter, SortOpen, SortOverdue, SortDueThisWeek, SortUnassigned, SortFlag, SortWorst];
 
     public async Task<Result<MyMattersHealthPage>> GetAsync(MyMattersHealthQuery query, CancellationToken ct)
     {
@@ -37,7 +40,7 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
             sort = match;
         }
 
-        var descending = sort is SortOpen or SortOverdue or SortDueThisWeek or SortUnassigned;
+        var descending = sort is SortOpen or SortOverdue or SortDueThisWeek or SortUnassigned or SortWorst;
         if (!string.IsNullOrWhiteSpace(query.Dir))
         {
             var dir = query.Dir.Trim().ToLowerInvariant();
@@ -78,11 +81,13 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
             Next = g.AsQueryable().Where(notOverdue).Where(t => t.DueDate != null).Min(t => t.DueDate),
         }).ToListAsync(ct)).ToDictionary(r => r.MatterId);
 
+        var atRisk = await AtRiskRules.Where(scope.OpenTasks(), db, clock).GroupBy(t => t.MatterId).Select(g => new { MatterId = g.Key, Count = g.Count() }).ToDictionaryAsync(r => r.MatterId, r => r.Count, ct);
+
         var rows = matters.Select(m =>
         {
             counts.TryGetValue(m.Id, out var c);
             var (flag, reasons) = MyMattersRules.Flag(c?.Open ?? 0, c?.Overdue ?? 0, c?.Unassigned ?? 0, c?.Due3 ?? 0, c?.Stuck ?? 0);
-            return new Row(m.Id, m.MatterRef, m.MatterName, m.ClientId, m.ClientNumber.Value, m.ClientName, c?.Open ?? 0, c?.Overdue ?? 0, c?.Due7 ?? 0, c?.Unassigned ?? 0, c?.Next, flag, reasons);
+            return new Row(m.Id, m.MatterRef, m.MatterName, m.ClientId, m.ClientNumber.Value, m.ClientName, c?.Open ?? 0, c?.Overdue ?? 0, c?.Due7 ?? 0, c?.Unassigned ?? 0, atRisk.GetValueOrDefault(m.Id), c?.Next, flag, reasons);
         }).ToList();
 
         var ordered = Order(rows, sort, descending).Skip(page.Value.Skip).Take(page.Value.PageSize).ToList();
@@ -108,6 +113,7 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
             r.Overdue,
             r.DueThisWeek,
             r.Unassigned,
+            r.AtRisk,
             r.Open > 0 && steps.TryGetValue(r.MatterId, out var st) ? MyMattersRules.PercentComplete(st.Total, st.Done) : null,
             r.NextDeadline,
             r.Flag,
@@ -137,6 +143,7 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
         int Overdue,
         int DueThisWeek,
         int Unassigned,
+        int AtRisk,
         DateOnly? NextDeadline,
         string Flag,
         IReadOnlyList<string> Reasons);
@@ -157,6 +164,9 @@ public sealed class MyMattersHealthService(MyMattersScopeResolver scopes)
             SortOverdue => Primary(r => r.Overdue),
             SortDueThisWeek => Primary(r => r.DueThisWeek),
             SortUnassigned => Primary(r => r.Unassigned),
+            SortWorst => descending
+                ? rows.OrderByDescending(r => r.Overdue).ThenByDescending(r => r.AtRisk).ThenByDescending(r => r.Unassigned).ThenBy(r => r.NextDeadline is null ? 1 : 0).ThenBy(r => r.NextDeadline)
+                : rows.OrderBy(r => r.Overdue).ThenBy(r => r.AtRisk).ThenBy(r => r.Unassigned).ThenBy(r => r.NextDeadline is null ? 1 : 0).ThenBy(r => r.NextDeadline),
             _ => Primary(r => MyMattersRules.FlagRank(r.Flag)),
         };
         return ordered.ThenBy(r => r.ClientName, text).ThenBy(r => r.MatterRef, StringComparer.Ordinal).ThenBy(r => r.MatterId);

@@ -320,40 +320,36 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
   });
 
   for (const size of SIZES) {
-    test(`Recent activity shows five events at most, one line each, and View all activity opens the tab at ${size.width} px (#827)`, async ({
+    test(`the Overview lists no event (no Recent activity) and the Activity tab holds them at ${size.width} px (#909)`, async ({
       seed,
       personas,
       asUser,
     }) => {
       const w = await mmWorld(seed, personas, `ra${size.width}`);
       const a = await w.matter('Activity five');
-      const longTitle = `A very long task title that cannot fit on one line of the recent activity panel ${'x'.repeat(100)}`;
+      const longTitle = `A very long task title that cannot fit on one line of the activity list ${'x'.repeat(100)}`;
       for (let i = 0; i < 8; i++) await w.task(a, { title: i === 7 ? longTitle : `Task ${i}` });
       const page = await asUser(w.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      const rows = page.locator('[data-panel=activity] [data-activity-row]');
-      await expect(rows.first()).toBeVisible();
-      expect(await rows.count()).toBeLessThanOrEqual(5);
-      expect(await rows.count()).toBeGreaterThan(0);
-      // One line per event: the sentence is cut with an ellipsis, the whole of it is the tooltip.
-      const link = page.locator('[data-panel=activity] [data-activity-link]').first();
-      const box = (await link.boundingBox())!;
-      expect(box.height, 'one line').toBeLessThanOrEqual(size.width < 640 ? 45 : 32);
-      const overflow = await link.evaluate((el) => ({
-        title: el.getAttribute('title'),
-        text: el.textContent!.trim(),
-        cut: el.scrollWidth > el.clientWidth,
-      }));
-      expect(overflow.title).toBe(overflow.text);
-      // A 200-character title fits a 1920 px panel; below that it is cut with an ellipsis.
-      if (size.width < 1920) expect(overflow.cut, 'the long sentence is cut').toBe(true);
+      await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+      // No event is listed twice because none is listed on the Overview: no card, no rows, no "View all activity" link.
+      await expect(page.getByRole('heading', { name: 'Recent activity' })).toHaveCount(0);
+      await expect(page.locator('[data-panel=activity], [data-activity-row]')).toHaveCount(0);
+      await expect(page.locator('[data-view-all-activity]')).toHaveCount(0);
       await noHorizontalScroll(page);
-      if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
-      await page.locator('[data-view-all-activity]').click();
-      await expect(page).toHaveURL(/tab=activity/);
+      if (axeAvailable())
+        expect(await axeViolations(page), `axe overview ${size.width}`).toEqual([]);
+      // The Activity tab keeps the full list.
+      await page.goto('/my-matters?tab=activity');
       await expect(page.locator('#mm-tab-activity')).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-panel=activity-tab]')).toBeVisible();
+      await expect(
+        page.locator('[data-panel=activity-tab] [data-activity-row]').first(),
+      ).toBeVisible();
+      await noHorizontalScroll(page);
+      if (axeAvailable())
+        expect(await axeViolations(page), `axe activity ${size.width}`).toEqual([]);
     });
   }
 });

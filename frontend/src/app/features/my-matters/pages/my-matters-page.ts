@@ -33,10 +33,9 @@ import {
   parseFilters,
 } from '../my-matters-filters';
 import { MyMattersStrip } from '../my-matters-strip';
-import { ActivityPanel } from '../panels/activity-panel';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
-import { HealthPanel, HealthSort } from '../panels/health-panel';
+import { HealthPanel } from '../panels/health-panel';
 import { SincePanel } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
@@ -44,17 +43,6 @@ import { BreakdownTab } from '../tabs/breakdown-tab';
 import { DataTab } from '../tabs/data-tab';
 import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
-
-const SORTS: readonly HealthSort[] = [
-  'nextDeadline',
-  'client',
-  'matter',
-  'open',
-  'overdue',
-  'dueThisWeek',
-  'unassigned',
-  'flag',
-];
 
 /** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
 export const MM_TABS = [
@@ -98,17 +86,16 @@ function storage(): Storage | null {
 }
 
 /**
- * My Matters (epic #667, README 6): the Project Manager's home. A count strip, Needs my attention, Upcoming deadlines, Matter health
- * and Recent activity (the five latest events; the Activity tab has the rest). Each loading and failing on its own. The matters are "mine" (primary or secondary manager) by default, a
- * default view and not a limit on access; with `Matter.AssignManagers` the scope can be All matters. The filters (client, role, dates,
- * scope, project manager) and the health table's sort and page live in the address, so Back restores them; the last filters are also
- * remembered per person in the browser as a convenience. One scrolling page, no tabs, no nested scroll boxes. Different from the
- * department Dashboard: it answers "what is on fire on my matters", not "how is the department doing". Workload and capacity of technicians is not shown here (owner decision, #826).
+ * My Matters (epic #667, README 6): the Project Manager's home. A strip of count chips, one "what changed" line (only when something that needs a decision changed), Needs my
+ * attention (one ranked list of five), Upcoming deadlines and, for several matters, a compact list of the matters (epic #893). The events are on the Activity tab. Each part
+ * loads and fails on its own. The matters are "mine" (primary or secondary manager) by default, a default view and not a limit on access; with `Matter.AssignManagers` the scope can be
+ * All matters. The filters (client, role, dates, scope, project manager) live in the address, so Back restores them; the last filters are also remembered per person in the browser
+ * as a convenience. One scrolling page, no nested scroll boxes. Different from the department Dashboard: it answers "what is on fire on my matters", not "how is the department
+ * doing". Workload and capacity of technicians is not shown here (owner decision, #826).
  */
 @Component({
   selector: 'mf-my-matters-page',
   imports: [
-    ActivityPanel,
     AttentionPanel,
     DeadlinesPanel,
     FocusChip,
@@ -139,8 +126,7 @@ function storage(): Storage | null {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-areas:
         'attention deadlines'
-        'health health'
-        'activity activity';
+        'health health';
       gap: var(--mf-s3);
       align-items: start;
     }
@@ -152,9 +138,6 @@ function storage(): Storage | null {
     }
     .mm__health {
       grid-area: health;
-    }
-    .mm__activity {
-      grid-area: activity;
     }
     .mm__grid > * {
       min-width: 0;
@@ -194,15 +177,14 @@ function storage(): Storage | null {
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, activity. */
+    /* A phone: one column in the reading order of the plan (README 9): attention, matters, deadlines. */
     @media (max-width: 639.98px) {
       .mm__grid {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
           'attention'
           'health'
-          'deadlines'
-          'activity';
+          'deadlines';
       }
     }
   `,
@@ -291,21 +273,14 @@ function storage(): Storage | null {
         }
         @case ('activity') {
           @defer (on immediate) {
-            <mf-mm-activity-tab [filters]="filters()" (marked)="markerMoved()" />
+            <mf-mm-activity-tab [filters]="filters()" />
           } @placeholder {
             <p class="mm__loading" role="status">Loading activity</p>
           }
         }
         @default {
           <mf-mm-skip-links [class.mm__off]="states.quiet()" />
-          <mf-mm-since
-            class="mm__since"
-            [class.mm__off]="states.quiet()"
-            [filters]="filters()"
-            [marker]="marker()"
-            (marked)="markerMoved()"
-            (settled)="sinceSettled.set(true)"
-          />
+          <mf-mm-since class="mm__since" [class.mm__off]="states.quiet()" [filters]="filters()" />
           @if (states.quiet() && !states.noMatters()) {
             <p class="mm__quiet" role="status" data-all-quiet>
               Nothing is late and nothing is due in the next 7 days.
@@ -316,32 +291,20 @@ function storage(): Storage | null {
               class="mm__attention"
               [class.mm__off]="states.quiet()"
               [filters]="filters()"
+              (listed)="listed.set($event)"
             />
             <mf-mm-deadlines
               class="mm__deadlines"
               [class.mm__off]="states.quiet()"
               [filters]="filters()"
+              [exclude]="listed()"
               (rangeChange)="setRange($event)"
             />
             <mf-mm-health
               class="mm__health"
               [filters]="filters()"
-              [sort]="sort()"
-              [dir]="dir()"
-              [pageNumber]="page()"
               [filtered]="barActive() > 0"
-              (sortChange)="setSort($event.sort, $event.dir)"
-              (pageChange)="setPage($event)"
-              (clearFilters)="clear()"
               (showAll)="update({ scope: 'all' })"
-            />
-            <mf-mm-activity
-              class="mm__activity"
-              [class.mm__off]="states.quiet()"
-              [filters]="filters()"
-              [marker]="marker()"
-              [hold]="!sinceSettled()"
-              (marked)="markerMoved()"
             />
           </div>
         }
@@ -381,21 +344,8 @@ export class MyMattersPage {
   protected readonly barActive = computed(() =>
     activeFilterCount({ ...this.filters(), range: DEFAULT_FILTERS.range }),
   );
-  /** Counts the moves of the "seen" marker, so the panels that show it read again. */
-  protected readonly marker = signal(0);
-  /** "Since your last visit" has been read once: Recent activity may ask now (its first read creates the marker, see the panel). */
-  protected readonly sinceSettled = signal(false);
-  protected readonly sort = computed<HealthSort | null>(() => {
-    const s = this.params().get('sort');
-    return SORTS.includes(s as HealthSort) ? (s as HealthSort) : null;
-  });
-  protected readonly dir = computed<'asc' | 'desc'>(() =>
-    this.params().get('dir') === 'desc' ? 'desc' : 'asc',
-  );
-  protected readonly page = computed(() => {
-    const n = Number.parseInt(this.params().get('page') ?? '', 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
-  });
+  /** The tasks Needs my attention lists: Upcoming deadlines leaves them out (a task is listed once per screen). */
+  protected readonly listed = signal<number[]>([]);
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
 
@@ -508,18 +458,14 @@ export class MyMattersPage {
     });
   }
 
-  /** A filter changed: the address changes, the health table goes back to its first page. */
+  /** A filter changed: the address changes (a leftover `page` from an older link is dropped). */
   protected update(patch: Partial<MmFilters>): void {
     const next: MmFilters = { ...this.filters(), ...patch };
     if (patch.scope === 'mine') next.managerId = null;
     this.go({ ...filtersToParams(next), page: null });
   }
 
-  protected markerMoved(): void {
-    this.marker.update((n) => n + 1);
-  }
-
-  /** A tab was chosen: the address changes (Overview leaves it), the health table goes back to its first page, the filters stay. */
+  /** A tab was chosen: the address changes (Overview leaves it), the filters stay. */
   protected selectTab(tab: string): void {
     this.chose = true;
     this.go({ tab: tab === 'overview' ? null : tab, page: null });
@@ -537,17 +483,5 @@ export class MyMattersPage {
       }),
       page: null,
     });
-  }
-
-  protected setSort(sort: HealthSort, dir: 'asc' | 'desc'): void {
-    this.go({
-      sort: sort === 'nextDeadline' && dir === 'asc' ? null : sort,
-      dir: dir === 'asc' ? null : dir,
-      page: null,
-    });
-  }
-
-  protected setPage(page: number): void {
-    this.go({ page: page > 1 ? page : null });
   }
 }

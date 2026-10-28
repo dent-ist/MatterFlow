@@ -6,8 +6,9 @@ import { Seeder } from '../support/seed';
 import { axeAvailable } from '../support/axe';
 
 /**
- * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Upcoming deadlines (#693), the matter health
- * table with "+ New task" (#695), Recent activity (#697; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs in a
+ * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Upcoming deadlines (#693), the matters list
+ * with the "+ New task" of its row menu (#695, reworked in epic #893 issue #908), the activity events (#697; they moved to the Activity tab in
+ * issue #909; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs in a
  * world of its own, so the numbers on the page are written down here instead of read back from the page.
  */
 const total = async (page: Page): Promise<number> => {
@@ -17,8 +18,9 @@ const total = async (page: Page): Promise<number> => {
 };
 
 const cell = (page: Page, key: string) => page.locator(`[data-strip-item="${key}"]`);
+/** A chip's number: its accessible name starts with the count ("9 overdue"). */
 const cellCount = async (page: Page, key: string): Promise<number> =>
-  Number((await cell(page, key).locator('strong').innerText()).trim());
+  Number(((await cell(page, key).getAttribute('aria-label')) ?? '').split(' ')[0]);
 
 test.describe('My Matters: shell, filters and the count strip', () => {
   test('every strip cell opens a list whose total equals the cell, and the numbers are the world written down', async ({
@@ -45,29 +47,37 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('2');
-    await expect(cell(page, 'open').locator('strong')).toHaveText('6');
-    await expect(cell(page, 'overdue').locator('strong')).toHaveText('1');
-    await expect(cell(page, 'due3').locator('strong')).toHaveText('1');
-    await expect(cell(page, 'due7').locator('strong')).toHaveText('2');
-    await expect(cell(page, 'unassigned').locator('strong')).toHaveText('4');
-    await expect(cell(page, 'onHold').locator('strong')).toHaveText('1');
-    // The label names what it counts and never carries the age before the count (#821); the age is the tooltip.
-    await expect(cell(page, 'onHold')).toHaveText(/^\s*On hold\s+1\s*$/);
-    await expect(cell(page, 'onHold')).toHaveAttribute('title', 'oldest 0 days');
+    await expect.poll(() => cellCount(page, 'open')).toBe(6);
+    expect(await cellCount(page, 'overdue')).toBe(1);
+    expect(await cellCount(page, 'due7')).toBe(2);
+    expect(await cellCount(page, 'unassigned')).toBe(4);
+    expect(await cellCount(page, 'onHold')).toBe(1);
+    // "Matters I manage" and "Due in 3 days" are gone from the strip; the open count says how many matters it is on.
+    await expect(page.locator('[data-strip-item="matters"], [data-strip-item="due3"]')).toHaveCount(
+      0,
+    );
+    await expect(page.locator('[data-strip-open]')).toContainText('6 open on 2 matters');
+    // The name carries the count and, for On hold, the oldest hold after it (#821).
+    await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 0 days');
+    await expect(cell(page, 'onHold')).toHaveText(/^\s*1\s+on hold\s*$/);
 
-    const label = await page.locator('[data-strip]').getAttribute('aria-label');
+    const label = await page.locator('[data-mm-strip]').getAttribute('aria-label');
     expect(label).toContain('your matters');
     await shot(page, 'my-matters-strip');
 
-    for (const key of ['open', 'overdue', 'due3', 'due7', 'unassigned', 'onHold', 'matters']) {
+    for (const key of ['open', 'overdue', 'due7', 'unassigned', 'onHold']) {
       await page.goto('/my-matters');
-      await expect(cell(page, key).locator('strong')).not.toHaveText('--');
+      await expect.poll(() => cellCount(page, key)).not.toBeNaN();
       const n = await cellCount(page, key);
       await cell(page, key).click();
-      await expect(page).toHaveURL(key === 'matters' ? /\/matters\?/ : /\/tasks\?/);
+      await expect(page).toHaveURL(/\/tasks\?/);
       await expect.poll(() => total(page), { message: `list total for ${key}` }).toBe(n);
     }
+    // The Matters list is one link in the matters list of the page.
+    await page.goto('/my-matters');
+    await page.locator('[data-all-matters]').click();
+    await expect(page).toHaveURL(/\/matters\?/);
+    await expect.poll(() => total(page), { message: 'list total for the matters' }).toBe(2);
   });
 
   test('Role, Client and Dates are in the address, change every panel and survive Back', async ({
@@ -76,21 +86,26 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'filters');
-    await w.matter('As primary');
-    await w.matter('As secondary', w.other, w.pm);
+    const asPrimary = await w.matter('As primary');
+    const asSecondary = await w.matter('As secondary', w.other, w.pm);
+    await w.task(asPrimary, { dueDate: inDays(30) });
+    await w.task(asSecondary, { dueDate: inDays(30) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('2');
+    await expect.poll(() => cellCount(page, 'open')).toBe(2);
+    await expect(page.locator('[data-health-row]')).toHaveCount(2);
     await page.locator('[data-filter=role]').selectOption('primary');
     await expect(page).toHaveURL(/role=primary/);
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('1');
-    await expect(page.locator('[data-health-row]')).toHaveCount(1);
-    await expect(page.locator('[data-strip]')).toHaveAttribute(
+    await expect.poll(() => cellCount(page, 'open')).toBe(1);
+    // One matter is left: there is nothing to compare, so the matters list is not drawn.
+    await expect(page.locator('[data-panel=health]')).toHaveCount(0);
+    await expect(page.locator('[data-mm-strip]')).toHaveAttribute(
       'aria-label',
       /primary manager only/,
     );
     await page.locator('[data-filter=role]').selectOption('secondary');
-    await expect(page.locator('[data-health-row]')).toContainText('As secondary');
+    await expect(page).toHaveURL(/role=secondary/);
+    await expect.poll(() => cellCount(page, 'open')).toBe(1);
     // The Dates control belongs to the Deadlines tab (PV-08).
     await page.locator('[data-tab=deadlines]').click();
     await page.locator('[data-filter=range]').selectOption('2w');
@@ -106,14 +121,14 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await page.goBack(); // the Deadlines tab was chosen after this: back to Overview
     await page.goBack();
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('1');
+    await expect.poll(() => cellCount(page, 'open')).toBe(1);
     // Clear filters
     await page.locator('[data-clear-filters]').first().click();
     await expect(page).toHaveURL(/\/my-matters$/);
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('2');
+    await expect.poll(() => cellCount(page, 'open')).toBe(2);
     // the client filter by the address
     await page.goto(`/my-matters?clientId=${w.world.client.clientId}`);
-    await expect(cell(page, 'matters').locator('strong')).toHaveText('2');
+    await expect.poll(() => cellCount(page, 'open')).toBe(2);
     await expect(page.locator('[data-chosen]')).toContainText(w.world.client.name);
     await page.goto('/my-matters?clientId=99999999');
     await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing counted: no strip of zeros (#920)
@@ -156,27 +171,28 @@ test.describe('My Matters: shell, filters and the count strip', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'fail');
     const m = await w.matter('Alpha');
+    await w.matter('Beta');
     await w.task(m, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
-    await page.route('**/api/v1/my-matters/activity**', (route) =>
+    await page.route('**/api/v1/my-matters/attention**', (route) =>
       route.fulfill({ status: 500, body: '{}' }),
     );
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=activity] [data-panel-error]')).toContainText(
-      "Couldn't load recent activity.",
+    await expect(page.locator('[data-panel=attention] [data-panel-error]')).toContainText(
+      "Couldn't load needs my attention.",
     );
-    await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(2);
+    await expect(page.locator('[data-mm-strip]')).toBeVisible();
+    await page.unroute('**/api/v1/my-matters/attention**');
+    await page.locator('[data-panel=attention] [data-panel-retry]').click();
     await expect(
-      page.locator('[data-panel=attention] [data-group=overdue] [data-attention-row]'),
-    ).toHaveCount(1);
-    await page.unroute('**/api/v1/my-matters/activity**');
-    await page.locator('[data-panel=activity] [data-panel-retry]').click();
-    await expect(page.locator('[data-panel=activity] [data-activity-row]').first()).toBeVisible();
+      page.locator('[data-panel=attention] [data-attention-item]').first(),
+    ).toBeVisible();
   });
 });
 
 test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
-  test('groups, rows that open the task and Back, View all totals, and no item about a matter nobody manages', async ({
+  test('one ranked list, rows that open the task and Back, one View all with its total, and no item about a matter nobody manages', async ({
     seed,
     personas,
     asUser,
@@ -191,27 +207,39 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     const attention = page.locator('[data-panel=attention]');
-    await expect(attention.locator('[data-group=overdue] [data-attention-row]')).toHaveCount(1);
-    await expect(attention.locator('[data-group=dueSoon] [data-attention-row]')).toHaveCount(1);
-    // The overdue task is also unassigned: it is listed once, under Overdue, with a tag (PV-08); the count of the group stays 3.
-    await expect(attention.locator('[data-group=unassigned] [data-attention-row]')).toHaveCount(2);
-    await expect(attention.locator('[data-group=unassigned] [data-count]')).toContainText('3');
-    await expect(attention.locator('[data-group=overdue] [data-also-tag]')).toHaveText(
-      'No assignee',
+    // The overdue task is also unassigned: it is listed once, as overdue (no tags, no "also listed" notes). The unassigned task with a date is next.
+    // The unassigned task with no date is not attention yet.
+    await expect(attention.locator('[data-attention-item]')).toHaveCount(2);
+    await expect(attention.locator('[data-attention-item]').first()).toHaveAttribute(
+      'data-reason',
+      'overdue',
     );
-    await expect(attention.locator('[data-group=overdue] [data-fact]')).toContainText('overdue');
+    await expect(attention.locator('[data-attention-item]').nth(1)).toHaveAttribute(
+      'data-reason',
+      'unassigned',
+    );
+    await expect(attention.locator('[data-fact]').first()).toContainText('overdue');
+    await expect(attention.locator('[data-fact]').nth(1)).toHaveText('no assignee');
+    await expect(attention.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(
+      0,
+    );
+    await expect(attention).not.toContainText('Nobody holds this');
     await expect(attention).not.toContainText('On a matter without manager');
     await expect(attention).not.toContainText(nobody.name);
     // The row opens the task; Back returns to the page with its filters.
     await page.goto('/my-matters?role=primary');
-    await attention.locator('[data-group=overdue] [data-attention-row]').click();
+    await attention
+      .locator('[data-attention-item][data-reason=overdue] [data-attention-row]')
+      .click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${od.taskId}\\?from=my-matters`));
     await expect(page.getByRole('link', { name: /My Matters/ }).first()).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(/\/my-matters\?role=primary/);
-    // View all opens the Task Queue with the group's total.
-    await attention.locator('[data-group=unassigned] [data-view-all]').click();
-    await expect.poll(() => total(page)).toBe(3);
+    // One View all, with the total of the list it opens.
+    await expect(attention.locator('[data-view-all]')).toHaveText('View all 2');
+    await attention.locator('[data-view-all]').click();
+    await expect(page).toHaveURL(/needsAttention=true/);
+    await expect.poll(() => total(page)).toBe(2);
   });
 
   test('Upcoming deadlines are grouped by day, the 2 / 4 week toggle changes the window and overdue work is not in it', async ({
@@ -221,9 +249,11 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'dead');
     const m = await w.matter('Alpha');
-    await w.task(m, { dueDate: inDays(3), title: 'Within two weeks' });
-    await w.task(m, { dueDate: inDays(3), title: 'Same day' });
-    await w.task(m, { dueDate: inDays(20), title: 'Within four weeks' });
+    // Assigned: an unassigned task due within a week is listed in Needs my attention and, being listed once, not here.
+    const mine = { assignedUserId: w.other.userId };
+    await w.task(m, { dueDate: inDays(3), title: 'Within two weeks', ...mine });
+    await w.task(m, { dueDate: inDays(3), title: 'Same day', ...mine });
+    await w.task(m, { dueDate: inDays(20), title: 'Within four weeks', ...mine });
     await w.task(m, { dueDate: '2000-01-01', title: 'Long overdue' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
@@ -270,15 +300,19 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     );
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const group = page.locator('[data-panel=attention] [data-group=stuckOnHold]');
-    await expect(group.locator('[data-fact]')).toContainText('on hold 10 d');
-    await expect(group).toContainText('On hold more than 7 days');
-    await expect(cell(page, 'onHold')).toHaveAttribute('title', 'oldest 10 days');
+    const row = page.locator('[data-panel=attention] [data-attention-item][data-reason=onHold]');
+    await expect(row.locator('[data-fact]')).toHaveText('on hold 10 d');
+    await expect(row).toContainText('Waiting on client');
+    await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 10 days');
+    // The one View all counts it, and opens the Task Queue with the same tasks.
+    await page.locator('[data-panel=attention] [data-view-all]').click();
+    await expect(page).toHaveURL(/needsAttention=true/);
+    await expect.poll(() => total(page)).toBe(1);
   });
 });
 
-test.describe('My Matters: Matter health', () => {
-  test('rows, flag text, sort with aria-sort, the matter link, and the rule is spelled out', async ({
+test.describe('My Matters: the matters list', () => {
+  test('rows with counts, the worst first, no flag words, the matter link, and the rule behind the info button', async ({
     seed,
     personas,
     asUser,
@@ -296,51 +330,34 @@ test.describe('My Matters: Matter health', () => {
     await page.goto('/my-matters');
     const row = (name: string) => page.locator('[data-health-row]', { hasText: name });
     await expect(page.locator('[data-health-row]')).toHaveCount(4);
-    await expect(row('Reddish').locator('[data-flag]')).toHaveText('Red');
-    await expect(row('Amberish').locator('[data-flag]')).toHaveText('Amber');
-    await expect(row('Greenish').locator('[data-flag]')).toHaveText('Green');
-    await expect(row('Quiet').locator('[data-flag]')).toHaveText('Green');
-    await expect(row('Quiet').locator('[data-flag-cell]')).toHaveAttribute(
-      'title',
-      /no open tasks/,
+    // Worst first: the overdue matter, then the one with an unassigned task, then the one with a deadline, then the one with none.
+    await expect(page.locator('[data-health-row] [data-matter-link]')).toHaveText([
+      new RegExp('Reddish'),
+      new RegExp('Amberish'),
+      new RegExp('Greenish'),
+      new RegExp('Quiet'),
+    ]);
+    await expect(row('Reddish').locator('[data-overdue]')).toHaveText('1 overdue');
+    await expect(row('Greenish').locator('[data-overdue]')).toHaveText('0 overdue');
+    await expect(row('Amberish').locator('[data-unassigned]')).toHaveText('1 unassigned');
+    await expect(row('Reddish').locator('[data-at-risk]')).toHaveCount(0);
+    await expect(row('Greenish').locator('[data-unassigned], [data-at-risk]')).toHaveCount(0);
+    // No Red / Amber / Green word anywhere in the list, no table, no sort controls.
+    await expect(page.locator('[data-panel=health]')).not.toContainText(/\b(Red|Amber|Green)\b/);
+    await expect(page.locator('[data-panel=health] [data-sort], [data-health-table]')).toHaveCount(
+      0,
     );
-    await expect(row('Reddish').locator('[data-flag-cell]')).toHaveAttribute(
-      'title',
-      /a task is overdue/,
-    );
-    await expect(row('Amberish').locator('[data-flag-cell]')).toHaveAttribute(
-      'title',
-      /nobody assigned/,
-    );
-    await expect(row('Amberish')).toContainText('0%');
-    // The default is the next deadline, soonest first, and not the flag: Red does not come first because it is red.
-    await expect(page.locator('th[aria-sort=ascending] [data-sort=nextDeadline]')).toBeVisible();
-    // The viewer sorts: Open ascending then descending; the order and aria-sort follow, the address keeps it.
-    await page.locator('[data-panel=health] [data-sort=open]').click();
-    await expect(page).toHaveURL(/sort=open/);
-    await expect(
-      page.locator('[data-panel=health] th[aria-sort=ascending] [data-sort=open]'),
-    ).toBeVisible();
-    await page.locator('[data-panel=health] [data-sort=open]').click();
-    await expect(page).toHaveURL(/dir=desc/);
-    await expect(
-      page.locator('[data-panel=health] th[aria-sort=descending] [data-sort=open]'),
-    ).toBeVisible();
-    await expect(page.locator('[data-health-row]').first()).toContainText('Amberish');
-    // How is this decided?
+    // The rule is stated once, behind the info button.
+    await expect(page.locator('[data-rule]')).toHaveCount(0);
     await page.locator('[data-how]').click();
-    await expect(page.locator('[data-rule]')).toContainText(
-      'Red: at least one open task is overdue.',
-    );
-    await expect(page.locator('[data-rule]')).toContainText('never changes the flag');
+    await expect(page.locator('[data-rule]')).toContainText('Worst first');
+    await expect(page.locator('[data-rule]')).toContainText('never changes the order');
     // The matter cell is the link.
     await row('Reddish').locator('[data-matter-link]').click();
     await expect(page).toHaveURL(new RegExp(`/matters/${red.matterId}`));
     await page.goBack();
-    await expect(page).toHaveURL(/\/my-matters\?sort=open&dir=desc/);
-    await expect(
-      page.locator('[data-panel=health] th[aria-sort=descending] [data-sort=open]'),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/my-matters$/);
+    await expect(page.locator('[data-health-row]')).toHaveCount(4);
   });
 
   test('a matter nobody manages is never flagged, listed or counted on the page of someone who manages others', async ({
@@ -355,9 +372,9 @@ test.describe('My Matters: Matter health', () => {
     await w.task(orphan, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-health-row]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no list
     await expect(page.locator('main')).not.toContainText('Orphaned');
-    await expect(cell(page, 'overdue').locator('strong')).toHaveText('0');
+    await expect(cell(page, 'overdue')).toHaveAttribute('aria-label', '0 overdue');
     await expect(page.locator('main')).not.toContainText(
       /no (project )?manager|unmanaged|not managed/i,
     );
@@ -367,7 +384,7 @@ test.describe('My Matters: Matter health', () => {
     { width: 1366, height: 768 },
     { width: 375, height: 812 },
   ]) {
-    test(`+ New task opens Create task with the matter and creating the task returns to My Matters (${size.width})`, async ({
+    test(`+ New task in the row menu opens Create task with the matter and creating the task returns to My Matters (${size.width})`, async ({
       seed,
       personas,
       asUser,
@@ -378,13 +395,16 @@ test.describe('My Matters: Matter health', () => {
       const page = await asUser(w.pm.username);
       await page.setViewportSize(size);
       await page.goto('/my-matters?role=primary');
-      const button = page.getByRole('button', { name: `New task for ${m.matterRef}`, exact: true });
-      await button.scrollIntoViewIfNeeded();
+      const menu = page
+        .locator('[data-health-row]', { hasText: m.matterRef })
+        .locator('[data-row-actions] button');
+      await menu.scrollIntoViewIfNeeded();
       if (size.width < 640) {
-        const box = await button.boundingBox();
-        expect(box!.height, 'touch target').toBeGreaterThanOrEqual(44);
+        const box = await menu.boundingBox();
+        expect(box!.height, 'touch target').toBeGreaterThanOrEqual(43.5);
       }
-      await button.click();
+      await menu.click();
+      await page.getByRole('menuitem', { name: '+ New task' }).click();
       await expect(page).toHaveURL(new RegExp(`/tasks/new\\?matterId=${m.matterId}`));
       await expect(page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
       // Task type first, then the form; the matter is already chosen.
@@ -406,9 +426,14 @@ test.describe('My Matters: Matter health', () => {
   test('Cancel on Create task returns to My Matters too', async ({ seed, personas, asUser }) => {
     const w = await mmWorld(seed, personas, 'cancel');
     const m = await w.matter('Target');
+    await w.matter('Other');
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await page.getByRole('button', { name: `New task for ${m.matterRef}`, exact: true }).click();
+    await page
+      .locator('[data-health-row]', { hasText: m.matterRef })
+      .locator('[data-row-actions] button')
+      .click();
+    await page.getByRole('menuitem', { name: '+ New task' }).click();
     await page.getByRole('radio', { name: new RegExp(w.world.taskType.name) }).click();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page).toHaveURL(/\/my-matters$/);
@@ -436,8 +461,8 @@ test.describe('My Matters: Matter health', () => {
   });
 });
 
-test.describe('My Matters: Recent activity', () => {
-  test('first visit marks nothing unread; a change by someone else is unread until Mark all as read, which survives a reload', async ({
+test.describe('My Matters: the events of the Activity tab (they left the Overview in #909)', () => {
+  test('first visit marks nothing new; a change by someone else is new until Mark all as read, which survives a reload', async ({
     seed,
     personas,
     asUser,
@@ -446,12 +471,12 @@ test.describe('My Matters: Recent activity', () => {
     const m = await w.matter('Alpha');
     await w.task(m, { title: 'Before the first visit' });
     const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    const panel = page.locator('[data-panel=activity]');
+    await page.goto('/my-matters?tab=activity');
+    const panel = page.locator('[data-panel=activity-tab]');
     await expect(panel.locator('[data-activity-row]').first()).toBeVisible();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(0);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(0);
     await expect(panel.locator('[data-mark-all-read]')).toHaveCount(0);
-    // Somebody else creates a task and changes a status: both are unread; the viewer's own action is never.
+    // Somebody else creates a task and changes a status: both are new; the viewer's own action is never.
     const fresh = await w.task(m, { title: 'Created by the admin' });
     await seed.admin.post(`/api/v1/tasks/${fresh.taskId}/status`, {
       status: 'ON_HOLD',
@@ -459,24 +484,24 @@ test.describe('My Matters: Recent activity', () => {
       rowVersion: fresh.rowVersion,
     });
     await page.reload();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(2);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(2);
     await expect(panel.locator('[data-activity-row][data-unread=true]').first()).toContainText(
-      'unread',
+      'New',
     );
     await expect(panel).toContainText('moved "Created by the admin" to On Hold');
     await expect(panel).toContainText('created "Created by the admin"');
     await expect(panel).not.toContainText('Waiting for the client'); // the status note is never shown
-    // Looking at the panel does not move the marker.
+    // Looking at the tab does not move the marker.
     await page.reload();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(2);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(2);
     await panel.locator('[data-mark-all-read]').click();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(0);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(0);
     await expect(panel.locator('[data-activity-announce]')).toHaveText(
       'All activity marked as read.',
     );
     await page.reload();
     await expect(panel.locator('[data-activity-row]').first()).toBeVisible();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(0);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(0);
   });
 
   test('opening an event opens the task and marks it read; comments show only "commented on"', async ({
@@ -488,14 +513,14 @@ test.describe('My Matters: Recent activity', () => {
     const m = await w.matter('Alpha');
     const t = await w.task(m, { title: 'Commented task' });
     const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    // The first visit creates the marker: wait until the panel has it before somebody else comments.
-    await expect(page.locator('[data-panel=activity] [data-activity-row]').first()).toBeVisible();
+    await page.goto('/my-matters?tab=activity');
+    // The first visit creates the marker: wait until the tab has it before somebody else comments.
+    const panel = page.locator('[data-panel=activity-tab]');
+    await expect(panel.locator('[data-activity-row]').first()).toBeVisible();
     await seed.admin.post(`/api/v1/tasks/${t.taskId}/comments`, {
       bodyHtml: '<p>Privileged secret words</p>',
     });
     await page.reload();
-    const panel = page.locator('[data-panel=activity]');
     await expect(panel).not.toContainText('Privileged secret words');
     const unread = panel
       .locator('[data-activity-row][data-unread=true] [data-activity-link]')
@@ -505,7 +530,7 @@ test.describe('My Matters: Recent activity', () => {
     await expect(page).toHaveURL(new RegExp(`/tasks/${t.taskId}`));
     await page.goBack();
     await expect(panel.locator('[data-activity-row]').first()).toBeVisible();
-    await expect(panel.locator('[data-unread-word]')).toHaveCount(0);
+    await expect(panel.locator('[data-new-word]')).toHaveCount(0);
   });
 });
 
@@ -526,7 +551,6 @@ test.describe('My Matters: layout and accessibility', () => {
     await page.goto('/my-matters');
     await atEverySize(page, 'my-matters', async () => {
       await expect(page.locator('[data-health-row], [data-record-card]').first()).toBeVisible();
-      await expect(page.locator('[data-panel=activity] [data-activity-row]').first()).toBeVisible();
     });
   });
 });

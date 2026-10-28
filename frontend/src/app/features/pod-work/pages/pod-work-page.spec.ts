@@ -21,7 +21,7 @@ import { SkipTarget } from '../../../shared/layout/skip-target';
 import { PodWorkPage } from './pod-work-page';
 
 /** Positions of the arguments of `getPodWork` (Pod and view first, then the shared filters). */
-const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 35, page: 37 };
+const ARG = { podId: 0, view: 1, q: 2, status: 3, pod: 5, assignee: 7, sort: 36, page: 38 };
 
 const COUNTS = { memberCount: 3, openCount: 12, unassignedCount: 4, overdueCount: 0 };
 const PODS = [

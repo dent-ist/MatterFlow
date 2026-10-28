@@ -664,6 +664,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
           undefined, // role
           undefined, // dueWithin
           undefined, // atRisk
+          undefined, // needsAttention
           undefined, // onHoldReason
           'created',
           'desc',

@@ -33,6 +33,7 @@ public sealed record MyMattersSummary(
 
 /// <summary>One row of the health table (6.3).</summary>
 /// <param name="ClientNumber">The five-digit client number.</param>
+/// <param name="AtRisk">Open tasks of the matter that are At risk (<see cref="AtRiskRules"/>).</param>
 /// <param name="DueThisWeek">Open tasks due in the next 7 days, today included, not overdue (the strip's "due in 7 days" for this matter).</param>
 /// <param name="PercentComplete">Steps completed or skipped over all steps of the workflows of this matter's open tasks, whole percent; null with no open task.</param>
 /// <param name="NextDeadline">The earliest explicit due date among open tasks that are not overdue; null if none.</param>
@@ -50,6 +51,7 @@ public sealed record MyMattersHealthRow(
     [property: Required] int Overdue,
     [property: Required] int DueThisWeek,
     [property: Required] int Unassigned,
+    [property: Required] int AtRisk,
     int? PercentComplete,
     DateOnly? NextDeadline,
     [property: Required] string Flag,
@@ -68,7 +70,7 @@ public sealed record MyMattersHealthPage(
     [property: Required] int StuckOnHoldDays,
     [property: Required] string TimeZone);
 
-/// <summary>The fact an attention row states: <c>OVERDUE</c> (days), <c>DUE_TODAY</c>, <c>DUE_IN_DAYS</c> (days), <c>NO_ASSIGNEE</c>, <c>ON_HOLD_DAYS</c> (days).</summary>
+/// <summary>The fact an attention row states: <c>OVERDUE</c> (days), <c>AT_RISK</c>, <c>DUE_TODAY</c>, <c>DUE_IN_DAYS</c> (days), <c>NO_ASSIGNEE</c>, <c>ON_HOLD_DAYS</c> (days).</summary>
 public static class AttentionFacts
 {
     public const string Overdue = "OVERDUE";
@@ -76,6 +78,7 @@ public static class AttentionFacts
     public const string DueInDays = "DUE_IN_DAYS";
     public const string NoAssignee = "NO_ASSIGNEE";
     public const string OnHoldDays = "ON_HOLD_DAYS";
+    public const string AtRisk = "AT_RISK";
 }
 
 /// <summary>One task in the attention list or the upcoming deadlines.</summary>
@@ -123,24 +126,23 @@ public sealed record MyMattersTaskItem(
 /// <summary>The hold of a task that is On Hold: the structured reason (null when none was chosen) and for how many whole days.</summary>
 public sealed record MyMattersOnHold(string? ReasonName, [property: Required] int Days);
 
-/// <summary>One group of the attention list: the total in the group, the first rows and the Task Queue query behind "View all".</summary>
-/// <param name="Kind"><c>overdue</c>, <c>dueSoon</c>, <c>unassigned</c> or <c>stuckOnHold</c>.</param>
-/// <param name="Total">All tasks of the group (the rows are capped at 10).</param>
-/// <param name="TotalUnfiltered">With a <c>taskTypeId</c> filter: the total of the group without it, so a heading can read "4 of 13"; null without a filter.</param>
-/// <param name="Query">For <c>stuckOnHold</c> the list shows every task on hold, oldest hold first (the Task Queue has no "longer than 7 days" filter), so its total can be larger than <c>Total</c>.</param>
-public sealed record MyMattersAttentionGroup(
-    [property: Required] string Kind,
-    [property: Required] int Total,
-    [property: Required] string Query,
-    [property: Required] IReadOnlyList<MyMattersTaskItem> Items,
-    int? TotalUnfiltered = null);
-
-/// <summary>Needs my attention (6.2): four groups in this order, each capped at 10 rows. Matters and tasks nobody manages never appear.</summary>
+/// <summary>
+/// Needs my attention (6.2, reworked in epic #893 issue #905): ONE ranked list. Each task is listed once under its most urgent reason: overdue (oldest first), at risk,
+/// due today, unassigned with a due date within 7 days, on hold for more than 7 days; the row's <c>FactCode</c> is that reason. <c>Items</c> are the first five;
+/// <c>Total</c> counts every task that needs attention (each once) and <c>Query</c> is the Task Queue query that lists exactly those tasks (<c>needsAttention=true</c>).
+/// Matters and tasks nobody manages never appear.
+/// </summary>
+/// <param name="Total">All tasks that need attention, each counted once (the rows are capped at five).</param>
+/// <param name="Query">The Task Queue query behind "View all": the scope's open tasks with <c>needsAttention=true</c> (and the type filter, if one was asked).</param>
+/// <param name="TotalUnfiltered">With a <c>taskTypeId</c> filter: the total without it; null without a filter.</param>
 public sealed record MyMattersAttention(
     [property: Required] string TimeZone,
     [property: Required] DateTime AsOfUtc,
     [property: Required] int StuckOnHoldDays,
-    [property: Required] IReadOnlyList<MyMattersAttentionGroup> Groups);
+    [property: Required] int Total,
+    [property: Required] string Query,
+    [property: Required] IReadOnlyList<MyMattersTaskItem> Items,
+    int? TotalUnfiltered = null);
 
 /// <summary>
 /// Upcoming deadlines (6.5): open, not overdue, due from today to the last day of the window, soonest first, capped at 25. With <c>groupBy=day</c> or <c>groupBy=matter</c>
@@ -315,14 +317,16 @@ public sealed record MyMattersSinceCount(
     [property: Required] string Query,
     [property: Required] string Target);
 
-/// <summary>The six figures of the summary.</summary>
+/// <summary>The figures of the summary. The Overview line draws the four that need a decision (<c>BecameOverdue</c>, <c>PutOnHold</c>, <c>Completed</c>, <c>NewUnassigned</c>); the others stay for the Activity tab.</summary>
+/// <param name="NewUnassigned">Open tasks of the scope with nobody assigned that were created on or after the day of the period's start; <c>Query</c> is the Task Queue query that lists them.</param>
 public sealed record MyMattersSinceCounts(
     [property: Required] MyMattersSinceCount NewTasks,
     [property: Required] MyMattersSinceCount Completed,
     [property: Required] MyMattersSinceCount BecameOverdue,
     [property: Required] MyMattersSinceCount Reassigned,
     [property: Required] MyMattersSinceCount PutOnHold,
-    [property: Required] MyMattersSinceCount Comments);
+    [property: Required] MyMattersSinceCount Comments,
+    [property: Required] MyMattersSinceCount NewUnassigned);
 
 /// <summary>One of the (at most five) most important items: a task that became overdue, then holds and reassignments, newest first. Exactly one of <c>Task</c> and <c>Event</c> is set.</summary>
 /// <param name="Kind"><c>BECAME_OVERDUE</c>, <c>ON_HOLD</c> or <c>REASSIGNED</c>.</param>

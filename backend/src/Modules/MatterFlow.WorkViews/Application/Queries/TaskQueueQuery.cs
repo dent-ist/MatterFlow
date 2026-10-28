@@ -19,7 +19,7 @@ public class TaskQueueQuery
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
         "matterText", "clientText", "projectText", "updatedFrom", "updatedTo",
         "managedByMe", "managerId", "role", "dueWithin",
-        "atRisk", "onHoldReason",
+        "atRisk", "onHoldReason", "needsAttention",
     ];
 
     /// <summary>All parameters of the Task Queue.</summary>
@@ -162,6 +162,10 @@ public class TaskQueueQuery
     [FromQuery(Name = "atRisk")]
     public bool? AtRisk { get; init; }
 
+    /// <summary>True: only open Tasks that need attention: overdue, at risk, due today, unassigned with a due date within 7 days, or on hold for more than 7 days (<see cref="AttentionRules"/>). The My Matters Overview's "View all". False is the same as leaving it out.</summary>
+    [FromQuery(Name = "needsAttention")]
+    public bool? NeedsAttention { get; init; }
+
     /// <summary>On-hold reason ids; repeatable. Matches Tasks that are On Hold with one of those reasons; <c>0</c> matches Tasks On Hold with no reason chosen.</summary>
     [FromQuery(Name = "onHoldReason")]
     public int[]? OnHoldReason { get; init; }
@@ -285,7 +289,8 @@ public sealed record TaskQueueFilter(
     string ManagerRole = TaskQueueFilter.RoleBoth,
     int? DueWithinDays = null,
     bool AtRisk = false,
-    IReadOnlyList<int>? OnHoldReasons = null)
+    IReadOnlyList<int>? OnHoldReasons = null,
+    bool NeedsAttention = false)
 {
     public const string RolePrimary = "primary";
     public const string RoleSecondary = "secondary";
@@ -351,7 +356,8 @@ public sealed record TaskQueueFilter(
             role,
             query.DueWithin,
             query.AtRisk == true,
-            query.OnHoldReason is null ? [] : [.. query.OnHoldReason.Where(id => id >= 0).Distinct()]);
+            query.OnHoldReason is null ? [] : [.. query.OnHoldReason.Where(id => id >= 0).Distinct()],
+            query.NeedsAttention == true);
     }
 
     /// <summary>True when no filter is set at all (a plain link): My Work then counts and lists Created by me as open tasks only.</summary>
@@ -360,7 +366,7 @@ public sealed record TaskQueueFilter(
         && Creators.Count == 0 && ClientId is null && MatterId is null && ProjectId is null && TaskTypes.Count == 0 && Workflows.Count == 0
         && CreatedFrom is null && CreatedTo is null && DueFrom is null && DueTo is null && Asap is null && Overdue is null && Requestor is null
         && CompletedFrom is null && CompletedTo is null && MatterText is null && ClientText is null && ProjectText is null
-        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null && !AtRisk && (OnHoldReasons is null || OnHoldReasons.Count == 0);
+        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null && !AtRisk && !NeedsAttention && (OnHoldReasons is null || OnHoldReasons.Count == 0);
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 

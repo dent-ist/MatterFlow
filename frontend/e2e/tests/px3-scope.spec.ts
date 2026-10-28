@@ -225,6 +225,7 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     const w = await mmWorld(seed, personas, 'qs');
     const a = await w.matter('Alpha');
     const b = await w.matter('Bravo', w.other);
+    await w.matter('Charlie'); // a second matter of mine: with one matter the Overview has no matters list
     await w.task(a, { dueDate: '2001-05-05', title: 'Older overdue A' });
     await w.task(a, { dueDate: '2005-05-05', title: 'Newer overdue A' });
     await w.task(a, { dueDate: inDays(40), title: 'Later A' });
@@ -276,7 +277,7 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     expect(await pressed(page, 'all')).toBe('true');
 
     // The other cells of the strip: the same agreement.
-    for (const cell of ['unassigned', 'due3', 'onHold', 'open']) {
+    for (const cell of ['unassigned', 'due7', 'onHold', 'open']) {
       await page.goto('/my-matters');
       const item = page.locator(`[data-mm-strip] [data-strip-item=${cell}]`);
       await expect(item).toBeVisible();
@@ -288,7 +289,7 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     }
   });
 
-  test('the Matters list: the strip cell opens on My matters with the scope in the address', async ({
+  test('the Matters list: the All matters link opens on My matters with the scope in the address', async ({
     seed,
     personas,
     asUser,
@@ -296,11 +297,12 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     const w = await world(seed, personas);
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await page.locator('[data-mm-strip] [data-strip-item=matters]').click();
+    await expect(page.locator('[data-all-matters]')).toContainText('All matters (2)');
+    await page.locator('[data-all-matters]').click();
     await expect(page).toHaveURL(/\/matters/);
     await expect(page).toHaveURL(/scope=mine/);
     expect(await pressed(page, 'mine')).toBe('true');
-    await expect(page.locator('tbody tr')).toHaveCount(1);
+    await expect(page.locator('tbody tr')).toHaveCount(2);
     await page.locator('[data-scope="all"]').click();
     await expect(page).toHaveURL(/scope=all/);
     await expect.poll(async () => page.locator('tbody tr').count()).toBeGreaterThan(1);
@@ -327,10 +329,11 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     await expect(page).not.toHaveURL(/sort=due/);
     await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
 
-    // The Needs my attention panel's View all overdue link.
+    // The Needs my attention panel's one View all (the two overdue tasks are all that needs attention here): oldest due first as well.
     await page.goto('/my-matters');
-    await page.locator('[data-group=overdue] [data-view-all]').click();
+    await page.locator('[data-panel=attention] [data-view-all]').click();
     await expect(page).toHaveURL(/sort=due/);
+    await expect(page).toHaveURL(/needsAttention=true/);
     await expect(rows.first()).toContainText('Older overdue A');
 
     // A Task Queue link of any other kind keeps the default order (a bare /tasks restores the view last used, sort included).

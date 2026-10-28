@@ -72,7 +72,12 @@ public sealed class MyMattersSinceLastVisitService(MyMattersScopeResolver scopes
             : await overdue.OrderBy(t => t.DueSortKey).ThenBy(t => t.Id).Take(ImportantItems)
                 .Select(t => new { t.Id, t.Number, t.Title, t.MatterId, t.DueDate, t.DueAtUtc, t.AssignedUserId }).ToListAsync(ct);
 
-        var sinceDay = DashboardRules.Date(LocalDayOf(clock, since));
+        var sinceLocalDay = LocalDayOf(clock, since);
+        var sinceDay = DashboardRules.Date(sinceLocalDay);
+
+        // New unassigned: open tasks nobody is assigned to that were created after the period's start (to the second, so "Mark as read" clears them; the list it opens
+        // starts at that day, like "became overdue" above).
+        var newUnassigned = await scope.OpenTasks().Where(MyMattersRules.Unassigned).Where(t => t.CreatedAtUtc > since).CountAsync(ct);
         var items = new List<MyMattersSinceItem>();
         if (overdueTop.Count > 0)
         {
@@ -120,7 +125,8 @@ public sealed class MyMattersSinceLastVisitService(MyMattersScopeResolver scopes
                 new MyMattersSinceCount(overdueTotal, scope.QueueOpen("overdue=true", "dueFrom=" + sinceDay, "sort=due"), "taskQueue"),
                 Count(Of(MyMattersActivityService.AssignedEvent), ActivityKinds.Reassigned),
                 Count(Of(MyMattersActivityService.StatusEvent, "ON_HOLD"), "ON_HOLD"),
-                Count(Of(MyMattersActivityService.CommentEvent), ActivityKinds.Commented)),
+                Count(Of(MyMattersActivityService.CommentEvent), ActivityKinds.Commented),
+                new MyMattersSinceCount(newUnassigned, scope.QueueOpen("unassigned=true", "createdFrom=" + sinceDay, "sort=" + TaskQueueRules.SortCreated), "taskQueue")),
             items);
     }
 

@@ -62,6 +62,43 @@ public sealed class MyMattersHealthTests(SqlServerFixture sql) : MyMattersTestBa
     }
 
     [Fact]
+    public async Task Worst_first_orders_by_overdue_then_at_risk_then_unassigned_then_the_soonest_deadline_and_each_row_counts_its_at_risk_tasks()
+    {
+        // Without a target on the type nothing is at risk.
+        var page = await Mine("health?sort=worst");
+        page.GetProperty("sort").GetString().ShouldBe("worst");
+        page.GetProperty("dir").GetString().ShouldBe("desc");
+        page.GetProperty("items").EnumerateArray().ShouldAllBe(r => r.GetProperty("atRisk").GetInt32() == 0);
+        // M1 has the overdue task; then the matter with unassigned tasks (M2: three); then the two with none, the one with a deadline first.
+        Order(page).ShouldBe([M1, M2, M4, M6]);
+
+        // The type gets a target of one day: an open task created two days ago, not yet overdue, is at risk.
+        var type = await OkAsync(await H.Admin.GetAsync($"/api/v1/task-types/{W.TaskTypeId}"));
+        await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/task-types/{W.TaskTypeId}", new
+        {
+            name = type.GetProperty("name").GetString(),
+            iconKey = type.GetProperty("iconKey").GetString(),
+            colourKey = type.GetProperty("colourKey").GetString(),
+            targetDays = 1,
+            isActive = true,
+            eligibleWorkflowIds = type.GetProperty("eligibleWorkflowIds").EnumerateArray().Select(e => e.GetInt32()).ToArray(),
+            defaultWorkflowDefinitionId = type.GetProperty("defaultWorkflowDefinitionId").GetInt32(),
+            rowVersion = type.GetProperty("rowVersion").GetString(),
+        }));
+        await MakeAsync("m6-risk", M6, new() { ["dueDate"] = "2099-01-01", ["assignedUserId"] = Tech });
+        await H.ExecuteAsync("UPDATE dbo.Task SET CreatedAt = DATEADD(day, -2, SYSUTCDATETIME()) WHERE Title = 'm6-risk'");
+        H.Factory.InvalidateAll();
+
+        var again = await Mine("health?sort=worst");
+        Row(again, M6).GetProperty("atRisk").GetInt32().ShouldBe(1);
+        (await TotalAsync(A, "task-queue", Row(again, M6).GetProperty("query").GetString()! + "&atRisk=true")).ShouldBe(1);
+        // Overdue still comes first (M1); at risk beats unassigned (M6 before M2).
+        Order(again).ShouldBe([M1, M6, M2, M4]);
+        Order(await Mine("health?sort=worst&dir=asc")).Reverse<int>().ToList().Count.ShouldBe(4);
+        Order(await Mine("health?sort=worst&pageSize=2")).ShouldBe([M1, M6]);
+    }
+
+    [Fact]
     public async Task A_long_hold_alone_is_Amber_and_a_short_one_is_not()
     {
         await MakeAsync("m6-hold", M6, new() { ["dueDate"] = "2099-01-01", ["assignedUserId"] = Tech }, "ON_HOLD");

@@ -135,6 +135,10 @@ export function todayText(clock: Clock, zone: string): string {
               Show all types
             </button>
           </p>
+        } @else if (leftOut() > 0) {
+          <p class="pl__empty" data-empty data-all-above>
+            Everything due in this period is listed under Needs my attention.
+          </p>
         } @else {
           <p class="pl__empty" data-empty>No deadlines in this period.</p>
         }
@@ -197,6 +201,8 @@ export function todayText(clock: Clock, zone: string): string {
 export class DeadlinesPanel {
   readonly filters = input.required<MmFilters>();
   readonly rangeChange = output<MmRange>();
+  /** Task ids already listed in Needs my attention: a task is listed once per screen, in its most urgent place (issue #905), so they are left out here. */
+  readonly exclude = input<readonly number[]>([]);
   protected readonly origin = inject(TaskOriginLinks);
   private readonly api = inject(MyMattersClient);
   private readonly clock = inject(Clock);
@@ -245,7 +251,7 @@ export class DeadlinesPanel {
   protected readonly bare = computed(
     () =>
       this.loader.state() === 'ready' &&
-      this.days().length === 0 &&
+      this.rows().length === 0 &&
       !this.filtered() &&
       this.filters().range === '4w',
   );
@@ -256,8 +262,17 @@ export class DeadlinesPanel {
     effect(() => this.states?.report('deadlines', this.bare() ? 'empty' : 'content'));
   }
 
+  /** The rows the API returned, before the ones listed above are left out. */
+  private readonly rows = computed(() => this.loader.data()?.items ?? []);
+  /** How many of them are already listed in Needs my attention. */
+  protected readonly leftOut = computed(() => {
+    const skip = new Set(this.exclude());
+    return this.rows().filter((t) => skip.has(t.taskId)).length;
+  });
+
   protected readonly days = computed(() => {
-    const items = this.loader.data()?.items ?? [];
+    const skip = new Set(this.exclude());
+    const items = this.rows().filter((t) => !skip.has(t.taskId));
     return this.flat()
       ? items.length > 0
         ? [{ key: 'flat', heading: '', items }]

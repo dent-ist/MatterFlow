@@ -494,6 +494,9 @@ public sealed class TaskQueueService(
         if (f.AtRisk)
             rows = AtRiskRules.Where(rows, db, c);
 
+        if (f.NeedsAttention)
+            rows = rows.Where(AttentionRules.NeedsAttention(db, c));
+
         if (f.OnHoldReasons is { Count: > 0 } reasons)
         {
             var ids = reasons.Where(id => id > 0).ToList();

@@ -1,5 +1,6 @@
 import {
   OLDEST_FIRST,
+  activityText,
   activityTime,
   dayHeading,
   factText,
@@ -8,13 +9,12 @@ import {
   shortDate,
   statusWords,
 } from './facts';
-import { activityText } from './panels/activity-panel';
-import { reasonText } from './panels/health-panel';
 
 describe('My Matters words', () => {
   it('states the one fact of an attention row in plain words', () => {
     expect(factText({ factCode: 'OVERDUE', factDays: 3 })).toBe('3 d overdue');
     expect(factText({ factCode: 'DUE_TODAY', factDays: undefined })).toBe('due today');
+    expect(factText({ factCode: 'AT_RISK', factDays: undefined })).toBe('at risk');
     expect(factText({ factCode: 'DUE_IN_DAYS', factDays: 1 })).toBe('due tomorrow');
     expect(factText({ factCode: 'DUE_IN_DAYS', factDays: 4 })).toBe('due in 4 d');
     expect(factText({ factCode: 'NO_ASSIGNEE', factDays: undefined })).toBe('no assignee');
@@ -77,12 +77,6 @@ describe('My Matters words', () => {
     expect(
       activityText(e({ kind: 'MANAGER_CHANGED', to: 'Alex Kim', managerPlace: 'primary' })),
     ).toBe('Alex Kim became primary project manager');
-  });
-
-  it('spells out the flag reasons with the thresholds the API echoes', () => {
-    expect(reasonText('DUE_SOON', 3, 7)).toBe('a task is due within 3 days');
-    expect(reasonText('LONG_HOLD', 3, 7)).toBe('a task has been on hold for more than 7 days');
-    expect(reasonText('NO_OPEN_TASKS', 3, 7)).toBe('no open tasks');
   });
 
   it('writes a next deadline short in the current year and in full in another', () => {

@@ -8,13 +8,14 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
-/// "Needs my attention" and "Upcoming deadlines" (issue #681). Attention: four groups (overdue, due in 3 days, unassigned, stuck on hold), each a count
-/// and a <c>TOP 10</c>; deadlines: one count and a <c>TOP 25</c>. All bounded by TOP, all on the open tasks of the scope's matters, all with the
+/// "Needs my attention" and "Upcoming deadlines" (issue #681). Attention (issue #905): one ranked list of five rows and one count of the <see cref="AttentionRules"/> set;
+/// deadlines: one count and a <c>TOP 25</c>. All bounded by TOP, all on the open tasks of the scope's matters, all with the
 /// <see cref="TaskQueueRules"/> predicates. Tasks of matters nobody manages are not in anybody's "mine" scope, so they are never an item.
 /// </summary>
 public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbContext db)
 {
-    public const int GroupSize = 10;
+    /// <summary>Rows of the ranked attention list.</summary>
+    public const int RowCount = 5;
     public const int DeadlineSize = 25;
 
     /// <summary>Tasks listed per calendar day and per matter in the grouped deadlines.</summary>
@@ -35,73 +36,63 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             return resolved.Error!;
         var scope = resolved.Value;
         var clock = scope.Clock;
-
-        var overdue = TaskQueueRules.Overdue(clock);
-        var due3 = TaskQueueRules.DueWithin(clock, MyMattersRules.AmberDueDays);
-        var stuck = MyMattersRules.StuckOnHold(clock.NowUtc);
         var today = clock.Today;
-        var weekEnd = today.AddDays(7);
+
         var allOpen = scope.OpenTasks();
         var open = SectionSorts.Filter(allOpen, opts);
+        var any = AttentionRules.NeedsAttention(db, clock);
 
-        var totals = await TotalsAsync(open, overdue, due3, stuck, ct);
-        // With a type filter the headings read "4 of 13": the same four counts without it.
-        var unfiltered = opts.Filtered ? await TotalsAsync(allOpen, overdue, due3, stuck, ct) : null;
-        Func<IQueryable<WorkTask>, IOrderedQueryable<WorkTask>> Order(Func<IQueryable<WorkTask>, IOrderedQueryable<WorkTask>> natural) =>
-            opts.Sort is { } sort ? q => SectionSorts.Apply(q, db, sort, opts.Descending) : natural;
+        // The total counts each task once (a task that is overdue and unassigned is one). With a type filter the heading can read "4 of 13": the same count without it.
+        var total = await open.Where(any).CountAsync(ct);
+        var totalUnfiltered = opts.Filtered ? await allOpen.Where(any).CountAsync(ct) : (int?)null;
 
-        // Each group is first a TOP N of task ids over index columns only (a seek and a small sort, no row lookups); the other columns of those few
-        // tasks, and then the names of their matters, clients and people, are read once for all four groups.
-        var overdueIds = await TopIdsAsync(open.Where(overdue), Order(q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id)), GroupSize, ct);
-        var dueSoonIds = await TopIdsAsync(open.Where(due3), Order(q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id)), GroupSize, ct);
-        // Unassigned: those due within 7 days (overdue ones included) first, soonest first; then the rest, oldest first.
-        var unassignedIds = await TopIdsAsync(
-            open.Where(MyMattersRules.Unassigned),
-            Order(q => q.OrderBy(x => x.DueDate != null && x.DueDate <= weekEnd ? 0 : 1).ThenBy(x => x.DueDate != null && x.DueDate <= weekEnd ? x.DueSortKey : (DateTime?)null).ThenBy(x => x.CreatedAtUtc).ThenBy(x => x.Id)),
-            GroupSize,
-            ct);
-        var stuckIds = await TopIdsAsync(open.Where(stuck), Order(q => q.OrderBy(x => x.StatusChangedAtUtc).ThenBy(x => x.Id)), GroupSize, ct);
-        var details = await DetailsAsync([.. overdueIds, .. dueSoonIds, .. unassignedIds, .. stuckIds], ct);
+        // One TOP N of task ids per reason over index columns only (a seek and a small sort, no row lookups); all five are always asked, so the number of statements does not
+        // depend on the data. The first RowCount of each reason are enough: the reasons are walked in rank order and a task already picked is skipped, so a reason can lose
+        // at most the rows picked before it.
+        var picked = new List<(long Id, string Reason)>();
+        foreach (var reason in AttentionRules.Reasons)
+        {
+            var ids = await TopIdsAsync(open.Where(AttentionRules.Of(reason, db, clock)), OrderOf(reason), RowCount, ct);
+            foreach (var id in ids)
+            {
+                if (picked.Count < RowCount && picked.All(p => p.Id != id))
+                    picked.Add((id, reason));
+            }
+        }
+
+        var details = await DetailsAsync([.. picked.Select(p => p.Id)], ct);
         var names = await NamesAsync(details.Values, clock, ct);
-        IReadOnlyList<TaskRow> Rows(IEnumerable<long> ids) => [.. ids.Select(id => details[id])];
-        var overdueRows = Rows(overdueIds);
-        var dueSoonRows = Rows(dueSoonIds);
-        var unassignedRows = Rows(unassignedIds);
-        var stuckRows = Rows(stuckIds);
-
-        MyMattersAttentionGroup Group(string kind, int total, int? totalUnfiltered, string queryString, IReadOnlyList<TaskRow> rows, Func<TaskRow, (string, int?)> fact) =>
-            new(kind, total, queryString, [.. rows.Select(r => ToItem(r, names, fact(r)))], totalUnfiltered);
-
-        (string, int?) OverdueFact(TaskRow r) => (AttentionFacts.Overdue, DaysOverdue(r, today, clock.NowUtc));
-        (string, int?) DueFact(TaskRow r) => DueFactOf(r, today);
-        (string, int?) NoAssigneeFact(TaskRow _) => (AttentionFacts.NoAssignee, null);
-        (string, int?) HoldFact(TaskRow r) => (AttentionFacts.OnHoldDays, MyMattersRules.WholeDaysSince(r.StatusChangedAtUtc, clock.NowUtc));
+        var items = picked.Select(p =>
+        {
+            var r = details[p.Id];
+            (string, int?) fact = p.Reason switch
+            {
+                "overdue" => (AttentionFacts.Overdue, DaysOverdue(r, today, clock.NowUtc)),
+                "atRisk" => (AttentionFacts.AtRisk, null),
+                "dueToday" => (AttentionFacts.DueToday, 0),
+                "unassigned" => (AttentionFacts.NoAssignee, null),
+                _ => (AttentionFacts.OnHoldDays, MyMattersRules.WholeDaysSince(r.StatusChangedAtUtc, clock.NowUtc)),
+            };
+            return ToItem(r, names, fact);
+        }).ToList();
 
         return new MyMattersAttention(
             clock.ZoneId,
             DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
             MyMattersRules.StuckOnHoldDays,
-            [
-                Group("overdue", totals.Overdue, unfiltered?.Overdue, scope.QueueOpen(["overdue=true", .. QueueTail(opts, "due")]), overdueRows, OverdueFact),
-                Group("dueSoon", totals.Due3, unfiltered?.Due3, scope.QueueOpen([$"dueWithin={MyMattersRules.AmberDueDays}", .. QueueTail(opts, "due")]), dueSoonRows, DueFact),
-                Group("unassigned", totals.Unassigned, unfiltered?.Unassigned, scope.QueueOpen(["unassigned=true", .. QueueTail(opts, "due")]), unassignedRows, NoAssigneeFact),
-                Group("stuckOnHold", totals.Stuck, unfiltered?.Stuck, scope.QueueStatus(TaskStatusCode.OnHold, [.. QueueTail(opts, TaskQueueRules.SortOnHoldSince)]), stuckRows, HoldFact),
-            ]);
+            total,
+            scope.QueueOpen(["needsAttention=true", .. opts.TaskTypeIds.Select(id => "type=" + id.ToString(System.Globalization.CultureInfo.InvariantCulture)), "sort=" + TaskQueueRules.SortDue]),
+            items,
+            totalUnfiltered);
     }
 
-    private sealed record GroupTotals(int Overdue, int Due3, int Unassigned, int Stuck);
-
-    private static async Task<GroupTotals> TotalsAsync(
-        IQueryable<WorkTask> open,
-        System.Linq.Expressions.Expression<Func<WorkTask, bool>> overdue,
-        System.Linq.Expressions.Expression<Func<WorkTask, bool>> due3,
-        System.Linq.Expressions.Expression<Func<WorkTask, bool>> stuck,
-        CancellationToken ct) =>
-        await open.GroupBy(_ => 1).Select(g => new GroupTotals(
-            g.AsQueryable().Count(overdue),
-            g.AsQueryable().Count(due3),
-            g.AsQueryable().Count(MyMattersRules.Unassigned),
-            g.AsQueryable().Count(stuck))).FirstOrDefaultAsync(ct) ?? new GroupTotals(0, 0, 0, 0);
+    /// <summary>The order inside a reason: by due moment, except at risk (then the oldest first) and on hold (the longest wait first).</summary>
+    private static Func<IQueryable<WorkTask>, IOrderedQueryable<WorkTask>> OrderOf(string reason) => reason switch
+    {
+        "stuckOnHold" => q => q.OrderBy(x => x.StatusChangedAtUtc).ThenBy(x => x.Id),
+        "atRisk" => q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.CreatedAtUtc).ThenBy(x => x.Id),
+        _ => q => q.OrderBy(x => x.DueSortKey).ThenBy(x => x.Id),
+    };
 
     /// <summary>The Task Queue parameters after the group's own: the type filter and the sort (the section's natural sort when none was asked).</summary>
     private static string[] QueueTail(SectionOptions options, string naturalSort) =>

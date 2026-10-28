@@ -11,11 +11,11 @@ import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 const tab = (page: Page, key: string) => page.locator(`[role=tab][data-tab="${key}"]`);
 const panel = (page: Page, name: string) => page.locator(`[data-panel="${name}"]`);
 
-/** A first visit: Recent activity creates the person's marker at the newest event (nothing is unread yet). */
+/** A first visit to the Activity tab creates the person's marker at the newest event (nothing is unread yet); the Overview no longer reads the events (#909). */
 async function prime(page: Page): Promise<void> {
-  await page.goto('/my-matters');
+  await page.goto('/my-matters?tab=activity');
   await expect(
-    panel(page, 'activity').locator('[data-activity-row], [data-empty]').first(),
+    panel(page, 'activity-tab').locator('[data-activity-row], [data-empty]').first(),
   ).toBeVisible();
 }
 
@@ -101,7 +101,7 @@ test.describe('My Matters: the tab shell', () => {
   });
 });
 
-test.describe('My Matters: Since your last visit', () => {
+test.describe('My Matters: what changed, in one line (#909)', () => {
   test('counts that are links, the marker moves only on Mark as read, and the first visit shows the last 7 days', async ({
     seed,
     personas,
@@ -112,39 +112,32 @@ test.describe('My Matters: Since your last visit', () => {
     await w.task(m, { title: 'Before the first visit' });
     const page = await asUser(w.pm.username);
 
-    // First ever visit: no marker yet, so the card covers the last 7 days.
+    // First ever visit: no marker yet, so the line covers the last 7 days. Only what needs a decision is counted: the new unassigned task.
     await page.goto('/my-matters');
-    const card = panel(page, 'since');
-    await expect(card.locator('[data-since-period]')).toContainText('last 7 days');
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
-    // Recent activity waited for the card, then created a starting point for its unread dots (issue #815): that is not a last visit.
-    await expect(
-      panel(page, 'activity').locator('[data-activity-row], [data-empty]').first(),
-    ).toBeVisible();
+    const line = panel(page, 'since');
+    await expect(line.locator('[data-since-period]')).toContainText('In the last 7 days:');
+    await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
+    await expect(line.locator('[data-figure=newTasks], [data-figure=comments]')).toHaveCount(0);
 
-    // Looking at the Activity tab and coming back, or reloading, changes nothing the card says.
+    // Looking at the Activity tab and coming back, or reloading, changes nothing the line says.
     await page.reload();
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
+    await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
     await tab(page, 'activity').click();
     await expect(panel(page, 'activity-tab').locator('[data-activity-row]').first()).toBeVisible();
     await tab(page, 'overview').click();
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
+    await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
     await page.reload();
-    await expect(card.locator('[data-since-period]')).toContainText('last 7 days');
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('1 new task');
-    await expect(card.locator('[data-since-empty]')).toHaveCount(0);
+    await expect(line.locator('[data-since-period]')).toContainText('In the last 7 days:');
 
-    // Mark as read is what moves it.
-    await card.locator('[data-mark-read]').click();
-    await expect(card.locator('[data-since-empty]')).toContainText(
-      'Nothing has changed since your last visit.',
-    );
+    // Mark as read is what moves it: the line goes away.
+    await line.locator('[data-mark-read]').click();
+    await expect(panel(page, 'since')).toHaveCount(0);
     await page.reload();
-    await expect(card.locator('[data-since-empty]')).toContainText(
-      'Nothing has changed since your last visit.',
-    );
+    await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+    await expect(panel(page, 'since')).toHaveCount(0);
 
-    // Something happens: two new tasks and one put on hold.
+    // Something happens: two new unassigned tasks and one of them put on hold.
     await w.task(m, { title: 'News one' });
     const held = await w.task(m, { title: 'News two' });
     await seed.admin.post(`/api/v1/tasks/${held.taskId}/status`, {
@@ -153,30 +146,38 @@ test.describe('My Matters: Since your last visit', () => {
       rowVersion: held.rowVersion,
     });
     await page.reload();
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('2 new tasks');
-    await expect(card.locator('[data-figure=putOnHold]')).toContainText('1 put on hold');
-    await expect(card.locator('[data-since-item]').first()).toContainText('News two');
-    await expect(card.locator('[data-since-period]')).toContainText(/^Since /);
+    await expect(line.locator('[data-figure=newUnassigned]')).toContainText('2 new unassigned');
+    await expect(line.locator('[data-figure=putOnHold]')).toContainText('1 put on hold');
+    await expect(line.locator('[data-since-period]')).toContainText(/^Since your last visit:/);
     await shot(page, 'px4-since');
 
     // Opening the page again does not move the marker.
     await page.reload();
-    await expect(card.locator('[data-figure=newTasks]')).toContainText('2 new tasks');
+    await expect(line.locator('[data-figure=newUnassigned]')).toContainText('2 new unassigned');
 
-    // A count opens the Activity tab on exactly those events.
-    await card.locator('[data-figure=newTasks]').click();
+    // A count of events opens the Activity tab on exactly those events.
+    await line.locator('[data-figure=putOnHold]').click();
     await expect(page).toHaveURL(/tab=activity/);
-    await expect(page).toHaveURL(/kind=TASK_CREATED/);
-    await expect(panel(page, 'activity-tab').locator('[data-activity-row]')).toHaveCount(2);
+    await expect(page).toHaveURL(/kind=ON_HOLD/);
+    await expect(panel(page, 'activity-tab').locator('[data-activity-row]')).toHaveCount(1);
     await page.goBack();
 
-    // Mark as read is the one thing that moves it; the Recent activity panel follows.
-    await card.locator('[data-mark-read]').click();
-    await expect(card.locator('[data-since-empty]')).toBeVisible();
+    // A count of tasks opens the Task Queue with exactly those tasks.
+    const [queue] = await Promise.all([
+      page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
+      line.locator('[data-figure=newUnassigned]').click(),
+    ]);
+    // The count is to the second, the list starts at the day of the period (like "became overdue"): the task made earlier the same day is in the list too.
+    expect(((await queue.json()) as { total: number }).total).toBeGreaterThanOrEqual(2);
+    await page.goBack();
+
+    // Mark as read is the one thing that moves it.
+    await line.locator('[data-mark-read]').click();
+    await expect(panel(page, 'since')).toHaveCount(0);
     await expect(page.locator('[data-since-announce]')).toHaveText('Marked as read.');
-    await expect(panel(page, 'activity').locator('[data-unread-word]')).toHaveCount(0);
     await page.reload();
-    await expect(card.locator('[data-since-empty]')).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+    await expect(panel(page, 'since')).toHaveCount(0);
   });
 });
 
@@ -357,7 +358,7 @@ test.describe('My Matters: Activity', () => {
 });
 
 test.describe('My Matters: the first screen on a phone, and the skip links', () => {
-  test('375x812: Since shows its counts line and a "Show events" expander, and Needs my attention starts in the first screen (#818)', async ({
+  test('375x812: the "what changed" line is one short block and Needs my attention starts in the first screen (#818, #909)', async ({
     seed,
     personas,
     asUser,
@@ -369,40 +370,19 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
-    const card = panel(page, 'since');
-    await expect(card.locator('[data-since-figures]')).toBeVisible();
-    // The Overdue count is in the first screen, whole.
+    const line = panel(page, 'since');
+    await expect(line.locator('[data-since-figures]')).toBeVisible();
+    // No events behind a button any more: the Overview lists none.
+    await expect(page.locator('[data-since-toggle], [data-since-item]')).toHaveCount(0);
+    // The Overdue chip is in the first screen, whole.
     const overdue = (await page.locator('[data-strip-item=overdue]').boundingBox())!;
     expect(overdue.x + overdue.width).toBeLessThanOrEqual(375);
     expect(overdue.y + overdue.height).toBeLessThanOrEqual(812);
     // Needs my attention starts in the first screen.
     const attention = (await panel(page, 'attention').locator('h2').boundingBox())!;
     expect(attention.y + attention.height).toBeLessThanOrEqual(812);
-
-    // The events are behind a button; focus stays on it and aria-expanded says which way it is.
-    const toggle = card.locator('[data-since-toggle]');
-    await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(toggle).toContainText('Show events');
-    await expect(card.locator('[data-since-items]')).toBeHidden();
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await expect(toggle).toBeFocused();
-    await expect(toggle).toContainText('Hide events');
-    await expect(card.locator('[data-since-item]').first()).toBeVisible();
-    await expect(card.locator('[data-since-item]').first()).toContainText('Fell due two days ago');
-    await toggle.press('Enter');
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(card.locator('[data-since-items]')).toBeHidden();
-    expect(await axeViolations(page), 'collapsed').toEqual([]);
-    await toggle.click();
-    expect(await axeViolations(page), 'expanded').toEqual([]);
+    expect(await axeViolations(page), 'phone').toEqual([]);
     await noHorizontalScroll(page);
-
-    // At every width the events sit behind the button (PV-08: Needs my attention starts near the top); it is open here, so they show.
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(toggle).toBeVisible();
-    await expect(card.locator('[data-since-item]').first()).toBeVisible();
   });
 
   test('skip links: the first stops after the tab strip, each moves focus to its panel heading, the Tab order of the panels is unchanged (#820)', async ({
@@ -412,6 +392,7 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
   }) => {
     const w = await mmWorld(seed, personas, 'skip');
     const m = await w.matter('Alpha');
+    await w.matter('Beta'); // two matters: the matters list is on the page
     await w.task(m, { dueDate: inDays(-2), title: 'Fell due' });
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -419,7 +400,7 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     await expect(panel(page, 'health').locator('[data-health-row]').first()).toBeVisible();
     await expect(page.locator('[data-skip-links]')).toBeAttached();
 
-    const keys = ['attention', 'deadlines', 'health', 'activity'];
+    const keys = ['attention', 'deadlines', 'health'];
     await page.locator('[role=tab][aria-selected=true]').focus();
     await page.keyboard.press('Tab');
     for (const key of keys) {

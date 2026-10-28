@@ -8,16 +8,16 @@
   "controlsInViewport": 28,
   "controlsInViewportWholeScreen": 38,
   "controlsOnPage": 28,
-  "wordsInViewport": 117,
+  "wordsInViewport": 116,
   "textLinesInViewport": 26,
-  "wordsOnPage": 117,
+  "wordsOnPage": 116,
   "textLinesOnPage": 26,
   "taskLinks": 0,
   "distinctTaskCodes": 0,
   "repeatedTaskCodes": 0,
   "repeatedExtraOccurrences": 0,
   "horizontalScroll": false,
-  "panelHeight": 67
+  "panelHeight": 55
  },
  "empty|deadlines|1366x768": {
   "viewport": "1366x768",
@@ -128,16 +128,16 @@
   "controlsInViewport": 28,
   "controlsInViewportWholeScreen": 38,
   "controlsOnPage": 28,
-  "wordsInViewport": 117,
+  "wordsInViewport": 116,
   "textLinesInViewport": 26,
-  "wordsOnPage": 117,
+  "wordsOnPage": 116,
   "textLinesOnPage": 26,
   "taskLinks": 0,
   "distinctTaskCodes": 0,
   "repeatedTaskCodes": 0,
   "repeatedExtraOccurrences": 0,
   "horizontalScroll": false,
-  "panelHeight": 67
+  "panelHeight": 55
  },
  "empty|deadlines|1920x1080": {
   "viewport": "1920x1080",
@@ -248,16 +248,16 @@
   "controlsInViewport": 28,
   "controlsInViewportWholeScreen": 38,
   "controlsOnPage": 28,
-  "wordsInViewport": 117,
+  "wordsInViewport": 116,
   "textLinesInViewport": 26,
-  "wordsOnPage": 117,
+  "wordsOnPage": 116,
   "textLinesOnPage": 26,
   "taskLinks": 0,
   "distinctTaskCodes": 0,
   "repeatedTaskCodes": 0,
   "repeatedExtraOccurrences": 0,
   "horizontalScroll": false,
-  "panelHeight": 67
+  "panelHeight": 55
  },
  "empty|deadlines|768x1024": {
   "viewport": "768x1024",
@@ -368,16 +368,16 @@
   "controlsInViewport": 10,
   "controlsInViewportWholeScreen": 16,
   "controlsOnPage": 28,
-  "wordsInViewport": 106,
+  "wordsInViewport": 105,
   "textLinesInViewport": 24,
-  "wordsOnPage": 116,
+  "wordsOnPage": 115,
   "textLinesOnPage": 26,
   "taskLinks": 0,
   "distinctTaskCodes": 0,
   "repeatedTaskCodes": 0,
   "repeatedExtraOccurrences": 0,
   "horizontalScroll": false,
-  "panelHeight": 79
+  "panelHeight": 67
  },
  "empty|deadlines|375x812": {
   "viewport": "375x812",

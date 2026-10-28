@@ -1,4 +1,8 @@
-import { MyMattersAwayWindow, MyMattersTaskItem } from '../../api/generated/api-client';
+import {
+  MyMattersActivityItem,
+  MyMattersAwayWindow,
+  MyMattersTaskItem,
+} from '../../api/generated/api-client';
 import {
   CalendarDay,
   calendarDayInZone,
@@ -15,6 +19,8 @@ export function factText(t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'>): s
   switch (t.factCode) {
     case 'OVERDUE':
       return n <= 0 ? 'overdue' : `${n} d overdue`;
+    case 'AT_RISK':
+      return 'at risk';
     case 'DUE_TODAY':
       return 'due today';
     case 'DUE_IN_DAYS':
@@ -139,21 +145,33 @@ export function shortDate(
     : formatCalendarDay(d);
 }
 
-/** The reasons behind a flag in plain words; `amber` and `hold` are the thresholds the API echoes. */
-export function reasonText(code: string, amber: number, hold: number): string {
-  switch (code) {
-    case 'OVERDUE':
-      return 'a task is overdue';
-    case 'UNASSIGNED':
-      return 'a task has nobody assigned';
-    case 'DUE_SOON':
-      return `a task is due within ${amber} days`;
-    case 'LONG_HOLD':
-      return `a task has been on hold for more than ${hold} days`;
-    case 'NO_OPEN_TASKS':
-      return 'no open tasks';
+/**
+ * The sentence of one event, composed from its structured fields (README 6.6). A comment is only ever "commented on <task>": the text is
+ * never read or shown (privilege).
+ */
+export function activityText(e: MyMattersActivityItem): string {
+  const who = e.actorName ?? 'Someone';
+  const task = e.taskTitle ? `"${e.taskTitle}"` : 'a task';
+  switch (e.kind) {
+    case 'TASK_CREATED':
+      return `${who} created ${task}`;
+    case 'STATUS_CHANGED':
+      return `${who} moved ${task} to ${statusWords(e.to)}`;
+    case 'REASSIGNED':
+      return e.from
+        ? `${task} reassigned from ${e.from} to ${e.to ?? 'nobody'}`
+        : `${task} assigned to ${e.to ?? 'nobody'}`;
+    case 'COMMENTED':
+      return `${who} commented on ${task}`;
+    case 'MANAGER_CHANGED': {
+      const place = e.managerPlace === 'secondary' ? 'secondary' : 'primary';
+      if (e.to) return `${e.to} became ${place} project manager`;
+      return e.from
+        ? `${e.from} is no longer ${place} project manager`
+        : `The ${place} project manager was cleared`;
+    }
     default:
-      return code;
+      return `${who} changed ${task}`;
   }
 }
 

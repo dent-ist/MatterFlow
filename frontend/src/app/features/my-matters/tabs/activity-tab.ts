@@ -28,10 +28,9 @@ import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
-import { activityTime } from '../facts';
+import { activityText, activityTime } from '../facts';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
-import { activityText } from '../panels/activity-panel';
 import { PanelBox } from '../panels/panel-box';
 
 /** The events asked for at a time (30 days are read page by page). */

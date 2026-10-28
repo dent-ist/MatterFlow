@@ -187,6 +187,7 @@ describe('work list definitions for the column filters', () => {
         'project',
         'managedByMe',
         'atRisk',
+        'needsAttention',
         'onHoldReason',
         'managerId',
         'role',

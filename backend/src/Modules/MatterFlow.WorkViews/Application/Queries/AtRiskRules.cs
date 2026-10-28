@@ -34,12 +34,6 @@ public static class AtRiskRules
     public static IQueryable<WorkTask> Where(IQueryable<WorkTask> tasks, DbContext db, QueueClock clock)
     {
         ArgumentNullException.ThrowIfNull(tasks);
-        ArgumentNullException.ThrowIfNull(db);
-        ArgumentNullException.ThrowIfNull(clock);
-        var now = DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc);
-        return tasks
-            .Where(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress)
-            .Where(MyMattersRules.Not(TaskQueueRules.Overdue(clock)))
-            .Where(t => db.Set<TaskType>().Any(ty => ty.Id == t.TaskTypeId && ty.TargetDays != null && EF.Functions.DateDiffMinute(t.CreatedAtUtc, now) >= ty.TargetDays.Value * MinutesPerTargetDay));
+        return tasks.Where(AttentionRules.AtRisk(db, clock));
     }
 }
