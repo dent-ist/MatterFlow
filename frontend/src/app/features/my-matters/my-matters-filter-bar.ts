@@ -21,9 +21,13 @@ import { AuthStore } from '../../core/auth/auth.store';
 import { QuietRequests } from '../../core/http/interceptors';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../shared/ui/entity-picker';
+import { SearchSelect } from '../../shared/ui/search-select';
 import { phoneCards } from '../../shared/ui/record-card-list';
 import { ManagedMatters } from './managed-matters';
 import { MmFilters, MmRole, ROLE_LABELS, roleApplies } from './my-matters-filters';
+
+/** How many clients the dropdown asks for at a time when the list cannot be given whole. */
+const CLIENT_LIST_MAX = 50;
 
 const managerOption = (m: MatterManagerItem): PickerOption => ({
   id: m.userId,
@@ -40,7 +44,7 @@ const clientOption = (c: {
 });
 
 /**
- * The filters of My Matters (README 6.8): Client (a typeahead; only with Client.View), Role (Both, Primary, Secondary) and, in the All matters scope,
+ * The filters of My Matters (README 6.8): Client (a searchable dropdown, issue #928: the clients of the person's matters, narrowed as they type; only with Client.View), Role (Both, Primary, Secondary) and, in the All matters scope,
  * a Project manager. The page keeps them in the address; this bar only reports a change. "No project manager" is not a filter here: a matter
  * without a manager is normal, never a thing to look for.
  *
@@ -51,7 +55,7 @@ const clientOption = (c: {
  */
 @Component({
   selector: 'mf-mm-filter-bar',
-  imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet, RouterLink],
+  imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet, RouterLink, SearchSelect],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.fb-phone]': 'phone()' },
   styles: `
@@ -189,10 +193,11 @@ const clientOption = (c: {
       <div class="fb" data-mm-filters>
         @if (showClient()) {
           <div class="fb__field fb__client">
-            <mf-entity-picker
+            <mf-search-select
               label="Client"
               inputId="mm-client"
-              placeholder="All clients"
+              allLabel="All clients"
+              [options]="clientOptions()"
               [search]="searchClients"
               [selected]="client()"
               (selectedChange)="clientPicked($event)"
@@ -292,17 +297,33 @@ export class MyMattersFilterBar {
   protected readonly client = signal<PickerOption | null>(null);
   protected readonly manager = signal<PickerOption | null>(null);
 
+  /**
+   * The clients of the matters the person manages, when all of those matters were read and the scope is "mine": the whole list, narrowed as they type. In the
+   * All matters scope (any matter of the firm) or when the list is partial, null: the clients are asked for as they type instead.
+   */
+  protected readonly clientOptions = computed<PickerOption[] | null>(() => {
+    if (this.all() || !this.managed.complete()) return null;
+    const byId = new Map<number, PickerOption>();
+    for (const m of this.managed.items()) {
+      byId.set(m.clientId, {
+        id: m.clientId,
+        label: `${m.clientNumber} ${m.clientName}`,
+      });
+    }
+    return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+  });
+
   protected readonly searchClients = async (query: string): Promise<PickerOption[]> => {
     const page = await firstValueFrom(
       this.clients.listClients(
-        query,
+        query || undefined,
         undefined,
         undefined,
         undefined,
         undefined,
         undefined,
         1,
-        8,
+        CLIENT_LIST_MAX,
         undefined,
       ),
     );

@@ -143,9 +143,9 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       const input = page.locator(`${prefix}#mm-client`);
       await input.fill(p.clients[0].name.slice(0, 12));
       await page.locator(`${prefix}[role=option]`).first().click();
-      await expect(page.locator(`${prefix}[data-chosen]`)).toBeVisible();
+      await expect(input).toHaveValue(new RegExp(p.clients[0].name.slice(0, 12)));
       await still(page);
-      const chosen = await measure(page, `${prefix}[data-chosen]`, 'Chosen client');
+      const chosen = await measure(page, `${prefix}#mm-client`, 'Chosen client');
       const role = await measure(page, `${prefix}#mm-role`, 'Role');
       const clear = await measure(page, `${prefix}[data-clear-filters]`, 'Clear filters');
       expectSameBox([role, chosen, clear], `${size.width} px (chosen client)`);

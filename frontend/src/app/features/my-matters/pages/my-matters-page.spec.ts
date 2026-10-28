@@ -1153,6 +1153,8 @@ describe('MyMattersPage', () => {
     ): Partial<MatterResponse> => ({
       matterId: id,
       clientId,
+      clientNumber: `9000${clientId}`,
+      clientName: `Client ${clientId}`,
       matterRef: `9000${clientId}-8000${id}`,
       name: `Matter ${id}`,
       // The signed-in person is user 1 (profileOf's default).
@@ -1200,6 +1202,19 @@ describe('MyMattersPage', () => {
       expect(el(h).querySelector('[data-mm-filters]')).not.toBeNull();
       expect(el(h).querySelector('#mm-client')).not.toBeNull();
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
+      // The Client filter is a searchable dropdown of the clients of the person's matters (issue #928): it lists them when it is opened and narrows as they type.
+      const client = el(h).querySelector<HTMLInputElement>('#mm-client')!;
+      expect(client.getAttribute('role')).toBe('combobox');
+      expect(client.value).toBe('All clients');
+      client.dispatchEvent(new Event('focus'));
+      h.detectChanges();
+      const listed = (): string[] =>
+        Array.from(el(h).querySelectorAll('[role=option]')).map((o) => o.textContent!.trim());
+      expect(listed()).toEqual(['All clients', '90002 Client 2', '90003 Client 3']);
+      client.value = 'client 3';
+      client.dispatchEvent(new Event('input'));
+      h.detectChanges();
+      expect(listed()).toEqual(['90003 Client 3']);
       const create = el(h).querySelector('[data-header-new-task]')!;
       expect(create.querySelector('[data-new-task-go]')!.textContent!.trim()).toBe('New task');
       // The chooser only picks the matter for New task (no page filter): "Matter: choose" until one is picked or was used last.

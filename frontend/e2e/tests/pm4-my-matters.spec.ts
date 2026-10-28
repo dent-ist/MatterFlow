@@ -129,7 +129,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     // the client filter by the address
     await page.goto(`/my-matters?clientId=${w.world.client.clientId}`);
     await expect.poll(() => cellCount(page, 'open')).toBe(2);
-    await expect(page.locator('[data-chosen]')).toContainText(w.world.client.name);
+    await expect(page.locator('#mm-client')).toHaveValue(new RegExp(w.world.client.name));
     await page.goto('/my-matters?clientId=99999999');
     await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing counted: no strip of zeros (#920)
     await expect(page.locator('[data-panel=health] [data-empty-kind=filtered]')).toContainText(
