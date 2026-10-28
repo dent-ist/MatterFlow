@@ -521,10 +521,17 @@ describe('MyMattersPage', () => {
     const row1 = el(h).querySelector<HTMLAnchorElement>('[data-attention-row]')!;
     expect(row1.getAttribute('href')).toBe('/tasks/1?from=my-matters');
     // The link keeps the task, the matter and the reason in its name.
-    expect(row1.getAttribute('aria-label')).toBe('TSK-1 Task 1, 90001-80001 Merger, 3 d overdue');
+    expect(row1.getAttribute('aria-label')).toBe(
+      'TSK-1 Task 1, 90001-80001 Merger, No assignee, 3 d overdue',
+    );
+    // Two right-hand columns (issue #901): who, then when. An unassigned task's reason is "No assignee" in the who column, its time text is its due day.
+    expect(rows.map((r) => r.querySelector('[data-row-who]')!.textContent!.trim())).toEqual([
+      'No assignee',
+      'No assignee',
+    ]);
     expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
       '3 d overdue',
-      'no assignee',
+      'due Mon Oct 26',
     ]);
     const all = el(h).querySelectorAll<HTMLAnchorElement>('[data-panel=attention] [data-view-all]');
     expect(all).toHaveLength(1);
@@ -616,9 +623,11 @@ describe('MyMattersPage', () => {
     const h = await open('/my-matters');
     const panel = el(h).querySelector('[data-panel=deadlines]')!;
     expect(panel.querySelector('h2')!.textContent).toBe('Next 7 days');
+    // The same two right-hand columns as Needs my attention (issue #901): who, then when (here the due day).
     expect(
-      Array.from(panel.querySelectorAll('[data-row-day]')).map((d) => d.textContent!.trim()),
+      Array.from(panel.querySelectorAll('[data-fact]')).map((d) => d.textContent!.trim()),
     ).toEqual(['Mon Oct 26', 'Tue Oct 27']);
+    expect(panel.querySelectorAll('[data-row-who]')).toHaveLength(2);
     expect(panel.querySelector('[data-day]')).toBeNull(); // no day headings
     // No 2 / 4 week buttons, no Views, no Sort, no Task types, no Options: the Deadlines tab owns the range and Focus is the one type filter.
     expect(panel.querySelector('[data-range], select, details, button')).toBeNull();
@@ -1381,7 +1390,7 @@ describe('MyMattersPage', () => {
       const link = rows[2].querySelector('a[data-attention-row]')!;
       expect(link.textContent!.trim()).toBe('TSK-3 Task 3');
       expect(link.getAttribute('aria-label')).toBe(
-        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, 3 d overdue',
+        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, No assignee, 3 d overdue',
       );
     });
 

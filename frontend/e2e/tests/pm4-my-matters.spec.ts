@@ -219,7 +219,11 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
       'unassigned',
     );
     await expect(attention.locator('[data-fact]').first()).toContainText('overdue');
-    await expect(attention.locator('[data-fact]').nth(1)).toHaveText('no assignee');
+    // An unassigned task's reason is the assignee column ("No assignee"); its time text is the day it is due (issue #901).
+    await expect(
+      attention.locator('[data-attention-item]').nth(1).locator('[data-row-who]'),
+    ).toHaveText('No assignee');
+    await expect(attention.locator('[data-fact]').nth(1)).toHaveText(/^due |^ASAP$/);
     await expect(attention.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(
       0,
     );
@@ -260,7 +264,7 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     const panel = page.locator('[data-panel=deadlines]');
     await expect(panel.locator('h2')).toHaveText('Next 7 days');
     await expect(panel.locator('[data-deadline-row]')).toHaveCount(2);
-    await expect(panel.locator('[data-row-day]')).toHaveCount(2);
+    await expect(panel.locator('[data-row-who]')).toHaveCount(2);
     await expect(panel).not.toContainText('Long overdue');
     await expect(panel).not.toContainText('Within four weeks');
     // The list has no toolbar: no 2 / 4 week buttons, no Views, no Sort, no Task types, no Options.

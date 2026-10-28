@@ -468,3 +468,107 @@ test.describe('Client and Role filters (#899)', () => {
     });
   }
 });
+
+test.describe('The same right-hand pattern in every list (#901)', () => {
+  const soonDay = (): string => new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+
+  test('Needs my attention and Next 7 days have the same two columns, who then when, aligned; the time text is the coloured one', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const p = await pmThree(seed, personas, 'b4r1');
+    // A task that is assigned and due in 3 days: Next 7 days lists it (an unassigned one is listed under Needs my attention instead).
+    const tech = await seed.user(['Data Technician'], 'b4r1tech');
+    const pod = await seed.pod(`B4 pod ${p.token}`, [tech.userId]);
+    await seed.task(
+      {
+        matter: { matterId: p.matters[0].matterId },
+        taskType: p.world.taskType,
+        workflow: p.world.workflow,
+      },
+      {
+        title: `Soon ${p.token}`,
+        dueDate: soonDay(),
+        assignedUserId: tech.userId,
+        assignedPodId: pod['podId'],
+      },
+    );
+    // And one that nobody holds, due in 2 days: it is listed under Needs my attention with "No assignee" in the assignee column.
+    await seed.task(
+      {
+        matter: { matterId: p.matters[1].matterId },
+        taskType: p.world.taskType,
+        workflow: p.world.workflow,
+      },
+      {
+        title: `Nobody ${p.token}`,
+        dueDate: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10),
+      },
+    );
+    const page = await asUser(p.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await settled(page);
+    const attention = page.locator('[data-attention-item]').first();
+    await expect(attention).toBeVisible();
+    const cols = async (row: typeof attention) => ({
+      who: (await row.locator('[data-row-who]').boundingBox())!,
+      when: (await row.locator('[data-fact]').boundingBox())!,
+    });
+    const color = (loc: ReturnType<typeof page.locator>) =>
+      loc.evaluate((e) => getComputedStyle(e).color);
+    const a = await cols(attention);
+    const whoColour = await color(attention.locator('[data-row-who]'));
+    expect(a.who.x + a.who.width).toBeLessThanOrEqual(a.when.x + 1);
+    // Who is muted, never coloured; the time text is the one coloured element (red for overdue).
+    expect(await color(attention.locator('[data-fact]'))).not.toBe(whoColour);
+    await expect(attention.locator('[data-row-who]')).toHaveText('No assignee');
+    // An unassigned task's reason is its assignee column; its time text is the day it is due ("due Sat Oct 31").
+    const unassigned = page.locator('[data-reason=unassigned]').first();
+    await expect(unassigned.locator('[data-row-who]')).toHaveText('No assignee');
+    await expect(unassigned.locator('[data-fact]')).toHaveText(
+      /^due [A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}$|^ASAP$/,
+    );
+    // Next 7 days has the same two columns as Needs my attention, in the same places: who, then when (here the due day).
+    const deadline = page.locator('[data-deadlines-list] li').first();
+    await expect(deadline).toBeVisible();
+    const d = await cols(deadline);
+    expect(Math.abs(a.who.x - d.who.x), 'who is one column').toBeLessThan(1.5);
+    expect(Math.abs(a.when.x - d.when.x), 'when is one column').toBeLessThan(1.5);
+    expect(Math.abs(a.when.x + a.when.width - (d.when.x + d.when.width))).toBeLessThan(1.5);
+    await expect(deadline.locator('[data-row-who]')).not.toHaveText('No assignee');
+    expect(await color(deadline.locator('[data-row-who]'))).toBe(whoColour);
+    await expect(deadline.locator('[data-fact]')).toHaveText(
+      /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}$/,
+    );
+    // The Deadlines tab uses the same row: the same two columns (the tab's list sits in its own box, so only the widths are compared).
+    await page.goto('/my-matters?tab=deadlines');
+    const tabRow = page.locator('[data-panel=deadlines-tab] [data-deadline-row]').first();
+    await expect(tabRow).toBeVisible();
+    const row = tabRow.locator('xpath=ancestor::li[1]');
+    const t = await cols(row);
+    expect(Math.abs(a.who.width - t.who.width)).toBeLessThan(1.5);
+    expect(Math.abs(a.when.width - t.when.width)).toBeLessThan(1.5);
+    expect(await color(row.locator('[data-row-who]'))).toBe(whoColour);
+    await expect(row.locator('[data-fact]')).toHaveText(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}$/);
+  });
+
+  test('375x812: the phone card keeps the order, who then when', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const p = await pmThree(seed, personas, 'b4r2');
+    const page = await asUser(p.pm.username);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/my-matters');
+    await settled(page);
+    const row = page.locator('[data-attention-item]').first();
+    const who = (await row.locator('[data-row-who]').boundingBox())!;
+    const when = (await row.locator('[data-fact]').boundingBox())!;
+    expect(who.y).toBeLessThanOrEqual(when.y + 1);
+    if (Math.abs(who.y - when.y) < 4) expect(who.x).toBeLessThan(when.x);
+    expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(420);
+  });
+});

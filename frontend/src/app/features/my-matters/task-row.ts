@@ -14,21 +14,21 @@ export function isUrgentPriority(t: Pick<MyMattersTaskItem, 'priorityRank'>): bo
 }
 
 /**
- * The name a row's link has for a screen reader: the code and title the link shows, then what the lighter row left out - the matter, the priority and the
- * one status text - so nothing a sighted person can read is lost to a person who listens (the task type is read from the badge through `aria-describedby`).
- * It starts with the visible text, as a name must (WCAG label in name).
+ * The name a row's link has for a screen reader: the code and title the link shows, then what the lighter row left out - the matter, the priority, the
+ * assignee and the one time text - so nothing a sighted person can read is lost to a person who listens (the task type is read from the badge through
+ * `aria-describedby`). It starts with the visible text, as a name must (WCAG label in name).
  */
 export function rowLinkName(
   t: Pick<MyMattersTaskItem, 'taskNumber' | 'title' | 'matterRef' | 'matterName' | 'priorityName'>,
-  status: string,
-  lead = '',
+  when: string,
+  who = '',
 ): string {
   return [
     `${t.taskNumber} ${t.title}`,
     `${t.matterRef} ${t.matterName}`,
     t.priorityName ? `${t.priorityName} priority` : '',
-    lead ? `due ${lead}` : '',
-    status,
+    who,
+    when,
   ]
     .filter((part) => part.length > 0)
     .join(', ');
@@ -38,8 +38,10 @@ export function rowLinkName(
  * One task row of the My Matters lists (`li[mfMmTaskRow]`, epic #893 issue #897, built once for Needs my attention, Next 7 days and the Deadlines tab):
  * the task type's icon in its colour (28 px, so the colour reads), the code and the title as the one link, the matter's name as short grey text after the
  * title only where the page shows several matters, a pill only for what is unusual (High or Critical, At risk, On hold; "Normal" and "Low" are never
- * printed), and ONE status text on the right in a fixed column (the reason, or the assignee). On a phone it is a card of two lines (title, then the matter,
- * the pills and the status). The tooltip of the status carries what was left out (the reason of a hold). Row focus returns after Back (`rowKey`, `mfRowLink`).
+ * printed), and then the SAME TWO COLUMNS on the right in every list (issue #901): WHO (the assignee, or "No assignee", muted) and WHEN (the time text:
+ * the reason such as "23 d overdue", or the due day; the only coloured element of the row, red for overdue and amber for at risk). On a phone it is a card
+ * (title, matter, pills, then who and when on one line, in the same order). The tooltip of the time text carries what was left out (the reason of a hold).
+ * Row focus returns after Back (`rowKey`, `mfRowLink`).
  */
 @Component({
   // A row is the list item itself (a list's children must be list items), so this component is an attribute on the li.
@@ -47,12 +49,12 @@ export function rowLinkName(
   selector: '[mfMmTaskRow]',
   imports: [RouterLink, RowLink, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'tr', '[class.tr--lead]': 'lead().length > 0' },
+  host: { class: 'tr' },
   styles: `
     :host {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto var(--tr-status, 9.5rem);
-      grid-template-areas: 'icon main tags status';
+      grid-template-columns: auto minmax(0, 1fr) auto var(--tr-who, 9rem) var(--tr-when, 9.5rem);
+      grid-template-areas: 'icon main tags who when';
       column-gap: var(--mf-s2);
       align-items: center;
       min-height: 36px;
@@ -61,17 +63,6 @@ export function rowLinkName(
     }
     :host(:first-child) {
       border-top: 0;
-    }
-    /* A row with a leading day (Next 7 days): the day is a muted first column. */
-    :host(.tr--lead) {
-      grid-template-columns: 5.5rem auto minmax(0, 1fr) auto var(--tr-status, 9.5rem);
-      grid-template-areas: 'lead icon main tags status';
-    }
-    .tr__lead {
-      grid-area: lead;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      white-space: nowrap;
     }
     mf-task-type-badge {
       grid-area: icon;
@@ -128,8 +119,20 @@ export function rowLinkName(
       background: var(--mf-warning-bg, #fef3c7);
       color: var(--mf-warning-text, #5c3b00);
     }
-    .tr__status {
-      grid-area: status;
+    .tr__side {
+      display: contents;
+    }
+    .tr__who {
+      grid-area: who;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--mf-text-muted);
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tr__when {
+      grid-area: when;
       min-width: 0;
       overflow: hidden;
       color: var(--mf-text);
@@ -138,24 +141,23 @@ export function rowLinkName(
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .tr__status--overdue {
+    .tr__when--overdue {
       color: var(--mf-danger);
       font-weight: 600;
     }
-    .tr__status--atRisk {
+    .tr__when--atRisk {
       color: var(--mf-warning);
       font-weight: 600;
     }
-    /* A phone: a card of two lines. The status wraps under the title instead of squeezing it (issue #923), 44 px targets. */
+    /* A phone: a card. Who and when sit on one line under the title, the matter and the pills, in the same order as on a wide screen (issues #923, #901);
+       44 px targets. */
     @media (max-width: 639.98px) {
-      :host,
-      :host(.tr--lead) {
+      :host {
         grid-template-columns: auto minmax(0, 1fr);
         grid-template-areas:
           'icon main'
-          '. lead'
           '. tags'
-          '. status';
+          '. side';
         row-gap: 0;
         min-height: 44px;
         padding: var(--mf-s1) 0;
@@ -176,36 +178,41 @@ export function rowLinkName(
         flex: none;
         max-width: 100%;
       }
-      .tr__status {
+      .tr__side {
+        grid-area: side;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 var(--mf-s2);
         padding-bottom: var(--mf-s1);
-        color: var(--mf-text-muted);
         font-size: var(--mf-fs-sm);
+      }
+      .tr__who,
+      .tr__when {
+        grid-area: auto;
+        overflow: visible;
         text-align: left;
         white-space: normal;
         overflow-wrap: anywhere;
       }
-      .tr__status--overdue,
-      .tr__status--atRisk {
+      .tr__when {
+        color: var(--mf-text-muted);
+      }
+      .tr__when--overdue,
+      .tr__when--atRisk {
         font-weight: 600;
       }
-      .tr__status--overdue {
+      .tr__when--overdue {
         color: var(--mf-danger);
       }
-      .tr__status--atRisk {
+      .tr__when--atRisk {
         color: var(--mf-warning);
       }
       .tr__tags {
         padding: 0 0 var(--mf-s1);
       }
-      .tr__lead {
-        padding-top: 0;
-      }
     }
   `,
   template: `
-    @if (lead()) {
-      <span class="tr__lead" data-row-day>{{ lead() }}</span>
-    }
     <mf-task-type-badge
       #tt
       [large]="true"
@@ -250,14 +257,17 @@ export function rowLinkName(
         <span class="tr__pill" data-hold-pill [attr.title]="holdReason()">On hold</span>
       }
     </span>
-    <span
-      class="tr__status"
-      [class.tr__status--overdue]="tone() === 'overdue'"
-      [class.tr__status--atRisk]="tone() === 'atRisk'"
-      data-fact
-      [attr.title]="holdReason() || null"
-      >{{ status() }}</span
-    >
+    <span class="tr__side">
+      <span class="tr__who" data-row-who>{{ who() }}</span>
+      <span
+        class="tr__when"
+        [class.tr__when--overdue]="tone() === 'overdue'"
+        [class.tr__when--atRisk]="tone() === 'atRisk'"
+        data-fact
+        [attr.title]="holdReason() || null"
+        >{{ when() }}</span
+      >
+    </span>
   `,
 })
 export class MmTaskRow {
@@ -270,13 +280,13 @@ export class MmTaskRow {
   readonly rowScope = input.required<string>();
   /** The matter's name is drawn after the title: only on a page that shows several matters (a matter named on every row says nothing). */
   readonly showMatter = input(false);
-  /** The one status text of the right-hand column ("23 d overdue", "Dana Rao", "no assignee"). */
-  readonly status = input.required<string>();
-  /** How loud the status is: overdue is red and at risk amber, only where the status says so. */
+  /** WHO, the first right-hand column: the assignee, or "No assignee" (muted). */
+  readonly who = input('');
+  /** WHEN, the second right-hand column: the time text ("23 d overdue", "due today", "on hold 12 d", "Wed Oct 28"). */
+  readonly when = input.required<string>();
+  /** How loud the time text is: overdue is red and at risk amber, only where the text says so (the one coloured element of a row). */
   readonly tone = input<'overdue' | 'atRisk' | 'plain'>('plain');
-  /** A short text before the icon (the due day of a deadline), muted; none draws no column. */
-  readonly lead = input('');
-  /** The status already says the task is at risk or on hold: the pill would repeat it. */
+  /** The time text already says the task is at risk or on hold: the pill would repeat it. */
   readonly statusIs = input<'atRisk' | 'onHold' | ''>('');
 
   protected readonly urgent = computed(() => isUrgentPriority(this.task()));
@@ -284,7 +294,7 @@ export class MmTaskRow {
   protected readonly showHold = computed(
     () => this.task().statusCode === 'ON_HOLD' && this.statusIs() !== 'onHold',
   );
-  /** Why the task is on hold: the tooltip of the status (a long reason never crowds the row). */
+  /** Why the task is on hold: the tooltip of the time text (a long reason never crowds the row). */
   protected readonly holdReason = computed(() => this.task().onHold?.reasonName ?? '');
-  protected readonly name = computed(() => rowLinkName(this.task(), this.status(), this.lead()));
+  protected readonly name = computed(() => rowLinkName(this.task(), this.when(), this.who()));
 }

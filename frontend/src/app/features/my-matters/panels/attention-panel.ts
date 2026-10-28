@@ -10,7 +10,8 @@ import {
 import { RouterLink } from '@angular/router';
 import { MyMattersClient, MyMattersTaskItem } from '../../../api/generated/api-client';
 import { restoreRowFocus } from '../../../shared/ui/row-nav';
-import { factText } from '../facts';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { dayHeading, dueDay, factText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
@@ -113,7 +114,8 @@ import { PANEL_LIST_STYLES } from './panel-styles';
               [attr.data-reason]="reasonKind(t)"
               [task]="t"
               [showMatter]="showMatter()"
-              [status]="fact(t)"
+              [who]="who(t)"
+              [when]="when(t)"
               [tone]="tone(t)"
               [statusIs]="statusIs(t)"
             ></li>
@@ -135,6 +137,7 @@ export class AttentionPanel {
 
   private readonly exports = inject(ExportService);
   private readonly api = inject(MyMattersClient);
+  private readonly zone = inject(USER_TIME_ZONE);
   protected readonly focus = inject(MyMattersFocus);
   /** The task types of the person's Focus: the list's only type filter (issue #907). */
   protected readonly focused = computed(() => this.focus.types().length > 0);
@@ -176,6 +179,21 @@ export class AttentionPanel {
   }
 
   protected readonly fact = factText;
+
+  /** WHO, the first right-hand column: the assignee, or "No assignee" (issue #901: the same columns in every list). */
+  protected who(t: MyMattersTaskItem): string {
+    return t.assigneeName ?? 'No assignee';
+  }
+
+  /**
+   * WHEN, the second right-hand column: the reason as a time text ("23 d overdue", "at risk", "due today", "on hold 12 d"). An unassigned task's reason is
+   * the assignee column ("No assignee"), so its time text is the day it is due.
+   */
+  protected when(t: MyMattersTaskItem): string {
+    if (this.reasonKind(t) !== 'unassigned') return factText(t);
+    const day = dueDay(t, this.zone);
+    return day ? `due ${dayHeading(day)}` : 'ASAP';
+  }
 
   protected tone(t: MyMattersTaskItem): 'overdue' | 'atRisk' | 'plain' {
     const k = this.reasonKind(t);
