@@ -1,7 +1,7 @@
 # Application settings: branding (title and icon)
 
 Epic #850 "Epic: Application settings: title and icon" (phase-23; issues #843 to #849). Decisions: `docs/requirements/decisions-addendum.md` section AM. Plan: `delivery-plan.md` (same folder).
-**Status: planned; ready to start after the current verification** (design, plan and epic only; nothing is built).
+**Status (2026-10-27): built and verified on `dev`** (issues #843 to #849; operations `docs/runbook.md` section 16, screen S27 in `docs/ux/ux-spec.md`, decisions addendum AM). Owner answers: Q1 `&` allowed, Q2 IIS anonymous for the branding path only (done, tested), Q3 no light chip in dark mode, Q4 the name is always next to the icon, Q5 fixed `theme-color`. Differences from this design: the startup read always revalidates (`cache: 'no-cache'`), so the delay in section 5.3 is at most about 30 seconds (the server's copy) instead of two minutes; the `/admin` route guard uses the menu's permission list; the app starts at once and applies the server's answer when it arrives (waiting for it moved the first render after the load event and broke older timing-sensitive browser tests), so a first visit with no remembered copy can show `MatterFlow` for a few tens of milliseconds before the custom name. Initial bundle 645.07 kB (was 641.53 kB, +3.5 kB, limit 700 kB).
 
 ## 1. Goal
 
