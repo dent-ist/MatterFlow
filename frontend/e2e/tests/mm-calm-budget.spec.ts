@@ -11,13 +11,14 @@ import { PmPersona, pmSolo, pmThree } from '../support/pm-fixtures';
  * A busy fixture is built first (five late tasks, three due soon) so the lists are full, as they are for a real Project Manager.
  *
  * The budgets and why (README, "The calm budget"):
- *  - first task row: 300 px at 1366x768 (the issue's number; measured 233 for one matter, 273 for three), 420 px on a phone;
- *  - controls and words on the first screen, per person, set from the measured result of Release 2 with a small margin, NOT the issue's 25 / 150 for both:
- *    the one-matter person meets them (25 and 125 measured at 1366x768), the three-matter person does not (36 controls, 207 words: the Client and Role filters, the
- *    New task chooser, three matter rows with a menu each, and the matter name on every task row, which the owner kept). The ceilings stop the page getting
+ *  - first task row: 300 px at 1366x768 (the issue's number; measured 291 for one matter, 299 for three after the tiles became one row), 420 px on a phone (measured 343);
+ *  - controls and words on the first screen, per person, set from the measured result of Release 3 with a small margin, NOT the issue's 25 / 150 for both. They ROSE
+ *    in Release 3 on purpose: every column heading of the two grids is a sort button (about 7 each), the second grid has its own heading row, there is a Matter
+ *    column and a Calendar button, and the six tiles replace three chips. Measured at 1366x768: one matter 39 controls / 204 words, three matters 58 / 274
+ *    (the Client and Role filters, the New task chooser, three matter rows with a menu each); on a phone 22 / 100 and 23 / 101. The ceilings stop the page getting
  *    busier; the issue's targets stay open and are said so in the README;
  *  - no task id twice on the Overview; no sideways scroll.
- * The Deadlines and Activity tabs are not reworked yet (Release 3): they get a ratchet, their measured numbers plus a margin, so that work only lowers them.
+ * The Calendar view, the Data tab and the Activity tab get a ratchet, their measured numbers plus a margin, so that work only lowers them.
  */
 interface Budget {
   row: number;
@@ -27,26 +28,41 @@ interface Budget {
 
 const OVERVIEW: Record<'solo' | 'three', Record<'desktop' | 'phone', Budget>> = {
   solo: {
-    desktop: { row: 300, controls: 25, words: 150 },
+    desktop: { row: 300, controls: 41, words: 215 },
     phone: { row: 420, controls: 22, words: 110 },
   },
   three: {
-    desktop: { row: 300, controls: 37, words: 215 },
-    phone: { row: 420, controls: 22, words: 110 },
+    desktop: { row: 300, controls: 61, words: 290 },
+    phone: { row: 420, controls: 24, words: 110 },
   },
 };
 
-/** Release 3 lowers these (the Deadlines and Activity tabs are rebuilt there): measured numbers plus about 5 percent. */
-const TABS: Record<'deadlines' | 'activity', Record<'desktop' | 'phone', Budget>> = {
-  deadlines: {
-    desktop: { row: 400, controls: 30, words: 125 },
-    phone: { row: 430, controls: 22, words: 90 },
+/**
+ * The tabs and the Calendar view: a ratchet, their measured numbers plus about 5 percent, so that later work only lowers them. (Release 3: the Deadlines tab is gone,
+ * the Calendar is a view of the Overview behind an icon button; the Data tab was rebuilt in #931 to #933.)
+ */
+const TABS: Record<'calendar' | 'data' | 'activity', Record<'desktop' | 'phone', Budget>> = {
+  calendar: {
+    desktop: { row: 410, controls: 30, words: 96 },
+    phone: { row: 470, controls: 22, words: 85 },
+  },
+  // The Data tab holds no task row (row is not measured): tiles, selection bar and the asset-type grid. Measured: 23 / 27 controls and 74 words on a desktop, 20 / 21 and 53 / 49 on a phone.
+  data: {
+    desktop: { row: 0, controls: 29, words: 78 },
+    phone: { row: 0, controls: 22, words: 56 },
   },
   activity: {
-    desktop: { row: 400, controls: 42, words: 215 },
-    phone: { row: 560, controls: 27, words: 90 },
+    desktop: { row: 400, controls: 40, words: 200 },
+    phone: { row: 605, controls: 27, words: 85 },
   },
 };
+
+/** Where each ratcheted view lives, and the tab that is selected there. */
+const VIEWS = {
+  calendar: { url: '/my-matters?view=calendar', tab: 'overview' },
+  data: { url: '/my-matters?tab=data', tab: 'data' },
+  activity: { url: '/my-matters?tab=activity', tab: 'activity' },
+} as const;
 
 const SIZES = {
   desktop: { width: 1366, height: 768 },
@@ -61,7 +77,7 @@ const settled = async (page: Page, tab: string): Promise<void> => {
   await expect(page.locator('[data-mm-body]')).toHaveCSS('visibility', 'visible');
 };
 
-/** A busy person: the persona's four tasks plus four more overdue (five in Needs my attention) and three due within the week. */
+/** A busy person: the persona's four tasks plus four more overdue (five in Needs my attention), three due within the week and four assets (the Data tab). */
 async function fill(
   seed: import('../support/seed').Seeder,
   p: PmPersona,
@@ -78,6 +94,9 @@ async function fill(
       dueDate: '2000-01-0' + (i + 2),
       assignedUserId: assigneeId,
     });
+  // Assets, so the Data tab shows its tiles and its grid and not the one-line empty state (the ratchet measures the real thing).
+  for (let i = 0; i < 4; i++)
+    await seed.asset(p.matters[i % p.matters.length], `Asset ${i} ${p.token}`);
   for (let i = 0; i < 3; i++)
     await seed.task(on(i), {
       title: `Soon ${i} ${p.token}`,
@@ -121,9 +140,9 @@ for (const who of ['solo', 'three'] as const) {
         expect(m.repeatedTaskCodes, `a task id appears twice on the Overview (${say(m)})`).toBe(0);
         expect(m.horizontalScroll, 'sideways scroll').toBe(false);
 
-        for (const tab of ['deadlines', 'activity'] as const) {
-          await page.goto(`/my-matters?tab=${tab}`);
-          await settled(page, tab);
+        for (const tab of ['calendar', 'data', 'activity'] as const) {
+          await page.goto(VIEWS[tab].url);
+          await settled(page, VIEWS[tab].tab);
           const t = await calmMetrics(page);
           test.info().annotations.push({ type: `${who}-${size}-${tab}`, description: say(t) });
           console.log(`BUDGET ${who} ${size} ${tab}: ${say(t)}`);
