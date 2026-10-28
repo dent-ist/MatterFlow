@@ -34,7 +34,6 @@ test.describe('My Matters: the tab shell', () => {
     // The Activity tab may carry a small badge (the changes since the last visit): the label is the words before it.
     await expect(page.getByRole('tab')).toHaveText([
       /^\s*Overview\s*$/,
-      /^\s*Deadlines\s*$/,
       /^\s*Breakdown\s*$/,
       /^\s*Data\s*$/,
       /^\s*Activity(\s+\d+)?\s*$/,
@@ -48,22 +47,22 @@ test.describe('My Matters: the tab shell', () => {
     await expect(panel(page, 'health')).toBeVisible();
 
     await page.locator('[data-filter=role]').selectOption('primary');
-    await tab(page, 'deadlines').click();
-    await expect(page).toHaveURL(/tab=deadlines/);
+    await tab(page, 'breakdown').click();
+    await expect(page).toHaveURL(/tab=breakdown/);
     await expect(page).toHaveURL(/role=primary/);
-    await expect(panel(page, 'deadlines-tab')).toBeVisible();
+    await expect(panel(page, 'breakdown')).toBeVisible();
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
     await tab(page, 'trends').click();
     await expect(panel(page, 'trends')).toBeVisible();
-    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // the dates belong to the Deadlines tab (#906)
+    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // the dates belong to the Calendar (#906, #929)
 
     // Back returns to the earlier tab and puts focus on its tab.
     await page.goBack();
-    await expect(tab(page, 'deadlines')).toHaveAttribute('aria-selected', 'true');
-    await expect(tab(page, 'deadlines')).toBeFocused();
+    await expect(tab(page, 'breakdown')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'breakdown')).toBeFocused();
 
     // Keyboard only, with the keys the app has: Right and Left move between tabs, Home goes to Overview.
-    await tab(page, 'deadlines').focus();
+    await tab(page, 'overview').focus();
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'breakdown')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
@@ -192,8 +191,8 @@ test.describe('My Matters: what changed, one line on the Activity tab with its c
   });
 });
 
-test.describe('My Matters: Deadlines', () => {
-  test('a list by matter, a calendar of week rows, the range, and every count equals the Task Queue it opens', async ({
+test.describe('My Matters: Calendar (the Deadlines tab moved to the Overview, #929)', () => {
+  test('the Deadlines tab address opens the Overview; the Calendar button shows a calendar of week rows with the range, every day count equals the Task Queue it opens, a phone gets the list by matter', async ({
     seed,
     personas,
     asUser,
@@ -207,40 +206,46 @@ test.describe('My Matters: Deadlines', () => {
     await w.task(b, { dueDate: inDays(5), title: 'B middle' });
     await w.task(b, { dueDate: '2000-01-01', title: 'B overdue' }); // overdue work is not a deadline
     const page = await asUser(w.pm.username);
+
+    // The old address opens the Overview (the address is replaced, so Back does not return to it).
     await page.goto('/my-matters?tab=deadlines');
-    const tabPanel = panel(page, 'deadlines-tab');
+    await expect(page.getByRole('tab', { selected: true })).toHaveText(/Overview/);
+    await expect(page).not.toHaveURL(/tab=deadlines/);
+    await expect(page.getByRole('tab', { name: 'Deadlines' })).toHaveCount(0);
 
-    // List by matter, 4 weeks: A has three, B has one.
-    await expect(tabPanel.locator('[data-matter-group]')).toHaveCount(2);
-    await expect(tabPanel.locator('[data-matter-group]').first()).toContainText('(3)');
-    await expect(tabPanel.locator('[data-deadline-row]')).toHaveCount(4);
-    // 2 weeks leaves out the task due in 20 days.
-    await page.locator('#mm-range').selectOption('2w'); // the Dates control of the tab (#906: the 2 / 4 week buttons are gone)
-    await expect(page).toHaveURL(/range=2w/);
-    await expect(tabPanel.locator('[data-deadline-row]')).toHaveCount(3);
-    await expect(tabPanel.locator('[data-matter-group]').first()).toContainText('(2)');
-    await page.locator('#mm-range').selectOption('4w');
-
-    // The calendar: week rows, today in words, a count per day that opens the Task Queue with the same tasks.
-    // The List / Calendar choice is behind the tab's Options menu (issue #894).
-    await tabPanel.locator('[data-options-trigger]').click();
-    await tabPanel.locator('[data-view="calendar"]').click();
+    // The Calendar button swaps the grids for the calendar.
+    await page.getByRole('button', { name: 'Show calendar' }).click();
     await expect(page).toHaveURL(/view=calendar/);
-    await expect(tabPanel.locator('[data-calendar]')).toBeVisible();
-    await expect(tabPanel.getByText('Today', { exact: true })).toBeVisible();
-    const day = tabPanel.locator('[data-day-count]').filter({ hasText: /^2$/ });
+    const cal = panel(page, 'calendar');
+    await expect(cal.locator('[data-calendar]')).toBeVisible();
+    await expect(panel(page, 'attention')).toHaveCount(0);
+    await expect(cal.getByText('Today', { exact: true })).toBeVisible();
+    // 4 weeks: three days have deadlines (two tasks on one of them); 2 weeks leaves out the task due in 20 days.
+    await expect(cal.locator('[data-day-count]')).toHaveCount(3);
+    await page.locator('#mm-range').selectOption('2w'); // the Dates control of the Calendar (#906)
+    await expect(page).toHaveURL(/range=2w/);
+    await expect(cal.locator('[data-day-count]')).toHaveCount(2);
+    await page.locator('#mm-range').selectOption('4w');
+    await expect(cal.locator('[data-day-count]')).toHaveCount(3);
+    // A count per day opens the Task Queue with the same tasks.
+    const day = cal.locator('[data-day-count]').filter({ hasText: /^2$/ });
     await expect(day).toHaveCount(1);
     await day.click();
     await expect(page).toHaveURL(/\/tasks\?/);
     await expect(page.locator('[data-range]').first()).toContainText('of 2');
     await page.goBack();
-    await expect(tabPanel.locator('[data-calendar]')).toBeVisible();
+    await expect(cal.locator('[data-calendar]')).toBeVisible();
 
-    // A phone gets the grouped list: no calendar, no view toggle.
+    // A phone gets the same tasks as a list grouped by matter, not a calendar.
     await page.setViewportSize({ width: 375, height: 812 });
-    await expect(tabPanel.locator('[data-calendar]')).toHaveCount(0);
-    await expect(tabPanel.locator('[data-view]')).toHaveCount(0);
-    await expect(tabPanel.locator('[data-matter-group]')).toHaveCount(2);
+    await expect(cal.locator('[data-calendar]')).toHaveCount(0);
+    await expect(cal.locator('[data-matter-group]')).toHaveCount(2);
+    await expect(cal.locator('[data-matter-group]').first()).toContainText('(3)');
+
+    // "Show list" brings the grids back.
+    await page.getByRole('button', { name: 'Show list' }).click();
+    await expect(panel(page, 'attention')).toBeVisible();
+    await expect(panel(page, 'calendar')).toHaveCount(0);
   });
 });
 
@@ -427,8 +432,8 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
       await expect(page.locator('[data-skip-links]')).toBeVisible(); // shown while a link has the focus
       await page.keyboard.press('Tab');
     }
-    // After the skip links the Tab order is what it was: the first control of Needs my attention (the "since" line is on the Activity tab now).
-    await expect(page.locator('[data-panel=attention] [data-view-all]')).toBeFocused();
+    // After the skip links the Tab order is what it was: the first control of Needs my attention (its Calendar button, #929).
+    await expect(page.locator('[data-panel=attention] [data-calendar-toggle]')).toBeFocused();
 
     // Enter moves focus to the panel heading, with a visible ring; Tab goes on into that panel.
     for (const key of keys) {
@@ -475,8 +480,7 @@ test.describe('My Matters tabs: four sizes', () => {
       await page.setViewportSize(size);
       const urls: [string, string][] = [
         ['overview', '/my-matters'],
-        ['deadlines', '/my-matters?tab=deadlines'],
-        ['calendar', '/my-matters?tab=deadlines&view=calendar'],
+        ['calendar', '/my-matters?view=calendar'],
         ['trends', '/my-matters?tab=trends'],
         ['activity', '/my-matters?tab=activity'],
       ];

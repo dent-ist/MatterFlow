@@ -131,6 +131,7 @@ const LONG_PRESS_MS = 500;
           [emptyParts]="emptyParts()"
           [emptyAction]="emptyActionTpl()"
           [assignLink]="assignLink()"
+          [readOnly]="readOnly()"
           [newSince]="newSince()"
           [leaving]="leaving()"
           [linkParams]="linkParams()"
@@ -698,6 +699,11 @@ export class TaskTable {
   /** Hide the Matter and Client columns: on a Matter's or Project's own page the header already says it. */
   readonly hideContext = input(false);
   /**
+   * No inline editors: Status, Priority and Assignee are shown as text and badges. A short list on a page of its own business (the My Matters Overview, issue #929)
+   * is for reading and opening a task, so it adds no editing controls to the page.
+   */
+  readonly readOnly = input(false);
+  /**
    * My Work grouped by due: the size of every bucket for the whole filtered set. The rows are in the server's bucket order, so each group's
    * header goes where its bucket starts. Null: no grouping.
    */
@@ -1118,7 +1124,7 @@ export class TaskTable {
   }
 
   protected editable(field: InlineField, row: TaskQueueRow): boolean {
-    return canEditField(field, row, (p) => this.auth.has(p));
+    return !this.readOnly() && canEditField(field, row, (p) => this.auth.has(p));
   }
 
   protected isNew(row: TaskQueueRow): boolean {

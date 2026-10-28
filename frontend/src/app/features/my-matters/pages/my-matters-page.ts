@@ -37,30 +37,22 @@ import {
 } from '../my-matters-filters';
 import { LoadGroup } from '../panel-loader';
 import { MyMattersStrip } from '../my-matters-strip';
-import { AttentionPanel } from '../panels/attention-panel';
-import { DeadlinesPanel } from '../panels/deadlines-panel';
+import { CalendarToggle } from '../calendar-toggle';
+import { CalendarPanel } from '../panels/calendar-panel';
+import { TaskGrid } from '../panels/task-grid';
 import { HealthPanel } from '../panels/health-panel';
 import { SincePanel, SinceFeed } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { BreakdownTab } from '../tabs/breakdown-tab';
 import { DataTab } from '../tabs/data-tab';
-import { DeadlinesTab } from '../tabs/deadlines-tab';
 import { TrendsTab } from '../tabs/trends-tab';
 
-/** The five tabs (`?tab=`; Overview is the page as it was and is absent from the address). */
-export const MM_TABS = [
-  'overview',
-  'deadlines',
-  'breakdown',
-  'data',
-  'activity',
-  'trends',
-] as const;
+/** The tabs (`?tab=`; Overview is the page as it was and is absent from the address). The Deadlines tab is gone (issue #929): `?tab=deadlines` opens the Overview. */
+export const MM_TABS = ['overview', 'breakdown', 'data', 'activity', 'trends'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
-  deadlines: 'Deadlines',
   breakdown: 'Breakdown',
   data: 'Data',
   trends: 'Trends',
@@ -104,8 +96,8 @@ function storage(): Storage | null {
 @Component({
   selector: 'mf-my-matters-page',
   imports: [
-    AttentionPanel,
-    DeadlinesPanel,
+    CalendarPanel,
+    CalendarToggle,
     ErrorReference,
     FocusChip,
     FocusControl,
@@ -120,11 +112,11 @@ function storage(): Storage | null {
     ScopeSwitch,
     SincePanel,
     SkipLinks,
+    TaskGrid,
     Tabs,
     ActivityTab,
     BreakdownTab,
     DataTab,
-    DeadlinesTab,
     TrendsTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -333,13 +325,6 @@ function storage(): Storage | null {
         data-mm-tabpanel
       >
         @switch (tab()) {
-          @case ('deadlines') {
-            @defer (on immediate) {
-              <mf-mm-deadlines-tab [filters]="filters()" (filterChange)="update($event)" />
-            } @placeholder {
-              <p class="mm__loading" role="status">Loading deadlines</p>
-            }
-          }
           @case ('breakdown') {
             @defer (on immediate) {
               <mf-mm-breakdown-tab [filters]="filters()" />
@@ -376,25 +361,49 @@ function storage(): Storage | null {
             }
           }
           @default {
-            <mf-mm-skip-links [class.mm__off]="states.quiet()" />
-            @if (states.quiet() && !states.noMatters()) {
+            <mf-mm-skip-links [class.mm__off]="states.quiet() || calendarShown()" />
+            @if (states.quiet() && !states.noMatters() && !calendarShown()) {
               <p class="mm__quiet" role="status" data-all-quiet>
                 Nothing is late and nothing is due in the next 7 days.
+                <mf-mm-calendar-toggle (flip)="setCalendar(true)" />
               </p>
             }
             <div class="mm__stack">
-              <mf-mm-attention
-                [class.mm__off]="states.quiet()"
-                [filters]="filters()"
-                [showMatter]="showMatter()"
-                (listed)="listed.set($event)"
-              />
-              <mf-mm-deadlines
-                [class.mm__off]="states.quiet()"
-                [filters]="filters()"
-                [exclude]="listed()"
-                [showMatter]="showMatter()"
-              />
+              @if (calendarShown()) {
+                <!-- The Calendar button of the task area (issue #929): the calendar replaces the two grids, "Show list" brings them back. It is its own lazy chunk. -->
+                @defer (on immediate) {
+                  <mf-mm-calendar
+                    [filters]="filters()"
+                    (filterChange)="update($event)"
+                    (closed)="setCalendar(false)"
+                  />
+                } @placeholder {
+                  <p class="mm__loading" role="status">Loading calendar</p>
+                }
+              } @else {
+                <mf-mm-grid
+                  kind="attention"
+                  [class.mm__off]="states.quiet()"
+                  [filters]="filters()"
+                  [showMatter]="showMatter()"
+                  (listed)="listed.set($event)"
+                >
+                  @if (states.calendarHost() === 'attention') {
+                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
+                  }
+                </mf-mm-grid>
+                <mf-mm-grid
+                  kind="deadlines"
+                  [class.mm__off]="states.quiet()"
+                  [filters]="filters()"
+                  [exclude]="listed()"
+                  [showMatter]="showMatter()"
+                >
+                  @if (states.calendarHost() === 'deadlines') {
+                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
+                  }
+                </mf-mm-grid>
+              }
               <mf-mm-health
                 [filters]="filters()"
                 [filtered]="barActive() > 0"
@@ -455,7 +464,11 @@ export class MyMattersPage {
   protected readonly headerActive = computed(
     () => (this.focus.types().length > 0 ? 1 : 0) + (this.filters().scope === 'all' ? 1 : 0),
   );
-  /** The tasks Needs my attention lists: Upcoming deadlines leaves them out (a task is listed once per screen). */
+  /** The Calendar is the task area (`?view=calendar`), remembered per person: the Overview shows the grids otherwise (issue #929). */
+  protected readonly calendarShown = computed(
+    () => this.tab() === 'overview' && this.params().get('view') === 'calendar',
+  );
+  /** The tasks Needs my attention lists: Next 7 days leaves them out (a task is listed once per screen). */
   protected readonly listed = signal<number[]>([]);
   /** The matter's name goes on a row only where several matters are in play (a person who manages one matter would read it on every row). */
   protected readonly showMatter = computed(
@@ -505,6 +518,10 @@ export class MyMattersPage {
 
   constructor() {
     this.restoreRemembered();
+    // The Deadlines tab is gone (issue #929): its address opens the Overview (a calendar link keeps its `view`).
+    effect(() => {
+      if (this.params().get('tab') === 'deadlines') untracked(() => this.go({ tab: null }, true));
+    });
     effect(() => this.since.filters.set(this.filters()));
     const timer = setTimeout(() => this.waited.set(true), HOLD_MS);
     inject(DestroyRef).onDestroy(() => clearTimeout(timer));
@@ -551,24 +568,37 @@ export class MyMattersPage {
     return `mf-my-matters-filters-${this.auth.profile()?.userId ?? 0}`;
   }
 
-  /** A visit with no filters in the address starts from the filters the person last used. */
+  /**
+   * A visit with no filters in the address starts from the filters the person last used, and a visit to the Overview with no `view` opens the Calendar if that is
+   * what the person last used. One navigation for both, so neither is lost.
+   */
   private restoreRemembered(): void {
     const q = this.route.snapshot.queryParamMap;
-    if (FILTER_KEYS.some((k) => q.has(k))) return;
+    const params: Record<string, string | number | null | undefined> = {};
     try {
-      const raw = storage()?.getItem(this.rememberKey());
-      if (!raw) return;
-      const kept = parseFilters(new URLSearchParams(raw) as unknown as typeof q, this.canAll());
-      if (same(kept, DEFAULT_FILTERS)) return;
-      void this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: filtersToParams(kept),
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
+      if (!FILTER_KEYS.some((k) => q.has(k))) {
+        const raw = storage()?.getItem(this.rememberKey());
+        if (raw) {
+          const kept = parseFilters(new URLSearchParams(raw) as unknown as typeof q, this.canAll());
+          if (!same(kept, DEFAULT_FILTERS)) Object.assign(params, filtersToParams(kept));
+        }
+      }
+      if (
+        !q.has('view') &&
+        (q.get('tab') ?? 'overview') === 'overview' &&
+        storage()?.getItem(this.calendarKey()) === 'calendar'
+      )
+        params['view'] = 'calendar';
     } catch {
       // Storage may be blocked; the page then starts from the defaults.
     }
+    if (Object.keys(params).length === 0) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: params,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private remember(f: MmFilters): void {
@@ -586,12 +616,37 @@ export class MyMattersPage {
     }
   }
 
-  private go(queryParams: Record<string, string | number | null>): void {
+  private go(queryParams: Record<string, string | number | null>, replaceUrl = false): void {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
       queryParamsHandling: 'merge',
+      replaceUrl,
     });
+  }
+
+  private calendarKey(): string {
+    return `mf-my-matters-calendar-${this.auth.profile()?.userId ?? 0}`;
+  }
+
+  /** Switches the task area between the grids and the Calendar; the choice is remembered per person (a convenience, the address stays the source of truth). */
+  protected setCalendar(on: boolean): void {
+    this.go({ view: on ? 'calendar' : null }, true);
+    try {
+      const s = storage();
+      if (on) s?.setItem(this.calendarKey(), 'calendar');
+      else s?.removeItem(this.calendarKey());
+    } catch {
+      // Not remembering is fine.
+    }
+    // The button that was pressed is replaced by the other view's button: the focus goes to it.
+    afterNextRender(
+      () => {
+        const next = document.querySelector<HTMLElement>('[data-calendar-toggle]');
+        next?.focus({ preventScroll: true });
+      },
+      { injector: this.injector },
+    );
   }
 
   /** A filter changed: the address changes (a leftover `page` from an older link is dropped). */

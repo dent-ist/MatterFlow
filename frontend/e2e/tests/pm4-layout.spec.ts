@@ -103,7 +103,7 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(filtersButton).toHaveText(/Filters \(1\)/);
   });
 
-  test('phone: Needs my attention is five rows at most, each with its title, matter and reason, and "View all N"', async ({
+  test('phone: Needs my attention is five cards at most, each with its title, matter and due, and "View all N"', async ({
     seed,
     personas,
     asUser,
@@ -117,11 +117,12 @@ test.describe('My Matters on a phone and a tablet', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
     const attention = page.locator('[data-panel=attention]');
-    await expect(attention.locator('[data-attention-item]')).toHaveCount(5);
-    for (const item of await attention.locator('[data-attention-item]').all()) {
-      await expect(item.locator('[data-attention-row]')).toBeVisible();
-      await expect(item.locator('[data-row-matter]')).toBeVisible();
-      await expect(item.locator('[data-fact]')).toContainText('overdue');
+    // The shared table is cards on a phone (#929): a title, the client and matter, and the Due cell that says overdue.
+    await expect(attention.locator('li[data-task]')).toHaveCount(5);
+    for (const item of await attention.locator('li[data-task]').all()) {
+      await expect(item.locator('a.wt-title')).toBeVisible();
+      await expect(item.locator('[data-card-matter]')).toBeVisible();
+      await expect(item.locator('[data-col=due]')).toContainText(/overdue/i);
     }
     await expect(attention.locator('[data-view-all]')).toHaveText('View all 7');
     // The events are not on the Overview.

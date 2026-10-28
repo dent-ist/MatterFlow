@@ -333,6 +333,8 @@ export class TaskCardList {
   /** The projected `[empty-action]` content of the table, as a template. */
   readonly emptyAction = input<TemplateRef<unknown> | null>(null);
   readonly assignLink = input(false);
+  /** No inline editors (the table's `readOnly`). */
+  readonly readOnly = input(false);
   readonly newSince = input<number | null>(null);
   readonly leaving = input<ReadonlySet<number>>(new Set());
   readonly linkParams = input<Record<string, unknown> | null>(null);
@@ -370,7 +372,7 @@ export class TaskCardList {
   }
 
   protected editable(field: InlineField, row: TaskQueueRow): boolean {
-    return canEditField(field, row, (p) => this.auth.has(p));
+    return !this.readOnly() && canEditField(field, row, (p) => this.auth.has(p));
   }
 
   protected closed(row: TaskQueueRow): boolean {

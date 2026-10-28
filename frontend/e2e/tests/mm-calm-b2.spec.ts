@@ -476,8 +476,8 @@ test.describe('Matters list (#908)', () => {
   }
 });
 
-test.describe('Needs my attention: one ranked list (#905)', () => {
-  test('one list, at most five rows, a reason on each, one View all N that opens the Task Queue with the same tasks', async ({
+test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
+  test('one grid of the shared table, at most five rows, sortable headings, one View all N that opens the Task Queue with the same tasks', async ({
     seed,
     personas,
     asUser,
@@ -488,39 +488,30 @@ test.describe('Needs my attention: one ranked list (#905)', () => {
     await page.goto('/my-matters');
     await settled(page);
     const panel = page.locator('[data-panel=attention]');
-    const rows = panel.locator('[data-attention-item]');
+    const rows = panel.locator('tbody tr[data-task]');
     const n = await rows.count();
     expect(n).toBeGreaterThan(0);
     expect(n).toBeLessThanOrEqual(5);
-    // No group headings, no "also listed" notes; one View all.
+    // The same table as the Tasks pages: Ref, Title, Matter name, Priority, Assignee, Due, Status, every heading a sort button with aria-sort.
+    await expect(panel.locator('mf-task-table table.wt')).toBeVisible();
+    const heads = panel.locator('thead th');
+    expect(await heads.evaluateAll((els) => els.map((e) => e.getAttribute('data-col')))).toEqual([
+      'ref',
+      'title',
+      'matterName',
+      'priority',
+      'assignee',
+      'due',
+      'status',
+    ]);
+    await expect(heads.locator('button.wt-sort')).toHaveCount(7);
+    // No group headings, no "also listed" notes; one View all. The default order is the Due column, soonest first.
     await expect(panel.locator('h3, [data-group], [data-repeated]')).toHaveCount(0);
     await expect(panel.locator('[data-view-all]')).toHaveCount(1);
-    // The reason is the last column of each row and the names keep task, matter and reason.
-    const facts = await rows.evaluateAll((els) =>
-      els.map((e) => ({
-        reason: e.getAttribute('data-reason'),
-        text: e.querySelector('[data-fact]')!.textContent!.trim(),
-        right: e.querySelector('[data-fact]')!.getBoundingClientRect().right,
-        name: e.querySelector('[data-attention-row]')!.getAttribute('aria-label'),
-      })),
-    );
-    for (const f of facts) {
-      expect(f.text).not.toBe('');
-      expect(f.name).toContain(f.text);
-    }
-    expect(new Set(facts.map((f) => Math.round(f.right))).size, 'one fixed column').toBe(1);
-    // Ranked: overdue first, then at risk, then the long hold.
-    const order = facts.map((f) => f.reason);
-    const rank = ['overdue', 'atRisk', 'dueToday', 'unassigned', 'onHold'];
-    expect(order.map((r) => rank.indexOf(r!))).toEqual(
-      [...order.map((r) => rank.indexOf(r!))].sort((a, b) => a - b),
-    );
-    expect(order[0]).toBe('overdue');
-    if (p.aged) {
-      expect(order).toContain('atRisk');
-      expect(order).toContain('onHold');
-    }
-    // View all N: N equals the Task Queue total of the link, and the list is no taller than 420 px.
+    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'ascending');
+    // Overdue work comes first.
+    await expect(rows.first().locator('td[data-col=due]')).toContainText(/Overdue/i);
+    // View all N: N equals the Task Queue total of the link, and the section is no taller than 420 px.
     const all = panel.locator('[data-view-all]');
     const total = Number((await all.innerText()).replace(/\D+/g, ''));
     const box = await panel.boundingBox();
@@ -533,34 +524,75 @@ test.describe('Needs my attention: one ranked list (#905)', () => {
     expect(((await queue.json()) as { total: number }).total).toBe(total);
   });
 
-  test('a task is listed once per screen: overdue and unassigned is one overdue row; an at-risk task is not also in the deadlines', async ({
+  test('a click on a heading sorts all the tasks that need attention, not only the rows on screen, and View all follows the order', async ({
     seed,
     personas,
     asUser,
   }) => {
-    const p = await pmThree(seed, personas, 'na2');
-    const page = await asUser(p.pm.username);
+    const w = await mmWorld(seed, personas, 'na5');
+    const m = await w.matter('Sorting');
+    for (let i = 0; i < 7; i++)
+      await w.task(m, {
+        dueDate: `2000-01-0${i + 1}`,
+        title: `Sort ${String.fromCharCode(65 + i)}`,
+      });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await settled(page);
+    const panel = page.locator('[data-panel=attention]');
+    const titles = async () =>
+      (await panel.locator('a.wt-title').allInnerTexts()).map((t) => t.trim());
+    expect(await titles()).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
+    // Title, Z to A: the five that sort last of ALL seven, not the same five turned round.
+    const titleSort = panel.locator('th[data-col=title] button.wt-sort');
+    await titleSort.click();
+    await expect(panel.locator('th[data-col=title]')).toHaveAttribute('aria-sort', 'ascending');
+    await titleSort.click();
+    await expect(panel.locator('th[data-col=title]')).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(titles).toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C']);
+    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
+    await expect(panel.locator('[data-view-all]')).toHaveText('View all 7');
+    await expect(panel.locator('[data-view-all]')).toHaveAttribute('href', /sort=title&dir=desc/);
+    // Due again, and the order turns round with a second press.
+    await panel.locator('th[data-col=due] button.wt-sort').click();
+    await expect.poll(titles).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
+    await panel.locator('th[data-col=due] button.wt-sort').click();
+    await expect.poll(titles).toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C']);
+  });
+
+  test('a task is listed once per screen: a task that needs attention is not also in Next 7 days; there are no inline editors in the grids', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'na2');
+    const m = await w.matter('Once');
+    await w.task(m, { dueDate: inDays(0), title: 'Due today and unassigned' });
+    for (let i = 1; i <= 3; i++)
+      await w.task(m, { dueDate: inDays(i), title: `Soon ${i}`, assignedUserId: w.pm.userId });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
     const links = await taskLinks(page);
     expect(new Set(links).size, `no task id twice: ${links.join(' ')}`).toBe(links.length);
-    // The overdue task is unassigned too: one row, reason overdue.
-    const overdueRows = page.locator('[data-attention-item]', { hasText: `Overdue ${p.token}` });
-    await expect(overdueRows).toHaveCount(1);
-    await expect(overdueRows).toHaveAttribute('data-reason', 'overdue');
-    await expect(overdueRows.locator('[data-fact]')).toContainText('overdue');
-    if (p.aged) {
-      const risk = page.locator('[data-attention-item]', { hasText: `At risk ${p.token}` });
-      await expect(risk).toHaveCount(1);
-      await expect(risk.locator('[data-fact]')).toHaveText('at risk');
-      // It is due in 12 days (inside the deadlines window) and still not listed there.
-      await expect(
-        page.locator('[data-panel=deadlines]', { hasText: `At risk ${p.token}` }),
-      ).toHaveCount(0);
-    }
+    await expect(
+      page.locator('[data-panel=attention] tr[data-task]', { hasText: 'Due today and unassigned' }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator('[data-panel=deadlines] tr[data-task]', { hasText: 'Due today and unassigned' }),
+    ).toHaveCount(0);
+    await expect(page.locator('[data-panel=deadlines] tr[data-task]')).toHaveCount(3);
+    // Read-only: Status, Priority and Assignee are text and badges, not editors.
+    await expect(
+      page.locator(
+        '[data-panel=attention] [data-inline-trigger], [data-panel=deadlines] [data-inline-trigger]',
+      ),
+    ).toHaveCount(0);
   });
 
-  test('more than five need attention: the list stops at five, the oldest overdue first, View all counts all of them', async ({
+  test('more than five need attention: the grid stops at five, the oldest overdue first, View all counts all of them', async ({
     seed,
     personas,
     asUser,
@@ -573,15 +605,9 @@ test.describe('Needs my attention: one ranked list (#905)', () => {
     await page.goto('/my-matters');
     await settled(page);
     const panel = page.locator('[data-panel=attention]');
-    await expect(panel.locator('[data-attention-item]')).toHaveCount(5);
-    const titles = await panel.locator('[data-attention-row]').allInnerTexts();
-    expect(titles.map((t) => t.replace(/^TSK-\d+\s+/, ''))).toEqual([
-      'Late 0',
-      'Late 1',
-      'Late 2',
-      'Late 3',
-      'Late 4',
-    ]);
+    await expect(panel.locator('tbody tr[data-task]')).toHaveCount(5);
+    const titles = await panel.locator('a.wt-title').allInnerTexts();
+    expect(titles.map((t) => t.trim())).toEqual(['Late 0', 'Late 1', 'Late 2', 'Late 3', 'Late 4']);
     await expect(panel.locator('[data-view-all]')).toHaveText('View all 8');
   });
 
@@ -612,7 +638,7 @@ test.describe('Needs my attention: one ranked list (#905)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      await expect(page.locator('[data-attention-item]').first()).toBeVisible();
+      await expect(page.locator('[data-panel=attention] [data-task]').first()).toBeVisible();
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });

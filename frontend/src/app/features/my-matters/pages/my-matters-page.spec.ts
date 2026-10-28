@@ -8,11 +8,14 @@ import {
   MatterResponse,
   MattersClient,
   MyMattersClient,
+  TaskQueueClient,
+  TaskQueueRow,
 } from '../../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
+import { MyMattersFocus } from '../focus';
 import { MyMattersPage } from './my-matters-page';
 
 const count = (n: number, query: string) => ({ count: n, query });
@@ -85,20 +88,129 @@ function row(matterId: number, overdue: number, atRisk: number, unassigned: numb
   };
 }
 
-/** The ranked Needs my attention answer (issue #905): one list, total counts each task once. */
-function attention(
-  items: object[] = [task(1), task(2, { factCode: 'NO_ASSIGNEE', factDays: undefined })],
-  total = 25,
-) {
-  return {
-    timeZone: 'x',
-    asOfUtc: 'x',
-    stuckOnHoldDays: 7,
-    total,
-    query:
-      'managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due',
-    items,
-  };
+/** The arguments of `getTaskQueue`, by name, in the order of the generated client. */
+const TQ_ARGS = [
+  'group',
+  'q',
+  'status',
+  'priority',
+  'pod',
+  'noPod',
+  'assignee',
+  'unassigned',
+  'creator',
+  'client',
+  'matter',
+  'project',
+  'type',
+  'workflow',
+  'createdFrom',
+  'createdTo',
+  'dueFrom',
+  'dueTo',
+  'asap',
+  'overdue',
+  'requestor',
+  'completedFrom',
+  'completedTo',
+  'matterText',
+  'clientText',
+  'projectText',
+  'updatedFrom',
+  'updatedTo',
+  'managedByMe',
+  'managerId',
+  'role',
+  'dueWithin',
+  'atRisk',
+  'needsAttention',
+  'onHoldReason',
+  'sort',
+  'dir',
+  'page',
+  'pageSize',
+] as const;
+
+function tqCall(args: unknown[]): Record<string, unknown> {
+  return Object.fromEntries(TQ_ARGS.map((k, i) => [k, args[i]]));
+}
+
+/** One row of the Task Queue, with the fields the shared table reads. */
+const queueRow = (id: number, over: Partial<TaskQueueRow> = {}): TaskQueueRow => ({
+  taskId: id,
+  taskNumber: `TSK-${id}`,
+  title: `Task ${id}`,
+  matterId: 5,
+  matterRef: '90001-80001',
+  matterName: 'Merger',
+  matterIsSensitive: false,
+  matterIsActive: true,
+  clientId: 2,
+  clientName: 'Acme',
+  projectId: undefined,
+  projectName: undefined,
+  taskTypeId: 1,
+  taskTypeName: 'Review',
+  taskTypeIconKey: 'file-text',
+  workflowDefinitionId: 1,
+  workflowName: 'Standard',
+  priority: { priorityId: 3, label: 'Normal', color: '#667085', sortOrder: 3 },
+  status: 'NEW',
+  statusLabel: 'New',
+  assignedPod: undefined,
+  assignedUser: undefined,
+  createdBy: undefined,
+  requestorName: 'Rita',
+  dueDate: '2026-10-26',
+  dueAtUtc: undefined,
+  isAsap: false,
+  isOverdue: true,
+  createdAtUtc: '2026-10-01T12:00:00Z',
+  assignedAtUtc: undefined,
+  updatedAtUtc: undefined,
+  completedAtUtc: undefined,
+  statusChangedAtUtc: '2026-10-01T12:00:00Z',
+  closedAtUtc: undefined,
+  workflow: {
+    stepsTotal: 0,
+    stepsResolved: 0,
+    currentStepNumber: undefined,
+    currentStepName: undefined,
+  },
+  rowVersion: 'AAAA',
+  holdReasonTruncated: false,
+  matterCanOpen: true,
+  atRisk: false,
+  ...over,
+});
+
+/** A page of the Task Queue. */
+function queuePage(items: TaskQueueRow[], total = items.length) {
+  return { items, total, page: 1, pageSize: items.length, sort: 'due', dir: 'asc' };
+}
+
+/** The default answers of the grids: two tasks needing attention (of 25) and two due in the next 7 days (of 41). */
+function defaultQueue(args: unknown[]) {
+  const q = tqCall(args);
+  return q['needsAttention']
+    ? of(
+        queuePage(
+          [
+            queueRow(1),
+            queueRow(2, { assignedUser: { userId: 9, displayName: 'Dana', isActive: true } }),
+          ],
+          25,
+        ),
+      )
+    : of(
+        queuePage(
+          [
+            queueRow(3, { isOverdue: false, dueDate: '2026-10-27' }),
+            queueRow(4, { isOverdue: false, dueDate: '2026-10-28' }),
+          ],
+          41,
+        ),
+      );
 }
 
 function activity(unread = 2) {
@@ -280,6 +392,8 @@ function trends() {
 
 describe('MyMattersPage', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
+  /** `getTaskQueue` of the two grids; a test overrides it with `tq.mockImplementation`. */
+  let tq: ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>;
 
   async function open(
     url: string,
@@ -296,7 +410,6 @@ describe('MyMattersPage', () => {
   ) {
     api = {
       getMyMattersSummary: vi.fn().mockReturnValue(of(summary())),
-      getMyMattersAttention: vi.fn().mockReturnValue(of(attention())),
       getMyMattersDeadlines: vi.fn().mockReturnValue(
         of({
           timeZone: 'x',
@@ -319,9 +432,14 @@ describe('MyMattersPage', () => {
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
       markMyMattersActivitySeen: vi.fn().mockReturnValue(of({ seenEventId: 12, seenAtUtc: 'x' })),
     };
+    tq = vi.fn<(...args: unknown[]) => unknown>((...args) => defaultQueue(args));
     configure?.(api);
     TestBed.configureTestingModule({
       providers: [
+        {
+          provide: TaskQueueClient,
+          useValue: { getTaskQueue: (...args: unknown[]) => tq(...args) },
+        },
         provideRouter([
           { path: 'my-matters', component: MyMattersPage },
           { path: '**', children: [] },
@@ -468,7 +586,7 @@ describe('MyMattersPage', () => {
     expect(el(h).querySelector('[data-headline-none]')).toBeNull();
   });
 
-  it('sends no date range to the strip and the other panels; Next 7 days asks for today to seven days ahead, whatever the range (#896)', async () => {
+  it('sends no date range to the strip and the grids; Next 7 days asks for dueWithin=7, whatever the range, and the Overview does not read the deadlines endpoint (#896, #929)', async () => {
     await open('/my-matters?range=2w');
     expect(api['getMyMattersSummary']).toHaveBeenCalledWith(
       undefined,
@@ -478,22 +596,19 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
     );
-    const day = expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/);
-    expect(api['getMyMattersDeadlines']).toHaveBeenCalledWith(
-      14,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      day,
-      day,
-      undefined,
-    );
-    const [, , , , , , , , from, to] = api['getMyMattersDeadlines'].mock.calls[0];
-    expect((Date.parse(to) - Date.parse(from)) / 86_400_000).toBe(7);
+    const calls = tq.mock.calls.map((c) => tqCall(c));
+    const next = calls.find((c) => c['dueWithin'] === 7)!;
+    expect(next).toMatchObject({
+      managedByMe: true,
+      status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
+      sort: 'due',
+      dir: 'asc',
+      page: 1,
+      pageSize: 8,
+    });
+    expect(next['dueFrom']).toBeUndefined();
+    expect(next['dueTo']).toBeUndefined();
+    expect(api['getMyMattersDeadlines']).not.toHaveBeenCalled();
     expect(api['getMyMattersHealth']).toHaveBeenCalledWith(
       'worst',
       undefined,
@@ -534,148 +649,232 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('shows Needs my attention as ONE ranked list: a reason on every row, one View all N, no group headings (#905)', async () => {
+  it('shows Needs my attention as the shared grid: the Tasks columns, five rows asked for, soonest due first, one View all N with the Task Queue filter (#929)', async () => {
     const h = await open('/my-matters');
-    expect(el(h).querySelector('[data-group], [data-repeated], [data-also-tag]')).toBeNull();
-    const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
-    expect(rows).toHaveLength(2);
-    const row1 = el(h).querySelector<HTMLAnchorElement>('[data-attention-row]')!;
-    expect(row1.getAttribute('href')).toBe('/tasks/1?from=my-matters');
-    // The link keeps the task, the matter and the reason in its name.
-    expect(row1.getAttribute('aria-label')).toBe(
-      'TSK-1 Task 1, 90001-80001 Merger, Unassigned, 3 d overdue',
+    const panel = el(h).querySelector('[data-panel=attention]')!;
+    expect(panel.querySelector('h2')!.textContent).toBe('Needs my attention');
+    // The same table as the Tasks pages, not a list of its own.
+    const table = panel.querySelector('mf-task-table table.wt')!;
+    expect(
+      Array.from(table.querySelectorAll('thead th')).map((t) => t.getAttribute('data-col')),
+    ).toEqual(['ref', 'title', 'matterName', 'priority', 'assignee', 'due', 'status']);
+    const rows = Array.from(table.querySelectorAll('tbody tr[data-task]'));
+    expect(rows.map((r) => r.getAttribute('data-task'))).toEqual(['TSK-1', 'TSK-2']);
+    expect(rows[0].querySelector<HTMLAnchorElement>('a.wt-title')!.getAttribute('href')).toBe(
+      '/tasks/1?from=my-matters',
     );
-    // Two right-hand columns (issue #901): who, then when. An unassigned task's reason is "Unassigned" in the who column, its time text is its due day.
-    expect(rows.map((r) => r.querySelector('[data-row-who]')!.textContent!.trim())).toEqual([
-      'Unassigned',
-      'Unassigned',
-    ]);
-    expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
-      '3 d overdue',
-      'due Mon Oct 26',
-    ]);
-    const all = el(h).querySelectorAll<HTMLAnchorElement>('[data-panel=attention] [data-view-all]');
+    // Read-only here: Status, Priority and Assignee are text and badges, not editors.
+    expect(table.querySelector('mf-row-edit, [data-inline-trigger]')).toBeNull();
+    expect(rows[1].querySelector('[data-col=assignee]')!.textContent).toContain('Dana');
+    expect(rows[0].querySelector('[data-col=assignee]')!.textContent).toContain('Unassigned');
+    const asked = tqCall(tq.mock.calls.find((c) => tqCall(c)['needsAttention'])!);
+    expect(asked).toMatchObject({
+      managedByMe: true,
+      needsAttention: true,
+      status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
+      sort: 'due',
+      dir: 'asc',
+      page: 1,
+      pageSize: 5,
+    });
+    const all = panel.querySelectorAll<HTMLAnchorElement>('[data-view-all]');
     expect(all).toHaveLength(1);
     expect(all[0].textContent!.trim()).toBe('View all 25');
     expect(all[0].getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due',
-    );
-    // Not a sort, not a group: the ranking is the server's.
-    expect(el(h).querySelector('[data-panel=attention] [data-sort]')).toBeNull();
-    expect(api['getMyMattersAttention']).toHaveBeenCalledWith(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
+      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due&dir=asc',
     );
   });
 
-  it('At risk is a row with its own reason, and an at-risk task due today still shows the At risk pill', async () => {
-    const h = await open('/my-matters', undefined, (a) => {
-      a['getMyMattersAttention'].mockReturnValue(
+  it('a click on a heading sorts the whole set on the server and announces it (aria-sort); the same heading again turns the order round (#929)', async () => {
+    const h = await open('/my-matters');
+    const panel = el(h).querySelector('[data-panel=attention]')!;
+    const th = (col: string) => panel.querySelector(`th[data-col=${col}]`)!;
+    const press = async (col: string) => {
+      th(col).querySelector<HTMLButtonElement>('button.wt-sort')!.click();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      h.detectChanges();
+    };
+    const last = () => tqCall(tq.mock.calls.filter((c) => tqCall(c)['needsAttention']).at(-1)!);
+    // Due is the default order.
+    expect(th('due').getAttribute('aria-sort')).toBe('ascending');
+    expect(th('priority').getAttribute('aria-sort')).toBe('none');
+    await press('due');
+    expect(last()).toMatchObject({ sort: 'due', dir: 'desc', page: 1, pageSize: 5 });
+    expect(th('due').getAttribute('aria-sort')).toBe('descending');
+    await press('priority');
+    expect(last()).toMatchObject({ sort: 'priority', dir: 'asc' });
+    expect(th('priority').getAttribute('aria-sort')).toBe('ascending');
+    expect(th('due').getAttribute('aria-sort')).toBe('none');
+    // "View all" opens the Task Queue in the order in force.
+    expect(
+      panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
+    ).toContain('sort=priority&dir=asc');
+    // The other grid is its own: its order did not change.
+    expect(
+      el(h).querySelector('[data-panel=deadlines] th[data-col=due]')!.getAttribute('aria-sort'),
+    ).toBe('ascending');
+  });
+
+  it('every sortable heading of the grids is a button; the headings that cannot sort are not (#929)', async () => {
+    const h = await open('/my-matters');
+    const heads = Array.from(el(h).querySelectorAll('[data-panel=attention] thead th'));
+    expect(heads.every((t) => t.querySelector('button.wt-sort') !== null)).toBe(true);
+  });
+
+  it('At risk and On hold show in the shared Due and Status cells', async () => {
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) =>
         of(
-          attention(
-            [
-              task(1, { factCode: 'AT_RISK', factDays: undefined, atRisk: true }),
-              task(2, { factCode: 'DUE_TODAY', factDays: 0, atRisk: true }),
-              task(3, {
-                factCode: 'ON_HOLD_DAYS',
-                factDays: 12,
-                onHold: { reasonName: 'Waiting', days: 12 },
-              }),
-            ],
-            3,
+          queuePage(
+            tqCall(args)['needsAttention']
+              ? [
+                  queueRow(1, { atRisk: true, isOverdue: false, dueDate: '2099-01-01' }),
+                  queueRow(2, { status: 'ON_HOLD', statusLabel: 'On Hold', isOverdue: false }),
+                ]
+              : [],
           ),
         ),
-      );
-    });
-    const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
-    expect(rows.map((r) => r.getAttribute('data-reason'))).toEqual([
-      'atRisk',
-      'dueToday',
-      'onHold',
-    ]);
-    expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
-      'at risk',
-      'due today',
-      'on hold 12 d',
-    ]);
-    expect(rows[0].querySelector('[data-at-risk]')).toBeNull(); // the reason says it already
-    expect(rows[1].querySelector('[data-at-risk]')).not.toBeNull();
-    // The reason of a hold is the tooltip of the one status text, not a second piece of text on the row (issue #897).
-    expect(rows[2].querySelector('[data-fact]')!.getAttribute('title')).toBe('Waiting');
-    expect(rows[2].querySelector('[data-hold-pill]')).toBeNull(); // the status says it already
+      ),
+    );
+    const rows = Array.from(el(h).querySelectorAll('[data-panel=attention] tbody tr[data-task]'));
+    expect(rows[0].querySelector('[data-col=due]')!.textContent).toContain('At risk');
+    expect(rows[1].querySelector('[data-col=status]')!.textContent).toContain('On Hold');
   });
 
-  it('leaves a task out of Next 7 days when Needs my attention lists it: one task, once per screen (#905)', async () => {
-    const h = await open('/my-matters', undefined, (a) => {
-      a['getMyMattersAttention'].mockReturnValue(
-        of(attention([task(3, { factCode: 'DUE_TODAY', factDays: 0 })], 1)),
-      );
-    });
-    const ids = Array.from(el(h).querySelectorAll('a[href^="/tasks/"]')).map((a) =>
-      a.getAttribute('href'),
+  it('leaves a task out of Next 7 days when Needs my attention lists it: one task, once per screen (#905, #929)', async () => {
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) =>
+        tqCall(args)['needsAttention']
+          ? of(queuePage([queueRow(3, { dueDate: '2026-10-23', isOverdue: false })], 1))
+          : of(
+              queuePage(
+                [3, 4, 5, 6, 7].map((id) => queueRow(id, { isOverdue: false })),
+                5,
+              ),
+            ),
+      ),
     );
+    const ids = Array.from(el(h).querySelectorAll('a.wt-title')).map((a) => a.getAttribute('href'));
     expect(ids.filter((x) => x === '/tasks/3?from=my-matters')).toHaveLength(1);
     expect(new Set(ids).size).toBe(ids.length);
+    // Three rows are shown below it, the first not listed above.
     expect(
-      el(h).querySelector('[data-panel=deadlines] [data-deadline-row]')!.getAttribute('href'),
-    ).toBe('/tasks/4?from=my-matters');
+      Array.from(el(h).querySelectorAll('[data-panel=deadlines] tbody tr[data-task]')).map((r) =>
+        r.getAttribute('data-task'),
+      ),
+    ).toEqual(['TSK-4', 'TSK-5', 'TSK-6']);
   });
 
   it('says so when nothing needs attention, with no manager-related item', async () => {
-    const h = await open('/my-matters');
-    api['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
-    TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
-    await h.fixture.whenStable();
-    h.detectChanges();
-    expect(el(h).querySelector('[data-panel=attention] [data-empty]')!.textContent).toContain(
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) =>
+        tqCall(args)['needsAttention'] ? of(queuePage([], 0)) : defaultQueue(args),
+      ),
+    );
+    const panel = el(h).querySelector('[data-panel=attention]')!;
+    expect(panel.querySelector('[data-empty]')!.textContent).toContain(
       'Nothing needs your attention.',
     );
+    expect(panel.querySelector('table, [data-view-all], mf-options-menu')).toBeNull();
     expect(el(h).textContent).not.toMatch(/no (project )?manager/i);
   });
 
-  it('Next 7 days is a short flat list with who and the due day on the right and no controls of its own; All deadlines opens the Deadlines tab (#896, #894, #901)', async () => {
+  it('Next 7 days is a grid of its own with the same columns, no Options, and View all N opens the Task Queue with dueWithin=7 (#896, #929)', async () => {
     const h = await open('/my-matters');
     const panel = el(h).querySelector('[data-panel=deadlines]')!;
     expect(panel.querySelector('h2')!.textContent).toBe('Next 7 days');
-    // The same two right-hand columns as Needs my attention (issue #901): who, then when (here the due day).
     expect(
-      Array.from(panel.querySelectorAll('[data-fact]')).map((d) => d.textContent!.trim()),
-    ).toEqual(['Mon Oct 26', 'Tue Oct 27']);
-    expect(panel.querySelectorAll('[data-row-who]')).toHaveLength(2);
-    expect(panel.querySelector('[data-day]')).toBeNull(); // no day headings
-    // No 2 / 4 week buttons, no Views, no Sort, no Task types, no Options: the Deadlines tab owns the range and Focus is the one type filter.
-    expect(panel.querySelector('[data-range], select, details, button')).toBeNull();
+      Array.from(panel.querySelectorAll('thead th')).map((t) => t.getAttribute('data-col')),
+    ).toEqual(['ref', 'title', 'matterName', 'priority', 'assignee', 'due', 'status']);
+    expect(panel.querySelectorAll('tbody tr[data-task]')).toHaveLength(2);
+    expect(panel.querySelector('mf-options-menu')).toBeNull();
     const all = panel.querySelector<HTMLAnchorElement>('[data-view-all]')!;
-    expect(all.textContent).toContain('All deadlines');
-    expect(all.getAttribute('href')).toBe('/my-matters?tab=deadlines');
+    expect(all.textContent!.trim()).toBe('View all 41');
+    expect(all.getAttribute('href')).toBe(
+      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&dueWithin=7&sort=due&dir=asc',
+    );
   });
 
   it('Next 7 days shows at most three rows (owner decision of 2026-10-28) and says how many there are in all', async () => {
-    const h = await open('/my-matters', undefined, (a) => {
-      a['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
-      a['getMyMattersDeadlines'].mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          days: 14,
-          fromDate: '2026-10-23',
-          toDate: '2026-10-30',
-          total: 8,
-          query: 'q',
-          items: [10, 11, 12, 13, 14, 15, 16, 17].map((id) => task(id, { dueDate: '2026-10-26' })),
-        }),
-      );
-    });
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) =>
+        tqCall(args)['needsAttention']
+          ? of(queuePage([], 0))
+          : of(
+              queuePage(
+                [10, 11, 12, 13, 14, 15, 16, 17].map((id) => queueRow(id, { isOverdue: false })),
+                8,
+              ),
+            ),
+      ),
+    );
     const panel = el(h).querySelector('[data-panel=deadlines]')!;
-    expect(panel.querySelectorAll('[data-deadline-row]')).toHaveLength(3);
-    expect(panel.querySelector('[data-view-all]')!.textContent).toContain('All deadlines (8)');
+    expect(panel.querySelectorAll('tbody tr[data-task]')).toHaveLength(3);
+    expect(panel.querySelector('[data-view-all]')!.textContent).toContain('View all 8');
+  });
+
+  it('the Deadlines tab is gone: its address opens the Overview, and the tab strip has no Deadlines (#929)', async () => {
+    const h = await open('/my-matters?tab=deadlines&role=primary');
+    expect(TestBed.inject(Router).url).toBe('/my-matters?role=primary');
+    expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+      'Overview',
+    );
+    expect(
+      Array.from(el(h).querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
+    ).not.toContain('Deadlines');
+    expect(el(h).querySelector('[data-panel=deadlines-tab]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=attention]')).not.toBeNull();
+  });
+
+  it('the Calendar button swaps the two grids for the calendar and back, names what it does, and the choice is remembered (#929)', async () => {
+    const h = await open('/my-matters');
+    const toggle = () => el(h).querySelector<HTMLButtonElement>('[data-calendar-toggle]')!;
+    const settle = async () => {
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      h.detectChanges();
+    };
+    expect(toggle().getAttribute('aria-label')).toBe('Show calendar');
+    // It lives in the heading of Needs my attention.
+    expect(el(h).querySelector('[data-panel=attention]')!.contains(toggle())).toBe(true);
+    toggle().click();
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/my-matters?view=calendar');
+    expect(el(h).querySelector('[data-panel=attention], [data-panel=deadlines]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=calendar]')).not.toBeNull();
+    expect(el(h).querySelector('[data-calendar]')).not.toBeNull();
+    expect(api['getMyMattersDeadlines']).toHaveBeenCalledWith(
+      28,
+      'day',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(toggle().getAttribute('aria-label')).toBe('Show list');
+    expect(el(h).querySelector('[data-panel=calendar]')!.contains(toggle())).toBe(true);
+    expect(Object.values(localStorage)).toContain('calendar');
+    toggle().click();
+    await settle();
+    expect(TestBed.inject(Router).url).toBe('/my-matters');
+    expect(el(h).querySelector('[data-panel=attention]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=calendar]')).toBeNull();
+    expect(Object.values(localStorage)).not.toContain('calendar');
+  });
+
+  it('a visit with no view in the address opens the Calendar when that is what the person last used (#929)', async () => {
+    localStorage.setItem('mf-my-matters-calendar-1', 'calendar');
+    const h = await open('/my-matters');
+    expect(TestBed.inject(Router).url).toBe('/my-matters?view=calendar');
+    expect(el(h).querySelector('[data-panel=calendar]')).not.toBeNull();
   });
 
   it('lists the matters as one-line rows, worst first: counts instead of a Red / Amber / Green word, one row menu (#908)', async () => {
@@ -836,25 +1035,27 @@ describe('MyMattersPage', () => {
 
   it('a failing panel shows its own error with Retry and leaves the others alone', async () => {
     const h = await open('/my-matters');
-    api['getMyMattersAttention'].mockReturnValue(throwError(() => new Error('boom')));
+    const failing = (...args: unknown[]) =>
+      tqCall(args)['needsAttention'] ? throwError(() => new Error('boom')) : defaultQueue(args);
+    tq.mockImplementation(failing);
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
     expect(el(h).querySelector('[data-panel=attention] [data-panel-error]')).not.toBeNull();
     expect(el(h).querySelector('[data-panel=health] [data-health-list]')).not.toBeNull();
-    api['getMyMattersAttention'].mockClear();
-    api['getMyMattersAttention'].mockReturnValue(of(attention()));
+    tq.mockClear();
+    tq.mockImplementation((...args: unknown[]) => defaultQueue(args));
     el(h).querySelector<HTMLButtonElement>('[data-panel=attention] [data-panel-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(api['getMyMattersAttention']).toHaveBeenCalledTimes(1);
-    expect(el(h).querySelector('[data-panel=attention] [data-attention-list]')).not.toBeNull();
+    expect(tq.mock.calls.filter((c) => tqCall(c)['needsAttention'])).toHaveLength(1);
+    expect(el(h).querySelector('[data-panel=attention] table')).not.toBeNull();
   });
 
   it('two or more failed calls: ONE banner and ONE Retry for the page, a muted "not loaded" line in each section; Retry asks every failed call again (#921)', async () => {
     const h = await open('/my-matters');
-    for (const name of ['getMyMattersAttention', 'getMyMattersDeadlines', 'getMyMattersSummary'])
-      api[name].mockReturnValue(throwError(() => new Error('boom')));
+    tq.mockImplementation(() => throwError(() => new Error('boom')));
+    api['getMyMattersSummary'].mockReturnValue(throwError(() => new Error('boom')));
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
@@ -869,32 +1070,26 @@ describe('MyMattersPage', () => {
     expect(el(h).querySelector('[data-panel=deadlines] [data-panel-notloaded]')).not.toBeNull();
     expect(el(h).querySelector('[data-strip-notloaded]')).not.toBeNull();
     // The one Retry asks each failed call once; the sections that were fine are left alone.
-    for (const name of ['getMyMattersAttention', 'getMyMattersDeadlines', 'getMyMattersSummary']) {
-      api[name].mockClear();
-      api[name].mockReturnValue(
-        of(
-          name === 'getMyMattersSummary'
-            ? summary()
-            : name === 'getMyMattersAttention'
-              ? attention()
-              : { items: [], total: 0, query: '' },
-        ),
-      );
-    }
+    tq.mockClear();
+    tq.mockImplementation((...args: unknown[]) => defaultQueue(args));
+    api['getMyMattersSummary'].mockClear();
+    api['getMyMattersSummary'].mockReturnValue(of(summary()));
     api['getMyMattersHealth'].mockClear();
     el(h).querySelector<HTMLButtonElement>('[data-page-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(api['getMyMattersAttention']).toHaveBeenCalledTimes(1);
-    expect(api['getMyMattersDeadlines']).toHaveBeenCalledTimes(1);
+    expect(tq.mock.calls.filter((c) => tqCall(c)['needsAttention'])).toHaveLength(1);
+    expect(tq.mock.calls.filter((c) => tqCall(c)['dueWithin'])).toHaveLength(1);
     expect(api['getMyMattersSummary']).toHaveBeenCalledTimes(1);
     expect(api['getMyMattersHealth']).not.toHaveBeenCalled();
     expect(el(h).querySelector('[data-page-error]')).toBeNull();
   });
 
   it('a panel that is still loading has no toolbar: its Options and View all appear with the data (#921)', async () => {
-    const h = await open('/my-matters', undefined, (a) =>
-      a['getMyMattersAttention'].mockReturnValue(NEVER),
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) =>
+        tqCall(args)['needsAttention'] ? NEVER : defaultQueue(args),
+      ),
     );
     const panel = el(h).querySelector('[data-panel=attention]')!;
     expect(panel.querySelector('[data-loading]')).not.toBeNull();
@@ -914,7 +1109,9 @@ describe('MyMattersPage', () => {
 
   it('loads every panel on its own: a panel still waiting does not hold the others', async () => {
     const h = await open('/my-matters');
-    api['getMyMattersAttention'].mockReturnValue(NEVER);
+    tq.mockImplementation((...args: unknown[]) =>
+      tqCall(args)['needsAttention'] ? NEVER : defaultQueue(args),
+    );
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=secondary');
     await h.fixture.whenStable();
     h.detectChanges();
@@ -942,7 +1139,7 @@ describe('MyMattersPage', () => {
         a['getMyMattersData'] = vi.fn().mockReturnValue(NEVER);
         a['getMyMattersDataVolume'] = vi.fn().mockReturnValue(NEVER);
       });
-      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Data', 'Activity', 'Trends']);
+      expect(tabs(h)).toEqual(['Overview', 'Breakdown', 'Data', 'Activity', 'Trends']);
     });
 
     it('has no Data tab without Asset.View, and its address opens Overview', async () => {
@@ -953,9 +1150,9 @@ describe('MyMattersPage', () => {
       );
     });
 
-    it('has the four tabs, Overview selected, and the page as it was under it', async () => {
+    it('has the four tabs (no Deadlines, #929), Overview selected, and the page as it was under it', async () => {
       const h = await open('/my-matters');
-      expect(tabs(h)).toEqual(['Overview', 'Deadlines', 'Breakdown', 'Activity', 'Trends']);
+      expect(tabs(h)).toEqual(['Overview', 'Breakdown', 'Activity', 'Trends']);
       expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
         'Overview',
       );
@@ -1189,19 +1386,7 @@ describe('MyMattersPage', () => {
         role === 'secondary' ? { userId: 1, displayName: 'Me', isActive: true } : undefined,
     });
     const quiet = (a: Record<string, ReturnType<typeof vi.fn>>) => {
-      a['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
-      a['getMyMattersDeadlines'].mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          days: 28,
-          fromDate: 'a',
-          toDate: 'b',
-          total: 0,
-          query: '',
-          items: [],
-        }),
-      );
+      tq.mockImplementation(() => of(queuePage([], 0)));
       a['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
     };
 
@@ -1268,42 +1453,16 @@ describe('MyMattersPage', () => {
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
     });
 
-    it('the Dates control is in the Deadlines tab and never in the filter bar', async () => {
-      const h = await open(
-        '/my-matters?tab=deadlines',
-        undefined,
-        (a) =>
-          a['getMyMattersDeadlines'].mockReturnValue(
-            of({
-              timeZone: 'x',
-              asOfUtc: 'x',
-              days: 28,
-              fromDate: '2026-10-23',
-              toDate: '2026-11-20',
-              total: 1,
-              matterTotal: 1,
-              query: 'q',
-              items: [],
-              byMatter: [
-                {
-                  matterId: 5,
-                  matterRef: '90001-80001',
-                  matterName: 'Merger',
-                  clientName: 'Acme',
-                  total: 1,
-                  nextDueDate: '2026-10-30',
-                  items: [task(3)],
-                  query: 'matter=5',
-                },
-              ],
-            }),
-          ),
-        [matter(5, 2, 'primary'), matter(6, 3, 'secondary')],
-      );
-      const panel = el(h).querySelector('[data-panel=deadlines-tab]')!;
+    it('the Dates control is in the Calendar and never in the filter bar (#906, #929)', async () => {
+      const h = await open('/my-matters?view=calendar', undefined, undefined, [
+        matter(5, 2, 'primary'),
+        matter(6, 3, 'secondary'),
+      ]);
       expect(el(h).querySelector('[data-mm-tabpanel] #mm-range')).not.toBeNull();
       expect(el(h).querySelector('[data-mm-filters] #mm-range')).toBeNull();
-      expect(panel.querySelector('[data-range]')).toBeNull(); // the old 2 / 4 week buttons
+      expect(el(h).querySelector('[data-panel=calendar] [data-range]')).toBeNull(); // the old 2 / 4 week buttons
+      // No grid is drawn behind it: the calendar IS the task area.
+      expect(el(h).querySelector('[data-panel=attention], [data-panel=deadlines]')).toBeNull();
     });
 
     it('everything quiet: one line replaces the empty sections, the matters list stays', async () => {
@@ -1326,7 +1485,9 @@ describe('MyMattersPage', () => {
         undefined,
         (a) => {
           quiet(a);
-          a['getMyMattersAttention'].mockReturnValue(of(attention([task(1)], 1)));
+          tq.mockImplementation((...args: unknown[]) =>
+            tqCall(args)['needsAttention'] ? of(queuePage([queueRow(1)], 1)) : of(queuePage([], 0)),
+          );
         },
         [matter(5, 2, 'primary')],
       );
@@ -1375,18 +1536,6 @@ describe('MyMattersPage', () => {
       name: `Matter ${id}`,
       primaryManager: { userId: 1, displayName: 'Me', isActive: true },
     });
-    const rich = (id: number, over: object = {}) =>
-      task(id, {
-        taskTypeId: 1,
-        taskTypeName: 'Review',
-        taskTypeIconKey: 'file-text',
-        taskTypeColourKey: 'green',
-        priorityName: 'Normal',
-        priorityRank: 3,
-        statusCode: 'NEW',
-        ...over,
-      });
-
     it('one column: Needs my attention, Next 7 days, Matters, in that order (the "since" line is on the Activity tab), with no two-column grid (#903)', async () => {
       const h = await open('/my-matters');
       const order = Array.from(el(h).querySelectorAll('[data-panel]')).map((p) =>
@@ -1404,7 +1553,7 @@ describe('MyMattersPage', () => {
       }
     });
 
-    it('Needs my attention has one control of its own, Options, with Export inside; no Views, Task types or Sort (#894, #907)', async () => {
+    it('Needs my attention has two controls of its own besides the grid: the Calendar button and Options with Export inside; no Views, Task types or Sort menu (#894, #907, #929)', async () => {
       const h = await open('/my-matters');
       const panel = el(h).querySelector('[data-panel=attention]')!;
       const options = panel.querySelectorAll('mf-options-menu');
@@ -1416,73 +1565,65 @@ describe('MyMattersPage', () => {
       expect(
         panel.querySelector('[data-views], [data-types-trigger], [data-sort], [data-dir]'),
       ).toBeNull();
-      // Besides the rows, the "View all" link and the Options button, nothing is a control of the list.
+      // Besides the grid, the Calendar button, the "View all" link and the Options button, nothing is a control of the section.
       const controls = Array.from(
         panel.querySelectorAll('a, button, select, input, summary'),
-      ).filter((c) => !c.closest('mf-options-menu') && !c.closest('[mfMmTaskRow]'));
-      expect(controls.map((c) => c.getAttribute('data-view-all'))).toEqual(['']);
-    });
-
-    it('the matter name is not on a row for one matter (#897)', async () => {
-      const h = await open('/my-matters', undefined, undefined, [matter(5, 2)]);
-      expect(el(h).querySelector('[data-attention-item]')).not.toBeNull();
-      expect(el(h).querySelector('[data-row-matter]')).toBeNull();
-    });
-
-    it('the matter name follows the title as short text when the person has several matters (#897)', async () => {
-      const h = await open('/my-matters', undefined, undefined, [matter(5, 2), matter(6, 2)]);
-      const names = Array.from(
-        el(h).querySelectorAll('[data-attention-item] [data-row-matter]'),
-      ).map((n) => n.textContent!.trim());
-      expect(names).toEqual(['Merger', 'Merger']);
-    });
-
-    it('a priority pill only for High and Critical; the link keeps the matter, priority and status for a screen reader (#897)', async () => {
-      const h = await open('/my-matters', undefined, (a) => {
-        a['getMyMattersAttention'].mockReturnValue(
-          of(
-            attention(
-              [
-                rich(1, { priorityName: 'Critical', priorityRank: 1 }),
-                rich(2, { priorityName: 'High', priorityRank: 2 }),
-                rich(3, { priorityName: 'Normal', priorityRank: 3 }),
-                rich(4, { priorityName: 'Low', priorityRank: 4 }),
-              ],
-              4,
-            ),
-          ),
-        );
-      });
-      const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
+      ).filter((c) => !c.closest('mf-options-menu') && !c.closest('mf-task-table'));
       expect(
-        rows.map((r) => r.querySelector('[data-priority]')?.textContent?.trim() ?? null),
-      ).toEqual(['Critical', 'High', null, null]);
-      const link = rows[2].querySelector('a[data-attention-row]')!;
-      expect(link.textContent!.trim()).toBe('TSK-3 Task 3');
-      expect(link.getAttribute('aria-label')).toBe(
-        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, Unassigned, 3 d overdue',
-      );
+        controls.map(
+          (c) => c.getAttribute('data-calendar-toggle') ?? c.getAttribute('data-view-all'),
+        ),
+      ).toEqual(['', '']);
     });
 
-    it('the type icon is the large coloured badge, one status text sits on the right, an At risk or On hold task gets its pill (#897)', async () => {
-      const h = await open('/my-matters', undefined, (a) => {
-        a['getMyMattersAttention'].mockReturnValue(
-          of(
-            attention(
-              [
-                rich(1, { atRisk: true }),
-                rich(2, { statusCode: 'ON_HOLD', onHold: { reasonName: 'Waiting', days: 2 } }),
-              ],
-              2,
-            ),
-          ),
-        );
-      });
-      const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
-      expect(rows[0].querySelector('mf-task-type-badge.tt--large')).not.toBeNull();
-      expect(rows[0].querySelector('[data-at-risk]')).not.toBeNull();
-      expect(rows[1].querySelector('[data-hold-pill]')).not.toBeNull();
-      for (const r of rows) expect(r.querySelectorAll('[data-fact]')).toHaveLength(1);
+    it('the matter is a column only for a person with several matters (#897, #929)', async () => {
+      const one = await open('/my-matters', undefined, undefined, [matter(5, 2)]);
+      expect(el(one).querySelector('[data-panel=attention] th[data-col=matterName]')).toBeNull();
+      expect(el(one).querySelector('[data-panel=attention] tbody tr[data-task]')).not.toBeNull();
+    });
+
+    it('with several matters the Matter name is a column of both grids (#897, #929)', async () => {
+      const h = await open('/my-matters', undefined, undefined, [matter(5, 2), matter(6, 2)]);
+      for (const key of ['attention', 'deadlines']) {
+        expect(
+          el(h).querySelector(`[data-panel=${key}] th[data-col=matterName]`),
+          key,
+        ).not.toBeNull();
+      }
+      expect(
+        Array.from(el(h).querySelectorAll('[data-panel=attention] td[data-col=matterName]')).map(
+          (n) => n.textContent!.trim(),
+        ),
+      ).toEqual(['Merger', 'Merger']);
+    });
+
+    it('the Focus is the one task type filter of both grids (#907, #929)', async () => {
+      const h = await open('/my-matters');
+      TestBed.inject(MyMattersFocus).set([7, 9]);
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      const last = (key: string) => tqCall(tq.mock.calls.filter((c) => tqCall(c)[key]).at(-1)!);
+      expect(last('needsAttention')['type']).toEqual([7, 9]);
+      expect(last('dueWithin')['type']).toEqual([7, 9]);
+    });
+
+    it('with a Focus that hides everything, the grid says so and offers Clear Focus', async () => {
+      const h = await open('/my-matters', undefined, () =>
+        tq.mockImplementation((...args: unknown[]) =>
+          tqCall(args)['type'] ? of(queuePage([], 0)) : defaultQueue(args),
+        ),
+      );
+      TestBed.inject(MyMattersFocus).set([7]);
+      await h.fixture.whenStable();
+      h.detectChanges();
+      await h.fixture.whenStable();
+      h.detectChanges();
+      const panel = el(h).querySelector('[data-panel=attention]')!;
+      expect(panel.querySelector('[data-filtered-empty]')!.textContent).toContain(
+        'Nothing in your Focus needs your attention.',
+      );
+      expect(panel.querySelector('[data-show-all]')).not.toBeNull();
     });
   });
 });

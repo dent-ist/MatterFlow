@@ -1,7 +1,7 @@
 import { MyMattersActivityItem, MyMattersDeadlineDay } from '../../../api/generated/api-client';
 import { figureLink } from '../panels/since-panel';
 import { activityRows } from './activity-tab';
-import { calendarWeeks } from './deadlines-tab';
+import { calendarWeeks } from '../panels/calendar-panel';
 import { limitationText, linePoints, niceMax, weekLabel, valueY } from './trends-tab';
 
 const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {}) =>
@@ -15,7 +15,7 @@ const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {})
     ...extra,
   }) as MyMattersDeadlineDay;
 
-describe('calendarWeeks (Deadlines tab)', () => {
+describe('calendarWeeks (Calendar)', () => {
   it('pads the first week with blanks so a Wednesday starts under Wed, and ends on a Sunday', () => {
     // 2026-10-28 is a Wednesday.
     const days = ['28', '29', '30', '31'].map((d) => day(`2026-10-${d}`, 1));

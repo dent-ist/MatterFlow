@@ -27,6 +27,17 @@ export class OverviewStates {
     (['attention', 'deadlines'] as const).every((k) => this.states()[k] === 'empty'),
   );
 
+  /**
+   * Where the Calendar button is drawn (issue #929): in the heading of the first grid that has something to show, else in the line that says all is quiet. A
+   * grid with nothing to show is one muted line with no toolbar, so the button must not live in it.
+   */
+  readonly calendarHost = computed<'attention' | 'deadlines' | 'quiet'>(() => {
+    const s = this.states();
+    if (s.attention !== 'empty') return 'attention';
+    if (s.deadlines !== 'empty') return 'deadlines';
+    return 'quiet';
+  });
+
   /** No matter to list (the person manages none, or the filters match none): the Matter health message says it and nothing else is added. */
   readonly noMatters = computed(
     () => this.states().health === 'none' || this.states().health === 'nomatch',

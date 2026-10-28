@@ -10,11 +10,11 @@ import { SIZES } from '../support/screens';
  * My Matters, a calmer page: batch 1 of epic #893.
  *
  *  - #904 the title block: no description line, exactly one create-task button for a person with one matter;
- *  - #906 a filter is drawn only when it can change the result; the filter bar is the same on every tab; Dates lives in the Deadlines tab;
+ *  - #906 a filter is drawn only when it can change the result; the filter bar is the same on every tab; Dates lives in the Calendar (#929: the Deadlines tab is gone);
  *  - #920 an empty list is one line with no toolbar; a page with nothing to show is a few lines;
  *  - #923 a long reason on a held task never squeezes the title.
  */
-const TABS = ['overview', 'deadlines', 'breakdown', 'data', 'activity', 'trends'] as const;
+const TABS = ['overview', 'breakdown', 'data', 'activity', 'trends'] as const;
 type Tab = (typeof TABS)[number];
 const url = (tab: Tab, extra = ''): string =>
   `/my-matters?${tab === 'overview' ? '' : `tab=${tab}`}${extra}`;
@@ -207,9 +207,7 @@ test.describe('Filters only when they can change the result (#906)', () => {
       const box = await page.locator('[data-mm-filters]').boundingBox();
       expect(box, `${tab}: the bar is drawn`).not.toBeNull();
       boxes.set(tab, box!);
-      await expect(page.locator('#mm-range'), `${tab}: Dates`).toHaveCount(
-        tab === 'deadlines' ? 1 : 0,
-      );
+      await expect(page.locator('#mm-range'), `${tab}: Dates`).toHaveCount(0);
     }
     const first = boxes.get('overview')!;
     for (const [tab, b] of boxes) {
@@ -251,22 +249,23 @@ test.describe('Filters only when they can change the result (#906)', () => {
     await expect(page.locator('[data-mm-filters]')).toHaveCount(0);
   });
 
-  test('the Dates control in the Deadlines tab chooses the weeks (the old 2 / 4 week buttons are gone)', async ({
+  test('the Dates control in the Calendar chooses the weeks (the old 2 / 4 week buttons are gone)', async ({
     seed,
     personas,
     asUser,
   }) => {
     const p = await pmSolo(seed, personas, 'dts');
     const page = await asUser(p.pm.username);
-    await page.goto(url('deadlines'));
-    await settled(page, 'deadlines');
+    await page.goto('/my-matters?view=calendar');
+    await settled(page);
+    await expect(page.locator('[data-panel=calendar]')).toBeVisible();
     await expect(page.locator('[data-mm-tabpanel] [data-range]')).toHaveCount(0);
     await page.locator('#mm-range').selectOption('2w');
     await expect(page).toHaveURL(/range=2w/);
     await page.locator('#mm-range').selectOption('custom');
     await expect(page.locator('#mm-from')).toBeVisible();
     await expect(page.locator('#mm-to')).toBeVisible();
-    // The Overview has no Dates control, and the bar is not drawn for one matter.
+    // The grids have no Dates control, and the bar is not drawn for one matter.
     await page.goto('/my-matters?range=2w');
     await settled(page);
     await expect(page.locator('#mm-range')).toHaveCount(0);
@@ -392,7 +391,7 @@ test.describe('Empty states are one line (#920)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(1);
     const deadlines = page.locator('[data-panel=deadlines]');
     await expect(deadlines).toContainText('Nothing is due in the next 7 days.');
     // No toolbar controls in the empty panel: its heading and its sentence are all there is.
@@ -411,18 +410,22 @@ test.describe('Empty states are one line (#920)', () => {
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await nothingRecent(page, true, false);
-    for (const tab of ['deadlines', 'breakdown', 'data', 'activity'] as const) {
+    for (const tab of ['breakdown', 'data', 'activity'] as const) {
       await page.goto(url(tab));
       await settled(page, tab);
       await expect(page.locator('[data-mm-tabpanel] [data-empty]'), tab).toBeVisible();
       expect(
         await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input'),
-        // The Deadlines tab keeps its one range control: another range can show something.
         `${tab}: no controls`,
-      ).toBe(tab === 'deadlines' ? 1 : 0);
+      ).toBe(0);
       const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
-      expect(panel!.height, `${tab}: short`).toBeLessThan(tab === 'deadlines' ? 260 : 200);
+      expect(panel!.height, `${tab}: short`).toBeLessThan(200);
     }
+    // The Calendar keeps its one range control (another range can show something) and says so in one line.
+    await page.goto('/my-matters?view=calendar');
+    await settled(page);
+    await expect(page.locator('[data-panel=calendar] [data-empty]')).toBeVisible();
+    expect(await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input')).toBe(1);
   });
 });
 
@@ -459,9 +462,9 @@ test.describe('The held row keeps its title (#923)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      const group = page.locator('[data-attention-item][data-reason=onHold]');
+      const group = page.locator('[data-panel=attention] [data-task]').first();
       await expect(group).toBeVisible();
-      const link = group.locator('[data-attention-row]').first();
+      const link = group.locator('a.wt-title').first();
       await expect(link).toContainText(task.taskNumber);
       const wide = await link.evaluate((el) => {
         const fs = parseFloat(getComputedStyle(el).fontSize);
@@ -474,11 +477,10 @@ test.describe('The held row keeps its title (#923)', () => {
         wide.chars,
         `the title is at least 12 characters wide (${wide.width}px)`,
       ).toBeGreaterThanOrEqual(12);
-      // The fixed column says how long; the reason of the hold is the tooltip of that one status text (issue #897), not a second text on the row.
-      await expect(group.locator('[data-fact]').first()).toHaveText('on hold 9 d');
-      await expect(group.locator('[data-fact]').first()).toHaveAttribute('title', reasonName);
+      // The shared Status cell says the task is on hold (the reason is its hold note), and the title keeps its room.
+      await expect(group).toContainText(/On Hold/i);
       // One matter: its name is not repeated on the row.
-      await expect(group.locator('[data-row-matter]')).toHaveCount(0);
+      await expect(group.locator('td[data-col=matterName]')).toHaveCount(0);
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });

@@ -433,7 +433,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await expect(page.locator('[role=tab]').first()).toBeFocused();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/tab=deadlines/);
+    await expect(page).toHaveURL(/tab=breakdown/);
     await page.goBack();
     await expect(page.locator('[role=tab][aria-selected=true]')).toHaveText(/Overview/);
   });
@@ -490,7 +490,7 @@ test.describe('Reduced motion and focus after a change', () => {
       );
     for (const url of [
       '/my-matters',
-      '/my-matters?tab=deadlines',
+      '/my-matters?view=calendar',
       '/my-matters?tab=workload', // the removed Workload tab: an old link opens Overview
       '/my-matters?tab=trends',
       '/my-matters?tab=activity',

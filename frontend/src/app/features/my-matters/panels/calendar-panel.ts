@@ -1,14 +1,12 @@
-import { toSignal } from '@angular/core/rxjs-interop';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { Params, RouterLink } from '@angular/router';
 import {
   MyMattersClient,
   MyMattersDeadlineDay,
   MyMattersTaskItem,
 } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { parseDateOnly } from '../../../core/time/time';
-import { OptionsMenu } from '../../../shared/ui/options-menu';
+import { calendarDayInZone, parseDateOnly } from '../../../core/time/time';
 import { restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
@@ -18,10 +16,15 @@ import { MmTaskRow } from '../task-row';
 import { MmDatesControl } from '../dates-control';
 import { MmFilters, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
-import { Segmented } from '../../../shared/ui/segmented';
-import { PanelBox } from '../panels/panel-box';
-import { PANEL_LIST_STYLES } from '../panels/panel-styles';
-import { todayText } from '../panels/deadlines-panel';
+import { CalendarToggle } from '../calendar-toggle';
+import { PanelBox } from './panel-box';
+import { PANEL_LIST_STYLES } from './panel-styles';
+
+/** `yyyy-mm-dd` of today in the viewer's zone. */
+export function todayText(clock: Clock, zone: string): string {
+  const d = calendarDayInZone(clock.now(), zone);
+  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
+}
 
 /** One cell of the calendar: a day of the window, or a blank before the first day of the first week. */
 export interface CalendarCell {
@@ -87,14 +90,15 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
 }
 
 /**
- * Deadlines tab (epic #758, PX-20; README 6.2): the open work due in the next two or four weeks, as a list grouped by matter or as a calendar
- * of week rows. Every task opens the task; every day's count and every matter's total open the Task Queue with the filters that count them. Weekends
- * are muted and today says "Today" in words. The calendar is a grid of links in tab order (no arrow-key grid, no shortcut); below 480 px it
- * is the grouped list. The weeks are the page's date range (one state in the address); the view is `?view=calendar`.
+ * The Calendar of My Matters (epic #758 PX-20, and issue #929: the Deadlines tab is gone and the calendar lives on the Overview behind a Calendar button): the open work
+ * due in the next two or four weeks, as a calendar of week rows. Every task opens the task; every day's count opens the Task Queue with the filters that count it.
+ * Weekends are muted and today says "Today" in words. The calendar is a grid of links in tab order (no arrow-key grid, no shortcut); below 480 px it is the same
+ * tasks as a list grouped by matter. The weeks are the page's date range (one state in the address). The component is its own lazy chunk, loaded when the calendar
+ * is first shown, and "Show list" (the button in its heading) goes back to the grids.
  */
 @Component({
-  selector: 'mf-mm-deadlines-tab',
-  imports: [MmDatesControl, MmTaskRow, OptionsMenu, PanelBox, RouterLink, Segmented],
+  selector: 'mf-mm-calendar',
+  imports: [CalendarToggle, MmDatesControl, MmTaskRow, PanelBox, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
@@ -203,7 +207,6 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
         white-space: nowrap;
       }
       @media (max-width: 639.98px) {
-        .dt__toggle .mf-btn,
         .dt__more {
           min-height: 44px;
         }
@@ -211,42 +214,19 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
     `,
   ],
   template: `
-    <!-- The tab's one range control stays when the tab is empty: a different range (a custom one) can show something. -->
+    <!-- The range control stays when the calendar is empty: a different range (a custom one) can show something. -->
     <mf-mm-dates [filters]="filters()" (filterChange)="filterChange.emit($event)" />
     <mf-mm-panel
-      name="deadlines-tab"
-      title="Deadlines"
+      name="calendar"
+      title="Calendar"
+      [flat]="true"
       [state]="loader.state()"
       [busy]="loader.busy()"
-      [bare]="bare()"
       (retry)="loader.load()"
     >
-      @if (wide() && !bare()) {
-        <mf-options-menu mfPanelActions label="Deadlines" [active]="calendar() ? 1 : 0">
-          <div mfSegmented role="group" aria-label="Show deadlines as">
-            <button
-              type="button"
-              class="mf-btn"
-              data-view="list"
-              data-options-pick
-              [attr.aria-pressed]="!calendar()"
-              (click)="setView('list')"
-            >
-              List
-            </button>
-            <button
-              type="button"
-              class="mf-btn"
-              data-view="calendar"
-              data-options-pick
-              [attr.aria-pressed]="calendar()"
-              (click)="setView('calendar')"
-            >
-              Calendar
-            </button>
-          </div>
-        </mf-options-menu>
-      }
+      <span mfPanelActions class="dt__actions">
+        <mf-mm-calendar-toggle [calendar]="true" (flip)="closed.emit()" />
+      </span>
       @if (calendar()) {
         @if (total() === 0) {
           @if (filtered()) {
@@ -402,30 +382,25 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
     </mf-mm-panel>
   `,
 })
-export class DeadlinesTab {
+export class CalendarPanel {
   readonly filters = input.required<MmFilters>();
   readonly filterChange = output<Partial<MmFilters>>();
+  /** "Show list" was pressed: the page goes back to the grids. */
+  readonly closed = output<void>();
 
   protected readonly origin = inject(TaskOriginLinks);
   private readonly api = inject(MyMattersClient);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   protected readonly wide = viewportAtLeast(CALENDAR_MIN_PX);
-  private readonly query = toSignal(this.route.queryParamMap, {
-    initialValue: this.route.snapshot.queryParamMap,
-  });
 
   protected readonly weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   protected readonly shownPerDay = SHOWN_PER_DAY;
-  /** The calendar is shown when asked for and when the window is wide enough; a phone gets the grouped list. */
-  protected readonly calendar = computed(
-    () => this.query().get('view') === 'calendar' && this.wide(),
-  );
+  /** The calendar when the window is wide enough; a phone gets the same tasks as a list grouped by matter. */
+  protected readonly calendar = computed(() => this.wide());
 
   protected readonly focus = inject(MyMattersFocus);
-  /** The person's Focus filters the tab (the one task-type filter of the page, issue #907). */
+  /** The person's Focus filters the calendar (the one task-type filter of the page, issue #907). */
   protected readonly filtered = computed(() => this.focus.types().length > 0);
 
   protected readonly loader = panelLoader(
@@ -460,14 +435,6 @@ export class DeadlinesTab {
   protected readonly matters = computed(() => this.loader.data()?.byMatter ?? []);
   protected readonly matterTotal = computed(() => this.loader.data()?.matterTotal ?? 0);
   protected readonly total = computed(() => this.loader.data()?.total ?? 0);
-  /** Nothing is due in the widest window and no type filter hides anything: one muted line, no controls (issue #920). */
-  protected readonly bare = computed(
-    () =>
-      this.loader.state() === 'ready' &&
-      (this.calendar() ? this.total() === 0 : this.matters().length === 0) &&
-      !this.filtered() &&
-      this.filters().range === '4w',
-  );
   protected readonly range = computed(() => {
     const d = this.loader.data();
     return d ? `from ${d.fromDate} to ${d.toDate}` : '';
@@ -485,13 +452,5 @@ export class DeadlinesTab {
   protected due(t: MyMattersTaskItem): string {
     const day = dueDay(t, this.zone);
     return day ? dayHeading(day) : 'No date';
-  }
-
-  protected setView(view: 'list' | 'calendar'): void {
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { view: view === 'calendar' ? 'calendar' : null },
-      queryParamsHandling: 'merge',
-    });
   }
 }

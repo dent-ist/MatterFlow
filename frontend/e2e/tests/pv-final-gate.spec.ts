@@ -18,8 +18,7 @@ import { uid } from '../support/seed';
  * Screenshots: E2E_SCREENSHOTS=docs/ux/pm-v2-review/after.
  */
 const TABS = [
-  { tab: 'overview', title: 'My Matters - MatterFlow', ready: '[data-attention-row]' },
-  { tab: 'deadlines', title: 'My Matters: Deadlines - MatterFlow', ready: '#mm-tab-deadlines' },
+  { tab: 'overview', title: 'My Matters - MatterFlow', ready: '[data-panel=attention] a.wt-title' },
   {
     tab: 'breakdown',
     title: 'My Matters: Breakdown - MatterFlow',
@@ -130,7 +129,7 @@ test.describe('PM v2 final gate', () => {
     const g = await world(seed, personas);
     const page = await asUser(g.w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-attention-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=attention] a.wt-title').first()).toBeVisible();
 
     // The one Options menu of the list (issue #894): opens from the keyboard, Escape closes it and returns the focus to its button.
     const trigger = page.locator('[data-panel=attention] [data-options-trigger]');

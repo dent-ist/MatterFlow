@@ -106,8 +106,8 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await page.locator('[data-filter=role]').selectOption('secondary');
     await expect(page).toHaveURL(/role=secondary/);
     await expect.poll(() => cellCount(page, 'open')).toBe(1);
-    // The Dates control belongs to the Deadlines tab (PV-08).
-    await page.locator('[data-tab=deadlines]').click();
+    // The Dates control belongs to the Calendar (PV-08, #929); opening it replaces the address, so Back skips it.
+    await page.getByRole('button', { name: 'Show calendar' }).click();
     await page.locator('[data-filter=range]').selectOption('2w');
     await expect(page).toHaveURL(/range=2w/);
     await page.locator('[data-filter=range]').selectOption('custom');
@@ -118,8 +118,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await page.goBack();
     await expect(page.locator('[data-filter=range]')).toHaveValue('4w');
     await expect(page.locator('[data-filter=role]')).toHaveValue('secondary');
-    await page.goBack(); // the Deadlines tab was chosen after this: back to Overview
-    await page.goBack();
+    await page.goBack(); // the Calendar replaced the address of the secondary filter: back to the primary one
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
     await expect.poll(() => cellCount(page, 'open')).toBe(1);
     // Clear filters
@@ -174,7 +173,8 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await w.matter('Beta');
     await w.task(m, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
-    await page.route('**/api/v1/my-matters/attention**', (route) =>
+    // Needs my attention is a grid over the Task Queue (issue #929): its call fails.
+    await page.route('**/api/v1/task-queue*needsAttention=true*', (route) =>
       route.fulfill({ status: 500, body: '{}' }),
     );
     await page.goto('/my-matters');
@@ -183,16 +183,14 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     );
     await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(2);
     await expect(page.locator('[data-mm-strip]')).toBeVisible();
-    await page.unroute('**/api/v1/my-matters/attention**');
+    await page.unroute('**/api/v1/task-queue*needsAttention=true*');
     await page.locator('[data-panel=attention] [data-panel-retry]').click();
-    await expect(
-      page.locator('[data-panel=attention] [data-attention-item]').first(),
-    ).toBeVisible();
+    await expect(page.locator('[data-panel=attention] tr[data-task]').first()).toBeVisible();
   });
 });
 
 test.describe('My Matters: Needs my attention and Next 7 days', () => {
-  test('one ranked list, rows that open the task and Back, one View all with its total, and no item about a matter nobody manages', async ({
+  test('one grid, rows that open the task and Back, one View all with its total, and no item about a matter nobody manages', async ({
     seed,
     personas,
     asUser,
@@ -209,21 +207,12 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     const attention = page.locator('[data-panel=attention]');
     // The overdue task is also unassigned: it is listed once, as overdue (no tags, no "also listed" notes). The unassigned task with a date is next.
     // The unassigned task with no date is not attention yet.
-    await expect(attention.locator('[data-attention-item]')).toHaveCount(2);
-    await expect(attention.locator('[data-attention-item]').first()).toHaveAttribute(
-      'data-reason',
-      'overdue',
-    );
-    await expect(attention.locator('[data-attention-item]').nth(1)).toHaveAttribute(
-      'data-reason',
-      'unassigned',
-    );
-    await expect(attention.locator('[data-fact]').first()).toContainText('overdue');
-    // An unassigned task's reason is the assignee column ("Unassigned"); its time text is the day it is due (issue #901).
-    await expect(
-      attention.locator('[data-attention-item]').nth(1).locator('[data-row-who]'),
-    ).toHaveText('Unassigned');
-    await expect(attention.locator('[data-fact]').nth(1)).toHaveText(/^due |^ASAP$/);
+    const rows = attention.locator('tr[data-task]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.first().locator('td[data-col=due]')).toContainText(/overdue/i);
+    // An unassigned task says so in the Assignee column; its Due cell is the day it is due.
+    await expect(rows.first().locator('td[data-col=assignee]')).toHaveText(/Unassigned/);
+    await expect(rows.nth(1).locator('td[data-col=assignee]')).toHaveText(/Unassigned/);
     await expect(attention.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(
       0,
     );
@@ -232,9 +221,7 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     await expect(attention).not.toContainText(nobody.name);
     // The row opens the task; Back returns to the page with its filters.
     await page.goto('/my-matters?role=primary');
-    await attention
-      .locator('[data-attention-item][data-reason=overdue] [data-attention-row]')
-      .click();
+    await attention.locator('tr[data-task]').first().locator('a.wt-title').click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${od.taskId}\\?from=my-matters`));
     await expect(page.getByRole('link', { name: /My Matters/ }).first()).toBeVisible();
     await page.goBack();
@@ -246,7 +233,7 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     await expect.poll(() => total(page)).toBe(2);
   });
 
-  test('Next 7 days lists what falls due within a week with its day first, no range control, and All deadlines opens the Deadlines tab, which owns the range', async ({
+  test('Next 7 days lists what falls due within a week as a grid, no range control, and View all N opens the Task Queue; the Calendar owns the range', async ({
     seed,
     personas,
     asUser,
@@ -263,19 +250,26 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     await page.goto('/my-matters');
     const panel = page.locator('[data-panel=deadlines]');
     await expect(panel.locator('h2')).toHaveText('Next 7 days');
-    await expect(panel.locator('[data-deadline-row]')).toHaveCount(2);
-    await expect(panel.locator('[data-row-who]')).toHaveCount(2);
+    await expect(panel.locator('tr[data-task]')).toHaveCount(2);
+    await expect(panel.locator('td[data-col=assignee]')).toHaveCount(2);
     await expect(panel).not.toContainText('Long overdue');
     await expect(panel).not.toContainText('Within four weeks');
-    // The list has no toolbar: no 2 / 4 week buttons, no Views, no Sort, no Task types, no Options.
-    await expect(panel.locator('[data-range], select, details, button')).toHaveCount(0);
+    // The section has no toolbar of its own: no 2 / 4 week buttons, no Views, no Sort menu, no Task types, no Options (the headings sort).
+    await expect(panel.locator('[data-range], select, details, button:not(.wt-sort)')).toHaveCount(
+      0,
+    );
     await panel.locator('[data-view-all]').click();
-    await expect(page).toHaveURL(/tab=deadlines/);
-    // The Deadlines tab owns the range: its window holds the task due in 20 days as well.
-    await expect(page.locator('[data-panel=deadlines-tab] [data-deadline-row]')).toHaveCount(3);
+    await expect(page).toHaveURL(/\/tasks\?/);
+    await expect(page).toHaveURL(/dueWithin=7/);
+    await expect.poll(() => total(page)).toBe(2);
+    // The Calendar owns the range: its window holds the task due in 20 days as well.
+    await page.goto('/my-matters');
+    await page.getByRole('button', { name: 'Show calendar' }).click();
+    await expect(page.locator('[data-panel=calendar] [data-day-count]')).toHaveCount(2);
+    await expect(page.locator('[data-panel=calendar]')).toContainText('Within four weeks');
     // "Today" is a due-date range of one day: nothing is due today here, and the empty text is positive.
     await page.locator('[data-filter=range]').selectOption('today');
-    await expect(page.locator('[data-panel=deadlines-tab] [data-empty]')).toContainText(
+    await expect(page.locator('[data-panel=calendar] [data-empty]')).toContainText(
       'No deadlines in this period.',
     );
   });
@@ -299,8 +293,8 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     );
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const row = page.locator('[data-panel=attention] [data-attention-item][data-reason=onHold]');
-    await expect(row.locator('[data-fact]')).toHaveText('on hold 10 d');
+    const row = page.locator('[data-panel=attention] tr[data-task]');
+    await expect(row.locator('td[data-col=status]')).toContainText(/On Hold/i);
     await expect(row).toContainText('Waiting on client');
     await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 10 days');
     // The one View all counts it, and opens the Task Queue with the same tasks.

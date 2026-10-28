@@ -196,7 +196,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const rows = page.locator('[data-panel="attention"] [data-attention-row]');
+    const rows = page.locator('[data-panel="attention"] a.wt-title');
     await expect(rows).toHaveCount(3);
 
     await openHeaderOptions(page);
@@ -264,21 +264,20 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
-    const rowsOfBoth = page.locator(`[data-attention-row][href^="/tasks/${both.taskId}"]`);
+    const rowsOfBoth = page.locator(`a.wt-title[href^="/tasks/${both.taskId}"]`);
     await expect(rowsOfBoth).toHaveCount(1);
-    await expect(page.locator('[data-panel="attention"] [data-fact]').first()).toContainText(
-      'overdue',
+    await expect(page.locator('[data-panel="attention"] td[data-col=due]').first()).toContainText(
+      /overdue/i,
     );
-    // The Dates control is on the Deadlines tab only.
+    // The Dates control is in the Calendar only (the Deadlines tab moved there, #929).
     await expect(page.locator('[data-filter="range"]')).toBeHidden();
-    await page.goto('/my-matters?tab=deadlines');
+    await page.goto('/my-matters?view=calendar');
     await expect(page.locator('[data-filter="range"]')).toBeVisible();
 
     const tabs = await page.locator('[role=tab]').allTextContents();
     // (The Activity tab may carry a small number: the changes since the last visit.)
     expect(tabs.map((t) => t.replace(/\s+\d+\s*$/, '').trim())).toEqual([
       'Overview',
-      'Deadlines',
       'Breakdown',
       'Data', // PM v2 (#870): needs Asset.View, which the Project Manager role holds
       'Activity',

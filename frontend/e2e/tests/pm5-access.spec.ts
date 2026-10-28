@@ -110,12 +110,12 @@ test.describe('My Matters: keyboard', () => {
     await expect(page.locator('[data-health-row]').first()).toBeVisible();
 
     // A task link from the keyboard, then Back: focus returns to the row that was left.
-    const link = page.locator('[data-attention-row]').first();
+    const link = page.locator('[data-panel=attention] a.wt-title').first();
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/tasks\/\d+/);
     await page.goBack();
-    await expect(page.locator('[data-attention-row]').first()).toBeFocused();
+    await expect(page.locator('[data-panel=attention] a.wt-title').first()).toBeFocused();
 
     // The info button opens and closes the rule from the keyboard and keeps focus.
     const how = page.locator('[data-how]');

@@ -10,7 +10,7 @@ import { SIZES } from '../support/screens';
  * My Matters, a calmer page: batch 3 of epic #893.
  *
  *  - #894 one Options menu per list (Export inside), no Views / Sort / Task types toolbar; #907 Focus is the only task-type filter;
- *  - #896 Next 7 days never repeats a task, "All deadlines" opens the Deadlines tab;
+ *  - #896 Next 7 days never repeats a task; "View all N" opens the Task Queue (#929: the grids replaced the lists and the Deadlines tab);
  *  - #897 lighter rows (matter name only with several matters, a pill only for what is unusual, one status text on the right);
  *  - #903 one column, the first task row within about 300 px at 1366x768.
  */
@@ -23,7 +23,7 @@ const settled = async (page: Page): Promise<void> => {
 const firstTaskRowTop = (page: Page): Promise<number> =>
   page.evaluate(() => {
     const a = document.querySelector('[data-mm-tabpanel] a[href^="/tasks/"]')!;
-    const row = a.closest('li') ?? a;
+    const row = a.closest('tr, li') ?? a;
     return Math.round(row.getBoundingClientRect().top + window.scrollY);
   });
 
@@ -66,28 +66,25 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const rows = page.locator('[data-attention-item]');
+    const rows = page.locator('[data-panel=attention] tbody tr[data-task]');
     expect(await rows.count()).toBeGreaterThan(0);
-    await expect(page.locator('[data-row-matter]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=attention] td[data-col=matterName]')).toHaveCount(0);
     for (const box of await rows.evaluateAll((els) =>
       els.map((e) => e.getBoundingClientRect().height),
     ))
       expect(box, 'a row is one line').toBeLessThanOrEqual(44);
-    const pills = await page.locator('[data-priority]').allInnerTexts();
-    for (const t of pills) expect(['High', 'Critical']).toContain(t.trim());
-    for (const r of await rows.all()) await expect(r.locator('[data-fact]')).toHaveCount(1);
-    // The link says the code and the title; the screen reader's name keeps the matter, priority and status.
-    const link = rows.first().locator('[data-attention-row]');
-    const name = (await link.getAttribute('aria-label'))!;
-    expect(name).toContain(p.matters[0].name);
-    expect(name).toMatch(/priority/);
-    // No toolbar: the list's only controls are View all and Options; the Next 7 days list has none besides its link.
+    // The link says the code's title; the cells carry the matter-free facts (priority, assignee, due, status) as text and badges, never as editors.
+    const link = rows.first().locator('a.wt-title');
+    await expect(link).toHaveText(/\S/);
+    await expect(rows.first().locator('[data-inline-trigger]')).toHaveCount(0);
+    // No toolbar: the section's only controls are the Calendar button, View all and Options (and the sortable headings); the Next 7 days grid has no Options.
     await expect(
       page.locator('[data-types-trigger], [data-sort], [data-views], [data-range]'),
     ).toHaveCount(0);
     await expect(page.locator('[data-panel=attention] mf-options-menu')).toHaveCount(1);
+    await expect(page.locator('[data-panel=deadlines] mf-options-menu')).toHaveCount(0);
     await expect(
-      page.locator('[data-panel=deadlines] mf-options-menu, [data-panel=deadlines] button'),
+      page.locator('[data-panel=deadlines] button:not(.wt-sort), [data-panel=deadlines] select'),
     ).toHaveCount(0);
   });
 
@@ -126,14 +123,14 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(2);
+    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(2);
     await openHeaderOptions(page);
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
-    await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(1);
     await expect(page.locator('[data-types-trigger]')).toHaveCount(0);
     await page.locator('[data-focus-chip] button').click();
-    await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(2);
+    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(2);
   });
 
   for (const size of SIZES) {
@@ -153,11 +150,16 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
       await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeVisible();
       expect(await axeViolations(page), `Options open at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
-      await page.goto('/my-matters?tab=deadlines');
+      await page.goto('/my-matters?view=calendar');
+      await expect(page.locator('[data-panel=calendar]')).toBeVisible();
       await expect(
-        page.locator('[data-panel=deadlines-tab] [data-deadline-row]').first(),
+        page
+          .locator(
+            '[data-panel=calendar] [data-calendar], [data-panel=calendar] [data-matter-group]',
+          )
+          .first(),
       ).toBeVisible();
-      expect(await axeViolations(page), `Deadlines tab at ${size.width}`).toEqual([]);
+      expect(await axeViolations(page), `Calendar at ${size.width}`).toEqual([]);
     });
   }
 });

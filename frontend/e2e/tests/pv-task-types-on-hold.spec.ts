@@ -162,7 +162,7 @@ test.describe('My Matters section toolbar (#857)', () => {
     await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const rows = page.locator('[data-panel="attention"] [data-attention-row]');
+    const rows = page.locator('[data-panel="attention"] a.wt-title');
     await expect(rows).toHaveCount(3);
     await page.locator('[data-types-trigger]').first().click();
     await page.locator(`[data-type-option="${second.id}"]`).first().check();
