@@ -30,6 +30,9 @@ import { PickerOption, PickerSearch } from './entity-picker';
       display: grid;
     }
     .ss__input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
       padding-right: 2rem;
       text-overflow: ellipsis;
     }

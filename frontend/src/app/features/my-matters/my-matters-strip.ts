@@ -157,25 +157,24 @@ interface Tile {
       overflow-wrap: anywhere;
     }
     @media (max-width: 1099.98px) {
-      /* Narrow desktop and tablet: tighter tiles so all six words fit in the one row. */
+      /* Narrow desktop: tighter tiles so all six words fit in the one row. */
       .tile {
         gap: var(--mf-s1);
         padding: 0 var(--mf-s2);
       }
     }
-    @media (max-width: 639.98px) {
-      /* A phone: three columns by two rows of 44 px targets (issue #927). */
-      .ms {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--mf-s1) var(--mf-s2);
-      }
-      /* Three across, two rows: the number over its word (a shorter first screen than two across by three rows). */
+    @media (max-width: 999.98px) {
+      /* Tablet and phone: the number over its word, so all six words fit in the row (a shorter first screen on a phone). */
       .tile {
         flex-direction: column;
         justify-content: center;
         gap: 0;
+        min-height: 44px;
         padding: 0 var(--mf-s1);
         text-align: center;
+      }
+      .ms__error {
+        min-height: 44px;
       }
       .tile__n {
         line-height: 1.1;
@@ -184,12 +183,19 @@ interface Tile {
         max-width: 100%;
         font-size: var(--mf-fs-xs);
       }
+    }
+    @media (max-width: 639.98px) {
+      /* A phone: three columns by two rows of 44 px targets (issue #927). */
+      .ms {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--mf-s1) var(--mf-s2);
+      }
       .tile,
       .ms__error,
       .ms__error .mf-btn {
         min-height: 44px;
       }
-      .ms__matter-note {
+      .ms > li.ms__matter-note {
         display: none;
       }
       :host {

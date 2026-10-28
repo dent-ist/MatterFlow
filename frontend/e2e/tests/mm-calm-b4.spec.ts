@@ -312,7 +312,18 @@ test.describe('Loading and error (#921)', () => {
     await expect(retries(page)).toHaveCount(1);
     expect((await page.locator('#mm-tab-overview').boundingBox())!.y).toBe(tabsY);
     await page.unroute('**/api/v1/my-matters/summary*');
-    await fail(page, '**/api/v1/my-matters/attention*');
+    // Only the Needs my attention request fails (Next 7 days asks the same endpoint with another filter): that section alone says so.
+    await page.route(
+      (url) =>
+        url.pathname.endsWith('/api/v1/task-queue') &&
+        url.searchParams.get('needsAttention') === 'true',
+      (route) =>
+        route.fulfill({
+          status: 500,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ title: 'Server error', status: 500, traceId: 'trace-b4' }),
+        }),
+    );
     await page.reload();
     await expect(page.locator('[data-panel=attention] [data-panel-error]')).toHaveCount(1);
     await expect(page.locator('[data-panel=attention] [data-panel-retry]')).toBeVisible();

@@ -142,7 +142,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           min-height: 44px;
         }
         /* The cards' links (title, matter) are 44 px targets on a phone. */
-        :host ::ng-deep .tg__grid a {
+        :host ::ng-deep .tg__grid a,
+        :host ::ng-deep .tg__grid a.mf-ref {
           display: inline-flex;
           align-items: center;
           min-height: 44px;

@@ -134,6 +134,11 @@ const clientOption = (c: {
         align-items: center;
         gap: var(--mf-s2);
       }
+      /* The dropdown shrinks with its field instead of running over the next filter's label. */
+      :host ::ng-deep .fb__client mf-search-select {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
       :host ::ng-deep .fb__client .mf-field {
         display: flex;
         align-items: center;
