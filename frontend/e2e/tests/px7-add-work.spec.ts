@@ -126,7 +126,7 @@ test.describe('Add work from My Matters', () => {
     // The second Project Manager manages nothing here.
     const page = await asUser(w.other.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=attention]')).toBeVisible();
+    await expect(page.locator('[data-panel=health]')).toBeVisible();
     await expect(page.locator('[data-header-new-task]')).toHaveCount(0);
   });
 

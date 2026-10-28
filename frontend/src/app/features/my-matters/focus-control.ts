@@ -102,8 +102,8 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
       </summary>
       <div class="fc__panel" role="group" aria-label="Focus task types">
         <p class="fc__hint">
-          Pick the task types you work on now. Sections without a filter of their own show only
-          these, until you change it.
+          Pick the task types you work on now. Every list on this page shows only these, until you
+          change it.
         </p>
         @if (options.options().length === 0) {
           <p class="fc__hint" data-focus-none>No task types to choose from.</p>

@@ -11,7 +11,7 @@ import { uid } from '../support/seed';
  * One Project Manager with a task of two types, an overdue task and assets, then:
  *  - all six My Matters tabs: the title rule `My Matters: <Tab> - MatterFlow`, one level-one heading, axe (including best practice) finds nothing and the page
  *    does not scroll sideways at 1920x1080, 1366x768, 768x1024 and 375x812;
- *  - keyboard only: the section filter, Focus, the Views and Export menus open from the keyboard, Escape closes them and puts focus back on their button, and a
+ *  - keyboard only: the Options menu, Focus, the Views and Export menus open from the keyboard, Escape closes them and puts focus back on their button, and a
  *    Breakdown cell is a link that Enter follows to the Task Queue;
  *  - reduced motion: with the preference on, nothing on the Breakdown, the Data tab or the report chart animates, and the one hover transition of the pie is
  *    switched off (and is on without the preference, so the check can fail).
@@ -122,7 +122,7 @@ test.describe('PM v2 final gate', () => {
     }
   });
 
-  test('keyboard only: the type filter, Focus, Views and Export open, Escape closes and returns focus; a Breakdown cell is followed with Enter', async ({
+  test('keyboard only: Options, Focus and the Views and Export of the Task Queue open, Escape closes and returns focus; a Breakdown cell is followed with Enter', async ({
     seed,
     personas,
     asUser,
@@ -132,21 +132,19 @@ test.describe('PM v2 final gate', () => {
     await page.goto('/my-matters');
     await expect(page.locator('[data-attention-row]').first()).toBeVisible();
 
-    const trigger = page.locator('[data-types-trigger]').first();
+    // The one Options menu of the list (issue #894): opens from the keyboard, Escape closes it and returns the focus to its button.
+    const trigger = page.locator('[data-panel=attention] [data-options-trigger]');
     await trigger.focus();
     await page.keyboard.press('Enter');
-    const option = page.locator(`[data-type-option="${g.second.id}"]`).first();
-    await expect(option).toBeVisible();
-    await option.focus();
-    await page.keyboard.press('Space');
-    await expect(option).toBeChecked();
-    await expect(page.locator('[data-chip]').first()).toContainText(g.second.name);
+    const csv = page.locator('[data-panel=attention] [data-export=csv]');
+    await expect(csv).toBeVisible();
+    await csv.focus();
+    await expect(csv).toBeFocused();
     await page.keyboard.press('Escape');
-    await expect(option).toBeHidden();
+    await expect(csv).toBeHidden();
     await expect(trigger).toBeFocused();
-    await page.locator('[data-clear-all]').first().focus();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-chip]')).toHaveCount(0);
+    // There is no per-list task type filter any more (issue #907): Focus is the one filter.
+    await expect(page.locator('[data-types-trigger], [data-chips]')).toHaveCount(0);
 
     const focus = page.locator('[data-focus-trigger]');
     await focus.focus();

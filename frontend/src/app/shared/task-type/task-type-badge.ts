@@ -21,6 +21,7 @@ let nextId = 0;
   host: {
     '[attr.data-variant]': 'variant()',
     '[attr.data-colour]': 'colourKey() || null',
+    '[class.tt--large]': 'large()',
   },
   template: `
     @if (variant() === 'wide' || decorative()) {
@@ -30,7 +31,7 @@ let nextId = 0;
         [style.color]="colours().fg"
         aria-hidden="true"
       >
-        <mf-task-type-icon [iconKey]="iconKey()" size="sm" />
+        <mf-task-type-icon [iconKey]="iconKey()" [size]="large() ? 'md' : 'sm'" />
       </span>
       @if (variant() === 'wide') {
         <span class="name" data-type-name>{{ name() }}</span>
@@ -45,7 +46,7 @@ let nextId = 0;
         [style.color]="colours().fg"
         data-type-badge
       >
-        <mf-task-type-icon [iconKey]="iconKey()" size="sm" />
+        <mf-task-type-icon [iconKey]="iconKey()" [size]="large() ? 'md' : 'sm'" />
       </span>
       <span class="mf-sr-only" [id]="descriptionId" data-type-description>{{ sentence() }}</span>
     }
@@ -73,6 +74,11 @@ let nextId = 0;
       border-radius: var(--mf-radius);
       border: 1px solid transparent;
     }
+    /* A list row that leans on the icon and its colour (the My Matters rows, issue #897): a 28 px chip with the 20 px icon, so the colour reads. */
+    :host(.tt--large) .tt-chip {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
     .name {
       min-width: 0;
       overflow: hidden;
@@ -98,6 +104,8 @@ export class TaskTypeBadge {
   readonly variant = input<'compact' | 'wide'>('compact');
   /** True where the name sits right next to the badge (an admin list): the chip is then decorative, with no label, tooltip or description. */
   readonly decorative = input(false);
+  /** A 28 px chip with a 20 px icon instead of 24 px with 16 px, for a row where the icon is the type's main signal. */
+  readonly large = input(false);
 
   /** The id of the visually hidden sentence; give it to the owner's `aria-describedby` (`#tt` then `[attr.aria-describedby]="tt.descriptionId"`). */
   readonly descriptionId = `mf-tt-${++nextId}`;

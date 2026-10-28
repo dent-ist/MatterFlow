@@ -132,7 +132,15 @@ interface Chip {
       outline-offset: 2px;
     }
     .ms__matter {
+      min-width: 0;
+      max-width: 100%;
       color: var(--mf-link);
+      /* A matter name is one long word for some firms: it breaks instead of widening the page (found by the long-names test of the final gate). */
+      overflow-wrap: anywhere;
+    }
+    .ms__open {
+      min-width: 0;
+      max-width: 100%;
     }
     @media (max-width: 639.98px) {
       .ms__chip,

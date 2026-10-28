@@ -16,7 +16,7 @@ describe('SkipLinks (#820)', () => {
     const links = Array.from(el.querySelectorAll<HTMLAnchorElement>('a[data-skip-to]'));
     expect(links.map((a) => a.textContent?.trim())).toEqual([
       'Needs my attention',
-      'Upcoming deadlines',
+      'Next 7 days',
       'Matters',
     ]);
     expect(links.map((a) => a.getAttribute('href'))).toEqual(

@@ -21,22 +21,66 @@ export interface ExportResult {
   imports: [ActionMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-action-menu
-      [label]="help"
-      triggerText="Export"
-      [items]="items()"
-      [floating]="true"
-      data-export-menu
-    />
-    <span class="mf-sr-only" role="status" aria-live="polite" data-export-status>{{
-      status()
-    }}</span>
+    @if (inline()) {
+      <!-- Inside an Options menu (issue #894): the two choices are plain buttons, and what happened is said in words under them. -->
+      <div class="em__inline" role="group" [attr.aria-label]="help" data-export-menu>
+        @for (i of items(); track i.id) {
+          <button
+            type="button"
+            class="mf-btn em__item"
+            [attr.data-export]="i.id"
+            [disabled]="i.disabled"
+            [attr.title]="i.disabled && i.reason ? i.reason : null"
+            (click)="i.run()"
+          >
+            <i class="pi" [class]="i.icon" aria-hidden="true"></i>
+            {{ i.label }}
+          </button>
+        }
+        <span class="em__status" role="status" aria-live="polite" data-export-status>{{
+          status()
+        }}</span>
+      </div>
+    } @else {
+      <mf-action-menu
+        [label]="help"
+        triggerText="Export"
+        [items]="items()"
+        [floating]="true"
+        data-export-menu
+      />
+      <span class="mf-sr-only" role="status" aria-live="polite" data-export-status>{{
+        status()
+      }}</span>
+    }
   `,
   styles: `
     :host {
       display: inline-block;
     }
+    :host(.em--inline) {
+      display: block;
+    }
+    .em__inline {
+      display: grid;
+      gap: var(--mf-s1);
+    }
+    .em__item {
+      justify-content: flex-start;
+      gap: var(--mf-s2);
+    }
+    .em__status {
+      min-height: 1.2em;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    @media (max-width: 639.98px) {
+      .em__item {
+        min-height: 44px;
+      }
+    }
   `,
+  host: { '[class.em--inline]': 'inline()' },
 })
 export class ExportMenu {
   private readonly notify = inject(NotificationService);
@@ -47,6 +91,8 @@ export class ExportMenu {
   readonly disabled = input(false);
   /** Why the menu is unavailable (an empty list, a list still loading). */
   readonly reason = input('');
+  /** Drawn as two plain buttons for an Options menu (the menu button is then the Options button itself). */
+  readonly inline = input(false);
 
   protected readonly help = 'Export this list. This is a list export, not a status report.';
   protected readonly status = signal('');

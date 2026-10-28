@@ -27,7 +27,6 @@ import { OverviewStates } from '../overview-states';
 import {
   DEFAULT_FILTERS,
   MmFilters,
-  MmRange,
   activeFilterCount,
   filtersToParams,
   parseFilters,
@@ -121,29 +120,26 @@ function storage(): Storage | null {
     :host {
       display: block;
     }
-    .mm__grid {
+    /* One column (issue #903): the sections follow each other in the order of what a project manager needs, the calm line of what changed, Needs my attention,
+       Next 7 days and the matters. No two-column grid at any width, so no white hole under the shorter list. */
+    .mm__stack {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-areas:
-        'attention deadlines'
-        'health health';
       gap: var(--mf-s3);
-      align-items: start;
+      min-width: 0;
     }
-    .mm__attention {
-      grid-area: attention;
-    }
-    .mm__deadlines {
-      grid-area: deadlines;
-    }
-    .mm__health {
-      grid-area: health;
-    }
-    .mm__grid > * {
+    .mm__stack > * {
       min-width: 0;
     }
     .mm__since {
-      margin-bottom: var(--mf-s3);
+      margin-bottom: var(--mf-s1);
+    }
+    /* The calm Overview is tight above its first list (issue #903): 8 px, not 16, under the title row and under the tab strip. The page header's own
+       numbers (22 px title, 36 px row, 12 px from the top) are untouched. */
+    mf-page-header {
+      margin-bottom: var(--mf-s2);
+    }
+    .mm__tabs {
+      margin-bottom: var(--mf-s2);
     }
     /* Everything is quiet (issue #920): the four sections that have nothing to show give way to one line. */
     .mm__off {
@@ -176,16 +172,6 @@ function storage(): Storage | null {
       overflow: hidden;
       clip-path: inset(50%);
       white-space: nowrap;
-    }
-    /* A phone: one column in the reading order of the plan (README 9): attention, matters, deadlines. */
-    @media (max-width: 639.98px) {
-      .mm__grid {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-areas:
-          'attention'
-          'health'
-          'deadlines';
-      }
     }
   `,
   template: `
@@ -286,22 +272,20 @@ function storage(): Storage | null {
               Nothing is late and nothing is due in the next 7 days.
             </p>
           }
-          <div class="mm__grid">
+          <div class="mm__stack">
             <mf-mm-attention
-              class="mm__attention"
               [class.mm__off]="states.quiet()"
               [filters]="filters()"
+              [showMatter]="showMatter()"
               (listed)="listed.set($event)"
             />
             <mf-mm-deadlines
-              class="mm__deadlines"
               [class.mm__off]="states.quiet()"
               [filters]="filters()"
               [exclude]="listed()"
-              (rangeChange)="setRange($event)"
+              [showMatter]="showMatter()"
             />
             <mf-mm-health
-              class="mm__health"
               [filters]="filters()"
               [filtered]="barActive() > 0"
               (showAll)="update({ scope: 'all' })"
@@ -346,6 +330,12 @@ export class MyMattersPage {
   );
   /** The tasks Needs my attention lists: Upcoming deadlines leaves them out (a task is listed once per screen). */
   protected readonly listed = signal<number[]>([]);
+  /** The matter's name goes on a row only where several matters are in play (a person who manages one matter would read it on every row). */
+  protected readonly showMatter = computed(
+    () =>
+      this.managed.state() !== 'loading' &&
+      (this.filters().scope === 'all' || this.managed.only() === null),
+  );
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
 
@@ -469,10 +459,6 @@ export class MyMattersPage {
   protected selectTab(tab: string): void {
     this.chose = true;
     this.go({ tab: tab === 'overview' ? null : tab, page: null });
-  }
-
-  protected setRange(range: MmRange): void {
-    this.update(range === '2w' || range === '4w' ? { range, from: null, to: null } : { range });
   }
 
   protected clear(): void {

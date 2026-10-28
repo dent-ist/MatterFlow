@@ -68,7 +68,7 @@ const clientOption = (c: {
       flex-wrap: wrap;
       align-items: flex-end;
       gap: var(--mf-s3) var(--mf-s4);
-      margin: 0 0 var(--mf-s3);
+      margin: 0 0 var(--mf-s2);
     }
     .fb__field {
       display: grid;
@@ -107,6 +107,31 @@ const clientOption = (c: {
     }
     .fb--phone {
       margin-bottom: var(--mf-s2);
+    }
+    /* Wide screens (issue #903): the label sits beside its control, so the bar is one 32 px row instead of a 53 px one. The label's wording and style are
+       #899's; a phone keeps the stacked fields of its Filters sheet. */
+    @media (min-width: 640px) {
+      .fb {
+        align-items: center;
+      }
+      .fb__field {
+        display: flex;
+        align-items: center;
+        gap: var(--mf-s2);
+      }
+      :host ::ng-deep .fb__client .mf-field {
+        display: flex;
+        align-items: center;
+        gap: var(--mf-s2);
+      }
+      :host ::ng-deep .fb__client .mf-field > :not(label) {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      :host ::ng-deep .fb__client .mf-field__label {
+        margin: 0;
+        white-space: nowrap;
+      }
     }
     @media (max-width: 639.98px) {
       .fb {

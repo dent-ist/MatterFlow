@@ -389,7 +389,7 @@ test.describe('Empty states are one line (#920)', () => {
     await settled(page);
     await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(1);
     const deadlines = page.locator('[data-panel=deadlines]');
-    await expect(deadlines).toContainText('No deadlines in this period.');
+    await expect(deadlines).toContainText('Nothing is due in the next 7 days.');
     // No toolbar controls in the empty panel: its heading and its sentence are all there is.
     expect(await deadlines.locator('button, select, a, input').count()).toBe(0);
     await expect(page.locator('[data-all-quiet]')).toHaveCount(0);
@@ -469,12 +469,11 @@ test.describe('The held row keeps its title (#923)', () => {
         wide.chars,
         `the title is at least 12 characters wide (${wide.width}px)`,
       ).toBeGreaterThanOrEqual(12);
-      // The reason is all there (the visible part may end in an ellipsis; the tooltip has it whole), the fixed column says how long.
-      await expect(group.locator('[data-hold-reason]')).toHaveText(reasonName);
+      // The fixed column says how long; the reason of the hold is the tooltip of that one status text (issue #897), not a second text on the row.
       await expect(group.locator('[data-fact]').first()).toHaveText('on hold 9 d');
-      // The matter name is cut with an ellipsis and carries the whole text as its tooltip; the pill after it is not cut.
-      const matter = group.locator('.pl__matter').first();
-      await expect(matter).toHaveAttribute('title', /Squeeze alpha/);
+      await expect(group.locator('[data-fact]').first()).toHaveAttribute('title', reasonName);
+      // One matter: its name is not repeated on the row.
+      await expect(group.locator('[data-row-matter]')).toHaveCount(0);
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });

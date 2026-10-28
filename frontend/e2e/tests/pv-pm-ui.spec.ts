@@ -204,7 +204,6 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await page.locator('[data-focus-save]').click();
     await expect(page.locator('[data-focus-chip]')).toContainText(`Focus: ${second.name}`);
     await expect(rows).toHaveCount(1);
-    await expect(page.locator('[data-focus-note]').first()).toBeVisible();
 
     await page.reload();
     await expect(page.locator('[data-focus-chip]')).toContainText(second.name);
@@ -214,11 +213,9 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await page.goto('/tasks/new');
     await expect(page.locator(`[data-focus-type="${second.name}"]`)).toBeVisible();
 
-    // One section can say "All types" without touching the Focus; the chip clears it everywhere.
+    // The chip clears the Focus everywhere (there is no per-list filter to say "All types" in one section, issue #907).
     await page.goto('/my-matters');
     await expect(rows).toHaveCount(1);
-    await page.locator('[data-clear-all]').first().click();
-    await expect(rows).toHaveCount(3);
     await expect(page.locator('[data-focus-chip]')).toBeVisible();
     await page.locator('[data-focus-remove]').click();
     await expect(page.locator('[data-focus-chip]')).toHaveCount(0);

@@ -75,7 +75,7 @@ test.describe('My Matters on a phone and a tablet', () => {
     expect(newTask.y + newTask.height).toBeLessThanOrEqual(812);
     // Reading order: attention, matters, deadlines.
     const order = await Promise.all(
-      ['attention', 'health', 'deadlines'].map((p) => y(page, `[data-panel=${p}]`)),
+      ['attention', 'deadlines', 'health'].map((p) => y(page, `[data-panel=${p}]`)),
     );
     expect(order).toEqual([...order].sort((p, q) => p - q));
     // Cards of two lines, each with a 44 px row menu (New task is in it).
@@ -104,6 +104,7 @@ test.describe('My Matters on a phone and a tablet', () => {
   }) => {
     const w = await mmWorld(seed, personas, 'lay2');
     const a = await w.matter('Layout many');
+    await w.matter('Layout many two'); // several matters: the matter's name is on each row (a matter named on every row says nothing for one)
     for (let i = 0; i < 7; i++)
       await w.task(a, { dueDate: `2000-01-0${i + 1}`, title: `Layout task ${i}` });
     const page = await asUser(w.pm.username);
@@ -113,7 +114,7 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(attention.locator('[data-attention-item]')).toHaveCount(5);
     for (const item of await attention.locator('[data-attention-item]').all()) {
       await expect(item.locator('[data-attention-row]')).toBeVisible();
-      await expect(item.locator('.pl__matter')).toBeVisible();
+      await expect(item.locator('[data-row-matter]')).toBeVisible();
       await expect(item.locator('[data-fact]')).toContainText('overdue');
     }
     await expect(attention.locator('[data-view-all]')).toHaveText('View all 7');
@@ -122,7 +123,7 @@ test.describe('My Matters on a phone and a tablet', () => {
     await noHorizontalScroll(page);
   });
 
-  test('tablet: Needs my attention and Upcoming deadlines side by side, and a matter is one line', async ({
+  test('tablet: one column (Needs my attention, then Next 7 days, then the matters), and a matter is one line', async ({
     seed,
     personas,
     asUser,
@@ -135,12 +136,15 @@ test.describe('My Matters on a phone and a tablet', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/my-matters');
     await expect(page.locator('[data-health-row]').first()).toBeVisible();
-    const [attention, deadlines] = await Promise.all([
+    const [attention, deadlines, health] = await Promise.all([
       page.locator('[data-panel=attention]').boundingBox(),
       page.locator('[data-panel=deadlines]').boundingBox(),
+      page.locator('[data-panel=health]').boundingBox(),
     ]);
-    expect(Math.abs(attention!.y - deadlines!.y)).toBeLessThan(4);
-    expect(deadlines!.x).toBeGreaterThan(attention!.x + attention!.width - 2);
+    // No two-column grid at any width (issue #903): the sections follow each other and share one left edge.
+    expect(Math.abs(deadlines!.x - attention!.x)).toBeLessThan(2);
+    expect(deadlines!.y).toBeGreaterThanOrEqual(attention!.y + attention!.height - 2);
+    expect(health!.y).toBeGreaterThanOrEqual(deadlines!.y + deadlines!.height - 2);
     await shot(page, 'my-matters-tablet');
     await noHorizontalScroll(page);
     // A matter is one line at 768 px and at 1366 px: the name does not wrap.

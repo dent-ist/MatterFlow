@@ -13,10 +13,12 @@ import { ExportFormat } from './list-export';
     fileName="demo"
     [disabled]="off()"
     reason="Nothing to export."
+    [inline]="inline()"
   />`,
 })
 class Host {
   readonly off = signal(false);
+  readonly inline = signal(false);
   run: (format: ExportFormat) => Promise<ExportResult> = vi.fn();
 }
 
@@ -48,6 +50,25 @@ describe('ExportMenu', () => {
     expect(
       Array.from(el(f).querySelectorAll('[role=menuitem]')).map((b) => b.textContent!.trim()),
     ).toEqual(['Download CSV', 'Copy as text']);
+  });
+
+  it('inline (inside an Options menu) draws the two choices as buttons and says what happened in words (#894)', async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: write },
+      configurable: true,
+    });
+    const f = mount(vi.fn().mockResolvedValue({ text: 'a\tb\n', rows: 3 }));
+    f.componentInstance.inline.set(true);
+    f.detectChanges();
+    expect(el(f).querySelector('[data-overflow]')).toBeNull();
+    expect(
+      Array.from(el(f).querySelectorAll('[data-export]')).map((b) => b.textContent!.trim()),
+    ).toEqual(['Download CSV', 'Copy as text']);
+    el(f).querySelector<HTMLButtonElement>('[data-export=copy]')!.click();
+    await f.whenStable();
+    f.detectChanges();
+    expect(el(f).querySelector('[data-export-status]')!.textContent).toContain('Copied 3 rows.');
   });
 
   it('copies the text and says how many rows', async () => {

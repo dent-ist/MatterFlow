@@ -7,13 +7,17 @@ export const measure = () => {
   const sel = 'a[href], button, input, select, textarea, summary, [role=tab], [role=button], [role=menuitem], [tabindex]:not([tabindex="-1"])';
   const ctl = (root) => [...root.querySelectorAll(sel)].filter(vis);
   const cMain = ctl(main), cAll = ctl(document.body);
-  const words = (root, onlyVp) => {
+  // Batch 3: what a person can actually reach. The content of a closed `details` (the Focus checklist, an Options popover) and a skip link that is
+  // hidden until it has the focus are not on screen, but the plain count above (kept so the numbers stay comparable with `before/`) counts them.
+  const reachable = (el) => !(el.closest('details:not([open])') && el.tagName !== 'SUMMARY') && !el.closest('[data-skip-links], mf-mm-skip-links');
+  const words = (root, onlyVp, strict = false) => {
     let w = 0, lines = new Set();
     const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let n;
     while ((n = tw.nextNode())) {
       const t = n.textContent.trim(); if (!t) continue;
       const el = n.parentElement; if (!el || !vis(el) || el.closest('script,style')) continue;
+      if (strict && (!reachable(el) || el.closest('[data-page-description]'))) continue;
       const rg = document.createRange(); rg.selectNodeContents(n);
       const rects = [...rg.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
       if (!rects.length) continue;
@@ -23,7 +27,9 @@ export const measure = () => {
     }
     return { words: w, lines: new Set([...lines].map((k) => k.split(':')[0])).size };
   };
+  const cReach = cMain.filter(reachable);
   const wVp = words(main, true), wAll = words(main, false);
+  const wVpSeen = words(main, true, true), wAllSeen = words(main, false, true);
   // first task row: first link to a task inside main
   const tl = [...main.querySelectorAll('a[href*="/tasks/"]')].filter(vis);
   let firstRowTop = null, firstRowBottom = null;
@@ -37,7 +43,9 @@ export const measure = () => {
     pxAboveFirstTaskRow: firstRowTop, firstRowBottom, mainTop,
     controlsInViewport: cMain.filter((e) => inVp(e.getBoundingClientRect())).length,
     controlsInViewportWholeScreen: cAll.filter((e) => inVp(e.getBoundingClientRect())).length,
+    controlsInViewportReachable: cReach.filter((e) => inVp(e.getBoundingClientRect())).length,
     controlsOnPage: cMain.length,
+    wordsInViewportSeen: wVpSeen.words, wordsOnPageSeen: wAllSeen.words,
     wordsInViewport: wVp.words, textLinesInViewport: wVp.lines, wordsOnPage: wAll.words, textLinesOnPage: wAll.lines,
     taskLinks: tl.length, distinctTaskCodes: Object.keys(codes).length, repeatedTaskCodes: rep.length, repeatedExtraOccurrences: rep.reduce((a, n) => a + n - 1, 0),
     horizontalScroll: document.documentElement.scrollWidth > vw + 1,

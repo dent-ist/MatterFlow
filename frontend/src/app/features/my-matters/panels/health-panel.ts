@@ -204,6 +204,7 @@ export const MATTERS_SHOWN = 8;
       <mf-mm-panel
         name="health"
         title="Matters"
+        [flat]="true"
         [state]="loader.state()"
         [busy]="loader.busy()"
         [bare]="bare()"

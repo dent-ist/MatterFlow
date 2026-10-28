@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 /** The panels of the Overview a person can skip to, in page order (the id of a panel's heading is `mm-<key>-h`). */
 export const SKIP_PANELS: readonly { key: string; label: string }[] = [
   { key: 'attention', label: 'Needs my attention' },
-  { key: 'deadlines', label: 'Upcoming deadlines' },
+  { key: 'deadlines', label: 'Next 7 days' },
   { key: 'health', label: 'Matters' },
 ];
 

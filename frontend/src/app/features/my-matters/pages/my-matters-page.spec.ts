@@ -447,7 +447,7 @@ describe('MyMattersPage', () => {
     expect(chip('unassigned').classList.contains('ms__chip--zero')).toBe(false);
   });
 
-  it('sends no date range to the strip and the other panels, only to Upcoming deadlines', async () => {
+  it('sends no date range to the strip and the other panels; Next 7 days asks for today to seven days ahead, whatever the range (#896)', async () => {
     await open('/my-matters?range=2w');
     expect(api['getMyMattersSummary']).toHaveBeenCalledWith(
       undefined,
@@ -457,6 +457,7 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
     );
+    const day = expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/);
     expect(api['getMyMattersDeadlines']).toHaveBeenCalledWith(
       14,
       undefined,
@@ -466,10 +467,12 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       undefined,
-      undefined,
-      undefined,
+      day,
+      day,
       undefined,
     );
+    const [, , , , , , , , from, to] = api['getMyMattersDeadlines'].mock.calls[0];
+    expect((Date.parse(to) - Date.parse(from)) / 86_400_000).toBe(7);
     expect(api['getMyMattersHealth']).toHaveBeenCalledWith(
       'worst',
       undefined,
@@ -576,10 +579,12 @@ describe('MyMattersPage', () => {
     ]);
     expect(rows[0].querySelector('[data-at-risk]')).toBeNull(); // the reason says it already
     expect(rows[1].querySelector('[data-at-risk]')).not.toBeNull();
-    expect(rows[2].querySelector('[data-hold-reason]')!.textContent).toContain('Waiting');
+    // The reason of a hold is the tooltip of the one status text, not a second piece of text on the row (issue #897).
+    expect(rows[2].querySelector('[data-fact]')!.getAttribute('title')).toBe('Waiting');
+    expect(rows[2].querySelector('[data-hold-pill]')).toBeNull(); // the status says it already
   });
 
-  it('leaves a task out of Upcoming deadlines when Needs my attention lists it: one task, once per screen (#905)', async () => {
+  it('leaves a task out of Next 7 days when Needs my attention lists it: one task, once per screen (#905)', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersAttention'].mockReturnValue(
         of(attention([task(3, { factCode: 'DUE_TODAY', factDays: 0 })], 1)),
@@ -607,29 +612,40 @@ describe('MyMattersPage', () => {
     expect(el(h).textContent).not.toMatch(/no (project )?manager/i);
   });
 
-  it('groups upcoming deadlines by day and the 2 / 4 week toggle changes the range', async () => {
+  it('Next 7 days is a short flat list with the day first and no controls of its own; All deadlines opens the Deadlines tab (#896, #894)', async () => {
     const h = await open('/my-matters');
+    const panel = el(h).querySelector('[data-panel=deadlines]')!;
+    expect(panel.querySelector('h2')!.textContent).toBe('Next 7 days');
     expect(
-      Array.from(el(h).querySelectorAll('[data-day]')).map((d) => d.textContent!.trim()),
+      Array.from(panel.querySelectorAll('[data-row-day]')).map((d) => d.textContent!.trim()),
     ).toEqual(['Mon Oct 26', 'Tue Oct 27']);
-    expect(el(h).querySelector('[data-range="4w"]')!.getAttribute('aria-pressed')).toBe('true');
-    el(h).querySelector<HTMLButtonElement>('[data-range="2w"]')!.click();
-    await h.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/my-matters?range=2w');
-    expect(api['getMyMattersDeadlines']).toHaveBeenLastCalledWith(
-      14,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
-    expect(el(h).querySelector('[data-capped]')!.textContent).toContain('2 of 30');
+    expect(panel.querySelector('[data-day]')).toBeNull(); // no day headings
+    // No 2 / 4 week buttons, no Views, no Sort, no Task types, no Options: the Deadlines tab owns the range and Focus is the one type filter.
+    expect(panel.querySelector('[data-range], select, details, button')).toBeNull();
+    const all = panel.querySelector<HTMLAnchorElement>('[data-view-all]')!;
+    expect(all.textContent).toContain('All deadlines');
+    expect(all.getAttribute('href')).toBe('/my-matters?tab=deadlines');
+  });
+
+  it('Next 7 days shows at most five rows and says how many there are in all', async () => {
+    const h = await open('/my-matters', undefined, (a) => {
+      a['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
+      a['getMyMattersDeadlines'].mockReturnValue(
+        of({
+          timeZone: 'x',
+          asOfUtc: 'x',
+          days: 14,
+          fromDate: '2026-10-23',
+          toDate: '2026-10-30',
+          total: 8,
+          query: 'q',
+          items: [10, 11, 12, 13, 14, 15, 16, 17].map((id) => task(id, { dueDate: '2026-10-26' })),
+        }),
+      );
+    });
+    const panel = el(h).querySelector('[data-panel=deadlines]')!;
+    expect(panel.querySelectorAll('[data-deadline-row]')).toHaveLength(5);
+    expect(panel.querySelector('[data-view-all]')!.textContent).toContain('All deadlines (8)');
   });
 
   it('lists the matters as one-line rows, worst first: counts instead of a Red / Amber / Green word, one row menu (#908)', async () => {
@@ -1176,7 +1192,7 @@ describe('MyMattersPage', () => {
       );
       expect(el(h).querySelector('[data-all-quiet]')).toBeNull();
       const deadlines = el(h).querySelector('[data-panel=deadlines]')!;
-      expect(deadlines.textContent).toContain('No deadlines in this period.');
+      expect(deadlines.textContent).toContain('Nothing is due in the next 7 days.');
       expect(deadlines.querySelector('button, select, a')).toBeNull();
       expect(deadlines.querySelector('.mmp--bare')).not.toBeNull();
     });
@@ -1209,6 +1225,124 @@ describe('MyMattersPage', () => {
         'No matters match these filters.',
       );
       expect(el(h).querySelectorAll('[data-clear-filters]').length).toBe(1);
+    });
+  });
+  describe('a calmer Overview (epic #893, batch 3: #894, #896, #897, #903)', () => {
+    const matter = (id: number, clientId: number): Partial<MatterResponse> => ({
+      matterId: id,
+      clientId,
+      matterRef: `9000${clientId}-8000${id}`,
+      name: `Matter ${id}`,
+      primaryManager: { userId: 1, displayName: 'Me', isActive: true },
+    });
+    const rich = (id: number, over: object = {}) =>
+      task(id, {
+        taskTypeId: 1,
+        taskTypeName: 'Review',
+        taskTypeIconKey: 'file-text',
+        taskTypeColourKey: 'green',
+        priorityName: 'Normal',
+        priorityRank: 3,
+        statusCode: 'NEW',
+        ...over,
+      });
+
+    it('one column: since, Needs my attention, Next 7 days, Matters, in that order, with no two-column grid (#903)', async () => {
+      const h = await open('/my-matters');
+      const order = Array.from(el(h).querySelectorAll('[data-panel]')).map((p) =>
+        p.getAttribute('data-panel'),
+      );
+      expect(order).toEqual(['since', 'attention', 'deadlines', 'health']);
+      expect(el(h).querySelector('.mm__grid')).toBeNull();
+      expect(el(h).querySelector('.mm__stack')).not.toBeNull();
+      // The sections are flat (no card around each of them).
+      for (const key of ['attention', 'deadlines', 'health']) {
+        expect(
+          el(h).querySelector(`[data-panel=${key}] .mmp`)!.classList.contains('mmp--flat'),
+          key,
+        ).toBe(true);
+      }
+    });
+
+    it('Needs my attention has one control of its own, Options, with Export inside; no Views, Task types or Sort (#894, #907)', async () => {
+      const h = await open('/my-matters');
+      const panel = el(h).querySelector('[data-panel=attention]')!;
+      const options = panel.querySelectorAll('mf-options-menu');
+      expect(options).toHaveLength(1);
+      expect(options[0].querySelector('[data-options-trigger]')!.getAttribute('aria-label')).toBe(
+        'Options for Needs my attention',
+      );
+      expect(options[0].querySelectorAll('[data-export]').length).toBe(2);
+      expect(
+        panel.querySelector('[data-views], [data-types-trigger], [data-sort], [data-dir]'),
+      ).toBeNull();
+      // Besides the rows, the "View all" link and the Options button, nothing is a control of the list.
+      const controls = Array.from(
+        panel.querySelectorAll('a, button, select, input, summary'),
+      ).filter((c) => !c.closest('mf-options-menu') && !c.closest('[mfMmTaskRow]'));
+      expect(controls.map((c) => c.getAttribute('data-view-all'))).toEqual(['']);
+    });
+
+    it('the matter name is not on a row for one matter (#897)', async () => {
+      const h = await open('/my-matters', undefined, undefined, [matter(5, 2)]);
+      expect(el(h).querySelector('[data-attention-item]')).not.toBeNull();
+      expect(el(h).querySelector('[data-row-matter]')).toBeNull();
+    });
+
+    it('the matter name follows the title as short text when the person has several matters (#897)', async () => {
+      const h = await open('/my-matters', undefined, undefined, [matter(5, 2), matter(6, 2)]);
+      const names = Array.from(
+        el(h).querySelectorAll('[data-attention-item] [data-row-matter]'),
+      ).map((n) => n.textContent!.trim());
+      expect(names).toEqual(['Merger', 'Merger']);
+    });
+
+    it('a priority pill only for High and Critical; the link keeps the matter, priority and status for a screen reader (#897)', async () => {
+      const h = await open('/my-matters', undefined, (a) => {
+        a['getMyMattersAttention'].mockReturnValue(
+          of(
+            attention(
+              [
+                rich(1, { priorityName: 'Critical', priorityRank: 1 }),
+                rich(2, { priorityName: 'High', priorityRank: 2 }),
+                rich(3, { priorityName: 'Normal', priorityRank: 3 }),
+                rich(4, { priorityName: 'Low', priorityRank: 4 }),
+              ],
+              4,
+            ),
+          ),
+        );
+      });
+      const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
+      expect(
+        rows.map((r) => r.querySelector('[data-priority]')?.textContent?.trim() ?? null),
+      ).toEqual(['Critical', 'High', null, null]);
+      const link = rows[2].querySelector('a[data-attention-row]')!;
+      expect(link.textContent!.trim()).toBe('TSK-3 Task 3');
+      expect(link.getAttribute('aria-label')).toBe(
+        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, 3 d overdue',
+      );
+    });
+
+    it('the type icon is the large coloured badge, one status text sits on the right, an At risk or On hold task gets its pill (#897)', async () => {
+      const h = await open('/my-matters', undefined, (a) => {
+        a['getMyMattersAttention'].mockReturnValue(
+          of(
+            attention(
+              [
+                rich(1, { atRisk: true }),
+                rich(2, { statusCode: 'ON_HOLD', onHold: { reasonName: 'Waiting', days: 2 } }),
+              ],
+              2,
+            ),
+          ),
+        );
+      });
+      const rows = Array.from(el(h).querySelectorAll('[data-attention-item]'));
+      expect(rows[0].querySelector('mf-task-type-badge.tt--large')).not.toBeNull();
+      expect(rows[0].querySelector('[data-at-risk]')).not.toBeNull();
+      expect(rows[1].querySelector('[data-hold-pill]')).not.toBeNull();
+      for (const r of rows) expect(r.querySelectorAll('[data-fact]')).toHaveLength(1);
     });
   });
 });

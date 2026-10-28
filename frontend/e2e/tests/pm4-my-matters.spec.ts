@@ -6,7 +6,7 @@ import { Seeder } from '../support/seed';
 import { axeAvailable } from '../support/axe';
 
 /**
- * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Upcoming deadlines (#693), the matters list
+ * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Next 7 days (#693, #896), the matters list
  * with the "+ New task" of its row menu (#695, reworked in epic #893 issue #908), the activity events (#697; they moved to the Activity tab in
  * issue #909; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs in a
  * world of its own, so the numbers on the page are written down here instead of read back from the page.
@@ -191,7 +191,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
   });
 });
 
-test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
+test.describe('My Matters: Needs my attention and Next 7 days', () => {
   test('one ranked list, rows that open the task and Back, one View all with its total, and no item about a matter nobody manages', async ({
     seed,
     personas,
@@ -242,7 +242,7 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     await expect.poll(() => total(page)).toBe(2);
   });
 
-  test('Upcoming deadlines are grouped by day, the 2 / 4 week toggle changes the window and overdue work is not in it', async ({
+  test('Next 7 days lists what falls due within a week with its day first, no range control, and All deadlines opens the Deadlines tab, which owns the range', async ({
     seed,
     personas,
     asUser,
@@ -251,30 +251,25 @@ test.describe('My Matters: Needs my attention and Upcoming deadlines', () => {
     const m = await w.matter('Alpha');
     // Assigned: an unassigned task due within a week is listed in Needs my attention and, being listed once, not here.
     const mine = { assignedUserId: w.other.userId };
-    await w.task(m, { dueDate: inDays(3), title: 'Within two weeks', ...mine });
+    await w.task(m, { dueDate: inDays(3), title: 'Within a week', ...mine });
     await w.task(m, { dueDate: inDays(3), title: 'Same day', ...mine });
     await w.task(m, { dueDate: inDays(20), title: 'Within four weeks', ...mine });
     await w.task(m, { dueDate: '2000-01-01', title: 'Long overdue' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     const panel = page.locator('[data-panel=deadlines]');
-    await expect(panel.locator('[data-deadline-row]')).toHaveCount(3);
-    await expect(panel.locator('[data-day]')).toHaveCount(2);
-    await expect(panel).not.toContainText('Long overdue');
-    await panel.locator('[data-range="2w"]').click();
-    await expect(page).toHaveURL(/range=2w/);
+    await expect(panel.locator('h2')).toHaveText('Next 7 days');
     await expect(panel.locator('[data-deadline-row]')).toHaveCount(2);
-    await expect(panel.locator('[data-range="2w"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.locator('[data-row-day]')).toHaveCount(2);
+    await expect(panel).not.toContainText('Long overdue');
+    await expect(panel).not.toContainText('Within four weeks');
+    // The list has no toolbar: no 2 / 4 week buttons, no Views, no Sort, no Task types, no Options.
+    await expect(panel.locator('[data-range], select, details, button')).toHaveCount(0);
     await panel.locator('[data-view-all]').click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect.poll(() => total(page)).toBe(2);
-    await page.goBack();
-    await expect(page.locator('[data-panel=deadlines] [data-range="2w"]')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await expect(page).toHaveURL(/tab=deadlines/);
+    // The Deadlines tab owns the range: its window holds the task due in 20 days as well.
+    await expect(page.locator('[data-panel=deadlines-tab] [data-deadline-row]')).toHaveCount(3);
     // "Today" is a due-date range of one day: nothing is due today here, and the empty text is positive.
-    await page.locator('[data-tab=deadlines]').click();
     await page.locator('[data-filter=range]').selectOption('today');
     await expect(page.locator('[data-panel=deadlines-tab] [data-empty]')).toContainText(
       'No deadlines in this period.',

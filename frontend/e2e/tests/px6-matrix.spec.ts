@@ -416,7 +416,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     const tabAt = result.stops.findIndex((s) => s.role === 'tab');
     expect(result.stops.slice(tabAt + 1, tabAt + 4).map((s) => s.name)).toEqual([
       'Needs my attention',
-      'Upcoming deadlines',
+      'Next 7 days',
       'Matters',
     ]);
     expect(result.left, 'the whole page was walked').toBe(true);

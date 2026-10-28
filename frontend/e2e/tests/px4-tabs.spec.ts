@@ -211,6 +211,8 @@ test.describe('My Matters: Deadlines', () => {
     await page.locator('#mm-range').selectOption('4w');
 
     // The calendar: week rows, today in words, a count per day that opens the Task Queue with the same tasks.
+    // The List / Calendar choice is behind the tab's Options menu (issue #894).
+    await tabPanel.locator('[data-options-trigger]').click();
     await tabPanel.locator('[data-view="calendar"]').click();
     await expect(page).toHaveURL(/view=calendar/);
     await expect(tabPanel.locator('[data-calendar]')).toBeVisible();

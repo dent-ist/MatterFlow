@@ -60,7 +60,7 @@ export function figureLink(c: MyMattersSinceCount): {
       flex-wrap: wrap;
       align-items: center;
       gap: 0 var(--mf-s2);
-      margin: 0 0 var(--mf-s2);
+      margin: 0 0 var(--mf-s1);
       min-height: 24px;
     }
     .sv__lead {

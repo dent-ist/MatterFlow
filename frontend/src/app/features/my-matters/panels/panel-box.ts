@@ -17,6 +17,7 @@ import { PanelState } from '../panel-loader';
     <section
       class="mmp"
       [class.mmp--bare]="bare()"
+      [class.mmp--flat]="flat()"
       [attr.aria-labelledby]="id() + '-h'"
       [attr.aria-busy]="busy() ? 'true' : null"
     >
@@ -99,6 +100,26 @@ import { PanelState } from '../panel-loader';
       margin: 0;
       padding: 0;
     }
+    /* A section of the calm Overview (issue #903): no card, a heading row with a rule under it, the rows straight below. */
+    .mmp--flat {
+      height: auto;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+    .mmp--flat .mmp__head {
+      /* The Options button of a flat section is a little lower than a form control, so the heading row stays one line of text tall. */
+      --mf-options-h: 28px;
+      min-height: 28px;
+      margin-bottom: 0;
+      padding-bottom: var(--mf-s1);
+      border-bottom: 1px solid var(--mf-border-strong, var(--mf-border));
+    }
+    .mmp--flat .mmp__title {
+      font-size: var(--mf-fs-md);
+      text-transform: none;
+    }
     /* The target of a skip link (#820): the heading takes the focus, with a ring a keyboard user can see. */
     .mmp__title:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -148,6 +169,8 @@ export class PanelBox {
   readonly busy = input(false);
   /** Nothing to show: the panel draws as one muted line (the panel hides its own toolbar). */
   readonly bare = input(false);
+  /** A section of the calm Overview: drawn without the card around it (issue #903). */
+  readonly flat = input(false);
   readonly retry = output<void>();
   protected id(): string {
     return 'mm-' + this.name();

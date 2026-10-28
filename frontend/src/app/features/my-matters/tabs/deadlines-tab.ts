@@ -8,17 +8,16 @@ import {
 } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { parseDateOnly } from '../../../core/time/time';
-import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
+import { OptionsMenu } from '../../../shared/ui/options-menu';
+import { restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { dayHeading, dueDay } from '../facts';
+import { MyMattersFocus } from '../focus';
+import { MmTaskRow } from '../task-row';
 import { MmDatesControl } from '../dates-control';
 import { MmFilters, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
-import { sectionPref } from '../section-prefs';
-import { SectionToolbar } from '../section-toolbar';
-import { SectionTypes } from '../section-types';
-import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { PanelBox } from '../panels/panel-box';
 import { PANEL_LIST_STYLES } from '../panels/panel-styles';
 import { todayText } from '../panels/deadlines-panel';
@@ -94,7 +93,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
  */
 @Component({
   selector: 'mf-mm-deadlines-tab',
-  imports: [MmDatesControl, PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
+  imports: [MmDatesControl, MmTaskRow, OptionsMenu, PanelBox, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
@@ -229,50 +228,44 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
       [bare]="bare()"
       (retry)="loader.load()"
     >
-      @if (wide()) {
-        <div mfPanelActions class="dt__toggle" role="group" aria-label="View">
-          <button
-            type="button"
-            class="mf-btn"
-            data-view="list"
-            [attr.aria-pressed]="!calendar()"
-            (click)="setView('list')"
-          >
-            List
-          </button>
-          <button
-            type="button"
-            class="mf-btn"
-            data-view="calendar"
-            [attr.aria-pressed]="calendar()"
-            (click)="setView('calendar')"
-          >
-            Calendar
-          </button>
-        </div>
-      }
-      @if (!bare()) {
-        <mf-mm-section-toolbar
-          label="Deadlines"
-          [options]="typeChoices.options()"
-          [types]="pref.value().types"
-          [focused]="pref.focused()"
-          [sorts]="false"
-          (typesChange)="pref.setTypes($event)"
-        />
+      @if (wide() && !bare()) {
+        <mf-options-menu mfPanelActions label="Deadlines" [active]="calendar() ? 1 : 0">
+          <div class="dt__toggle" role="group" aria-label="Show deadlines as">
+            <button
+              type="button"
+              class="mf-btn"
+              data-view="list"
+              data-options-pick
+              [attr.aria-pressed]="!calendar()"
+              (click)="setView('list')"
+            >
+              List
+            </button>
+            <button
+              type="button"
+              class="mf-btn"
+              data-view="calendar"
+              data-options-pick
+              [attr.aria-pressed]="calendar()"
+              (click)="setView('calendar')"
+            >
+              Calendar
+            </button>
+          </div>
+        </mf-options-menu>
       }
       @if (calendar()) {
         @if (total() === 0) {
           @if (filtered()) {
             <p class="pl__empty" data-empty data-filtered-empty>
-              No deadlines of the selected types in this period.
+              Nothing in your Focus is due in this period.
               <button
                 type="button"
                 class="mf-btn mf-btn--text"
                 data-show-all
-                (click)="pref.showAll()"
+                (click)="focus.clear()"
               >
-                Show all types
+                Clear Focus
               </button>
             </p>
           } @else {
@@ -363,14 +356,14 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
         @if (matters().length === 0) {
           @if (filtered()) {
             <p class="pl__empty" data-empty data-filtered-empty>
-              No deadlines of the selected types in this period.
+              Nothing in your Focus is due in this period.
               <button
                 type="button"
                 class="mf-btn mf-btn--text"
                 data-show-all
-                (click)="pref.showAll()"
+                (click)="focus.clear()"
               >
-                Show all types
+                Clear Focus
               </button>
             </p>
           } @else {
@@ -385,37 +378,14 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
             </h3>
             <ul class="pl__list">
               @for (t of m.items; track t.taskId) {
-                <li class="pl__row">
-                  <span class="pl__line">
-                    <mf-task-type-badge
-                      #tt
-                      [iconKey]="t.taskTypeIconKey"
-                      [colourKey]="t.taskTypeColourKey"
-                      [name]="t.taskTypeName"
-                    />
-                    <a
-                      class="pl__link"
-                      data-deadline-row
-                      mfRowLink="my-matters-deadlines-tab"
-                      [rowKey]="t.taskId"
-                      [routerLink]="['/tasks', t.taskId]"
-                      [queryParams]="origin.params('my-matters')"
-                      [state]="origin.state()"
-                      [attr.aria-describedby]="tt.descriptionId"
-                      >{{ t.taskNumber }} {{ t.title }}</a
-                    >
-                  </span>
-                  <span class="pl__meta"
-                    ><span class="dt__due">{{ due(t) }}</span> .
-                    {{ t.assigneeName ?? 'Unassigned' }}
-                    <span class="pl__prio" data-priority>{{ t.priorityName }}</span>
-                    @if (t.atRisk) {
-                      <span class="pl__risk" data-at-risk
-                        ><i class="pi pi-clock" aria-hidden="true"></i> At risk</span
-                      >
-                    }
-                  </span>
-                </li>
+                <li
+                  mfMmTaskRow
+                  kind="deadline"
+                  rowScope="my-matters-deadlines-tab"
+                  [task]="t"
+                  [lead]="due(t)"
+                  [status]="t.assigneeName ?? 'no assignee'"
+                ></li>
               }
             </ul>
             @if (m.total > m.items.length) {
@@ -461,21 +431,21 @@ export class DeadlinesTab {
     () => this.query().get('view') === 'calendar' && this.wide(),
   );
 
-  protected readonly typeChoices = inject(SectionTypes);
-  protected readonly pref = sectionPref('my-matters.deadlines', { sort: false });
-  protected readonly filtered = computed(() => this.pref.value().types.length > 0);
+  protected readonly focus = inject(MyMattersFocus);
+  /** The person's Focus filters the tab (the one task-type filter of the page, issue #907). */
+  protected readonly filtered = computed(() => this.focus.types().length > 0);
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.calendar(), this.pref.value()],
+    () => [this.filters(), this.calendar(), this.focus.types()],
     () => {
       const f = this.filters();
       const a = commonArgs(f);
-      const p = this.pref.value();
+      const types = this.focus.types();
       const d = deadlineArgs(f, todayText(this.clock, this.zone));
       return this.api.getMyMattersDeadlines(
         d.days,
         this.calendar() ? 'day' : 'matter',
-        p.types.length > 0 ? p.types : undefined,
+        types.length > 0 ? types : undefined,
         undefined,
         undefined,
         a.scope,
@@ -489,7 +459,7 @@ export class DeadlinesTab {
   );
 
   constructor() {
-    this.typeChoices.ensure();
+    this.focus.ensure();
     restoreRowFocus('my-matters-deadlines-tab', () => this.loader.state() === 'ready');
   }
 

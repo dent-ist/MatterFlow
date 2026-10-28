@@ -6,7 +6,7 @@ import { ParamMap, Params } from '@angular/router';
  */
 export type MmScope = 'mine' | 'all';
 export type MmRole = 'both' | 'primary' | 'secondary';
-/** The date range of the Upcoming deadlines panel: the next 2 or 4 weeks (the API's two windows), today only, or a custom due-date range. */
+/** The date range of the Deadlines tab: the next 2 or 4 weeks (the API's two windows), today only, or a custom due-date range. */
 export type MmRange = '2w' | '4w' | 'today' | 'custom';
 
 export interface MmFilters {
@@ -119,7 +119,7 @@ export function commonArgs(f: MmFilters): MmCommonArgs {
   };
 }
 
-/** The window and due-date range of Upcoming deadlines for the range filter. `today` is `yyyy-mm-dd` in the viewer's zone. */
+/** The window and due-date range of the Deadlines tab for the range filter. `today` is `yyyy-mm-dd` in the viewer's zone. */
 export function deadlineArgs(
   f: MmFilters,
   today: string,
