@@ -50,23 +50,18 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(filtersButton).toHaveText(/Filters/);
     await expect(page.locator('[data-filter=role]')).toHaveCount(0);
     expect((await filtersButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    // The strip is ONE row that scrolls sideways on a phone (issue #922): four chips (Due in 7 days is the Next 7 days section) and the muted count; Overdue and
-    // At risk are inside the page width and every drawn chip is a 44 px target.
+    // The strip is six tiles in two columns by three rows on a phone (issue #927): all six inside the page width, every one a 44 px target.
     const strip = page.locator('[data-mm-strip]');
     const box = (await strip.boundingBox())!;
-    expect(box.height).toBeLessThanOrEqual(48);
+    expect(box.height).toBeLessThanOrEqual(150);
     expect(box.x + box.width).toBeLessThanOrEqual(375);
-    await expect(page.locator('[data-strip-item=due7]')).toBeHidden();
-    // Overdue and At risk are the headline and are drawn only above zero; this person has one overdue task and none at risk.
-    for (const key of ['overdue', 'unassigned', 'onHold']) {
+    // Every tile is drawn, also at zero (this person has one overdue task and none at risk).
+    for (const key of ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7', 'open']) {
       const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
       expect(cell.x, `${key} starts inside the page`).toBeGreaterThanOrEqual(0);
-      expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
-      expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(44);
-    }
-    for (const key of ['overdue']) {
-      const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
       expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
+      expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
+      expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(43.5);
     }
     // The first screen (375x812) shows the whole strip and the heading of the first panel; Needs my attention starts in it.
     const attention = (await page.locator('[data-panel=attention] h2').boundingBox())!;

@@ -36,7 +36,7 @@ test.describe('My Matters: All matters', () => {
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?clientId=${clientId}`);
     await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '1 overdue');
-    await expect(page.locator('[data-strip-open]')).toContainText('1 open');
+    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b1\s+Open/);
     await expect(page.locator('[data-scope=mine]')).toHaveAttribute('aria-pressed', 'true');
 
     await openHeaderOptions(page);
@@ -45,7 +45,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-scope=all]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
     // The world's own matter (00001), mine, theirs and the orphan: four active matters of this client.
-    await expect(page.locator('[data-strip-open]')).toContainText('4 open');
+    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b4\s+Open/);
     await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '3 overdue');
     expect(await count(page, 'open')).toBe(4);
     await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(4);

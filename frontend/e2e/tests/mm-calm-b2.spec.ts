@@ -218,8 +218,8 @@ test.describe('One "what changed" line, on the Activity tab (#909, #895, owner d
   }
 });
 
-test.describe('Count chips (#902)', () => {
-  test('five buttons with their count in the name, then a muted open count; each opens a Task Queue whose total is the count', async ({
+test.describe('Count tiles (#902, #927)', () => {
+  test('six equal tiles with their count in the name; each opens a Task Queue whose total is the count', async ({
     seed,
     personas,
     asUser,
@@ -230,16 +230,27 @@ test.describe('Count chips (#902)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const keys = ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7'];
+    const keys = ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7', 'open'];
     for (const key of keys) {
       const chip = page.locator(`button[data-strip-item=${key}]`);
       await expect(chip, key).toBeVisible();
       expect((await chip.getAttribute('aria-label')) ?? '', key).toMatch(/^\d+ /);
     }
     await expect(page.locator('[data-strip-item=matters], [data-strip-item=due3]')).toHaveCount(0);
-    await expect(page.locator('[data-strip-open]')).toContainText(/\d+ open\s*$/);
-    // Every chip opens the Task Queue with exactly the tasks it counts.
-    for (const key of [...keys, 'open']) {
+    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\d+\s+Open\s*$/);
+    // The six tiles are one size (issue #927).
+    const sizes = await page
+      .locator('button[data-strip-item]')
+      .evaluateAll((els) =>
+        els.map((e) => [
+          Math.round(e.getBoundingClientRect().width),
+          Math.round(e.getBoundingClientRect().height),
+        ]),
+      );
+    expect(sizes.length).toBe(6);
+    for (const sz of sizes) expect(sz, 'equal tiles').toEqual(sizes[0]);
+    // Every tile opens the Task Queue with exactly the tasks it counts.
+    for (const key of keys) {
       await page.goto('/my-matters');
       await settled(page);
       const chip = page.locator(`button[data-strip-item=${key}]`);
@@ -249,11 +260,11 @@ test.describe('Count chips (#902)', () => {
         chip.click(),
       ]);
       await expect(page).toHaveURL(/\/tasks\?/);
-      expect(((await queue.json()) as { total: number }).total, `${key}: chip = list`).toBe(count);
+      expect(((await queue.json()) as { total: number }).total, `${key}: tile = list`).toBe(count);
     }
   });
 
-  test('the late work is a headline (red, amber, only above zero; "Nothing is late" otherwise); the quiet counts are plain text, grey at zero and still reachable', async ({
+  test('red only for Overdue and amber only for At risk, only above zero; a zero tile is muted and still reachable', async ({
     seed,
     personas,
     asUser,
@@ -265,28 +276,34 @@ test.describe('Count chips (#902)', () => {
     const state = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLButtonElement>('button[data-strip-item]')].map((b) => ({
         key: b.getAttribute('data-strip-item'),
-        zero: b.classList.contains('ms__chip--zero'),
-        danger: b.classList.contains('ms__big--danger'),
-        warning: b.classList.contains('ms__big--warning'),
+        zero: b.classList.contains('tile--zero'),
+        danger: b.classList.contains('tile--danger'),
+        warning: b.classList.contains('tile--warning'),
         count: Number(b.getAttribute('aria-label')!.split(' ')[0]),
         disabled: b.disabled,
       })),
     );
-    // The headline draws only the late counts above zero; the three quiet counts are always drawn.
-    expect(state.length).toBeGreaterThanOrEqual(4);
+    // Six tiles are always drawn (the strip does not rearrange itself).
+    expect(state.map((s) => s.key)).toEqual([
+      'overdue',
+      'atRisk',
+      'unassigned',
+      'onHold',
+      'due7',
+      'open',
+    ]);
     for (const s of state) {
       expect(s.disabled, `${s.key}: reachable`).toBe(false);
-      if (s.key === 'overdue') expect([s.danger, s.count > 0]).toEqual([true, true]);
-      else expect(s.danger).toBe(false);
-      if (s.key === 'atRisk') expect([s.warning, s.count > 0]).toEqual([true, true]);
-      else expect(s.warning).toBe(false);
-      if (s.key !== 'overdue' && s.key !== 'atRisk')
-        expect(s.zero, `${s.key}: grey exactly when zero`).toBe(s.count === 0);
+      expect(s.danger, `${s.key}: red exactly for Overdue above zero`).toBe(
+        s.key === 'overdue' && s.count > 0,
+      );
+      expect(s.warning, `${s.key}: amber exactly for At risk above zero`).toBe(
+        s.key === 'atRisk' && s.count > 0,
+      );
+      expect(s.zero, `${s.key}: muted exactly when zero`).toBe(s.count === 0);
     }
-    if (!state.some((s) => s.key === 'overdue' || s.key === 'atRisk'))
-      await expect(page.locator('[data-headline-none]')).toHaveText('Nothing is late');
-    // A zero chip works with the keyboard like any other.
-    const zero = page.locator('button[data-strip-item].ms__chip--zero').first();
+    // A zero tile works with the keyboard like any other.
+    const zero = page.locator('button[data-strip-item].tile--zero').first();
     if ((await zero.count()) > 0) {
       await zero.focus();
       await page.keyboard.press('Enter');
@@ -295,7 +312,7 @@ test.describe('Count chips (#902)', () => {
   });
 
   for (const size of SIZES) {
-    test(`the chips are clean (axe, no sideways scroll) at ${size.width} px`, async ({
+    test(`the tiles are clean (axe, no sideways scroll) at ${size.width} px`, async ({
       seed,
       personas,
       asUser,
@@ -307,14 +324,21 @@ test.describe('Count chips (#902)', () => {
       await settled(page);
       await expect(page.locator('[data-mm-strip]')).toBeVisible();
       if (size.width < 640) {
-        // A phone draws four chips and the muted count (Due in 7 days is the Next 7 days section below, issue #922): every one that is drawn is 44 px.
-        const heights = await page
+        // A phone draws the six tiles as two columns by three rows (issue #927): every one is a 44 px target and all six are on screen at once.
+        const boxes = await page
           .locator('button[data-strip-item]')
           .evaluateAll((els) =>
-            els.map((e) => e.getBoundingClientRect().height).filter((h) => h > 0),
+            els
+              .map((e) => e.getBoundingClientRect())
+              .map((r) => [r.left, r.top, r.width, r.height]),
           );
-        expect(heights.length).toBe(5);
-        for (const h of heights) expect(h, 'phone targets are 44 px').toBeGreaterThanOrEqual(43.5);
+        expect(boxes.length).toBe(6);
+        for (const [, , w, h] of boxes) {
+          expect(h, 'phone targets are 44 px').toBeGreaterThanOrEqual(43.5);
+          expect(w, 'phone tiles share the width').toBeGreaterThan(100);
+        }
+        expect(new Set(boxes.map((b) => Math.round(b[0]))).size, 'two columns').toBe(2);
+        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'three rows').toBe(3);
       }
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
@@ -323,7 +347,7 @@ test.describe('Count chips (#902)', () => {
 });
 
 test.describe('Matters list (#908)', () => {
-  test('one matter: no matters list, no New task button of a row; the matter is named and linked beside the open count', async ({
+  test('one matter: no matters list, no New task button of a row; the matter is named and linked after the tiles', async ({
     seed,
     personas,
     asUser,

@@ -56,10 +56,10 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await expect(page.locator('[data-strip-item="matters"], [data-strip-item="due3"]')).toHaveCount(
       0,
     );
-    await expect(page.locator('[data-strip-open]')).toContainText('6 open');
+    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b6\s+Open/);
     // The name carries the count and, for On hold, the oldest hold after it (#821).
     await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 0 days');
-    await expect(cell(page, 'onHold')).toHaveText(/^\s*1\s+on hold\s*$/);
+    await expect(cell(page, 'onHold')).toHaveText(/^\s*1\s+On hold\s*$/);
 
     const label = await page.locator('[data-mm-strip]').getAttribute('aria-label');
     expect(label).toContain('your matters');
@@ -373,9 +373,9 @@ test.describe('My Matters: the matters list', () => {
     await page.goto('/my-matters');
     await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no list
     await expect(page.locator('main')).not.toContainText('Orphaned');
-    // Nothing is overdue: no zero button, the headline says so (issue #918).
-    await expect(cell(page, 'overdue')).toHaveCount(0);
-    await expect(page.locator('[data-headline-none]')).toHaveText('Nothing is late');
+    // Nothing is overdue: the Overdue tile stays, muted and not red (issue #927).
+    await expect(cell(page, 'overdue')).toHaveClass(/tile--zero/);
+    await expect(cell(page, 'overdue')).not.toHaveClass(/tile--danger/);
     await expect(page.locator('main')).not.toContainText(
       /no (project )?manager|unmanaged|not managed/i,
     );

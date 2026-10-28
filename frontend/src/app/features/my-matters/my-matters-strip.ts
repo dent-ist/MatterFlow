@@ -7,12 +7,13 @@ import { OLDEST_FIRST, holdHint } from './facts';
 import { ManagedMatters } from './managed-matters';
 import { LoadGroup, panelLoader } from './panel-loader';
 
-/** One chip of the strip: the number, the words after it, where it leads and how loud it may be. */
-interface Chip {
+/** One tile of the strip: the number, the word under or beside it, where it leads and how loud it may be. */
+interface Tile {
   key: string;
   count: number | null;
-  words: string;
-  /** The accessible name: the count and the visible words (spelled out where they are short), and the oldest hold where there is one. */
+  /** The visible word ("Overdue"). */
+  label: string;
+  /** The accessible name: the count first, then the word (spelled out where it is short), and the oldest hold where there is one. */
   name: string;
   params: Params;
   /** `danger` (overdue) and `warning` (at risk) are loud only while the count is above zero. */
@@ -20,15 +21,13 @@ interface Chip {
 }
 
 /**
- * The count strip of My Matters (README 6.1, issues #902 and #918): the focal point of the page. The first thing in the content is ONE large headline, the
- * overdue and at risk counts made big ("9 overdue  6 at risk", red and amber), or "Nothing is late" in muted text when both are zero (not a new number: the same
- * two counts, larger). After it come the quiet counts as plain text buttons without a frame (Unassigned, On hold, Due soon) and one muted "N open" that opens
- * all open tasks. Every count is a button that opens the Task Queue with the filter it counts; the number comes first, so the accessible name carries the count
- * ("9 overdue"; "5 due soon, within 7 days"). The colour budget: red only for overdue and amber only for at risk, only above zero, and the words are always there
- * (colour is never alone); everything else is neutral text and a zero is grey. "Matters I manage" and "Due in 3 days" are gone. Every number is the total of
- * the list its button opens, and the buttons follow the page's Client / Role / Scope filters (said in the group's name); the date range belongs to the Deadlines
- * tab and does not narrow the strip. For one matter the muted count names it and links to it (the Matters list of the Overview is not drawn for one matter,
- * issue #908; the owner decided on 2026-10-28 that the name stays here and not in the title).
+ * The count tiles of My Matters (README 6.1, issues #927, #902 and #918): the focal point of the page. SIX tiles of one size, each a button with a large number and
+ * a short word: Overdue, At risk, Unassigned, On hold, Due soon (within 7 days) and Open. A tile opens the Task Queue with the filter it counts (the number comes
+ * first in its accessible name: "9 overdue", "5 due soon, within 7 days"), and every number is the total of the list it opens; the tiles follow the page's
+ * Client / Role / Scope filters (said in the group's name); the date range belongs to the calendar and does not narrow them. The colour budget: red only for
+ * Overdue and amber only for At risk, only while the count is above zero, the word is always there (colour is never alone); every other tile is neutral and a
+ * zero is muted. On a phone the tiles are two columns by three rows of 44 px targets. For one matter the Open tile is followed by its name as a link (the
+ * Matters list of the Overview is not drawn for one matter, issue #908; the owner decided on 2026-10-28 that the name stays here and not in the title).
  */
 @Component({
   selector: 'mf-mm-strip',
@@ -42,7 +41,7 @@ interface Chip {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 32px;
+      min-height: 40px;
       margin: 0 0 var(--mf-s2);
       overflow: hidden;
       white-space: nowrap;
@@ -65,114 +64,82 @@ interface Chip {
       padding: 0 var(--mf-s2);
     }
     .ms {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0 var(--mf-s4);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+      gap: var(--mf-s2);
+      width: min(100%, 56rem);
       margin: 0 0 var(--mf-s2);
       padding: 0;
       list-style: none;
     }
-    /* The headline (issue #918): the late work, large. Red for overdue, amber for at risk, only above zero; the words are always there. */
-    .ms__headline {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 0 var(--mf-s4);
+    .ms > li {
+      display: flex;
+      min-width: 0;
     }
-    .ms__big {
-      min-height: 32px;
-      padding: 0 var(--mf-s1);
-      border: 0;
-      background: none;
+    /* One tile (issue #927): the same size for all six, the number large and the word beside it. A button, so it is keyboard and screen reader friendly. */
+    .tile {
+      display: flex;
+      flex: 1 1 auto;
+      align-items: center;
+      justify-content: flex-start;
+      gap: var(--mf-s2);
+      box-sizing: border-box;
+      min-width: 0;
+      min-height: 40px;
+      padding: 0 var(--mf-s3);
+      border: 1px solid var(--mf-border-strong, var(--mf-border));
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
-      font-size: var(--mf-fs-h2);
-      font-weight: 700;
-      line-height: 1.3;
-      text-decoration: underline;
-      text-decoration-color: transparent;
-      text-underline-offset: 4px;
+      text-align: left;
       white-space: nowrap;
       cursor: pointer;
     }
-    .ms__big:hover {
-      text-decoration-color: currentColor;
+    .tile:hover {
+      background: var(--mf-selected-bg);
     }
-    .ms__big:focus-visible,
-    .ms__chip:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
-    }
-    .ms__big--danger {
-      color: var(--mf-danger);
-    }
-    .ms__big--warning {
-      color: var(--mf-warning);
-    }
-    .ms__none {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-h2);
-      font-weight: 600;
-      line-height: 1.3;
-    }
-    /* The quiet counts: plain text buttons, no frame (a frame is for the unusual). */
-    .ms__chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35em;
-      min-height: 28px;
-      padding: 0 var(--mf-s1);
-      border: 0;
-      background: none;
-      color: var(--mf-text);
-      font: inherit;
-      text-decoration: underline;
-      text-decoration-color: transparent;
-      text-underline-offset: 3px;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-    .ms__chip:hover {
-      text-decoration-color: currentColor;
-    }
-    .ms__chip strong {
-      font-variant-numeric: tabular-nums;
-    }
-    /* Nothing counted: grey, still a button. */
-    .ms__chip--zero {
-      color: var(--mf-text-muted);
-    }
-    .ms__chip--zero strong {
-      font-weight: 400;
-    }
-    .ms__open {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0 0.35em;
-      color: var(--mf-text-muted);
-    }
-    .ms__open-link {
-      min-height: 28px;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
-      font: inherit;
-      text-decoration: underline;
-      text-decoration-color: transparent;
-      text-underline-offset: 2px;
-      cursor: pointer;
-    }
-    .ms__open-link:hover {
-      color: var(--mf-text);
-      text-decoration-color: currentColor;
-    }
-    .ms__open-link:focus-visible,
+    .tile:focus-visible,
     .ms__matter:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
+    }
+    .tile__n {
+      font-size: var(--mf-fs-h2);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .tile__l {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* Red only for Overdue and amber only for At risk, and only above zero; the word is always printed. */
+    .tile--danger {
+      border-color: var(--mf-danger);
+    }
+    .tile--danger .tile__n {
+      color: var(--mf-danger);
+    }
+    .tile--warning {
+      border-color: var(--mf-warning);
+    }
+    .tile--warning .tile__n {
+      color: var(--mf-warning);
+    }
+    /* Nothing counted: muted, still a button. */
+    .tile--zero {
+      color: var(--mf-text-muted);
+      border-color: var(--mf-border);
+    }
+    .tile--zero .tile__n {
+      font-weight: 400;
+    }
+    .ms__matter-note {
+      align-items: center;
+      min-width: 0;
+      grid-column: 1 / -1;
+      color: var(--mf-text-muted);
     }
     .ms__matter {
       display: inline-flex;
@@ -180,61 +147,24 @@ interface Chip {
       min-height: 24px;
       min-width: 0;
       max-width: 100%;
+      margin-left: 0.35em;
       color: var(--mf-link);
       /* A matter name is one long word for some firms: it breaks instead of widening the page (found by the long-names test of the final gate). */
       overflow-wrap: anywhere;
     }
-    .ms__open {
-      min-width: 0;
-      max-width: 100%;
-    }
     @media (max-width: 639.98px) {
-      /* A phone (issue #922): ONE row that scrolls sideways (the last chip is cut off as the cue), four chips (Overdue, At risk, Unassigned, On hold; "Due
-         in 7 days" is the Next 7 days section below) and then the muted count, so the strip is 44 px high, not four rows. */
+      /* A phone: two columns by three rows of 44 px targets (issue #927). */
       .ms {
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        scrollbar-width: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--mf-s1) var(--mf-s2);
       }
-      .ms > li {
-        flex: none;
-      }
-      .ms {
-        gap: 0 var(--mf-s2);
-      }
-      .ms__headline {
-        flex-wrap: nowrap;
-        gap: 0 var(--mf-s2);
-      }
-      .ms__big,
-      .ms__none {
-        font-size: var(--mf-fs-h3);
-      }
-      .ms__chip--seven {
-        display: none;
-      }
-      .ms__open {
-        flex-wrap: nowrap;
-        white-space: nowrap;
-      }
-      .ms__matter {
-        overflow-wrap: normal;
-      }
-      .ms__chip,
-      .ms__big,
-      .ms__open-link,
-      .ms__matter,
+      .tile,
       .ms__error,
       .ms__error .mf-btn {
         min-height: 44px;
       }
-      .ms__matter {
-        display: inline-flex;
-        align-items: center;
-      }
-      .ms__open {
-        margin-left: 0;
+      .ms__matter-note {
+        display: none;
       }
       :host {
         margin-bottom: var(--mf-s1);
@@ -243,7 +173,7 @@ interface Chip {
   `,
   template: `
     @if (loader.state() === 'error') {
-      <!-- The row keeps the height of the headline (32 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
+      <!-- The row keeps the height of a tile (40 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
       @if (group?.many()) {
         <div class="ms__error ms__error--muted" data-strip-notloaded>Summary not loaded.</div>
       } @else {
@@ -262,55 +192,29 @@ interface Chip {
         [attr.aria-busy]="loader.busy() ? 'true' : null"
         data-mm-strip
       >
-        <li class="ms__headline" data-mm-headline>
-          @for (c of headline(); track c.key) {
-            <button
-              type="button"
-              class="ms__big"
-              [class.ms__big--danger]="c.tone === 'danger' && !!c.count"
-              [class.ms__big--warning]="c.tone === 'warning' && !!c.count"
-              [attr.aria-label]="c.name"
-              [attr.data-strip-item]="c.key"
-              (click)="open(c.params)"
-            >
-              {{ c.count ?? '--' }} {{ c.words }}
-            </button>
-          } @empty {
-            <span class="ms__none" data-headline-none>Nothing is late</span>
-          }
-        </li>
-        @for (c of quiet(); track c.key) {
+        @for (c of tiles(); track c.key) {
           <li>
             <button
               type="button"
-              class="ms__chip"
-              [class.ms__chip--seven]="c.key === 'due7'"
-              [class.ms__chip--zero]="c.count === 0"
+              class="tile"
+              [class.tile--danger]="c.tone === 'danger' && !!c.count"
+              [class.tile--warning]="c.tone === 'warning' && !!c.count"
+              [class.tile--zero]="c.count === 0"
               [attr.aria-label]="c.name"
               [attr.data-strip-item]="c.key"
               (click)="open(c.params)"
             >
-              <strong>{{ c.count ?? '--' }}</strong> {{ c.words }}
+              <span class="tile__n">{{ c.count ?? '--' }}</span
+              >{{ ' ' }}<span class="tile__l">{{ c.label }}</span>
             </button>
           </li>
         }
-        @if (summary(); as s) {
-          <li class="ms__open" data-strip-open>
-            <button
-              type="button"
-              class="ms__open-link"
-              [attr.aria-label]="s.count + ' open tasks'"
-              data-strip-item="open"
-              (click)="open(s.params)"
+        @if (only(); as m) {
+          <li class="ms__matter-note" data-strip-matter-note>
+            <span>Open tasks on</span>
+            <a class="ms__matter" data-strip-matter [routerLink]="['/matters', m.matterId]"
+              >{{ m.matterRef }} {{ m.name }}</a
             >
-              {{ s.count }} open
-            </button>
-            @if (only(); as m) {
-              <span>on</span>
-              <a class="ms__matter" data-strip-matter [routerLink]="['/matters', m.matterId]"
-                >{{ m.matterRef }} {{ m.name }}</a
-              >
-            }
           </li>
         }
       </ul>
@@ -371,66 +275,44 @@ export class MyMattersStrip {
       : null,
   );
 
-  /**
-   * The headline (issue #918): the overdue and at risk counts, made big, only the ones above zero. While the numbers are on their way both are drawn as
-   * "--", so the row does not jump; when both are zero the headline is the muted "Nothing is late".
-   */
-  protected readonly headline = computed(() => {
-    const late = this.chips().filter((c) => c.key === 'overdue' || c.key === 'atRisk');
-    return this.loader.data() ? late.filter((c) => !!c.count) : late;
-  });
-
-  /** The quiet counts: Unassigned, On hold, Due soon (zero is grey). */
-  protected readonly quiet = computed(() =>
-    this.chips().filter((c) => c.key !== 'overdue' && c.key !== 'atRisk'),
-  );
-
-  protected readonly chips = computed<Chip[]>(() => {
+  protected readonly tiles = computed<Tile[]>(() => {
     const s = this.loader.data();
-    const chip = (
+    const tile = (
       key: string,
+      label: string,
       words: string,
       c: DashboardCount | undefined,
-      tone: Chip['tone'],
+      tone: Tile['tone'],
       order: Params = {},
       hint = '',
-    ): Chip => ({
+    ): Tile => ({
       key,
       count: c?.count ?? null,
-      words,
+      label,
       name: `${c?.count ?? 'Unknown number of'} ${words}${hint ? `, ${hint}` : ''}`,
       params: c ? { ...queryToParams(c.query), ...order } : {},
       tone,
     });
     return [
       // Opens oldest overdue first: a person who handles overdue work starts with the longest wait (issue #817); Priority is one click on the header.
-      chip('overdue', 'overdue', s?.overdue, 'danger', OLDEST_FIRST),
+      tile('overdue', 'Overdue', 'overdue', s?.overdue, 'danger', OLDEST_FIRST),
       // PM v2 (#878): open, not overdue, 80 percent of the type's target used; the same rule as the Task Queue's At risk filter.
-      chip('atRisk', 'at risk', s?.atRisk, 'warning'),
-      chip('unassigned', 'unassigned', s?.unassigned, 'plain'),
-      chip(
+      tile('atRisk', 'At risk', 'at risk', s?.atRisk, 'warning'),
+      tile('unassigned', 'Unassigned', 'unassigned', s?.unassigned, 'plain'),
+      tile(
         'onHold',
+        'On hold',
         'on hold',
         s?.onHold,
         'plain',
         {},
         holdHint(s?.oldestHoldDays, s?.onHold.count),
       ),
-      // "Due soon" is the visible word; the name says what it counts (the Next 7 days section below it is the same window).
-      chip('due7', 'due soon', s?.dueIn7Days, 'plain', {}, 'within 7 days'),
+      // "Due soon" is the visible word; the name says what it counts (the Next 7 days grid below is the same window).
+      tile('due7', 'Due soon', 'due soon', s?.dueIn7Days, 'plain', {}, 'within 7 days'),
+      // All open tasks.
+      tile('open', 'Open', 'open tasks', s?.openTasks, 'plain'),
     ];
-  });
-
-  /** "24 open" (all open tasks) and how many matters they are on, muted. */
-  protected readonly summary = computed(() => {
-    const s = this.loader.data();
-    return s
-      ? {
-          count: s.openTasks.count,
-          matters: s.matters.count,
-          params: queryToParams(s.openTasks.query),
-        }
-      : null;
   });
 
   protected open(params: Params): void {

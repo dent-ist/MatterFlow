@@ -201,13 +201,11 @@ test.describe('Phone first screen (#922)', () => {
         return out;
       });
       expect(small).toEqual([]);
-      // The strip is one row of at most four chips plus the muted count; it does not wrap.
+      // The strip is two columns by three rows of 44 px tiles (issue #927): 3 x 44 plus the gaps.
       const strip = await page.locator('[data-mm-strip]').boundingBox();
-      expect(strip!.height).toBeLessThanOrEqual(48);
-      // The headline (overdue, at risk) and the quiet counts shown on a phone (unassigned, on hold; due soon is the Next 7 days section).
-      await expect(
-        page.locator('[data-mm-strip] .ms__big, [data-mm-strip] .ms__chip:visible'),
-      ).toHaveCount(4);
+      expect(strip!.height).toBeLessThanOrEqual(150);
+      // All six tiles are on a phone, each a 44 px target.
+      await expect(page.locator('[data-mm-strip] .tile')).toHaveCount(6);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -291,7 +289,7 @@ test.describe('Loading and error (#921)', () => {
     await retries(page).click();
     await expect(page.locator('[data-page-error]')).toHaveCount(0);
     await expect(page.locator('[data-attention-item]').first()).toBeVisible();
-    await expect(page.locator('[data-mm-strip] .ms__chip').first()).toBeVisible();
+    await expect(page.locator('[data-mm-strip] .tile').first()).toBeVisible();
   });
 
   test('one section failing keeps its own message and Retry, no banner; a strip failure does not move the tabs', async ({

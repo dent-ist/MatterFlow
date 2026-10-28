@@ -373,7 +373,7 @@ describe('MyMattersPage', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows the late work as a large headline, then the quiet counts and a muted open count, all buttons opening the lists they count (#902, #918)', async () => {
+  it('shows six equal tiles in a fixed order, red only for Overdue and amber only for At risk, all buttons opening the lists they count (#927)', async () => {
     const h = await open('/my-matters');
     const chips = Array.from(el(h).querySelectorAll<HTMLButtonElement>('button[data-strip-item]'));
     expect(chips.map((c) => c.getAttribute('data-strip-item'))).toEqual([
@@ -384,7 +384,7 @@ describe('MyMattersPage', () => {
       'due7',
       'open',
     ]);
-    // The accessible name carries the count; the oldest hold is said with the on-hold chip (never before the count, #821).
+    // The accessible name starts with the count; the oldest hold is said with the on-hold tile (never before the count, #821).
     expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
       '9 overdue',
       '5 at risk',
@@ -393,18 +393,38 @@ describe('MyMattersPage', () => {
       '41 due soon, within 7 days',
       '212 open tasks',
     ]);
-    expect(chips[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('9 overdue');
-    // The headline: overdue red and at risk amber, large; the quiet counts are plain text.
-    expect(chips[0].classList.contains('ms__big--danger')).toBe(true);
-    expect(chips[1].classList.contains('ms__big--warning')).toBe(true);
-    expect(chips[2].classList.contains('ms__big')).toBe(false);
-    expect(el(h).querySelector('[data-mm-headline]')!.contains(chips[1])).toBe(true);
-    expect(chips[4].textContent?.replace(/\s+/g, ' ').trim()).toBe('41 due soon');
+    // A large number and a short word in every tile.
+    expect(chips.map((c) => c.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+      '9 Overdue',
+      '5 At risk',
+      '6 Unassigned',
+      '3 On hold',
+      '41 Due soon',
+      '212 Open',
+    ]);
+    expect(chips.every((c) => c.classList.contains('tile'))).toBe(true);
+    expect(chips.every((c) => c.querySelector('.tile__n') && c.querySelector('.tile__l'))).toBe(
+      true,
+    );
+    // Red only for Overdue and amber only for At risk; nothing else is loud.
+    expect(chips.map((c) => c.classList.contains('tile--danger'))).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(chips.map((c) => c.classList.contains('tile--warning'))).toEqual([
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
     // "Matters I manage" and "Due in 3 days" are gone.
     expect(el(h).querySelector('[data-strip-item=matters], [data-strip-item=due3]')).toBeNull();
-    expect(el(h).querySelector('[data-strip-open]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
-      '212 open',
-    );
     expect(el(h).querySelector('[data-mm-strip]')!.getAttribute('aria-label')).toContain(
       'your matters',
     );
@@ -424,7 +444,7 @@ describe('MyMattersPage', () => {
     ]);
   });
 
-  it('nothing late: the headline says so in muted text, no zero overdue or at risk button; a quiet count of zero is grey but reachable (#918)', async () => {
+  it('nothing late: a zero tile is muted but still a button, and no tile is red or amber (#927)', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersSummary'].mockReturnValue(
         of({
@@ -435,14 +455,17 @@ describe('MyMattersPage', () => {
         }),
       );
     });
-    const chip = (key: string) =>
-      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`);
-    expect(el(h).querySelector('[data-headline-none]')!.textContent).toBe('Nothing is late');
-    expect(chip('overdue')).toBeNull();
-    expect(chip('atRisk')).toBeNull();
-    expect(chip('unassigned')!.classList.contains('ms__chip--zero')).toBe(true);
-    expect(chip('unassigned')!.disabled).toBe(false);
-    expect(chip('onHold')!.classList.contains('ms__chip--zero')).toBe(false);
+    const tile = (key: string) =>
+      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`)!;
+    // All six tiles stay (the strip does not rearrange itself), the zeros are muted and not loud.
+    expect(el(h).querySelectorAll('button[data-strip-item]').length).toBe(6);
+    expect(tile('overdue').classList.contains('tile--zero')).toBe(true);
+    expect(tile('overdue').classList.contains('tile--danger')).toBe(false);
+    expect(tile('atRisk').classList.contains('tile--warning')).toBe(false);
+    expect(tile('unassigned').classList.contains('tile--zero')).toBe(true);
+    expect(tile('unassigned').disabled).toBe(false);
+    expect(tile('onHold').classList.contains('tile--zero')).toBe(false);
+    expect(el(h).querySelector('[data-headline-none]')).toBeNull();
   });
 
   it('sends no date range to the strip and the other panels; Next 7 days asks for today to seven days ahead, whatever the range (#896)', async () => {
