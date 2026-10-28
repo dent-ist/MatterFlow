@@ -56,7 +56,7 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await expect(page.locator('[data-strip-item="matters"], [data-strip-item="due3"]')).toHaveCount(
       0,
     );
-    await expect(page.locator('[data-strip-open]')).toContainText('6 open on 2 matters');
+    await expect(page.locator('[data-strip-open]')).toContainText('6 open');
     // The name carries the count and, for On hold, the oldest hold after it (#821).
     await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 0 days');
     await expect(cell(page, 'onHold')).toHaveText(/^\s*1\s+on hold\s*$/);
@@ -219,10 +219,10 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
       'unassigned',
     );
     await expect(attention.locator('[data-fact]').first()).toContainText('overdue');
-    // An unassigned task's reason is the assignee column ("No assignee"); its time text is the day it is due (issue #901).
+    // An unassigned task's reason is the assignee column ("Unassigned"); its time text is the day it is due (issue #901).
     await expect(
       attention.locator('[data-attention-item]').nth(1).locator('[data-row-who]'),
-    ).toHaveText('No assignee');
+    ).toHaveText('Unassigned');
     await expect(attention.locator('[data-fact]').nth(1)).toHaveText(/^due |^ASAP$/);
     await expect(attention.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(
       0,
@@ -373,7 +373,9 @@ test.describe('My Matters: the matters list', () => {
     await page.goto('/my-matters');
     await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no list
     await expect(page.locator('main')).not.toContainText('Orphaned');
-    await expect(cell(page, 'overdue')).toHaveAttribute('aria-label', '0 overdue');
+    // Nothing is overdue: no zero button, the headline says so (issue #918).
+    await expect(cell(page, 'overdue')).toHaveCount(0);
+    await expect(page.locator('[data-headline-none]')).toHaveText('Nothing is late');
     await expect(page.locator('main')).not.toContainText(
       /no (project )?manager|unmanaged|not managed/i,
     );

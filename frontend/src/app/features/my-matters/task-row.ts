@@ -38,7 +38,7 @@ export function rowLinkName(
  * One task row of the My Matters lists (`li[mfMmTaskRow]`, epic #893 issue #897, built once for Needs my attention, Next 7 days and the Deadlines tab):
  * the task type's icon in its colour (28 px, so the colour reads), the code and the title as the one link, the matter's name as short grey text after the
  * title only where the page shows several matters, a pill only for what is unusual (High or Critical, At risk, On hold; "Normal" and "Low" are never
- * printed), and then the SAME TWO COLUMNS on the right in every list (issue #901): WHO (the assignee, or "No assignee", muted) and WHEN (the time text:
+ * printed), and then the SAME TWO COLUMNS on the right in every list (issue #901): WHO (the assignee, or "Unassigned", muted) and WHEN (the time text:
  * the reason such as "23 d overdue", or the due day; the only coloured element of the row, red for overdue and amber for at risk). On a phone it is a card
  * (title, matter, pills, then who and when on one line, in the same order). The tooltip of the time text carries what was left out (the reason of a hold).
  * Row focus returns after Back (`rowKey`, `mfRowLink`).
@@ -280,7 +280,7 @@ export class MmTaskRow {
   readonly rowScope = input.required<string>();
   /** The matter's name is drawn after the title: only on a page that shows several matters (a matter named on every row says nothing). */
   readonly showMatter = input(false);
-  /** WHO, the first right-hand column: the assignee, or "No assignee" (muted). */
+  /** WHO, the first right-hand column: the assignee, or "Unassigned" (muted). */
   readonly who = input('');
   /** WHEN, the second right-hand column: the time text ("23 d overdue", "due today", "on hold 12 d", "Wed Oct 28"). */
   readonly when = input.required<string>();

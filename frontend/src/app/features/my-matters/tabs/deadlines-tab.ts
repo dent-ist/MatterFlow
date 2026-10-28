@@ -376,7 +376,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
                   kind="deadline"
                   rowScope="my-matters-deadlines-tab"
                   [task]="t"
-                  [who]="t.assigneeName ?? 'No assignee'"
+                  [who]="t.assigneeName ?? 'Unassigned'"
                   [when]="due(t)"
                 ></li>
               }

@@ -112,6 +112,7 @@ test.describe('One "what changed" line, on the Activity tab (#909, #895, owner d
     await expect(line).toHaveCount(1);
     await expect(line).toContainText('Since your last visit:');
     // Only the four that need a decision are counted; comments are not.
+    await expect(line.locator('[data-since-figures] a').first()).toBeVisible();
     const parts = (await line.locator('[data-since-figures] a').allInnerTexts()).map((t) =>
       t.replace(/\s+/g, ' ').trim(),
     );
@@ -236,7 +237,7 @@ test.describe('Count chips (#902)', () => {
       expect((await chip.getAttribute('aria-label')) ?? '', key).toMatch(/^\d+ /);
     }
     await expect(page.locator('[data-strip-item=matters], [data-strip-item=due3]')).toHaveCount(0);
-    await expect(page.locator('[data-strip-open]')).toContainText('open on 3 matters');
+    await expect(page.locator('[data-strip-open]')).toContainText(/\d+ open\s*$/);
     // Every chip opens the Task Queue with exactly the tasks it counts.
     for (const key of [...keys, 'open']) {
       await page.goto('/my-matters');
@@ -252,7 +253,7 @@ test.describe('Count chips (#902)', () => {
     }
   });
 
-  test('zeros are muted but still reachable; only Overdue (red) and At risk (amber) are loud, and only above zero', async ({
+  test('the late work is a headline (red, amber, only above zero; "Nothing is late" otherwise); the quiet counts are plain text, grey at zero and still reachable', async ({
     seed,
     personas,
     asUser,
@@ -262,26 +263,28 @@ test.describe('Count chips (#902)', () => {
     await page.goto('/my-matters');
     await settled(page);
     const state = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLButtonElement>('button[data-strip-item].ms__chip')].map(
-        (b) => ({
-          key: b.getAttribute('data-strip-item'),
-          zero: b.classList.contains('ms__chip--zero'),
-          danger: b.classList.contains('ms__chip--danger'),
-          warning: b.classList.contains('ms__chip--warning'),
-          count: Number(b.getAttribute('aria-label')!.split(' ')[0]),
-          disabled: b.disabled,
-        }),
-      ),
+      [...document.querySelectorAll<HTMLButtonElement>('button[data-strip-item]')].map((b) => ({
+        key: b.getAttribute('data-strip-item'),
+        zero: b.classList.contains('ms__chip--zero'),
+        danger: b.classList.contains('ms__big--danger'),
+        warning: b.classList.contains('ms__big--warning'),
+        count: Number(b.getAttribute('aria-label')!.split(' ')[0]),
+        disabled: b.disabled,
+      })),
     );
-    expect(state.length).toBe(5);
+    // The headline draws only the late counts above zero; the three quiet counts are always drawn.
+    expect(state.length).toBeGreaterThanOrEqual(4);
     for (const s of state) {
-      expect(s.zero, `${s.key}: muted exactly when zero`).toBe(s.count === 0);
       expect(s.disabled, `${s.key}: reachable`).toBe(false);
-      if (s.key === 'overdue') expect(s.danger).toBe(s.count > 0);
+      if (s.key === 'overdue') expect([s.danger, s.count > 0]).toEqual([true, true]);
       else expect(s.danger).toBe(false);
-      if (s.key === 'atRisk') expect(s.warning).toBe(s.count > 0);
+      if (s.key === 'atRisk') expect([s.warning, s.count > 0]).toEqual([true, true]);
       else expect(s.warning).toBe(false);
+      if (s.key !== 'overdue' && s.key !== 'atRisk')
+        expect(s.zero, `${s.key}: grey exactly when zero`).toBe(s.count === 0);
     }
+    if (!state.some((s) => s.key === 'overdue' || s.key === 'atRisk'))
+      await expect(page.locator('[data-headline-none]')).toHaveText('Nothing is late');
     // A zero chip works with the keyboard like any other.
     const zero = page.locator('button[data-strip-item].ms__chip--zero').first();
     if ((await zero.count()) > 0) {

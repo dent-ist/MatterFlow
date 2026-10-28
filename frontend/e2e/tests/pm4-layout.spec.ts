@@ -57,13 +57,14 @@ test.describe('My Matters on a phone and a tablet', () => {
     expect(box.height).toBeLessThanOrEqual(48);
     expect(box.x + box.width).toBeLessThanOrEqual(375);
     await expect(page.locator('[data-strip-item=due7]')).toBeHidden();
-    for (const key of ['overdue', 'atRisk', 'unassigned', 'onHold']) {
+    // Overdue and At risk are the headline and are drawn only above zero; this person has one overdue task and none at risk.
+    for (const key of ['overdue', 'unassigned', 'onHold']) {
       const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
       expect(cell.x, `${key} starts inside the page`).toBeGreaterThanOrEqual(0);
       expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
       expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(44);
     }
-    for (const key of ['overdue', 'atRisk']) {
+    for (const key of ['overdue']) {
       const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
       expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
     }

@@ -381,7 +381,7 @@ describe('MyMattersPage', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows five chips that are buttons opening the lists they count, then a muted open count (#902)', async () => {
+  it('shows the late work as a large headline, then the quiet counts and a muted open count, all buttons opening the lists they count (#902, #918)', async () => {
     const h = await open('/my-matters');
     const chips = Array.from(el(h).querySelectorAll<HTMLButtonElement>('button[data-strip-item]'));
     expect(chips.map((c) => c.getAttribute('data-strip-item'))).toEqual([
@@ -398,16 +398,20 @@ describe('MyMattersPage', () => {
       '5 at risk',
       '6 unassigned',
       '3 on hold, oldest 12 days',
-      '41 due in 7 days',
+      '41 due soon, within 7 days',
       '212 open tasks',
     ]);
     expect(chips[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('9 overdue');
-    expect(chips[0].classList.contains('ms__chip--danger')).toBe(true);
-    expect(chips[1].classList.contains('ms__chip--warning')).toBe(true);
+    // The headline: overdue red and at risk amber, large; the quiet counts are plain text.
+    expect(chips[0].classList.contains('ms__big--danger')).toBe(true);
+    expect(chips[1].classList.contains('ms__big--warning')).toBe(true);
+    expect(chips[2].classList.contains('ms__big')).toBe(false);
+    expect(el(h).querySelector('[data-mm-headline]')!.contains(chips[1])).toBe(true);
+    expect(chips[4].textContent?.replace(/\s+/g, ' ').trim()).toBe('41 due soon');
     // "Matters I manage" and "Due in 3 days" are gone.
     expect(el(h).querySelector('[data-strip-item=matters], [data-strip-item=due3]')).toBeNull();
-    expect(el(h).querySelector('[data-strip-open]')!.textContent).toContain(
-      '212 open on 14 matters',
+    expect(el(h).querySelector('[data-strip-open]')!.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      '212 open',
     );
     expect(el(h).querySelector('[data-mm-strip]')!.getAttribute('aria-label')).toContain(
       'your matters',
@@ -428,23 +432,25 @@ describe('MyMattersPage', () => {
     ]);
   });
 
-  it('mutes a chip that counts nothing and keeps it reachable; only Overdue and At risk are loud, and only above zero', async () => {
+  it('nothing late: the headline says so in muted text, no zero overdue or at risk button; a quiet count of zero is grey but reachable (#918)', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersSummary'].mockReturnValue(
         of({
           ...summary(),
           overdue: count(0, 'managedByMe=true&overdue=true'),
           atRisk: count(0, 'q'),
+          unassigned: count(0, 'q'),
         }),
       );
     });
     const chip = (key: string) =>
-      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`)!;
-    expect(chip('overdue').classList.contains('ms__chip--zero')).toBe(true);
-    expect(chip('overdue').classList.contains('ms__chip--danger')).toBe(false);
-    expect(chip('overdue').disabled).toBe(false);
-    expect(chip('atRisk').classList.contains('ms__chip--warning')).toBe(false);
-    expect(chip('unassigned').classList.contains('ms__chip--zero')).toBe(false);
+      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`);
+    expect(el(h).querySelector('[data-headline-none]')!.textContent).toBe('Nothing is late');
+    expect(chip('overdue')).toBeNull();
+    expect(chip('atRisk')).toBeNull();
+    expect(chip('unassigned')!.classList.contains('ms__chip--zero')).toBe(true);
+    expect(chip('unassigned')!.disabled).toBe(false);
+    expect(chip('onHold')!.classList.contains('ms__chip--zero')).toBe(false);
   });
 
   it('sends no date range to the strip and the other panels; Next 7 days asks for today to seven days ahead, whatever the range (#896)', async () => {
@@ -522,12 +528,12 @@ describe('MyMattersPage', () => {
     expect(row1.getAttribute('href')).toBe('/tasks/1?from=my-matters');
     // The link keeps the task, the matter and the reason in its name.
     expect(row1.getAttribute('aria-label')).toBe(
-      'TSK-1 Task 1, 90001-80001 Merger, No assignee, 3 d overdue',
+      'TSK-1 Task 1, 90001-80001 Merger, Unassigned, 3 d overdue',
     );
-    // Two right-hand columns (issue #901): who, then when. An unassigned task's reason is "No assignee" in the who column, its time text is its due day.
+    // Two right-hand columns (issue #901): who, then when. An unassigned task's reason is "Unassigned" in the who column, its time text is its due day.
     expect(rows.map((r) => r.querySelector('[data-row-who]')!.textContent!.trim())).toEqual([
-      'No assignee',
-      'No assignee',
+      'Unassigned',
+      'Unassigned',
     ]);
     expect(rows.map((r) => r.querySelector('[data-fact]')!.textContent!.trim())).toEqual([
       '3 d overdue',
@@ -1428,7 +1434,7 @@ describe('MyMattersPage', () => {
       const link = rows[2].querySelector('a[data-attention-row]')!;
       expect(link.textContent!.trim()).toBe('TSK-3 Task 3');
       expect(link.getAttribute('aria-label')).toBe(
-        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, No assignee, 3 d overdue',
+        'TSK-3 Task 3, 90001-80001 Merger, Normal priority, Unassigned, 3 d overdue',
       );
     });
 

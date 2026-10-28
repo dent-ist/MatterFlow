@@ -17,9 +17,6 @@ import { SectionTypes, TypeOption } from './section-types';
 /** The checklist gets a search box above this many task types. */
 const SEARCH_OVER = 10;
 
-/** At most this many task types are drawn at once (a search finds the rest): a list of hundreds would make every click slow. */
-const MAX_ROWS = 100;
-
 /** The text of the Focus chip: "Focus: Intake, Production" (a type the list does not know shows by its number). */
 export function focusLabel(ids: readonly number[], options: readonly TypeOption[]): string {
   const names = ids.map((id) => options.find((o) => o.id === id)?.name ?? `Task type ${id}`);
@@ -106,11 +103,6 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
             (input)="query.set($any($event.target).value)"
           />
         }
-        @if (capped()) {
-          <p class="fc__hint" data-focus-capped>
-            Showing the first 100. Search to find the others.
-          </p>
-        }
         @if (options.options().length === 0) {
           <p class="fc__hint" data-focus-none>No task types to choose from.</p>
         } @else {
@@ -173,13 +165,8 @@ export class FocusControl {
     const all = this.options.options();
     const list =
       q && all.length > SEARCH_OVER ? all.filter((o) => o.name.toLowerCase().includes(q)) : all;
-    return [...list]
-      .sort((a, b) => Number(saved.includes(b.id)) - Number(saved.includes(a.id)))
-      .slice(0, MAX_ROWS);
+    return [...list].sort((a, b) => Number(saved.includes(b.id)) - Number(saved.includes(a.id)));
   });
-  protected readonly capped = computed(
-    () => this.options.options().length > MAX_ROWS && this.query().trim() === '',
-  );
 
   constructor() {
     this.options.ensure();

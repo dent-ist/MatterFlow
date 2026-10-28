@@ -12,7 +12,7 @@ interface Chip {
   key: string;
   count: number | null;
   words: string;
-  /** The accessible name: the count and the words, and the oldest hold where there is one. */
+  /** The accessible name: the count and the visible words (spelled out where they are short), and the oldest hold where there is one. */
   name: string;
   params: Params;
   /** `danger` (overdue) and `warning` (at risk) are loud only while the count is above zero. */
@@ -20,13 +20,15 @@ interface Chip {
 }
 
 /**
- * The count strip of My Matters (README 6.1, issue #902): five chips that each open the Task Queue with the filter they count - Overdue, At risk, Unassigned,
- * On hold and Due in 7 days - then one muted "N open" that opens all open tasks. A chip is a button with a hover and focus state; the number comes first
- * ("9 overdue"), so the accessible name carries the count. A zero stays reachable but muted; only Overdue is red and only At risk amber, and only above zero (the
- * words are always there, colour is never alone). "Matters I manage" and "Due in 3 days" are gone: the first is the page's scope, the second is always inside
- * "7 days". Every number is the total of the list its chip opens, and the chips follow the page's Client / Role / Scope filters (said in the group's name); the
- * date range belongs to the Deadlines tab and does not narrow the strip. For one matter the muted count names it and links to it (the Matters list of the
- * Overview is not drawn for one matter, issue #908).
+ * The count strip of My Matters (README 6.1, issues #902 and #918): the focal point of the page. The first thing in the content is ONE large headline, the
+ * overdue and at risk counts made big ("9 overdue  6 at risk", red and amber), or "Nothing is late" in muted text when both are zero (not a new number: the same
+ * two counts, larger). After it come the quiet counts as plain text buttons without a frame (Unassigned, On hold, Due soon) and one muted "N open" that opens
+ * all open tasks. Every count is a button that opens the Task Queue with the filter it counts; the number comes first, so the accessible name carries the count
+ * ("9 overdue"; "5 due soon, within 7 days"). The colour budget: red only for overdue and amber only for at risk, only above zero, and the words are always there
+ * (colour is never alone); everything else is neutral text and a zero is grey. "Matters I manage" and "Due in 3 days" are gone. Every number is the total of
+ * the list its button opens, and the buttons follow the page's Client / Role / Scope filters (said in the group's name); the date range belongs to the Deadlines
+ * tab and does not narrow the strip. For one matter the muted count names it and links to it (the Matters list of the Overview is not drawn for one matter,
+ * issue #908; the owner decided on 2026-10-28 that the name stays here and not in the title).
  */
 @Component({
   selector: 'mf-mm-strip',
@@ -40,7 +42,7 @@ interface Chip {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 28px;
+      min-height: 32px;
       margin: 0 0 var(--mf-s2);
       overflow: hidden;
       white-space: nowrap;
@@ -66,67 +68,89 @@ interface Chip {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--mf-s2);
+      gap: 0 var(--mf-s4);
       margin: 0 0 var(--mf-s2);
       padding: 0;
       list-style: none;
     }
+    /* The headline (issue #918): the late work, large. Red for overdue, amber for at risk, only above zero; the words are always there. */
+    .ms__headline {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--mf-s4);
+    }
+    .ms__big {
+      min-height: 32px;
+      padding: 0 var(--mf-s1);
+      border: 0;
+      background: none;
+      color: var(--mf-text);
+      font: inherit;
+      font-size: var(--mf-fs-h2);
+      font-weight: 700;
+      line-height: 1.3;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 4px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .ms__big:hover {
+      text-decoration-color: currentColor;
+    }
+    .ms__big:focus-visible,
+    .ms__chip:focus-visible {
+      outline: 2px solid var(--mf-focus);
+      outline-offset: 2px;
+    }
+    .ms__big--danger {
+      color: var(--mf-danger);
+    }
+    .ms__big--warning {
+      color: var(--mf-warning);
+    }
+    .ms__none {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-h2);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    /* The quiet counts: plain text buttons, no frame (a frame is for the unusual). */
     .ms__chip {
       display: inline-flex;
       align-items: center;
       gap: 0.35em;
       min-height: 28px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong, var(--mf-border));
-      border-radius: 999px;
-      background: var(--mf-surface);
+      padding: 0 var(--mf-s1);
+      border: 0;
+      background: none;
       color: var(--mf-text);
       font: inherit;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 3px;
       white-space: nowrap;
       cursor: pointer;
     }
     .ms__chip:hover {
-      border-color: var(--mf-primary);
-      background: var(--mf-surface-alt);
-    }
-    .ms__chip:focus-visible {
-      outline: 2px solid var(--mf-focus);
-      outline-offset: 2px;
+      text-decoration-color: currentColor;
     }
     .ms__chip strong {
       font-variant-numeric: tabular-nums;
     }
-    /* Nothing counted: muted, still a button. */
+    /* Nothing counted: grey, still a button. */
     .ms__chip--zero {
-      border-color: var(--mf-border);
-      background: transparent;
       color: var(--mf-text-muted);
     }
     .ms__chip--zero strong {
       font-weight: 400;
-    }
-    .ms__chip--danger {
-      border-color: var(--mf-danger);
-      background: var(--mf-danger-bg);
-      color: var(--mf-danger);
-      font-weight: 600;
-    }
-    .ms__chip--warning {
-      border-color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
-      font-weight: 600;
-    }
-    .ms__chip--danger:hover,
-    .ms__chip--warning:hover {
-      filter: brightness(0.96);
     }
     .ms__open {
       display: inline-flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 0 0.35em;
-      margin-left: var(--mf-s2);
       color: var(--mf-text-muted);
     }
     .ms__open-link {
@@ -151,6 +175,9 @@ interface Chip {
       outline-offset: 2px;
     }
     .ms__matter {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
       min-width: 0;
       max-width: 100%;
       color: var(--mf-link);
@@ -173,6 +200,17 @@ interface Chip {
       .ms > li {
         flex: none;
       }
+      .ms {
+        gap: 0 var(--mf-s2);
+      }
+      .ms__headline {
+        flex-wrap: nowrap;
+        gap: 0 var(--mf-s2);
+      }
+      .ms__big,
+      .ms__none {
+        font-size: var(--mf-fs-h3);
+      }
       .ms__chip--seven {
         display: none;
       }
@@ -184,6 +222,7 @@ interface Chip {
         overflow-wrap: normal;
       }
       .ms__chip,
+      .ms__big,
       .ms__open-link,
       .ms__matter,
       .ms__error,
@@ -204,7 +243,7 @@ interface Chip {
   `,
   template: `
     @if (loader.state() === 'error') {
-      <!-- The row keeps the height of the chips (28 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
+      <!-- The row keeps the height of the headline (32 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
       @if (group?.many()) {
         <div class="ms__error ms__error--muted" data-strip-notloaded>Summary not loaded.</div>
       } @else {
@@ -223,22 +262,34 @@ interface Chip {
         [attr.aria-busy]="loader.busy() ? 'true' : null"
         data-mm-strip
       >
-        @for (c of chips(); track c.key) {
+        <li class="ms__headline" data-mm-headline>
+          @for (c of headline(); track c.key) {
+            <button
+              type="button"
+              class="ms__big"
+              [class.ms__big--danger]="c.tone === 'danger' && !!c.count"
+              [class.ms__big--warning]="c.tone === 'warning' && !!c.count"
+              [attr.aria-label]="c.name"
+              [attr.data-strip-item]="c.key"
+              (click)="open(c.params)"
+            >
+              {{ c.count ?? '--' }} {{ c.words }}
+            </button>
+          } @empty {
+            <span class="ms__none" data-headline-none>Nothing is late</span>
+          }
+        </li>
+        @for (c of quiet(); track c.key) {
           <li>
             <button
               type="button"
               class="ms__chip"
               [class.ms__chip--seven]="c.key === 'due7'"
               [class.ms__chip--zero]="c.count === 0"
-              [class.ms__chip--danger]="c.tone === 'danger' && !!c.count"
-              [class.ms__chip--warning]="c.tone === 'warning' && !!c.count"
               [attr.aria-label]="c.name"
               [attr.data-strip-item]="c.key"
               (click)="open(c.params)"
             >
-              @if (c.tone === 'danger' && c.count) {
-                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-              }
               <strong>{{ c.count ?? '--' }}</strong> {{ c.words }}
             </button>
           </li>
@@ -259,8 +310,6 @@ interface Chip {
               <a class="ms__matter" data-strip-matter [routerLink]="['/matters', m.matterId]"
                 >{{ m.matterRef }} {{ m.name }}</a
               >
-            } @else if (s.matters > 1) {
-              <span>on {{ s.matters }} matters</span>
             }
           </li>
         }
@@ -322,6 +371,20 @@ export class MyMattersStrip {
       : null,
   );
 
+  /**
+   * The headline (issue #918): the overdue and at risk counts, made big, only the ones above zero. While the numbers are on their way both are drawn as
+   * "--", so the row does not jump; when both are zero the headline is the muted "Nothing is late".
+   */
+  protected readonly headline = computed(() => {
+    const late = this.chips().filter((c) => c.key === 'overdue' || c.key === 'atRisk');
+    return this.loader.data() ? late.filter((c) => !!c.count) : late;
+  });
+
+  /** The quiet counts: Unassigned, On hold, Due soon (zero is grey). */
+  protected readonly quiet = computed(() =>
+    this.chips().filter((c) => c.key !== 'overdue' && c.key !== 'atRisk'),
+  );
+
   protected readonly chips = computed<Chip[]>(() => {
     const s = this.loader.data();
     const chip = (
@@ -353,7 +416,8 @@ export class MyMattersStrip {
         {},
         holdHint(s?.oldestHoldDays, s?.onHold.count),
       ),
-      chip('due7', 'due in 7 days', s?.dueIn7Days, 'plain'),
+      // "Due soon" is the visible word; the name says what it counts (the Next 7 days section below it is the same window).
+      chip('due7', 'due soon', s?.dueIn7Days, 'plain', {}, 'within 7 days'),
     ];
   });
 

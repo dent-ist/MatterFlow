@@ -181,14 +181,14 @@ export class AttentionPanel {
 
   protected readonly fact = factText;
 
-  /** WHO, the first right-hand column: the assignee, or "No assignee" (issue #901: the same columns in every list). */
+  /** WHO, the first right-hand column: the assignee, or "Unassigned" (issue #901: the same columns in every list). */
   protected who(t: MyMattersTaskItem): string {
-    return t.assigneeName ?? 'No assignee';
+    return t.assigneeName ?? 'Unassigned';
   }
 
   /**
    * WHEN, the second right-hand column: the reason as a time text ("23 d overdue", "at risk", "due today", "on hold 12 d"). An unassigned task's reason is
-   * the assignee column ("No assignee"), so its time text is the day it is due.
+   * the assignee column ("Unassigned"), so its time text is the day it is due.
    */
   protected when(t: MyMattersTaskItem): string {
     if (this.reasonKind(t) !== 'unassigned') return factText(t);

@@ -145,8 +145,9 @@ function plural(n: number, one: string, many: string): string {
       border-radius: var(--mf-radius);
       background: var(--mf-surface-alt, var(--mf-surface));
     }
+    /* Amber is for "at risk" only (issue #918): a warning about assets is neutral text with its icon. */
     .dt__warn .pi {
-      color: var(--mf-warning-text, var(--mf-text));
+      color: var(--mf-text);
     }
     .dt__warn a,
     .dt__show {

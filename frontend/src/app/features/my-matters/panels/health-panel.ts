@@ -117,15 +117,13 @@ export const MATTERS_SHOWN = 8;
       grid-area: counts;
       display: flex;
       flex-wrap: wrap;
-      gap: var(--mf-s1);
+      gap: 0 var(--mf-s3);
       justify-content: flex-end;
     }
+    /* The counts of a matter are plain text (a frame is for the unusual, issue #918): grey at zero, red only for overdue, amber only for at risk. */
     .mh__chip {
       display: inline-flex;
       align-items: center;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border);
-      border-radius: 999px;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       line-height: 1.6;
@@ -136,16 +134,16 @@ export const MATTERS_SHOWN = 8;
       font-variant-numeric: tabular-nums;
     }
     .mh__chip--danger {
-      border-color: var(--mf-danger);
-      background: var(--mf-danger-bg);
       color: var(--mf-danger);
       font-weight: 600;
     }
     .mh__chip--warning {
-      border-color: var(--mf-warning);
-      background: var(--mf-warning-bg);
       color: var(--mf-warning);
       font-weight: 600;
+    }
+    /* Unassigned is neither late nor at risk: neutral text. */
+    .mh__chip--plain {
+      color: var(--mf-text);
     }
     .mh__next {
       grid-area: next;
@@ -309,7 +307,7 @@ export const MATTERS_SHOWN = 8;
                       >
                     }
                     @if (r.unassigned > 0) {
-                      <span class="mh__chip mh__chip--warning" data-unassigned
+                      <span class="mh__chip mh__chip--plain" data-unassigned
                         ><strong>{{ r.unassigned }}</strong> unassigned</span
                       >
                     }

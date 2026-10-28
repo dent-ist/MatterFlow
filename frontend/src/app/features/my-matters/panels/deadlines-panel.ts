@@ -101,7 +101,7 @@ export const NEXT_DAYS_ROWS = 3;
               rowScope="my-matters-deadlines"
               [task]="t"
               [showMatter]="showMatter()"
-              [who]="t.assigneeName ?? 'No assignee'"
+              [who]="t.assigneeName ?? 'Unassigned'"
               [when]="dayOf(t)"
               [tone]="'plain'"
             ></li>

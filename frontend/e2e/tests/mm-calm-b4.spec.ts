@@ -204,7 +204,10 @@ test.describe('Phone first screen (#922)', () => {
       // The strip is one row of at most four chips plus the muted count; it does not wrap.
       const strip = await page.locator('[data-mm-strip]').boundingBox();
       expect(strip!.height).toBeLessThanOrEqual(48);
-      await expect(page.locator('[data-mm-strip] .ms__chip:visible')).toHaveCount(4);
+      // The headline (overdue, at risk) and the quiet counts shown on a phone (unassigned, on hold; due soon is the Next 7 days section).
+      await expect(
+        page.locator('[data-mm-strip] .ms__big, [data-mm-strip] .ms__chip:visible'),
+      ).toHaveCount(4);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -509,7 +512,7 @@ test.describe('The same right-hand pattern in every list (#901)', () => {
         assignedPodId: pod['podId'],
       },
     );
-    // And one that nobody holds, due in 2 days: it is listed under Needs my attention with "No assignee" in the assignee column.
+    // And one that nobody holds, due in 2 days: it is listed under Needs my attention with "Unassigned" in the assignee column.
     await seed.task(
       {
         matter: { matterId: p.matters[1].matterId },
@@ -538,10 +541,10 @@ test.describe('The same right-hand pattern in every list (#901)', () => {
     expect(a.who.x + a.who.width).toBeLessThanOrEqual(a.when.x + 1);
     // Who is muted, never coloured; the time text is the one coloured element (red for overdue).
     expect(await color(attention.locator('[data-fact]'))).not.toBe(whoColour);
-    await expect(attention.locator('[data-row-who]')).toHaveText('No assignee');
+    await expect(attention.locator('[data-row-who]')).toHaveText('Unassigned');
     // An unassigned task's reason is its assignee column; its time text is the day it is due ("due Sat Oct 31").
     const unassigned = page.locator('[data-reason=unassigned]').first();
-    await expect(unassigned.locator('[data-row-who]')).toHaveText('No assignee');
+    await expect(unassigned.locator('[data-row-who]')).toHaveText('Unassigned');
     await expect(unassigned.locator('[data-fact]')).toHaveText(
       /^due [A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}$|^ASAP$/,
     );
@@ -552,7 +555,7 @@ test.describe('The same right-hand pattern in every list (#901)', () => {
     expect(Math.abs(a.who.x - d.who.x), 'who is one column').toBeLessThan(1.5);
     expect(Math.abs(a.when.x - d.when.x), 'when is one column').toBeLessThan(1.5);
     expect(Math.abs(a.when.x + a.when.width - (d.when.x + d.when.width))).toBeLessThan(1.5);
-    await expect(deadline.locator('[data-row-who]')).not.toHaveText('No assignee');
+    await expect(deadline.locator('[data-row-who]')).not.toHaveText('Unassigned');
     expect(await color(deadline.locator('[data-row-who]'))).toBe(whoColour);
     await expect(deadline.locator('[data-fact]')).toHaveText(
       /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2}$/,

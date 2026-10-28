@@ -45,7 +45,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-scope=all]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
     // The world's own matter (00001), mine, theirs and the orphan: four active matters of this client.
-    await expect(page.locator('[data-strip-open]')).toContainText('4 open on 4 matters');
+    await expect(page.locator('[data-strip-open]')).toContainText('4 open');
     await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '3 overdue');
     expect(await count(page, 'open')).toBe(4);
     await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(4);
