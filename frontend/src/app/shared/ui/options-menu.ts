@@ -83,8 +83,11 @@ import {
     }
     /* A menu that holds whole controls (the phone's header menu): as wide as the screen allows, so a full-width switch fits. */
     .om--wide .om__panel {
+      grid-template-columns: minmax(0, 1fr);
       width: min(24rem, calc(100vw - 2rem));
       max-width: none;
+      max-height: calc(100dvh - 8rem);
+      overflow-y: auto;
     }
     @media (max-width: 639.98px) {
       .om__summary {

@@ -14,7 +14,7 @@ import { formatInstant, formatStatusStamp } from '../../../core/time/time';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { OverviewStates } from '../overview-states';
-import { panelLoader } from '../panel-loader';
+import { LoadGroup, panelLoader } from '../panel-loader';
 
 /** One figure of the sentence: its words and where it leads. */
 interface Figure {
@@ -91,6 +91,10 @@ export function figureLink(c: MyMattersSinceCount): {
       min-height: 24px;
       padding: 0 var(--mf-s2);
     }
+    .sv__muted {
+      margin: 0 0 var(--mf-s2);
+      color: var(--mf-text-muted);
+    }
     .sv__error {
       display: flex;
       flex-wrap: wrap;
@@ -99,6 +103,22 @@ export function figureLink(c: MyMattersSinceCount): {
       margin: 0 0 var(--mf-s2);
     }
     @media (max-width: 639.98px) {
+      /* A phone (issue #922): one 44 px row that scrolls sideways instead of three lines and a button under them. */
+      .sv {
+        flex-wrap: nowrap;
+        margin-bottom: 0;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        white-space: nowrap;
+      }
+      .sv__figures {
+        flex-wrap: nowrap;
+      }
+      .sv__lead,
+      .sv__mark {
+        flex: none;
+      }
       .sv__fig a,
       .sv__mark {
         min-height: 44px;
@@ -107,11 +127,19 @@ export function figureLink(c: MyMattersSinceCount): {
   `,
   template: `
     @if (loader.state() === 'error') {
-      <div class="sv__error" role="alert" data-panel-error>
-        <span>Couldn't load what changed since your last visit.</span>
-        <mf-error-reference />
-        <button type="button" class="mf-btn" data-panel-retry (click)="loader.load()">Retry</button>
-      </div>
+      @if (group?.many()) {
+        <p class="sv__muted" data-panel-notloaded>
+          What changed since your last visit: not loaded.
+        </p>
+      } @else {
+        <div class="sv__error" role="alert" data-panel-error>
+          <span>Couldn't load what changed since your last visit.</span>
+          <mf-error-reference />
+          <button type="button" class="mf-btn" data-panel-retry (click)="loader.load()">
+            Retry
+          </button>
+        </div>
+      }
     }
     @if (figures().length > 0) {
       <section
@@ -156,6 +184,7 @@ export class SincePanel {
   protected readonly marking = signal(false);
   protected readonly announcement = signal('');
 
+  protected readonly group = inject(LoadGroup, { optional: true });
   protected readonly loader = panelLoader(
     () => this.filters(),
     () => {
@@ -178,11 +207,13 @@ export class SincePanel {
     effect(() =>
       this.states?.report(
         'since',
-        this.loader.state() !== 'ready'
+        this.loader.state() === 'loading'
           ? 'loading'
-          : this.figures().length === 0
-            ? 'empty'
-            : 'content',
+          : this.loader.state() === 'error'
+            ? 'error'
+            : this.figures().length === 0
+              ? 'empty'
+              : 'content',
       ),
     );
   }

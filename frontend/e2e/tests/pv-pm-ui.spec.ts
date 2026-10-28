@@ -226,7 +226,14 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      await page.locator('[data-focus] [data-options-trigger]').click();
+      // On a phone the Focus is inside the one Options menu of the title row (issue #922).
+      await page
+        .locator(
+          size.width < 640
+            ? '[data-header-options] [data-options-trigger]'
+            : '[data-focus] [data-options-trigger]',
+        )
+        .click();
       await expect(page.locator('[data-focus-save]')).toBeVisible();
       await noSidewaysScroll(page, `Focus at ${size.name}`);
       await clean(page, `Focus open at ${size.name}`);

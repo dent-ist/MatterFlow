@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { StillLoading } from '../../../shared/ui/still-loading';
-import { PanelState } from '../panel-loader';
+import { LoadGroup, PanelState } from '../panel-loader';
 
 /**
  * The frame of every My Matters panel (README 6.9): an `h2` region, a skeleton while the first answer is on its way ("Still loading..."
@@ -23,25 +23,36 @@ import { PanelState } from '../panel-loader';
     >
       <header class="mmp__head">
         <h2 class="mmp__title" [id]="id() + '-h'" tabindex="-1">{{ title() }}</h2>
-        <div class="mmp__actions"><ng-content select="[mfPanelActions]" /></div>
+        <!-- No toolbar while the answer is on its way or has failed: it appears with the data (issue #921), so nothing jumps and nothing offers a choice about a list that is not there. -->
+        @if (state() === 'ready') {
+          <div class="mmp__actions"><ng-content select="[mfPanelActions]" /></div>
+        }
       </header>
       @switch (state()) {
         @case ('loading') {
           <p class="mf-sr-only" role="status" data-loading>Loading {{ title().toLowerCase() }}</p>
           <div class="mmp__sk" aria-hidden="true">
-            <span class="mmp__bar"></span><span class="mmp__bar"></span
-            ><span class="mmp__bar mmp__bar--short"></span>
+            @for (r of skeletonList(); track $index) {
+              <span class="mmp__row"
+                ><span class="mmp__bar" [class.mmp__bar--short]="$last"></span
+              ></span>
+            }
           </div>
           <mf-still-loading (retry)="retry.emit()" />
         }
         @case ('error') {
-          <div class="mmp__error" role="alert" data-panel-error>
-            <p>Couldn't load {{ title().toLowerCase() }}.</p>
-            <mf-error-reference />
-            <button type="button" class="mf-btn" data-panel-retry (click)="retry.emit()">
-              Retry
-            </button>
-          </div>
+          @if (group?.many()) {
+            <!-- Several sections failed: the page's one banner has the message, the reference and the Retry. -->
+            <p class="mmp__muted" data-panel-notloaded>{{ title() }} not loaded.</p>
+          } @else {
+            <div class="mmp__error" role="alert" data-panel-error>
+              <p>Couldn't load {{ title().toLowerCase() }}.</p>
+              <mf-error-reference />
+              <button type="button" class="mf-btn" data-panel-retry (click)="retry.emit()">
+                Retry
+              </button>
+            </div>
+          }
         }
         @default {
           <div class="mmp__body"><ng-content /></div>
@@ -136,12 +147,23 @@ import { PanelState } from '../panel-loader';
     }
     .mmp__sk {
       display: grid;
-      gap: var(--mf-s2);
+    }
+    /* A placeholder row is as high as the row it stands for (36 px, a card on a phone), so the data do not move the page when they arrive (issue #921). */
+    .mmp__row {
+      display: flex;
+      align-items: center;
+      min-height: var(--mmp-row-h, 36px);
     }
     .mmp__bar {
+      flex: 1 1 auto;
       height: 14px;
       border-radius: 4px;
       background: var(--mf-border);
+    }
+    .mmp__muted {
+      margin: 0;
+      padding: var(--mf-s2) 0;
+      color: var(--mf-text-muted);
     }
     .mmp__bar--short {
       width: 55%;
@@ -156,6 +178,13 @@ import { PanelState } from '../panel-loader';
     }
     /* A button the page projects into the heading (a toggle, Mark as read) is a 44 px target on a phone. */
     @media (max-width: 639.98px) {
+      /* The heading row of a section is as high as its 44 px Options button and View all link from the start, so they do not push the rows down when they appear (issue #921). */
+      .mmp--flat .mmp__head {
+        min-height: 44px;
+      }
+      .mmp__row {
+        min-height: var(--mmp-row-h-phone, 112px);
+      }
       :host ::ng-deep .mmp__actions .mf-btn {
         min-height: 44px;
       }
@@ -171,7 +200,13 @@ export class PanelBox {
   readonly bare = input(false);
   /** A section of the calm Overview: drawn without the card around it (issue #903). */
   readonly flat = input(false);
+  /** How many rows the skeleton stands for (the list's usual length), so its height is the list's. */
+  readonly skeleton = input(3);
   readonly retry = output<void>();
+  protected readonly group = inject(LoadGroup, { optional: true });
+  protected readonly skeletonList = computed(() =>
+    Array.from({ length: this.skeleton() }, (_, i) => i),
+  );
   protected id(): string {
     return 'mm-' + this.name();
   }

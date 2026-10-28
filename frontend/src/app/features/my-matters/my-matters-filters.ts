@@ -32,7 +32,7 @@ export const DEFAULT_FILTERS: MmFilters = {
 };
 
 export const ROLE_LABELS: Record<MmRole, string> = {
-  both: 'Both',
+  both: 'Primary or secondary',
   primary: 'Primary',
   secondary: 'Secondary',
 };

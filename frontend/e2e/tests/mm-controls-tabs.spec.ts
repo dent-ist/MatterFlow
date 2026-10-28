@@ -276,16 +276,22 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       emptyTops.set(`empty ${tab}`, await stripTop(page));
     }
 
-    // Slow answers: the strip is measured while the panels are still loading, and again once they are in.
+    // Slow answers: the strip is measured while the panels are still loading, and again once they are in. The answers are held until the test lets them go (not for
+    // a fixed time), so the strip is measured while its own request is open however slow the machine is; the page's brief hold of its first answers
+    // (1.2 s after it starts, issue #921) is over by then, because the tab strip is only visible once it has ended.
+    let gate: Promise<void> = Promise.resolve();
+    let release: () => void = () => undefined;
     await page.route('**/api/v1/my-matters/**', async (route) => {
-      await new Promise((r) => setTimeout(r, 1200));
+      await gate;
       await route.continue();
     });
     const loadTops = new Map<string, number>();
     for (const tab of TABS) {
+      gate = new Promise<void>((resolve) => (release = resolve));
       await page.goto(url(tab));
       await expect(page.locator('mf-tabs.mm__tabs')).toBeVisible();
       loadTops.set(`loading ${tab}`, await stripTop(page));
+      release();
       await settled(page, tab);
       loadTops.set(`loaded ${tab}`, await stripTop(page));
     }
@@ -299,7 +305,8 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
     for (const tab of TABS) {
       await page.goto(url(tab));
       await expect(page.locator(`#mm-tab-${tab}`)).toHaveAttribute('aria-selected', 'true');
-      await expect(page.locator('[data-strip-error]')).toBeVisible();
+      // Every call fails: ONE banner for the page, the strip keeps its row (issue #921).
+      await expect(page.locator('[data-page-error]')).toBeVisible();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
       errorTops.set(`error ${tab}`, await stripTop(page));
     }

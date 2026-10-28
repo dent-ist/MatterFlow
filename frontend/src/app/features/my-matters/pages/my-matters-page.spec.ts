@@ -612,7 +612,7 @@ describe('MyMattersPage', () => {
     expect(el(h).textContent).not.toMatch(/no (project )?manager/i);
   });
 
-  it('Next 7 days is a short flat list with the day first and no controls of its own; All deadlines opens the Deadlines tab (#896, #894)', async () => {
+  it('Next 7 days is a short flat list with who and the due day on the right and no controls of its own; All deadlines opens the Deadlines tab (#896, #894, #901)', async () => {
     const h = await open('/my-matters');
     const panel = el(h).querySelector('[data-panel=deadlines]')!;
     expect(panel.querySelector('h2')!.textContent).toBe('Next 7 days');
@@ -819,6 +819,67 @@ describe('MyMattersPage', () => {
     h.detectChanges();
     expect(api['getMyMattersAttention']).toHaveBeenCalledTimes(1);
     expect(el(h).querySelector('[data-panel=attention] [data-attention-list]')).not.toBeNull();
+  });
+
+  it('two or more failed calls: ONE banner and ONE Retry for the page, a muted "not loaded" line in each section; Retry asks every failed call again (#921)', async () => {
+    const h = await open('/my-matters');
+    for (const name of ['getMyMattersAttention', 'getMyMattersDeadlines', 'getMyMattersSummary'])
+      api[name].mockReturnValue(throwError(() => new Error('boom')));
+    await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
+    await h.fixture.whenStable();
+    h.detectChanges();
+    expect(el(h).querySelectorAll('[data-page-error]')).toHaveLength(1);
+    expect(el(h).querySelector('[data-page-error]')!.textContent).toContain(
+      "Couldn't load My Matters.",
+    );
+    // No section keeps a Retry of its own, and each says "not loaded" without a button.
+    expect(el(h).querySelectorAll('[data-panel-retry], [data-strip-retry]')).toHaveLength(0);
+    expect(el(h).querySelector('[data-panel-error], [data-strip-error]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=attention] [data-panel-notloaded]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=deadlines] [data-panel-notloaded]')).not.toBeNull();
+    expect(el(h).querySelector('[data-strip-notloaded]')).not.toBeNull();
+    // The one Retry asks each failed call once; the sections that were fine are left alone.
+    for (const name of ['getMyMattersAttention', 'getMyMattersDeadlines', 'getMyMattersSummary']) {
+      api[name].mockClear();
+      api[name].mockReturnValue(
+        of(
+          name === 'getMyMattersSummary'
+            ? summary()
+            : name === 'getMyMattersAttention'
+              ? attention()
+              : { items: [], total: 0, query: '' },
+        ),
+      );
+    }
+    api['getMyMattersHealth'].mockClear();
+    el(h).querySelector<HTMLButtonElement>('[data-page-retry]')!.click();
+    await h.fixture.whenStable();
+    h.detectChanges();
+    expect(api['getMyMattersAttention']).toHaveBeenCalledTimes(1);
+    expect(api['getMyMattersDeadlines']).toHaveBeenCalledTimes(1);
+    expect(api['getMyMattersSummary']).toHaveBeenCalledTimes(1);
+    expect(api['getMyMattersHealth']).not.toHaveBeenCalled();
+    expect(el(h).querySelector('[data-page-error]')).toBeNull();
+  });
+
+  it('a panel that is still loading has no toolbar: its Options and View all appear with the data (#921)', async () => {
+    const h = await open('/my-matters', undefined, (a) =>
+      a['getMyMattersAttention'].mockReturnValue(NEVER),
+    );
+    const panel = el(h).querySelector('[data-panel=attention]')!;
+    expect(panel.querySelector('[data-loading]')).not.toBeNull();
+    expect(panel.querySelector('mf-options-menu, [data-view-all]')).toBeNull();
+    // The skeleton stands for the five rows the list will have.
+    expect(panel.querySelectorAll('.mmp__row')).toHaveLength(5);
+  });
+
+  it('Role says "I am" with plain choices (Primary or secondary, Primary, Secondary) (#899)', async () => {
+    const h = await open('/my-matters?role=primary');
+    const bar = el(h).querySelector('[data-mm-filters]')!;
+    expect(bar.querySelector('label[for=mm-role]')!.textContent!.trim()).toBe('I am');
+    expect(
+      Array.from(bar.querySelectorAll('#mm-role option')).map((o) => o.textContent!.trim()),
+    ).toEqual(['Primary or secondary', 'Primary', 'Secondary']);
   });
 
   it('loads every panel on its own: a panel still waiting does not hold the others', async () => {

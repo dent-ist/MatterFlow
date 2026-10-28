@@ -171,16 +171,17 @@ export const MATTERS_SHOWN = 8;
         flex-wrap: wrap;
         row-gap: 0;
       }
+      /* The matter's name may wrap to two lines: the client's name follows it and never overlaps it (found in batch 3). */
       .mh__name a {
         display: inline-flex;
-        align-items: center;
+        align-items: flex-end;
         flex: 1 1 100%;
         min-height: 44px;
         white-space: normal;
       }
       .mh__client {
         flex: 1 1 100%;
-        margin-top: -10px;
+        padding-bottom: var(--mf-s1);
       }
       .mh__counts {
         justify-content: flex-start;
@@ -205,6 +206,7 @@ export const MATTERS_SHOWN = 8;
         name="health"
         title="Matters"
         [flat]="true"
+        [skeleton]="3"
         [state]="loader.state()"
         [busy]="loader.busy()"
         [bare]="bare()"

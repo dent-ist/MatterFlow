@@ -4,6 +4,7 @@ import {
   afterNextRender,
   computed,
   effect,
+  input,
   inject,
   Injector,
   untracked,
@@ -39,6 +40,9 @@ const MENU_MAX = 25;
     :host {
       display: inline-flex;
     }
+    :host(:empty) {
+      display: none;
+    }
     .nt {
       display: inline-flex;
       flex-wrap: wrap;
@@ -58,6 +62,33 @@ const MENU_MAX = 25;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .nti__title {
+      margin: 0 0 var(--mf-s1);
+      font-size: var(--mf-fs-md);
+      font-weight: 700;
+    }
+    .nti__list {
+      display: grid;
+      gap: var(--mf-s1);
+      max-height: 9rem;
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      list-style: none;
+    }
+    .nti__item {
+      justify-content: flex-start;
+      width: 100%;
+      min-height: 44px;
+      font-weight: 400;
+      text-align: left;
+    }
+    .nti__text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     @media (max-width: 639.98px) {
       :host,
       .nt {
@@ -71,7 +102,36 @@ const MENU_MAX = 25;
     }
   `,
   template: `
-    @if (shown()) {
+    @if (inline()) {
+      <!-- Inside the phone's header menu: the matters as a list, no second popover. -->
+      @if (shown()) {
+        <div
+          class="nti"
+          role="group"
+          aria-labelledby="nti-h"
+          data-header-new-task
+          data-new-task-inline
+        >
+          <p class="nti__title" id="nti-h">New task on a matter</p>
+          <ul class="nti__list">
+            @for (it of items(); track it.id) {
+              <li>
+                <button
+                  type="button"
+                  class="mf-btn nti__item"
+                  data-options-pick
+                  [attr.data-new-task-item]="it.id"
+                  (click)="it.run()"
+                >
+                  <i class="pi" [class]="it.icon" aria-hidden="true"></i>
+                  <span class="nti__text">{{ it.label }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    } @else if (shown()) {
       <div class="nt" data-header-new-task>
         @if (last(); as l) {
           <button
@@ -106,6 +166,8 @@ const MENU_MAX = 25;
   `,
 })
 export class NewTaskControl {
+  /** Drawn inside another menu (the phone's header menu): the matters as a list. */
+  readonly inline = input(false);
   private readonly managed = inject(ManagedMatters);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
@@ -154,7 +216,7 @@ export class NewTaskControl {
             () =>
               document
                 .querySelector<HTMLElement>(
-                  '[data-header-new-task] [data-new-task-last], [data-header-new-task] [data-overflow]',
+                  '[data-header-new-task] [data-new-task-last], [data-header-new-task] [data-overflow], [data-header-options] [data-options-trigger]',
                 )
                 ?.focus(),
             { injector: this.injector },

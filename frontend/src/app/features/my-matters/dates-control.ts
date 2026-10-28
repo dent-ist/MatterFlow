@@ -26,9 +26,12 @@ import { MmFilters, MmRange, RANGE_LABELS } from './my-matters-filters';
       gap: 2px;
       min-width: 0;
     }
+    /* The same label style as the Client and Role filters (issue #899). */
     .dc__field label {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+      color: var(--mf-text);
+      font-size: var(--mf-fs-md);
+      font-weight: 600;
+      line-height: 1.4;
     }
     .dc__select {
       min-width: 9rem;

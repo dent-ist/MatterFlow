@@ -63,6 +63,7 @@ import { PANEL_LIST_STYLES } from './panel-styles';
       name="attention"
       title="Needs my attention"
       [flat]="true"
+      [skeleton]="5"
       [state]="loader.state()"
       [busy]="loader.busy()"
       [bare]="bare()"

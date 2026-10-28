@@ -5,7 +5,7 @@ import { ErrorReference } from '../../shared/ui/error-reference';
 import { MmFilters, commonArgs, filterSummary, queryToParams } from './my-matters-filters';
 import { OLDEST_FIRST, holdHint } from './facts';
 import { ManagedMatters } from './managed-matters';
-import { panelLoader } from './panel-loader';
+import { LoadGroup, panelLoader } from './panel-loader';
 
 /** One chip of the strip: the number, the words after it, where it leads and how loud it may be. */
 interface Chip {
@@ -38,10 +38,29 @@ interface Chip {
     }
     .ms__error {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
+      min-height: 28px;
       margin: 0 0 var(--mf-s2);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    /* As wide as a row of chips (a plain width: a percentage cannot take part in sizing a flex item), so the strip wraps under the filters, or stays beside
+       them, exactly as it does when it has loaded: the tabs never move. Only where the filters and the chips can share a line at all. */
+    @media (min-width: 1200px) {
+      .ms__error {
+        min-width: 48rem;
+      }
+    }
+    .ms__error--muted {
+      color: var(--mf-text-muted);
+    }
+    .ms__error :is(mf-error-reference) {
+      margin: 0;
+    }
+    .ms__error .mf-btn {
+      min-height: 28px;
+      padding: 0 var(--mf-s2);
     }
     .ms {
       display: flex;
@@ -143,9 +162,32 @@ interface Chip {
       max-width: 100%;
     }
     @media (max-width: 639.98px) {
+      /* A phone (issue #922): ONE row that scrolls sideways (the last chip is cut off as the cue), four chips (Overdue, At risk, Unassigned, On hold; "Due
+         in 7 days" is the Next 7 days section below) and then the muted count, so the strip is 44 px high, not four rows. */
+      .ms {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+      }
+      .ms > li {
+        flex: none;
+      }
+      .ms__chip--seven {
+        display: none;
+      }
+      .ms__open {
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+      .ms__matter {
+        overflow-wrap: normal;
+      }
       .ms__chip,
       .ms__open-link,
-      .ms__matter {
+      .ms__matter,
+      .ms__error,
+      .ms__error .mf-btn {
         min-height: 44px;
       }
       .ms__matter {
@@ -162,13 +204,19 @@ interface Chip {
   `,
   template: `
     @if (loader.state() === 'error') {
-      <div class="ms__error" role="alert" data-strip-error>
-        <span>Couldn't load the summary.</span>
-        <mf-error-reference />
-        <button type="button" class="mf-btn" data-strip-retry (click)="loader.load()">Retry</button>
-      </div>
-    }
-    @if (!allZero()) {
+      <!-- The row keeps the height of the chips (28 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
+      @if (group?.many()) {
+        <div class="ms__error ms__error--muted" data-strip-notloaded>Summary not loaded.</div>
+      } @else {
+        <div class="ms__error" role="alert" data-strip-error>
+          <span>Couldn't load the summary.</span>
+          <mf-error-reference />
+          <button type="button" class="mf-btn" data-strip-retry (click)="loader.load()">
+            Retry
+          </button>
+        </div>
+      }
+    } @else if (!allZero()) {
       <ul
         class="ms"
         [attr.aria-label]="label()"
@@ -180,6 +228,7 @@ interface Chip {
             <button
               type="button"
               class="ms__chip"
+              [class.ms__chip--seven]="c.key === 'due7'"
               [class.ms__chip--zero]="c.count === 0"
               [class.ms__chip--danger]="c.tone === 'danger' && !!c.count"
               [class.ms__chip--warning]="c.tone === 'warning' && !!c.count"
@@ -227,6 +276,7 @@ export class MyMattersStrip {
   private readonly router = inject(Router);
   private readonly managed = inject(ManagedMatters, { optional: true });
 
+  protected readonly group = inject(LoadGroup, { optional: true });
   protected readonly loader = panelLoader(
     () => this.filters(),
     () => {

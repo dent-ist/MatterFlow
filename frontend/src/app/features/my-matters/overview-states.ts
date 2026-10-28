@@ -4,10 +4,10 @@ import { Injectable, computed, signal } from '@angular/core';
 export type OverviewKey = 'since' | 'attention' | 'deadlines' | 'health';
 
 /**
- * `loading` (not answered, or failed: nothing is hidden on a guess), `empty` (answered, nothing to show), `content`; the Matter health section
+ * `loading` (not answered), `error` (failed: nothing is hidden on a guess), `empty` (answered, nothing to show), `content`; the Matter health section
  * also says `none` (the person manages no matter at all) and `nomatch` (the filters match no matter).
  */
-export type OverviewState = 'loading' | 'empty' | 'content' | 'none' | 'nomatch';
+export type OverviewState = 'loading' | 'error' | 'empty' | 'content' | 'none' | 'nomatch';
 
 /**
  * What each section of the Overview has to show, collected for the page (issue #920). When "Since your last visit", Needs my attention and Upcoming

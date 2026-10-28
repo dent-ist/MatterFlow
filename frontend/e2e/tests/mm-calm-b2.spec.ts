@@ -293,9 +293,13 @@ test.describe('Count chips (#902)', () => {
       await settled(page);
       await expect(page.locator('[data-mm-strip]')).toBeVisible();
       if (size.width < 640) {
+        // A phone draws four chips and the muted count (Due in 7 days is the Next 7 days section below, issue #922): every one that is drawn is 44 px.
         const heights = await page
           .locator('button[data-strip-item]')
-          .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
+          .evaluateAll((els) =>
+            els.map((e) => e.getBoundingClientRect().height).filter((h) => h > 0),
+          );
+        expect(heights.length).toBe(5);
         for (const h of heights) expect(h, 'phone targets are 44 px').toBeGreaterThanOrEqual(43.5);
       }
       await noSideways(page);

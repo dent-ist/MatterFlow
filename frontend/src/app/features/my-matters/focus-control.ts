@@ -41,6 +41,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
     }
     .fc__inline .fc__list {
       width: auto;
+      max-height: 9rem;
     }
     .fc__hint {
       margin: 0 0 var(--mf-s2);
@@ -76,10 +77,10 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
   template: `
     @if (inline()) {
       <!-- Inside another menu (the phone's header menu): the checklist itself, no second popover. -->
-      <section class="fc__inline" aria-labelledby="fc-inline-h" data-focus-inline>
-        <h3 class="fc__title" id="fc-inline-h">Focus</h3>
+      <div class="fc__inline" role="group" aria-labelledby="fc-inline-h" data-focus-inline>
+        <p class="fc__title" id="fc-inline-h">Focus</p>
         <ng-container *ngTemplateOutlet="panel" />
-      </section>
+      </div>
     } @else {
       <!-- The same menu as every Options button (issue #919), under its own name; its number is how many task types are set. -->
       <mf-options-menu

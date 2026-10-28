@@ -61,6 +61,7 @@ export const NEXT_DAYS_ROWS = 5;
       name="deadlines"
       title="Next 7 days"
       [flat]="true"
+      [skeleton]="3"
       [state]="loader.state()"
       [busy]="loader.busy()"
       [bare]="bare()"

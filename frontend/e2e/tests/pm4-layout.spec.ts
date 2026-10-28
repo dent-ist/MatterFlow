@@ -50,17 +50,22 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(filtersButton).toHaveText(/Filters/);
     await expect(page.locator('[data-filter=role]')).toHaveCount(0);
     expect((await filtersButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    // The strip is a wrapping row of chips: every chip, Overdue included, is inside the page width and on the first screen (#818, #902).
+    // The strip is ONE row that scrolls sideways on a phone (issue #922): four chips (Due in 7 days is the Next 7 days section) and the muted count; Overdue and
+    // At risk are inside the page width and every drawn chip is a 44 px target.
     const strip = page.locator('[data-mm-strip]');
     const box = (await strip.boundingBox())!;
-    expect(box.height).toBeLessThan(200);
+    expect(box.height).toBeLessThanOrEqual(48);
     expect(box.x + box.width).toBeLessThanOrEqual(375);
-    for (const key of ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7', 'open']) {
+    await expect(page.locator('[data-strip-item=due7]')).toBeHidden();
+    for (const key of ['overdue', 'atRisk', 'unassigned', 'onHold']) {
       const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
       expect(cell.x, `${key} starts inside the page`).toBeGreaterThanOrEqual(0);
-      expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
       expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
       expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(44);
+    }
+    for (const key of ['overdue', 'atRisk']) {
+      const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
+      expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
     }
     // The first screen (375x812) shows the whole strip and the heading of the first panel; Needs my attention starts in it.
     const attention = (await page.locator('[data-panel=attention] h2').boundingBox())!;
@@ -70,9 +75,14 @@ test.describe('My Matters on a phone and a tablet', () => {
     const description = (await page.locator('[data-page-description]').boundingBox())!;
     expect(description.height).toBeLessThanOrEqual(1);
     await expect(page.locator('[data-page-description]')).toContainText('The matters you manage');
-    // "New task" is on the first screen too (#814).
-    const newTask = (await page.locator('[data-header-new-task] button').first().boundingBox())!;
-    expect(newTask.y + newTask.height).toBeLessThanOrEqual(812);
+    // "New task" is on the first screen too (#814), in the one Options menu of the title row (issue #922).
+    const options = (await page
+      .locator('[data-header-options] [data-options-trigger]')
+      .boundingBox())!;
+    expect(options.y + options.height).toBeLessThanOrEqual(812);
+    await page.locator('[data-header-options] [data-options-trigger]').click();
+    await expect(page.locator('[data-header-options] [data-new-task-inline]')).toBeVisible();
+    await page.keyboard.press('Escape');
     // Reading order: attention, matters, deadlines.
     const order = await Promise.all(
       ['attention', 'deadlines', 'health'].map((p) => y(page, `[data-panel=${p}]`)),

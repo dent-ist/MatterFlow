@@ -79,10 +79,9 @@ test.describe('My Matters: keyboard', () => {
     await expect(page.locator('[data-health-row]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
-      /My matters/,
-      /All matters/,
+      /My matters/, // one Tab stop for the scope switch: the pressed button (the arrow keys reach All matters, issue #919)
       /Client/,
-      /Role/,
+      /I am/,
       /^button: \d+ overdue$/,
       /^button: \d+ at risk$/,
       /^button: \d+ unassigned$/,

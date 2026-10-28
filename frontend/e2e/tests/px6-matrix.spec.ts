@@ -326,7 +326,7 @@ function expectGoodStops(
 }
 
 test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () => {
-  test('scoped list: the switch is two stops in order, then the filters and the rows; Enter and Space change it and focus stays on it', async ({
+  test('scoped list: the switch is ONE stop (the pressed button; the arrow keys reach the other), then the filters and the rows; Enter and Space change it and focus stays on it', async ({
     seed,
     personas,
     asUser,
@@ -344,7 +344,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
       const mine = names.findIndex((n) => /^My matters/.test(n));
       const all = names.findIndex((n) => /^All/.test(n));
       expect(mine, 'My matters is a stop').toBeGreaterThanOrEqual(0);
-      expect(all, 'All follows My matters directly').toBe(mine + 1);
+      expect(all, 'All is reached with the arrow keys, not with Tab (issue #919)').toBe(-1);
       expectGoodStops('scoped list', { stops: result.stops, left: true }, 4);
     }
     await page.setViewportSize(SIZES[2]);
@@ -353,7 +353,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/scope=all/);
     await expect(page.locator('[data-scope="all"]')).toBeFocused();
-    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('ArrowLeft');
     await expect(page.locator('[data-scope="mine"]')).toBeFocused();
     await page.keyboard.press('Space');
     await expect(page).toHaveURL(/scope=mine/);

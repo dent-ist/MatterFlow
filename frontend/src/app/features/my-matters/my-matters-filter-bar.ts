@@ -53,9 +53,17 @@ const clientOption = (c: {
   selector: 'mf-mm-filter-bar',
   imports: [ConfirmDialog, EntityPicker, NgTemplateOutlet, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.fb-phone]': 'phone()' },
   styles: `
     :host {
       display: block;
+    }
+    /* A phone (issue #922): the bar is only the Filters button, and it sits in the page header's actions beside the Options menu. */
+    :host(.fb-phone) {
+      display: inline-flex;
+    }
+    :host(.fb-phone:empty) {
+      display: none;
     }
     /* One height for every control of the row: the compact control height of the list filter bars (--mf-row-h-compact, 32 px; 44 px touch
        targets on a phone). The Client / Project manager picker is a shared component whose input takes its height from --mf-row-h, so
@@ -75,10 +83,13 @@ const clientOption = (c: {
       gap: 2px;
       min-width: 0;
     }
+    /* One label style for every filter of the bar (issue #899): the form-label look of Client (weight 600, the page's text size and colour). */
     .fb__field label,
-    .fb__label {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
+    :host ::ng-deep .fb .mf-field__label {
+      color: var(--mf-text);
+      font-size: var(--mf-fs-md);
+      font-weight: 600;
+      line-height: 1.4;
     }
     .fb__client {
       width: min(20rem, 100%);
@@ -106,7 +117,7 @@ const clientOption = (c: {
       min-height: var(--mf-fb-h);
     }
     .fb--phone {
-      margin-bottom: var(--mf-s2);
+      margin: 0;
     }
     /* Wide screens (issue #903): the label sits beside its control, so the bar is one 32 px row instead of a 53 px one. The label's wording and style are
        #899's; a phone keeps the stacked fields of its Filters sheet. */
@@ -160,8 +171,6 @@ const clientOption = (c: {
             Filters{{ active() > 0 ? ' (' + active() + ')' : '' }}
           </button>
         }
-        <!-- Focus sits beside Filters on a phone: its own row would push Needs my attention out of the first screen (PV-08). -->
-        <ng-content select="[mfPhoneRowExtra]" />
       </div>
       @if (drawn()) {
         <mf-confirm-dialog
@@ -204,7 +213,7 @@ const clientOption = (c: {
         }
         @if (showRole()) {
           <div class="fb__field">
-            <label for="mm-role">Role</label>
+            <label for="mm-role">{{ filters().scope === 'all' ? 'Their role' : 'I am' }}</label>
             <select
               id="mm-role"
               class="mf-control mf-control--compact fb__select"

@@ -141,19 +141,29 @@ test.describe('Add work from My Matters', () => {
       const page = await asUser(w.pm.username);
       await page.setViewportSize(size);
       await page.goto('/my-matters');
-      const trigger = page
-        .locator('[data-header-new-task]')
-        .getByRole('button', { name: /: \+ Task on a matter$/ });
+      const phone = size.width < 640;
+      // A phone has the matters in the one Options menu of the title row (issue #922); a wide screen has the "+ Task on a matter" menu.
+      const trigger = phone
+        ? page.locator('[data-header-options] [data-options-trigger]')
+        : page
+            .locator('[data-header-new-task]')
+            .getByRole('button', { name: /: \+ Task on a matter$/ });
       await expect(trigger).toBeVisible();
       const box = (await trigger.boundingBox())!;
       expect(box.y + box.height, 'on the first screen').toBeLessThan(size.height);
-      if (size.width < 640) expect(box.height).toBeGreaterThanOrEqual(44);
+      if (phone) expect(box.height).toBeGreaterThanOrEqual(44);
       expect(await axeViolations(page), 'closed').toEqual([]);
       await trigger.click();
-      await expect(page.getByRole('menu')).toBeVisible();
+      if (phone) await expect(page.locator('[data-new-task-inline]')).toBeVisible();
+      else await expect(page.getByRole('menu')).toBeVisible();
       expect(await axeViolations(page), 'menu open').toEqual([]);
       await noHorizontalScroll(page);
-      await page.getByRole('menuitem', { name: new RegExp(`^${alpha.matterRef}`) }).click();
+      if (phone)
+        await page
+          .locator('[data-new-task-inline]')
+          .getByRole('button', { name: new RegExp(alpha.matterRef) })
+          .click();
+      else await page.getByRole('menuitem', { name: new RegExp(`^${alpha.matterRef}`) }).click();
       await page.getByRole('radio', { name: new RegExp(type.name) }).click();
       await page.getByRole('textbox', { name: 'Title (required)' }).fill(`Axe ${size.width}`);
       await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Rita');
