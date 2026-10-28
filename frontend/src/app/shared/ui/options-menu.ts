@@ -4,6 +4,7 @@ import {
   ElementRef,
   inject,
   input,
+  output,
   viewChild,
 } from '@angular/core';
 
@@ -80,6 +81,11 @@ import {
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-2, 0 4px 14px rgb(0 0 0 / 0.18));
     }
+    /* A menu that holds whole controls (the phone's header menu): as wide as the screen allows, so a full-width switch fits. */
+    .om--wide .om__panel {
+      width: min(24rem, calc(100vw - 2rem));
+      max-width: none;
+    }
     @media (max-width: 639.98px) {
       .om__summary {
         min-height: 44px;
@@ -87,16 +93,17 @@ import {
     }
   `,
   template: `
-    <details #details data-options>
+    <details #details data-options [class.om--wide]="wide()" (toggle)="toggled($event)">
       <summary
         class="om__summary"
         data-options-trigger
         [attr.aria-label]="
+          triggerName() ||
           'Options for ' + label() + (active() > 0 ? ', ' + active() + ' in force' : '')
         "
       >
-        <i class="pi pi-sliders-h" aria-hidden="true"></i>
-        <span>Options</span>
+        <i class="pi" [class]="icon()" aria-hidden="true"></i>
+        <span>{{ text() }}</span>
         @if (active() > 0) {
           <span class="om__n" aria-hidden="true" data-options-count>{{ active() }}</span>
         }
@@ -115,6 +122,20 @@ export class OptionsMenu {
   readonly label = input.required<string>();
   /** How many of the choices inside differ from the default; shown as a number on the button and said in its name. */
   readonly active = input(0);
+  /** The button's words and icon: "Options" everywhere, except the person's Focus, which is the same menu under its own name (issue #919: one popover). */
+  readonly text = input('Options');
+  readonly icon = input('pi-sliders-h');
+  /** The accessible name when the default sentence does not fit ("Focus, 2 task types set"); it must start with the visible words. */
+  readonly triggerName = input('');
+  /** The popover is as wide as the screen allows (it holds whole controls, such as a full-width switch). */
+  readonly wide = input(false);
+  /** The popover was opened (a menu that works from a draft starts the draft here). */
+  readonly opened = output<void>();
+
+  /** Closes the popover and returns the focus to its button (a menu that has its own Save / Clear buttons). */
+  closeAndReturn(): void {
+    this.close(true);
+  }
 
   /** Closes the popover; with `back` the focus returns to the button (Escape). */
   protected close(back: boolean): void {
@@ -122,6 +143,10 @@ export class OptionsMenu {
     if (!details?.open) return;
     details.open = false;
     if (back) details.querySelector<HTMLElement>('summary')?.focus();
+  }
+
+  protected toggled(event: Event): void {
+    if ((event.target as HTMLDetailsElement).open) this.opened.emit();
   }
 
   protected outside(event: Event): void {

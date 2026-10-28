@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { Segmented } from '../ui/segmented';
 import { Scope } from './scope.service';
 
 /** Zero-width space: a live region only speaks when its text changes, so the same message alternates with this. */
 const NUDGE = String.fromCharCode(0x200b);
 
 /**
- * The "My matters | All" switch (epic #758, PX-13): a two-button toggle group (`aria-pressed`), 44 px targets on touch, the state in words
- * and in a bold pressed button, never in colour alone. Put it in the page header's actions (`mfActions`). It draws nothing unless "All" is
+ * The "My matters | All" switch (epic #758, PX-13): the shared segmented toggle (`mfSegmented`, issue #919: `aria-pressed`, one Tab stop, arrow keys, 44 px targets on touch, a check mark on the pressed button, never colour alone). Put it in the page header's actions (`mfActions`). It draws nothing unless "All" is
  * offered (`canAll`): a project manager who may not see all matters has nothing to switch, the count line says what the list shows.
  * A polite live region announces a change the person made ("Showing matters you manage" / "Showing all matters").
  *
@@ -14,6 +14,7 @@ const NUDGE = String.fromCharCode(0x200b);
  */
 @Component({
   selector: 'mf-scope-switch',
+  imports: [Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'data-ph-selector': '' },
   styles: `
@@ -24,22 +25,7 @@ const NUDGE = String.fromCharCode(0x200b);
       display: none;
     }
     .ss {
-      display: inline-flex;
       max-width: 100%;
-    }
-    .ss .mf-btn[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
-    }
-    .ss .mf-btn:first-child {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-    .ss .mf-btn:last-child {
-      margin-left: -1px;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
     }
     @media (max-width: 639.98px) {
       :host {
@@ -47,23 +33,18 @@ const NUDGE = String.fromCharCode(0x200b);
         flex: 1 1 100%;
       }
       .ss {
+        display: flex;
         width: 100%;
       }
       .ss .mf-btn {
         flex: 1 1 0;
-        justify-content: center;
-        min-height: 44px;
-      }
-    }
-    @media (pointer: coarse) {
-      .ss .mf-btn {
-        min-height: 44px;
       }
     }
   `,
   template: `
     @if (visible()) {
       <div
+        mfSegmented
         class="ss"
         role="group"
         aria-label="Scope"

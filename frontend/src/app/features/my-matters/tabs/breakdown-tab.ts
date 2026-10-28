@@ -14,6 +14,7 @@ import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
 
 /** Below this width the matrix would need sideways scrolling inside the page: each matter becomes a card (README 6.5). */
@@ -45,19 +46,11 @@ export function turnaroundText(
  */
 @Component({
   selector: 'mf-mm-breakdown-tab',
-  imports: [ExportMenu, PanelBox, RouterLink, TaskTypeBadge],
+  imports: [ExportMenu, PanelBox, RouterLink, Segmented, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
       display: block;
-    }
-    .bd__toggle {
-      display: inline-flex;
-    }
-    .bd__toggle .mf-btn[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
     }
     .bd__bar {
       display: flex;
@@ -222,7 +215,7 @@ export function turnaroundText(
         [disabled]="!data() || data()!.types.length === 0"
         reason="Nothing to export."
       />
-      <div mfPanelActions class="bd__toggle" role="group" aria-label="Matters shown">
+      <div mfPanelActions mfSegmented role="group" aria-label="Matters shown">
         <button
           type="button"
           class="mf-btn"
@@ -230,7 +223,7 @@ export function turnaroundText(
           [attr.aria-pressed]="view() === 'matrix'"
           (click)="setView('matrix')"
         >
-          Per matter
+          By matter
         </button>
         <button
           type="button"
@@ -239,13 +232,13 @@ export function turnaroundText(
           [attr.aria-pressed]="view() === 'types'"
           (click)="setView('types')"
         >
-          All matters
+          All together
         </button>
       </div>
       @if (data(); as d) {
         @if (!bare()) {
           <div class="bd__bar">
-            <span class="bd__toggle" role="group" aria-label="Tasks counted">
+            <span mfSegmented role="group" aria-label="Tasks counted">
               <button
                 type="button"
                 class="mf-btn"

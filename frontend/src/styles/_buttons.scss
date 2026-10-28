@@ -137,3 +137,55 @@
   --p-button-danger-hover-color: #fff;
   --p-button-danger-active-color: #fff;
 }
+
+/*
+ * One segmented toggle (epic #893, issue #919): a group of two to four buttons that are alternatives of ONE thing (the scope, a range, a view). Put
+ * `mfSegmented` on the group element (shared/ui/segmented.ts) and `class="mf-btn"` with `[attr.aria-pressed]` on its buttons. Same height as every
+ * control (32 px, 44 px on a phone and on touch), the pressed button is filled, bold and carries a check mark, so the state is never colour alone.
+ */
+.mf-seg {
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.mf-seg > .mf-btn {
+  min-height: var(--mf-seg-h, 32px);
+}
+
+.mf-seg > .mf-btn + .mf-btn {
+  margin-left: -1px;
+}
+
+.mf-seg > .mf-btn:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.mf-seg > .mf-btn:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.mf-seg > .mf-btn[aria-pressed='true'] {
+  position: relative;
+  z-index: 1;
+  border-color: var(--mf-primary);
+  background: var(--mf-selected-bg);
+  font-weight: 700;
+}
+
+.mf-seg > .mf-btn[aria-pressed='true']::before {
+  content: '\2713';
+  font-weight: 700;
+}
+
+.mf-seg > .mf-btn:focus-visible {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 639.98px), (pointer: coarse) {
+  .mf-seg > .mf-btn {
+    min-height: 44px;
+  }
+}

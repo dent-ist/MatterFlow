@@ -7,6 +7,7 @@ import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { dayHeading } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
 
 export const TREND_WEEKS = [8, 12, 26] as const;
@@ -74,17 +75,9 @@ export function limitationText(code: string): string {
  */
 @Component({
   selector: 'mf-mm-trends-tab',
-  imports: [PanelBox, RouterLink],
+  imports: [PanelBox, RouterLink, Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    .tr__toggle {
-      display: inline-flex;
-    }
-    .tr__toggle .mf-btn[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
-    }
     .tr__approx-line {
       cursor: pointer;
     }
@@ -260,7 +253,7 @@ export function limitationText(code: string): string {
       [busy]="loader.busy()"
       (retry)="loader.load()"
     >
-      <div mfPanelActions class="tr__toggle" role="group" aria-label="Weeks shown">
+      <div mfPanelActions mfSegmented role="group" aria-label="Weeks shown">
         @for (w of weekChoices; track w) {
           <button
             type="button"

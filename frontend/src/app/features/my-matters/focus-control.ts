@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
+  effect,
   inject,
+  input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { OptionsMenu } from '../../shared/ui/options-menu';
 import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
 import { MyMattersFocus } from './focus';
 import { SectionTypes, TypeOption } from './section-types';
@@ -20,45 +24,23 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
 /**
  * The Focus button of My Matters (PM v2, PV-07 #858) and, once a Focus is set, its chip. "Focus" opens a checklist of the task types with Save and
  * Clear; the choice is kept per person and stays until it is changed (`MyMattersFocus`). The chip names the types and has a remove button that
- * clears the Focus everywhere. A native `details`, so the keyboard and screen readers get the disclosure for free; Escape closes it and returns to the button.
+ * clears the Focus everywhere. It is the shared Options menu under the name Focus (issue #919), so it opens, closes and takes the keyboard like every other menu.
  */
 @Component({
   selector: 'mf-mm-focus',
-  imports: [TaskTypeBadge],
+  imports: [NgTemplateOutlet, OptionsMenu, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(keydown.escape)': 'close()' },
   styles: `
     :host {
-      position: relative;
       display: inline-block;
     }
-    .fc__summary {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      min-height: 32px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      cursor: pointer;
-      list-style: none;
+    .fc__title {
+      margin: 0 0 var(--mf-s1);
+      font-size: var(--mf-fs-md);
+      font-weight: 700;
     }
-    .fc__summary::-webkit-details-marker {
-      display: none;
-    }
-    .fc__panel {
-      position: absolute;
-      z-index: 30;
-      top: calc(100% + 2px);
-      right: 0;
-      width: min(22rem, 86vw);
-      box-sizing: border-box;
-      padding: var(--mf-s2);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2, 0 4px 14px rgb(0 0 0 / 0.18));
+    .fc__inline .fc__list {
+      width: auto;
     }
     .fc__hint {
       margin: 0 0 var(--mf-s2);
@@ -66,6 +48,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
       font-size: var(--mf-fs-sm);
     }
     .fc__list {
+      width: min(20rem, 76vw);
       max-height: 14rem;
       margin: 0 0 var(--mf-s2);
       padding: 0;
@@ -84,7 +67,6 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
       gap: var(--mf-s2);
     }
     @media (max-width: 639.98px) {
-      .fc__summary,
       .fc__opt,
       .fc__actions .mf-btn {
         min-height: 44px;
@@ -92,15 +74,31 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
     }
   `,
   template: `
-    <details #details (toggle)="opened($event)" data-focus>
-      <summary class="fc__summary" data-focus-trigger>
-        <i class="pi pi-bullseye" aria-hidden="true"></i>
-        <span>Focus</span>
-        @if (focus.types().length > 0) {
-          <span class="mf-sr-only">, {{ focus.types().length }} task types set</span>
-        }
-      </summary>
-      <div class="fc__panel" role="group" aria-label="Focus task types">
+    @if (inline()) {
+      <!-- Inside another menu (the phone's header menu): the checklist itself, no second popover. -->
+      <section class="fc__inline" aria-labelledby="fc-inline-h" data-focus-inline>
+        <h3 class="fc__title" id="fc-inline-h">Focus</h3>
+        <ng-container *ngTemplateOutlet="panel" />
+      </section>
+    } @else {
+      <!-- The same menu as every Options button (issue #919), under its own name; its number is how many task types are set. -->
+      <mf-options-menu
+        #menu
+        label="Focus task types"
+        text="Focus"
+        icon="pi-bullseye"
+        [active]="focus.types().length"
+        [triggerName]="
+          focus.types().length > 0 ? 'Focus, ' + focus.types().length + ' task types set' : 'Focus'
+        "
+        (opened)="opened()"
+        data-focus
+      >
+        <ng-container *ngTemplateOutlet="panel" />
+      </mf-options-menu>
+    }
+    <ng-template #panel>
+      <div data-focus-panel>
         <p class="fc__hint">
           Pick the task types you work on now. Every list on this page shows only these, until you
           change it.
@@ -131,29 +129,50 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
           </ul>
         }
         <div class="fc__actions">
-          <button type="button" class="mf-btn mf-btn--primary" data-focus-save (click)="save()">
+          <button
+            type="button"
+            class="mf-btn mf-btn--primary"
+            data-focus-save
+            [attr.data-options-pick]="inline() ? '' : null"
+            (click)="save()"
+          >
             Save
           </button>
-          <button type="button" class="mf-btn" data-focus-clear (click)="clearAll()">Clear</button>
+          <button
+            type="button"
+            class="mf-btn"
+            data-focus-clear
+            [attr.data-options-pick]="inline() ? '' : null"
+            (click)="clearAll()"
+          >
+            Clear
+          </button>
         </div>
       </div>
-    </details>
+    </ng-template>
   `,
 })
 export class FocusControl {
   protected readonly focus = inject(MyMattersFocus);
   protected readonly options = inject(SectionTypes);
-  private readonly details = viewChild<ElementRef<HTMLDetailsElement>>('details');
+  private readonly menu = viewChild<OptionsMenu>('menu');
+  /** Drawn inside another menu (the phone's header menu): the checklist alone, with a heading, no popover of its own. */
+  readonly inline = input(false);
   protected readonly draft = signal<number[]>([]);
 
   constructor() {
     this.options.ensure();
     this.focus.ensure();
+    // Inline there is no "opened" moment: the draft follows the saved Focus.
+    effect(() => {
+      const saved = this.focus.types();
+      if (this.inline()) untracked(() => this.draft.set([...saved]));
+    });
   }
 
   /** Opening starts from the saved Focus, so a closed-without-saving panel never keeps a half choice. */
-  protected opened(event: Event): void {
-    if ((event.target as HTMLDetailsElement).open) this.draft.set([...this.focus.types()]);
+  protected opened(): void {
+    this.draft.set([...this.focus.types()]);
   }
 
   protected toggle(id: number): void {
@@ -163,20 +182,13 @@ export class FocusControl {
 
   protected save(): void {
     this.focus.set(this.draft());
-    this.close();
+    this.menu()?.closeAndReturn();
   }
 
   protected clearAll(): void {
     this.focus.clear();
     this.draft.set([]);
-    this.close();
-  }
-
-  protected close(): void {
-    const details = this.details()?.nativeElement;
-    if (!details?.open) return;
-    details.open = false;
-    details.querySelector<HTMLElement>('summary')?.focus();
+    this.menu()?.closeAndReturn();
   }
 }
 

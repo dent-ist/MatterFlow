@@ -18,6 +18,7 @@ import { MmTaskRow } from '../task-row';
 import { MmDatesControl } from '../dates-control';
 import { MmFilters, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
 import { PANEL_LIST_STYLES } from '../panels/panel-styles';
 import { todayText } from '../panels/deadlines-panel';
@@ -93,19 +94,11 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
  */
 @Component({
   selector: 'mf-mm-deadlines-tab',
-  imports: [MmDatesControl, MmTaskRow, OptionsMenu, PanelBox, RouterLink],
+  imports: [MmDatesControl, MmTaskRow, OptionsMenu, PanelBox, RouterLink, Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
     `
-      .dt__toggle {
-        display: inline-flex;
-      }
-      .dt__toggle .mf-btn[aria-pressed='true'] {
-        border-color: var(--mf-primary);
-        background: var(--mf-selected-bg);
-        font-weight: 700;
-      }
       .dt__matter {
         margin: var(--mf-s3) 0 var(--mf-s1);
         font-size: var(--mf-fs-md);
@@ -230,7 +223,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
     >
       @if (wide() && !bare()) {
         <mf-options-menu mfPanelActions label="Deadlines" [active]="calendar() ? 1 : 0">
-          <div class="dt__toggle" role="group" aria-label="Show deadlines as">
+          <div mfSegmented role="group" aria-label="Show deadlines as">
             <button
               type="button"
               class="mf-btn"

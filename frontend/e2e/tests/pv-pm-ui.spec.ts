@@ -199,7 +199,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     const rows = page.locator('[data-panel="attention"] [data-attention-row]');
     await expect(rows).toHaveCount(3);
 
-    await page.locator('[data-focus-trigger]').click();
+    await page.locator('[data-focus] [data-options-trigger]').click();
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
     await expect(page.locator('[data-focus-chip]')).toContainText(`Focus: ${second.name}`);
@@ -226,7 +226,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      await page.locator('[data-focus-trigger]').click();
+      await page.locator('[data-focus] [data-options-trigger]').click();
       await expect(page.locator('[data-focus-save]')).toBeVisible();
       await noSidewaysScroll(page, `Focus at ${size.name}`);
       await clean(page, `Focus open at ${size.name}`);

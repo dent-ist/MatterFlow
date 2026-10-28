@@ -146,7 +146,7 @@ test.describe('PM v2 final gate', () => {
     // There is no per-list task type filter any more (issue #907): Focus is the one filter.
     await expect(page.locator('[data-types-trigger], [data-chips]')).toHaveCount(0);
 
-    const focus = page.locator('[data-focus-trigger]');
+    const focus = page.locator('[data-focus] [data-options-trigger]');
     await focus.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-focus-save]')).toBeVisible();

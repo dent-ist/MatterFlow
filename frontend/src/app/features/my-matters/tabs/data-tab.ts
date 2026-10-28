@@ -43,6 +43,7 @@ import {
 } from '../data-model';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
 
 const COUNT = new Intl.NumberFormat('en-US');
@@ -76,7 +77,16 @@ function plural(n: number, one: string, many: string): string {
  */
 @Component({
   selector: 'mf-mm-data-tab',
-  imports: [Badge, ColumnChart, PanelBox, RecordCard, RecordCardDef, RecordCardList, RouterLink],
+  imports: [
+    Badge,
+    ColumnChart,
+    PanelBox,
+    RecordCard,
+    RecordCardDef,
+    RecordCardList,
+    RouterLink,
+    Segmented,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -252,18 +262,7 @@ function plural(n: number, one: string, many: string): string {
     .dt__empty p {
       margin: 0;
     }
-    .dt__toggle {
-      display: inline-flex;
-      flex-wrap: wrap;
-      gap: var(--mf-s1);
-    }
-    .dt__toggle .mf-btn[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
-    }
     @media (max-width: 639.98px) {
-      .dt__toggle .mf-btn,
       .dt__controls select,
       .dt__empty .mf-btn {
         min-height: 44px;
@@ -734,7 +733,7 @@ function plural(n: number, one: string, many: string): string {
               </select>
             </div>
           }
-          <div class="dt__toggle" role="group" aria-label="Show the volume as">
+          <div mfSegmented role="group" aria-label="Show the volume as">
             <button
               type="button"
               class="mf-btn"
@@ -751,7 +750,7 @@ function plural(n: number, one: string, many: string): string {
               [attr.aria-pressed]="asTable()"
               (click)="asTable.set(true)"
             >
-              Show as table
+              Table
             </button>
           </div>
         </div>

@@ -126,7 +126,7 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     await page.goto('/my-matters');
     await settled(page);
     await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(2);
-    await page.locator('[data-focus-trigger]').click();
+    await page.locator('[data-focus] [data-options-trigger]').click();
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
     await expect(page.locator('[data-panel=attention] [data-attention-row]')).toHaveCount(1);
