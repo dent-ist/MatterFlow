@@ -5,11 +5,14 @@ import { NEVER, Subject, of, throwError } from 'rxjs';
 import {
   ClientsClient,
   MatterManagersClient,
+  MatterResponse,
+  MattersClient,
   MyMattersClient,
 } from '../../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../../core/auth/auth-testing';
 import { Permission } from '../../../core/auth/permissions';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { MyMattersPage } from './my-matters-page';
 
 const count = (n: number, query: string) => ({ count: n, query });
@@ -274,6 +277,8 @@ describe('MyMattersPage', () => {
       'Client.View',
     ],
     configure?: (api: Record<string, ReturnType<typeof vi.fn>>) => void,
+    /** The matters the person manages (the answer of the Matters list); omitted: the read fails, so every filter is offered as it was. */
+    managed?: Partial<MatterResponse>[],
   ) {
     api = {
       getMyMattersSummary: vi.fn().mockReturnValue(of(summary())),
@@ -330,6 +335,18 @@ describe('MyMattersPage', () => {
         ]),
         provideFakeMe(new FakeMeApi(profileOf({ permissions }))),
         { provide: MyMattersClient, useValue: api },
+        {
+          provide: MattersClient,
+          useValue: {
+            listMatters: vi
+              .fn()
+              .mockReturnValue(
+                managed
+                  ? of({ items: managed, total: managed.length })
+                  : throwError(() => new Error('no matters')),
+              ),
+          },
+        },
         {
           provide: ClientsClient,
           useValue: {
@@ -798,8 +815,8 @@ describe('MyMattersPage', () => {
       expect(api['getMyMattersTrends']).toHaveBeenCalled();
       expect(api['getMyMattersTrends'].mock.calls[0][2]).toBe('primary'); // weeks, scope, role
       expect(api['getMyMattersHealth']).not.toHaveBeenCalled();
-      // The date control belongs to Overview and Deadlines only.
-      expect(el(h).querySelector('.fb__dates')!.hasAttribute('inert')).toBe(true); // kept in place, unseen
+      // The date control lives in the Deadlines tab, never in the filter bar; a role that is in force keeps its control.
+      expect(el(h).querySelector('#mm-range')).toBeNull();
       expect(el(h).querySelector('[data-filter=role]')).not.toBeNull();
     });
 
@@ -934,6 +951,194 @@ describe('MyMattersPage', () => {
       h.detectChanges();
       await h.fixture.whenStable();
       expect(api['getMyMattersActivity']).toHaveBeenCalled();
+    });
+  });
+
+  describe('a calmer page (epic #893, batch 1)', () => {
+    const matter = (
+      id: number,
+      clientId: number,
+      role: 'primary' | 'secondary',
+    ): Partial<MatterResponse> => ({
+      matterId: id,
+      clientId,
+      matterRef: `9000${clientId}-8000${id}`,
+      name: `Matter ${id}`,
+      // The signed-in person is user 1 (profileOf's default).
+      primaryManager:
+        role === 'primary'
+          ? { userId: 1, displayName: 'Me', isActive: true }
+          : { userId: 9, displayName: 'Other', isActive: true },
+      secondaryManager:
+        role === 'secondary' ? { userId: 1, displayName: 'Me', isActive: true } : undefined,
+    });
+    const quiet = (a: Record<string, ReturnType<typeof vi.fn>>) => {
+      a['getMyMattersAttention'].mockReturnValue(
+        of({ timeZone: 'x', asOfUtc: 'x', stuckOnHoldDays: 7, groups: [] }),
+      );
+      a['getMyMattersDeadlines'].mockReturnValue(
+        of({
+          timeZone: 'x',
+          asOfUtc: 'x',
+          days: 28,
+          fromDate: 'a',
+          toDate: 'b',
+          total: 0,
+          query: '',
+          items: [],
+        }),
+      );
+      a['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
+      a['getMyMattersActivity'].mockReturnValue(of({ ...activity(0), items: [], unreadCount: 0 }));
+    };
+
+    it('one matter: no filter bar, no create button of its own (the shell button starts with that matter), no sentence drawn', async () => {
+      const h = await open('/my-matters', undefined, undefined, [matter(5, 2, 'primary')]);
+      expect(el(h).querySelector('[data-mm-filters]')).toBeNull();
+      expect(el(h).querySelector('[data-filters-open]')).toBeNull();
+      expect(el(h).querySelector('[data-header-new-task]')).toBeNull();
+      expect(TestBed.inject(CreateTaskContext).matterId()).toBe(5);
+      // The sentence is in the page for screen readers (the page's styles hide it at every width), not as a visible line.
+      expect(el(h).querySelector('[data-page-description]')!.textContent).toContain(
+        'The matters you manage as primary or secondary project manager.',
+      );
+    });
+
+    it('several clients and both roles: Client and Role are offered, the create menu is the small "Task on a matter"', async () => {
+      const h = await open('/my-matters', undefined, undefined, [
+        matter(5, 2, 'primary'),
+        matter(6, 3, 'secondary'),
+      ]);
+      expect(el(h).querySelector('[data-mm-filters]')).not.toBeNull();
+      expect(el(h).querySelector('#mm-client')).not.toBeNull();
+      expect(el(h).querySelector('#mm-role')).not.toBeNull();
+      expect(el(h).querySelector('[data-header-new-task]')!.textContent).toContain(
+        'Task on a matter',
+      );
+      expect(TestBed.inject(CreateTaskContext).matterId()).toBeNull();
+    });
+
+    it('one client and only Primary matters: neither Client nor Role; a role in the address brings its control back', async () => {
+      const h = await open('/my-matters', undefined, undefined, [
+        matter(5, 2, 'primary'),
+        matter(6, 2, 'primary'),
+      ]);
+      expect(el(h).querySelector('[data-mm-filters]')).toBeNull();
+      await TestBed.inject(Router).navigateByUrl('/my-matters?role=secondary');
+      await h.fixture.whenStable();
+      h.detectChanges();
+      expect(el(h).querySelector('#mm-role')).not.toBeNull();
+      expect(el(h).querySelector('[data-clear-filters]')).not.toBeNull();
+      expect(el(h).querySelector('#mm-client')).toBeNull();
+    });
+
+    it('a failed read of the matters hides nothing', async () => {
+      const h = await open('/my-matters');
+      expect(el(h).querySelector('#mm-client')).not.toBeNull();
+      expect(el(h).querySelector('#mm-role')).not.toBeNull();
+    });
+
+    it('the Dates control is in the Deadlines tab and never in the filter bar', async () => {
+      const h = await open(
+        '/my-matters?tab=deadlines',
+        undefined,
+        (a) =>
+          a['getMyMattersDeadlines'].mockReturnValue(
+            of({
+              timeZone: 'x',
+              asOfUtc: 'x',
+              days: 28,
+              fromDate: '2026-10-23',
+              toDate: '2026-11-20',
+              total: 1,
+              matterTotal: 1,
+              query: 'q',
+              items: [],
+              byMatter: [
+                {
+                  matterId: 5,
+                  matterRef: '90001-80001',
+                  matterName: 'Merger',
+                  clientName: 'Acme',
+                  total: 1,
+                  nextDueDate: '2026-10-30',
+                  items: [task(3)],
+                  query: 'matter=5',
+                },
+              ],
+            }),
+          ),
+        [matter(5, 2, 'primary'), matter(6, 3, 'secondary')],
+      );
+      const panel = el(h).querySelector('[data-panel=deadlines-tab]')!;
+      expect(panel.querySelector('#mm-range')).not.toBeNull();
+      expect(el(h).querySelector('[data-mm-filters] #mm-range')).toBeNull();
+      expect(panel.querySelector('[data-range]')).toBeNull(); // the old 2 / 4 week buttons
+    });
+
+    it('everything quiet: one line replaces the four empty sections, Matter health stays', async () => {
+      const h = await open('/my-matters', undefined, quiet, [matter(5, 2, 'primary')]);
+      expect(el(h).querySelector('[data-all-quiet]')!.textContent).toContain(
+        'Nothing is late and nothing is due in the next 7 days.',
+      );
+      for (const key of ['since', 'attention', 'deadlines', 'activity']) {
+        expect(el(h).querySelector(`[data-panel=${key}]`)!.closest('.mm__off'), key).not.toBeNull();
+      }
+      expect(el(h).querySelector('[data-panel=health]')!.closest('.mm__off')).toBeNull();
+    });
+
+    it('an empty list is one line with no toolbar when the others have work', async () => {
+      const h = await open(
+        '/my-matters',
+        undefined,
+        (a) => {
+          quiet(a);
+          a['getMyMattersAttention'].mockReturnValue(
+            of({
+              timeZone: 'x',
+              asOfUtc: 'x',
+              stuckOnHoldDays: 7,
+              groups: [{ kind: 'overdue', total: 1, query: 'q', items: [task(1)] }],
+            }),
+          );
+        },
+        [matter(5, 2, 'primary')],
+      );
+      expect(el(h).querySelector('[data-all-quiet]')).toBeNull();
+      const deadlines = el(h).querySelector('[data-panel=deadlines]')!;
+      expect(deadlines.textContent).toContain('No deadlines in this period.');
+      expect(deadlines.querySelector('button, select, a')).toBeNull();
+      expect(deadlines.querySelector('.mmp--bare')).not.toBeNull();
+    });
+
+    it('a manager with no matter: only the Matter health message, no strip of zeros, one Clear filters at most', async () => {
+      const zero = {
+        ...summary(),
+        matters: count(0, 'q'),
+        openTasks: count(0, 'q'),
+        overdue: count(0, 'q'),
+        dueIn3Days: count(0, 'q'),
+        dueIn7Days: count(0, 'q'),
+        unassigned: count(0, 'q'),
+        onHold: count(0, 'q'),
+        atRisk: count(0, 'q'),
+      };
+      const h = await open(
+        '/my-matters?role=primary',
+        undefined,
+        (a) => {
+          quiet(a);
+          a['getMyMattersSummary'].mockReturnValue(of(zero));
+          a['getMyMattersHealth'].mockReturnValue(of(health([])));
+        },
+        [],
+      );
+      expect(el(h).querySelector('[data-mm-strip]')).toBeNull();
+      expect(el(h).querySelector('[data-all-quiet]')).toBeNull();
+      expect(el(h).querySelector('[data-empty-kind=filtered]')!.textContent).toContain(
+        'No matters match these filters.',
+      );
+      expect(el(h).querySelectorAll('[data-clear-filters]').length).toBe(1);
     });
   });
 });

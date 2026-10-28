@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MyMattersClient } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
@@ -10,6 +18,7 @@ import { ViewState } from '../../../core/views/view-state';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { groupByDay } from '../facts';
 import { MmFilters, MmRange, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
+import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { sectionPref } from '../section-prefs';
 import { SectionToolbar } from '../section-toolbar';
@@ -66,46 +75,53 @@ export function todayText(clock: Clock, zone: string): string {
       title="Upcoming deadlines"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
-      <mf-views-menu
-        mfPanelActions
-        surface="my-matters.deadlines"
-        [defaults]="false"
-        [capture]="captureView"
-        [apply]="pref.restore"
-      />
-      <div mfPanelActions class="dl__toggle" role="group" aria-label="Look ahead">
-        <button
-          type="button"
-          class="mf-btn"
-          data-range="2w"
-          [attr.aria-pressed]="filters().range === '2w'"
-          (click)="rangeChange.emit('2w')"
-        >
-          2 wk
-        </button>
-        <button
-          type="button"
-          class="mf-btn"
-          data-range="4w"
-          [attr.aria-pressed]="filters().range === '4w'"
-          (click)="rangeChange.emit('4w')"
-        >
-          4 wk
-        </button>
-      </div>
-      <mf-mm-section-toolbar
-        label="Upcoming deadlines"
-        [options]="typeChoices.options()"
-        [types]="pref.value().types"
-        [focused]="pref.focused()"
-        [sort]="pref.value().sort"
-        [dir]="pref.value().dir"
-        (typesChange)="pref.setTypes($event)"
-        (sortChange)="pref.setSort($event)"
-        (dirChange)="pref.setDir($event)"
-      />
+      @if (!bare()) {
+        <mf-views-menu
+          mfPanelActions
+          surface="my-matters.deadlines"
+          [defaults]="false"
+          [capture]="captureView"
+          [apply]="pref.restore"
+        />
+      }
+      @if (!bare()) {
+        <div mfPanelActions class="dl__toggle" role="group" aria-label="Look ahead">
+          <button
+            type="button"
+            class="mf-btn"
+            data-range="2w"
+            [attr.aria-pressed]="filters().range === '2w'"
+            (click)="rangeChange.emit('2w')"
+          >
+            2 wk
+          </button>
+          <button
+            type="button"
+            class="mf-btn"
+            data-range="4w"
+            [attr.aria-pressed]="filters().range === '4w'"
+            (click)="rangeChange.emit('4w')"
+          >
+            4 wk
+          </button>
+        </div>
+      }
+      @if (!bare()) {
+        <mf-mm-section-toolbar
+          label="Upcoming deadlines"
+          [options]="typeChoices.options()"
+          [types]="pref.value().types"
+          [focused]="pref.focused()"
+          [sort]="pref.value().sort"
+          [dir]="pref.value().dir"
+          (typesChange)="pref.setTypes($event)"
+          (sortChange)="pref.setSort($event)"
+          (dirChange)="pref.setDir($event)"
+        />
+      }
       @if (days().length === 0) {
         @if (filtered()) {
           <p class="pl__empty" data-empty data-filtered-empty>
@@ -149,8 +165,10 @@ export function todayText(clock: Clock, zone: string): string {
                     >{{ t.taskNumber }} {{ t.title }}</a
                   >
                 </span>
-                <span class="pl__meta"
-                  >{{ t.matterRef }} {{ t.matterName }}
+                <span class="pl__meta pl__meta--flex"
+                  ><span class="pl__matter" [attr.title]="t.matterRef + ' ' + t.matterName"
+                    >{{ t.matterRef }} {{ t.matterName }}</span
+                  >
                   <span class="pl__prio" data-priority>{{ t.priorityName }}</span>
                   @if (t.atRisk) {
                     <span class="pl__risk" data-at-risk
@@ -222,9 +240,20 @@ export class DeadlinesPanel {
     },
   );
 
+  private readonly states = inject(OverviewStates, { optional: true });
+  /** Nothing is due in the widest window, no type filter hides anything: one muted line, no toolbar (issue #920). */
+  protected readonly bare = computed(
+    () =>
+      this.loader.state() === 'ready' &&
+      this.days().length === 0 &&
+      !this.filtered() &&
+      this.filters().range === '4w',
+  );
+
   constructor() {
     this.typeChoices.ensure();
     restoreRowFocus('my-matters-deadlines', () => this.loader.state() === 'ready');
+    effect(() => this.states?.report('deadlines', this.bare() ? 'empty' : 'content'));
   }
 
   protected readonly days = computed(() => {

@@ -282,60 +282,63 @@ function plural(n: number, one: string, many: string): string {
       title="Data"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
-      <div class="dt__controls" data-data-controls>
-        <div class="dt__field">
-          <label for="dt-type">Asset type</label>
-          <select
-            id="dt-type"
-            class="mf-control"
-            data-data-type
-            (change)="pickType($any($event.target).value)"
-          >
-            <option value="" [selected]="typeId() === null">All asset types</option>
-            @for (t of types(); track t.assetTypeId) {
-              <option [value]="t.assetTypeId" [selected]="t.assetTypeId === typeId()">
-                {{ t.name }}
-              </option>
-            }
-          </select>
-        </div>
-        @if (typeId() !== null) {
+      @if (!bare()) {
+        <div class="dt__controls" data-data-controls>
           <div class="dt__field">
-            <label for="dt-field">Size field</label>
+            <label for="dt-type">Asset type</label>
             <select
-              id="dt-field"
+              id="dt-type"
               class="mf-control"
-              data-data-field
-              (change)="pickField($any($event.target).value)"
+              data-data-type
+              (change)="pickType($any($event.target).value)"
             >
-              <option value="" [selected]="!fieldKey()">{{ defaultLabel() }}</option>
-              @for (f of numberFields(); track f.key) {
-                <option [value]="f.key" [selected]="f.key === fieldKey()">
-                  {{ f.label }} ({{ f.key }})
+              <option value="" [selected]="typeId() === null">All asset types</option>
+              @for (t of types(); track t.assetTypeId) {
+                <option [value]="t.assetTypeId" [selected]="t.assetTypeId === typeId()">
+                  {{ t.name }}
                 </option>
               }
             </select>
           </div>
-          @if (needsUnit()) {
+          @if (typeId() !== null) {
             <div class="dt__field">
-              <label for="dt-unit">Unit of this field</label>
+              <label for="dt-field">Size field</label>
               <select
-                id="dt-unit"
+                id="dt-field"
                 class="mf-control"
-                data-data-unit
-                (change)="pickUnit($any($event.target).value)"
+                data-data-field
+                (change)="pickField($any($event.target).value)"
               >
-                <option value="" [selected]="!unit()">Choose a unit</option>
-                @for (u of units; track u) {
-                  <option [value]="u" [selected]="u === unit()">{{ u }}</option>
+                <option value="" [selected]="!fieldKey()">{{ defaultLabel() }}</option>
+                @for (f of numberFields(); track f.key) {
+                  <option [value]="f.key" [selected]="f.key === fieldKey()">
+                    {{ f.label }} ({{ f.key }})
+                  </option>
                 }
               </select>
             </div>
+            @if (needsUnit()) {
+              <div class="dt__field">
+                <label for="dt-unit">Unit of this field</label>
+                <select
+                  id="dt-unit"
+                  class="mf-control"
+                  data-data-unit
+                  (change)="pickUnit($any($event.target).value)"
+                >
+                  <option value="" [selected]="!unit()">Choose a unit</option>
+                  @for (u of units; track u) {
+                    <option [value]="u" [selected]="u === unit()">{{ u }}</option>
+                  }
+                </select>
+              </div>
+            }
           }
-        }
-      </div>
+        </div>
+      }
       @if (needsUnit() && !unit()) {
         <p class="dt__note" data-unit-needed>
           Choose the unit of this field to measure it. Until then the size is the asset type's
@@ -891,6 +894,10 @@ export class DataTab {
     },
   );
   protected readonly data = computed(() => this.loader.data());
+  /** No asset on these matters at all (and no asset type chosen): one muted line, no controls (issue #920). */
+  protected readonly bare = computed(
+    () => !!this.data() && this.data()!.totals.assets === 0 && this.typeId() === null,
+  );
 
   protected readonly volume = panelLoader(
     () => [this.filters(), this.measure(), this.matterId(), this.months()],

@@ -24,7 +24,9 @@ export const PANEL_LIST_STYLES = `
   }
   .pl__row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* The fact (a reason such as "on hold 9 d - Waiting for a decision" can be long) never takes more than a third of the row: the title keeps
+       the rest, and a long fact wraps inside its third (issue #923). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 33%);
     grid-template-areas:
       'link fact'
       'meta fact';
@@ -58,6 +60,22 @@ export const PANEL_LIST_STYLES = `
     font-size: var(--mf-fs-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  /* A meta line that has a matter name: the name is cut with an ellipsis (its text is the tooltip) and the pills after it are never cut. */
+  .pl__meta--flex {
+    display: flex;
+    align-items: center;
+    gap: var(--mf-s2);
+  }
+  .pl__matter {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pl__meta--flex > :not(.pl__matter) {
+    flex: none;
   }
   .pl__prio {
     display: inline-block;
@@ -100,9 +118,11 @@ export const PANEL_LIST_STYLES = `
   .pl__fact {
     grid-area: fact;
     align-self: center;
+    min-width: 0;
     color: var(--mf-text);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    text-align: right;
   }
   .pl__all {
     display: inline-block;
@@ -111,9 +131,21 @@ export const PANEL_LIST_STYLES = `
     color: var(--mf-link);
   }
   @media (max-width: 639.98px) {
+    /* A phone: one column. The fact (reason of a hold, due text) wraps below the title and the matter line instead of squeezing the title. */
     .pl__row {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'link'
+        'meta'
+        'fact';
       min-height: 44px;
       align-content: center;
+    }
+    .pl__fact {
+      padding-bottom: var(--mf-s1);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+      text-align: left;
     }
     .pl__link {
       display: flex;

@@ -3,15 +3,14 @@ import {
   Component,
   afterNextRender,
   computed,
+  effect,
   inject,
   Injector,
-  signal,
+  untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { MatterResponse, MattersClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
-import { QuietRequests } from '../../core/http/interceptors';
+import { ManagedMatters } from './managed-matters';
 import { ActionMenu, MenuAction } from '../../shared/ui/action-menu';
 import {
   flagFocusReturn,
@@ -28,7 +27,9 @@ const MENU_MAX = 25;
  * the person used last (and still manages) the main button is "New task for <that matter>" and one click opens Create task with the matter
  * fixed; "Other matter" lists the matters they manage (their last one first) and "Another matter" opens Create task to search all of them.
  * Create task returns to this page (`returnTo`, only an address on /my-matters is accepted there) and the focus comes back to this control.
- * Nothing is drawn without Task.Create or when the person manages no active matter.
+ * Nothing is drawn without Task.Create or when the person manages no active matter, and (issue #904) not for exactly one matter either: the shell's
+ * "Create task" is then the one create button and opens Create task with that matter filled in (the page tells the shell, see `CreateTaskContext`).
+ * With several matters the menu is one small "+ Task on a matter".
  */
 @Component({
   selector: 'mf-mm-new-task',
@@ -94,7 +95,7 @@ const MENU_MAX = 25;
         } @else {
           <mf-action-menu
             label="Choose the matter for a new task"
-            triggerText="New task"
+            triggerText="+ Task on a matter"
             align="start"
             [floating]="true"
             [items]="items()"
@@ -105,15 +106,14 @@ const MENU_MAX = 25;
   `,
 })
 export class NewTaskControl {
-  private readonly api = inject(MattersClient);
+  private readonly managed = inject(ManagedMatters);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
-  private readonly quiet = inject(QuietRequests);
   private readonly injector = inject(Injector);
 
-  private readonly matters = signal<MatterResponse[]>([]);
+  private readonly matters = computed(() => this.managed.items().slice(0, MENU_MAX));
   protected readonly shown = computed(
-    () => this.auth.has('Task.Create') && this.matters().length > 0,
+    () => this.auth.has('Task.Create') && this.matters().length > 0 && this.managed.only() === null,
   );
 
   /** The matter used last, when the person still manages it and it is active. */
@@ -144,51 +144,24 @@ export class NewTaskControl {
   });
 
   constructor() {
-    void this.load();
-  }
-
-  private async load(): Promise<void> {
-    if (!this.auth.has('Task.Create')) return;
-    try {
-      const page = await this.quiet.run(() =>
-        firstValueFrom(
-          this.api.listMatters(
-            undefined,
-            undefined,
-            true,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            true,
-            undefined,
-            undefined,
-            undefined,
-            1,
-            MENU_MAX,
-            undefined,
-          ),
-        ),
-      );
-      this.matters.set(page.items);
-      // Back from Create task: the focus returns to this control (once), when it is on the page.
-      if (takeFocusReturn() && page.items.length > 0) {
-        afterNextRender(
-          () =>
-            document
-              .querySelector<HTMLElement>(
-                '[data-header-new-task] [data-new-task-last], [data-header-new-task] [data-overflow]',
-              )
-              ?.focus(),
-          { injector: this.injector },
-        );
-      }
-    } catch {
-      // No control: Create task in the header and the Matter health rows still work.
-    }
+    // Back from Create task: the focus returns to this control (once), when it is on the page.
+    effect(() => {
+      if (this.managed.state() === 'loading') return;
+      const shown = this.shown();
+      untracked(() => {
+        if (takeFocusReturn() && shown) {
+          afterNextRender(
+            () =>
+              document
+                .querySelector<HTMLElement>(
+                  '[data-header-new-task] [data-new-task-last], [data-header-new-task] [data-overflow]',
+                )
+                ?.focus(),
+            { injector: this.injector },
+          );
+        }
+      });
+    });
   }
 
   /** Create task with the matter fixed (or its own search without one); Create and Cancel come back here with the filters. */

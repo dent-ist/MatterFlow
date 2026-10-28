@@ -16,6 +16,7 @@ import { PanelState } from '../panel-loader';
   template: `
     <section
       class="mmp"
+      [class.mmp--bare]="bare()"
       [attr.aria-labelledby]="id() + '-h'"
       [attr.aria-busy]="busy() ? 'true' : null"
     >
@@ -74,6 +75,30 @@ import { PanelState } from '../panel-loader';
       font-size: var(--mf-fs-lg);
       font-weight: 700;
     }
+    /* A panel with nothing to show (issue #920): no card, no toolbar, the heading and one muted line side by side. */
+    .mmp--bare {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 var(--mf-s3);
+      padding: var(--mf-s1) 0;
+      border-color: transparent;
+      background: transparent;
+    }
+    .mmp--bare .mmp__head {
+      min-height: 0;
+      margin: 0;
+    }
+    .mmp--bare .mmp__title {
+      font-size: var(--mf-fs-md);
+    }
+    .mmp--bare .mmp__actions {
+      display: none;
+    }
+    .mmp--bare ::ng-deep p {
+      margin: 0;
+      padding: 0;
+    }
     /* The target of a skip link (#820): the heading takes the focus, with a ring a keyboard user can see. */
     .mmp__title:focus-visible {
       outline: 2px solid var(--mf-focus);
@@ -121,6 +146,8 @@ export class PanelBox {
   readonly title = input.required<string>();
   readonly state = input.required<PanelState>();
   readonly busy = input(false);
+  /** Nothing to show: the panel draws as one muted line (the panel hides its own toolbar). */
+  readonly bare = input(false);
   readonly retry = output<void>();
   protected id(): string {
     return 'mm-' + this.name();

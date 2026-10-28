@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -15,6 +16,7 @@ import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { activityTime, statusWords } from '../facts';
 import { MmFilters, commonArgs } from '../my-matters-filters';
+import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
 
@@ -162,6 +164,7 @@ export function activityText(e: MyMattersActivityItem): string {
       title="Recent activity"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
       @if (unread() > 0) {
@@ -273,8 +276,15 @@ export class ActivityPanel {
     { enabled: () => !this.hold() },
   );
 
+  private readonly states = inject(OverviewStates, { optional: true });
+  /** No activity: one muted line, no card (issue #920). */
+  protected readonly bare = computed(
+    () => this.loader.state() === 'ready' && (this.loader.data()?.items.length ?? 0) === 0,
+  );
+
   constructor() {
     restoreRowFocus('my-matters-activity', () => this.loader.state() === 'ready');
+    effect(() => this.states?.report('activity', this.bare() ? 'empty' : 'content'));
   }
 
   protected readonly items = computed(() => this.loader.data()?.items ?? []);

@@ -239,6 +239,7 @@ export function activityRows(
       title="Activity"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
       @if (unread() > 0) {
@@ -253,41 +254,43 @@ export function activityRows(
           Mark all as read
         </button>
       }
-      <div class="at__filters" data-activity-filters>
-        <div class="at__field at__matter">
-          <mf-entity-picker
-            label="Matter"
-            inputId="at-matter"
-            placeholder="All matters"
-            [search]="searchMatters"
-            [selected]="matter()"
-            (selectedChange)="matterPicked($event)"
-          />
+      @if (!bare()) {
+        <div class="at__filters" data-activity-filters>
+          <div class="at__field at__matter">
+            <mf-entity-picker
+              label="Matter"
+              inputId="at-matter"
+              placeholder="All matters"
+              [search]="searchMatters"
+              [selected]="matter()"
+              (selectedChange)="matterPicked($event)"
+            />
+          </div>
+          <div class="at__field">
+            <label for="at-kind">Kind</label>
+            <select
+              id="at-kind"
+              class="mf-control mf-control--compact at__select"
+              data-filter="kind"
+              [value]="kind()"
+              (change)="setKind($any($event.target).value)"
+            >
+              @for (k of kinds; track k.value) {
+                <option [value]="k.value" [selected]="k.value === kind()">{{ k.label }}</option>
+              }
+            </select>
+          </div>
+          <label class="at__check">
+            <input
+              type="checkbox"
+              data-filter="unread"
+              [checked]="unreadOnly()"
+              (change)="setUnreadOnly($any($event.target).checked)"
+            />
+            Unread only
+          </label>
         </div>
-        <div class="at__field">
-          <label for="at-kind">Kind</label>
-          <select
-            id="at-kind"
-            class="mf-control mf-control--compact at__select"
-            data-filter="kind"
-            [value]="kind()"
-            (change)="setKind($any($event.target).value)"
-          >
-            @for (k of kinds; track k.value) {
-              <option [value]="k.value" [selected]="k.value === kind()">{{ k.label }}</option>
-            }
-          </select>
-        </div>
-        <label class="at__check">
-          <input
-            type="checkbox"
-            data-filter="unread"
-            [checked]="unreadOnly()"
-            (change)="setUnreadOnly($any($event.target).checked)"
-          />
-          Unread only
-        </label>
-      </div>
+      }
       <span class="mf-sr-only" role="status" aria-live="polite" data-activity-announce>{{
         announcement()
       }}</span>
@@ -415,6 +418,10 @@ export class ActivityTab {
     () => this.matterId() !== null || this.kind() !== '' || this.unreadOnly(),
   );
   protected readonly matter = signal<PickerOption | null>(null);
+  /** No activity at all (no filter is hiding any): one muted line, no filters (issue #920). */
+  protected readonly bare = computed(
+    () => this.loader.state() === 'ready' && this.rows().length === 0 && !this.filtered(),
+  );
 
   protected readonly loader = panelLoader(
     () => [this.filters(), this.matterId(), this.kind(), this.unreadOnly()],

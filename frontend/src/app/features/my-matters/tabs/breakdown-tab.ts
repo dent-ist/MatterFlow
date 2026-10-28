@@ -212,6 +212,7 @@ export function turnaroundText(
       title="Breakdown"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
       <mf-export-menu
@@ -242,29 +243,31 @@ export function turnaroundText(
         </button>
       </div>
       @if (data(); as d) {
-        <div class="bd__bar">
-          <span class="bd__toggle" role="group" aria-label="Tasks counted">
-            <button
-              type="button"
-              class="mf-btn"
-              data-bd-status="open"
-              [attr.aria-pressed]="status() === 'open'"
-              (click)="setStatus('open')"
-            >
-              Open tasks
-            </button>
-            <button
-              type="button"
-              class="mf-btn"
-              data-bd-status="onHold"
-              [attr.aria-pressed]="status() === 'onHold'"
-              (click)="setStatus('onHold')"
-            >
-              On hold only
-            </button>
-          </span>
-          <span data-bd-summary>{{ summary() }}</span>
-        </div>
+        @if (!bare()) {
+          <div class="bd__bar">
+            <span class="bd__toggle" role="group" aria-label="Tasks counted">
+              <button
+                type="button"
+                class="mf-btn"
+                data-bd-status="open"
+                [attr.aria-pressed]="status() === 'open'"
+                (click)="setStatus('open')"
+              >
+                Open tasks
+              </button>
+              <button
+                type="button"
+                class="mf-btn"
+                data-bd-status="onHold"
+                [attr.aria-pressed]="status() === 'onHold'"
+                (click)="setStatus('onHold')"
+              >
+                On hold only
+              </button>
+            </span>
+            <span data-bd-summary>{{ summary() }}</span>
+          </div>
+        }
 
         @if (d.types.length === 0) {
           <p class="bd__empty" data-empty>No {{ noun() }} on these matters.</p>
@@ -606,6 +609,10 @@ export class BreakdownTab {
   );
 
   protected readonly data = computed(() => this.loader.data());
+  /** No task of any type on these matters (and the status choice is not what hides them): one muted line, no controls (issue #920). */
+  protected readonly bare = computed(
+    () => this.status() === 'open' && !!this.data() && this.data()!.types.length === 0,
+  );
   protected readonly noun = computed(() =>
     this.status() === 'onHold' ? 'Tasks on hold' : 'Open tasks',
   );

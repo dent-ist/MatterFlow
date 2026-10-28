@@ -22,14 +22,8 @@ import { QuietRequests } from '../../core/http/interceptors';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
 import { EntityPicker, PickerOption } from '../../shared/ui/entity-picker';
 import { phoneCards } from '../../shared/ui/record-card-list';
-import {
-  MmFilters,
-  MmRange,
-  MmRole,
-  RANGE_LABELS,
-  ROLE_LABELS,
-  roleApplies,
-} from './my-matters-filters';
+import { ManagedMatters } from './managed-matters';
+import { MmFilters, MmRole, ROLE_LABELS, roleApplies } from './my-matters-filters';
 
 const managerOption = (m: MatterManagerItem): PickerOption => ({
   id: m.userId,
@@ -46,10 +40,14 @@ const clientOption = (c: {
 });
 
 /**
- * The filters of My Matters (README 6.8): Client (a typeahead; only with Client.View), Role (Both, Primary, Secondary), the date range of
- * Upcoming deadlines (Today, next 2 weeks, next 4 weeks, Custom) and, in the All matters scope, a Project manager. The page keeps them in the
- * address; this bar only reports a change. "No project manager" is not a filter here: a matter without a manager is normal, never a
- * thing to look for.
+ * The filters of My Matters (README 6.8): Client (a typeahead; only with Client.View), Role (Both, Primary, Secondary) and, in the All matters scope,
+ * a Project manager. The page keeps them in the address; this bar only reports a change. "No project manager" is not a filter here: a matter
+ * without a manager is normal, never a thing to look for.
+ *
+ * A control is drawn only when it can change the result (issue #906): Client when the person's matters belong to two or more clients, Role when
+ * they are Primary on some and Secondary on others. With neither the bar is not drawn at all (0 px). A filter that is in force (the address, or
+ * what was remembered) always keeps its control, so the page is never filtered by something the person cannot see or clear. The bar is the same
+ * on every tab: the date range of the Deadlines tab is a control of that tab (`MmDatesControl`), not of this bar.
  */
 @Component({
   selector: 'mf-mm-filter-bar',
@@ -89,15 +87,6 @@ const clientOption = (c: {
       min-width: 9rem;
       max-width: 22rem;
     }
-    /* The date controls are the row's own flex items (the wrapper has no box). They belong to the Deadlines tab only (PV-08 #859); off it they stay
-       in place, unseen and inert, so the row wraps the same way on every tab and the tab strip never moves (#825). The line that said what the
-       dates apply to is gone (the bar is one row at 1366 px): the control carries it as its description. */
-    .fb__dates {
-      display: contents;
-    }
-    .fb__dates--off {
-      visibility: hidden;
-    }
     .fb__link {
       align-self: center;
       color: var(--mf-link);
@@ -134,33 +123,37 @@ const clientOption = (c: {
   template: `
     @if (phone()) {
       <div class="fb fb--phone">
-        <button
-          type="button"
-          class="mf-btn"
-          data-filters-open
-          aria-haspopup="dialog"
-          (click)="sheet.set(true)"
-        >
-          <i class="pi pi-filter" aria-hidden="true"></i>
-          Filters{{ active() > 0 ? ' (' + active() + ')' : '' }}
-        </button>
+        @if (drawn()) {
+          <button
+            type="button"
+            class="mf-btn"
+            data-filters-open
+            aria-haspopup="dialog"
+            (click)="sheet.set(true)"
+          >
+            <i class="pi pi-filter" aria-hidden="true"></i>
+            Filters{{ active() > 0 ? ' (' + active() + ')' : '' }}
+          </button>
+        }
         <!-- Focus sits beside Filters on a phone: its own row would push Needs my attention out of the first screen (PV-08). -->
         <ng-content select="[mfPhoneRowExtra]" />
       </div>
-      <mf-confirm-dialog
-        title="Filters"
-        cancelLabel="Show results"
-        [showConfirm]="false"
-        [(visible)]="sheet"
-      >
-        <ng-container *ngTemplateOutlet="controls" />
-      </mf-confirm-dialog>
-    } @else {
+      @if (drawn()) {
+        <mf-confirm-dialog
+          title="Filters"
+          cancelLabel="Show results"
+          [showConfirm]="false"
+          [(visible)]="sheet"
+        >
+          <ng-container *ngTemplateOutlet="controls" />
+        </mf-confirm-dialog>
+      }
+    } @else if (drawn()) {
       <ng-container *ngTemplateOutlet="controls" />
     }
     <ng-template #controls>
       <div class="fb" data-mm-filters>
-        @if (canClient()) {
+        @if (showClient()) {
           <div class="fb__field fb__client">
             <mf-entity-picker
               label="Client"
@@ -215,64 +208,14 @@ const clientOption = (c: {
             Clear filters
           </button>
         }
-        <!-- The date controls close the row. On the tabs they do not belong to they stay in place, unseen and inert, so the row wraps the same
-             way on every tab and the tab strip below never moves (#825). -->
-        <div class="fb__dates" [class.fb__dates--off]="!dates()" [attr.inert]="dates() ? null : ''">
-          <div class="fb__field">
-            <label for="mm-range">Dates</label>
-            <select
-              id="mm-range"
-              aria-describedby="mm-dates-hint"
-              class="mf-control mf-control--compact fb__select"
-              data-filter="range"
-              [value]="filters().range"
-              (change)="rangePicked($any($event.target).value)"
-            >
-              @for (r of ranges; track r) {
-                <option [value]="r" [selected]="r === filters().range">{{ rangeLabels[r] }}</option>
-              }
-            </select>
-          </div>
-          @if (filters().range === 'custom') {
-            <div class="fb__field">
-              <label for="mm-from">From</label>
-              <input
-                id="mm-from"
-                type="date"
-                class="mf-control mf-control--compact"
-                data-filter="from"
-                [value]="filters().from ?? ''"
-                (change)="filterChange.emit({ from: $any($event.target).value || null })"
-              />
-            </div>
-            <div class="fb__field">
-              <label for="mm-to">To</label>
-              <input
-                id="mm-to"
-                type="date"
-                class="mf-control mf-control--compact"
-                data-filter="to"
-                [value]="filters().to ?? ''"
-                (change)="filterChange.emit({ to: $any($event.target).value || null })"
-              />
-            </div>
-          }
-        </div>
-        <span class="mf-sr-only" id="mm-dates-hint" data-filters-hint>{{ hint() }}</span>
       </div>
     </ng-template>
   `,
 })
 export class MyMattersFilterBar {
   readonly filters = input.required<MmFilters>();
-  /** How many filters differ from the default (Clear filters shows from 1). */
+  /** How many of this bar's filters are in force (Clear filters shows from 1). */
   readonly active = input(0);
-  /** The Dates control: the Deadlines tab only (the other tabs show all open work, or their own weeks). */
-  readonly dates = input(true);
-  /** What the dates apply to: the description of the Dates control. */
-  readonly hint = input(
-    'The dates apply to Upcoming deadlines. The other panels show all open work.',
-  );
   readonly filterChange = output<Partial<MmFilters>>();
   readonly clear = output<void>();
   /** The name of the chosen client / manager, reported so the strip can name the filters. */
@@ -287,12 +230,31 @@ export class MyMattersFilterBar {
   protected readonly phone = phoneCards();
   /** The phone's Filters sheet. */
   protected readonly sheet = signal(false);
+  private readonly managed = inject(ManagedMatters);
   protected readonly roles: MmRole[] = ['both', 'primary', 'secondary'];
-  protected readonly ranges: MmRange[] = ['today', '2w', '4w', 'custom'];
   protected readonly roleLabels = ROLE_LABELS;
-  protected readonly rangeLabels = RANGE_LABELS;
-  protected readonly canClient = computed(() => this.auth.has('Client.View'));
-  protected readonly showRole = computed(() => roleApplies(this.filters()));
+  private readonly all = computed(() => this.filters().scope === 'all');
+  /** Client: with two or more clients, in the All scope (any matter), or while a client is chosen (so it can be changed or cleared). */
+  protected readonly showClient = computed(
+    () =>
+      this.auth.has('Client.View') &&
+      (this.all() || this.managed.severalClients() || this.filters().clientId !== null),
+  );
+  /** Role: Primary on some matters and Secondary on others, in the All scope once a manager is named, or while a role is chosen. */
+  protected readonly showRole = computed(
+    () =>
+      roleApplies(this.filters()) &&
+      (this.all() || this.managed.mixedRoles() || this.filters().role !== 'both'),
+  );
+  /**
+   * Anything to draw. While the matters are still being read nothing is guessed: a bar appears at once only for the All scope or a filter in force,
+   * and the page does not jump for a person with one matter. (After a failed read everything is offered, as before.)
+   */
+  protected readonly drawn = computed(() => {
+    if (this.all() || this.active() > 0) return true;
+    if (this.managed.state() === 'loading') return false;
+    return this.showClient() || this.showRole();
+  });
   protected readonly client = signal<PickerOption | null>(null);
   protected readonly manager = signal<PickerOption | null>(null);
 
@@ -389,11 +351,5 @@ export class MyMattersFilterBar {
     this.manager.set(pick);
     this.managerName.emit(pick?.label ?? null);
     this.filterChange.emit({ managerId: pick?.id ?? null });
-  }
-
-  protected rangePicked(value: MmRange): void {
-    this.filterChange.emit(
-      value === 'custom' ? { range: value } : { range: value, from: null, to: null },
-    );
   }
 }

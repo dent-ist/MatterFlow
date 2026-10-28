@@ -21,6 +21,7 @@ import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { factText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
+import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { activityText } from './activity-panel';
 import { PanelBox } from './panel-box';
@@ -166,6 +167,7 @@ function plural(n: number, one: string, many: string): string {
       title="Since your last visit"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
       @if (!empty()) {
@@ -300,8 +302,13 @@ export class SincePanel {
     },
   );
 
+  private readonly states = inject(OverviewStates, { optional: true });
+  /** Nothing changed: one muted line, no card (issue #920). */
+  protected readonly bare = computed(() => this.loader.state() === 'ready' && this.empty());
+
   constructor() {
     restoreRowFocus('my-matters-since', () => this.loader.state() === 'ready');
+    effect(() => this.states?.report('since', this.bare() ? 'empty' : 'content'));
     let first = true;
     effect(() => {
       if (this.loader.state() === 'loading' || !first) return;

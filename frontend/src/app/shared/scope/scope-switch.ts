@@ -63,7 +63,13 @@ const NUDGE = String.fromCharCode(0x200b);
   `,
   template: `
     @if (visible()) {
-      <div class="ss" role="group" aria-label="Scope" data-scope-switch>
+      <div
+        class="ss"
+        role="group"
+        aria-label="Scope"
+        data-scope-switch
+        [attr.title]="description() || null"
+      >
         <button
           type="button"
           class="mf-btn"
@@ -96,6 +102,8 @@ export class ScopeSwitch {
   readonly canAll = input(false);
   /** The second button's text. */
   readonly allLabel = input('All');
+  /** What the shown scope means: the switch's tooltip (a page with no sentence under its title says it here). */
+  readonly description = input('');
   /** The live region's text after a change by the person. */
   readonly announceMine = input('Showing matters you manage');
   readonly announceAll = input('Showing all matters');

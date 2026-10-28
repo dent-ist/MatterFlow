@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -27,6 +28,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { reasonText, shortDate } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
+import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { PanelBox } from './panel-box';
 
@@ -229,6 +231,7 @@ export { reasonText };
       title="Matter health"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
       @if (page(); as p) {
@@ -239,10 +242,8 @@ export { reasonText };
             [attr.data-empty-kind]="filtered() ? 'filtered' : 'none'"
           >
             @if (filtered()) {
+              <!-- The one "Clear filters" is in the filter bar (issue #920). -->
               <p>No matters match these filters.</p>
-              <button type="button" class="mf-btn" data-clear-filters (click)="clearFilters.emit()">
-                Clear filters
-              </button>
             } @else if (filters().scope === 'all') {
               <p>There are no active matters.</p>
             } @else {
@@ -554,9 +555,27 @@ export class HealthPanel {
     },
   );
 
+  private readonly states = inject(OverviewStates, { optional: true });
+  /** No matter to list: a line (with what to do about it), no card (issue #920). */
+  protected readonly bare = computed(
+    () => this.loader.state() === 'ready' && (this.page()?.total ?? 1) === 0,
+  );
+
   constructor() {
     // Back from a matter puts focus on the row that was left.
     restoreRowFocus('my-matters-health', () => this.loader.state() === 'ready');
+    effect(() =>
+      this.states?.report(
+        'health',
+        this.loader.state() !== 'ready'
+          ? 'loading'
+          : (this.page()?.total ?? 1) > 0
+            ? 'content'
+            : this.filtered()
+              ? 'nomatch'
+              : 'none',
+      ),
+    );
   }
 
   protected readonly page = computed(() => this.loader.data());

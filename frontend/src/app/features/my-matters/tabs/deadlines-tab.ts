@@ -12,7 +12,8 @@ import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { dayHeading, dueDay } from '../facts';
-import { MmFilters, MmRange, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
+import { MmDatesControl } from '../dates-control';
+import { MmFilters, commonArgs, deadlineArgs, queryToParams } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { sectionPref } from '../section-prefs';
 import { SectionToolbar } from '../section-toolbar';
@@ -93,7 +94,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
  */
 @Component({
   selector: 'mf-mm-deadlines-tab',
-  imports: [PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
+  imports: [MmDatesControl, PanelBox, RouterLink, RowLink, SectionToolbar, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
@@ -223,28 +224,9 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
       title="Deadlines"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
-      <div mfPanelActions class="dt__toggle" role="group" aria-label="Look ahead">
-        <button
-          type="button"
-          class="mf-btn"
-          data-range="2w"
-          [attr.aria-pressed]="filters().range === '2w'"
-          (click)="rangeChange.emit('2w')"
-        >
-          2 weeks
-        </button>
-        <button
-          type="button"
-          class="mf-btn"
-          data-range="4w"
-          [attr.aria-pressed]="filters().range === '4w'"
-          (click)="rangeChange.emit('4w')"
-        >
-          4 weeks
-        </button>
-      </div>
       @if (wide()) {
         <div mfPanelActions class="dt__toggle" role="group" aria-label="View">
           <button
@@ -267,14 +249,19 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
           </button>
         </div>
       }
-      <mf-mm-section-toolbar
-        label="Deadlines"
-        [options]="typeChoices.options()"
-        [types]="pref.value().types"
-        [focused]="pref.focused()"
-        [sorts]="false"
-        (typesChange)="pref.setTypes($event)"
-      />
+      @if (!bare()) {
+        <mf-mm-dates [filters]="filters()" (filterChange)="filterChange.emit($event)" />
+      }
+      @if (!bare()) {
+        <mf-mm-section-toolbar
+          label="Deadlines"
+          [options]="typeChoices.options()"
+          [types]="pref.value().types"
+          [focused]="pref.focused()"
+          [sorts]="false"
+          (typesChange)="pref.setTypes($event)"
+        />
+      }
       @if (calendar()) {
         @if (total() === 0) {
           @if (filtered()) {
@@ -455,7 +442,7 @@ export function calendarWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCe
 })
 export class DeadlinesTab {
   readonly filters = input.required<MmFilters>();
-  readonly rangeChange = output<MmRange>();
+  readonly filterChange = output<Partial<MmFilters>>();
 
   protected readonly origin = inject(TaskOriginLinks);
   private readonly api = inject(MyMattersClient);
@@ -511,6 +498,14 @@ export class DeadlinesTab {
   protected readonly matters = computed(() => this.loader.data()?.byMatter ?? []);
   protected readonly matterTotal = computed(() => this.loader.data()?.matterTotal ?? 0);
   protected readonly total = computed(() => this.loader.data()?.total ?? 0);
+  /** Nothing is due in the widest window and no type filter hides anything: one muted line, no controls (issue #920). */
+  protected readonly bare = computed(
+    () =>
+      this.loader.state() === 'ready' &&
+      (this.calendar() ? this.total() === 0 : this.matters().length === 0) &&
+      !this.filtered() &&
+      this.filters().range === '4w',
+  );
   protected readonly range = computed(() => {
     const d = this.loader.data();
     return d ? `from ${d.fromDate} to ${d.toDate}` : '';

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { Params, RouterLink } from '@angular/router';
 import { MyMattersClient } from '../../../api/generated/api-client';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
@@ -6,6 +6,7 @@ import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { OLDEST_FIRST, rowFactText } from '../facts';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
+import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
 import { ViewsMenu } from '../../../shared/ui/views-menu';
 import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
@@ -49,33 +50,40 @@ const GROUP_TITLES: Record<string, string> = {
       title="Needs my attention"
       [state]="loader.state()"
       [busy]="loader.busy()"
+      [bare]="bare()"
       (retry)="loader.load()"
     >
-      <mf-views-menu
-        mfPanelActions
-        surface="my-matters.attention"
-        [defaults]="false"
-        [capture]="captureView"
-        [apply]="pref.restore"
-      />
-      <mf-export-menu
-        mfPanelActions
-        fileName="needs-my-attention"
-        [run]="exportRun"
-        [disabled]="groups().groups.length === 0"
-        reason="Nothing to export."
-      />
-      <mf-mm-section-toolbar
-        label="Needs my attention"
-        [options]="typeChoices.options()"
-        [types]="pref.value().types"
-        [focused]="pref.focused()"
-        [sort]="pref.value().sort"
-        [dir]="pref.value().dir"
-        (typesChange)="pref.setTypes($event)"
-        (sortChange)="pref.setSort($event)"
-        (dirChange)="pref.setDir($event)"
-      />
+      @if (!bare()) {
+        <mf-views-menu
+          mfPanelActions
+          surface="my-matters.attention"
+          [defaults]="false"
+          [capture]="captureView"
+          [apply]="pref.restore"
+        />
+      }
+      @if (!bare()) {
+        <mf-export-menu
+          mfPanelActions
+          fileName="needs-my-attention"
+          [run]="exportRun"
+          [disabled]="groups().groups.length === 0"
+          reason="Nothing to export."
+        />
+      }
+      @if (!bare()) {
+        <mf-mm-section-toolbar
+          label="Needs my attention"
+          [options]="typeChoices.options()"
+          [types]="pref.value().types"
+          [focused]="pref.focused()"
+          [sort]="pref.value().sort"
+          [dir]="pref.value().dir"
+          (typesChange)="pref.setTypes($event)"
+          (sortChange)="pref.setSort($event)"
+          (dirChange)="pref.setDir($event)"
+        />
+      }
       @if (groups().groups.length === 0) {
         @if (filtered()) {
           <p class="pl__empty" data-empty data-filtered-empty>
@@ -131,8 +139,10 @@ const GROUP_TITLES: Record<string, string> = {
                       >{{ t.taskNumber }} {{ t.title }}</a
                     >
                   </span>
-                  <span class="pl__meta"
-                    >{{ t.matterRef }} {{ t.matterName }}
+                  <span class="pl__meta pl__meta--flex"
+                    ><span class="pl__matter" [attr.title]="t.matterRef + ' ' + t.matterName"
+                      >{{ t.matterRef }} {{ t.matterName }}</span
+                    >
                     <span class="pl__prio" data-priority>{{ t.priorityName }}</span>
                     @for (tag of groups().tags.get(t.taskId) ?? []; track tag) {
                       <span class="pl__tag" data-also-tag>{{ tag }}</span>
@@ -172,6 +182,7 @@ export class AttentionPanel {
   protected readonly typeChoices = inject(SectionTypes);
   protected readonly pref = sectionPref('my-matters.attention', { sort: true });
   protected readonly filtered = computed(() => this.pref.value().types.length > 0);
+  private readonly states = inject(OverviewStates, { optional: true });
 
   protected readonly loader = panelLoader(
     () => [this.filters(), this.pref.value()],
@@ -192,9 +203,15 @@ export class AttentionPanel {
     },
   );
 
+  /** Nothing needs attention and no type filter is hiding anything: one muted line, no toolbar (issue #920). */
+  protected readonly bare = computed(
+    () => this.loader.state() === 'ready' && this.groups().groups.length === 0 && !this.filtered(),
+  );
+
   constructor() {
     this.typeChoices.ensure();
     restoreRowFocus('my-matters-attention', () => this.loader.state() === 'ready');
+    effect(() => this.states?.report('attention', this.bare() ? 'empty' : 'content'));
   }
 
   /**

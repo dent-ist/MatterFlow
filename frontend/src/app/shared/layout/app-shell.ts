@@ -33,6 +33,7 @@ import { ADMIN_NAV_ITEMS, NAV_GROUPS, NAV_ITEMS, NavItem, compactNav } from './n
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
+import { CreateTaskContext } from './create-task-context';
 import { SkipTarget, skipId } from './skip-target';
 import { isShortcut } from './shortcut-registry';
 import { ShellLayout } from '../ui/fixed-page';
@@ -108,6 +109,7 @@ export class AppShell {
   );
   private readonly help = inject(ShortcutHelpState);
   private readonly shortcuts = inject(KeyboardShortcuts);
+  private readonly createContext = inject(CreateTaskContext);
   /** Set while a page offers a first stop of its own ("Skip to task list" on the work pages, #181). */
   protected readonly skipTarget = inject(SkipTarget);
   /** Set while the target page's element carrying the skip id is in the document; the link is drawn only then (#586). */
@@ -356,7 +358,11 @@ export class AppShell {
   }
 
   protected createTask(): void {
-    void this.router.navigate(['/tasks/new']);
+    // A page that knows the one matter new work belongs to (My Matters with a single matter) starts Create task with it and returns there.
+    const matterId = this.createContext.matterId();
+    void this.router.navigate(['/tasks/new'], {
+      queryParams: matterId === null ? undefined : { matterId, returnTo: this.router.url },
+    });
   }
 
   protected onKeydown(event: KeyboardEvent): void {

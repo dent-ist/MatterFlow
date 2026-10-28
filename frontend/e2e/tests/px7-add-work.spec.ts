@@ -48,7 +48,7 @@ test.describe('Add work from My Matters', () => {
       page.viewportSize()!.height,
     );
     // No matter used yet: the control is a menu of my matters (the last one used comes first next time).
-    await click(control.getByRole('button', { name: /: New task$/ }));
+    await click(control.getByRole('button', { name: /: \+ Task on a matter$/ }));
     await click(page.getByRole('menuitem', { name: new RegExp(`^${alpha.matterRef}`) }));
     await expect(page).toHaveURL(new RegExp(`/tasks/new\\?matterId=${alpha.matterId}`));
     await expect(page.locator('[data-recent-types]')).toHaveCount(0); // nothing used yet
@@ -95,7 +95,7 @@ test.describe('Add work from My Matters', () => {
     await page.goto('/my-matters');
     await page
       .locator('[data-header-new-task]')
-      .getByRole('button', { name: /: New task$/ })
+      .getByRole('button', { name: /: \+ Task on a matter$/ })
       .click();
     const items = page.getByRole('menuitem');
     await expect(items).toHaveCount(3); // Alpha, Bravo, Another matter
@@ -143,7 +143,7 @@ test.describe('Add work from My Matters', () => {
       await page.goto('/my-matters');
       const trigger = page
         .locator('[data-header-new-task]')
-        .getByRole('button', { name: /: New task$/ });
+        .getByRole('button', { name: /: \+ Task on a matter$/ });
       await expect(trigger).toBeVisible();
       const box = (await trigger.boundingBox())!;
       expect(box.y + box.height, 'on the first screen').toBeLessThan(size.height);

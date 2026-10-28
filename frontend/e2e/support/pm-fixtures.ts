@@ -254,3 +254,151 @@ async function build(seed: Seeder, personas: Personas): Promise<PmFixtures> {
     m,
   };
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// The two review personas of epic #893 (issue #925): a Project Manager with exactly ONE matter and one with exactly THREE. They have worlds of
+// their own (never part of `pmFixtures`, so the counts of the Matters list specs do not move), and each gets an overdue, an unassigned, an On hold
+// (for ten days) and an At risk task. The two aged states need the SQL container of `run-local.sh` (`Seeder.canWriteLegacyText()`); without it
+// `aged` is false and only the overdue and unassigned tasks exist.
+
+export interface PmPersona {
+  pm: Persona;
+  /** Another Project Manager: the Primary of the matter `pm` is Secondary on (three-matter persona only). */
+  other: Persona;
+  token: string;
+  world: World;
+  clients: PmClient[];
+  matters: PmMatter[];
+  /** True when the At risk task and the ten-day hold were aged with SQL. */
+  aged: boolean;
+  tasks: { overdue: Json; unassigned: Json; hold: Json; atRisk: Json };
+}
+
+async function personaWorld(
+  seed: Seeder,
+  personas: Personas,
+  label: string,
+  three: boolean,
+): Promise<PmPersona> {
+  const token = uid().slice(0, 5).toUpperCase();
+  const world = await seed.world();
+  const pm = await personas.create({
+    label: `${label}-pm`,
+    roles: ['Project Manager'],
+    displayName: `${three ? 'PM Three' : 'PM Solo'} ${label} ${token}`,
+  });
+  const other = await personas.create({
+    label: `${label}-pm2`,
+    roles: ['Project Manager'],
+    displayName: `PM Other ${label} ${token}`,
+  });
+  // Three clients for the three-matter persona (the Client filter is then offered); one for the solo persona.
+  const clients: PmClient[] = [];
+  const makeClient = async (name: string): Promise<Json> => {
+    const c = await seed.client({ name: `${name} ${label} ${token}` });
+    clients.push({ clientId: c.clientId, clientNumber: c.clientNumber, name: c.name });
+    return c;
+  };
+  const manage = async (m: Json, primary: Persona | null, secondary: Persona | null) => {
+    await seed.admin.put(`/api/v1/matters/${m.matterId}/managers`, {
+      primaryManagerId: primary?.userId ?? null,
+      secondaryManagerId: secondary?.userId ?? null,
+      rowVersion: m.rowVersion,
+    });
+    return { matterId: m.matterId, matterRef: m.matterRef, name: m.name } as PmMatter;
+  };
+  const matters: PmMatter[] = [];
+  if (three) {
+    const c1 = await makeClient('Persona client one');
+    const c2 = await makeClient('Persona client two');
+    const c3 = await makeClient('Persona client three');
+    const one = await seed.matter({
+      client: c1,
+      number: '00001',
+      name: `Three one ${label} ${token}`,
+    });
+    const two = await seed.matter({
+      client: c2,
+      number: '00001',
+      name: `Three two ${label} ${token}`,
+    });
+    const tri = await seed.matter({
+      client: c3,
+      number: '00001',
+      name: `Three three ${label} ${token}`,
+    });
+    matters.push(
+      await manage(one, pm, null),
+      await manage(two, pm, null),
+      await manage(tri, other, pm),
+    );
+  } else {
+    const c1 = await makeClient('Persona client solo');
+    const only = await seed.matter({
+      client: c1,
+      number: '00001',
+      name: `Solo only ${label} ${token}`,
+    });
+    matters.push(await manage(only, pm, null));
+  }
+
+  // The states, spread over the matters. A task type with a target turnaround makes At risk possible.
+  const slow = await seed.taskType({ workflows: [world.workflow] });
+  const view = await seed.admin.get(`/api/v1/task-types/${slow.id}`);
+  await seed.admin.put(`/api/v1/task-types/${slow.id}`, {
+    name: view.name,
+    description: view.description ?? null,
+    isActive: true,
+    eligibleWorkflowIds: view.eligibleWorkflowIds,
+    defaultWorkflowDefinitionId: view.defaultWorkflowDefinitionId,
+    iconKey: view.iconKey,
+    colourKey: view.colourKey ?? undefined,
+    targetDays: 5,
+    rowVersion: view.rowVersion,
+  });
+  const on = (i: number) => ({
+    matter: { matterId: matters[i % matters.length].matterId },
+    taskType: world.taskType,
+    workflow: world.workflow,
+  });
+  const farOut = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  const overdue = await seed.task(on(0), { title: `Overdue ${token}`, dueDate: '2000-01-01' });
+  const unassigned = await seed.task(on(1), { title: `Unassigned ${token}`, dueDate: farOut });
+  const hold = await seed.task(on(2), { title: `Held ${token}`, dueDate: farOut });
+  await seed.admin.post(`/api/v1/tasks/${hold.taskId}/status`, {
+    status: 'ON_HOLD',
+    comment: 'Waiting for the client',
+    rowVersion: hold.rowVersion,
+  });
+  const atRisk = await seed.task(
+    { ...on(0), taskType: { ...world.taskType, id: slow.id } },
+    { title: `At risk ${token}`, taskTypeId: slow.id, dueDate: farOut },
+  );
+  const aged = Seeder.canWriteLegacyText();
+  if (aged) {
+    seed.sql(
+      `UPDATE dbo.Task SET StatusChangedAt = DATEADD(DAY, -10, SYSUTCDATETIME()) WHERE TaskId = ${Number(hold.taskId)}`,
+    );
+    seed.ageTask(atRisk.taskId, { createdDaysAgo: 5 });
+  }
+  return {
+    pm,
+    other,
+    token,
+    world,
+    clients,
+    matters,
+    aged,
+    tasks: { overdue, unassigned, hold, atRisk },
+  };
+}
+
+/** The Project Manager with exactly one matter: one overdue, one unassigned, one on hold (ten days) and one At risk task on it. */
+export function pmSolo(seed: Seeder, personas: Personas, label: string): Promise<PmPersona> {
+  return personaWorld(seed, personas, label, false);
+}
+
+/** The Project Manager with exactly three matters (Primary of two, Secondary of one; three clients): every state spread across them. */
+export function pmThree(seed: Seeder, personas: Personas, label: string): Promise<PmPersona> {
+  return personaWorld(seed, personas, label, true);
+}

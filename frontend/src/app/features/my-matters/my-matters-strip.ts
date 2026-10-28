@@ -49,12 +49,14 @@ import { panelLoader } from './panel-loader';
         <button type="button" class="mf-btn" data-strip-retry (click)="loader.load()">Retry</button>
       </div>
     }
-    <mf-work-strip
-      [label]="label()"
-      [items]="items()"
-      [attr.aria-busy]="loader.busy() ? 'true' : null"
-      data-mm-strip
-    />
+    @if (!allZero()) {
+      <mf-work-strip
+        [label]="label()"
+        [items]="items()"
+        [attr.aria-busy]="loader.busy() ? 'true' : null"
+        data-mm-strip
+      />
+    }
   `,
 })
 export class MyMattersStrip {
@@ -78,6 +80,24 @@ export class MyMattersStrip {
       );
     },
   );
+
+  /** Every count is zero (no matter, or the filters match none): eight zeros say nothing, so the strip is not drawn (issue #920). */
+  protected readonly allZero = computed(() => {
+    const s = this.loader.data();
+    return (
+      !!s &&
+      [
+        s.matters,
+        s.openTasks,
+        s.overdue,
+        s.atRisk,
+        s.dueIn3Days,
+        s.dueIn7Days,
+        s.unassigned,
+        s.onHold,
+      ].every((c) => c.count === 0)
+    );
+  });
 
   protected readonly label = computed(
     () =>

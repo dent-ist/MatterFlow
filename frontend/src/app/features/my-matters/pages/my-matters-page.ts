@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PageTitle } from '../../../core/title/page-title';
+import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
@@ -20,7 +21,9 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { FocusChip, FocusControl } from '../focus-control';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
+import { ManagedMatters } from '../managed-matters';
 import { NewTaskControl } from '../new-task-control';
+import { OverviewStates } from '../overview-states';
 import {
   DEFAULT_FILTERS,
   MmFilters,
@@ -71,9 +74,6 @@ const TAB_LABELS: Record<MmTab, string> = {
   trends: 'Trends',
   activity: 'Activity',
 };
-
-const HINT_OVERVIEW = 'The dates apply to Upcoming deadlines. The other panels show all open work.';
-const HINT_DEADLINES = 'The dates choose the weeks of the Deadlines tab.';
 
 const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
 
@@ -129,6 +129,7 @@ function storage(): Storage | null {
     TrendsTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ManagedMatters, OverviewStates],
   styles: `
     :host {
       display: block;
@@ -161,6 +162,14 @@ function storage(): Storage | null {
     .mm__since {
       margin-bottom: var(--mf-s3);
     }
+    /* Everything is quiet (issue #920): the four sections that have nothing to show give way to one line. */
+    .mm__off {
+      display: none;
+    }
+    .mm__quiet {
+      margin: 0 0 var(--mf-s3);
+      color: var(--mf-text-muted);
+    }
     .mm__loading {
       margin: 0;
       color: var(--mf-text-muted);
@@ -174,18 +183,16 @@ function storage(): Storage | null {
         bottom: 0;
       }
     }
-    /* A phone: the scope switch beside the title already says which matters these are, and the one-line description would only be cut off
-       ("The matters you manage as primary or secondary pro..."): it stays for screen readers and gives its line to the first screen (#818). */
-    @media (max-width: 639.98px) {
-      :host ::ng-deep [data-page-description] {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        margin: 0;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-      }
+    /* No sentence under the title (issue #904): the scope switch beside it says which matters these are, and its tooltip says what that means. The
+       sentence stays in the page for screen readers only, at every width. */
+    :host ::ng-deep [data-page-description] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     /* A phone: one column in the reading order of the plan (README 9): attention, health, deadlines, activity. */
     @media (max-width: 639.98px) {
@@ -206,6 +213,7 @@ function storage(): Storage | null {
         [scope]="filters().scope"
         [canAll]="canAll()"
         allLabel="All matters"
+        [description]="scopeText()"
         (scopeChange)="
           update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
         "
@@ -218,9 +226,7 @@ function storage(): Storage | null {
 
     <mf-mm-filter-bar
       [filters]="filters()"
-      [active]="active()"
-      [dates]="datesApply()"
-      [hint]="datesHint()"
+      [active]="barActive()"
       (filterChange)="update($event)"
       (clear)="clear()"
       (clientName)="clientName.set($event)"
@@ -253,7 +259,7 @@ function storage(): Storage | null {
       @switch (tab()) {
         @case ('deadlines') {
           @defer (on immediate) {
-            <mf-mm-deadlines-tab [filters]="filters()" (rangeChange)="setRange($event)" />
+            <mf-mm-deadlines-tab [filters]="filters()" (filterChange)="update($event)" />
           } @placeholder {
             <p class="mm__loading" role="status">Loading deadlines</p>
           }
@@ -291,18 +297,29 @@ function storage(): Storage | null {
           }
         }
         @default {
-          <mf-mm-skip-links />
+          <mf-mm-skip-links [class.mm__off]="states.quiet()" />
           <mf-mm-since
             class="mm__since"
+            [class.mm__off]="states.quiet()"
             [filters]="filters()"
             [marker]="marker()"
             (marked)="markerMoved()"
             (settled)="sinceSettled.set(true)"
           />
+          @if (states.quiet() && !states.noMatters()) {
+            <p class="mm__quiet" role="status" data-all-quiet>
+              Nothing is late and nothing is due in the next 7 days.
+            </p>
+          }
           <div class="mm__grid">
-            <mf-mm-attention class="mm__attention" [filters]="filters()" />
+            <mf-mm-attention
+              class="mm__attention"
+              [class.mm__off]="states.quiet()"
+              [filters]="filters()"
+            />
             <mf-mm-deadlines
               class="mm__deadlines"
+              [class.mm__off]="states.quiet()"
               [filters]="filters()"
               (rangeChange)="setRange($event)"
             />
@@ -312,7 +329,7 @@ function storage(): Storage | null {
               [sort]="sort()"
               [dir]="dir()"
               [pageNumber]="page()"
-              [filtered]="active() > 0"
+              [filtered]="barActive() > 0"
               (sortChange)="setSort($event.sort, $event.dir)"
               (pageChange)="setPage($event)"
               (clearFilters)="clear()"
@@ -320,6 +337,7 @@ function storage(): Storage | null {
             />
             <mf-mm-activity
               class="mm__activity"
+              [class.mm__off]="states.quiet()"
               [filters]="filters()"
               [marker]="marker()"
               [hold]="!sinceSettled()"
@@ -336,6 +354,9 @@ export class MyMattersPage {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
   private readonly pageTitle = inject(PageTitle);
+  private readonly managed = inject(ManagedMatters);
+  protected readonly states = inject(OverviewStates);
+  private readonly createContext = inject(CreateTaskContext);
 
   private readonly params = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
@@ -356,10 +377,9 @@ export class MyMattersPage {
   protected readonly tabList = computed<MfTab[]>(() =>
     MM_TABS.filter((key) => this.offered(key)).map((key) => ({ key, label: TAB_LABELS[key] })),
   );
-  /** The Dates control belongs to the Deadlines tab (PV-08: the filter bar is one row on Overview; Upcoming deadlines there has its own range choice). */
-  protected readonly datesApply = computed(() => this.tab() === 'deadlines');
-  protected readonly datesHint = computed(() =>
-    this.tab() === 'deadlines' ? HINT_DEADLINES : HINT_OVERVIEW,
+  /** The filters of the filter bar that are in force. The date range is not one of them: its control is inside the Deadlines tab (issue #906). */
+  protected readonly barActive = computed(() =>
+    activeFilterCount({ ...this.filters(), range: DEFAULT_FILTERS.range }),
   );
   /** Counts the moves of the "seen" marker, so the panels that show it read again. */
   protected readonly marker = signal(0);
@@ -379,10 +399,16 @@ export class MyMattersPage {
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
 
+  /** What the scope means. No sentence is drawn under the title (issue #904): it is the tooltip of the scope switch and stays for screen readers. */
+  protected readonly scopeText = computed(() =>
+    this.filters().scope === 'all'
+      ? 'All active matters, whoever manages them'
+      : 'The matters you manage as primary or secondary project manager. This is your default view, not a limit on what you can open.',
+  );
   protected readonly description = computed(() =>
     this.filters().scope === 'all'
       ? 'All active matters, whoever manages them. Each count opens the list it counts.'
-      : 'The matters you manage as primary or secondary project manager. This is your default view, not a limit on what you can open.',
+      : this.scopeText(),
   );
 
   private readonly injector = inject(Injector);
@@ -401,7 +427,12 @@ export class MyMattersPage {
       const tab = this.tab();
       this.pageTitle.pin(tab === 'overview' ? 'My Matters' : `My Matters: ${TAB_LABELS[tab]}`);
     });
-    inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
+    inject(DestroyRef).onDestroy(() => {
+      this.pageTitle.unpin();
+      this.createContext.matterId.set(null);
+    });
+    // One managed matter: the shell's "Create task" is the one create button and opens Create task with that matter (issue #904).
+    effect(() => this.createContext.matterId.set(this.managed.only()?.matterId ?? null));
     effect(() => {
       const tab = this.tab();
       untracked(() => {
