@@ -58,11 +58,11 @@ public abstract class MyMattersTestBase(SqlServerFixture sql) : IAsyncLifetime
 
     protected Dictionary<string, long> Ids { get; } = [];
 
-    public static string In(int days) => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(days).ToString("yyyy-MM-dd");
+    public static string In(int days) => ViewerDay.Today().AddDays(days).ToString("yyyy-MM-dd");
 
     public virtual async Task InitializeAsync()
     {
-        H = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()));
+        H = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = ViewerDay.HostClock });
         W = await H.CreateWorldAsync();
         string[] pm = ["Task.View", "Matter.View", "Matter.BeManager"];
         A = await H.UserWithAsync(@"KE\pma", pm);

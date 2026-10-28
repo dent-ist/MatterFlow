@@ -29,7 +29,7 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
 
     public async Task InitializeAsync()
     {
-        _h = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()));
+        _h = new TaskHarness(new DatabaseApiFactory(await sql.CreateDatabaseAsync()) { Clock = ViewerDay.HostClock });
         _w = await _h.CreateWorldAsync();
         var perms = new[] { "Task.View", "Matter.View", "Matter.BeManager" };
         _pmAClient = await _h.UserWithAsync(@"KE\pma", perms);
@@ -46,7 +46,7 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
         await _h.ExecuteAsync($"UPDATE dbo.Matter SET PrimaryManagerId = {_pmB}, SecondaryManagerId = {_pmA} WHERE MatterId = {_m2}");
         await _h.ExecuteAsync($"UPDATE dbo.Matter SET PrimaryManagerId = {_pmB} WHERE MatterId = {_m4}");
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = ViewerDay.Today(); // the viewer's day (New York), not the UTC day
         string In(int days) => today.AddDays(days).ToString("yyyy-MM-dd");
         await MakeAsync("m1-soon", _m1, new() { ["dueDate"] = In(2) });
         await MakeAsync("m1-overdue", _m1, new() { ["dueDate"] = "2000-01-01" });
@@ -57,8 +57,8 @@ public sealed class TaskQueueManagerFilterTests(SqlServerFixture sql) : IAsyncLi
         await MakeAsync("m1-hold-second", _m1, [], "ON_HOLD");
         await MakeAsync("m3-soon", _m3, new() { ["dueDate"] = In(1) });
         await MakeAsync("m4-soon", _m4, new() { ["dueDate"] = In(1) });
-        await _h.ExecuteAsync("UPDATE dbo.Task SET StatusChangedAt = DATEADD(day, -10, SYSUTCDATETIME()) WHERE Title = 'm2-hold-first'");
-        await _h.ExecuteAsync("UPDATE dbo.Task SET StatusChangedAt = DATEADD(day, -2, SYSUTCDATETIME()) WHERE Title = 'm1-hold-second'");
+        await _h.ExecuteAsync($"UPDATE dbo.Task SET StatusChangedAt = DATEADD(day, -10, '{ViewerDay.Now:yyyy-MM-ddTHH:mm:ss}') WHERE Title = 'm2-hold-first'");
+        await _h.ExecuteAsync($"UPDATE dbo.Task SET StatusChangedAt = DATEADD(day, -2, '{ViewerDay.Now:yyyy-MM-ddTHH:mm:ss}') WHERE Title = 'm1-hold-second'");
         _h.Factory.InvalidateAll();
     }
 

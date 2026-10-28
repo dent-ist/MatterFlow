@@ -20,7 +20,7 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
         await H.ScalarLongAsync($"SELECT CAST(ISNULL((SELECT SeenAuditEventId FROM dbo.UserMatterActivitySeen WHERE UserId = {PmA}), -1) AS BIGINT) AS [Value]");
 
     private async Task SetMarkerTimeAsync(int daysAgo) =>
-        await H.ExecuteAsync($"UPDATE dbo.UserMatterActivitySeen SET SeenAtUtc = DATEADD(day, -{daysAgo}, SYSUTCDATETIME()) WHERE UserId = {PmA}");
+        await H.ExecuteAsync($"UPDATE dbo.UserMatterActivitySeen SET SeenAtUtc = DATEADD(day, -{daysAgo}, '{ViewerDay.Now:yyyy-MM-ddTHH:mm:ss}') WHERE UserId = {PmA}");
 
     [Fact]
     public async Task Without_a_marker_the_last_seven_days_count_and_the_call_neither_creates_nor_moves_a_marker()
@@ -28,7 +28,7 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
         var answer = await Mine("since-last-visit");
         answer.GetProperty("hasMarker").GetBoolean().ShouldBeFalse();
         answer.GetProperty("seenEventId").GetInt64().ShouldBe(0);
-        DateTime.Parse(answer.GetProperty("sinceUtc").GetString()!).ShouldBeInRange(DateTime.UtcNow.AddDays(-7).AddMinutes(-5), DateTime.UtcNow.AddDays(-7).AddMinutes(5));
+        DateTime.Parse(answer.GetProperty("sinceUtc").GetString()!).ShouldBeInRange(ViewerDay.Now.AddDays(-7).AddMinutes(-5), ViewerDay.Now.AddDays(-7).AddMinutes(5));
 
         // The seeded tasks of A's matters (M1: four, M2: three, M4: one; M3 belongs to nobody) were created by the administrator, in the period.
         Count(answer, "newTasks").GetProperty("count").GetInt32().ShouldBe(8);
@@ -93,7 +93,7 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
         await H.CompleteAsync(await H.GetTaskAsync(Ids["m2-in5"]));
         await OkAsync(await H.Admin.PostAsJsonAsync($"/api/v1/tasks/{Ids["m1-asap"]}/comments", new { bodyHtml = "<p>SECRET-PRIVILEGED-TEXT</p>" }), HttpStatusCode.Created);
         // m1-soon fell due yesterday, after the marker was set two days ago: it became overdue during the period.
-        var yesterday = DateTime.UtcNow.Date.AddDays(-1);
+        var yesterday = ViewerDay.Today().AddDays(-1); // the viewer's day (New York), not the UTC day
         await H.ExecuteAsync($"UPDATE dbo.Task SET DueDate = '{yesterday:yyyy-MM-dd}', DueSortKey = '{yesterday:yyyy-MM-dd} 23:59:59' WHERE TaskId = {Ids["m1-soon"]}");
         await SetMarkerTimeAsync(2);
 
@@ -155,7 +155,7 @@ public sealed class MyMattersSinceLastVisitTests(SqlServerFixture sql) : MyMatte
             await MakeAsync($"late-{i}", M6, new() { ["dueDate"] = "2099-01-01" });
         }
 
-        var yesterday = DateTime.UtcNow.Date.AddDays(-1);
+        var yesterday = ViewerDay.Today().AddDays(-1); // the viewer's day (New York), not the UTC day
         await H.ExecuteAsync($"UPDATE dbo.Task SET DueDate = '{yesterday:yyyy-MM-dd}', DueSortKey = '{yesterday:yyyy-MM-dd} 23:59:59' WHERE Title LIKE 'late-%'");
         await SetMarkerTimeAsync(3);
 
