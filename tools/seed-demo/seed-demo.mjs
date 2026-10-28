@@ -11,6 +11,7 @@
 import { Api, ApiError, Pacer, withRecheck } from './lib/http.mjs';
 import { createRng } from './lib/rng.mjs';
 import { FormFiller } from './lib/forms.mjs';
+import { ageDemoTasks, assertLocal, sqlFromOptions } from './lib/aged.mjs';
 import {
   CANCEL_REASONS,
   CLIENT_NAMES,
@@ -27,7 +28,7 @@ import {
 const FIRM_ZONE = 'America/New_York';
 const DEMO_CLIENT_BASE = 90001; // Demo clients are numbered 90001..90005
 const DEMO_MATTER_BASE = 80001; // Demo matters 80001..80012 (five digits, unique within their client)
-// Sensitive Demo matters (epic #788): by position in MATTER_NAMES. Index 5 gets two managers (the plan in ensureManagers), index 9 gets none, so the demo
+// Sensitive Demo matters (epic #788): by position in MATTER_NAMES. Index 5 gets a manager (the plan in ensureManagers), index 9 gets none, so the demo
 // shows both cases: a sensitive matter people manage and one that only holders of Matter.ViewSensitive and the people assigned a task on it can see.
 const SENSITIVE_MATTER_INDEXES = new Set([5, 9]);
 
@@ -46,11 +47,17 @@ Usage: npm run seed:demo -- [options]      (node tools/seed-demo/seed-demo.mjs [
   --seed <n>        seed of the random sequence (default: random, printed); the same seed plans the same data
   --tag <text>      run tag put into the requestor name of the tasks of this run (default: generated, e.g. D4X9K)
   --concurrency <n> tasks worked in parallel (default 3)
+  --aged            also move dates back so the screens have realistic states (issue #925): open tasks that used 80 percent of their
+                    task type's target turnaround (At risk) and tasks that have been On hold for 3 to 21 days. The API cannot do this (it
+                    creates every task "now"), so this one step runs UPDATE statements inside the local development SQL Server container
+                    (docker exec). Local API only; only Demo tasks (requestor "[demo <tag>]"); safe to repeat. Needs Docker.
+  --sql-container <name>  the SQL Server container for --aged (default $SEED_SQL_CONTAINER or matterflow-sql)
+  --sql-password <pw>     its sa password (default $SEED_SQL_PASSWORD or the development password of docker-compose.dev.yml)
   --dry-run         read the system and print the plan, create nothing
   --help
 
 Every option also exists as an environment variable: SEED_API, SEED_ADMIN, SEED_USERS, SEED_TASKS, SEED_SEED, SEED_TAG,
-SEED_CONCURRENCY, SEED_DRY_RUN=1.`;
+SEED_CONCURRENCY, SEED_AGED=1, SEED_SQL_CONTAINER, SEED_SQL_PASSWORD, SEED_DRY_RUN=1.`;
 
 function parseArgs(argv) {
   const env = process.env;
@@ -64,8 +71,21 @@ function parseArgs(argv) {
     tag: env.SEED_TAG,
     concurrency: env.SEED_CONCURRENCY !== undefined ? Number(env.SEED_CONCURRENCY) : 3,
     dryRun: env.SEED_DRY_RUN === '1' || env.SEED_DRY_RUN === 'true',
+    aged: env.SEED_AGED === '1' || env.SEED_AGED === 'true',
+    sqlContainer: env.SEED_SQL_CONTAINER ?? 'matterflow-sql',
+    sqlPassword: env.SEED_SQL_PASSWORD ?? 'MatterFlow_Dev1!',
   };
-  const takesValue = new Set(['api', 'admin', 'users', 'tasks', 'seed', 'tag', 'concurrency']);
+  const takesValue = new Set([
+    'api',
+    'admin',
+    'users',
+    'tasks',
+    'seed',
+    'tag',
+    'concurrency',
+    'sql-container',
+    'sql-password',
+  ]);
   for (let i = 0; i < argv.length; i++) {
     let arg = argv[i];
     if (arg === '--') continue;
@@ -85,11 +105,17 @@ function parseArgs(argv) {
       opts.dryRun = value === undefined || value === 'true' || value === '1';
       continue;
     }
+    if (name === 'aged') {
+      opts.aged = value === undefined || value === 'true' || value === '1';
+      continue;
+    }
     if (!takesValue.has(name)) fail(`Unknown option --${name}. Try --help.`);
     if (value === undefined) value = argv[++i];
     if (value === undefined) fail(`Option --${name} needs a value.`);
     if (name === 'tasks') opts.tasksGiven = true;
-    opts[name] = ['api', 'admin', 'tag'].includes(name) ? value : Number(value);
+    if (name === 'sql-container') opts.sqlContainer = value;
+    else if (name === 'sql-password') opts.sqlPassword = value;
+    else opts[name] = ['api', 'admin', 'tag'].includes(name) ? value : Number(value);
   }
   for (const key of ['users', 'tasks', 'concurrency']) {
     if (!Number.isInteger(opts[key]) || opts[key] < 0 || opts[key] > 1000)
@@ -675,8 +701,9 @@ function planTasks(total, ctx, opts, rng) {
 
 /**
  * Project managers on the Demo matters (epic #667): a spread of cases for the Matters list, the matter header and My Matters: Primary only,
- * Primary and Secondary, a Secondary without a Primary, a manager who is out of office, and four matters with no manager (which is normal).
+ * a Secondary without a Primary, a manager who is out of office, and four matters with no manager (which is normal).
  * Only matters that have no manager yet are touched, so a re-run, or a change somebody made by hand, is never overwritten.
+ * The two review personas (issue #925) are the exception, see `ensurePersonas`.
  */
 async function ensureManagers(admin, ctx, opts, summary) {
   summary.managersSet = 0;
@@ -686,16 +713,17 @@ async function ensureManagers(admin, ctx, opts, summary) {
     return;
   }
   const [a, b, c] = [people[0], people[1], people[2] ?? people[0]];
-  // matter index -> [primary, secondary]
+  // matter index -> [primary, secondary]. Since issue #925 the second person manages exactly three matters (3, 4 and 6) and the third exactly one
+  // (7), so the demo has a Project Manager with one matter and one with three (ensurePersonas keeps this true on a database seeded earlier).
   const plan = [
     [a, null],
     [a, null],
-    [a, b],
+    [a, null],
     [b, null],
     [null, b],
-    [b, a],
+    [a, null],
+    [b, null],
     [c, null],
-    [c, a],
   ];
   const matters = ctx.matters.filter((m) => m.matterId !== null);
   for (let m = 0; m < plan.length && m < matters.length; m++) {
@@ -712,6 +740,195 @@ async function ensureManagers(admin, ctx, opts, summary) {
     });
   }
   log(`Project managers: ${summary.managersSet} matters ${opts.dryRun ? 'to get' : 'got'} managers.`);
+}
+
+/** The two review personas of issue #925 (positions in the Demo matter list): the Project Manager with ONE matter and the one with THREE. */
+const PERSONA_MATTERS = {
+  solo: { 7: 'primary' },
+  three: { 3: 'primary', 4: 'secondary', 6: 'primary' },
+};
+
+/**
+ * Makes the personas true on any database (issue #925): the third Project Manager test user (Test User 35) manages exactly one Demo matter, the
+ * second (Test User 19) exactly three, one Primary and one Secondary among them. A matter such a person managed before and no longer should is
+ * given to the first Project Manager (as Primary) or left without a Secondary. Demo data only: this does overwrite a manager on those matters.
+ */
+async function ensurePersonas(admin, ctx, opts, summary) {
+  summary.personaChanges = 0;
+  const people = ctx.users.filter((u) => u.roleName === 'Project Manager' && u.userId !== null);
+  const matters = ctx.matters.filter((m) => m.matterId !== null);
+  if (people.length < 3 || matters.length < 8) {
+    log('Personas: fewer than three Project Manager test users or eight Demo matters, no one-matter / three-matter Project Manager.');
+    ctx.personas = null;
+    return;
+  }
+  const [filler, three, solo] = people;
+  ctx.personas = { solo, three };
+  const wanted = [
+    [solo, PERSONA_MATTERS.solo],
+    [three, PERSONA_MATTERS.three],
+  ];
+  for (let i = 0; i < matters.length; i++) {
+    const matter = await admin.get(`/api/v1/matters/${matters[i].matterId}`);
+    let primary = matter.primaryManager?.userId ?? null;
+    let secondary = matter.secondaryManager?.userId ?? null;
+    for (const [person, want] of wanted) {
+      const role = want[i];
+      if (role === 'primary') primary = person.userId;
+      else if (role === 'secondary') secondary = person.userId;
+      else {
+        if (primary === person.userId) primary = filler.userId;
+        if (secondary === person.userId) secondary = null;
+      }
+    }
+    if (primary !== null && primary === secondary) secondary = null;
+    if (primary === (matter.primaryManager?.userId ?? null) && secondary === (matter.secondaryManager?.userId ?? null))
+      continue;
+    summary.personaChanges++;
+    if (opts.dryRun) continue;
+    await admin.put(`/api/v1/matters/${matter.matterId}/managers`, {
+      primaryManagerId: primary ?? undefined,
+      secondaryManagerId: secondary ?? undefined,
+      rowVersion: matter.rowVersion,
+    });
+  }
+  log(
+    `Personas: ${solo.displayName} manages one matter, ${three.displayName} three (${summary.personaChanges} matters ${opts.dryRun ? 'to change' : 'changed'}).`,
+  );
+}
+
+/** Task types that get a target turnaround when they have none (issue #925): Production and Analytics work, so those tasks can be At risk. */
+const DEMO_TARGETS = {
+  'Production (Outgoing)': 5,
+  'Incoming Production Intake': 4,
+  'Analytics / TAR Setup': 6,
+};
+
+async function ensureDemoTargets(admin, ctx, opts, summary) {
+  summary.targetsSet = 0;
+  for (const type of ctx.taskTypes) {
+    const days = DEMO_TARGETS[type.name];
+    if (!days || type.targetDays) continue;
+    summary.targetsSet++;
+    if (opts.dryRun) continue;
+    const fresh = await admin.get(`/api/v1/task-types/${type.id}`);
+    if (fresh.targetDays) continue;
+    await admin.put(`/api/v1/task-types/${type.id}`, {
+      name: fresh.name,
+      description: fresh.description ?? null,
+      isActive: fresh.isActive,
+      eligibleWorkflowIds: fresh.eligibleWorkflowIds,
+      defaultWorkflowDefinitionId: fresh.defaultWorkflowDefinitionId ?? null,
+      iconKey: fresh.iconKey,
+      colourKey: fresh.colourKey ?? null,
+      targetDays: days,
+      rowVersion: fresh.rowVersion,
+    });
+  }
+  if (!opts.dryRun) {
+    // The plan below picks task types by their target, so read the list again.
+    const again = await admin.get('/api/v1/task-types');
+    ctx.taskTypes = again.filter((t) => t.isActive && t.isUsable);
+  }
+  log(`Task types given a target turnaround for the demo (Production and Analytics): ${summary.targetsSet}.`);
+}
+
+/**
+ * Tasks for the two personas (issue #925), created only where the persona's matters lack the state: an overdue task, an unassigned task, a task On
+ * hold and a task that will be At risk. Through the API like every other task; the At risk and the aged hold only exist after `--aged` has moved
+ * their dates (the candidates carry "[persona risk]" in the requestor name so the aging step always takes them, and a repeat run adds none).
+ */
+async function ensurePersonaTasks(admin, ctx, opts, summary) {
+  summary.personaTasks = 0;
+  if (!ctx.personas) return;
+  if (opts.dryRun) {
+    log('Persona tasks: not planned in a dry run.');
+    return;
+  }
+  const matters = ctx.matters.filter((m) => m.matterId !== null);
+  const technicians = ctx.assignees
+    .map((a, index) => ({ a, index }))
+    .filter(({ a }) => a.roleName === 'Data Technician' && a.userId !== null && !a.outOfOffice);
+  const withTarget = ctx.taskTypes.filter((t) => t.targetDays);
+  const any = ctx.taskTypes;
+  if (technicians.length === 0 || ctx.priorities.length === 0) return;
+  const priority = ctx.priorities.find((p) => p.isDefault) ?? ctx.priorities[0];
+  const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
+  const kinds = [
+    { key: 'overdue', state: 'IN_PROGRESS', due: -6, find: `overdue=true&${OPEN}` },
+    { key: 'unassigned', state: 'NEW', due: 5, find: `unassigned=true&${OPEN}` },
+    { key: 'hold', state: 'ON_HOLD', due: 12, find: `status=ON_HOLD&q=${encodeURIComponent('[persona hold]')}`, marker: '[persona hold]' },
+    { key: 'risk', state: 'IN_PROGRESS', due: 20, find: 'atRisk=true', marker: '[persona risk]' },
+  ];
+  const plans = [];
+  let n = 0;
+  for (const [who, want] of [
+    ['solo', PERSONA_MATTERS.solo],
+    ['three', PERSONA_MATTERS.three],
+  ]) {
+    const own = Object.keys(want).map((i) => matters[Number(i)]);
+    // A state is needed once across the persona's matters; with three matters the kinds are spread over them (overdue on the first, and so on).
+    for (const [k, kind] of kinds.entries()) {
+      let have = 0;
+      for (const m of own) {
+        have += (await admin.get(`/api/v1/task-queue?matter=${m.matterId}&${kind.find}&pageSize=1`)).total;
+        if (kind.marker)
+          have += (
+            await admin.get(
+              `/api/v1/task-queue?matter=${m.matterId}&q=${encodeURIComponent(kind.marker)}&${OPEN}&pageSize=1`,
+            )
+          ).total;
+      }
+      if (have > 0) continue;
+      const types = kind.key === 'risk' ? withTarget : any;
+      if (types.length === 0) continue;
+      const matter = own[k % own.length];
+      plans.push({
+        k: 9000 + n,
+        type: types[n % types.length],
+        state: kind.state,
+        matterIndex: ctx.matters.indexOf(matter),
+        priority,
+        dueOffset: kind.due,
+        dueKind: kind.key,
+        assigneeIndex: kind.key === 'unassigned' ? null : technicians[n % technicians.length].index,
+        unassignLater: false,
+        creatorIndex: null,
+        useProject: false,
+        podForQueue: false,
+        progress: kind.state === 'IN_PROGRESS' ? 0.3 : 0,
+        reopen: false,
+        comments: 0,
+        requestedDaysAgo: 2,
+        requestorName: `Demo Persona [demo ${opts.tag}]${kind.marker ? ` ${kind.marker}` : ''}`,
+        description: `A ${kind.key} task for the ${who === 'solo' ? 'one-matter' : 'three-matter'} Project Manager.`,
+        holdReason: 'Waiting for the client to confirm the scope',
+        cancelReason: 'Not needed',
+        skipRoll: 1,
+        workflowPick: 0,
+      });
+      n++;
+    }
+  }
+  summary.personaTasks = plans.length;
+  if (plans.length === 0) {
+    log('Persona tasks: the states exist already.');
+    return;
+  }
+  const offsets = new Map();
+  for (const type of ctx.taskTypes)
+    offsets.set(type.id, (await admin.get(`/api/v1/tasks?taskTypeId=${type.id}&pageSize=1`)).total);
+  const filler = new FormFiller(admin, createRng(opts.seed ^ 0x2a2a), {
+    assetIdsFor: (matterId) => (ctx.assetPool.get(matterId) ?? []).map((a) => a.assetId),
+    userIds: ctx.users.map((u) => u.userId),
+  });
+  const seqs = new Map();
+  for (const plan of plans) {
+    seqs.set(plan.type.id, (seqs.get(plan.type.id) ?? 0) + 1);
+    plan.seq = seqs.get(plan.type.id);
+    await runTask(plan, { admin, ctx, filler, offsets, opts }, {});
+  }
+  log(`Persona tasks: ${plans.length} created (${plans.map((p) => p.dueKind).join(', ')}).`);
 }
 
 /**
@@ -838,6 +1055,10 @@ async function ensureDispositions(admin, ctx, opts, summary) {
       note: pick[2],
       rowVersion: fresh.rowVersion,
     });
+    // An asset that is no longer Active cannot be chosen in a task's form: the tasks created next must not refer to it (without this about a third
+    // of the tasks of a first run failed form validation).
+    const pool = ctx.assetPool.get(assets[i].matterId);
+    if (pool) ctx.assetPool.set(assets[i].matterId, pool.filter((x) => x.assetId !== assets[i].assetId));
   }
 }
 
@@ -1169,8 +1390,11 @@ async function main() {
   await ensureOrganization(admin, ctx, opts, summary);
   step('Project managers');
   await ensureManagers(admin, ctx, opts, summary);
+  step('Personas: a Project Manager with one matter and one with three');
+  await ensurePersonas(admin, ctx, opts, summary);
   step('PM v2: task type colours and targets, asset sizes and dispositions');
   await ensurePmV2(admin, ctx, opts, summary);
+  await ensureDemoTargets(admin, ctx, opts, summary);
 
   step('Tasks');
   const matterIds = ctx.matters.map((m) => m.matterId).filter((id) => id !== null);
@@ -1264,6 +1488,19 @@ async function main() {
       );
     if (found.total !== created.length + leftovers.length) process.exitCode = 1;
     if (failures.length > 0) process.exitCode = 1;
+  }
+
+  step('Tasks for the one-matter and the three-matter Project Manager');
+  await ensurePersonaTasks(admin, ctx, opts, summary);
+
+  if (opts.aged) {
+    step('Aged dates (--aged): At risk tasks and tasks On hold for days');
+    if (opts.dryRun) log('Dry run: not changed.');
+    else {
+      assertLocal(opts.api);
+      const moved = await ageDemoTasks(sqlFromOptions(opts));
+      log(`${moved.atRisk} tasks moved back to At risk, ${moved.onHold} On hold tasks given an earlier start.`);
+    }
   }
 
   step('Sensitive matters');

@@ -9,14 +9,30 @@ The Project Manager test users are the ones the seeder already creates (Test Use
 
 | Demo matter (order) | Primary | Secondary | Case |
 |---|---|---|---|
-| 1, 2 | first Project Manager user | none | Primary only |
-| 3 | first | second | both |
-| 4 | second | none | Primary only, another person |
-| 5 | none | second | Secondary without a Primary |
-| 6 | second | first | both, swapped |
-| 7 | third (out of office) | none | an away manager |
-| 8 | third | first | both |
+| 1, 2, 3 | first Project Manager user (Test User 03) | none | Primary only |
+| 4 | second (Test User 19, out of office) | none | **Persona "three matters"**, Primary |
+| 5 | none | second | **Persona "three matters"**, Secondary without a Primary |
+| 6 | first | none | Primary only, sensitive matter |
+| 7 | second | none | **Persona "three matters"**, Primary |
+| 8 | third (Test User 35) | none | **Persona "one matter"** |
 | 9 to 12 | none | none | no manager (normal: nothing is flagged) |
+
+### Two personas for reviews and the budget test (issue #925, epic #893)
+
+`ensurePersonas` makes these true on any Demo database, also one seeded earlier (it changes the managers of the Demo matters where they differ):
+
+* **One matter:** Test User 35 manages exactly one matter (Demo matter 8).
+* **Three matters:** Test User 19 manages exactly three (4 Primary, 5 Secondary, 7 Primary).
+
+`ensurePersonaTasks` then gives their matters, through the API, an overdue task, an unassigned task, a task On hold and a task that becomes At risk (a task with `[persona risk]` / `[persona hold]` in the requestor name), but only for the states they lack. The API creates every task "now", so **At risk** (80 percent of the task type's target turnaround used since creation) and **On hold for more than 7 days** need one more step:
+
+```
+npm run seed:demo -- --aged
+```
+
+`--aged` (Docker needed, local API only) runs a few `UPDATE` statements inside the development SQL Server container (`matterflow-sql`; `--sql-container` / `--sql-password` or `SEED_SQL_CONTAINER` / `SEED_SQL_PASSWORD` name another): the creation date of every third open, not overdue Demo task whose type has a target is moved back to just past 80 percent of it, the hold of each held Demo task starts 3, 9, 14 or 21 days ago (the persona hold 10 days ago). Only tasks with the demo marker in the requestor name are touched, and only those that still have fresh dates, so repeating it changes nothing. It is the one place where the seeder writes to the database directly. The seeder also gives three task types a target turnaround when they have none (Production (Outgoing) 5, Incoming Production Intake 4, Analytics / TAR Setup 6 days).
+
+What the personas see after `npm run seed:demo -- --aged --seed 7` (measured on a fresh database, 120 tasks planned): one matter, 8 open, 2 overdue, 3 at risk, 1 unassigned, 1 on hold for 10 days; three matters, 16 open, 3 overdue, 3 at risk, 5 unassigned, 5 on hold (oldest 14 days). The exact numbers change with `--seed`; the four states are always there. Without `--aged` the overdue and unassigned tasks and a hold exist, but no task is At risk and no hold is older than a minute.
 
 ## End-to-end fixtures (`frontend/e2e/support/pm-fixtures.ts`)
 
