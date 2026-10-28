@@ -123,10 +123,30 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
         box-shadow: none;
         overflow-y: visible;
       }
+      /* The rows do not spread over a very wide screen: a short Title would leave a big gap before Priority. */
+      :host ::ng-deep .tg__grid {
+        max-width: 82rem;
+      }
+      /* A heading row of 30 px (the rows are 36): the first task sits higher on the first screen. */
+      :host ::ng-deep .tg__grid .wt thead th {
+        height: 30px;
+      }
+      :host ::ng-deep .tg__grid .wt-sort {
+        min-height: 24px;
+      }
       :host ::ng-deep .tg__grid.mf-fill {
         display: block;
       }
       @media (max-width: 639.98px) {
+        :host ::ng-deep .tg__grid .wt-sort {
+          min-height: 44px;
+        }
+        /* The cards' links (title, matter) are 44 px targets on a phone. */
+        :host ::ng-deep .tg__grid a {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+        }
         .tg__all {
           min-height: 44px;
         }
@@ -196,6 +216,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           [dir]="dir()"
           [density]="'compact'"
           [readOnly]="true"
+          [quiet]="true"
+          [colWidths]="widths"
           [widthsEditable]="false"
           [canHideColumns]="false"
           [phoneCards]="true"
@@ -208,6 +230,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
   `,
 })
 export class TaskGrid {
+  /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
+  protected readonly widths = { matterName: 14, priority: 7, assignee: 8.5, due: 9.5, status: 8 };
   readonly kind = input.required<GridKind>();
   readonly filters = input.required<MmFilters>();
   /** The matter's name is a column: the person has several matters (it would say the same on every row for one). */

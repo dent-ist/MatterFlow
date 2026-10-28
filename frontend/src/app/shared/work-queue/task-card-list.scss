@@ -358,3 +358,21 @@
     break-inside: avoid;
   }
 }
+
+.tc-plain {
+  color: var(--mf-text);
+  font-size: var(--mf-fs-sm);
+}
+
+.wt-risk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  padding: 0 var(--mf-s2);
+  border-radius: var(--mf-radius);
+  background: var(--mf-st-hold-bg);
+  color: var(--mf-st-hold-fg);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+  line-height: 1.5;
+}

@@ -19,6 +19,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       width: var(--mf-options-h, 32px);
       min-width: var(--mf-options-h, 32px);
       height: var(--mf-options-h, 32px);
+      min-height: var(--mf-options-h, 32px);
       padding: 0;
     }
     @media (max-width: 639.98px) {
@@ -26,6 +27,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         width: 44px;
         min-width: 44px;
         height: 44px;
+        min-height: 44px;
       }
     }
   `,

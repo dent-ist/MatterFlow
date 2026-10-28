@@ -109,6 +109,37 @@
 th[aria-sort='ascending'] .wt-sort,
 th[aria-sort='descending'] .wt-sort {
   color: var(--mf-primary);
+  /* The active sort column is visible at a glance: primary colour, a bold arrow and an underline (the other columns show a faint double arrow). */
+  box-shadow: inset 0 -2px 0 var(--mf-primary);
+}
+
+th[aria-sort='ascending'] .wt-sort .pi,
+th[aria-sort='descending'] .wt-sort .pi {
+  font-size: var(--mf-fs-sm);
+  font-weight: 700;
+}
+
+th[aria-sort='none'] .wt-sort .pi,
+th:not([aria-sort]) .wt-sort .pi {
+  opacity: 0.45;
+}
+
+/* Quiet badges (My Matters grids): plain words, and a pill only for At risk. */
+.wt-plain {
+  color: var(--mf-text);
+}
+
+.wt-risk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  padding: 0 var(--mf-s2);
+  border-radius: var(--mf-radius);
+  background: var(--mf-st-hold-bg);
+  color: var(--mf-st-hold-fg);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 /* Overdue rows get a leading bar plus the "Overdue" text in the due cell, so the cue is not color alone. */

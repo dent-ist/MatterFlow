@@ -465,7 +465,9 @@ test.describe('The held row keeps its title (#923)', () => {
       const group = page.locator('[data-panel=attention] [data-task]').first();
       await expect(group).toBeVisible();
       const link = group.locator('a.wt-title').first();
-      await expect(link).toContainText(task.taskNumber);
+      // The grid shows the reference in its own column; the title link is the title.
+      await expect(link).toContainText('Relativity Workspace Setup');
+      await expect(group).toContainText(task.taskNumber);
       const wide = await link.evaluate((el) => {
         const fs = parseFloat(getComputedStyle(el).fontSize);
         return {

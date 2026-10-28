@@ -324,7 +324,7 @@ test.describe('Count tiles (#902, #927)', () => {
       await settled(page);
       await expect(page.locator('[data-mm-strip]')).toBeVisible();
       if (size.width < 640) {
-        // A phone draws the six tiles as two columns by three rows (issue #927): every one is a 44 px target and all six are on screen at once.
+        // A phone draws the six tiles three across and two rows (issue #927 and the owner's review of batch 6): every one is a 44 px target and all six are on screen at once.
         const boxes = await page
           .locator('button[data-strip-item]')
           .evaluateAll((els) =>
@@ -337,8 +337,20 @@ test.describe('Count tiles (#902, #927)', () => {
           expect(h, 'phone targets are 44 px').toBeGreaterThanOrEqual(43.5);
           expect(w, 'phone tiles share the width').toBeGreaterThan(100);
         }
-        expect(new Set(boxes.map((b) => Math.round(b[0]))).size, 'two columns').toBe(2);
-        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'three rows').toBe(3);
+        expect(new Set(boxes.map((b) => Math.round(b[0]))).size, 'three columns').toBe(3);
+        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'two rows').toBe(2);
+      } else {
+        // Wider screens: ONE horizontal row of six equal tiles (owner review of batch 6: they had stacked in one column).
+        const boxes = await page
+          .locator('button[data-strip-item]')
+          .evaluateAll((els) =>
+            els.map((e) => e.getBoundingClientRect()).map((r) => [r.left, r.top, r.width]),
+          );
+        expect(boxes.length).toBe(6);
+        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'one row').toBe(1);
+        const widths = boxes.map((b) => Math.round(b[2]));
+        expect(Math.max(...widths) - Math.min(...widths), 'equal tiles').toBeLessThanOrEqual(1);
+        expect(Math.min(...widths), 'wide enough for the word').toBeGreaterThanOrEqual(96);
       }
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
@@ -446,7 +458,7 @@ test.describe('Matters list (#908)', () => {
     if (p.aged) expect(withRisk.some(Boolean)).toBe(true);
     // Chips exist only for counts above zero.
     const chips = await page
-      .locator('[data-at-risk], [data-unassigned]')
+      .locator('[data-health-row] [data-at-risk], [data-health-row] [data-unassigned]')
       .evaluateAll((els) => els.map((e) => Number(e.textContent!.trim().split(/\s+/)[0])));
     for (const n of chips) expect(n).toBeGreaterThan(0);
   });

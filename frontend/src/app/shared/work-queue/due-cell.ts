@@ -27,9 +27,11 @@ import { CLOSED_STATUSES, DueInput, describeDueCell } from '../../core/time/time
       } @else if (tone() === 'none-closed') {
         <span class="dc-l1" aria-hidden="true">-</span>
       } @else {
-        <time class="dc-l1" aria-hidden="true" [attr.datetime]="iso()">{{
-          lead() + (layout() === 'inline' ? c.dateText : c.line1)
-        }}</time>
+        @if (!dateHidden()) {
+          <time class="dc-l1" aria-hidden="true" [attr.datetime]="iso()">{{
+            lead() + (layout() === 'inline' ? c.dateText : c.line1)
+          }}</time>
+        }
         @if (c.line2 && !closed()) {
           <span class="dc-l2" aria-hidden="true">
             @if (tone() === 'overdue') {
@@ -136,6 +138,11 @@ export class DueCell {
 
   /** PM v2 (#878): the task is At risk (the server's rule: open, not overdue, 80 percent of the type's target used). Said in words, never colour alone. */
   readonly atRisk = input(false);
+  /** Overdue work says "Overdue 26d" and leaves the date out (it is the tooltip): the words are never cut by a long date (My Matters grids). */
+  readonly dateless = input(false);
+  protected readonly dateHidden = computed(
+    () => this.dateless() && this.tone() === 'overdue' && !!this.cell().line2 && !this.closed(),
+  );
 
   protected readonly riskShown = computed(
     () => this.atRisk() && !this.closed() && this.tone() !== 'overdue',

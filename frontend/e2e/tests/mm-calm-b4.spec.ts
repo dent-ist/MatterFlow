@@ -87,12 +87,11 @@ test.describe('One toggle pattern (#919)', () => {
     await page.goto('/my-matters?tab=breakdown');
     await openHeaderOptions(page);
     await expect(page.getByRole('button', { name: 'All matters', exact: true })).toHaveCount(1);
-    // Deadlines: List / Calendar sit behind Options and are the same component.
-    await page.goto('/my-matters?tab=deadlines');
-    await page.locator('[data-panel=deadlines-tab] [data-options-trigger]').click();
-    const view = page.locator('[role=group][aria-label="Show deadlines as"]');
-    await expect(view).toHaveClass(/mf-seg/);
-    expect(await view.locator('button').allInnerTexts()).toEqual(['List', 'Calendar']);
+    // The Calendar is one icon button on the Overview (not a toggle group): "Show calendar" there, "Show list" on the Calendar view.
+    await page.goto('/my-matters');
+    await expect(page.getByRole('button', { name: 'Show calendar', exact: true })).toHaveCount(1);
+    await page.goto('/my-matters?view=calendar');
+    await expect(page.getByRole('button', { name: 'Show list', exact: true })).toHaveCount(1);
   });
 
   test('the title row has one Options menu, built like every other Options button, and the Focus is inside it', async ({
@@ -202,9 +201,9 @@ test.describe('Phone first screen (#922)', () => {
         return out;
       });
       expect(small).toEqual([]);
-      // The strip is two columns by three rows of 44 px tiles (issue #927): 3 x 44 plus the gaps.
+      // The strip is three columns by two rows of 44 px tiles (issue #927): 2 x 44 plus the gap.
       const strip = await page.locator('[data-mm-strip]').boundingBox();
-      expect(strip!.height).toBeLessThanOrEqual(150);
+      expect(strip!.height).toBeLessThanOrEqual(110);
       // All six tiles are on a phone, each a 44 px target.
       await expect(page.locator('[data-mm-strip] .tile')).toHaveCount(6);
       expect(
@@ -412,8 +411,8 @@ test.describe('Client and Role filters (#899)', () => {
     ]);
     const h = async (sel: string) => Math.round((await bar.locator(sel).boundingBox())!.height);
     expect(await h('#mm-client')).toBe(await h('#mm-role'));
-    // The Dates control of the Deadlines tab uses the same label style.
-    await page.goto('/my-matters?tab=deadlines');
+    // The Dates control of the Calendar uses the same label style.
+    await page.goto('/my-matters?view=calendar');
     const dates = await page.locator('label[for=mm-range]').evaluate((el) => {
       const s = getComputedStyle(el);
       return `${s.fontSize}/${s.fontWeight}/${s.color}`;

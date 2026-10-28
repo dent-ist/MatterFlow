@@ -144,7 +144,7 @@ function storage(): Storage | null {
       margin-bottom: var(--mf-s2);
     }
     .mm__tabs {
-      margin-bottom: var(--mf-s2);
+      margin-bottom: var(--mf-s1);
     }
     /* Everything is quiet (issue #920): the four sections that have nothing to show give way to one line. */
     .mm__off {

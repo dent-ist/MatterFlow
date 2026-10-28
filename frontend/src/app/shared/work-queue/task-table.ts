@@ -36,6 +36,7 @@ import { DueCell } from './due-cell';
 import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
+import { loudPriority, loudStatus } from './quiet-badges';
 import { PriorityBadge } from '../ui/priority-badge';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
@@ -132,6 +133,7 @@ const LONG_PRESS_MS = 500;
           [emptyAction]="emptyActionTpl()"
           [assignLink]="assignLink()"
           [readOnly]="readOnly()"
+          [quiet]="quiet()"
           [newSince]="newSince()"
           [leaving]="leaving()"
           [linkParams]="linkParams()"
@@ -374,6 +376,8 @@ const LONG_PRESS_MS = 500;
                             [row]="row"
                             (rowChange)="rowChange.emit($event)"
                           />
+                        } @else if (quiet() && !loudPriority(row.priority)) {
+                          <span class="wt-plain" data-plain-priority>{{ row.priority.label }}</span>
                         } @else {
                           <mf-priority-badge
                             [priorityId]="row.priority.priorityId"
@@ -426,6 +430,7 @@ const LONG_PRESS_MS = 500;
                           [status]="row.status"
                           [atRisk]="row.atRisk"
                           [layout]="density() === 'compact' ? 'inline' : 'two-line'"
+                          [dateless]="quiet()"
                         />
                       }
                       @case ('status') {
@@ -436,6 +441,12 @@ const LONG_PRESS_MS = 500;
                               [row]="row"
                               (rowChange)="rowChange.emit($event)"
                             />
+                          } @else if (quiet() && loudStatus(row) === null) {
+                            <span class="wt-plain" data-plain-status>{{ row.statusLabel }}</span>
+                          } @else if (quiet() && loudStatus(row) === 'risk') {
+                            <span class="wt-risk-pill" data-at-risk-pill
+                              ><i class="pi pi-clock" aria-hidden="true"></i>At risk</span
+                            >
                           } @else {
                             <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                           }
@@ -703,6 +714,10 @@ export class TaskTable {
    * is for reading and opening a task, so it adds no editing controls to the page.
    */
   readonly readOnly = input(false);
+  /** Quiet badges (My Matters grids): Priority is a pill only for High and Critical, Status only for On hold and At risk, an overdue Due says "Overdue 26d" without the date. */
+  readonly quiet = input(false);
+  protected readonly loudPriority = loudPriority;
+  protected readonly loudStatus = loudStatus;
   /**
    * My Work grouped by due: the size of every bucket for the whole filtered set. The rows are in the server's bucket order, so each group's
    * header goes where its bucket starts. Null: no grouping.

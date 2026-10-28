@@ -251,7 +251,6 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
     await expect(page.locator('[data-panel=workload]')).toHaveCount(0);
     await expect(page.locator('[role=tab]')).toHaveText([
       'Overview',
-      'Deadlines',
       'Breakdown',
       'Data',
       'Activity',

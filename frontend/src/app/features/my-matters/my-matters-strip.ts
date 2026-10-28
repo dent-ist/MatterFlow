@@ -34,15 +34,19 @@ interface Tile {
   imports: [ErrorReference, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    /* A flex item of the top row with a basis wide enough for six tiles: it stays beside the filters when the width allows and wraps under them
+       otherwise, and is never shrunk to the width of one tile (which stacked the six tiles in one column on wide screens). */
     :host {
       display: block;
+      flex: 1 1 44rem;
+      max-width: 64rem;
     }
     .ms__error {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 40px;
-      margin: 0 0 var(--mf-s2);
+      min-height: 36px;
+      margin: 0 0 var(--mf-s1);
       overflow: hidden;
       white-space: nowrap;
     }
@@ -65,10 +69,10 @@ interface Tile {
     }
     .ms {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: var(--mf-s2);
-      width: min(100%, 56rem);
-      margin: 0 0 var(--mf-s2);
+      width: 100%;
+      margin: 0 0 var(--mf-s1);
       padding: 0;
       list-style: none;
     }
@@ -85,7 +89,7 @@ interface Tile {
       gap: var(--mf-s2);
       box-sizing: border-box;
       min-width: 0;
-      min-height: 40px;
+      min-height: 36px;
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong, var(--mf-border));
       border-radius: var(--mf-radius);
@@ -152,11 +156,33 @@ interface Tile {
       /* A matter name is one long word for some firms: it breaks instead of widening the page (found by the long-names test of the final gate). */
       overflow-wrap: anywhere;
     }
+    @media (max-width: 1099.98px) {
+      /* Narrow desktop and tablet: tighter tiles so all six words fit in the one row. */
+      .tile {
+        gap: var(--mf-s1);
+        padding: 0 var(--mf-s2);
+      }
+    }
     @media (max-width: 639.98px) {
-      /* A phone: two columns by three rows of 44 px targets (issue #927). */
+      /* A phone: three columns by two rows of 44 px targets (issue #927). */
       .ms {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: var(--mf-s1) var(--mf-s2);
+      }
+      /* Three across, two rows: the number over its word (a shorter first screen than two across by three rows). */
+      .tile {
+        flex-direction: column;
+        justify-content: center;
+        gap: 0;
+        padding: 0 var(--mf-s1);
+        text-align: center;
+      }
+      .tile__n {
+        line-height: 1.1;
+      }
+      .tile__l {
+        max-width: 100%;
+        font-size: var(--mf-fs-xs);
       }
       .tile,
       .ms__error,
@@ -173,7 +199,7 @@ interface Tile {
   `,
   template: `
     @if (loader.state() === 'error') {
-      <!-- The row keeps the height of a tile (40 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
+      <!-- The row keeps the height of a tile (36 px, 44 on a phone): a failure never pushes the tab strip down (issue #921). -->
       @if (group?.many()) {
         <div class="ms__error ms__error--muted" data-strip-notloaded>Summary not loaded.</div>
       } @else {

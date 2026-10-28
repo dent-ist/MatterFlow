@@ -19,6 +19,7 @@ import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { ErrorReference } from '../ui/error-reference';
 import { LoadState } from '../ui/data-table';
 import { MatterRef } from '../ui/matter-ref';
+import { loudPriority, loudStatus } from './quiet-badges';
 import { PriorityBadge } from '../ui/priority-badge';
 import { StatusBadge } from '../ui/status-badge';
 import { TaskTypeBadge } from '../task-type/task-type-badge';
@@ -211,6 +212,8 @@ export function initialsOf(name: string): string {
                             [row]="row"
                             (rowChange)="rowChange.emit($event)"
                           />
+                        } @else if (quiet() && !loudPriority(row.priority)) {
+                          <span class="tc-plain" data-plain-priority>{{ row.priority.label }}</span>
                         } @else {
                           <mf-priority-badge
                             [priorityId]="row.priority.priorityId"
@@ -238,6 +241,12 @@ export function initialsOf(name: string): string {
                           [row]="row"
                           (rowChange)="rowChange.emit($event)"
                         />
+                      } @else if (quiet() && loudStatus(row) === null) {
+                        <span class="tc-plain" data-plain-status>{{ row.statusLabel }}</span>
+                      } @else if (quiet() && loudStatus(row) === 'risk') {
+                        <span class="wt-risk-pill" data-at-risk-pill
+                          ><i class="pi pi-clock" aria-hidden="true"></i>At risk</span
+                        >
                       } @else {
                         <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                       }
@@ -335,6 +344,10 @@ export class TaskCardList {
   readonly assignLink = input(false);
   /** No inline editors (the table's `readOnly`). */
   readonly readOnly = input(false);
+  /** Quiet badges (see the table). */
+  readonly quiet = input(false);
+  protected readonly loudPriority = loudPriority;
+  protected readonly loudStatus = loudStatus;
   readonly newSince = input<number | null>(null);
   readonly leaving = input<ReadonlySet<number>>(new Set());
   readonly linkParams = input<Record<string, unknown> | null>(null);
