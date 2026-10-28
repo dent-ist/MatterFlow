@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 
 /** The sections of the Overview that can be empty. */
-export type OverviewKey = 'since' | 'attention' | 'deadlines' | 'health';
+export type OverviewKey = 'attention' | 'deadlines' | 'health';
 
 /**
  * `loading` (not answered), `error` (failed: nothing is hidden on a guess), `empty` (answered, nothing to show), `content`; the Matter health section
@@ -10,9 +10,9 @@ export type OverviewKey = 'since' | 'attention' | 'deadlines' | 'health';
 export type OverviewState = 'loading' | 'error' | 'empty' | 'content' | 'none' | 'nomatch';
 
 /**
- * What each section of the Overview has to show, collected for the page (issue #920). When "Since your last visit", Needs my attention and Upcoming
- * deadlines are all empty at once, the page draws one line instead of three, and the Matters list stays (it is the list of matters). Recent activity is
- * not on the Overview any more (issue #909): the Activity tab holds the events.
+ * What each section of the Overview has to show, collected for the page (issue #920). When Needs my attention and Next 7 days are both empty at once, the page
+ * draws one line instead of two, and the Matters list stays (it is the list of matters). "Since your last visit" and the events are not on the Overview any more
+ * (issues #909, and the owner's decision of 2026-10-28): the Activity tab holds them and shows their number as a badge.
  */
 @Injectable()
 export class OverviewStates {
@@ -22,9 +22,9 @@ export class OverviewStates {
     if (this.states()[key] !== state) this.states.update((s) => ({ ...s, [key]: state }));
   }
 
-  /** Nothing late, nothing due, nothing changed: the three sections collapse into one line. */
+  /** Nothing late and nothing due: the two sections collapse into one line. */
   readonly quiet = computed(() =>
-    (['since', 'attention', 'deadlines'] as const).every((k) => this.states()[k] === 'empty'),
+    (['attention', 'deadlines'] as const).every((k) => this.states()[k] === 'empty'),
   );
 
   /** No matter to list (the person manages none, or the filters match none): the Matter health message says it and nothing else is added. */

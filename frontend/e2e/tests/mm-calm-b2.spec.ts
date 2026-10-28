@@ -13,8 +13,8 @@ import { SIZES } from '../support/screens';
  *  - #908 no matters list for one matter; for several, one line each with counts, the worst first, no Red / Amber / Green wall;
  *  - #905 Needs my attention as ONE ranked list of at most five rows with a reason column, At risk included, each task once per screen.
  */
-const settled = async (page: Page): Promise<void> => {
-  await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
+const settled = async (page: Page, tab = 'overview'): Promise<void> => {
+  await expect(page.locator(`#mm-tab-${tab}`)).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('[data-mm-tabpanel] >> text=/^Loading /')).toHaveCount(0);
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
 };
@@ -78,8 +78,8 @@ const taskLinks = (page: Page): Promise<string[]> =>
       .map((a) => a.getAttribute('href')!.split('?')[0]),
   );
 
-test.describe('One "what changed" line (#909, #895)', () => {
-  test('changes that need a decision: one line of links with Mark as read; no Recent activity and no event listed on the Overview', async ({
+test.describe('One "what changed" line, on the Activity tab (#909, #895, owner decision of 2026-10-28)', () => {
+  test('changes that need a decision: the Overview draws nothing and the Activity tab a badge; opened, one line of links with Mark as read; no Recent activity and no event listed on the Overview', async ({
     seed,
     personas,
     asUser,
@@ -96,6 +96,18 @@ test.describe('One "what changed" line (#909, #895)', () => {
     });
     await page.goto('/my-matters');
     await settled(page);
+    // Cut 1: nothing of it on the Overview; the four figures added up are the badge of the Activity tab.
+    await expect(page.locator('[data-panel=since]')).toHaveCount(0);
+    await expect(page.locator('#mm-tab-activity [data-tab-badge]')).toHaveText('18'); // 2 + 4 + 9 + 3, comments are not counted
+    await expect(page.locator('#mm-tab-activity')).toHaveAccessibleName(
+      'Activity, 18 changes since your last visit',
+    );
+    // The Overview has no Recent activity and lists no event; the Activity tab keeps the full list.
+    await expect(page.getByRole('heading', { name: 'Recent activity' })).toHaveCount(0);
+    await expect(page.locator('[data-panel=activity], [data-activity-row]')).toHaveCount(0);
+    await expect(page.locator('[data-since-item], [data-since-toggle]')).toHaveCount(0);
+    await page.locator('#mm-tab-activity').click();
+    await expect(page).toHaveURL(/tab=activity/);
     const line = page.locator('[data-panel=since]');
     await expect(line).toHaveCount(1);
     await expect(line).toContainText('Since your last visit:');
@@ -109,10 +121,6 @@ test.describe('One "what changed" line (#909, #895)', () => {
     // It is a line, not a card: about one text line high.
     const box = await line.boundingBox();
     expect(box!.height, 'one line').toBeLessThanOrEqual(30);
-    // The Overview has no Recent activity and lists no event; the Activity tab keeps the full list.
-    await expect(page.getByRole('heading', { name: 'Recent activity' })).toHaveCount(0);
-    await expect(page.locator('[data-panel=activity], [data-activity-row]')).toHaveCount(0);
-    await expect(page.locator('[data-since-item], [data-since-toggle]')).toHaveCount(0);
     // Each part leads to its list (the Task Queue, or the Activity tab).
     await expect(line.locator('[data-figure=becameOverdue]')).toHaveAttribute('href', /\/tasks\?/);
     await expect(line.locator('[data-figure=putOnHold]')).toHaveAttribute('href', /tab=activity/);
@@ -126,9 +134,11 @@ test.describe('One "what changed" line (#909, #895)', () => {
     const p = await pmThree(seed, personas, 'sc2');
     const page = await asUser(p.pm.username);
     await sinceCounts(page, { comments: 5, newTasks: 12 });
-    await page.goto('/my-matters');
-    await settled(page);
+    await page.goto('/my-matters?tab=activity');
+    await expect(page.locator('#mm-tab-activity')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
     await expect(page.locator('[data-panel=since]')).toHaveCount(0);
+    await expect(page.locator('#mm-tab-activity [data-tab-badge]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Mark as read' })).toHaveCount(0);
     const host = await page.locator('mf-mm-since').boundingBox();
     expect(host?.height ?? 0, 'no space reserved').toBeLessThanOrEqual(1);
@@ -141,8 +151,9 @@ test.describe('One "what changed" line (#909, #895)', () => {
   }) => {
     const p = await pmSolo(seed, personas, 'sc3');
     const page = await asUser(p.pm.username);
-    await page.goto('/my-matters');
-    await settled(page);
+    await page.goto('/my-matters?tab=activity');
+    await expect(page.locator('#mm-tab-activity')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
     const line = page.locator('[data-panel=since]');
     await expect(line).toBeVisible();
     // The persona has unassigned tasks created in the last 7 days; the part links to exactly those.
@@ -156,7 +167,7 @@ test.describe('One "what changed" line (#909, #895)', () => {
     ]);
     expect(((await queue.json()) as { total: number }).total).toBe(n);
     await page.goBack();
-    await settled(page);
+    await settled(page, 'activity');
 
     const seen = page.waitForResponse(
       (r) => r.url().includes('/api/v1/my-matters/activity/seen') && r.ok(),
@@ -166,7 +177,7 @@ test.describe('One "what changed" line (#909, #895)', () => {
     await expect(page.locator('[data-panel=since]')).toHaveCount(0);
     // Reload: still nothing (the marker moved on the server).
     await page.reload();
-    await settled(page);
+    await settled(page, 'activity');
     await expect(page.locator('[data-panel=since]')).toHaveCount(0);
   });
 
@@ -197,8 +208,8 @@ test.describe('One "what changed" line (#909, #895)', () => {
       const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
       await sinceCounts(page, { becameOverdue: 2, putOnHold: 4, completed: 9, newUnassigned: 3 });
-      await page.goto('/my-matters');
-      await settled(page);
+      await page.goto('/my-matters?tab=activity');
+      await settled(page, 'activity');
       await expect(page.locator('[data-panel=since]')).toBeVisible();
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);

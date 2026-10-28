@@ -31,13 +31,14 @@ test.describe('My Matters: the tab shell', () => {
     await w.task(m, { dueDate: inDays(3) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
+    // The Activity tab may carry a small badge (the changes since the last visit): the label is the words before it.
     await expect(page.getByRole('tab')).toHaveText([
-      'Overview',
-      'Deadlines',
-      'Breakdown',
-      'Data',
-      'Activity',
-      'Trends',
+      /^\s*Overview\s*$/,
+      /^\s*Deadlines\s*$/,
+      /^\s*Breakdown\s*$/,
+      /^\s*Data\s*$/,
+      /^\s*Activity(\s+\d+)?\s*$/,
+      /^\s*Trends\s*$/,
     ]);
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-mm-tabpanel]')).toHaveAttribute(
@@ -101,7 +102,7 @@ test.describe('My Matters: the tab shell', () => {
   });
 });
 
-test.describe('My Matters: what changed, in one line (#909)', () => {
+test.describe('My Matters: what changed, one line on the Activity tab with its count as a badge (#909, owner decision of 2026-10-28)', () => {
   test('counts that are links, the marker moves only on Mark as read, and the first visit shows the last 7 days', async ({
     seed,
     personas,
@@ -112,8 +113,15 @@ test.describe('My Matters: what changed, in one line (#909)', () => {
     await w.task(m, { title: 'Before the first visit' });
     const page = await asUser(w.pm.username);
 
-    // First ever visit: no marker yet, so the line covers the last 7 days. Only what needs a decision is counted: the new unassigned task.
+    // The Overview does not draw the line; the Activity tab carries its count as a small badge (one new unassigned task) and shows the line when opened.
     await page.goto('/my-matters');
+    await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'activity').locator('[data-tab-badge]')).toHaveText('1');
+    await expect(panel(page, 'since')).toHaveCount(0);
+
+    // First ever visit: no marker yet, so the line covers the last 7 days. Only what needs a decision is counted: the new unassigned task.
+    await tab(page, 'activity').click();
+    await expect(page).toHaveURL(/tab=activity/);
     const line = panel(page, 'since');
     await expect(line.locator('[data-since-period]')).toContainText('In the last 7 days:');
     await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
@@ -122,18 +130,20 @@ test.describe('My Matters: what changed, in one line (#909)', () => {
     // Looking at the Activity tab and coming back, or reloading, changes nothing the line says.
     await page.reload();
     await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
-    await tab(page, 'activity').click();
     await expect(panel(page, 'activity-tab').locator('[data-activity-row]').first()).toBeVisible();
     await tab(page, 'overview').click();
+    await expect(tab(page, 'activity').locator('[data-tab-badge]')).toHaveText('1');
+    await tab(page, 'activity').click();
     await expect(line.locator('[data-figure=newUnassigned]')).toContainText('1 new unassigned');
     await page.reload();
     await expect(line.locator('[data-since-period]')).toContainText('In the last 7 days:');
 
-    // Mark as read is what moves it: the line goes away.
+    // Mark as read is what moves it: the line goes away, and so does the badge.
     await line.locator('[data-mark-read]').click();
     await expect(panel(page, 'since')).toHaveCount(0);
+    await expect(tab(page, 'activity').locator('[data-tab-badge]')).toHaveCount(0);
     await page.reload();
-    await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#mm-tab-activity')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
     await expect(panel(page, 'since')).toHaveCount(0);
 
@@ -146,6 +156,7 @@ test.describe('My Matters: what changed, in one line (#909)', () => {
       rowVersion: held.rowVersion,
     });
     await page.reload();
+    await expect(tab(page, 'activity').locator('[data-tab-badge]')).toHaveText('3'); // 2 new unassigned + 1 put on hold
     await expect(line.locator('[data-figure=newUnassigned]')).toContainText('2 new unassigned');
     await expect(line.locator('[data-figure=putOnHold]')).toContainText('1 put on hold');
     await expect(line.locator('[data-since-period]')).toContainText(/^Since your last visit:/);
@@ -360,7 +371,7 @@ test.describe('My Matters: Activity', () => {
 });
 
 test.describe('My Matters: the first screen on a phone, and the skip links', () => {
-  test('375x812: the "what changed" line is one short block and Needs my attention starts in the first screen (#818, #909)', async ({
+  test('375x812: the Overview has no "what changed" line (a badge on the Activity tab), where it is one 44 px row, and Needs my attention starts in the first screen (#818, #909)', async ({
     seed,
     personas,
     asUser,
@@ -372,10 +383,10 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
-    const line = panel(page, 'since');
-    await expect(line.locator('[data-since-figures]')).toBeVisible();
-    // No events behind a button any more: the Overview lists none.
+    // Nothing of the line on the Overview, and no events behind a button: the Activity tab carries the number.
+    await expect(panel(page, 'since')).toHaveCount(0);
     await expect(page.locator('[data-since-toggle], [data-since-item]')).toHaveCount(0);
+    await expect(tab(page, 'activity').locator('[data-tab-badge]')).toBeVisible();
     // The Overdue chip is in the first screen, whole.
     const overdue = (await page.locator('[data-strip-item=overdue]').boundingBox())!;
     expect(overdue.x + overdue.width).toBeLessThanOrEqual(375);
@@ -385,6 +396,12 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     expect(attention.y + attention.height).toBeLessThanOrEqual(812);
     expect(await axeViolations(page), 'phone').toEqual([]);
     await noHorizontalScroll(page);
+    // On the Activity tab the line is one row of 44 px targets that scrolls sideways.
+    await tab(page, 'activity').click();
+    const line = panel(page, 'since');
+    await expect(line.locator('[data-since-figures]')).toBeVisible();
+    expect((await line.boundingBox())!.height).toBeLessThanOrEqual(48);
+    expect(await axeViolations(page), 'phone, activity').toEqual([]);
   });
 
   test('skip links: the first stops after the tab strip, each moves focus to its panel heading, the Tab order of the panels is unchanged (#820)', async ({
@@ -410,8 +427,8 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
       await expect(page.locator('[data-skip-links]')).toBeVisible(); // shown while a link has the focus
       await page.keyboard.press('Tab');
     }
-    // After the skip links the Tab order is what it was: the Since card's first control.
-    await expect(page.locator('[data-mark-read], [data-since-figures] a').first()).toBeFocused();
+    // After the skip links the Tab order is what it was: the first control of Needs my attention (the "since" line is on the Activity tab now).
+    await expect(page.locator('[data-panel=attention] [data-view-all]')).toBeFocused();
 
     // Enter moves focus to the panel heading, with a visible ring; Tab goes on into that panel.
     for (const key of keys) {

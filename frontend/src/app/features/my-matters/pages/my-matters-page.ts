@@ -40,7 +40,7 @@ import { MyMattersStrip } from '../my-matters-strip';
 import { AttentionPanel } from '../panels/attention-panel';
 import { DeadlinesPanel } from '../panels/deadlines-panel';
 import { HealthPanel } from '../panels/health-panel';
-import { SincePanel } from '../panels/since-panel';
+import { SincePanel, SinceFeed } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { BreakdownTab } from '../tabs/breakdown-tab';
@@ -128,12 +128,12 @@ function storage(): Storage | null {
     TrendsTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ManagedMatters, OverviewStates, LoadGroup],
+  providers: [ManagedMatters, OverviewStates, LoadGroup, SinceFeed],
   styles: `
     :host {
       display: block;
     }
-    /* One column (issue #903): the sections follow each other in the order of what a project manager needs, the calm line of what changed, Needs my attention,
+    /* One column (issue #903): the sections follow each other in the order of what a project manager needs, Needs my attention,
        Next 7 days and the matters. No two-column grid at any width, so no white hole under the shorter list. */
     .mm__stack {
       display: grid;
@@ -366,15 +366,17 @@ function storage(): Storage | null {
             }
           }
           @case ('activity') {
+            <!-- What changed since the last visit (owner decision of 2026-10-28): not drawn on the Overview any more, shown here, with Mark as read; its number
+                 is the badge on this tab. -->
+            <mf-mm-since class="mm__since" />
             @defer (on immediate) {
-              <mf-mm-activity-tab [filters]="filters()" />
+              <mf-mm-activity-tab [filters]="filters()" (marked)="since.loader.load()" />
             } @placeholder {
               <p class="mm__loading" role="status">Loading activity</p>
             }
           }
           @default {
             <mf-mm-skip-links [class.mm__off]="states.quiet()" />
-            <mf-mm-since class="mm__since" [class.mm__off]="states.quiet()" [filters]="filters()" />
             @if (states.quiet() && !states.noMatters()) {
               <p class="mm__quiet" role="status" data-all-quiet>
                 Nothing is late and nothing is due in the next 7 days.
@@ -412,6 +414,7 @@ export class MyMattersPage {
   private readonly pageTitle = inject(PageTitle);
   private readonly managed = inject(ManagedMatters);
   private readonly focus = inject(MyMattersFocus);
+  protected readonly since = inject(SinceFeed);
   protected readonly states = inject(OverviewStates);
   protected readonly loads = inject(LoadGroup);
   private readonly createContext = inject(CreateTaskContext);
@@ -433,7 +436,16 @@ export class MyMattersPage {
   });
   /** The Data tab is for people who may see assets (the Data API needs `Asset.View`). */
   protected readonly tabList = computed<MfTab[]>(() =>
-    MM_TABS.filter((key) => this.offered(key)).map((key) => ({ key, label: TAB_LABELS[key] })),
+    MM_TABS.filter((key) => this.offered(key)).map((key) => {
+      const tab: MfTab = { key, label: TAB_LABELS[key] };
+      // The changes since the last visit are the small number on the Activity tab (the Overview does not draw them any more).
+      const n = key === 'activity' ? this.since.total() : 0;
+      if (n > 0) {
+        tab.badge = n;
+        tab.name = `${tab.label}, ${n} ${n === 1 ? 'change' : 'changes'} since your last visit`;
+      }
+      return tab;
+    }),
   );
   /** The filters of the filter bar that are in force. The date range is not one of them: its control is inside the Deadlines tab (issue #906). */
   protected readonly barActive = computed(() =>
@@ -493,6 +505,7 @@ export class MyMattersPage {
 
   constructor() {
     this.restoreRemembered();
+    effect(() => this.since.filters.set(this.filters()));
     const timer = setTimeout(() => this.waited.set(true), HOLD_MS);
     inject(DestroyRef).onDestroy(() => clearTimeout(timer));
     // The title rule `<Page>: <Tab> - <App name>`: the Overview is the page itself.

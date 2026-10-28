@@ -27,10 +27,10 @@ export function addDaysText(day: string, days: number): string {
 }
 
 /** How many tasks the Overview preview shows. */
-export const NEXT_DAYS_ROWS = 5;
+export const NEXT_DAYS_ROWS = 3;
 
 /**
- * Next 7 days (epic #893 issues #896 and #894; README 5): a short preview of what falls due from today to seven days ahead, at most five rows, soonest first,
+ * Next 7 days (epic #893 issues #896 and #894; README 5): a short preview of what falls due from today to seven days ahead, at most three rows (owner decision of 2026-10-28, cut 3), soonest first,
  * the due day as the first column and the assignee on the right. It never lists a task that Needs my attention already lists (a task is listed once per
  * screen, in its most urgent place), has no toolbar of its own (no range, sort, saved views or task-type filter: the Deadlines tab owns the range and the
  * person's Focus is the one type filter) and "All deadlines" opens the Deadlines tab. Nothing due, or everything due already listed above: one muted line.

@@ -636,7 +636,7 @@ describe('MyMattersPage', () => {
     expect(all.getAttribute('href')).toBe('/my-matters?tab=deadlines');
   });
 
-  it('Next 7 days shows at most five rows and says how many there are in all', async () => {
+  it('Next 7 days shows at most three rows (owner decision of 2026-10-28) and says how many there are in all', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersAttention'].mockReturnValue(of(attention([], 0)));
       a['getMyMattersDeadlines'].mockReturnValue(
@@ -653,7 +653,7 @@ describe('MyMattersPage', () => {
       );
     });
     const panel = el(h).querySelector('[data-panel=deadlines]')!;
-    expect(panel.querySelectorAll('[data-deadline-row]')).toHaveLength(5);
+    expect(panel.querySelectorAll('[data-deadline-row]')).toHaveLength(3);
     expect(panel.querySelector('[data-view-all]')!.textContent).toContain('All deadlines (8)');
   });
 
@@ -903,8 +903,9 @@ describe('MyMattersPage', () => {
 
   describe('tabs (epic #758, PX-18)', () => {
     const tabs = (h: { fixture: { nativeElement: unknown } }) =>
+      // The label only: the Activity tab's small badge (the changes since the last visit) is not part of it.
       Array.from(el(h).querySelectorAll<HTMLElement>('[role=tab]')).map((t) =>
-        t.textContent!.trim(),
+        t.textContent!.replace(t.querySelector('[data-tab-badge]')?.textContent ?? '', '').trim(),
       );
 
     it('offers the Data tab, between Breakdown and Activity, to a person who may see assets', async () => {
@@ -939,7 +940,8 @@ describe('MyMattersPage', () => {
       );
       const panel = el(h).querySelector('[role=tabpanel]')!;
       expect(panel.getAttribute('aria-labelledby')).toBe('mm-tab-overview');
-      expect(panel.querySelector('[data-panel=since]')).not.toBeNull();
+      expect(panel.querySelector('[data-panel=since]')).toBeNull(); // on the Activity tab since 2026-10-28
+      expect(panel.querySelector('[data-panel=attention]')).not.toBeNull();
       expect(panel.querySelector('[data-panel=health]')).not.toBeNull();
       expect(el(h).querySelector('[data-panel=deadlines-tab]')).toBeNull();
     });
@@ -1034,9 +1036,9 @@ describe('MyMattersPage', () => {
     });
   });
 
-  describe('What changed: one line (epic #893, issues #909 and #895)', () => {
+  describe('What changed: one line on the Activity tab, its count a badge (epic #893, issues #909 and #895, owner decision of 2026-10-28)', () => {
     it('is one line of the four counts that need a decision, each a link, and Mark as read at its end', async () => {
-      const h = await open('/my-matters');
+      const h = await open('/my-matters?tab=activity');
       const line = el(h).querySelector('[data-panel=since]')!;
       expect(line.getAttribute('aria-label')).toBe('Since your last visit');
       const figures = Array.from(line.querySelectorAll('[data-since-figures] a')).map((a) =>
@@ -1062,13 +1064,45 @@ describe('MyMattersPage', () => {
         'Since your last visit:',
       );
       expect(line.querySelector('[data-mark-read]')!.textContent).toContain('Mark as read');
-      // No event is listed on the Overview, and opening the page never moves the marker.
+      // Opening the page never moves the marker.
       expect(line.querySelector('[data-since-item], [data-since-toggle]')).toBeNull();
       expect(api['markMyMattersActivitySeen']).not.toHaveBeenCalled();
     });
 
+    it('the Overview does not draw it: the Activity tab carries the four figures added up as a small badge', async () => {
+      const h = await open('/my-matters');
+      expect(el(h).querySelector('[data-panel=since]')).toBeNull();
+      expect(el(h).querySelector('mf-mm-since')).toBeNull();
+      const tab = el(h).querySelector<HTMLElement>('[data-tab=activity]')!;
+      expect(tab.querySelector('[data-tab-badge]')!.textContent!.trim()).toBe('15'); // 4 + 1 + 7 + 3
+      expect(tab.getAttribute('aria-label')).toBe('Activity, 15 changes since your last visit');
+      // The line itself (and Mark as read) are on the Activity tab.
+      expect(el(h).querySelector('[data-mark-read]')).toBeNull();
+    });
+
+    it('no badge when none of the four changed', async () => {
+      const h = await open('/my-matters', undefined, (a) => {
+        const s = since();
+        const zero = { count: 0, query: 'q', target: 'activity' };
+        a['getMyMattersSinceLastVisit'].mockReturnValue(
+          of({
+            ...s,
+            counts: {
+              ...s.counts,
+              becameOverdue: zero,
+              putOnHold: zero,
+              completed: zero,
+              newUnassigned: zero,
+            },
+          }),
+        );
+      });
+      expect(el(h).querySelector('[data-tab=activity] [data-tab-badge]')).toBeNull();
+      expect(el(h).querySelector('[data-tab=activity]')!.getAttribute('aria-label')).toBeNull();
+    });
+
     it('says the last 7 days when there is no marker yet', async () => {
-      const h = await open('/my-matters', undefined, (a) =>
+      const h = await open('/my-matters?tab=activity', undefined, (a) =>
         a['getMyMattersSinceLastVisit'].mockReturnValue(of({ ...since(), hasMarker: false })),
       );
       expect(el(h).querySelector('[data-since-period]')!.textContent).toContain(
@@ -1077,7 +1111,7 @@ describe('MyMattersPage', () => {
     });
 
     it('draws nothing when none of the four changed, even if comments and reassignments did', async () => {
-      const h = await open('/my-matters', undefined, (a) => {
+      const h = await open('/my-matters?tab=activity', undefined, (a) => {
         const s = since();
         const zero = { count: 0, query: 'q', target: 'activity' };
         a['getMyMattersSinceLastVisit'].mockReturnValue(
@@ -1099,7 +1133,7 @@ describe('MyMattersPage', () => {
     });
 
     it('Mark as read moves the marker once, says so, and the line goes away', async () => {
-      const h = await open('/my-matters');
+      const h = await open('/my-matters?tab=activity');
       const before = api['getMyMattersSinceLastVisit'].mock.calls.length;
       api['getMyMattersSinceLastVisit'].mockReturnValue(of(since(true)));
       el(h).querySelector<HTMLButtonElement>('[data-mark-read]')!.click();
@@ -1321,12 +1355,12 @@ describe('MyMattersPage', () => {
         ...over,
       });
 
-    it('one column: since, Needs my attention, Next 7 days, Matters, in that order, with no two-column grid (#903)', async () => {
+    it('one column: Needs my attention, Next 7 days, Matters, in that order (the "since" line is on the Activity tab), with no two-column grid (#903)', async () => {
       const h = await open('/my-matters');
       const order = Array.from(el(h).querySelectorAll('[data-panel]')).map((p) =>
         p.getAttribute('data-panel'),
       );
-      expect(order).toEqual(['since', 'attention', 'deadlines', 'health']);
+      expect(order).toEqual(['attention', 'deadlines', 'health']);
       expect(el(h).querySelector('.mm__grid')).toBeNull();
       expect(el(h).querySelector('.mm__stack')).not.toBeNull();
       // The sections are flat (no card around each of them).

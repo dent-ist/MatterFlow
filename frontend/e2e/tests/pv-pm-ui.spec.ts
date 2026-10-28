@@ -276,7 +276,8 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
     await expect(page.locator('[data-filter="range"]')).toBeVisible();
 
     const tabs = await page.locator('[role=tab]').allTextContents();
-    expect(tabs.map((t) => t.trim())).toEqual([
+    // (The Activity tab may carry a small number: the changes since the last visit.)
+    expect(tabs.map((t) => t.replace(/\s+\d+\s*$/, '').trim())).toEqual([
       'Overview',
       'Deadlines',
       'Breakdown',

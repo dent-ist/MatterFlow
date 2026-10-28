@@ -1,10 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Injectable,
   computed,
-  effect,
   inject,
-  input,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -13,7 +12,6 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatInstant, formatStatusStamp } from '../../../core/time/time';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MmFilters, commonArgs, queryToParams } from '../my-matters-filters';
-import { OverviewStates } from '../overview-states';
 import { LoadGroup, panelLoader } from '../panel-loader';
 
 /** One figure of the sentence: its words and where it leads. */
@@ -41,10 +39,62 @@ export function figureLink(c: MyMattersSinceCount): {
 }
 
 /**
- * What changed, in one line (epic #893, issues #909 and #895): "Since your last visit: 2 became overdue, 4 put on hold, 9 completed, 3 new unassigned", each
+ * What changed since the person's last visit, loaded once for the page (epic #893, owner decision of 2026-10-28, cut 1): the Overview no longer draws the
+ * line, so the number of changes is the small badge on the Activity tab (the tab strip is always in sight) and the same line is shown when the tab is opened
+ * (`mf-mm-since`, with "Mark as read"). Both read this one request. The page gives it the filters in force.
+ */
+@Injectable()
+export class SinceFeed {
+  private readonly api = inject(MyMattersClient);
+  /** The page's filters; the first request waits until the page has set them. */
+  readonly filters = signal<MmFilters | null>(null);
+
+  readonly loader = panelLoader(
+    () => this.filters(),
+    () => {
+      const a = commonArgs(this.filters()!);
+      return this.api.getMyMattersSinceLastVisit(
+        a.scope,
+        a.role,
+        a.clientId,
+        undefined,
+        undefined,
+        a.managerId,
+      );
+    },
+    { enabled: () => this.filters() !== null },
+  );
+
+  /** The four changes that call for a decision, in the order of the line; a zero is not shown. */
+  readonly figures = computed((): Figure[] => {
+    const c = this.loader.data()?.counts;
+    if (!c) return [];
+    const make = (key: string, count: MyMattersSinceCount, words: string): Figure => ({
+      key,
+      count: count.count,
+      words: ` ${words}`,
+      ...figureLink(count),
+    });
+    return [
+      make('becameOverdue', c.becameOverdue, 'became overdue'),
+      make('putOnHold', c.putOnHold, 'put on hold'),
+      make('completed', c.completed, 'completed'),
+      make('newUnassigned', c.newUnassigned, 'new unassigned'),
+    ].filter((f) => f.count > 0);
+  });
+
+  /** Moves on each time the marker moved from the line ("Mark as read"), so the Activity tab's list, which is read against the same marker, loads again. */
+  readonly marks = signal(0);
+
+  /** The number on the Activity tab: all the changes of the line (0: no badge). */
+  readonly total = computed(() => this.figures().reduce((sum, f) => sum + f.count, 0));
+}
+
+/**
+ * What changed, in one line (epic #893, issues #909 and #895; since 2026-10-28 it is drawn at the top of the Activity tab, not on the Overview): "Since your last visit: 2 became overdue, 4 put on hold, 9 completed, 3 new unassigned", each
  * part a link to the list behind it, and "Mark as read" as a small text button at the end. Only the changes that call for a decision are counted (became
  * overdue, put on hold, completed, new unassigned); reassignments, comments and new tasks are not decisions and the events themselves are on the Activity
- * tab, so the Overview never lists an event. When none of the four changed nothing is drawn at all. Opening the page never moves the marker; only "Mark
+ * tab, so this line never lists an event. When none of the four changed nothing is drawn at all. Opening the page never moves the marker; only "Mark
  * as read" does (the same marker as the Activity tab). Without a marker the line covers the last 7 days.
  */
 @Component({
@@ -176,65 +226,16 @@ export function figureLink(c: MyMattersSinceCount): {
   `,
 })
 export class SincePanel {
-  readonly filters = input.required<MmFilters>();
-
   private readonly api = inject(MyMattersClient);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
   protected readonly marking = signal(false);
   protected readonly announcement = signal('');
 
+  private readonly feed = inject(SinceFeed);
   protected readonly group = inject(LoadGroup, { optional: true });
-  protected readonly loader = panelLoader(
-    () => this.filters(),
-    () => {
-      const a = commonArgs(this.filters());
-      return this.api.getMyMattersSinceLastVisit(
-        a.scope,
-        a.role,
-        a.clientId,
-        undefined,
-        undefined,
-        a.managerId,
-      );
-    },
-  );
-
-  private readonly states = inject(OverviewStates, { optional: true });
-
-  constructor() {
-    // Nothing is drawn when nothing that needs a decision changed; the page counts the Overview as quiet only once this has answered.
-    effect(() =>
-      this.states?.report(
-        'since',
-        this.loader.state() === 'loading'
-          ? 'loading'
-          : this.loader.state() === 'error'
-            ? 'error'
-            : this.figures().length === 0
-              ? 'empty'
-              : 'content',
-      ),
-    );
-  }
-
-  /** The four changes that call for a decision, in the order of the line; a zero is not shown. */
-  protected readonly figures = computed((): Figure[] => {
-    const c = this.loader.data()?.counts;
-    if (!c) return [];
-    const make = (key: string, count: MyMattersSinceCount, words: string): Figure => ({
-      key,
-      count: count.count,
-      words: ` ${words}`,
-      ...figureLink(count),
-    });
-    return [
-      make('becameOverdue', c.becameOverdue, 'became overdue'),
-      make('putOnHold', c.putOnHold, 'put on hold'),
-      make('completed', c.completed, 'completed'),
-      make('newUnassigned', c.newUnassigned, 'new unassigned'),
-    ].filter((f) => f.count > 0);
-  });
+  protected readonly loader = this.feed.loader;
+  protected readonly figures = this.feed.figures;
 
   /** "Since your last visit:"; without a marker the line says it covers the last 7 days. */
   protected readonly lead = computed(() =>
@@ -259,6 +260,7 @@ export class SincePanel {
         this.api.markMyMattersActivitySeen({}).subscribe({ next: () => resolve(), error: reject }),
       );
       this.announcement.set('Marked as read.');
+      this.feed.marks.update((n) => n + 1);
       this.loader.load();
     } catch {
       // The error toast says it; the line keeps showing what changed.

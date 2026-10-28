@@ -31,6 +31,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { activityText, activityTime } from '../facts';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
+import { SinceFeed } from '../panels/since-panel';
 import { PanelBox } from '../panels/panel-box';
 
 /** The events asked for at a time (30 days are read page by page). */
@@ -393,6 +394,8 @@ export class ActivityTab {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
+  /** The line of changes above this tab (when the tab is on the page): its "Mark as read" moves the marker this list is read against. */
+  private readonly since = inject(SinceFeed, { optional: true });
   protected readonly phone = phoneCards();
 
   protected readonly kinds = ACTIVITY_KINDS;
@@ -423,7 +426,7 @@ export class ActivityTab {
   );
 
   protected readonly loader = panelLoader(
-    () => [this.filters(), this.matterId(), this.kind(), this.unreadOnly()],
+    () => [this.filters(), this.matterId(), this.kind(), this.unreadOnly(), this.since?.marks()],
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersActivity(

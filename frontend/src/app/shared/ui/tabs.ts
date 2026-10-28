@@ -19,6 +19,8 @@ export interface MfTab {
   label: string;
   /** Count shown in parentheses; omitted while unknown (a string such as `--` while it loads). */
   count?: number | string | null;
+  /** A small badge after the label (the number of things waiting in the tab); not drawn for 0. Say it in `name` as well, a badge alone is not read as part of the name. */
+  badge?: number;
   /** The accessible name when the visible label and count do not read well aloud (`Workflow, 2 of 3 steps resolved`); it starts with the label. */
   name?: string;
   /**
@@ -72,6 +74,9 @@ export interface MfTab {
             {{ t.label }}
             @if (t.count !== undefined && t.count !== null) {
               <span class="count">({{ t.count }})</span>
+            }
+            @if (t.badge) {
+              <span class="badge" aria-hidden="true" data-tab-badge>{{ t.badge }}</span>
             }
           </button>
           @if (t.disabledReason) {
@@ -203,6 +208,20 @@ export interface MfTab {
     .tab:focus-visible {
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
+    }
+    .badge {
+      display: inline-block;
+      min-width: 1.25rem;
+      margin-left: var(--mf-s1);
+      padding: 0 var(--mf-s1);
+      border-radius: 999px;
+      background: var(--mf-primary);
+      color: var(--mf-on-primary, #fff);
+      font-size: var(--mf-fs-xs);
+      font-weight: 700;
+      line-height: 1.25rem;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
     }
     .count {
       color: var(--mf-text-muted);

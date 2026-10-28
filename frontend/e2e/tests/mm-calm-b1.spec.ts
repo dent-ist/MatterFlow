@@ -372,7 +372,7 @@ test.describe('Empty states are one line (#920)', () => {
     await expect(page.locator('[data-all-quiet]')).toHaveText(
       'Nothing is late and nothing is due in the next 7 days.',
     );
-    for (const hidden of ['attention', 'deadlines', 'since']) {
+    for (const hidden of ['attention', 'deadlines']) {
       await expect(page.locator(`[data-panel=${hidden}]`)).toBeHidden();
     }
     // The matters list is still there (two matters), and no Recent activity is on the Overview any more (#909).

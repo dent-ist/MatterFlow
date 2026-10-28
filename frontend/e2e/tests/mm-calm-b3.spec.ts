@@ -49,7 +49,7 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     expect(boxes[2]!.y).toBeGreaterThanOrEqual(boxes[1]!.y + boxes[1]!.height - 2);
     // The Client / Role bar is drawn here (three clients, both roles) and the first task row is still within 300 px at 1366x768.
     await expect(page.locator('[data-mm-filters]')).toBeVisible();
-    expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(300 + 40); // + the "since" line, which the fixture's new tasks always draw
+    expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(300); // the "since" line is on the Activity tab now
     const hrefs = await page
       .locator('[data-mm-tabpanel] a[href^="/tasks/"]')
       .evaluateAll((as) => as.map((a) => a.getAttribute('href')!.split('?')[0]));

@@ -39,6 +39,20 @@ describe('mf-tabs', () => {
     expect(tab('b').tabIndex).toBe(-1);
   });
 
+  it('a badge is a small number after the label, hidden from assistive technology (the name says it), and not drawn for 0', () => {
+    const { fixture, tab } = create();
+    fixture.componentInstance.tabs.set([
+      { key: 'a', label: 'Overview', badge: 0 },
+      { key: 'b', label: 'Activity', badge: 7, name: 'Activity, 7 changes since your last visit' },
+    ]);
+    fixture.detectChanges();
+    expect(tab('a').querySelector('[data-tab-badge]')).toBeNull();
+    const badge = tab('b').querySelector('[data-tab-badge]')!;
+    expect(badge.textContent!.trim()).toBe('7');
+    expect(badge.getAttribute('aria-hidden')).toBe('true');
+    expect(tab('b').getAttribute('aria-label')).toBe('Activity, 7 changes since your last visit');
+  });
+
   it('a tab with a disabled reason is aria-disabled, described by the reason, and does nothing when chosen (#381)', () => {
     const { fixture, el, tab } = create();
     const c = tab('c');
