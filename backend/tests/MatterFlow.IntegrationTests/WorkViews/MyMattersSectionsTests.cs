@@ -145,6 +145,33 @@ public sealed class MyMattersSectionsTests(SqlServerFixture sql) : MyMattersTest
     }
 
     [Fact]
+    public async Task Priority_sort_of_the_deadlines_is_Critical_High_Normal_Low_and_descending_is_the_reverse_with_ties_in_due_order()
+    {
+        // Issue #898: a sort named Priority must put the most urgent first. Two Normal tasks tie on priority; the tie breaks by due date, then id.
+        var priorities = await OkAsync(await H.Admin.GetAsync("/api/v1/priorities"));
+        int Id(string label) => priorities.EnumerateArray().First(p => p.GetProperty("label").GetString() == label).GetProperty("id").GetInt32();
+        await MakeAsync("prio-low", M1, new() { ["dueDate"] = In(2), ["priorityId"] = Id("Low") });
+        await MakeAsync("prio-normal-late", M1, new() { ["dueDate"] = In(6), ["priorityId"] = Id("Normal") });
+        await MakeAsync("prio-critical", M2, new() { ["dueDate"] = In(5), ["priorityId"] = Id("Critical") });
+        await MakeAsync("prio-normal-soon", M1, new() { ["dueDate"] = In(3), ["priorityId"] = Id("Normal") });
+        await MakeAsync("prio-high", M2, new() { ["dueDate"] = In(4), ["priorityId"] = Id("High") });
+
+        List<string> Own(JsonElement items) => [.. Titles(items).Where(t => t.StartsWith("prio-", StringComparison.Ordinal))];
+        var asc = (await Mine("deadlines?sort=priority")).GetProperty("items");
+        Own(asc).ShouldBe(["prio-critical", "prio-high", "prio-normal-soon", "prio-normal-late", "prio-low"]);
+        asc.EnumerateArray().Where(i => i.GetProperty("title").GetString()!.StartsWith("prio-", StringComparison.Ordinal))
+            .Select(i => i.GetProperty("priorityName").GetString()).ShouldBe(["Critical", "High", "Normal", "Normal", "Low"]);
+        Own((await Mine("deadlines?sort=priority&dir=asc")).GetProperty("items")).ShouldBe(Own(asc));
+        Own((await Mine("deadlines?sort=priority&dir=desc")).GetProperty("items")).ShouldBe(["prio-low", "prio-normal-soon", "prio-normal-late", "prio-high", "prio-critical"]);
+
+        // The "View all" link carries the same sort, and the Task Queue answers it in the same order.
+        var viewAll = (await Mine("deadlines?sort=priority")).GetProperty("query").GetString()!;
+        viewAll.ShouldContain("sort=priority");
+        var queue = await OkAsync(await A.GetAsync("/api/v1/task-queue?pageSize=100&" + viewAll));
+        Own(queue.GetProperty("items")).ShouldBe(["prio-critical", "prio-high", "prio-normal-soon", "prio-normal-late", "prio-low"]);
+    }
+
+    [Fact]
     public async Task A_bad_sort_direction_or_type_id_is_a_400_and_Since_your_last_visit_items_carry_the_facts()
     {
         await ProblemAsync(await A.GetAsync("/api/v1/my-matters/attention?sort=colour"), HttpStatusCode.BadRequest, "VALIDATION_FAILED");

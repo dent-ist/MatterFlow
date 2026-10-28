@@ -10,6 +10,7 @@ import {
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { formatInstant } from '../../core/time/time';
 import { SortDirection } from './queue-filters';
+import { directionWords } from './sort-sentences';
 import { SORT_LABELS } from './sort-note';
 
 /**
@@ -75,8 +76,7 @@ export class PrintLine {
   protected readonly sortText = computed(() => {
     const s = this.sort();
     if (!s) return 'Sorted by default order';
-    const way = this.dir() === 'desc' ? 'descending' : 'ascending';
-    return `Sorted by ${SORT_LABELS[s] ?? s}, ${way}`;
+    return `Sorted by ${SORT_LABELS[s] ?? s}, ${directionWords(s, this.dir() === 'desc' ? 'desc' : 'asc')}`;
   });
 
   protected readonly countText = computed(() => {

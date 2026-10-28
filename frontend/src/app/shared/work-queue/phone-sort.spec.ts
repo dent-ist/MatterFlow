@@ -22,7 +22,7 @@ describe('PhoneSort', () => {
       defaultOrder: 'Default order: Newest closed first',
     });
     const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
-    expect(select.options[0].textContent?.trim()).toBe('Default order (Closed date)');
+    expect(select.options[0].textContent?.trim()).toBe('Closed date (default order)');
     const labels = Array.from(select.options).map((o) => o.textContent?.trim());
     expect(labels).toContain('Due date');
     expect(labels).toContain('Priority, then age');
@@ -30,7 +30,7 @@ describe('PhoneSort', () => {
     expect(el.querySelector('[data-sort-rule]')!.textContent).toContain('Newest closed first');
   });
 
-  it('picking a field emits it with its natural direction (dates newest first), the Direction select appears for a sort', () => {
+  it('picking a field emits it with its natural direction (dates newest first), the Order select appears for a sort, in words (no Ascending / Descending)', () => {
     const { el, picks, fixture } = create();
     const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
     change(select, 'due');
@@ -44,6 +44,10 @@ describe('PhoneSort', () => {
     fixture.detectChanges();
     const dir = el.querySelector<HTMLSelectElement>('[data-dir-select]')!;
     expect(dir.value).toBe('asc');
+    expect(Array.from(dir.options).map((o) => o.textContent?.trim())).toEqual([
+      'Soonest first',
+      'Latest first',
+    ]);
     change(dir, 'desc');
     expect(picks[picks.length - 1]).toEqual({ field: 'due', dir: 'desc' });
     expect(el.querySelector('[data-sort-rule]')).toBeNull();
@@ -84,7 +88,12 @@ describe('PhoneSort', () => {
       'Open tasks',
     ]);
     expect(select.value).toBe('name');
-    expect(el.querySelector<HTMLSelectElement>('[data-dir-select]')!.value).toBe('asc');
+    const order = () => el.querySelector<HTMLSelectElement>('[data-dir-select]')!;
+    expect(order().value).toBe('asc');
+    expect(Array.from(order().options).map((o) => o.textContent?.trim())).toEqual([
+      'A to Z',
+      'Z to A',
+    ]);
     change(select, 'openTasks');
     expect(picks).toEqual([{ field: 'openTasks', dir: 'desc' }]);
   });

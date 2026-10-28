@@ -13,6 +13,7 @@ import { ColumnChooser } from './column-chooser';
 import { Density } from './column-prefs';
 import { SortDirection } from './queue-filters';
 import { DESC_FIRST, SORT_LABELS } from './sort-note';
+import { directionWords } from './sort-sentences';
 
 /**
  * The right end of the work toolbar: a short "Sorted by Priority" note with the sort direction, an info button that opens the full
@@ -39,19 +40,12 @@ import { DESC_FIRST, SORT_LABELS } from './sort-note';
             Remove grouping
           </button>
         } @else if (sort(); as s) {
-          <span class="vc-label"
-            >Sorted by {{ sortLabel() }}
-            <i class="pi" [class]="dirIcon()" aria-hidden="true"></i>
-            <span class="vc-sr">({{ dir() === 'desc' ? 'descending' : 'ascending' }})</span>
-          </span>
+          <span class="vc-label">Sorted by {{ sortLabel() }}, {{ words() }}</span>
           <button type="button" class="mf-btn mf-btn--text" (click)="resetSort.emit()">
             Reset sort
           </button>
         } @else {
-          <span class="vc-label"
-            >Sorted by {{ defaultLabel() }}
-            <i class="pi pi-sort-amount-up-alt" aria-hidden="true"></i>
-          </span>
+          <span class="vc-label">Sorted by {{ defaultLabel() }}</span>
           <button
             #infoBtn
             type="button"
@@ -124,7 +118,7 @@ export class WorkViewControls {
     'Default order: Priority, then ASAP first, then due date, then oldest',
   );
   /** The short name of the default sort column ("Priority"). */
-  readonly defaultLabel = input('Priority');
+  readonly defaultLabel = input('Priority, most urgent first');
   /** The help of the current tab, behind an "About this tab" button (M3: no always-visible paragraph). */
   readonly tabHelp = input<string | null>(null);
   readonly columns = input.required<readonly string[]>();
@@ -161,8 +155,11 @@ export class WorkViewControls {
     });
   }
   protected readonly sortLabel = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());
-  protected readonly dirIcon = computed(() => {
-    const desc = (this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc')) === 'desc';
-    return desc ? 'pi-sort-amount-down' : 'pi-sort-amount-up-alt';
-  });
+  /** The direction in words ("most urgent first"): the label carries it, there is no arrow to read (issue #898). */
+  protected readonly words = computed(() =>
+    directionWords(
+      this.sort() ?? '',
+      this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc'),
+    ),
+  );
 }

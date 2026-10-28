@@ -63,6 +63,7 @@ import { PANEL_LIST_STYLES } from './panel-styles';
     <mf-mm-panel
       name="attention"
       title="Needs my attention"
+      hint="Most urgent first: overdue, at risk, due today, unassigned, then on hold"
       [flat]="true"
       [skeleton]="5"
       [state]="loader.state()"
@@ -104,7 +105,7 @@ import { PANEL_LIST_STYLES } from './panel-styles';
           <p class="pl__empty" data-empty>Nothing needs your attention.</p>
         }
       } @else {
-        <ul class="pl__list" data-attention-list>
+        <ul class="pl__list" data-attention-list aria-label="Needs my attention, most urgent first">
           @for (t of items(); track t.taskId) {
             <li
               mfMmTaskRow

@@ -12,10 +12,10 @@ describe('SortNote', () => {
     fixture.detectChanges();
   }
 
-  it('says "Sorted by Priority (default order)" with the rule behind a keyboard-reachable info button', async () => {
+  it('says "Sorted by Priority, most urgent first (default order)" with the rule behind a keyboard-reachable info button', async () => {
     await create();
     const note = el().querySelector('[data-sort-note]')!;
-    expect(note.textContent).toContain('Sorted by Priority (default order)');
+    expect(note.textContent).toContain('Sorted by Priority, most urgent first (default order)');
     expect(el().querySelector('[data-sort-rule]')).toBeNull();
     const info = note.querySelector<HTMLButtonElement>('.sn-info')!;
     expect(info.getAttribute('aria-label')).toBe('How the default order works');
@@ -34,7 +34,8 @@ describe('SortNote', () => {
     await create({ sort: 'due', dir: 'desc' });
     const note = el().querySelector('[data-sort-note]')!;
     expect(note.textContent).toContain('Sorted by Due date');
-    expect(note.textContent).toContain('(descending)');
+    expect(note.textContent).toContain('Sorted by Due date, latest first');
+    expect(note.querySelector('.pi-sort-amount-down, .pi-sort-amount-up-alt')).toBeNull();
     expect(note.textContent).not.toContain('default order');
     expect(note.querySelector('.sn-info')).toBeNull();
   });

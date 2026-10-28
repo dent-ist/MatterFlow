@@ -90,7 +90,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
       );
     }
     await expect(page.locator('[data-sort-note]').first()).toContainText(
-      'Sorted by Priority (default order)',
+      'Sorted by Priority, most urgent first (default order)',
     );
     await expect(page.locator('.mf-pager [data-sort-note]')).toHaveCount(1);
     await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toHaveCount(0);

@@ -475,7 +475,7 @@ test.describe('#433 one action per row', () => {
     const select = sheet.getByLabel('Sort by');
     await expect(select).toBeVisible();
     expect(await select.locator('option').allTextContents()).toEqual([
-      'Default order (Waiting people first)',
+      'Waiting people first (default order)',
       'Name',
       'Last seen',
       'First seen',

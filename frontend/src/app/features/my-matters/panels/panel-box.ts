@@ -22,7 +22,7 @@ import { LoadGroup, PanelState } from '../panel-loader';
       [attr.aria-busy]="busy() ? 'true' : null"
     >
       <header class="mmp__head">
-        <h2 class="mmp__title" [id]="id() + '-h'" tabindex="-1">{{ title() }}</h2>
+        <h2 class="mmp__title" [id]="id() + '-h'" tabindex="-1" [title]="hint()">{{ title() }}</h2>
         <!-- No toolbar while the answer is on its way or has failed: it appears with the data (issue #921), so nothing jumps and nothing offers a choice about a list that is not there. -->
         @if (state() === 'ready') {
           <div class="mmp__actions"><ng-content select="[mfPanelActions]" /></div>
@@ -200,6 +200,8 @@ export class PanelBox {
   readonly bare = input(false);
   /** A section of the calm Overview: drawn without the card around it (issue #903). */
   readonly flat = input(false);
+  /** The order of the list in one line, as the heading's tooltip ("Most urgent first: ..."): the ranking is the sort, and it is named (issue #898). */
+  readonly hint = input('');
   /** How many rows the skeleton stands for (the list's usual length), so its height is the list's. */
   readonly skeleton = input(3);
   readonly retry = output<void>();

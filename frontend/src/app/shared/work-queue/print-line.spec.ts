@@ -46,7 +46,7 @@ describe('PrintLine (#215)', () => {
   it('names the page, the sort, the place in the list and the time in the viewer zone', () => {
     const r = render();
     expect(r.page).toBe('Task Queue: Overdue');
-    expect(r.sort).toBe('Sorted by Due date, ascending');
+    expect(r.sort).toBe('Sorted by Due date, soonest first');
     expect(r.count).toBe('Page 1 of 9, 442 tasks, showing 1-50');
     expect(r.when).toBe('Printed Oct 14, 2026, 12:05 PM EDT');
   });
@@ -59,7 +59,7 @@ describe('PrintLine (#215)', () => {
   });
 
   it('says descending, and default order when no column sorts', () => {
-    expect(render((h) => h.dir.set('desc')).sort).toBe('Sorted by Due date, descending');
+    expect(render((h) => h.dir.set('desc')).sort).toBe('Sorted by Due date, latest first');
     expect(render((h) => h.sort.set(null)).sort).toBe('Sorted by default order');
   });
 });

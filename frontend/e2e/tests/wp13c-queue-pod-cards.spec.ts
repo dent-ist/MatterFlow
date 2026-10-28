@@ -186,7 +186,7 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     // The sort control is the first thing in the sheet, 44 px, naming the default order.
     const select = sheet.getByLabel('Sort by');
     await expect(select).toHaveValue('');
-    await expect(select.locator('option').first()).toContainText('Default order');
+    await expect(select.locator('option').first()).toContainText('(default order)');
     expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await shot(page, 'tq-filters-sheet-375x812');
     await axeClean(page, 'filters sheet with the sort select at 375');
@@ -195,15 +195,19 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(page).toHaveURL(/sort=title/);
     await expect(page).toHaveURL(/dir=asc/);
     await expect.poll(() => cardTitles(page)).toEqual([...px.titles].sort());
-    await expect(sheet.getByLabel('Direction')).toHaveValue('asc');
-    await sheet.getByLabel('Direction').selectOption('desc');
+    await expect(sheet.getByLabel('Order')).toHaveValue('asc');
+    // The order is said in words, not "Ascending" (issue #898).
+    expect(
+      (await sheet.getByLabel('Order').locator('option').allTextContents()).map((t) => t.trim()),
+    ).toEqual(['A to Z', 'Z to A']);
+    await sheet.getByLabel('Order').selectOption('desc');
     await expect(page).toHaveURL(/dir=desc/);
     await expect.poll(() => cardTitles(page)).toEqual([...px.titles].sort().reverse());
     await select.selectOption('due');
     await expect(page).toHaveURL(/sort=due/);
     await select.selectOption('');
     await expect(page).not.toHaveURL(/sort=/);
-    await expect(sheet.getByLabel('Direction')).toHaveCount(0);
+    await expect(sheet.getByLabel('Order')).toHaveCount(0);
     await sheet.getByRole('button', { name: /^Show \d+ results?$/ }).click();
     await expect(sheet).toHaveCount(0);
   });

@@ -57,6 +57,28 @@ public sealed class TaskQueueSortApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Priority_sort_puts_Critical_first_then_High_Normal_Low_and_descending_is_the_reverse_on_all_three_lists()
+    {
+        // Issue #898: "Priority" in ascending order is the most urgent first (rank 1 = Critical), so a label can say so without an arrow.
+        var priorities = await OkAsync(await _h.Admin.GetAsync("/api/v1/priorities"));
+        int Id(string label) => priorities.EnumerateArray().First(p => p.GetProperty("label").GetString() == label).GetProperty("id").GetInt32();
+        var made = new Dictionary<string, long>();
+        foreach (var label in new[] { "Low", "Critical", "Normal", "High" }) // created in a scrambled order
+        {
+            var task = await _h.CreateTaskAsync(_w, extra: new() { ["priorityId"] = Id(label), ["title"] = "prio-" + label });
+            made[label] = TaskId(task);
+        }
+
+        List<long> Prio(JsonElement page) => [.. IdsOf(page).Where(made.Values.Contains)];
+        long[] urgentFirst = [made["Critical"], made["High"], made["Normal"], made["Low"]];
+        Prio(await ListAsync("task-queue", "sort=priority")).ShouldBe(urgentFirst);
+        Prio(await ListAsync("task-queue", "sort=priority&dir=asc")).ShouldBe(urgentFirst);
+        Prio(await ListAsync("task-queue", "sort=priority&dir=desc")).ShouldBe([.. urgentFirst.Reverse()]);
+        Prio(await ListAsync("task-queue", "")).ShouldBe(urgentFirst); // the default order is the same ranking, and is named "Most urgent first"
+        Prio(await ListAsync("task-queue", "sort=priorityAge")).ShouldBe(urgentFirst);
+    }
+
+    [Fact]
     public async Task Title_sort_is_stable_across_pages()
     {
         var all = Own(await ListAsync("task-queue", "sort=title&dir=asc"));

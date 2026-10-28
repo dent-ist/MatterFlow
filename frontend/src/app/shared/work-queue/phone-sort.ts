@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { SortDirection } from './queue-filters';
 import { DESC_FIRST, SORT_LABELS } from './sort-note';
+import { SortKind, directionWords } from './sort-sentences';
 
 let nextId = 0;
 
@@ -32,6 +33,8 @@ export interface SortOption {
   value: string;
   label: string;
   descFirst?: boolean;
+  /** What the field orders, for the words of its direction (a list's own fields; counts, which sort descending first, are read as counts). */
+  kind?: SortKind;
 }
 
 /**
@@ -57,7 +60,7 @@ export interface SortOption {
           (change)="pickField($any($event.target).value)"
         >
           @if (!defaultField()) {
-            <option value="" [selected]="!sort()">Default order ({{ defaultLabel() }})</option>
+            <option value="" [selected]="!sort()">{{ defaultLabel() }} (default order)</option>
           }
           @for (f of fields(); track f.value) {
             <option [value]="f.value" [selected]="f.value === current()">{{ f.label }}</option>
@@ -66,7 +69,7 @@ export interface SortOption {
       </div>
       @if (current()) {
         <div class="ps-field">
-          <label [for]="uid + '-dir'">Direction</label>
+          <label [for]="uid + '-dir'">Order</label>
           <select
             class="mf-control"
             [id]="uid + '-dir'"
@@ -74,8 +77,12 @@ export interface SortOption {
             [value]="direction()"
             (change)="pickDir($any($event.target).value)"
           >
-            <option value="asc" [selected]="direction() === 'asc'">Ascending</option>
-            <option value="desc" [selected]="direction() === 'desc'">Descending</option>
+            <option value="asc" [selected]="direction() === 'asc'">
+              {{ words('asc') }}
+            </option>
+            <option value="desc" [selected]="direction() === 'desc'">
+              {{ words('desc') }}
+            </option>
           </select>
         </div>
       } @else if (defaultOrder()) {
@@ -105,7 +112,7 @@ export class PhoneSort {
   /** The sort in the address (null: the default order). */
   readonly sort = input<string | null>(null);
   readonly dir = input<SortDirection | null>(null);
-  readonly defaultLabel = input('Priority');
+  readonly defaultLabel = input('Priority, most urgent first');
   /** The list's own sorts (null: the sortable columns of the work grids). */
   readonly options = input<readonly SortOption[] | null>(null);
   /** The sort field the list opens with when the address has none; set, the "Default order" entry is not offered. */
@@ -128,6 +135,17 @@ export class PhoneSort {
   protected readonly direction = computed<SortDirection>(
     () => this.dir() ?? (this.descFirst(this.current()) ? 'desc' : 'asc'),
   );
+
+  /** The words of a direction for the sort shown ("Most urgent first", "A to Z"): the select says what comes first, not "Ascending" (issue #898). */
+  protected words(dir: SortDirection): string {
+    const own = this.options()?.find((o) => o.value === this.current());
+    const text = directionWords(
+      this.current(),
+      dir,
+      own?.kind ?? (own?.descFirst ? 'count' : undefined),
+    );
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
 
   private descFirst(field: string): boolean {
     const own = this.options()?.find((o) => o.value === field);

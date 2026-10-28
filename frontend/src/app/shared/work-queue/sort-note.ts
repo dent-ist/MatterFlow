@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { Dismissable } from '../ui/dismissable';
 import { SortDirection } from './queue-filters';
+import { directionWords } from './sort-sentences';
 
 /** Sorts whose first click goes newest first. */
 export const DESC_FIRST: ReadonlySet<string> = new Set([
@@ -29,7 +30,7 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
 };
 
 /**
- * "Sorted by Priority (default order) (i)" or "Sorted by Due date (ascending)": the note that sits in the footer next to the range
+ * "Sorted by Priority (default order) (i)" or "Sorted by Due date, soonest first": the note that sits in the footer next to the range
  * ("Showing 1-50 of 442") on the Task Queue (#216). The info button opens the full default rule above the footer (the shared popover
  * rule: Esc, outside click).
  */
@@ -41,11 +42,7 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
   template: `
     <span class="sn" data-sort-note>
       @if (sort(); as s) {
-        <span class="sn-label"
-          >Sorted by {{ label() }}
-          <i class="pi" [class]="dirIcon()" aria-hidden="true"></i>
-          <span class="sn-sr">({{ dir() === 'desc' ? 'descending' : 'ascending' }})</span>
-        </span>
+        <span class="sn-label">Sorted by {{ label() }}, {{ words() }}</span>
       } @else {
         <span class="sn-label">Sorted by {{ defaultLabel() }} (default order)</span>
         <button
@@ -81,12 +78,15 @@ export class SortNote {
   readonly defaultOrder = input(
     'Default order: Priority, then ASAP first, then due date, then oldest',
   );
-  readonly defaultLabel = input('Priority');
+  readonly defaultLabel = input('Priority, most urgent first');
 
   protected readonly info = signal(false);
   protected readonly label = computed(() => SORT_LABELS[this.sort() ?? ''] ?? this.sort());
-  protected readonly dirIcon = computed(() => {
-    const desc = (this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc')) === 'desc';
-    return desc ? 'pi-sort-amount-down' : 'pi-sort-amount-up-alt';
-  });
+  /** The direction in words ("soonest first"): the label carries it, there is no arrow to read (issue #898). */
+  protected readonly words = computed(() =>
+    directionWords(
+      this.sort() ?? '',
+      this.dir() ?? (DESC_FIRST.has(this.sort() ?? '') ? 'desc' : 'asc'),
+    ),
+  );
 }

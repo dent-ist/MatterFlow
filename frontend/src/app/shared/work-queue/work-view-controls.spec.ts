@@ -17,7 +17,7 @@ describe('WorkViewControls', () => {
   it('says "Sorted by Priority" and keeps the full default rule behind a keyboard-reachable info button', async () => {
     await create();
     const note = el().querySelector('[data-sort-note]')!;
-    expect(note.textContent).toContain('Sorted by Priority');
+    expect(note.textContent).toContain('Sorted by Priority, most urgent first');
     expect(note.textContent).not.toContain('Default order');
     expect(el().querySelector('[data-sort-rule]')).toBeNull();
 
@@ -40,7 +40,8 @@ describe('WorkViewControls', () => {
     await create({ sort: 'due', dir: 'desc' });
     const note = el().querySelector('[data-sort-note]')!;
     expect(note.textContent).toContain('Sorted by Due date');
-    expect(note.textContent).toContain('(descending)');
+    expect(note.textContent).toContain('Sorted by Due date, latest first');
+    expect(note.querySelector('.pi-sort-amount-down, .pi-sort-amount-up-alt')).toBeNull();
     expect(note.querySelector('.vc-info')).toBeNull();
     let reset = 0;
     fixture.componentInstance.resetSort.subscribe(() => reset++);

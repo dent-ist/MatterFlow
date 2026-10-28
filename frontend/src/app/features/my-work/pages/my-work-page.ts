@@ -478,10 +478,10 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
 
   protected readonly defaultLabel = computed(() =>
     this.tab() === 'completed'
-      ? 'Closed date'
+      ? 'Closed date, newest first'
       : this.tab() === 'dueSoon'
         ? 'Overdue first, then due date'
-        : 'Priority',
+        : 'Priority, most urgent first',
   );
 
   /** The help of Due soon and overdue and Closed, behind the "About this tab" button. */

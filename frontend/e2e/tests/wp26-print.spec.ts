@@ -128,7 +128,7 @@ test.describe('Print (#215)', () => {
     const line = page.locator('[data-print-line]');
     await expect(line).toBeVisible();
     await expect(line.locator('[data-print-page]')).toHaveText('Task Queue');
-    await expect(line.locator('[data-print-sort]')).toHaveText('Sorted by Due date, ascending');
+    await expect(line.locator('[data-print-sort]')).toHaveText('Sorted by Due date, soonest first');
     await expect(line.locator('[data-print-count]')).toHaveText(
       'Page 1 of 2, 60 tasks, showing 1-50',
     );

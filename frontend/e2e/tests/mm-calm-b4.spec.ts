@@ -572,3 +572,45 @@ test.describe('The same right-hand pattern in every list (#901)', () => {
     expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(420);
   });
 });
+
+test.describe('Clear sort (#898)', () => {
+  test('Needs my attention names its order; the Task Queue says what comes first instead of an arrow, and Priority is Critical first', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const p = await pmThree(seed, personas, 'b4s1');
+    const page = await asUser(p.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await settled(page);
+    await expect(page.locator('[data-attention-list]')).toHaveAttribute(
+      'aria-label',
+      'Needs my attention, most urgent first',
+    );
+    await expect(page.locator('[data-panel=attention] h2')).toHaveAttribute(
+      'title',
+      /^Most urgent first/,
+    );
+    // No Sort control and no arrow button remain on the page.
+    await expect(page.locator('[data-sort], [data-sort-dir], [data-dir-select]')).toHaveCount(0);
+
+    await page.goto('/tasks');
+    await expect(page.locator('.mf-pager [data-sort-note]')).toContainText(
+      'Sorted by Priority, most urgent first (default order)',
+    );
+    await page.goto('/tasks?sort=priority&dir=desc');
+    await expect(page.locator('.mf-pager [data-sort-note]')).toContainText(
+      'Sorted by Priority, least urgent first',
+    );
+    await page.goto('/tasks?sort=due&dir=asc');
+    await expect(page.locator('.mf-pager [data-sort-note]')).toContainText(
+      'Sorted by Due date, soonest first',
+    );
+    await expect(
+      page.locator(
+        '.mf-pager [data-sort-note] .pi-sort-amount-down, .mf-pager [data-sort-note] .pi-sort-amount-up-alt',
+      ),
+    ).toHaveCount(0);
+  });
+});
