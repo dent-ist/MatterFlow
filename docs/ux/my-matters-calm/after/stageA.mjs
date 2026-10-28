@@ -1,4 +1,5 @@
 // Capture script for the "after" screenshots and numbers of epic #893 (same personas, sizes and file names as ../before/stageA.mjs).
+// The Deadlines tab is gone (#929): `calendar` is the Overview's calendar view (?view=calendar).
 // Usage (stack running, see ../progress.md):  node stageA.mjs [pm1,pm3] [tab,tab]   ->  <persona>-<tab>-<size>.png and metrics.json here.
 import fs from 'fs';
 import path from 'path';
@@ -7,14 +8,14 @@ import { launch, ctx, BASE, settle, VIEWS } from './lib.mjs';
 import { measure } from './metrics.mjs';
 const OUT = process.env.MF_OUT ?? path.dirname(fileURLToPath(import.meta.url));
 const personas = process.argv[2] ? process.argv[2].split(',') : ['pm1', 'pm3'];
-const TABS = process.argv[3] ? process.argv[3].split(',') : ['overview', 'deadlines', 'breakdown', 'data', 'activity', 'trends'];
+const TABS = process.argv[3] ? process.argv[3].split(',') : ['overview', 'calendar', 'breakdown', 'data', 'activity', 'trends'];
 const file = path.join(OUT, 'metrics.json');
 const results = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {};
 const b = await launch();
 for (const pers of personas) for (const view of Object.keys(VIEWS)) {
   const { c, p } = await ctx(b, pers, view);
   for (const t of TABS) {
-    await p.goto(BASE + '/my-matters' + (t === 'overview' ? '' : '?tab=' + t)); await settle(p, 3000);
+    await p.goto(BASE + '/my-matters' + (t === 'overview' ? '' : t === 'calendar' ? '?view=calendar' : '?tab=' + t)); await settle(p, 3000);
     await p.evaluate(() => window.scrollTo(0, 0));
     const m = await p.evaluate(measure); results[`${pers}|${t}|${view}`] = m;
     const base = `${OUT}/${pers}-${t}-${view}`;

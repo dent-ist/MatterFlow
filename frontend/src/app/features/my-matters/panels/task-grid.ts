@@ -14,6 +14,7 @@ import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
 import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat, buildList } from '../../../shared/ui/list-export';
 import { OptionsMenu } from '../../../shared/ui/options-menu';
+import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { restoreRowFocus } from '../../../shared/ui/row-nav';
 import {
   OPEN_STATUSES,
@@ -224,7 +225,7 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           [density]="'compact'"
           [readOnly]="true"
           [quiet]="true"
-          [colWidths]="widths"
+          [colWidths]="widths()"
           [widthsEditable]="false"
           [canHideColumns]="false"
           [phoneCards]="true"
@@ -238,7 +239,13 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 })
 export class TaskGrid {
   /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
-  protected readonly widths = { matterName: 14, priority: 7, assignee: 8.5, due: 9.5, status: 8 };
+  private readonly wide = viewportAtLeast(1000);
+  protected readonly widths = computed(() =>
+    this.wide()
+      ? { matterName: 14, priority: 6.5, assignee: 8, due: 9.5, status: 7.5 }
+      : // A tablet: every column at its narrowest, so the grid fits 768 px without scrolling sideways (Title keeps 10 rem).
+        { ref: 5, matterName: 7, priority: 6, assignee: 7, due: 8, status: 7 },
+  );
   readonly kind = input.required<GridKind>();
   readonly filters = input.required<MmFilters>();
   /** The matter's name is a column: the person has several matters (it would say the same on every row for one). */

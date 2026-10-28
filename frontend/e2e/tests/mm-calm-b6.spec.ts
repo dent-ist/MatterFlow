@@ -115,4 +115,52 @@ test.describe('Batch 6 review fixes', () => {
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });
   }
+
+  for (const size of SIZES) {
+    test(`${size.width}x${size.height}: the Calendar and the Data Area (pickers, info point, chart switch) are clean for axe`, async ({
+      seed,
+      personas,
+      asUser,
+    }) => {
+      test.setTimeout(120_000);
+      expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
+      const p = await pmThree(seed, personas, `b6d${size.width}`);
+      for (let i = 0; i < 4; i++)
+        await seed.asset(p.matters[i % p.matters.length], `Asset ${i} ${p.token}`);
+      const page = await asUser(p.pm.username);
+      await page.setViewportSize({ width: size.width, height: size.height });
+
+      // The Calendar view (a month of weeks on a desktop, the list by matter on a phone).
+      await page.goto('/my-matters?view=calendar');
+      await expect(page.locator('[data-panel=calendar]')).toBeVisible();
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+      expect(await axeViolations(page), `calendar ${size.width}`).toEqual([]);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(0);
+
+      // The Data Area: closed, with each picker open, the info point open and each chart view.
+      await page.goto('/my-matters?tab=data');
+      await expect(page.locator('[data-panel="data"] [data-data-controls]')).toBeVisible();
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
+      expect(await axeViolations(page), `data ${size.width}`).toEqual([]);
+      for (const picker of ['matters', 'types', 'sizes']) {
+        const summary = page.locator(`[data-pick-${picker}] summary`);
+        if ((await summary.count()) === 0) continue;
+        await summary.click();
+        expect(await axeViolations(page), `${picker} picker open at ${size.width}`).toEqual([]);
+        await page.keyboard.press('Escape');
+      }
+      await page.locator('[data-how]').click();
+      expect(await axeViolations(page), `info point open at ${size.width}`).toEqual([]);
+      await page.locator('[data-how]').click();
+      for (const view of ['bar', 'pie', 'table']) {
+        await page.locator(`[data-show-${view}]`).click();
+        expect(await axeViolations(page), `${view} view at ${size.width}`).toEqual([]);
+      }
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(0);
+    });
+  }
 });
