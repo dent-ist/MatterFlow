@@ -25,6 +25,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown.escape)': 'close(true)',
+    '(document:pointerdown)': 'pressed($event)',
     '(document:click)': 'outside($event)',
     '(focusout)': 'leave($event)',
     '(click)': 'picked($event)',
@@ -152,7 +153,21 @@ export class OptionsMenu {
     if ((event.target as HTMLDetailsElement).open) this.opened.emit();
   }
 
+  /** Where the last mouse or touch press began: inside the menu or not. */
+  private pressInside = false;
+
+  protected pressed(event: Event): void {
+    this.pressInside = this.host.nativeElement.contains(event.target as Node);
+  }
+
+  /**
+   * A click outside closes. A press that BEGAN inside never does (issue #926): dragging the scrollbar of a long list and letting go outside the panel makes the
+   * browser fire the click on the common ancestor, which is not a click outside.
+   */
   protected outside(event: Event): void {
+    const began = this.pressInside;
+    this.pressInside = false;
+    if (began) return;
     if (!this.host.nativeElement.contains(event.target as Node)) this.close(false);
   }
 

@@ -14,6 +14,12 @@ import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
 import { MyMattersFocus } from './focus';
 import { SectionTypes, TypeOption } from './section-types';
 
+/** The checklist gets a search box above this many task types. */
+const SEARCH_OVER = 10;
+
+/** At most this many task types are drawn at once (a search finds the rest): a list of hundreds would make every click slow. */
+const MAX_ROWS = 100;
+
 /** The text of the Focus chip: "Focus: Intake, Production" (a type the list does not know shows by its number). */
 export function focusLabel(ids: readonly number[], options: readonly TypeOption[]): string {
   const names = ids.map((id) => options.find((o) => o.id === id)?.name ?? `Task type ${id}`);
@@ -41,6 +47,10 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
     .fc__inline .fc__list {
       width: auto;
       max-height: 9rem;
+    }
+    .fc__search {
+      width: 100%;
+      margin: 0 0 var(--mf-s2);
     }
     .fc__hint {
       margin: 0 0 var(--mf-s2);
@@ -85,11 +95,27 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
           Pick the task types you work on now. Every list on this page shows only these, until you
           change it.
         </p>
+        @if (options.options().length > searchOver) {
+          <input
+            type="search"
+            class="mf-control mf-control--compact fc__search"
+            aria-label="Find a task type"
+            placeholder="Find a task type"
+            data-focus-search
+            [value]="query()"
+            (input)="query.set($any($event.target).value)"
+          />
+        }
+        @if (capped()) {
+          <p class="fc__hint" data-focus-capped>
+            Showing the first 100. Search to find the others.
+          </p>
+        }
         @if (options.options().length === 0) {
           <p class="fc__hint" data-focus-none>No task types to choose from.</p>
         } @else {
           <ul class="fc__list">
-            @for (o of options.options(); track o.id) {
+            @for (o of shown(); track o.id) {
               <li>
                 <label class="fc__opt">
                   <input
@@ -138,6 +164,22 @@ export class FocusControl {
   protected readonly focus = inject(MyMattersFocus);
   protected readonly options = inject(SectionTypes);
   protected readonly draft = signal<number[]>([]);
+  protected readonly searchOver = SEARCH_OVER;
+  protected readonly query = signal('');
+  /** The task types to list: the ones in force first (as saved), then the rest; narrowed by the search box (shown above ten types). */
+  protected readonly shown = computed(() => {
+    const saved = this.focus.types();
+    const q = this.query().trim().toLowerCase();
+    const all = this.options.options();
+    const list =
+      q && all.length > SEARCH_OVER ? all.filter((o) => o.name.toLowerCase().includes(q)) : all;
+    return [...list]
+      .sort((a, b) => Number(saved.includes(b.id)) - Number(saved.includes(a.id)))
+      .slice(0, MAX_ROWS);
+  });
+  protected readonly capped = computed(
+    () => this.options.options().length > MAX_ROWS && this.query().trim() === '',
+  );
 
   constructor() {
     this.options.ensure();
@@ -152,6 +194,7 @@ export class FocusControl {
   /** The Options menu was opened: it starts from the saved Focus, so a menu closed without saving never keeps a half choice. */
   reset(): void {
     this.draft.set([...this.focus.types()]);
+    this.query.set('');
   }
 
   protected toggle(id: number): void {
