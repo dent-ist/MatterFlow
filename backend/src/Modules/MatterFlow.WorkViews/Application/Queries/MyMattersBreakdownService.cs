@@ -11,12 +11,11 @@ namespace MatterFlow.WorkViews.Application.Queries;
 /// <summary>
 /// The Breakdown (PM v2, #861): open work per matter and task type for the matters of the scope. Every count is a grouped statement over the scope's open tasks (the scope is a SQL subquery of managed, visible matters,
 /// so a matter the caller cannot see contributes nothing), uses the same predicates as the Task Queue the links open (<see cref="TaskQueueRules.Overdue"/>, <see cref="AtRiskRules"/>) and the totals are over all
-/// matters, not the page. About ten statements whatever the number of matters: the page of matters, the cells of that page, the totals per type, the at risk counts, the names and the average days to completion.
+/// matters, not the page. About ten statements whatever the number of matters: the page of matters, the cells of that page, the totals per type, the at risk counts, and the names.
 /// </summary>
 public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbContext db)
 {
     public const int MaxTypeColumns = 40;
-    public const int AvgWindowDays = 90;
     public const string ViewMatrix = "matrix";
     public const string ViewTypes = "types";
     public const string StatusOpen = "open";
@@ -66,36 +65,22 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
         var shownTypes = typeCounts.OrderByDescending(t => t.Open).ThenBy(t => t.TypeId).Take(MaxTypeColumns).Select(t => t.TypeId).ToList();
         var typeInfo = shownTypes.Count == 0
             ? []
-            : await db.Set<TaskType>().AsNoTracking().Where(t => shownTypes.Contains(t.Id)).Select(t => new { t.Id, t.Name, t.IconKey, t.ColourKey, t.TargetDays }).ToDictionaryAsync(t => t.Id, ct);
-
-        // Average calendar days from creation to completion of the tasks completed in the window, per type.
-        var since = DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc).AddDays(-AvgWindowDays);
-        var done = shownTypes.Count == 0
-            ? []
-            : await scope.Tasks()
-                .Where(t => t.Status == TaskStatusCode.Completed && t.CompletedAtUtc != null && t.CompletedAtUtc >= since && shownTypes.Contains(t.TaskTypeId))
-                .GroupBy(t => t.TaskTypeId)
-                .Select(g => new { TypeId = g.Key, Count = g.Count(), Minutes = g.Average(t => (double)EF.Functions.DateDiffMinute(t.CreatedAtUtc, t.CompletedAtUtc!.Value)) })
-                .ToDictionaryAsync(x => x.TypeId, ct);
+            : await db.Set<TaskType>().AsNoTracking().Where(t => shownTypes.Contains(t.Id)).Select(t => new { t.Id, t.Name, t.IconKey, t.ColourKey }).ToDictionaryAsync(t => t.Id, ct);
 
         var types = shownTypes.Select(id =>
         {
             var c = typeCounts.Single(t => t.TypeId == id);
             var info = typeInfo.GetValueOrDefault(id);
-            var d = done.GetValueOrDefault(id);
             var typeParam = "type=" + id.ToString(CultureInfo.InvariantCulture);
             return new BreakdownType(
                 id,
                 info?.Name ?? string.Empty,
                 info?.IconKey ?? "file-text",
                 info?.ColourKey,
-                info?.TargetDays,
                 c.Open,
                 c.Overdue,
                 c.OnHold,
                 typeAtRisk.GetValueOrDefault(id),
-                d is null ? null : Math.Round(d.Minutes / 1440d, 1, MidpointRounding.AwayFromZero),
-                d?.Count ?? 0,
                 Queue(typeParam),
                 Queue(typeParam, "overdue=true"));
         }).OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.TaskTypeId).ToList();
@@ -175,7 +160,6 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
             matterTotal,
             page,
             pageSize,
-            totals,
-            AvgWindowDays);
+            totals);
     }
 }

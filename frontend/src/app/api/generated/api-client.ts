@@ -18615,13 +18615,10 @@ export interface BreakdownType {
     name: string;
     iconKey: string;
     colourKey: string | undefined;
-    targetDays: number | undefined;
     open: number;
     overdue: number;
     onHold: number;
     atRisk: number;
-    avgDaysDone: number | undefined;
-    doneCount: number;
     query: string;
     overdueQuery: string;
 
@@ -19761,7 +19758,6 @@ export interface MyMattersBreakdown {
     page: number;
     pageSize: number;
     totals: BreakdownTotals;
-    avgWindowDays: number;
 
     [key: string]: any;
 }

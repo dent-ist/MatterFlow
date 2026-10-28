@@ -104,7 +104,7 @@ test.describe('On-hold reason (#877)', () => {
 });
 
 test.describe('At risk, the Breakdown tab and Focus', () => {
-  test('At risk is a badge, a strip count and a filter; the Breakdown tab shows matter by type and the average against the target', async ({
+  test('At risk is a badge, a strip count and a filter; the Breakdown tab shows matter by type and no average turnaround', async ({
     seed,
     personas,
     asUser,
@@ -165,9 +165,8 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await page.goto('/my-matters?tab=breakdown&bview=types');
     const typeRow = page.locator(`[data-bd-type][data-type-id="${slow.id}"]`);
     await expect(typeRow).toBeVisible();
-    await expect(typeRow.locator('[data-bd-turnaround]')).toContainText(
-      'd average, 5 d target: within target (1 done)',
-    );
+    await expect(page.locator('[data-bd-turnaround]')).toHaveCount(0);
+    await expect(page.getByText(/turnaround|average/i)).toHaveCount(0);
 
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });

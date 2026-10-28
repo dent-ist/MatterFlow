@@ -23,24 +23,10 @@ const TABLE_MIN_PX = 720;
 export type BreakdownView = 'matrix' | 'types';
 export type BreakdownStatus = 'open' | 'onHold';
 
-/** `4.2 d average, 5 d target: within target (12 done)`: the actual turnaround against the target of a task type, in words (colour is never the signal). */
-export function turnaroundText(
-  t: Pick<BreakdownType, 'avgDaysDone' | 'targetDays' | 'doneCount'>,
-  windowDays: number,
-): string {
-  if (t.avgDaysDone === null || t.avgDaysDone === undefined)
-    return `No tasks completed in the last ${windowDays} days`;
-  const avg = `${t.avgDaysDone} d average`;
-  const done = `${t.doneCount} done`;
-  if (t.targetDays === null || t.targetDays === undefined) return `${avg}, no target (${done})`;
-  const verdict = t.avgDaysDone > t.targetDays ? 'over target' : 'within target';
-  return `${avg}, ${t.targetDays} d target: ${verdict} (${done})`;
-}
-
 /**
  * The Breakdown tab (PM v2, PV-11, README 6.5): open work per matter and task type, from `GET /my-matters/breakdown`. "Per matter" is a real table
  * (one row per matter, a column per task type, a totals row, a cell is open tasks with the overdue ones named in words); "All matters" is
- * one row per task type with open, overdue, at risk and on hold counts and the average actual turnaround against the target (PV-27). Every number is
+ * one row per task type with open, overdue, at risk and on hold counts. Every number is
  * a link to the Task Queue with exactly the filters it counts. On a phone each matter (or type) is a card. The tab is its own lazy chunk, and
  * follows the page's Client / Role / Scope filters.
  */
@@ -272,12 +258,7 @@ export function turnaroundText(
                   {{
                     noun()
                   }}
-                  per task type across all these matters. The average is over the tasks completed in
-                  the last
-                  {{
-                    d.avgWindowDays
-                  }}
-                  days.
+                  per task type across all these matters.
                 </caption>
                 <thead>
                   <tr>
@@ -286,7 +267,6 @@ export function turnaroundText(
                     <th scope="col">Overdue</th>
                     <th scope="col">At risk</th>
                     <th scope="col">On hold</th>
-                    <th scope="col">Average turnaround against target</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,7 +301,6 @@ export function turnaroundText(
                       </td>
                       <td>{{ t.atRisk }}</td>
                       <td>{{ t.onHold }}</td>
-                      <td data-bd-turnaround>{{ turnaround(t, d.avgWindowDays) }}</td>
                     </tr>
                   }
                 </tbody>
@@ -350,7 +329,6 @@ export function turnaroundText(
                     </td>
                     <td>{{ d.totals.atRisk }}</td>
                     <td>{{ d.totals.onHold }}</td>
-                    <td></td>
                   </tr>
                 </tfoot>
               </table>
@@ -378,7 +356,6 @@ export function turnaroundText(
                     }
                     <span>{{ t.atRisk }} at risk, {{ t.onHold }} on hold</span>
                   </div>
-                  <p class="bd__sub">{{ turnaround(t, d.avgWindowDays) }}</p>
                 </li>
               }
             </ul>
@@ -566,7 +543,6 @@ export class BreakdownTab {
     initialValue: this.route.snapshot.queryParamMap,
   });
   protected readonly wide = viewportAtLeast(TABLE_MIN_PX);
-  protected readonly turnaround = turnaroundText;
 
   /** `?bview=types` is "All matters"; absent is "Per matter". */
   protected readonly view = computed<BreakdownView>(() =>
@@ -628,26 +604,8 @@ export class BreakdownTab {
     let header: string[];
     let rows: (string | number)[][];
     if (this.view() === 'types') {
-      header = [
-        'Task type',
-        this.countLabel(),
-        'Overdue',
-        'At risk',
-        'On hold',
-        'Average days to complete',
-        'Target days',
-        'Completed in the window',
-      ];
-      rows = d.types.map((t) => [
-        t.name,
-        t.open,
-        t.overdue,
-        t.atRisk,
-        t.onHold,
-        t.avgDaysDone ?? '',
-        t.targetDays ?? '',
-        t.doneCount,
-      ]);
+      header = ['Task type', this.countLabel(), 'Overdue', 'At risk', 'On hold'];
+      rows = d.types.map((t) => [t.name, t.open, t.overdue, t.atRisk, t.onHold]);
     } else {
       header = [
         'Matter',

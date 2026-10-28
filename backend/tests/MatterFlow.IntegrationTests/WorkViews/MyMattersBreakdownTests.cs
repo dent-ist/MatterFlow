@@ -99,7 +99,7 @@ public sealed class MyMattersBreakdownTests(SqlServerFixture sql) : MyMattersTes
     }
 
     [Fact]
-    public async Task At_risk_and_the_average_days_to_completion_come_with_the_target_of_the_type()
+    public async Task At_risk_comes_with_the_target_of_the_type_and_no_average_turnaround_is_sent()
     {
         var t = await OkAsync(await H.Admin.GetAsync($"/api/v1/task-types/{_production}"));
         await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/task-types/{_production}", new
@@ -114,23 +114,21 @@ public sealed class MyMattersBreakdownTests(SqlServerFixture sql) : MyMattersTes
         }));
         // prod-m2-ok is 4.5 days old (90 percent of 5), not overdue: at risk. prod-m2-late is overdue: not at risk.
         await H.ExecuteAsync("UPDATE dbo.Task SET CreatedAt = DATEADD(hour, -108, SYSUTCDATETIME()) WHERE Title IN ('prod-m2-ok', 'prod-m2-late')");
-        var done = await MakeAsync("prod-done", M1, new() { ["taskTypeId"] = _production });
-        await H.CompleteAsync(done);
-        await H.ExecuteAsync("UPDATE dbo.Task SET CreatedAt = DATEADD(day, -4, SYSUTCDATETIME()) WHERE Title = 'prod-done'");
         H.Factory.InvalidateAll();
 
         var b = await Mine("breakdown");
         var production = TypeOf(b, "Production");
-        production.GetProperty("targetDays").GetInt32().ShouldBe(5);
         production.GetProperty("atRisk").GetInt32().ShouldBe(1);
-        production.GetProperty("doneCount").GetInt32().ShouldBe(1);
-        production.GetProperty("avgDaysDone").GetDouble().ShouldBe(4.0, 0.1);
+        // #930: an average misleads, so neither it, the target it was held against nor its window is part of the answer.
+        production.TryGetProperty("avgDaysDone", out _).ShouldBeFalse();
+        production.TryGetProperty("doneCount", out _).ShouldBeFalse();
+        production.TryGetProperty("targetDays", out _).ShouldBeFalse();
+        b.TryGetProperty("avgWindowDays", out _).ShouldBeFalse();
         b.GetProperty("totals").GetProperty("atRisk").GetInt32().ShouldBe(1);
         RowOf(b, M2).GetProperty("atRisk").GetInt32().ShouldBe(1);
 
         // The Task Queue filter atRisk=true lists the same task.
         (await TotalAsync(A, "task-queue", "managedByMe=true&atRisk=true")).ShouldBe(1);
-        TypeOf(b, "Data Processing").GetProperty("avgDaysDone").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     [Fact]

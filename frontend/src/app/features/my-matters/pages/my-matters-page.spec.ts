@@ -180,18 +180,15 @@ function since(empty = false) {
 }
 
 function breakdown(view = 'matrix') {
-  const type = (id: number, name: string, open: number, overdue: number, avg: number | null) => ({
+  const type = (id: number, name: string, open: number, overdue: number) => ({
     taskTypeId: id,
     name,
     iconKey: 'file-text',
     colourKey: null,
-    targetDays: 5,
     open,
     overdue,
     onHold: 1,
     atRisk: 2,
-    avgDaysDone: avg,
-    doneCount: avg === null ? 0 : 12,
     query: `managedByMe=true&type=${id}&status=NEW`,
     overdueQuery: `managedByMe=true&type=${id}&overdue=true`,
   });
@@ -200,11 +197,7 @@ function breakdown(view = 'matrix') {
     asOfUtc: '2026-10-23T12:00:00Z',
     view,
     status: 'open',
-    types: [
-      type(1, 'Production', 7, 2, 4.2),
-      type(2, 'Review', 3, 0, 6.5),
-      type(3, 'Intake', 1, 0, null),
-    ],
+    types: [type(1, 'Production', 7, 2), type(2, 'Review', 3, 0), type(3, 'Intake', 1, 0)],
     typeTotal: 3,
     rows:
       view === 'types'
@@ -252,7 +245,6 @@ function breakdown(view = 'matrix') {
       query: 'managedByMe=true&status=NEW',
       overdueQuery: 'managedByMe=true&overdue=true',
     },
-    avgWindowDays: 90,
   };
 }
 
@@ -1005,19 +997,15 @@ describe('MyMattersPage', () => {
       expect(api['getMyMattersBreakdown'].mock.calls[0][0]).toBe('matrix');
     });
 
-    it('the Breakdown tab switches to all matters: per type counts and the average turnaround against the target (PV-27)', async () => {
+    it('the Breakdown tab switches to all matters: per type counts and no average turnaround (#930)', async () => {
       const h = await open('/my-matters?tab=breakdown&bview=types');
       const root = el(h).querySelector('[data-panel=breakdown]')!;
       expect(api['getMyMattersBreakdown'].mock.calls[0][0]).toBe('types');
       const rows = Array.from(root.querySelectorAll('[data-bd-type]'));
       expect(rows).toHaveLength(3);
-      expect(rows[0].querySelector('[data-bd-turnaround]')!.textContent).toContain(
-        '4.2 d average, 5 d target: within target (12 done)',
-      );
-      expect(rows[1].querySelector('[data-bd-turnaround]')!.textContent).toContain('over target');
-      expect(rows[2].querySelector('[data-bd-turnaround]')!.textContent).toContain(
-        'No tasks completed in the last 90 days',
-      );
+      expect(root.querySelector('[data-bd-turnaround]')).toBeNull();
+      expect(root.textContent).not.toMatch(/turnaround|average/i);
+      expect(root.querySelectorAll('thead th')).toHaveLength(5);
     });
 
     it('the Trends tab shows the limitation on the screen, a summary, a table on request and the figures', async () => {

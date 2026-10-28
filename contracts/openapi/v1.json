@@ -15276,13 +15276,10 @@
           "name",
           "iconKey",
           "colourKey",
-          "targetDays",
           "open",
           "overdue",
           "onHold",
           "atRisk",
-          "avgDaysDone",
-          "doneCount",
           "query",
           "overdueQuery"
         ],
@@ -15304,13 +15301,6 @@
               "string"
             ]
           },
-          "targetDays": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
           "open": {
             "type": "integer",
             "format": "int32"
@@ -15324,17 +15314,6 @@
             "format": "int32"
           },
           "atRisk": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "avgDaysDone": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "doneCount": {
             "type": "integer",
             "format": "int32"
           },
@@ -19341,8 +19320,7 @@
           "matterTotal",
           "page",
           "pageSize",
-          "totals",
-          "avgWindowDays"
+          "totals"
         ],
         "type": "object",
         "properties": {
@@ -19389,10 +19367,6 @@
           },
           "totals": {
             "$ref": "#/components/schemas/BreakdownTotals"
-          },
-          "avgWindowDays": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
