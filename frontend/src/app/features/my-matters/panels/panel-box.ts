@@ -23,6 +23,10 @@ import { LoadGroup, PanelState } from '../panel-loader';
     >
       <header class="mmp__head">
         <h2 class="mmp__title" [id]="id() + '-h'" tabindex="-1" [title]="hint()">{{ title() }}</h2>
+        <!-- What follows the title in the same row (the Overview's pre-filter, issue #942; the Calendar's month buttons, issue #944): drawn with the data like the actions, or always when asked. -->
+        @if (state() === 'ready' || startAlways()) {
+          <div class="mmp__start"><ng-content select="[mfPanelStart]" /></div>
+        }
         <!-- No toolbar while the answer is on its way or has failed: it appears with the data (issue #921), so nothing jumps and nothing offers a choice about a list that is not there. -->
         @if (state() === 'ready') {
           <div class="mmp__actions"><ng-content select="[mfPanelActions]" /></div>
@@ -136,8 +140,18 @@ import { LoadGroup, PanelState } from '../panel-loader';
       outline: 2px solid var(--mf-focus);
       outline-offset: 2px;
     }
-    .mmp__actions:empty {
+    .mmp__actions:empty,
+    .mmp__start:empty {
       display: none;
+    }
+    /* The title and what follows it stay together on the left; the actions go to the right edge. */
+    .mmp__start {
+      display: flex;
+      flex: 1 1 auto;
+      flex-wrap: wrap;
+      gap: var(--mf-s2);
+      align-items: center;
+      min-width: 0;
     }
     .mmp__actions {
       display: flex;
@@ -200,6 +214,8 @@ export class PanelBox {
   readonly bare = input(false);
   /** A section of the calm Overview: drawn without the card around it (issue #903). */
   readonly flat = input(false);
+  /** What follows the title (`[mfPanelStart]`) is drawn while the data are on their way too: the month buttons of the Calendar must stay reachable. */
+  readonly startAlways = input(false);
   /** The order of the list in one line, as the heading's tooltip ("Most urgent first: ..."): the ranking is the sort, and it is named (issue #898). */
   readonly hint = input('');
   /** How many rows the skeleton stands for (the list's usual length), so its height is the list's. */

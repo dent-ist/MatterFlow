@@ -27,7 +27,6 @@ import { MyMattersActiveFilters } from '../my-matters-active-filters';
 import { MyMattersFilterBar } from '../my-matters-filter-bar';
 import { ManagedMatters } from '../managed-matters';
 import { NewTaskControl } from '../new-task-control';
-import { OverviewStates } from '../overview-states';
 import {
   DEFAULT_FILTERS,
   MmFilters,
@@ -36,12 +35,10 @@ import {
   parseFilters,
 } from '../my-matters-filters';
 import { LoadGroup } from '../panel-loader';
-import { MyMattersStrip } from '../my-matters-strip';
 import { CalendarToggle } from '../calendar-toggle';
 import { CalendarPanel } from '../panels/calendar-panel';
 import { TaskGrid } from '../panels/task-grid';
 import { SincePanel, SinceFeed } from '../panels/since-panel';
-import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { BreakdownTab } from '../tabs/breakdown-tab';
 import { DataTab } from '../tabs/data-tab';
@@ -59,7 +56,16 @@ const TAB_LABELS: Record<MmTab, string> = {
 /** How long the page may hold its body back for the answers that decide its layout (a slow server never leaves it blank). */
 const HOLD_MS = 1200;
 
-const FILTER_KEYS = ['scope', 'role', 'clientId', 'range', 'from', 'to', 'managerId'] as const;
+const FILTER_KEYS = [
+  'scope',
+  'role',
+  'clientId',
+  'range',
+  'from',
+  'to',
+  'managerId',
+  'show',
+] as const;
 
 function same(a: MmFilters, b: MmFilters): boolean {
   return (
@@ -69,7 +75,8 @@ function same(a: MmFilters, b: MmFilters): boolean {
     a.range === b.range &&
     a.from === b.from &&
     a.to === b.to &&
-    a.managerId === b.managerId
+    a.managerId === b.managerId &&
+    a.show === b.show
   );
 }
 
@@ -82,8 +89,8 @@ function storage(): Storage | null {
 }
 
 /**
- * My Matters (epic #667, README 6): the Project Manager's home. A strip of count chips, Needs my attention (one ranked list of five),
- * Next 7 days (three rows) and, for several matters, a compact list of the matters (epic #893). "Since your last visit" and the events are on the Activity tab, whose
+ * My Matters (epic #667, README 6): the Project Manager's home. ONE grid of the open tasks (epic #893 issue #943) with a pre-filter dropdown that carries the counts
+ * (issue #942), in the urgency order of #935, or the Calendar in its place. "Since your last visit" and the events are on the Activity tab, whose
  * badge carries the number of changes. Each part
  * loads and fails on its own. The matters are "mine" (primary or secondary manager) by default, a default view and not a limit on access; with `Matter.AssignManagers` the scope can be
  * All matters. The filters (client, role, dates, scope, project manager) live in the address, so Back restores them; the last filters are also remembered per person in the browser
@@ -100,7 +107,6 @@ function storage(): Storage | null {
     FocusControl,
     MyMattersActiveFilters,
     MyMattersFilterBar,
-    MyMattersStrip,
     NewTaskControl,
     OptionsMenu,
     PageHeader,
@@ -108,7 +114,6 @@ function storage(): Storage | null {
     ScopeChip,
     ScopeSwitch,
     SincePanel,
-    SkipLinks,
     TaskGrid,
     Tabs,
     ActivityTab,
@@ -116,13 +121,12 @@ function storage(): Storage | null {
     DataTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ManagedMatters, OverviewStates, LoadGroup, SinceFeed],
+  providers: [ManagedMatters, LoadGroup, SinceFeed],
   styles: `
     :host {
       display: block;
     }
-    /* One column (issue #903): the sections follow each other in the order of what a project manager needs, Needs my attention,
-       Next 7 days and the matters. No two-column grid at any width, so no white hole under the shorter list. */
+    /* One column (issue #903): the grid of tasks (issue #943), or the calendar in its place. */
     .mm__stack {
       display: grid;
       gap: var(--mf-s3);
@@ -141,10 +145,6 @@ function storage(): Storage | null {
     }
     .mm__tabs {
       margin-bottom: var(--mf-s1);
-    }
-    /* Everything is quiet (issue #920): the four sections that have nothing to show give way to one line. */
-    .mm__off {
-      display: none;
     }
     .mm__none {
       display: grid;
@@ -168,10 +168,6 @@ function storage(): Storage | null {
         align-items: center;
         min-height: 44px;
       }
-    }
-    .mm__quiet {
-      margin: 0 0 var(--mf-s3);
-      color: var(--mf-text-muted);
     }
     /* Held, not removed: the body is laid out but not painted, so what changes while it is held (the bar, the lists) moves nothing the person sees,
        and showing it moves nothing either. */
@@ -304,7 +300,7 @@ function storage(): Storage | null {
         </div>
       }
 
-      <!-- The filters, the Focus chip and the strip share a line where the width allows (issue #899) and wrap to rows where it does not. -->
+      <!-- The filters and the Focus chip share a line where the width allows (issue #899) and wrap to rows where it does not. -->
       <div class="mm__top">
         @if (!phone()) {
           <mf-mm-filter-bar
@@ -320,11 +316,6 @@ function storage(): Storage | null {
         <mf-mm-scope-chip
           [scope]="filters().scope"
           (back)="update({ scope: 'mine', managerId: null })"
-        />
-        <mf-mm-strip
-          [filters]="filters()"
-          [clientName]="clientName()"
-          [managerName]="managerName()"
         />
       </div>
 
@@ -373,13 +364,6 @@ function storage(): Storage | null {
             }
           }
           @default {
-            <mf-mm-skip-links [class.mm__off]="states.quiet() || calendarShown()" />
-            @if (states.quiet() && !noMatters() && !calendarShown()) {
-              <p class="mm__quiet" role="status" data-all-quiet>
-                Nothing is late and nothing is due in the next 7 days.
-                <mf-mm-calendar-toggle (flip)="setCalendar(true)" />
-              </p>
-            }
             @if (noMatters() && !calendarShown()) {
               <!-- The Matters section is gone (issue #945), but a manager with no matter still gets this positive line and the way on. -->
               <div class="mm__none" data-empty data-empty-kind="none">
@@ -400,44 +384,31 @@ function storage(): Storage | null {
                   <a class="mm__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
                 }
               </div>
-            }
-            <div class="mm__stack">
-              @if (calendarShown()) {
-                <!-- The Calendar button of the task area (issue #929): the calendar replaces the two grids, "Show list" brings them back. It is its own lazy chunk. -->
-                @defer (on immediate) {
-                  <mf-mm-calendar
+            } @else {
+              <div class="mm__stack">
+                @if (calendarShown()) {
+                  <!-- The Calendar button of the task area (issues #929, #944): the calendar replaces the grid, "Show list" brings it back. It is its own lazy chunk. -->
+                  @defer (on immediate) {
+                    <mf-mm-calendar
+                      [filters]="filters()"
+                      (filterChange)="update($event)"
+                      (closed)="setCalendar(false)"
+                    />
+                  } @placeholder {
+                    <p class="mm__loading" role="status">Loading calendar</p>
+                  }
+                } @else {
+                  <mf-mm-grid
                     [filters]="filters()"
+                    [showMatter]="showMatter()"
+                    [only]="oneMatter()"
                     (filterChange)="update($event)"
-                    (closed)="setCalendar(false)"
-                  />
-                } @placeholder {
-                  <p class="mm__loading" role="status">Loading calendar</p>
+                  >
+                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
+                  </mf-mm-grid>
                 }
-              } @else {
-                <mf-mm-grid
-                  kind="attention"
-                  [class.mm__off]="states.quiet()"
-                  [filters]="filters()"
-                  [showMatter]="showMatter()"
-                  (listed)="listed.set($event)"
-                >
-                  @if (states.calendarHost() === 'attention') {
-                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
-                  }
-                </mf-mm-grid>
-                <mf-mm-grid
-                  kind="deadlines"
-                  [class.mm__off]="states.quiet()"
-                  [filters]="filters()"
-                  [exclude]="listed()"
-                  [showMatter]="showMatter()"
-                >
-                  @if (states.calendarHost() === 'deadlines') {
-                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
-                  }
-                </mf-mm-grid>
-              }
-            </div>
+              </div>
+            }
           }
         }
       </div>
@@ -452,7 +423,6 @@ export class MyMattersPage {
   private readonly managed = inject(ManagedMatters);
   private readonly focus = inject(MyMattersFocus);
   protected readonly since = inject(SinceFeed);
-  protected readonly states = inject(OverviewStates);
   protected readonly loads = inject(LoadGroup);
   private readonly createContext = inject(CreateTaskContext);
 
@@ -496,8 +466,11 @@ export class MyMattersPage {
   protected readonly calendarShown = computed(
     () => this.tab() === 'overview' && this.params().get('view') === 'calendar',
   );
-  /** The tasks Needs my attention lists: Next 7 days leaves them out (a task is listed once per screen). */
-  protected readonly listed = signal<number[]>([]);
+  /** The person's one matter (scope Mine), named after the grid's heading on a wide screen. */
+  protected readonly oneMatter = computed(() => {
+    const m = this.filters().scope === 'mine' ? this.managed.only() : null;
+    return m ? { matterId: m.matterId, matterRef: m.matterRef, name: m.name } : null;
+  });
   /** The matter's name goes on a row only where several matters are in play (a person who manages one matter would read it on every row). */
   protected readonly showMatter = computed(
     () =>
@@ -523,9 +496,7 @@ export class MyMattersPage {
       : 'The matters you manage as primary or secondary project manager. This is your default view, not a limit on what you can open.',
   );
   protected readonly description = computed(() =>
-    this.filters().scope === 'all'
-      ? 'All active matters, whoever manages them. Each count opens the list it counts.'
-      : this.scopeText(),
+    this.filters().scope === 'all' ? 'All active matters, whoever manages them.' : this.scopeText(),
   );
 
   /** The first answers are awaited only briefly. */

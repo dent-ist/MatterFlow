@@ -4,7 +4,6 @@ import {
   activeFilterCount,
   commonArgs,
   deadlineArgs,
-  filterSummary,
   filtersToParams,
   parseFilters,
   queryToParams,
@@ -28,6 +27,7 @@ describe('My Matters filters', () => {
         from: '2026-10-01',
         to: '2026-10-31',
         managerId: '7',
+        show: 'overdue',
       }),
       true,
     );
@@ -39,6 +39,7 @@ describe('My Matters filters', () => {
       from: '2026-10-01',
       to: '2026-10-31',
       managerId: 7,
+      show: 'overdue',
     });
     expect(filtersToParams(f)).toEqual({
       scope: 'all',
@@ -48,6 +49,7 @@ describe('My Matters filters', () => {
       from: '2026-10-01',
       to: '2026-10-31',
       managerId: 7,
+      show: 'overdue',
     });
   });
 
@@ -60,7 +62,17 @@ describe('My Matters filters', () => {
       from: null,
       to: null,
       managerId: null,
+      show: null,
     });
+  });
+
+  it('knows the six pre-filters of the grid and takes an unknown one for All open (#942)', () => {
+    for (const key of ['open', 'overdue', 'atRisk', 'unassigned', 'onHold', 'dueSoon'])
+      expect(parseFilters(map({ show: key }), true).show).toBe(key);
+    expect(parseFilters(map({ show: 'everything' }), true).show).toBe('open');
+    expect(parseFilters(map({}), true).show).toBe('open');
+    // The pre-filter is not a filter of the filter bar: it does not count for "Clear filters".
+    expect(activeFilterCount({ ...DEFAULT_FILTERS, show: 'overdue' })).toBe(0);
   });
 
   it('ignores scope=all and managerId without Matter.AssignManagers', () => {
@@ -133,15 +145,5 @@ describe('My Matters filters', () => {
       sort: 'due',
     });
     expect(queryToParams('')).toEqual({});
-  });
-
-  it('names the active filters for the strip', () => {
-    expect(filterSummary(DEFAULT_FILTERS, null, null)).toContain('your matters');
-    expect(filterSummary({ ...DEFAULT_FILTERS, clientId: 4, role: 'primary' }, 'Acme', null)).toBe(
-      'client Acme, primary manager only',
-    );
-    expect(
-      filterSummary({ ...DEFAULT_FILTERS, scope: 'all', managerId: 9 }, null, 'Alex Kim'),
-    ).toBe('all matters, project manager Alex Kim');
   });
 });

@@ -14,6 +14,7 @@ import { ExportMenu, ExportResult } from '../../../shared/ui/export-menu';
 import { ExportService } from '../../../shared/ui/export.service';
 import { ExportFormat, buildList } from '../../../shared/ui/list-export';
 import { OptionsMenu } from '../../../shared/ui/options-menu';
+import { Pager } from '../../../shared/ui/pager';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { restoreRowFocus } from '../../../shared/ui/row-nav';
 import {
@@ -25,71 +26,17 @@ import { TaskTable } from '../../../shared/work-queue/task-table';
 import { QUEUE_ROW_HEADER, queueRowExport } from '../export-rows';
 import { MyMattersFocus } from '../focus';
 import { MmFilters, commonArgs } from '../my-matters-filters';
-import { OverviewStates } from '../overview-states';
 import { panelLoader } from '../panel-loader';
+import { PREFILTERS, MmPrefilter, prefilterParams } from '../prefilter';
+import { PrefilterSelect } from '../prefilter-select';
 import { PanelBox } from './panel-box';
 import { PANEL_LIST_STYLES } from './panel-styles';
 
-export type GridKind = 'attention' | 'deadlines';
+/** Rows per page (issue #943). */
+export const GRID_PAGE_SIZE = 25;
 
-/** How many rows each grid shows (owner decisions: five for Needs my attention, three for Next 7 days). */
-export const ATTENTION_ROWS = 5;
-export const NEXT_DAYS_ROWS = 3;
-
-interface GridConfig {
-  title: string;
-  hint: string;
-  /** Rows shown. */
-  rows: number;
-  /** Rows asked for: the Next 7 days grid also gets the rows Needs my attention already lists, which it leaves out, so it can still fill its own. */
-  fetch: number;
-  /** The Task Queue's own filter that counts this list. */
-  filter: Record<string, string>;
-  /** The default order, also what "View all" opens. */
-  sort: string;
-  rowList: string;
-  exportName: string;
-  surface: string;
-  /** "View all N tasks that need attention". */
-  allName: string;
-  /** The same for exactly one task ("View all 1 task that needs attention"). */
-  allNameOne: string;
-  nothing: string;
-  nothingInFocus: string;
-}
-
-const CONFIG: Readonly<Record<GridKind, GridConfig>> = {
-  attention: {
-    title: 'Needs my attention',
-    hint: 'Overdue, at risk, due today, unassigned with a date within 7 days, or on hold for more than 7 days. Most urgent first, in that order; click a heading to sort.',
-    rows: ATTENTION_ROWS,
-    fetch: ATTENTION_ROWS,
-    filter: { needsAttention: 'true' },
-    sort: 'attention',
-    rowList: 'my-matters-attention',
-    exportName: 'needs-my-attention',
-    surface: 'my-matters.attention',
-    allName: 'tasks that need attention',
-    allNameOne: 'task that needs attention',
-    nothing: 'Nothing needs your attention.',
-    nothingInFocus: 'Nothing in your Focus needs your attention.',
-  },
-  deadlines: {
-    title: 'Next 7 days',
-    hint: 'Open tasks due from today to seven days ahead, not overdue. Soonest due first; click a heading to sort.',
-    rows: NEXT_DAYS_ROWS,
-    fetch: NEXT_DAYS_ROWS + ATTENTION_ROWS,
-    filter: { dueWithin: '7' },
-    sort: 'due',
-    rowList: 'my-matters-deadlines',
-    exportName: 'next-7-days',
-    surface: 'my-matters.deadlines',
-    allName: 'tasks due in the next 7 days',
-    allNameOne: 'task due in the next 7 days',
-    nothing: 'Nothing is due in the next 7 days.',
-    nothingInFocus: 'Nothing in your Focus is due in the next 7 days.',
-  },
-};
+/** The order the grid opens in (issue #935): urgency, most urgent first. */
+const DEFAULT_SORT = 'attention';
 
 /** Column widths in rem of the wide grid: Due is never cut, the Matter and the others stay short. */
 const WIDE_WIDTHS: Record<string, number> = {
@@ -113,37 +60,53 @@ const TABLET_WIDTHS: Record<string, number> = {
 const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 
 /**
- * Needs my attention and Next 7 days as grids (epic #893 issue #929): the SAME table as the Tasks pages (`mf-task-table`), with the same columns, the same sortable
- * headings (`aria-sort`, the sort icon) and, below 640 px, the same cards, over the Task Queue endpoint with the page's Client / Role / Scope filters and the person's
- * Focus. Each grid shows the first rows of the sort in force (five and three) and "View all N" opens the Task Queue with exactly the filter that counts them, in the
- * same order, so the tiles, this number and that list agree. The table is read-only here (no inline editors: this is for reading and opening a task).
- *
- * - Needs my attention = the Task Queue's `needsAttention=true` (overdue, at risk, due today, unassigned with a date within 7 days, on hold too long).
- * - Next 7 days = `dueWithin=7` (open, due today to seven days ahead, not overdue), and it leaves out the tasks Needs my attention lists: a task is listed once per
- *   screen, in its most urgent place (so it asks for more rows than it shows).
- *
- * The default order of Needs my attention is Urgency (issue #935): overdue (oldest first), at risk, due today, unassigned with a date within 7 days, on hold more than
- * 7 days, so an at-risk or held task is never pushed out of the five rows by a due-date order; Next 7 days is Due, soonest first. A click on a heading sorts the whole set,
- * not just the rows on screen (and "View all N" carries that order); the Urgency button brings the default back.
+ * The one grid of the Overview (epic #893 issue #943): the person's open tasks as the shared table of the Tasks pages (`mf-task-table`: the same columns, sortable
+ * headings with `aria-sort`, and below 640 px the same cards), over `GET /task-queue` with the page's Client, Matter, Role and Scope and the person's Focus. It replaces
+ * Needs my attention and Next 7 days: the pre-filter dropdown (issue #942) narrows it in place (Overdue, At risk, Unassigned, On hold, Due soon), the default order is
+ * Urgency (issue #935: overdue oldest first, at risk, due today, unassigned with a date within 7 days, on hold more than 7 days, then the rest by due date), a click on a heading
+ * sorts the whole set on the server, and the grid pages (25 a page). Every task is listed once. The table is read-only here (this is for reading and opening a task).
  */
 @Component({
   selector: 'mf-mm-grid',
-  imports: [ExportMenu, OptionsMenu, PanelBox, RouterLink, TaskTable],
+  imports: [ExportMenu, OptionsMenu, PanelBox, Pager, PrefilterSelect, RouterLink, TaskTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     PANEL_LIST_STYLES,
     `
-      .tg__all {
+      .tg__actions {
+        display: contents;
+      }
+      /* What the grid shows ("16 overdue tasks") and the one way back. */
+      .tg__status {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--mf-s2);
+        color: var(--mf-text-muted);
+      }
+      .tg__clear {
+        min-height: 24px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--mf-link);
+        font: inherit;
+        cursor: pointer;
+      }
+      .tg__clear:hover {
+        text-decoration: underline;
+      }
+      .tg__only {
+        min-width: 0;
+        color: var(--mf-text-muted);
+        overflow-wrap: anywhere;
+      }
+      .tg__only a {
         display: inline-flex;
         align-items: center;
         min-height: 24px;
         color: var(--mf-link);
-        font-weight: 600;
       }
-      .tg__actions {
-        display: contents;
-      }
-      /* The default order of Needs my attention is Urgency (issue #935): it has no column, so it is named here, marked like the active heading (underlined, bold) and a
+      /* The default order of the grid is Urgency (issue #935): it has no column, so it is named here, marked like the active heading (underlined, bold) and a
          click on it brings the order back after a heading was chosen. */
       .tg__urgency {
         display: inline-flex;
@@ -163,7 +126,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
         text-decoration: underline;
         text-underline-offset: 3px;
       }
-      .tg__urgency:focus-visible {
+      .tg__urgency:focus-visible,
+      .tg__clear:focus-visible {
         outline: 2px solid var(--mf-focus);
         outline-offset: 2px;
       }
@@ -189,6 +153,10 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
       :host ::ng-deep .tg__grid.mf-fill {
         display: block;
       }
+      .tg__pager {
+        display: block;
+        max-width: 82rem;
+      }
       @media (max-width: 639.98px) {
         :host ::ng-deep .tg__grid .wt-sort {
           min-height: 44px;
@@ -200,28 +168,57 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           align-items: center;
           min-height: 44px;
         }
-        .tg__all,
-        .tg__urgency {
+        .tg__urgency,
+        .tg__clear {
           min-height: 44px;
+        }
+        .tg__only {
+          display: none;
         }
       }
     `,
   ],
   template: `
     <mf-mm-panel
-      [name]="kind()"
-      [title]="cfg().title"
-      [hint]="cfg().hint"
+      name="tasks"
+      title="Open tasks"
+      [hint]="hint"
       [flat]="true"
-      [skeleton]="cfg().rows"
+      [skeleton]="6"
       [state]="loader.state()"
       [busy]="loader.busy()"
-      [bare]="bare()"
       (retry)="loader.load()"
     >
+      <span mfPanelStart class="tg__start">
+        @if (selectShown()) {
+          <mf-mm-prefilter
+            [filters]="filters()"
+            [show]="show()"
+            (showChange)="filterChange.emit({ show: $event })"
+          />
+        }
+        @if (show() !== 'open') {
+          <span class="tg__status" role="status" data-grid-status>
+            <span>{{ statusText() }}</span>
+            <button
+              type="button"
+              class="tg__clear"
+              data-clear-prefilter
+              (click)="filterChange.emit({ show: 'open' })"
+            >
+              Clear filter
+            </button>
+          </span>
+        }
+        @if (only(); as m) {
+          <span class="tg__only" data-grid-matter
+            >on <a [routerLink]="['/matters', m.matterId]">{{ m.matterRef }} {{ m.name }}</a></span
+          >
+        }
+      </span>
       <span mfPanelActions class="tg__actions">
         <ng-content select="[mfGridActions]" />
-        @if (!bare() && kind() === 'attention' && total() > 0) {
+        @if (total() > 1) {
           <button
             type="button"
             class="tg__urgency"
@@ -234,23 +231,11 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
             Urgency
           </button>
         }
-        @if (!bare() && total() > 0) {
-          <a
-            class="tg__all"
-            data-view-all
-            routerLink="/tasks"
-            [queryParams]="allParams()"
-            [attr.aria-label]="
-              'View all ' + total() + ' ' + (total() === 1 ? cfg().allNameOne : cfg().allName)
-            "
-            >View all {{ total() }}</a
-          >
-        }
-        @if (!bare() && kind() === 'attention') {
-          <mf-options-menu [label]="cfg().title">
+        @if (total() > 0) {
+          <mf-options-menu label="Open tasks">
             <mf-export-menu
               [inline]="true"
-              [fileName]="cfg().exportName"
+              fileName="open-tasks"
               [run]="exportRun"
               [disabled]="rows().length === 0"
               reason="Nothing to export."
@@ -259,27 +244,25 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
         }
       </span>
       @if (rows().length === 0) {
-        @if (focused()) {
+        @if (focused() && show() === 'open') {
           <p class="pl__empty" data-empty data-filtered-empty>
-            {{ cfg().nothingInFocus }}
+            Nothing in your Focus is open.
             <button type="button" class="mf-btn mf-btn--text" data-show-all (click)="focus.clear()">
               Clear Focus
             </button>
           </p>
-        } @else if (leftOut() > 0 && kind() === 'deadlines') {
-          <p class="pl__empty" data-empty data-all-above>
-            Everything due in the next 7 days is listed under Needs my attention.
-          </p>
+        } @else if (show() !== 'open') {
+          <p class="pl__empty" data-empty>No {{ prefilterNoun() }}.</p>
         } @else {
-          <p class="pl__empty" data-empty>{{ cfg().nothing }}</p>
+          <p class="pl__empty" data-empty>No open tasks.</p>
         }
       } @else {
         <mf-task-table
           class="tg__grid"
-          [attr.data-grid]="kind()"
+          data-grid="tasks"
           [rows]="rows()"
           [columns]="columns()"
-          [caption]="cfg().title"
+          caption="Open tasks"
           [state]="loader.busy() ? 'loading' : 'ready'"
           [sort]="sort()"
           [dir]="dir()"
@@ -292,41 +275,54 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           [canHideColumns]="false"
           [phoneCards]="true"
           [origin]="'my-matters'"
-          [rowList]="cfg().rowList"
+          [rowList]="rowList"
           (sortChange)="sortBy($event)"
         />
+        @if (total() > pageSize) {
+          <mf-pager
+            class="tg__pager"
+            [page]="page()"
+            [pageSize]="pageSize"
+            [pageSizes]="[]"
+            [total]="total()"
+            (pageChange)="goPage($event)"
+          />
+        }
       }
     </mf-mm-panel>
   `,
 })
 export class TaskGrid {
+  protected readonly hint =
+    'Open tasks of your matters, most urgent first: overdue, at risk, due today, unassigned with a date within 7 days, then on hold for more than 7 days. Click a heading to sort.';
+  protected readonly rowList = 'my-matters-tasks';
+  protected readonly pageSize = GRID_PAGE_SIZE;
+
   /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
   private readonly wide = viewportAtLeast(1000);
   /** Tablet portrait (below 800 px): the Ref column gives way so the grid fits without scrolling sideways (issue #937); the title link opens the task. */
   private readonly roomy = viewportAtLeast(800);
   protected readonly widths = computed(() => (this.wide() ? WIDE_WIDTHS : TABLET_WIDTHS));
-  readonly kind = input.required<GridKind>();
+
   readonly filters = input.required<MmFilters>();
   /** The matter's name is a column: the person has several matters (it would say the same on every row for one). */
   readonly showMatter = input(false);
-  /** Task ids already listed above: this grid leaves them out (a task is listed once per screen). */
-  readonly exclude = input<readonly number[]>([]);
-  /** The ids of the tasks listed, for the page. */
-  readonly listed = output<number[]>();
+  /** The person's one matter: named after the heading (wide screens), where the six tiles used to name it. */
+  readonly only = input<{ matterId: number; matterRef: string; name: string } | null>(null);
+  readonly filterChange = output<Partial<MmFilters>>();
 
   private readonly api = inject(TaskQueueClient);
   private readonly exports = inject(ExportService);
-  private readonly states = inject(OverviewStates, { optional: true });
   protected readonly focus = inject(MyMattersFocus);
-  protected readonly cfg = computed(() => CONFIG[this.kind()]);
   protected readonly focused = computed(() => this.focus.types().length > 0);
+  protected readonly show = computed<MmPrefilter>(() => this.filters().show);
 
-  /** The person's own sort (null: the default order). */
+  /** The person's own sort (null: the default order, Urgency). */
   protected readonly chosen = signal<{ field: string; dir: 'asc' | 'desc' } | null>(null);
-  protected readonly sort = computed(() => this.chosen()?.field ?? this.cfg().sort);
+  protected readonly sort = computed(() => this.chosen()?.field ?? DEFAULT_SORT);
   protected readonly dir = computed(() => this.chosen()?.dir ?? 'asc');
 
-  /** The Task Queue filters that count this grid: the page's scope, role and client, the open statuses, the list's own filter and the Focus. */
+  /** The Task Queue filters that count this grid: the page's scope, role and client, the open statuses, the pre-filter and the Focus. */
   private readonly baseParams = computed(() => {
     const a = commonArgs(this.filters());
     const params: Record<string, string | string[]> = {
@@ -335,46 +331,52 @@ export class TaskGrid {
       ...(a.role === undefined ? {} : { role: a.role }),
       ...(a.clientId === undefined ? {} : { client: String(a.clientId) }),
       status: [...OPEN_STATUSES],
-      ...this.cfg().filter,
+      ...prefilterParams(this.show()),
     };
     const types = this.focus.types();
     if (types.length > 0) params['type'] = types.map(String);
     return params;
   });
 
+  /** The page shown: back to the first when the filters or the order change (the page is kept with the filters and the order it was chosen under). */
+  private readonly pageAt = signal<{ key: string; page: number }>({ key: '', page: 1 });
+  private readonly key = computed(() =>
+    JSON.stringify([this.baseParams(), this.sort(), this.dir()]),
+  );
+  protected readonly page = computed(() =>
+    this.pageAt().key === this.key() ? this.pageAt().page : 1,
+  );
+
   protected readonly loader = panelLoader(
-    () => [this.kind(), this.baseParams(), this.chosen()],
+    () => [this.baseParams(), this.sort(), this.dir(), this.page()],
     () => {
       const base = parseQueueState(convertToParamMap(this.baseParams()));
       const request = queueArgs({
         ...base,
         sort: this.sort(),
         dir: this.dir(),
-        page: 1,
-        pageSize: this.cfg().fetch,
+        page: this.page(),
+        pageSize: GRID_PAGE_SIZE,
       });
       return this.api.getTaskQueue(undefined, ...request);
     },
   );
 
-  /** The rows the Task Queue returned, before the ones listed above are left out. */
-  private readonly all = computed<TaskQueueRow[]>(() => this.loader.data()?.items ?? []);
+  protected readonly rows = computed<TaskQueueRow[]>(() => this.loader.data()?.items ?? []);
   protected readonly total = computed(() => this.loader.data()?.total ?? 0);
-  protected readonly leftOut = computed(() => {
-    const skip = new Set(this.exclude());
-    return this.all().filter((t) => skip.has(t.taskId)).length;
-  });
-  protected readonly rows = computed<TaskQueueRow[]>(() => {
-    const skip = new Set(this.exclude());
-    return this.all()
-      .filter((t) => !skip.has(t.taskId))
-      .slice(0, this.cfg().rows);
-  });
 
-  /** Nothing to show and no Focus hiding anything: one muted line, no toolbar (issue #920). */
-  protected readonly bare = computed(
-    () => this.loader.state() === 'ready' && this.total() === 0 && !this.focused(),
+  /** The dropdown is there while there is something to choose from: not for a person with no open task at all (one muted line instead). */
+  protected readonly selectShown = computed(
+    () => this.total() > 0 || this.show() !== 'open' || this.focused(),
   );
+
+  protected readonly prefilterNoun = computed(() => PREFILTERS[this.show()].noun);
+  /** "16 overdue tasks": what the grid shows, said (not only in the dropdown). */
+  protected readonly statusText = computed(() => {
+    const info = PREFILTERS[this.show()];
+    const n = this.total();
+    return `${n} ${n === 1 ? info.one : info.noun}`;
+  });
 
   protected readonly columns = computed(() => [
     ...(this.roomy() ? ['ref'] : []),
@@ -386,29 +388,26 @@ export class TaskGrid {
     'status',
   ]);
 
-  /** "View all N": the Task Queue with the filter that counts these tasks, in the order in force. */
-  protected readonly allParams = computed(() => ({
-    ...this.baseParams(),
-    sort: this.sort(),
-    dir: this.dir(),
-  }));
-
   constructor() {
     this.focus.ensure();
     restoreRowFocus(
-      () => this.cfg().rowList,
+      () => this.rowList,
       () => this.loader.state() === 'ready',
     );
     effect(() => {
-      this.states?.report(this.kind(), this.bare() ? 'empty' : 'content');
+      // A page past the last one (the filters shrank the set) steps back to the last.
+      const pages = Math.max(1, Math.ceil(this.total() / GRID_PAGE_SIZE));
+      if (this.loader.state() === 'ready' && this.page() > pages) this.goPage(pages);
     });
-    effect(() => this.listed.emit(this.rows().map((t) => t.taskId)));
+  }
+
+  protected goPage(page: number): void {
+    this.pageAt.set({ key: this.key(), page });
   }
 
   /** A click on a heading: the same field turns the order round, another field starts in its natural direction. */
   protected sortBy(field: string): void {
-    const now = this.chosen();
-    const current = now?.field ?? this.cfg().sort;
+    const current = this.sort();
     if (current === field) {
       this.chosen.set({ field, dir: this.dir() === 'asc' ? 'desc' : 'asc' });
     } else {
@@ -421,7 +420,7 @@ export class TaskGrid {
     const rows = this.rows().map((t) => queueRowExport(t));
     const text = buildList(format, QUEUE_ROW_HEADER, rows);
     void this.exports.log(
-      this.cfg().surface,
+      'my-matters.attention',
       format,
       rows.length,
       this.focused() ? 'focus applied' : '',

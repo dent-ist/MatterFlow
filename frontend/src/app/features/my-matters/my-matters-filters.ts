@@ -1,4 +1,5 @@
 import { ParamMap, Params } from '@angular/router';
+import { MmPrefilter, parsePrefilter } from './prefilter';
 
 /**
  * The filters of My Matters (README 6.8), kept in the address (`?clientId=&role=&range=&from=&to=&scope=all&managerId=`) so Back restores them.
@@ -19,6 +20,8 @@ export interface MmFilters {
   to: string | null;
   /** All matters scope only: a named project manager. */
   managerId: number | null;
+  /** The Overview grid's pre-filter (`?show=`, issue #942); All open is the default and is left out of the address. */
+  show: MmPrefilter;
 }
 
 export const DEFAULT_FILTERS: MmFilters = {
@@ -29,6 +32,7 @@ export const DEFAULT_FILTERS: MmFilters = {
   from: null,
   to: null,
   managerId: null,
+  show: 'open',
 };
 
 export const ROLE_LABELS: Record<MmRole, string> = {
@@ -67,6 +71,7 @@ export function parseFilters(q: ParamMap, canAll: boolean): MmFilters {
     from: r === 'custom' && from && DATE.test(from) ? from : null,
     to: r === 'custom' && to && DATE.test(to) ? to : null,
     managerId: scope === 'all' ? positive(q.get('managerId')) : null,
+    show: parsePrefilter(q.get('show')),
   };
 }
 
@@ -80,6 +85,7 @@ export function filtersToParams(f: MmFilters): Params {
     from: f.range === 'custom' ? f.from : null,
     to: f.range === 'custom' ? f.to : null,
     managerId: f.scope === 'all' ? f.managerId : null,
+    show: f.show === 'open' ? null : f.show,
   };
 }
 
@@ -145,18 +151,4 @@ export function queryToParams(query: string): Params {
     out[key] = all.length === 1 ? all[0] : all;
   }
   return out;
-}
-
-/** The words that name the active filters for the strip's accessible name ("Client 12, Primary only"). */
-export function filterSummary(
-  f: MmFilters,
-  clientName: string | null,
-  managerName: string | null,
-): string {
-  const parts: string[] = [];
-  if (f.scope === 'all') parts.push('all matters');
-  if (f.managerId !== null) parts.push(`project manager ${managerName ?? f.managerId}`);
-  if (f.clientId !== null) parts.push(`client ${clientName ?? f.clientId}`);
-  if (f.role !== 'both' && roleApplies(f)) parts.push(`${f.role} manager only`);
-  return parts.length > 0 ? parts.join(', ') : 'all your matters, as primary or secondary manager';
 }

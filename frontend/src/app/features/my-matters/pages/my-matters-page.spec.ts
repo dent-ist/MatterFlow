@@ -154,28 +154,14 @@ function queuePage(items: TaskQueueRow[], total = items.length) {
   return { items, total, page: 1, pageSize: items.length, sort: 'due', dir: 'asc' };
 }
 
-/** The default answers of the grids: two tasks needing attention (of 25) and two due in the next 7 days (of 41). */
-function defaultQueue(args: unknown[]) {
-  const q = tqCall(args);
-  return q['needsAttention']
-    ? of(
-        queuePage(
-          [
-            queueRow(1),
-            queueRow(2, { assignedUser: { userId: 9, displayName: 'Dana', isActive: true } }),
-          ],
-          25,
-        ),
-      )
-    : of(
-        queuePage(
-          [
-            queueRow(3, { isOverdue: false, dueDate: '2026-10-27' }),
-            queueRow(4, { isOverdue: false, dueDate: '2026-10-28' }),
-          ],
-          41,
-        ),
-      );
+/** The default answer of the grid: two open tasks, the second assigned. */
+function defaultQueue() {
+  return of(
+    queuePage([
+      queueRow(1),
+      queueRow(2, { assignedUser: { userId: 9, displayName: 'Dana', isActive: true } }),
+    ]),
+  );
 }
 
 function activity(unread = 2) {
@@ -328,7 +314,7 @@ function breakdown(view = 'matrix') {
 
 describe('MyMattersPage', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
-  /** `getTaskQueue` of the two grids; a test overrides it with `tq.mockImplementation`. */
+  /** `getTaskQueue` of the grid; a test overrides it with `tq.mockImplementation`. */
   let tq: ReturnType<typeof vi.fn<(...args: unknown[]) => unknown>>;
 
   async function open(
@@ -366,7 +352,7 @@ describe('MyMattersPage', () => {
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
       markMyMattersActivitySeen: vi.fn().mockReturnValue(of({ seenEventId: 12, seenAtUtc: 'x' })),
     };
-    tq = vi.fn<(...args: unknown[]) => unknown>((...args) => defaultQueue(args));
+    tq = vi.fn<(...args: unknown[]) => unknown>(() => defaultQueue());
     configure?.(api);
     TestBed.configureTestingModule({
       providers: [
@@ -425,125 +411,142 @@ describe('MyMattersPage', () => {
 
   beforeEach(() => localStorage.clear());
 
-  it('shows six equal tiles in a fixed order, red only for Overdue and amber only for At risk, all buttons opening the lists they count (#927)', async () => {
+  /** Lets the page, the grid and the counts settle after a click or a navigation. */
+  const settle = async (h: {
+    detectChanges: () => void;
+    fixture: { whenStable: () => Promise<unknown> };
+  }) => {
+    await h.fixture.whenStable();
+    h.detectChanges();
+    await h.fixture.whenStable();
+    h.detectChanges();
+  };
+  const prefilter = (h: { fixture: { nativeElement: unknown } }) =>
+    el(h).querySelector<HTMLSelectElement>('select[data-prefilter]')!;
+  const lastGrid = () => tqCall(tq.mock.calls.at(-1)!);
+
+  it('has no tiles: the pre-filter dropdown has the six choices, each with its count in the option, All open first and chosen (#942)', async () => {
     const h = await open('/my-matters');
-    const chips = Array.from(el(h).querySelectorAll<HTMLButtonElement>('button[data-strip-item]'));
-    expect(chips.map((c) => c.getAttribute('data-strip-item'))).toEqual([
+    expect(el(h).querySelector('[data-mm-strip], button[data-strip-item], .tile')).toBeNull();
+    const select = prefilter(h);
+    expect(select.getAttribute('aria-label')).toBe('Show tasks');
+    const options = Array.from(select.querySelectorAll('option'));
+    // The count is part of each option's name; the summary's six counts are the totals of the grid for that choice.
+    expect(options.map((o) => o.textContent!.trim())).toEqual([
+      'All open (212)',
+      'Overdue (9)',
+      'At risk (5)',
+      'Unassigned (6)',
+      'On hold (3)',
+      'Due soon (within 7 days) (41)',
+    ]);
+    expect(options.map((o) => o.getAttribute('data-prefilter-option'))).toEqual([
+      'open',
       'overdue',
       'atRisk',
       'unassigned',
       'onHold',
-      'due7',
-      'open',
+      'dueSoon',
     ]);
-    // The accessible name starts with the count; the oldest hold is said with the on-hold tile (never before the count, #821).
-    expect(chips.map((c) => c.getAttribute('aria-label'))).toEqual([
-      '9 overdue',
-      '5 at risk',
-      '6 unassigned',
-      '3 on hold, oldest 12 days',
-      '41 due soon, within 7 days',
-      '212 open tasks',
-    ]);
-    // A large number and a short word in every tile.
-    expect(chips.map((c) => c.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
-      '9 Overdue',
-      '5 At risk',
-      '6 Unassigned',
-      '3 On hold',
-      '41 Due soon',
-      '212 Open',
-    ]);
-    expect(chips.every((c) => c.classList.contains('tile'))).toBe(true);
-    expect(chips.every((c) => c.querySelector('.tile__n') && c.querySelector('.tile__l'))).toBe(
-      true,
-    );
-    // Red only for Overdue and amber only for At risk; nothing else is loud.
-    expect(chips.map((c) => c.classList.contains('tile--danger'))).toEqual([
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
-    ]);
-    expect(chips.map((c) => c.classList.contains('tile--warning'))).toEqual([
-      false,
-      true,
-      false,
-      false,
-      false,
-      false,
-    ]);
-    // "Matters I manage" and "Due in 3 days" are gone.
-    expect(el(h).querySelector('[data-strip-item=matters], [data-strip-item=due3]')).toBeNull();
-    expect(el(h).querySelector('[data-mm-strip]')!.getAttribute('aria-label')).toContain(
-      'your matters',
-    );
-    const router = TestBed.inject(Router);
-    const navigate = vi.spyOn(router, 'navigate');
-    chips[0].click();
-    expect(navigate).toHaveBeenCalledWith(['/tasks'], {
-      queryParams: { managedByMe: 'true', overdue: 'true', sort: 'due', dir: 'asc' },
-    });
-    chips[1].click();
-    expect(navigate.mock.calls[1][1]!.queryParams).toMatchObject({ atRisk: 'true' });
-    chips[5].click();
-    expect(navigate.mock.calls[2][1]!.queryParams!['status']).toEqual([
-      'NEW',
-      'IN_PROGRESS',
-      'ON_HOLD',
-    ]);
+    expect(select.value).toBe('open');
+    // No filter is announced and none can be cleared while All open is chosen.
+    expect(el(h).querySelector('[data-grid-status], [data-clear-prefilter]')).toBeNull();
   });
 
-  it('nothing late: a zero tile is muted but still a button, and no tile is red or amber (#927)', async () => {
+  it('a zero stays selectable but muted (#942)', async () => {
     const h = await open('/my-matters', undefined, (a) => {
       a['getMyMattersSummary'].mockReturnValue(
-        of({
-          ...summary(),
-          overdue: count(0, 'managedByMe=true&overdue=true'),
-          atRisk: count(0, 'q'),
-          unassigned: count(0, 'q'),
-        }),
+        of({ ...summary(), overdue: count(0, 'q'), atRisk: count(0, 'q') }),
       );
     });
-    const tile = (key: string) =>
-      el(h).querySelector<HTMLButtonElement>(`button[data-strip-item=${key}]`)!;
-    // All six tiles stay (the strip does not rearrange itself), the zeros are muted and not loud.
-    expect(el(h).querySelectorAll('button[data-strip-item]').length).toBe(6);
-    expect(tile('overdue').classList.contains('tile--zero')).toBe(true);
-    expect(tile('overdue').classList.contains('tile--danger')).toBe(false);
-    expect(tile('atRisk').classList.contains('tile--warning')).toBe(false);
-    expect(tile('unassigned').classList.contains('tile--zero')).toBe(true);
-    expect(tile('unassigned').disabled).toBe(false);
-    expect(tile('onHold').classList.contains('tile--zero')).toBe(false);
-    expect(el(h).querySelector('[data-headline-none]')).toBeNull();
+    const option = (key: string) =>
+      el(h).querySelector<HTMLOptionElement>(`option[data-prefilter-option=${key}]`)!;
+    expect(option('overdue').textContent!.trim()).toBe('Overdue (0)');
+    expect(option('overdue').classList.contains('pf__zero')).toBe(true);
+    expect(option('overdue').disabled).toBe(false);
+    expect(option('unassigned').classList.contains('pf__zero')).toBe(false);
   });
 
-  it('sends no date range to the strip and the grids; Next 7 days asks for dueWithin=7, whatever the range, and the Overview does not read the deadlines endpoint (#896, #929)', async () => {
-    await open('/my-matters?range=2w');
-    expect(api['getMyMattersSummary']).toHaveBeenCalledWith(
+  it('choosing a pre-filter filters the grid in place: no jump to the Tasks page, the address keeps it, the grid says what it shows and Clear filter brings All open back (#942)', async () => {
+    const h = await open('/my-matters');
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate');
+    const choose = async (key: string) => {
+      prefilter(h).value = key;
+      prefilter(h).dispatchEvent(new Event('change'));
+      await settle(h);
+    };
+    // Every choice is one filter of the Task Queue, on top of the open statuses (On hold is that one status).
+    const expected: Record<string, Record<string, unknown>> = {
+      overdue: { overdue: true },
+      atRisk: { atRisk: true },
+      unassigned: { unassigned: true },
+      onHold: { status: ['ON_HOLD'] },
+      dueSoon: { dueWithin: 7 },
+    };
+    for (const [key, filter] of Object.entries(expected)) {
+      await choose(key);
+      expect(router.url, key).toBe(`/my-matters?show=${key}`);
+      expect(lastGrid(), key).toMatchObject({
+        managedByMe: true,
+        sort: 'attention',
+        page: 1,
+        ...filter,
+      });
+      expect(prefilter(h).value).toBe(key);
+    }
+    // The grid says what it shows, with the count the dropdown has, and offers one way back.
+    tq.mockImplementation(() => of(queuePage([queueRow(1)], 16)));
+    await choose('overdue');
+    expect(el(h).querySelector('[data-grid-status]')!.textContent).toContain('16 overdue tasks');
+    expect(el(h).querySelectorAll('[data-clear-prefilter]')).toHaveLength(1);
+    el(h).querySelector<HTMLButtonElement>('[data-clear-prefilter]')!.click();
+    await settle(h);
+    expect(router.url).toBe('/my-matters');
+    expect(prefilter(h).value).toBe('open');
+    expect(el(h).querySelector('[data-grid-status]')).toBeNull();
+    // It never left the page for the Task Queue.
+    expect(navigate.mock.calls.every((c) => (c[0] as string[])[0] !== '/tasks')).toBe(true);
+  });
+
+  it('the remembered pre-filter comes back with the visit, and an address wins over it (#942)', async () => {
+    localStorage.setItem('mf-my-matters-filters-1', 'show=unassigned');
+    const h = await open('/my-matters');
+    expect(TestBed.inject(Router).url).toBe('/my-matters?show=unassigned');
+    expect(prefilter(h).value).toBe('unassigned');
+    expect(lastGrid()).toMatchObject({ unassigned: true });
+  });
+
+  it('a pre-filter in the address wins over the remembered one (#942)', async () => {
+    localStorage.setItem('mf-my-matters-filters-1', 'show=unassigned');
+    const h = await open('/my-matters?show=onHold');
+    expect(prefilter(h).value).toBe('onHold');
+    expect(TestBed.inject(Router).url).toBe('/my-matters?show=onHold');
+  });
+
+  it('the counts follow the Client filter and the Focus, so they stay the totals of the grid (#942)', async () => {
+    const h = await open('/my-matters?clientId=4');
+    expect(api['getMyMattersSummary']).toHaveBeenLastCalledWith(
       undefined,
       undefined,
       undefined,
-      undefined,
+      4,
       undefined,
       undefined,
       undefined,
     );
-    const calls = tq.mock.calls.map((c) => tqCall(c));
-    const next = calls.find((c) => c['dueWithin'] === 7)!;
-    expect(next).toMatchObject({
-      managedByMe: true,
-      status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-      sort: 'due',
-      dir: 'asc',
-      page: 1,
-      pageSize: 8,
-    });
-    expect(next['dueFrom']).toBeUndefined();
-    expect(next['dueTo']).toBeUndefined();
-    expect(api['getMyMattersDeadlines']).not.toHaveBeenCalled();
+    TestBed.inject(MyMattersFocus).set([7, 9]);
+    await settle(h);
+    expect(api['getMyMattersSummary']).toHaveBeenLastCalledWith(
+      [7, 9],
+      undefined,
+      undefined,
+      4,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(lastGrid()['type']).toEqual([7, 9]);
   });
 
   it('keeps the filters in the address and restores them from it', async () => {
@@ -574,10 +577,15 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('shows Needs my attention as the shared grid: the Tasks columns, five rows asked for, most urgent first, one View all N with the Task Queue filter (#929)', async () => {
+  it('shows ONE grid of the open tasks: one heading, the Tasks columns, 25 a page, urgency order, no second grid and no View all (#943)', async () => {
     const h = await open('/my-matters');
-    const panel = el(h).querySelector('[data-panel=attention]')!;
-    expect(panel.querySelector('h2')!.textContent).toBe('Needs my attention');
+    const panels = Array.from(el(h).querySelectorAll('[data-panel]')).map((p) =>
+      p.getAttribute('data-panel'),
+    );
+    expect(panels).toEqual(['tasks']);
+    const panel = el(h).querySelector('[data-panel=tasks]')!;
+    expect(el(h).querySelectorAll('[data-mm-tabpanel] h2')).toHaveLength(1);
+    expect(panel.querySelector('h2')!.textContent).toBe('Open tasks');
     // The same table as the Tasks pages, not a list of its own.
     const table = panel.querySelector('mf-task-table table.wt')!;
     expect(
@@ -592,171 +600,134 @@ describe('MyMattersPage', () => {
     expect(table.querySelector('mf-row-edit, [data-inline-trigger]')).toBeNull();
     expect(rows[1].querySelector('[data-col=assignee]')!.textContent).toContain('Dana');
     expect(rows[0].querySelector('[data-col=assignee]')!.textContent).toContain('Unassigned');
-    const asked = tqCall(tq.mock.calls.find((c) => tqCall(c)['needsAttention'])!);
-    expect(asked).toMatchObject({
+    // Server side: all open tasks, the urgency order, 25 on the first page.
+    expect(lastGrid()).toMatchObject({
       managedByMe: true,
-      needsAttention: true,
       status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
       sort: 'attention',
       dir: 'asc',
       page: 1,
-      pageSize: 5,
+      pageSize: 25,
     });
-    const all = panel.querySelectorAll<HTMLAnchorElement>('[data-view-all]');
-    expect(all).toHaveLength(1);
-    expect(all[0].textContent!.trim()).toBe('View all 25');
-    expect(all[0].getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=attention&dir=asc',
-    );
+    expect(lastGrid()['needsAttention']).toBeUndefined();
+    expect(lastGrid()['dueWithin']).toBeUndefined();
+    expect(el(h).querySelector('[data-view-all]')).toBeNull();
+    // Two tasks do not need a pager.
+    expect(el(h).querySelector('mf-pager')).toBeNull();
   });
 
-  it('a click on a heading sorts the whole set on the server and announces it (aria-sort); the same heading again turns the order round (#929)', async () => {
+  it('pages 25 at a time with a keyboard-reachable page control, and a task is listed once (#943)', async () => {
+    const rowsOf = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) => queueRow(from + i, { isOverdue: false }));
+    const h = await open('/my-matters', undefined, () =>
+      tq.mockImplementation((...args: unknown[]) => {
+        const q = tqCall(args);
+        return of(queuePage(q['page'] === 2 ? rowsOf(26, 17) : rowsOf(1, 25), 42));
+      }),
+    );
+    const pager = () => el(h).querySelector('mf-pager')!;
+    expect(el(h).querySelectorAll('tbody tr[data-task]')).toHaveLength(25);
+    expect(pager().textContent).toContain('Page 1 of 2');
+    // No size select: the page size is fixed.
+    expect(pager().querySelector('select')).toBeNull();
+    const next = Array.from(pager().querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => b.textContent!.trim() === 'Next',
+    )!;
+    expect(next.disabled).toBe(false);
+    next.click();
+    await settle(h);
+    expect(lastGrid()).toMatchObject({ page: 2, pageSize: 25, sort: 'attention' });
+    expect(el(h).querySelectorAll('tbody tr[data-task]')).toHaveLength(17);
+    expect(pager().textContent).toContain('Page 2 of 2');
+    // A new filter starts at the first page again.
+    prefilter(h).value = 'overdue';
+    prefilter(h).dispatchEvent(new Event('change'));
+    await settle(h);
+    expect(lastGrid()).toMatchObject({ page: 1, overdue: true });
+    const titles = Array.from(el(h).querySelectorAll('a.wt-title')).map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(new Set(titles).size).toBe(titles.length);
+  });
+
+  it('a click on a heading sorts the whole set on the server and announces it (aria-sort); the same heading again turns the order round; Urgency brings the default back (#929, #935)', async () => {
     const h = await open('/my-matters');
-    const panel = el(h).querySelector('[data-panel=attention]')!;
+    const panel = el(h).querySelector('[data-panel=tasks]')!;
     const th = (col: string) => panel.querySelector(`th[data-col=${col}]`)!;
     const press = async (col: string) => {
       th(col).querySelector<HTMLButtonElement>('button.wt-sort')!.click();
-      await h.fixture.whenStable();
-      h.detectChanges();
-      await h.fixture.whenStable();
-      h.detectChanges();
+      await settle(h);
     };
-    const last = () => tqCall(tq.mock.calls.filter((c) => tqCall(c)['needsAttention']).at(-1)!);
     const urgency = () => panel.querySelector<HTMLButtonElement>('[data-sort-urgency]')!;
     // Urgency is the default order (issue #935): no heading is marked, the Urgency control is pressed.
-    expect(last()).toMatchObject({ sort: 'attention', dir: 'asc' });
+    expect(lastGrid()).toMatchObject({ sort: 'attention', dir: 'asc' });
     expect(th('due').getAttribute('aria-sort')).toBe('none');
     expect(th('priority').getAttribute('aria-sort')).toBe('none');
     expect(urgency().textContent!.trim()).toBe('Urgency');
     expect(urgency().getAttribute('aria-pressed')).toBe('true');
     await press('due');
-    expect(last()).toMatchObject({ sort: 'due', dir: 'asc', page: 1, pageSize: 5 });
+    expect(lastGrid()).toMatchObject({ sort: 'due', dir: 'asc', page: 1, pageSize: 25 });
     expect(th('due').getAttribute('aria-sort')).toBe('ascending');
     expect(urgency().getAttribute('aria-pressed')).toBe('false');
     await press('due');
-    expect(last()).toMatchObject({ sort: 'due', dir: 'desc' });
+    expect(lastGrid()).toMatchObject({ sort: 'due', dir: 'desc' });
     expect(th('due').getAttribute('aria-sort')).toBe('descending');
     await press('priority');
-    expect(last()).toMatchObject({ sort: 'priority', dir: 'asc' });
+    expect(lastGrid()).toMatchObject({ sort: 'priority', dir: 'asc' });
     expect(th('priority').getAttribute('aria-sort')).toBe('ascending');
     expect(th('due').getAttribute('aria-sort')).toBe('none');
-    // "View all" opens the Task Queue in the order in force.
-    expect(
-      panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
-    ).toContain('sort=priority&dir=asc');
-    // The Urgency control brings the default order back.
+    // The pre-filter keeps the order the person chose.
+    prefilter(h).value = 'overdue';
+    prefilter(h).dispatchEvent(new Event('change'));
+    await settle(h);
+    expect(lastGrid()).toMatchObject({ sort: 'priority', dir: 'asc', overdue: true });
     urgency().click();
-    await h.fixture.whenStable();
-    h.detectChanges();
-    await h.fixture.whenStable();
-    h.detectChanges();
-    expect(last()).toMatchObject({ sort: 'attention', dir: 'asc' });
+    await settle(h);
+    expect(lastGrid()).toMatchObject({ sort: 'attention', dir: 'asc', overdue: true });
     expect(urgency().getAttribute('aria-pressed')).toBe('true');
-    expect(
-      panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
-    ).toContain('sort=attention&dir=asc');
-    // The other grid is its own: its order did not change.
-    expect(
-      el(h).querySelector('[data-panel=deadlines] th[data-col=due]')!.getAttribute('aria-sort'),
-    ).toBe('ascending');
   });
 
-  it('every sortable heading of the grids is a button; the headings that cannot sort are not (#929)', async () => {
+  it('every sortable heading of the grid is a button (#929)', async () => {
     const h = await open('/my-matters');
-    const heads = Array.from(el(h).querySelectorAll('[data-panel=attention] thead th'));
+    const heads = Array.from(el(h).querySelectorAll('[data-panel=tasks] thead th'));
     expect(heads.every((t) => t.querySelector('button.wt-sort') !== null)).toBe(true);
   });
 
   it('At risk and On hold show in the shared Due and Status cells', async () => {
     const h = await open('/my-matters', undefined, () =>
-      tq.mockImplementation((...args: unknown[]) =>
+      tq.mockImplementation(() =>
         of(
-          queuePage(
-            tqCall(args)['needsAttention']
-              ? [
-                  queueRow(1, { atRisk: true, isOverdue: false, dueDate: '2099-01-01' }),
-                  queueRow(2, { status: 'ON_HOLD', statusLabel: 'On Hold', isOverdue: false }),
-                ]
-              : [],
-          ),
+          queuePage([
+            queueRow(1, { atRisk: true, isOverdue: false, dueDate: '2099-01-01' }),
+            queueRow(2, { status: 'ON_HOLD', statusLabel: 'On Hold', isOverdue: false }),
+          ]),
         ),
       ),
     );
-    const rows = Array.from(el(h).querySelectorAll('[data-panel=attention] tbody tr[data-task]'));
+    const rows = Array.from(el(h).querySelectorAll('[data-panel=tasks] tbody tr[data-task]'));
     expect(rows[0].querySelector('[data-col=due]')!.textContent).toContain('At risk');
     expect(rows[1].querySelector('[data-col=status]')!.textContent).toContain('On Hold');
   });
 
-  it('leaves a task out of Next 7 days when Needs my attention lists it: one task, once per screen (#905, #929)', async () => {
+  it('says so when there is nothing open, in one line with no toolbar, and the Calendar button stays; with no manager-related item (#920)', async () => {
     const h = await open('/my-matters', undefined, () =>
-      tq.mockImplementation((...args: unknown[]) =>
-        tqCall(args)['needsAttention']
-          ? of(queuePage([queueRow(3, { dueDate: '2026-10-23', isOverdue: false })], 1))
-          : of(
-              queuePage(
-                [3, 4, 5, 6, 7].map((id) => queueRow(id, { isOverdue: false })),
-                5,
-              ),
-            ),
-      ),
+      tq.mockImplementation(() => of(queuePage([], 0))),
     );
-    const ids = Array.from(el(h).querySelectorAll('a.wt-title')).map((a) => a.getAttribute('href'));
-    expect(ids.filter((x) => x === '/tasks/3?from=my-matters')).toHaveLength(1);
-    expect(new Set(ids).size).toBe(ids.length);
-    // Three rows are shown below it, the first not listed above.
-    expect(
-      Array.from(el(h).querySelectorAll('[data-panel=deadlines] tbody tr[data-task]')).map((r) =>
-        r.getAttribute('data-task'),
-      ),
-    ).toEqual(['TSK-4', 'TSK-5', 'TSK-6']);
-  });
-
-  it('says so when nothing needs attention, with no manager-related item', async () => {
-    const h = await open('/my-matters', undefined, () =>
-      tq.mockImplementation((...args: unknown[]) =>
-        tqCall(args)['needsAttention'] ? of(queuePage([], 0)) : defaultQueue(args),
-      ),
-    );
-    const panel = el(h).querySelector('[data-panel=attention]')!;
-    expect(panel.querySelector('[data-empty]')!.textContent).toContain(
-      'Nothing needs your attention.',
-    );
-    expect(panel.querySelector('table, [data-view-all], mf-options-menu')).toBeNull();
+    const panel = el(h).querySelector('[data-panel=tasks]')!;
+    expect(panel.querySelector('[data-empty]')!.textContent).toContain('No open tasks.');
+    expect(panel.querySelector('table, mf-options-menu, select, [data-sort-urgency]')).toBeNull();
+    expect(panel.querySelector('[data-calendar-toggle]')).not.toBeNull();
     expect(el(h).textContent).not.toMatch(/no (project )?manager/i);
   });
 
-  it('Next 7 days is a grid of its own with the same columns, no Options, and View all N opens the Task Queue with dueWithin=7 (#896, #929)', async () => {
-    const h = await open('/my-matters');
-    const panel = el(h).querySelector('[data-panel=deadlines]')!;
-    expect(panel.querySelector('h2')!.textContent).toBe('Next 7 days');
-    expect(
-      Array.from(panel.querySelectorAll('thead th')).map((t) => t.getAttribute('data-col')),
-    ).toEqual(['ref', 'title', 'matterName', 'priority', 'assignee', 'due', 'status']);
-    expect(panel.querySelectorAll('tbody tr[data-task]')).toHaveLength(2);
-    expect(panel.querySelector('mf-options-menu')).toBeNull();
-    const all = panel.querySelector<HTMLAnchorElement>('[data-view-all]')!;
-    expect(all.textContent!.trim()).toBe('View all 41');
-    expect(all.getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&dueWithin=7&sort=due&dir=asc',
+  it('a pre-filter with no task says so and keeps the dropdown, so the person can choose again (#942)', async () => {
+    const h = await open('/my-matters?show=overdue', undefined, () =>
+      tq.mockImplementation(() => of(queuePage([], 0))),
     );
-  });
-
-  it('Next 7 days shows at most three rows (owner decision of 2026-10-28) and says how many there are in all', async () => {
-    const h = await open('/my-matters', undefined, () =>
-      tq.mockImplementation((...args: unknown[]) =>
-        tqCall(args)['needsAttention']
-          ? of(queuePage([], 0))
-          : of(
-              queuePage(
-                [10, 11, 12, 13, 14, 15, 16, 17].map((id) => queueRow(id, { isOverdue: false })),
-                8,
-              ),
-            ),
-      ),
-    );
-    const panel = el(h).querySelector('[data-panel=deadlines]')!;
-    expect(panel.querySelectorAll('tbody tr[data-task]')).toHaveLength(3);
-    expect(panel.querySelector('[data-view-all]')!.textContent).toContain('View all 8');
+    const panel = el(h).querySelector('[data-panel=tasks]')!;
+    expect(panel.querySelector('[data-empty]')!.textContent).toContain('No overdue tasks.');
+    expect(panel.querySelector('select[data-prefilter]')).not.toBeNull();
+    expect(panel.querySelectorAll('[data-clear-prefilter]')).toHaveLength(1);
   });
 
   it('the Deadlines tab is gone: its address opens the Overview, and the tab strip has no Deadlines (#929)', async () => {
@@ -769,47 +740,40 @@ describe('MyMattersPage', () => {
       Array.from(el(h).querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
     ).not.toContain('Deadlines');
     expect(el(h).querySelector('[data-panel=deadlines-tab]')).toBeNull();
-    expect(el(h).querySelector('[data-panel=attention]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks]')).not.toBeNull();
   });
 
-  it('the Calendar button swaps the two grids for the calendar and back, names what it does, and the choice is remembered (#929)', async () => {
+  it('the Trends tab is gone: ?tab=trends opens the Overview and keeps the filters (#947)', async () => {
+    const h = await open('/my-matters?tab=trends&role=primary');
+    expect(TestBed.inject(Router).url).toBe('/my-matters?role=primary');
+    expect(el(h).querySelector('[role=tab][aria-selected=true]')!.textContent).toContain(
+      'Overview',
+    );
+    expect(
+      Array.from(el(h).querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
+    ).not.toContain('Trends');
+    expect(el(h).querySelector('[data-panel=trends]')).toBeNull();
+  });
+
+  it('the Calendar button swaps the grid for the calendar and back, names what it does, and the choice is remembered (#929)', async () => {
     const h = await open('/my-matters');
     const toggle = () => el(h).querySelector<HTMLButtonElement>('[data-calendar-toggle]')!;
-    const settle = async () => {
-      await h.fixture.whenStable();
-      h.detectChanges();
-      await h.fixture.whenStable();
-      h.detectChanges();
-    };
     expect(toggle().getAttribute('aria-label')).toBe('Show calendar');
-    // It lives in the heading of Needs my attention.
-    expect(el(h).querySelector('[data-panel=attention]')!.contains(toggle())).toBe(true);
+    // It lives in the heading of the grid.
+    expect(el(h).querySelector('[data-panel=tasks]')!.contains(toggle())).toBe(true);
     toggle().click();
-    await settle();
+    await settle(h);
     expect(TestBed.inject(Router).url).toBe('/my-matters?view=calendar');
-    expect(el(h).querySelector('[data-panel=attention], [data-panel=deadlines]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks]')).toBeNull();
     expect(el(h).querySelector('[data-panel=calendar]')).not.toBeNull();
     expect(el(h).querySelector('[data-calendar]')).not.toBeNull();
-    expect(api['getMyMattersDeadlines']).toHaveBeenCalledWith(
-      28,
-      'day',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
     expect(toggle().getAttribute('aria-label')).toBe('Show list');
     expect(el(h).querySelector('[data-panel=calendar]')!.contains(toggle())).toBe(true);
     expect(Object.values(localStorage)).toContain('calendar');
     toggle().click();
-    await settle();
+    await settle(h);
     expect(TestBed.inject(Router).url).toBe('/my-matters');
-    expect(el(h).querySelector('[data-panel=attention]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks]')).not.toBeNull();
     expect(el(h).querySelector('[data-panel=calendar]')).toBeNull();
     expect(Object.values(localStorage)).not.toContain('calendar');
   });
@@ -882,29 +846,54 @@ describe('MyMattersPage', () => {
       'Overview',
     );
     expect(el(h).querySelector('[data-panel=workload]')).toBeNull();
-    expect(el(h).querySelector('[data-panel=attention]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks]')).not.toBeNull();
   });
 
-  it('a failing panel shows its own error with Retry and leaves the others alone', async () => {
+  it('a failing grid shows its own error with Retry; the counts are left alone (#921)', async () => {
     const h = await open('/my-matters');
-    const failing = (...args: unknown[]) =>
-      tqCall(args)['needsAttention'] ? throwError(() => new Error('boom')) : defaultQueue(args);
-    tq.mockImplementation(failing);
+    tq.mockImplementation(() => throwError(() => new Error('boom')));
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=primary');
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(el(h).querySelector('[data-panel=attention] [data-panel-error]')).not.toBeNull();
-    expect(el(h).querySelector('[data-panel=deadlines] [data-grid]')).not.toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks] [data-panel-error]')).not.toBeNull();
+    expect(el(h).querySelector('[data-page-error]')).toBeNull();
+    expect(el(h).querySelector('[data-prefilter-error]')).toBeNull();
     tq.mockClear();
-    tq.mockImplementation((...args: unknown[]) => defaultQueue(args));
-    el(h).querySelector<HTMLButtonElement>('[data-panel=attention] [data-panel-retry]')!.click();
+    tq.mockImplementation(() => defaultQueue());
+    el(h).querySelector<HTMLButtonElement>('[data-panel=tasks] [data-panel-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(tq.mock.calls.filter((c) => tqCall(c)['needsAttention'])).toHaveLength(1);
-    expect(el(h).querySelector('[data-panel=attention] table')).not.toBeNull();
+    expect(tq).toHaveBeenCalledTimes(1);
+    expect(el(h).querySelector('[data-panel=tasks] table')).not.toBeNull();
   });
 
-  it('two or more failed calls: ONE banner and ONE Retry for the page, a muted "not loaded" line in each section; Retry asks every failed call again (#921)', async () => {
+  it('failing counts alone say so next to the dropdown with their own Retry; the dropdown still works without numbers (#942, #921)', async () => {
+    const h = await open('/my-matters', undefined, (a) =>
+      a['getMyMattersSummary'].mockReturnValue(throwError(() => new Error('boom'))),
+    );
+    expect(el(h).querySelector('[data-prefilter-error]')!.textContent).toContain(
+      'Counts not loaded.',
+    );
+    expect(el(h).querySelectorAll('[data-prefilter-retry]')).toHaveLength(1);
+    expect(
+      Array.from(prefilter(h).querySelectorAll('option')).map((o) => o.textContent!.trim()),
+    ).toEqual([
+      'All open',
+      'Overdue',
+      'At risk',
+      'Unassigned',
+      'On hold',
+      'Due soon (within 7 days)',
+    ]);
+    expect(el(h).querySelector('[data-panel=tasks] table')).not.toBeNull();
+    api['getMyMattersSummary'].mockReturnValue(of(summary()));
+    el(h).querySelector<HTMLButtonElement>('[data-prefilter-retry]')!.click();
+    await settle(h);
+    expect(el(h).querySelector('[data-prefilter-error]')).toBeNull();
+    expect(prefilter(h).querySelector('option')!.textContent!.trim()).toBe('All open (212)');
+  });
+
+  it('two or more failed calls: ONE banner and ONE Retry for the page, a muted "not loaded" line in the grid; Retry asks every failed call again (#921)', async () => {
     const h = await open('/my-matters');
     tq.mockImplementation(() => throwError(() => new Error('boom')));
     api['getMyMattersSummary'].mockReturnValue(throwError(() => new Error('boom')));
@@ -915,37 +904,30 @@ describe('MyMattersPage', () => {
     expect(el(h).querySelector('[data-page-error]')!.textContent).toContain(
       "Couldn't load My Matters.",
     );
-    // No section keeps a Retry of its own, and each says "not loaded" without a button.
-    expect(el(h).querySelectorAll('[data-panel-retry], [data-strip-retry]')).toHaveLength(0);
-    expect(el(h).querySelector('[data-panel-error], [data-strip-error]')).toBeNull();
-    expect(el(h).querySelector('[data-panel=attention] [data-panel-notloaded]')).not.toBeNull();
-    expect(el(h).querySelector('[data-panel=deadlines] [data-panel-notloaded]')).not.toBeNull();
-    expect(el(h).querySelector('[data-strip-notloaded]')).not.toBeNull();
-    // The one Retry asks each failed call once; the sections that were fine are left alone.
+    // No section keeps a Retry of its own, and the grid says "not loaded" without a button.
+    expect(el(h).querySelectorAll('[data-panel-retry], [data-prefilter-retry]')).toHaveLength(0);
+    expect(el(h).querySelector('[data-panel-error], [data-prefilter-error]')).toBeNull();
+    expect(el(h).querySelector('[data-panel=tasks] [data-panel-notloaded]')).not.toBeNull();
+    // The one Retry asks each failed call once.
     tq.mockClear();
-    tq.mockImplementation((...args: unknown[]) => defaultQueue(args));
+    tq.mockImplementation(() => defaultQueue());
     api['getMyMattersSummary'].mockClear();
     api['getMyMattersSummary'].mockReturnValue(of(summary()));
     el(h).querySelector<HTMLButtonElement>('[data-page-retry]')!.click();
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(tq.mock.calls.filter((c) => tqCall(c)['needsAttention'])).toHaveLength(1);
-    expect(tq.mock.calls.filter((c) => tqCall(c)['dueWithin'])).toHaveLength(1);
+    expect(tq).toHaveBeenCalledTimes(1);
     expect(api['getMyMattersSummary']).toHaveBeenCalledTimes(1);
     expect(el(h).querySelector('[data-page-error]')).toBeNull();
   });
 
-  it('a panel that is still loading has no toolbar: its Options and View all appear with the data (#921)', async () => {
-    const h = await open('/my-matters', undefined, () =>
-      tq.mockImplementation((...args: unknown[]) =>
-        tqCall(args)['needsAttention'] ? NEVER : defaultQueue(args),
-      ),
-    );
-    const panel = el(h).querySelector('[data-panel=attention]')!;
+  it('a grid that is still loading has no toolbar: its Options and Urgency appear with the data (#921)', async () => {
+    const h = await open('/my-matters', undefined, () => tq.mockImplementation(() => NEVER));
+    const panel = el(h).querySelector('[data-panel=tasks]')!;
     expect(panel.querySelector('[data-loading]')).not.toBeNull();
-    expect(panel.querySelector('mf-options-menu, [data-view-all]')).toBeNull();
-    // The skeleton stands for the five rows the list will have.
-    expect(panel.querySelectorAll('.mmp__row')).toHaveLength(5);
+    expect(panel.querySelector('mf-options-menu, [data-sort-urgency], select')).toBeNull();
+    // The skeleton stands for the rows the grid will have.
+    expect(panel.querySelectorAll('.mmp__row')).toHaveLength(6);
   });
 
   it('Role says "I am" with plain choices (Primary or secondary, Primary, Secondary) (#899)', async () => {
@@ -957,16 +939,23 @@ describe('MyMattersPage', () => {
     ).toEqual(['Primary or secondary', 'Primary', 'Secondary']);
   });
 
-  it('loads every panel on its own: a panel still waiting does not hold the others', async () => {
+  it('loads the grid and the counts on their own: a grid still waiting does not hold the counts (#921)', async () => {
     const h = await open('/my-matters');
-    tq.mockImplementation((...args: unknown[]) =>
-      tqCall(args)['needsAttention'] ? NEVER : defaultQueue(args),
-    );
+    tq.mockImplementation(() => NEVER);
     await TestBed.inject(Router).navigateByUrl('/my-matters?role=secondary');
     await h.fixture.whenStable();
     h.detectChanges();
-    expect(el(h).querySelector('[data-panel=attention] [data-loading]')).toBeNull(); // keeps the previous numbers
-    expect(el(h).querySelector('[data-panel=deadlines] [data-grid]')).not.toBeNull();
+    // The grid keeps the previous rows while the new ones are on their way; the counts follow the filter at once.
+    expect(el(h).querySelector('[data-panel=tasks] [data-loading]')).toBeNull();
+    expect(api['getMyMattersSummary']).toHaveBeenLastCalledWith(
+      undefined,
+      undefined,
+      'secondary',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
   });
 
   describe('tabs (epic #758, PX-18)', () => {
@@ -1009,7 +998,7 @@ describe('MyMattersPage', () => {
       const panel = el(h).querySelector('[role=tabpanel]')!;
       expect(panel.getAttribute('aria-labelledby')).toBe('mm-tab-overview');
       expect(panel.querySelector('[data-panel=since]')).toBeNull(); // on the Activity tab since 2026-10-28
-      expect(panel.querySelector('[data-panel=attention]')).not.toBeNull();
+      expect(panel.querySelector('[data-panel=tasks]')).not.toBeNull();
       expect(el(h).querySelector('[data-panel=deadlines-tab]')).toBeNull();
     });
 
@@ -1286,39 +1275,7 @@ describe('MyMattersPage', () => {
       expect(el(h).querySelector('[data-mm-filters] #mm-range')).toBeNull();
       expect(el(h).querySelector('[data-panel=calendar] [data-range]')).toBeNull(); // the old 2 / 4 week buttons
       // No grid is drawn behind it: the calendar IS the task area.
-      expect(el(h).querySelector('[data-panel=attention], [data-panel=deadlines]')).toBeNull();
-    });
-
-    it('everything quiet: one line replaces the empty sections', async () => {
-      const h = await open('/my-matters', undefined, quiet, [
-        matter(5, 2, 'primary'),
-        matter(6, 2, 'primary'),
-      ]);
-      expect(el(h).querySelector('[data-all-quiet]')!.textContent).toContain(
-        'Nothing is late and nothing is due in the next 7 days.',
-      );
-      for (const key of ['attention', 'deadlines']) {
-        expect(el(h).querySelector(`[data-panel=${key}]`)!.closest('.mm__off'), key).not.toBeNull();
-      }
-    });
-
-    it('an empty list is one line with no toolbar when the others have work', async () => {
-      const h = await open(
-        '/my-matters',
-        undefined,
-        (a) => {
-          quiet(a);
-          tq.mockImplementation((...args: unknown[]) =>
-            tqCall(args)['needsAttention'] ? of(queuePage([queueRow(1)], 1)) : of(queuePage([], 0)),
-          );
-        },
-        [matter(5, 2, 'primary')],
-      );
-      expect(el(h).querySelector('[data-all-quiet]')).toBeNull();
-      const deadlines = el(h).querySelector('[data-panel=deadlines]')!;
-      expect(deadlines.textContent).toContain('Nothing is due in the next 7 days.');
-      expect(deadlines.querySelector('button, select, a')).toBeNull();
-      expect(deadlines.querySelector('.mmp--bare')).not.toBeNull();
+      expect(el(h).querySelector('[data-panel=tasks]')).toBeNull();
     });
 
     it('a manager with no matter: only the positive line with the way on, no strip of zeros, no quiet line', async () => {
@@ -1357,36 +1314,33 @@ describe('MyMattersPage', () => {
       name: `Matter ${id}`,
       primaryManager: { userId: 1, displayName: 'Me', isActive: true },
     });
-    it('one column: Needs my attention, Next 7 days, in that order (the "since" line is on the Activity tab), with no two-column grid (#903)', async () => {
+    it('one column with ONE section, the grid of open tasks, and no two-column grid; it is flat, without a card (#903, #943)', async () => {
       const h = await open('/my-matters');
       const order = Array.from(el(h).querySelectorAll('[data-panel]')).map((p) =>
         p.getAttribute('data-panel'),
       );
-      expect(order).toEqual(['attention', 'deadlines']);
+      expect(order).toEqual(['tasks']);
       expect(el(h).querySelector('.mm__grid')).toBeNull();
       expect(el(h).querySelector('.mm__stack')).not.toBeNull();
-      // The sections are flat (no card around each of them).
-      for (const key of ['attention', 'deadlines']) {
-        expect(
-          el(h).querySelector(`[data-panel=${key}] .mmp`)!.classList.contains('mmp--flat'),
-          key,
-        ).toBe(true);
-      }
+      expect(el(h).querySelector('[data-panel=tasks] .mmp')!.classList.contains('mmp--flat')).toBe(
+        true,
+      );
     });
 
-    it('Needs my attention has two controls of its own besides the grid: the Calendar button and Options with Export inside; no Views, Task types or Sort menu (#894, #907, #929)', async () => {
+    it('the grid has the controls of its heading row and nothing else besides the table: the dropdown, the Calendar button, Urgency and Options with Export inside; no Views, Task types, Sort or View all (#894, #907, #929, #942)', async () => {
       const h = await open('/my-matters');
-      const panel = el(h).querySelector('[data-panel=attention]')!;
+      const panel = el(h).querySelector('[data-panel=tasks]')!;
       const options = panel.querySelectorAll('mf-options-menu');
       expect(options).toHaveLength(1);
       expect(options[0].querySelector('[data-options-trigger]')!.getAttribute('aria-label')).toBe(
-        'Options for Needs my attention',
+        'Options for Open tasks',
       );
       expect(options[0].querySelectorAll('[data-export]').length).toBe(2);
       expect(
-        panel.querySelector('[data-views], [data-types-trigger], [data-sort], [data-dir]'),
+        panel.querySelector(
+          '[data-views], [data-types-trigger], [data-sort], [data-dir], [data-view-all]',
+        ),
       ).toBeNull();
-      // Besides the grid, the Calendar button, the Urgency order (#935), the "View all" link and the Options button, nothing is a control of the section.
       const controls = Array.from(
         panel.querySelectorAll('a, button, select, input, summary'),
       ).filter((c) => !c.closest('mf-options-menu') && !c.closest('mf-task-table'));
@@ -1395,47 +1349,40 @@ describe('MyMattersPage', () => {
           (c) =>
             c.getAttribute('data-calendar-toggle') ??
             c.getAttribute('data-sort-urgency') ??
-            c.getAttribute('data-view-all'),
+            (c.tagName === 'SELECT' ? 'select' : 'other'),
         ),
-      ).toEqual(['', '', '']);
+      ).toEqual(['select', '', '']);
     });
 
     it('the matter is a column only for a person with several matters (#897, #929)', async () => {
       const one = await open('/my-matters', undefined, undefined, [matter(5, 2)]);
-      expect(el(one).querySelector('[data-panel=attention] th[data-col=matterName]')).toBeNull();
-      expect(el(one).querySelector('[data-panel=attention] tbody tr[data-task]')).not.toBeNull();
+      expect(el(one).querySelector('[data-panel=tasks] th[data-col=matterName]')).toBeNull();
+      expect(el(one).querySelector('[data-panel=tasks] tbody tr[data-task]')).not.toBeNull();
     });
 
-    it('with several matters the Matter name is a column of both grids (#897, #929)', async () => {
+    it('with several matters the Matter name is a column of the grid (#897, #929)', async () => {
       const h = await open('/my-matters', undefined, undefined, [matter(5, 2), matter(6, 2)]);
-      for (const key of ['attention', 'deadlines']) {
-        expect(
-          el(h).querySelector(`[data-panel=${key}] th[data-col=matterName]`),
-          key,
-        ).not.toBeNull();
-      }
+      expect(el(h).querySelector('[data-panel=tasks] th[data-col=matterName]')).not.toBeNull();
       expect(
-        Array.from(el(h).querySelectorAll('[data-panel=attention] td[data-col=matterName]')).map(
-          (n) => n.textContent!.trim(),
+        Array.from(el(h).querySelectorAll('[data-panel=tasks] td[data-col=matterName]')).map((n) =>
+          n.textContent!.trim(),
         ),
       ).toEqual(['Merger', 'Merger']);
     });
 
-    it('the Focus is the one task type filter of both grids (#907, #929)', async () => {
+    it('the Focus is the one task type filter of the grid (#907, #929)', async () => {
       const h = await open('/my-matters');
       TestBed.inject(MyMattersFocus).set([7, 9]);
       await h.fixture.whenStable();
       h.detectChanges();
       await h.fixture.whenStable();
-      const last = (key: string) => tqCall(tq.mock.calls.filter((c) => tqCall(c)[key]).at(-1)!);
-      expect(last('needsAttention')['type']).toEqual([7, 9]);
-      expect(last('dueWithin')['type']).toEqual([7, 9]);
+      expect(tqCall(tq.mock.calls.at(-1)!)['type']).toEqual([7, 9]);
     });
 
     it('with a Focus that hides everything, the grid says so and offers Clear Focus', async () => {
       const h = await open('/my-matters', undefined, () =>
         tq.mockImplementation((...args: unknown[]) =>
-          tqCall(args)['type'] ? of(queuePage([], 0)) : defaultQueue(args),
+          tqCall(args)['type'] ? of(queuePage([], 0)) : defaultQueue(),
         ),
       );
       TestBed.inject(MyMattersFocus).set([7]);
@@ -1443,9 +1390,9 @@ describe('MyMattersPage', () => {
       h.detectChanges();
       await h.fixture.whenStable();
       h.detectChanges();
-      const panel = el(h).querySelector('[data-panel=attention]')!;
+      const panel = el(h).querySelector('[data-panel=tasks]')!;
       expect(panel.querySelector('[data-filtered-empty]')!.textContent).toContain(
-        'Nothing in your Focus needs your attention.',
+        'Nothing in your Focus is open.',
       );
       expect(panel.querySelector('[data-show-all]')).not.toBeNull();
     });
