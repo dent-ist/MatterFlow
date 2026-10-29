@@ -1,6 +1,5 @@
-import { MyMattersActivityItem, MyMattersDeadlineDay } from '../../../api/generated/api-client';
+import { MyMattersDeadlineDay } from '../../../api/generated/api-client';
 import { figureLink } from '../panels/since-panel';
-import { activityRows } from './activity-tab';
 import { calendarWeeks } from '../panels/calendar-panel';
 
 const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {}) =>
@@ -59,33 +58,6 @@ describe('calendarWeeks (Calendar)', () => {
 
   it('is empty without days', () => {
     expect(calendarWeeks([])).toEqual([]);
-  });
-});
-
-describe('Activity tab rows', () => {
-  const item = (eventId: number, isUnread: boolean) =>
-    ({ eventId, isUnread }) as MyMattersActivityItem;
-
-  it('puts "Since your last visit" before the unread ones and "Earlier" before the read ones', () => {
-    const rows = activityRows([item(5, true), item(4, true), item(3, false), item(2, false)]);
-    expect(rows.map((r) => ('divider' in r ? r.divider : r.item.eventId))).toEqual([
-      'Since your last visit',
-      5,
-      4,
-      'Earlier',
-      3,
-      2,
-    ]);
-  });
-
-  it('draws no divider when nothing is unread', () => {
-    const rows = activityRows([item(3, false), item(2, false)]);
-    expect(rows.every((r) => 'item' in r)).toBe(true);
-  });
-
-  it('draws only the first divider when everything is unread', () => {
-    const rows = activityRows([item(3, true), item(2, true)]);
-    expect(rows.filter((r) => 'divider' in r)).toHaveLength(1);
   });
 });
 

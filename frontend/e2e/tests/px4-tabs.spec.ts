@@ -300,8 +300,8 @@ test.describe('My Matters: Trends', () => {
   });
 });
 
-test.describe('My Matters: Activity', () => {
-  test('New in words, the divider, filters, mark as read up to here and for all, load more, comment text never shown', async ({
+test.describe('My Matters: Activity (a grid, issue #946)', () => {
+  test('New in words, a grid of When / Who / What / Task / Matter, filters behind Options, mark all as read, comment text never shown', async ({
     seed,
     personas,
     asUser,
@@ -325,53 +325,85 @@ test.describe('My Matters: Activity', () => {
     const act = panel(page, 'activity-tab');
     await expect(act.locator('[data-activity-row]')).toHaveCount(7);
     await expect(act.locator('[data-new-word]')).toHaveCount(4);
-    await expect(act.locator('[data-divider]')).toHaveText(['Since your last visit', 'Earlier']);
     await expect(act.locator('[data-activity-announce]')).toHaveText(
       /4 new events since your last visit/,
     );
     await expect(page.locator('main')).not.toContainText('SECRET PRIVILEGED WORDS');
-    await expect(act.locator('[data-activity-row]').first()).toContainText('commented on');
-    // Each event links to the task and the matter.
-    await expect(act.locator('[data-matter-link]').first()).toBeVisible();
 
-    // Filters: Kind and Matter live in the address; unread only.
+    // The table: five columns (Matter because there are two matters), the newest first, the comment is only "Commented".
+    await expect(act.getByRole('columnheader')).toHaveText([
+      'When',
+      'Who',
+      'What',
+      'Task',
+      'Matter',
+    ]);
+    await expect(act.locator('[data-sort-when]')).toHaveAttribute('aria-sort', 'descending');
+    const first = act.locator('[data-activity-row]').first();
+    await expect(first.locator('[data-col=what]')).toHaveText('Commented');
+    await expect(first.locator('[data-col=task]')).toContainText('Fresh alpha one');
+    await expect(first.locator('[data-matter-link]')).toBeVisible();
+    // The sort button: oldest first, and back.
+    await act.locator('[data-sort-when] button').click();
+    await expect(page).toHaveURL(/asort=when/);
+    await expect(act.locator('[data-sort-when]')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(
+      act.locator('[data-activity-row]').first().locator('[data-col=what]'),
+    ).not.toHaveText('Commented');
+    await act.locator('[data-sort-when] button').click();
+    await expect(act.locator('[data-sort-when]')).toHaveAttribute('aria-sort', 'descending');
+
+    // Filters live behind Options (the number on the button says how many are in force), in the address.
+    await expect(act.locator('[data-filter=kind]')).toBeHidden();
+    await act.locator('[data-options-trigger]').click();
     await act.locator('[data-filter=kind]').selectOption('TASK_CREATED');
     await expect(page).toHaveURL(/kind=TASK_CREATED/);
     await expect(act.locator('[data-activity-row]')).toHaveCount(4);
+    await expect(act.locator('[data-options-count]')).toHaveText('1');
     await act.locator('[data-filter=unread]').check();
     await expect(act.locator('[data-activity-row]')).toHaveCount(3);
     await act.locator('[data-filter=kind]').selectOption('');
     await act.locator('[data-filter=unread]').uncheck();
+    await expect(act.locator('[data-activity-row]')).toHaveCount(7);
 
-    // Mark as read up to here: that event and the older ones; the newer stay New.
-    const rows = act.locator('[data-activity-row][data-unread=true]');
-    await expect(rows).toHaveCount(4);
-    await rows.nth(1).locator('[data-mark-up-to]').click();
-    await expect(act.locator('[data-new-word]')).toHaveCount(1);
-    await expect(act.locator('[data-activity-announce]')).toHaveText('Marked as read up to here.');
-    await expect(page.locator('[data-activity-link]:focus')).toHaveCount(1);
-    // Mark all as read: no New left, the divider is gone, focus goes to the list.
+    // Mark all as read: no New left, the button is gone, focus goes to the list.
     await act.locator('[data-mark-all-read]').click();
     await expect(act.locator('[data-new-word]')).toHaveCount(0);
-    await expect(act.locator('[data-divider]')).toHaveCount(0);
     await expect(act.locator('[data-mark-all-read]')).toHaveCount(0);
     await expect(act.locator('[data-activity-list]')).toBeFocused();
     await page.reload();
     await expect(act.locator('[data-new-word]')).toHaveCount(0);
   });
 
-  test('30 events at a time with Load more, newest first', async ({ seed, personas, asUser }) => {
+  test('25 events a page with the pager, newest first; one line a row, 44 px; one matter has no Matter column', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
     const w = await mmWorld(seed, personas, 'page');
     const a = await w.matter('Alpha');
     for (let i = 1; i <= 32; i++) await w.task(a, { title: `Paged ${String(i).padStart(2, '0')}` });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters?tab=activity');
     const act = panel(page, 'activity-tab');
-    await expect(act.locator('[data-activity-row]')).toHaveCount(30);
+    await expect(act.locator('[data-activity-row]')).toHaveCount(25);
     await expect(act.locator('[data-activity-row]').first()).toContainText('Paged 32');
-    await act.locator('[data-show-more]').click();
-    await expect(act.locator('[data-activity-row]')).toHaveCount(33); // 32 tasks and the manager set with the matter
-    await expect(act.locator('[data-show-more]')).toHaveCount(0);
+    await expect(act.getByRole('columnheader')).toHaveText(['When', 'Who', 'What', 'Task']);
+    await expect(act.locator('[data-range]')).toHaveText('Showing 1-25 of 33');
+    for (const row of await act.locator('[data-activity-row]').all()) {
+      const box = (await row.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeLessThan(60); // one line
+    }
+    await act.getByRole('button', { name: 'Next' }).click();
+    await expect(page).toHaveURL(/apage=2/);
+    await expect(act.locator('[data-activity-row]')).toHaveCount(8); // 32 tasks and the manager set with the matter
+    await expect(act.locator('[data-activity-announce]')).toHaveText('Page 2 of 2.');
+    await expect(act.getByRole('button', { name: 'Next' })).toBeDisabled();
+    // Changing the sort starts again on the first page.
+    await act.locator('[data-sort-when] button').click();
+    await expect(page).not.toHaveURL(/apage=/);
+    await expect(act.locator('[data-activity-row]')).toHaveCount(25);
   });
 });
 
@@ -482,6 +514,7 @@ test.describe('My Matters tabs: four sizes', () => {
         ['overview', '/my-matters'],
         ['calendar', '/my-matters?view=calendar'],
         ['trends', '/my-matters?tab=trends'],
+        ['breakdown', '/my-matters?tab=breakdown'],
         ['activity', '/my-matters?tab=activity'],
       ];
       for (const [name, url] of urls) {

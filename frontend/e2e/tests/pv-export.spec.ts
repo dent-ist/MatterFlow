@@ -78,24 +78,26 @@ test.describe('Export (#879)', () => {
     const pm = await asUser(w.pm.username);
     await pm.goto('/my-matters?tab=breakdown');
     await expect(pm.locator('table[data-bd-table="matrix"]')).toBeVisible();
-    await pm.locator('[data-export-menu] [data-overflow]').click();
+    // Export is inside the tab's Options menu (issue #911).
+    await pm.locator('[data-panel=breakdown] [data-options-trigger]').click();
     const download = pm.waitForEvent('download');
-    await pm.getByRole('menuitem', { name: 'Download CSV' }).click();
+    await pm.locator('[data-panel=breakdown] [data-export=csv]').click();
     const file = await download;
     const text = (await (await import('node:fs/promises')).readFile((await file.path())!))
       .toString('utf8')
       .replace(/^\uFEFF/, '');
     const lines = text.split('\r\n').filter(Boolean);
     expect(lines[0]).toMatch(/^Matter,Matter name,Client,/);
-    expect(lines).toHaveLength(3); // header, the one matter and the totals row
+    expect(lines).toHaveLength(2); // header and the one matter: a single matter has no "All matters" row (issue #911)
     expect(lines[1]).toContain(a.matterRef);
-    expect(lines[2]).toMatch(/^All matters,/);
-    await expect(pm.locator('[data-export-status]')).toContainText('Downloaded 2 rows.');
+    await expect(pm.locator('[data-panel=breakdown] [data-export-status]')).toContainText(
+      'Downloaded 1 row.',
+    );
     // The browser-side export is audited too (surface, count; no data).
     await expect
       .poll(async () =>
         JSON.stringify(await admin.get('/api/v1/audit/search?eventType=EXPORT_RUN&pageSize=50')),
       )
-      .toContain('Exported 2 rows of my-matters.breakdown');
+      .toMatch(/Exported 1 rows? of my-matters\.breakdown/);
   });
 });

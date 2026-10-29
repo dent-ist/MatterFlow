@@ -133,7 +133,7 @@ public sealed class MyMattersActivityQuery : MyMattersQuery
 {
     public const int DefaultTake = 30;
 
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take", "kind", "unread", "cursor"];
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take", "kind", "unread", "cursor", "dir", "page"];
 
     /// <summary>How many events (default 30, max 100), newest first.</summary>
     [FromQuery(Name = "take"), Range(1, 100)]
@@ -150,9 +150,17 @@ public sealed class MyMattersActivityQuery : MyMattersQuery
     [FromQuery(Name = "unread")]
     public bool? Unread { get; init; }
 
-    /// <summary>Paging: the <c>nextCursor</c> of the previous page. Returns the events older than that event id, still newest first.</summary>
+    /// <summary>Paging: the <c>nextCursor</c> of the previous page. Returns the events older than that event id (newer with <c>dir=asc</c>), in the order asked for.</summary>
     [FromQuery(Name = "cursor"), Range(1, long.MaxValue)]
     public long? Cursor { get; init; }
+
+    /// <summary>The order by When: <c>desc</c> (default, newest first) or <c>asc</c> (oldest first). Issue #946.</summary>
+    [FromQuery(Name = "dir"), StringLength(4)]
+    public string? Dir { get; init; }
+
+    /// <summary>1-based page of <c>take</c> events (the Activity grid's pager). A <c>cursor</c> wins when both are sent. Issue #946.</summary>
+    [FromQuery(Name = "page"), Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
 }
 
 /// <summary>Summary since the person's last visit: the common parameters only.</summary>

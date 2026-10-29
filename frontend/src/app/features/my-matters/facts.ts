@@ -126,6 +126,52 @@ export function activityTime(instant: string, now: Date, zone: string): string {
   return gap === 1 ? 'Yesterday' : formatMonthDay(day);
 }
 
+/** "Today, 9:42 AM", "Yesterday, 9:10 AM", "Oct 21, 2:05 PM": the When cell of the Activity grid (date and time on one line; the full stamp is its tooltip). */
+export function activityWhen(instant: string, now: Date, zone: string): string {
+  const day = calendarDayInZone(instant, zone);
+  const gap = dayIndex(calendarDayInZone(now, zone)) - dayIndex(day);
+  const clock = formatInstantClock(instant, zone);
+  if (gap <= 0) return `Today, ${clock}`;
+  return `${gap === 1 ? 'Yesterday' : formatMonthDay(day)}, ${clock}`;
+}
+
+/** The Who cell of the Activity grid: the person's name, never the account; "System" when nobody did it. */
+export function activityWho(e: Pick<MyMattersActivityItem, 'actorName'>): string {
+  return e.actorName?.trim() || 'System';
+}
+
+/**
+ * The What cell of the Activity grid: one short phrase, without the person (that is the Who cell) and without the task (the Task cell). "Created",
+ * "Moved to In Progress", "Put on hold", "Completed", "Assigned to Dana Rao", "Reassigned from Dana Rao to Priya Rao", "Commented", "Dana Rao became
+ * primary project manager". A comment is only ever "Commented": its text is never read or shown (privilege).
+ */
+export function activityWhat(e: MyMattersActivityItem): string {
+  switch (e.kind) {
+    case 'TASK_CREATED':
+      return 'Created';
+    case 'STATUS_CHANGED':
+      if (e.to === 'ON_HOLD') return 'Put on hold';
+      if (e.to === 'COMPLETED') return 'Completed';
+      if (e.to === 'CANCELLED') return 'Cancelled';
+      return e.to ? `Moved to ${statusWords(e.to)}` : 'Status changed';
+    case 'REASSIGNED':
+      return e.from
+        ? `Reassigned from ${e.from} to ${e.to ?? 'nobody'}`
+        : `Assigned to ${e.to ?? 'nobody'}`;
+    case 'COMMENTED':
+      return 'Commented';
+    case 'MANAGER_CHANGED': {
+      const place = e.managerPlace === 'secondary' ? 'secondary' : 'primary';
+      if (e.to) return `${e.to} became ${place} project manager`;
+      return e.from
+        ? `${e.from} is no longer ${place} project manager`
+        : `The ${place} project manager was cleared`;
+    }
+    default:
+      return 'Changed';
+  }
+}
+
 const SHORT_DATE = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',

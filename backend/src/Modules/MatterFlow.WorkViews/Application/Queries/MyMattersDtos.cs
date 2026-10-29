@@ -275,6 +275,7 @@ public sealed record MyMattersActivityItem(
 /// <param name="SeenEventId">The person's marker: events up to this id are read.</param>
 /// <param name="LatestEventId">The newest event of the answer (0 if none).</param>
 /// <param name="UnreadCount">Unread events in the window (not only in the rows returned, and whatever the matter / kind filter says: the badge is for all of them).</param>
+/// <param name="Total">How many events the matter, kind and unread filters match in the window (the grid's "of N"; the badge is <c>UnreadCount</c>).</param>
 /// <param name="HasMore">More events exist than <c>take</c>.</param>
 /// <param name="NextCursor">When <c>HasMore</c>: pass it as <c>cursor</c> to get the next, older page; null otherwise.</param>
 public sealed record MyMattersActivity(
@@ -284,6 +285,7 @@ public sealed record MyMattersActivity(
     [property: Required] long SeenEventId,
     [property: Required] long LatestEventId,
     [property: Required] int UnreadCount,
+    [property: Required] int Total,
     [property: Required] bool HasMore,
     [property: Required] IReadOnlyList<MyMattersActivityItem> Items,
     long? NextCursor = null);

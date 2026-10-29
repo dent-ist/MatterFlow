@@ -43,6 +43,10 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         var unknown = kinds.FirstOrDefault(k => !KindFilters.Contains(k));
         if (unknown is not null)
             return Error.Validation("kind", "UNKNOWN_KIND", $"Unknown kind '{unknown}'. Allowed: {string.Join(", ", KindFilters)}.");
+        var dir = string.IsNullOrWhiteSpace(query.Dir) ? "desc" : query.Dir.Trim().ToLowerInvariant();
+        if (dir is not ("asc" or "desc"))
+            return Error.Validation("dir", "UNKNOWN_DIR", "dir must be asc or desc.");
+        var ascending = dir == "asc";
 
         // The Matter filter narrows the LIST only: the unread badge counts the whole window, whatever the filter says (so the scope is not narrowed by it).
         var resolved = await scopes.ResolveAsync(query, ct, matterNarrowsScope: false);
@@ -61,29 +65,41 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         var seen = await EnsureSeenAsync(scope.Me, ct);
         var firstId = await FirstIdSinceAsync(since, ct);
         if (firstId is null)
-            return new MyMattersActivity(clock.ZoneId, now, since, seen, 0, 0, false, []);
+            return new MyMattersActivity(clock.ZoneId, now, since, seen, 0, 0, 0, false, []);
 
         var me = scope.Me;
         var events = ScopedEvents(scope, firstId.Value, since, until);
 
-        // The unread badge counts the whole window, whatever the matter / kind filter on the list says.
-        var unreadCount = await events.CountAsync(e => e.AuditEventId > seen && e.ActorUserId != me, ct);
+        // The unread badge counts the whole window, whatever the matter / kind filter on the list says; the total is the list's own "of N". One statement for both.
+        Expression<Func<AuditRow, bool>> isUnread = e => e.AuditEventId > seen && e.ActorUserId != me;
+        var filter = ListFilter(kinds, query.Unread == true ? isUnread : null);
+        var counts = await events.GroupBy(_ => 1).Select(g => new { Unread = g.AsQueryable().Count(isUnread), Total = g.AsQueryable().Count(filter) }).FirstOrDefaultAsync(ct);
+        var unreadCount = counts?.Unread ?? 0;
+        var total = counts?.Total ?? 0;
 
-        var listed = events;
-        if (query.MatterId is { } onlyMatter)
-            listed = listed.Where(e => e.MatterId == onlyMatter);
-        if (kinds.Count > 0)
-            listed = listed.Where(KindPredicate(kinds));
-        if (query.Unread == true)
-            listed = listed.Where(e => e.AuditEventId > seen && e.ActorUserId != me);
+        var listed = events.Where(filter);
         if (query.Cursor is { } cursor)
-            listed = listed.Where(e => e.AuditEventId < cursor);
-
-        var page = await listed.OrderByDescending(e => e.AuditEventId).Take(query.Take + 1).ToListAsync(ct);
+            listed = ascending ? listed.Where(e => e.AuditEventId > cursor) : listed.Where(e => e.AuditEventId < cursor);
+        var ordered = ascending ? listed.OrderBy(e => e.AuditEventId) : listed.OrderByDescending(e => e.AuditEventId);
+        var skip = query.Cursor is null ? (long)(query.Page - 1) * query.Take : 0;
+        var page = await ordered.Skip((int)Math.Min(skip, int.MaxValue)).Take(query.Take + 1).ToListAsync(ct);
         var hasMore = page.Count > query.Take;
         page = [.. page.Take(query.Take)];
         var items = await ToItemsAsync(page, seen, me, ct);
-        return new MyMattersActivity(clock.ZoneId, now, since, seen, page.Count == 0 ? 0 : page[0].AuditEventId, unreadCount, hasMore, items, hasMore ? page[^1].AuditEventId : null);
+        return new MyMattersActivity(clock.ZoneId, now, since, seen, page.Count == 0 ? 0 : page.Max(e => e.AuditEventId), unreadCount, total, hasMore, items, hasMore ? page[^1].AuditEventId : null);
+    }
+
+    /// <summary>The kind and unread filters of the list as one predicate (ANDed; no filter matches everything). The matter is the page's own filter and already narrowed the scope.</summary>
+    private static Expression<Func<AuditRow, bool>> ListFilter(IReadOnlyCollection<string> kinds, Expression<Func<AuditRow, bool>>? unread)
+    {
+        var parameter = Expression.Parameter(typeof(AuditRow), "e");
+        Expression body = Expression.Constant(true);
+        void And(LambdaExpression part) => body = Expression.AndAlso(body, new ReplaceParameter(part.Parameters[0], parameter).Visit(part.Body)!);
+        if (kinds.Count > 0)
+            And(KindPredicate(kinds));
+        if (unread is not null)
+            And(unread);
+        return Expression.Lambda<Func<AuditRow, bool>>(body, parameter);
     }
 
     /// <summary>The smallest audit event id written at or after <paramref name="since"/> (a seek of the time index), or null when there is none; it bounds every read of the log.</summary>

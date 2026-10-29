@@ -153,7 +153,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
   }
 
   for (const size of SIZES) {
-    test(`the Activity tab's filter row has one control height at ${size.width} px`, async ({
+    test(`the Activity tab's Options button is a normal control at ${size.width} px (the filters are inside it, issue #946)`, async ({
       seed,
       personas,
       asUser,
@@ -165,9 +165,17 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto(url('activity'));
       await settled(page, 'activity');
-      const matter = await measure(page, '#at-matter', 'Matter');
+      await expect(page.locator('#at-matter')).toHaveCount(0); // the Matter filter is the page's own now
+      await expect(page.locator('#at-kind')).toBeHidden(); // Kind is inside Options
+      const options = await measure(
+        page,
+        '[data-panel=activity-tab] [data-options-trigger]',
+        'Options',
+      );
+      expect(options.height).toBeGreaterThanOrEqual(size.width < 640 ? 44 : 32);
+      await page.locator('[data-panel=activity-tab] [data-options-trigger]').click();
       const kind = await measure(page, '#at-kind', 'Kind');
-      expectSameBox([matter, kind], `${size.width} px (activity filters)`);
+      if (size.width < 640) expect(kind.height).toBeGreaterThanOrEqual(44);
     });
   }
 

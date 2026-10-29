@@ -83,14 +83,14 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
   template: `
     <!-- Always inside the title row's Options menu (issue #900): the checklist itself, with a heading, no popover of its own. -->
     <div class="fc__inline" role="group" aria-labelledby="fc-inline-h" data-focus data-focus-inline>
-      <p class="fc__title" id="fc-inline-h">Focus</p>
+      <p class="fc__title" id="fc-inline-h">Focus on task types</p>
       <ng-container *ngTemplateOutlet="panel" />
     </div>
     <ng-template #panel>
       <div data-focus-panel>
-        <p class="fc__hint">
-          Pick the task types you work on now. Every list on this page shows only these, until you
-          change it.
+        <p class="fc__hint" data-focus-hint>
+          Tick the task types you want to see. The lists, the calendar and the Breakdown then show
+          only these, until you clear it.
         </p>
         @if (options.options().length > searchOver) {
           <input
@@ -136,7 +136,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
             data-options-pick
             (click)="save()"
           >
-            Save
+            Save Focus
           </button>
           <button
             type="button"
@@ -145,7 +145,7 @@ export function focusLabel(ids: readonly number[], options: readonly TypeOption[
             data-options-pick
             (click)="clearAll()"
           >
-            Clear
+            Clear Focus
           </button>
         </div>
       </div>

@@ -41,10 +41,15 @@ const OVERVIEW: Record<'solo' | 'three', Record<'desktop' | 'phone', Budget>> = 
  * The tabs and the Calendar view: a ratchet, their measured numbers plus about 5 percent, so that later work only lowers them. (Release 3: the Deadlines tab is gone,
  * the Calendar is a view of the Overview behind an icon button; the Data tab was rebuilt in #931 to #933.)
  */
-const TABS: Record<'calendar' | 'data' | 'activity', Record<'desktop' | 'phone', Budget>> = {
+const TABS: Record<'calendar' | 'breakdown' | 'data' | 'activity', Record<'desktop' | 'phone', Budget>> = {
   calendar: {
     desktop: { row: 410, controls: 30, words: 96 },
     phone: { row: 470, controls: 22, words: 85 },
+  },
+  // The Breakdown (issue #911, #912; no task row, the cells are counts): measured by the first run of this spec after the rework.
+  breakdown: {
+    desktop: { row: 0, controls: 40, words: 120 },
+    phone: { row: 0, controls: 30, words: 120 },
   },
   // The Data tab holds no task row (row is not measured): tiles, selection bar and the asset-type grid. Measured: 23 / 27 controls and 74 words on a desktop, 20 / 21 and 53 / 49 on a phone.
   data: {
@@ -60,6 +65,7 @@ const TABS: Record<'calendar' | 'data' | 'activity', Record<'desktop' | 'phone',
 /** Where each ratcheted view lives, and the tab that is selected there. */
 const VIEWS = {
   calendar: { url: '/my-matters?view=calendar', tab: 'overview' },
+  breakdown: { url: '/my-matters?tab=breakdown', tab: 'breakdown' },
   data: { url: '/my-matters?tab=data', tab: 'data' },
   activity: { url: '/my-matters?tab=activity', tab: 'activity' },
 } as const;
@@ -140,7 +146,7 @@ for (const who of ['solo', 'three'] as const) {
         expect(m.repeatedTaskCodes, `a task id appears twice on the Overview (${say(m)})`).toBe(0);
         expect(m.horizontalScroll, 'sideways scroll').toBe(false);
 
-        for (const tab of ['calendar', 'data', 'activity'] as const) {
+        for (const tab of ['calendar', 'breakdown', 'data', 'activity'] as const) {
           await page.goto(VIEWS[tab].url);
           await settled(page, VIEWS[tab].tab);
           const t = await calmMetrics(page);

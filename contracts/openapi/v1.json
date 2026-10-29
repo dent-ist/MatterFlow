@@ -9378,6 +9378,25 @@
             }
           },
           {
+            "name": "dir",
+            "in": "query",
+            "schema": {
+              "maxLength": 4,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -19197,6 +19216,7 @@
           "seenEventId",
           "latestEventId",
           "unreadCount",
+          "total",
           "hasMore",
           "items"
         ],
@@ -19222,6 +19242,10 @@
             "format": "int64"
           },
           "unreadCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
             "type": "integer",
             "format": "int32"
           },

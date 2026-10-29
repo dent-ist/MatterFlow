@@ -107,4 +107,49 @@ public sealed class MyMattersActivityFiltersTests(SqlServerFixture sql) : MyMatt
         seen.ShouldBe([.. seen.OrderByDescending(x => x)]);
         pages.ShouldBeGreaterThan(2);
     }
+
+    [Fact]
+    public async Task A_page_number_and_a_direction_walk_the_same_list_and_the_total_counts_the_filtered_list()
+    {
+        await Mine("activity");
+        for (var i = 0; i < 7; i++)
+            await MakeAsync($"grid-{i}", i % 2 == 0 ? M1 : M2, new() { ["dueDate"] = "2099-03-01" });
+
+        var whole = EventIds(await Mine("activity?take=100"));
+        var total = (await Mine("activity?take=3")).GetProperty("total").GetInt32();
+        total.ShouldBe(whole.Count);
+
+        // Pages of 3, newest first, then oldest first: together exactly the whole list, in order, with the same total on every page.
+        var newest = new List<long>();
+        var oldest = new List<long>();
+        for (var page = 1; page <= (total + 2) / 3; page++)
+        {
+            var down = await Mine($"activity?take=3&page={page}");
+            var up = await Mine($"activity?take=3&page={page}&dir=asc");
+            down.GetProperty("total").GetInt32().ShouldBe(total);
+            up.GetProperty("total").GetInt32().ShouldBe(total);
+            newest.AddRange(EventIds(down));
+            oldest.AddRange(EventIds(up));
+        }
+
+        newest.ShouldBe(whole);
+        oldest.ShouldBe([.. whole.AsEnumerable().Reverse()]);
+        EventIds(await Mine($"activity?take=3&page={(total + 2) / 3 + 1}")).ShouldBeEmpty(); // a page past the end is empty, not an error
+
+        // The total follows the list's own filters; the unread badge does not.
+        var created = await Mine("activity?take=3&kind=TASK_CREATED");
+        created.GetProperty("total").GetInt32().ShouldBe(Items(await Mine("activity?take=100&kind=TASK_CREATED")).Count);
+        created.GetProperty("total").GetInt32().ShouldBeLessThan(total);
+        var oneMatter = await Mine($"activity?take=3&matterId={M1}");
+        oneMatter.GetProperty("total").GetInt32().ShouldBe(Items(await Mine($"activity?take=100&matterId={M1}")).Count);
+        oneMatter.GetProperty("unreadCount").GetInt32().ShouldBe((await Mine("activity?take=3")).GetProperty("unreadCount").GetInt32());
+
+        // A cursor still works in the other direction.
+        var firstAsc = await Mine("activity?take=2&dir=asc");
+        var next = await Mine($"activity?take=2&dir=asc&cursor={firstAsc.GetProperty("nextCursor").GetInt64()}");
+        EventIds(next).ShouldBe(oldest.Skip(2).Take(2).ToList());
+
+        await ProblemAsync(await A.GetAsync("/api/v1/my-matters/activity?dir=sideways"), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+        await ProblemAsync(await A.GetAsync("/api/v1/my-matters/activity?page=0"), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+    }
 }

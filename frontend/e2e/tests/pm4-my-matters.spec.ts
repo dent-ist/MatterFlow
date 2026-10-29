@@ -483,8 +483,9 @@ test.describe('My Matters: the events of the Activity tab (they left the Overvie
     await expect(panel.locator('[data-activity-row][data-unread=true]').first()).toContainText(
       'New',
     );
-    await expect(panel).toContainText('moved "Created by the admin" to On Hold');
-    await expect(panel).toContainText('created "Created by the admin"');
+    // One row per event: the What column says it in a short phrase, the Task column names the task (issue #946).
+    const about = panel.locator('[data-activity-row]').filter({ hasText: 'Created by the admin' });
+    await expect(about.locator('[data-col=what]')).toHaveText(['Put on hold', 'Created']);
     await expect(panel).not.toContainText('Waiting for the client'); // the status note is never shown
     // Looking at the tab does not move the marker.
     await page.reload();

@@ -58,6 +58,9 @@ public sealed class SensitiveMyMattersTests(SqlServerFixture sql)
 
                 var activity = await GetAsync(http, "/api/v1/my-matters/activity?scope=all&take=100");
                 activity.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("matterId").GetInt32()).Distinct().ShouldAllBe(id => visible.Contains(id), name + ": activity matters");
+                // The grid's "of N" counts the events this person may see and nothing else (issue #946): it never reveals a hidden matter's events.
+                if (!activity.GetProperty("hasMore").GetBoolean())
+                    activity.GetProperty("total").GetInt32().ShouldBe(activity.GetProperty("items").GetArrayLength(), name + ": activity total");
 
                 var text = summary.GetRawText() + attention.GetRawText() + deadlines.GetRawText() + workload.GetRawText() + activity.GetRawText();
                 foreach (var matter in u.SensitiveMatters.Except(visible))

@@ -149,9 +149,11 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await expect(page).toHaveTitle(/My Matters: Breakdown - /);
     const table = page.locator('table[data-bd-table="matrix"]');
     await expect(table).toBeVisible();
-    await expect(table.locator('caption')).toBeVisible();
+    await expect(table.locator('caption')).toBeAttached(); // the caption is for screen readers (issue #911)
     const slowCell = table.locator(`tr[data-matter-id="${a.matterId}"] [data-bd-cell]`).first();
-    await expect(table.locator('tfoot')).toContainText('3');
+    // One matter: one row, no "All matters" row, no By matter / All together toggle (issue #911).
+    await expect(table.locator('tfoot')).toHaveCount(0);
+    await expect(page.locator('[data-bd-view]')).toHaveCount(0);
     // A cell opens exactly the tasks it counts.
     const href = await table
       .locator(`tr[data-matter-id="${a.matterId}"] a[data-bd-cell]`)
@@ -162,6 +164,12 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await expect(page).toHaveURL(/\/tasks\?/);
     await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
 
+    // With a second matter the toggle and the All matters row appear, and the all-together view lists the task types.
+    const b = await w.matter('Bravo');
+    await w.task(b, {});
+    await page.goto('/my-matters?tab=breakdown');
+    await expect(page.locator('[data-bd-view]')).toHaveCount(2);
+    await expect(table.locator('tfoot')).toContainText('All matters');
     await page.goto('/my-matters?tab=breakdown&bview=types');
     const typeRow = page.locator(`[data-bd-type][data-type-id="${slow.id}"]`);
     await expect(typeRow).toBeVisible();

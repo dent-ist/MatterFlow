@@ -186,6 +186,7 @@ function activity(unread = 2) {
     seenEventId: 10,
     latestEventId: 12,
     unreadCount: unread,
+    total: 2,
     hasMore: false,
     items: [
       {
@@ -1042,22 +1043,22 @@ describe('MyMattersPage', () => {
       expect(router.parseUrl(router.url).queryParams['clientId']).toBe('4');
     });
 
-    it('the Breakdown tab is a real table of matters by task type with a totals row and cells that open the filtered queue (PV-11)', async () => {
+    it('the Breakdown tab is a real table of matters by task type, one number per cell, and no "All matters" row for one matter (PV-11, #911)', async () => {
       const h = await open('/my-matters?tab=breakdown');
       const root = el(h).querySelector('[data-panel=breakdown]')!;
       const table = root.querySelector('table[data-bd-table=matrix]')!;
       expect(table.querySelector('caption')).not.toBeNull();
       expect(
         Array.from(table.querySelectorAll('thead th')).map((t) => t.textContent!.trim()),
-      ).toEqual(['Matter', 'Production', 'Review', 'Intake', 'All types']);
+      ).toEqual(['Matter', 'Production', 'Review', 'Intake', 'Total']);
       const cell = table.querySelector<HTMLAnchorElement>('[data-bd-cell]')!;
-      expect(cell.textContent!.trim()).toBe('6');
+      expect(cell.textContent!.replace(/\s+/g, '')).toBe('6!');
       expect(cell.getAttribute('href')).toBe('/tasks?matter=5&type=1&status=NEW');
       expect(cell.getAttribute('aria-label')).toBe('90001-80001, Production: 6 open, 2 overdue');
-      expect(table.querySelector('[data-bd-overdue]')!.textContent).toContain('2 overdue');
+      // The overdue part is a mark in the same link, never a second link in the cell.
+      expect(table.querySelectorAll('tbody td:nth-child(2) a')).toHaveLength(1);
       expect(table.querySelector('tbody th[scope=row]')!.textContent).toContain('Merger');
-      const totals = table.querySelector('tfoot [data-bd-totals], tfoot tr')!;
-      expect(totals.textContent).toContain('11');
+      expect(table.querySelector('tfoot')).toBeNull();
       expect(api['getMyMattersBreakdown'].mock.calls[0][0]).toBe('matrix');
     });
 
