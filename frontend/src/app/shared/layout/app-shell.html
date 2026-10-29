@@ -199,6 +199,11 @@
         }
       </ul>
     }
+    <!-- The version, pinned to the foot of the panel (MM-44, #940). Not a link; the rail shows the name tip on hover. -->
+    <p class="mf-nav-version" data-testid="nav-version" [attr.data-tip]="versionName">
+      <span class="mf-sr-only">{{ versionName }}</span
+      ><span aria-hidden="true">{{ versionLabel }}</span>
+    </p>
   </nav>
 
   <main id="mf-main" #main tabindex="-1" class="mf-main">

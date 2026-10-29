@@ -41,6 +41,7 @@ import { UserMenu } from './user-menu';
 import { ConnectionBanner } from './connection-banner';
 import { NotificationBell } from './notification-bell';
 import { NavTip } from './nav-tip';
+import { versionLabel, versionName } from './app-version';
 import { RouteAnnouncer } from './route-announcer';
 
 /**
@@ -89,6 +90,8 @@ export class AppShell {
   protected readonly auth = inject(AuthStore);
   protected readonly brand = inject(BrandingService);
   protected readonly pendingUsers = inject(PendingUsersStore);
+  protected readonly versionLabel = versionLabel();
+  protected readonly versionName = versionName();
   /** True while a fixed-header grid page is on screen: the main area then does not scroll (only the grid does). */
   protected readonly layout = inject(ShellLayout);
   private readonly router = inject(Router);

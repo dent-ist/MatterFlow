@@ -64,17 +64,19 @@
   width: 220px;
   flex: none;
   padding: var(--mf-s3);
-  border-right: 1px solid var(--mf-border);
+  border-right: 1px solid var(--mf-nav-border);
+  display: flex;
+  flex-direction: column;
   /* A soft shadow on the bottom (and top) edge shows only while more items are hidden beyond it, so a short window
      still tells the user the menu scrolls (UXR2-16). */
   background:
-    linear-gradient(var(--mf-surface) 30%, transparent) center top / 100% 24px no-repeat local,
-    linear-gradient(transparent, var(--mf-surface) 70%) center bottom / 100% 24px no-repeat local,
+    linear-gradient(var(--mf-nav-bg) 30%, transparent) center top / 100% 24px no-repeat local,
+    linear-gradient(transparent, var(--mf-nav-bg) 70%) center bottom / 100% 24px no-repeat local,
     radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 22%), transparent) center top / 100% 8px
       no-repeat scroll,
     radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 22%), transparent) center bottom / 100%
       8px no-repeat scroll,
-    var(--mf-surface);
+    var(--mf-nav-bg);
   /* Stays in view while the page scrolls; scrolls itself when the window is shorter than the menu. */
   position: sticky;
   top: var(--mf-header-h);
@@ -97,23 +99,24 @@
     min-height: var(--mf-row-h);
     padding: 0 var(--mf-s3);
     border-radius: var(--mf-radius);
-    color: var(--mf-text);
+    color: var(--mf-nav-text);
     text-decoration: none;
 
     &:hover {
-      background: var(--mf-surface-alt);
+      background: var(--mf-nav-hover-bg);
     }
 
     &.mf-active {
-      background: var(--mf-selected-bg);
-      color: var(--mf-primary);
+      background: var(--mf-nav-selected-bg);
+      color: var(--mf-nav-selected-fg);
       font-weight: 600;
+      box-shadow: inset 3px 0 0 var(--mf-nav-marker);
     }
   }
 
   hr {
     border: 0;
-    border-top: 1px solid var(--mf-border);
+    border-top: 1px solid var(--mf-nav-border);
     margin: var(--mf-s3) 0;
   }
 
@@ -132,7 +135,7 @@
   font-size: var(--mf-fs-xs);
   font-weight: 600;
   text-transform: uppercase;
-  color: var(--mf-text-muted);
+  color: var(--mf-nav-text-muted);
 }
 
 /* The Work and Records groups (S6, #621): a small label each, a gap between them; in the 56 px rail the labels are screen-reader only and
@@ -175,7 +178,7 @@
   .mf-nav-group + .mf-nav-group {
     margin-top: var(--mf-s2);
     padding-top: var(--mf-s2);
-    border-top: 1px solid var(--mf-border);
+    border-top: 1px solid var(--mf-nav-border);
   }
 }
 
@@ -270,7 +273,7 @@
   }
 
   .mf-nav.mf-nav--open {
-    display: block;
+    display: flex;
     overflow-y: auto;
   }
 
@@ -287,6 +290,7 @@
   .mf-nav-close {
     display: inline-flex;
     align-items: center;
+    align-self: flex-start;
     gap: var(--mf-s2);
     margin-bottom: var(--mf-s2);
   }

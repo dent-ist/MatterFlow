@@ -24,3 +24,37 @@
     line-height: 0;
   }
 }
+
+/* Navigation panel colours and the version line (MM-43 #939, MM-44 #940; global because the shell stylesheet is at its 5 kB budget). */
+.mf-nav > * {
+  flex-shrink: 0;
+}
+
+.mf-nav :focus-visible {
+  outline-color: var(--mf-nav-focus);
+}
+
+/* The selected item keeps a bar in forced-colors mode too (the inset shadow is dropped there). */
+@media (forced-colors: active) {
+  .mf-nav a.mf-active {
+    border-left: 3px solid;
+  }
+}
+
+.mf-nav-version {
+  margin: auto 0 0;
+  padding: var(--mf-s3) var(--mf-s3) var(--mf-s1);
+  font-size: var(--mf-fs-xs);
+  line-height: 1.2;
+  color: var(--mf-nav-text-muted);
+  user-select: text;
+}
+
+@media (min-width: 640px) and (max-width: 1099px) {
+  .mf-nav-version {
+    padding-inline: 0;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+}

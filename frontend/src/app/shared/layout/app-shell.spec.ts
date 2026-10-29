@@ -7,6 +7,7 @@ import { Permission } from '../../core/auth/permissions';
 import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { ok, settle } from '../testing/org-testing';
 import { AppShell } from './app-shell';
+import { versionLabel, versionName } from './app-version';
 import { SkipTarget } from './skip-target';
 import { MATTERS_ROUTES } from '../../features/matters/matters.routes';
 import { PROJECTS_ROUTES } from '../../features/projects/projects.routes';
@@ -265,6 +266,20 @@ describe('AppShell header search', () => {
       expect(navLabels(admin)).toContain('Task Queue');
       expect(admin.nativeElement.querySelector('[data-nav-more]')).toBeNull();
     });
+  });
+
+  it('shows the version at the foot of the nav, read as "Version 0.1.1", not a link or a button (MM-44, #940)', async () => {
+    const fixture = await create(['Task.View']);
+    const nav = (fixture.nativeElement as HTMLElement).querySelector('nav')!;
+    const version = nav.querySelector<HTMLElement>('[data-testid="nav-version"]')!;
+    expect(version.textContent!.replace(/\s+/g, ' ').trim()).toBe(
+      `${versionName()}${versionLabel()}`,
+    );
+    expect(version.querySelector('.mf-sr-only')!.textContent).toBe(versionName());
+    expect(version.querySelector('[aria-hidden="true"]')!.textContent).toBe(versionLabel());
+    expect(version.getAttribute('data-tip')).toBe(versionName());
+    expect(version.closest('a,button')).toBeNull();
+    expect(nav.lastElementChild).toBe(version);
   });
 
   it('hides My Matters without Task.View or without Matter.View, never disabled (#691)', async () => {

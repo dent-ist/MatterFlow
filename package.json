@@ -1,5 +1,6 @@
 {
   "name": "matterflow",
+  "version": "0.1.1",
   "private": true,
   "description": "Root scripts to run MatterFlow locally: SQL Server (Docker), API, Angular dev server.",
   "scripts": {
