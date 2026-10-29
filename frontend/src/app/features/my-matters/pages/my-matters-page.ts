@@ -37,6 +37,7 @@ import {
 import { LoadGroup } from '../panel-loader';
 import { CalendarToggle } from '../calendar-toggle';
 import { CalendarPanel } from '../panels/calendar-panel';
+import { parseMonth } from '../calendar-month';
 import { TaskGrid } from '../panels/task-grid';
 import { SincePanel, SinceFeed } from '../panels/since-panel';
 import { ActivityTab } from '../tabs/activity-tab';
@@ -56,17 +57,7 @@ const TAB_LABELS: Record<MmTab, string> = {
 /** How long the page may hold its body back for the answers that decide its layout (a slow server never leaves it blank). */
 const HOLD_MS = 1200;
 
-const FILTER_KEYS = [
-  'scope',
-  'role',
-  'clientId',
-  'matterId',
-  'range',
-  'from',
-  'to',
-  'managerId',
-  'show',
-] as const;
+const FILTER_KEYS = ['scope', 'role', 'clientId', 'matterId', 'managerId', 'show'] as const;
 
 function same(a: MmFilters, b: MmFilters): boolean {
   return (
@@ -74,9 +65,6 @@ function same(a: MmFilters, b: MmFilters): boolean {
     a.role === b.role &&
     a.clientId === b.clientId &&
     a.matterId === b.matterId &&
-    a.range === b.range &&
-    a.from === b.from &&
-    a.to === b.to &&
     a.managerId === b.managerId &&
     a.show === b.show
   );
@@ -395,7 +383,8 @@ function storage(): Storage | null {
                   @defer (on immediate) {
                     <mf-mm-calendar
                       [filters]="filters()"
-                      (filterChange)="update($event)"
+                      [month]="calendarMonth()"
+                      (monthChange)="setMonth($event)"
                       (closed)="setCalendar(false)"
                     />
                   } @placeholder {
@@ -458,10 +447,8 @@ export class MyMattersPage {
       return tab;
     }),
   );
-  /** The filters of the filter bar that are in force. The date range is not one of them: its control is inside the Deadlines tab (issue #906). */
-  protected readonly barActive = computed(() =>
-    activeFilterCount({ ...this.filters(), range: DEFAULT_FILTERS.range }),
-  );
+  /** The filters of the filter bar that are in force (the pre-filter of the grid is not one of them: the grid has its own Clear filter). */
+  protected readonly barActive = computed(() => activeFilterCount(this.filters()));
   /** What is set in the phone's header menu: the Focus and the All matters scope (the number on its button). */
   protected readonly headerActive = computed(
     () => (this.focus.types().length > 0 ? 1 : 0) + (this.filters().scope === 'all' ? 1 : 0),
@@ -470,6 +457,8 @@ export class MyMattersPage {
   protected readonly calendarShown = computed(
     () => this.tab() === 'overview' && this.params().get('view') === 'calendar',
   );
+  /** The month the Calendar shows (`?month=yyyy-mm`); null is the month of today. */
+  protected readonly calendarMonth = computed(() => parseMonth(this.params().get('month')));
   /** The person's one matter (scope Mine), named after the grid's heading on a wide screen. */
   protected readonly oneMatter = computed(() => {
     const m = this.filters().scope === 'mine' ? this.managed.only() : null;
@@ -646,7 +635,7 @@ export class MyMattersPage {
 
   /** Switches the task area between the grids and the Calendar; the choice is remembered per person (a convenience, the address stays the source of truth). */
   protected setCalendar(on: boolean): void {
-    this.go({ view: on ? 'calendar' : null }, true);
+    this.go({ view: on ? 'calendar' : null, month: null }, true);
     try {
       const s = storage();
       if (on) s?.setItem(this.calendarKey(), 'calendar');
@@ -662,6 +651,11 @@ export class MyMattersPage {
       },
       { injector: this.injector },
     );
+  }
+
+  /** Previous, Next or Today in the Calendar: the month is in the address (null leaves it, which is the current month); the history is not filled with months. */
+  protected setMonth(month: string | null): void {
+    this.go({ month }, true);
   }
 
   /** A filter changed: the address changes (a leftover `page` from an older link is dropped). */

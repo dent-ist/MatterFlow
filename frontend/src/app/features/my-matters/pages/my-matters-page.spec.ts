@@ -53,6 +53,44 @@ const task = (id: number, over: object = {}) => ({
   ...over,
 });
 
+/** One month of the Calendar: every day, with a task on the 26th (overdue) and two on the 28th (one due). */
+function calendar(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const days = Array.from({ length: last }, (_, i) => {
+    const date = `${month}-${String(i + 1).padStart(2, '0')}`;
+    const items =
+      i + 1 === 26
+        ? [task(11, { factCode: 'OVERDUE', dueDate: date })]
+        : i + 1 === 28
+          ? [
+              task(12, { factCode: 'DUE_IN_DAYS', dueDate: date }),
+              task(13, { factCode: 'DUE_IN_DAYS', dueDate: date }),
+            ]
+          : [];
+    const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+    return {
+      date,
+      isWeekend: weekday === 0 || weekday === 6,
+      isToday: false,
+      count: items.length,
+      query: `managedByMe=true&status=NEW&dueFrom=${date}&dueTo=${date}`,
+      items,
+    };
+  });
+  return {
+    timeZone: 'America/New_York',
+    asOfUtc: '2026-10-23T12:00:00Z',
+    month,
+    fromDate: `${month}-01`,
+    toDate: `${month}-${last}`,
+    today: '2026-10-23',
+    total: 3,
+    overdue: 1,
+    days,
+  };
+}
+
 /** The arguments of `getTaskQueue`, by name, in the order of the generated client. */
 const TQ_ARGS = [
   'group',
@@ -332,21 +370,9 @@ describe('MyMattersPage', () => {
   ) {
     api = {
       getMyMattersSummary: vi.fn().mockReturnValue(of(summary())),
-      getMyMattersDeadlines: vi.fn().mockReturnValue(
-        of({
-          timeZone: 'x',
-          asOfUtc: 'x',
-          days: 28,
-          fromDate: '2026-10-23',
-          toDate: '2026-11-20',
-          total: 30,
-          query: 'managedByMe=true&dueTo=2026-11-20&sort=due',
-          items: [
-            task(3, { factCode: 'DUE_IN_DAYS', factDays: 3 }),
-            task(4, { dueDate: '2026-10-27' }),
-          ],
-        }),
-      ),
+      getMyMattersCalendar: vi
+        .fn()
+        .mockImplementation((month?: string) => of(calendar(month ?? '2026-10'))),
       getMyMattersSinceLastVisit: vi.fn().mockReturnValue(of(since())),
       getMyMattersBreakdown: vi.fn().mockImplementation((view: string) => of(breakdown(view))),
       getMyMattersActivity: vi.fn().mockReturnValue(of(activity())),
@@ -786,6 +812,190 @@ describe('MyMattersPage', () => {
     expect(Object.values(localStorage)).not.toContain('calendar');
   });
 
+  describe('the Calendar is one month (epic #893, #944)', () => {
+    const grid = (h: { fixture: { nativeElement: unknown } }) =>
+      el(h).querySelector<HTMLElement>('[data-panel=calendar] table[data-calendar]')!;
+    const day = (h: { fixture: { nativeElement: unknown } }, date: string) =>
+      el(h).querySelector<HTMLElement>(`td[data-day="${date}"]`)!;
+    const key = (target: HTMLElement, k: string) =>
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }),
+      );
+    const addressMonth = () => {
+      const router = TestBed.inject(Router);
+      return router.parseUrl(router.url).queryParams['month'];
+    };
+
+    it('shows the month by name with Previous, Next and Today, an ARIA grid with one tab stop, and asks the server for that month only', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      expect(el(h).querySelector('[data-cal-month]')!.textContent!.trim()).toBe('October 2026');
+      expect(api['getMyMattersCalendar']).toHaveBeenCalledWith(
+        '2026-10',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+      expect(grid(h).getAttribute('role')).toBe('grid');
+      expect(grid(h).getAttribute('aria-label')).toBe('October 2026');
+      expect(
+        Array.from(grid(h).querySelectorAll('thead th')).map((t) => t.textContent!.trim()),
+      ).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+      expect(grid(h).querySelectorAll('td[data-day]')).toHaveLength(31);
+      // ONE tab stop in the grid (the other days and the task links are reached by arrows).
+      expect(grid(h).querySelectorAll('td[tabindex="0"]')).toHaveLength(1);
+      expect(grid(h).querySelectorAll('a[tabindex="0"], a:not([tabindex])')).toHaveLength(0);
+      expect(el(h).querySelector('[data-calendar-summary]')!.textContent).toContain(
+        'October 2026: 3 tasks due, 1 overdue.',
+      );
+      // The month's buttons name where they go.
+      expect(el(h).querySelector('[data-cal-prev]')!.getAttribute('aria-label')).toBe(
+        'Previous month, September 2026',
+      );
+      expect(el(h).querySelector('[data-cal-next]')!.getAttribute('aria-label')).toBe(
+        'Next month, November 2026',
+      );
+    });
+
+    it('Previous, Next and Today change the month in the address and ask for it; no Dates choice is left (#944)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      const press = async (selector: string) => {
+        el(h).querySelector<HTMLButtonElement>(selector)!.click();
+        await settle(h);
+      };
+      await press('[data-cal-next]');
+      expect(addressMonth()).toBe('2026-11');
+      expect(el(h).querySelector('[data-cal-month]')!.textContent!.trim()).toBe('November 2026');
+      expect(api['getMyMattersCalendar'].mock.calls.at(-1)![0]).toBe('2026-11');
+      expect(grid(h).querySelectorAll('td[data-day]')).toHaveLength(30);
+      await press('[data-cal-prev]');
+      await press('[data-cal-prev]');
+      expect(addressMonth()).toBe('2026-09');
+      expect(el(h).querySelector('[data-cal-today]')).not.toBeNull();
+      await press('[data-cal-today]');
+      expect(addressMonth()).toBeUndefined();
+      expect(el(h).querySelector('#mm-range, [data-mm-dates]')).toBeNull();
+    });
+
+    it('an overdue task carries a warning icon and the word Overdue (for screen readers and as its tooltip), on its own due date; the others carry none (#944)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      const late = day(h, '2026-10-26');
+      expect(late.querySelector('[data-overdue-icon]')).not.toBeNull();
+      expect(late.querySelector('.mf-sr-only')!.textContent).toContain('Overdue');
+      expect(late.querySelector('a[data-deadline-row]')!.getAttribute('title')).toBe(
+        'Overdue: TSK-11 Task 11',
+      );
+      expect(late.getAttribute('aria-label')).toBe('Mon Oct 26: 1 task due, 1 overdue');
+      const due = day(h, '2026-10-28');
+      expect(due.querySelectorAll('a[data-deadline-row]')).toHaveLength(2);
+      expect(due.querySelector('[data-overdue-icon]')).toBeNull();
+      expect(due.getAttribute('aria-label')).toBe('Wed Oct 28: 2 tasks due');
+    });
+
+    it('a busy day shows its first three tasks and "+N more", which opens the day in the Task Queue (#944)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10', undefined, (a) =>
+        a['getMyMattersCalendar'].mockImplementation((month: string) => {
+          const c = calendar(month);
+          c.days[27] = {
+            ...c.days[27],
+            count: 6,
+            items: [21, 22, 23, 24, 25].map((id) => task(id, { dueDate: '2026-10-28' })),
+          } as never;
+          return of(c);
+        }),
+      );
+      const busy = day(h, '2026-10-28');
+      expect(busy.querySelectorAll('a[data-deadline-row]')).toHaveLength(3);
+      const more = busy.querySelector<HTMLAnchorElement>('a[data-day-more]')!;
+      expect(more.textContent!.trim()).toBe('+3 more');
+      expect(more.getAttribute('href')).toContain('/tasks?');
+      expect(more.getAttribute('href')).toContain('dueFrom=2026-10-28');
+    });
+
+    it('the Matter, the pre-filter and the Focus go to the month (#944)', async () => {
+      await open('/my-matters?view=calendar&month=2026-10&matterId=7&show=overdue&clientId=4');
+      expect(api['getMyMattersCalendar']).toHaveBeenLastCalledWith(
+        '2026-10',
+        'overdue',
+        undefined,
+        undefined,
+        undefined,
+        4,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        7,
+      );
+    });
+
+    it('arrows move between days of the month, Home and End to the ends of the week, and the tab stop follows (#944, #420: keys of the control only)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      const start = day(h, '2026-10-14'); // a Wednesday
+      start.focus();
+      key(start, 'ArrowRight');
+      expect(document.activeElement).toBe(day(h, '2026-10-15'));
+      key(document.activeElement as HTMLElement, 'ArrowDown');
+      expect(document.activeElement).toBe(day(h, '2026-10-22'));
+      key(document.activeElement as HTMLElement, 'ArrowUp');
+      key(document.activeElement as HTMLElement, 'ArrowLeft');
+      expect(document.activeElement).toBe(day(h, '2026-10-14'));
+      key(document.activeElement as HTMLElement, 'Home');
+      expect(document.activeElement).toBe(day(h, '2026-10-12'));
+      key(document.activeElement as HTMLElement, 'End');
+      expect(document.activeElement).toBe(day(h, '2026-10-18'));
+      // One tab stop, now on the day the person reached.
+      h.detectChanges();
+      expect(grid(h).querySelectorAll('td[tabindex="0"]')).toHaveLength(1);
+      expect(day(h, '2026-10-18').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('Page Down and an arrow past the end of the month go to the next month, and the focus follows the day (#944)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      const start = day(h, '2026-10-29');
+      start.focus();
+      key(start, 'PageDown');
+      await settle(h);
+      expect(addressMonth()).toBe('2026-11');
+      expect(document.activeElement).toBe(day(h, '2026-11-29'));
+      key(document.activeElement as HTMLElement, 'ArrowDown');
+      await settle(h);
+      expect(addressMonth()).toBe('2026-12');
+      expect(document.activeElement).toBe(day(h, '2026-12-06'));
+      key(document.activeElement as HTMLElement, 'PageUp');
+      await settle(h);
+      expect(addressMonth()).toBe('2026-11');
+      expect(document.activeElement).toBe(day(h, '2026-11-06'));
+    });
+
+    it('Enter goes into a day with tasks, Up and Down move between its tasks, Escape comes back to the day (#944)', async () => {
+      const h = await open('/my-matters?view=calendar&month=2026-10');
+      const cell = day(h, '2026-10-28');
+      cell.focus();
+      key(cell, 'Enter');
+      const links = Array.from(cell.querySelectorAll<HTMLElement>('a'));
+      expect(links).toHaveLength(2);
+      expect(document.activeElement).toBe(links[0]);
+      key(links[0], 'ArrowDown');
+      expect(document.activeElement).toBe(links[1]);
+      key(links[1], 'ArrowUp');
+      expect(document.activeElement).toBe(links[0]);
+      key(links[0], 'Escape');
+      expect(document.activeElement).toBe(cell);
+      // A day with no task: Enter does nothing.
+      const empty = day(h, '2026-10-14');
+      empty.focus();
+      key(empty, 'Enter');
+      expect(document.activeElement).toBe(empty);
+    });
+  });
+
   it('a visit with no view in the address opens the Calendar when that is what the person last used (#929)', async () => {
     localStorage.setItem('mf-my-matters-calendar-1', 'calendar');
     const h = await open('/my-matters');
@@ -1022,8 +1232,6 @@ describe('MyMattersPage', () => {
         'Breakdown',
       );
       expect(api['getMyMattersBreakdown']).toHaveBeenCalled();
-      // The date control lives in the Deadlines tab, never in the filter bar; a role that is in force keeps its control.
-      expect(el(h).querySelector('#mm-range')).toBeNull();
       expect(el(h).querySelector('[data-filter=role]')).not.toBeNull();
     });
 
@@ -1365,14 +1573,15 @@ describe('MyMattersPage', () => {
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
     });
 
-    it('the Dates control is in the Calendar and never in the filter bar (#906, #929)', async () => {
+    it('the Calendar has no Dates choice at all: a month with Previous, Next and Today, and no grid behind it (#906, #929, #944)', async () => {
       const h = await open('/my-matters?view=calendar', undefined, undefined, [
         matter(5, 2, 'primary'),
         matter(6, 3, 'secondary'),
       ]);
-      expect(el(h).querySelector('[data-mm-tabpanel] #mm-range')).not.toBeNull();
-      expect(el(h).querySelector('[data-mm-filters] #mm-range')).toBeNull();
-      expect(el(h).querySelector('[data-panel=calendar] [data-range]')).toBeNull(); // the old 2 / 4 week buttons
+      expect(el(h).querySelector('#mm-range, [data-mm-dates], [data-range]')).toBeNull();
+      expect(el(h).querySelector('[data-cal-prev]')).not.toBeNull();
+      expect(el(h).querySelector('[data-cal-next]')).not.toBeNull();
+      expect(el(h).querySelector('[data-cal-today]')).not.toBeNull();
       // No grid is drawn behind it: the calendar IS the task area.
       expect(el(h).querySelector('[data-panel=tasks]')).toBeNull();
     });

@@ -1,59 +1,15 @@
 import {
-  OLDEST_FIRST,
   activityText,
   activityTime,
   activityWhat,
   activityWhen,
   activityWho,
   dayHeading,
-  factText,
-  groupByDay,
-  holdHint,
   shortDate,
-  statusWords,
 } from './facts';
 
 describe('My Matters words', () => {
-  it('states the one fact of an attention row in plain words', () => {
-    expect(factText({ factCode: 'OVERDUE', factDays: 3 })).toBe('3 d overdue');
-    expect(factText({ factCode: 'DUE_TODAY', factDays: undefined })).toBe('due today');
-    expect(factText({ factCode: 'AT_RISK', factDays: undefined })).toBe('at risk');
-    expect(factText({ factCode: 'DUE_IN_DAYS', factDays: 1 })).toBe('due tomorrow');
-    expect(factText({ factCode: 'DUE_IN_DAYS', factDays: 4 })).toBe('due in 4 d');
-    expect(factText({ factCode: 'NO_ASSIGNEE', factDays: undefined })).toBe('no assignee');
-    expect(factText({ factCode: 'ON_HOLD_DAYS', factDays: 12 })).toBe('on hold 12 d');
-  });
-
-  it('words the age of the oldest hold apart from the count (#821)', () => {
-    expect(holdHint(0, 10)).toBe('oldest 0 days');
-    expect(holdHint(1, 3)).toBe('oldest 1 day');
-    expect(holdHint(12, 3)).toBe('oldest 12 days');
-    expect(holdHint(12, 0)).toBe('');
-    expect(holdHint(null, 4)).toBe('');
-    expect(holdHint(undefined, undefined)).toBe('');
-  });
-
-  it('opens overdue links oldest first (#817)', () => {
-    expect(OLDEST_FIRST).toEqual({ sort: 'due', dir: 'asc' });
-  });
-
-  it('writes status codes as people read them', () => {
-    expect(statusWords('ON_HOLD')).toBe('On Hold');
-    expect(statusWords('IN_PROGRESS')).toBe('In Progress');
-    expect(statusWords(undefined)).toBe('');
-  });
-
-  it('groups deadlines by day in the order given', () => {
-    const t = (taskId: number, dueDate: string) =>
-      ({ taskId, dueDate, taskNumber: 'T', title: 'x' }) as never;
-    const groups = groupByDay(
-      [t(1, '2026-10-26'), t(2, '2026-10-26'), t(3, '2026-10-27')],
-      'America/New_York',
-    );
-    expect(groups.map((g) => [g.heading, g.items.length])).toEqual([
-      ['Mon Oct 26', 2],
-      ['Tue Oct 27', 1],
-    ]);
+  it('writes a day heading as the weekday and the date', () => {
     expect(dayHeading({ year: 2026, month: 10, day: 30 })).toBe('Fri Oct 30');
   });
 

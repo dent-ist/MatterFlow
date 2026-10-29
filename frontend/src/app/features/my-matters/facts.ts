@@ -13,53 +13,6 @@ import {
   parseDateOnly,
 } from '../../core/time/time';
 
-/** The one fact an attention or deadline row states, in plain words ("3 d overdue", "due tomorrow", "no assignee", "on hold 12 d"). */
-export function factText(t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'>): string {
-  const n = t.factDays ?? 0;
-  switch (t.factCode) {
-    case 'OVERDUE':
-      return n <= 0 ? 'overdue' : `${n} d overdue`;
-    case 'AT_RISK':
-      return 'at risk';
-    case 'DUE_TODAY':
-      return 'due today';
-    case 'DUE_IN_DAYS':
-      return n === 1 ? 'due tomorrow' : `due in ${n} d`;
-    case 'NO_ASSIGNEE':
-      return 'no assignee';
-    case 'ON_HOLD_DAYS':
-      return `on hold ${n} d`;
-    default:
-      return '';
-  }
-}
-
-/**
- * The fact of a row with the reason of a hold: "on hold 6 d - Waiting for client data". The reason is the structured one an administrator-managed list gives;
- * a hold without one reads as before.
- */
-export function rowFactText(
-  t: Pick<MyMattersTaskItem, 'factCode' | 'factDays'> & {
-    onHold?: { reasonName?: string | undefined } | undefined;
-  },
-): string {
-  const base = factText(t);
-  const reason = t.factCode === 'ON_HOLD_DAYS' ? t.onHold?.reasonName : undefined;
-  return reason ? `${base} - ${reason}` : base;
-}
-
-/** The Task Queue order of a link that means "overdue": the oldest due date first (the Due column header shows it; Priority is one click away). */
-export const OLDEST_FIRST = { sort: 'due', dir: 'asc' } as const;
-
-/** The second line of the strip's On hold cell: "oldest 12 days", "oldest 1 day"; nothing without a hold (the label never carries the age). */
-export function holdHint(
-  oldestDays: number | null | undefined,
-  onHold: number | undefined,
-): string {
-  if (oldestDays == null || !onHold || onHold <= 0) return '';
-  return `oldest ${oldestDays} ${oldestDays === 1 ? 'day' : 'days'}`;
-}
-
 const STATUS_WORDS: Record<string, string> = {
   NEW: 'New',
   IN_PROGRESS: 'In Progress',
@@ -69,7 +22,7 @@ const STATUS_WORDS: Record<string, string> = {
 };
 
 /** A status code as the people read it ("ON_HOLD" is "On Hold"). */
-export function statusWords(code: string | undefined): string {
+function statusWords(code: string | undefined): string {
   return code ? (STATUS_WORDS[code] ?? code) : '';
 }
 
@@ -93,29 +46,6 @@ export function dueDay(
 ): CalendarDay | null {
   if (t.dueDate) return parseDateOnly(t.dueDate);
   return t.dueAtUtc ? calendarDayInZone(t.dueAtUtc, zone) : null;
-}
-
-export interface DayGroup<T> {
-  key: string;
-  heading: string;
-  items: T[];
-}
-
-/** Deadlines grouped by day, in the order given (the API sorts soonest first). Rows without a day (cannot happen) are left out. */
-export function groupByDay(
-  items: readonly MyMattersTaskItem[],
-  zone: string,
-): DayGroup<MyMattersTaskItem>[] {
-  const groups: DayGroup<MyMattersTaskItem>[] = [];
-  for (const t of items) {
-    const day = dueDay(t, zone);
-    if (!day) continue;
-    const key = String(dayIndex(day));
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.items.push(t);
-    else groups.push({ key, heading: dayHeading(day), items: [t] });
-  }
-  return groups;
 }
 
 /** "9:42 AM" for today, "Yesterday", else "Oct 21": the time an activity event is shown with (the full stamp is its tooltip). */

@@ -3,7 +3,6 @@ import {
   DEFAULT_FILTERS,
   activeFilterCount,
   commonArgs,
-  deadlineArgs,
   filtersToParams,
   parseFilters,
   queryToParams,
@@ -24,9 +23,6 @@ describe('My Matters filters', () => {
         role: 'primary',
         clientId: '12',
         matterId: '31',
-        range: 'custom',
-        from: '2026-10-01',
-        to: '2026-10-31',
         managerId: '7',
         show: 'overdue',
       }),
@@ -37,9 +33,6 @@ describe('My Matters filters', () => {
       role: 'primary',
       clientId: 12,
       matterId: 31,
-      range: 'custom',
-      from: '2026-10-01',
-      to: '2026-10-31',
       managerId: 7,
       show: 'overdue',
     });
@@ -48,9 +41,6 @@ describe('My Matters filters', () => {
       role: 'primary',
       clientId: 12,
       matterId: 31,
-      range: 'custom',
-      from: '2026-10-01',
-      to: '2026-10-31',
       managerId: 7,
       show: 'overdue',
     });
@@ -62,9 +52,6 @@ describe('My Matters filters', () => {
       role: null,
       clientId: null,
       matterId: null,
-      range: null,
-      from: null,
-      to: null,
       managerId: null,
       show: null,
     });
@@ -86,17 +73,17 @@ describe('My Matters filters', () => {
     expect(f.role).toBe('secondary');
   });
 
-  it('drops bad values: unknown role, non-numeric client, dates outside a custom range', () => {
+  it('drops bad values: unknown role, non-numeric client, an old date range', () => {
     const f = parseFilters(
-      map({ role: 'boss', clientId: 'abc', range: '9w', from: '2026-10-01' }),
+      map({ role: 'boss', clientId: 'abc', range: '2w', from: '2026-10-01' }),
       true,
     );
     expect(f).toEqual(DEFAULT_FILTERS);
   });
 
-  it('sends scope, role, client and manager to the API and never the date range', () => {
+  it('sends scope, role, client and manager to the API', () => {
     const f = parseFilters(
-      map({ scope: 'all', managerId: '7', role: 'secondary', clientId: '3', range: '2w' }),
+      map({ scope: 'all', managerId: '7', role: 'secondary', clientId: '3' }),
       true,
     );
     expect(commonArgs(f)).toEqual({ scope: 'all', role: 'secondary', clientId: 3, managerId: 7 });
@@ -125,32 +112,10 @@ describe('My Matters filters', () => {
     expect(commonArgs(f).role).toBeUndefined();
   });
 
-  it('maps the date range to the deadlines window and due-date range', () => {
-    expect(deadlineArgs(DEFAULT_FILTERS, '2026-10-23')).toEqual({
-      days: 28,
-      from: undefined,
-      to: undefined,
-    });
-    expect(deadlineArgs({ ...DEFAULT_FILTERS, range: '2w' }, '2026-10-23').days).toBe(14);
-    expect(deadlineArgs({ ...DEFAULT_FILTERS, range: 'today' }, '2026-10-23')).toEqual({
-      days: 14,
-      from: '2026-10-23',
-      to: '2026-10-23',
-    });
-    expect(
-      deadlineArgs(
-        { ...DEFAULT_FILTERS, range: 'custom', from: '2026-11-01', to: '2026-11-05' },
-        '2026-10-23',
-      ),
-    ).toEqual({ days: 28, from: '2026-11-01', to: '2026-11-05' });
-  });
-
   it('counts the filters that differ from the default; the scope is a mode, not a filter', () => {
     expect(activeFilterCount(DEFAULT_FILTERS)).toBe(0);
     expect(activeFilterCount({ ...DEFAULT_FILTERS, scope: 'all' })).toBe(0);
-    expect(
-      activeFilterCount({ ...DEFAULT_FILTERS, role: 'primary', clientId: 4, range: '2w' }),
-    ).toBe(3);
+    expect(activeFilterCount({ ...DEFAULT_FILTERS, role: 'primary', clientId: 4 })).toBe(2);
   });
 
   it('turns an API query into router parameters; repeated keys become arrays', () => {

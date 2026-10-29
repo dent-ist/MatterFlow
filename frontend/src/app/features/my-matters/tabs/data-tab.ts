@@ -67,7 +67,7 @@ import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { Segmented } from '../../../shared/ui/segmented';
 import { PanelBox } from '../panels/panel-box';
-import { todayText } from '../panels/calendar-panel';
+import { todayText } from '../calendar-month';
 
 const COUNT = new Intl.NumberFormat('en-US');
 /** The months the volume looks back over; the period of the selection narrows the assets, not this window. */

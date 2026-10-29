@@ -1,6 +1,6 @@
 import { MyMattersDeadlineDay } from '../../../api/generated/api-client';
 import { figureLink } from '../panels/since-panel';
-import { calendarWeeks } from '../panels/calendar-panel';
+import { monthWeeks } from '../panels/calendar-panel';
 
 const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {}) =>
   ({
@@ -13,12 +13,14 @@ const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {})
     ...extra,
   }) as MyMattersDeadlineDay;
 
-describe('calendarWeeks (Calendar)', () => {
+const item = (taskId: number, factCode = 'DUE_IN_DAYS') =>
+  ({ taskId, taskNumber: `TSK-${taskId}`, title: `Task ${taskId}`, factCode }) as never;
+
+describe('monthWeeks (Calendar, #944)', () => {
   it('pads the first week with blanks so a Wednesday starts under Wed, and ends on a Sunday', () => {
     // 2026-10-28 is a Wednesday.
     const days = ['28', '29', '30', '31'].map((d) => day(`2026-10-${d}`, 1));
-    days.push(day('2026-11-01', 0, { isWeekend: true }));
-    const weeks = calendarWeeks(days);
+    const weeks = monthWeeks(days);
     expect(weeks).toHaveLength(1);
     expect(weeks[0].map((c) => c.date)).toEqual([
       null,
@@ -27,28 +29,38 @@ describe('calendarWeeks (Calendar)', () => {
       '2026-10-29',
       '2026-10-30',
       '2026-10-31',
-      '2026-11-01',
+      null,
     ]);
   });
 
-  it('labels the first cell and the first of a month with the month, the others with the day number', () => {
-    const days = Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(Date.UTC(2026, 9, 26 + i)); // Monday Oct 26
-      return day(d.toISOString().slice(0, 10));
-    });
-    const weeks = calendarWeeks(days);
-    expect(weeks).toHaveLength(2);
-    const labels = weeks.flat().map((c) => c.label);
-    expect(labels[0]).toBe('Oct 26');
-    expect(labels[1]).toBe('27');
-    expect(labels).toContain('Nov 1');
-    expect(labels).toContain('8');
+  it('labels every cell with its day number and names the day in full', () => {
+    const days = Array.from({ length: 31 }, (_, i) =>
+      day(`2026-10-${String(i + 1).padStart(2, '0')}`),
+    );
+    const weeks = monthWeeks(days);
+    // October 2026 starts on a Thursday: five week rows of Monday to Sunday.
+    expect(weeks).toHaveLength(5);
+    expect(weeks[0].map((c) => c.label)).toEqual(['', '', '', '1', '2', '3', '4']);
+    expect(weeks[0][3].full).toBe('Thu Oct 1');
+    expect(weeks[4].map((c) => c.label)).toEqual(['26', '27', '28', '29', '30', '31', '']);
   });
 
-  it('keeps the count, the weekend and today flags and the Task Queue query of a day', () => {
-    const weeks = calendarWeeks([day('2026-10-24', 3, { isWeekend: true, isToday: true })]);
+  it('keeps the count, the weekend and today flags, the overdue tasks and the Task Queue query of a day', () => {
+    const weeks = monthWeeks([
+      day('2026-10-24', 3, {
+        isWeekend: true,
+        isToday: true,
+        items: [item(1, 'OVERDUE'), item(2)],
+      }),
+    ]);
     const cell = weeks[0].find((c) => c.date)!;
-    expect(cell).toMatchObject({ count: 3, weekend: true, today: true, full: 'Sat Oct 24' });
+    expect(cell).toMatchObject({
+      count: 3,
+      weekend: true,
+      today: true,
+      overdue: 1,
+      full: 'Sat Oct 24',
+    });
     expect(cell.params).toEqual({
       managedByMe: 'true',
       dueFrom: '2026-10-24',
@@ -57,7 +69,7 @@ describe('calendarWeeks (Calendar)', () => {
   });
 
   it('is empty without days', () => {
-    expect(calendarWeeks([])).toEqual([]);
+    expect(monthWeeks([])).toEqual([]);
   });
 });
 
