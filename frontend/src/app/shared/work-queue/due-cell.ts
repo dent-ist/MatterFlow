@@ -138,10 +138,10 @@ export class DueCell {
 
   /** PM v2 (#878): the task is At risk (the server's rule: open, not overdue, 80 percent of the type's target used). Said in words, never colour alone. */
   readonly atRisk = input(false);
-  /** Overdue work says "Overdue 26d" and leaves the date out (it is the tooltip): the words are never cut by a long date (My Matters grids). */
+  /** A cell with words ("Overdue 26d", "Due today", "Tomorrow") leaves the date out (it is the tooltip): the words are never cut by a long date (My Matters grids). */
   readonly dateless = input(false);
   protected readonly dateHidden = computed(
-    () => this.dateless() && this.tone() === 'overdue' && !!this.cell().line2 && !this.closed(),
+    () => this.dateless() && !!this.cell().line2 && !this.closed(),
   );
 
   protected readonly riskShown = computed(

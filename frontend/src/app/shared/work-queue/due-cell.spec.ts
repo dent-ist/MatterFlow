@@ -144,7 +144,7 @@ describe('DueCell At risk (PM v2, #878)', () => {
     ).toBeNull();
   });
 
-  it('dateless: an overdue cell keeps only "Overdue 4d" (the date stays in the tooltip); other cells keep their date', () => {
+  it('dateless: a cell with words keeps only "Overdue 4d" (the date stays in the tooltip); a plain date stays', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [

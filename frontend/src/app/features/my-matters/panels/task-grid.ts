@@ -91,6 +91,24 @@ const CONFIG: Readonly<Record<GridKind, GridConfig>> = {
   },
 };
 
+/** Column widths in rem of the wide grid: Due is never cut, the Matter and the others stay short. */
+const WIDE_WIDTHS: Record<string, number> = {
+  matterName: 14,
+  priority: 6.5,
+  assignee: 8,
+  due: 9.5,
+  status: 7.5,
+};
+/** A tablet: every column at its narrowest, so the grid fits 768 px without scrolling sideways (the Title keeps 10 rem). */
+const TABLET_WIDTHS: Record<string, number> = {
+  ref: 5,
+  matterName: 7,
+  priority: 6,
+  assignee: 7,
+  due: 7.5,
+  status: 7,
+};
+
 /** The sorts that start descending (the newest first), as in the Task Queue. */
 const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 
@@ -240,12 +258,7 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 export class TaskGrid {
   /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
   private readonly wide = viewportAtLeast(1000);
-  protected readonly widths = computed(() =>
-    this.wide()
-      ? { matterName: 14, priority: 6.5, assignee: 8, due: 9.5, status: 7.5 }
-      : // A tablet: every column at its narrowest, so the grid fits 768 px without scrolling sideways (Title keeps 10 rem).
-        { ref: 5, matterName: 7, priority: 6, assignee: 7, due: 8, status: 7 },
-  );
+  protected readonly widths = computed(() => (this.wide() ? WIDE_WIDTHS : TABLET_WIDTHS));
   readonly kind = input.required<GridKind>();
   readonly filters = input.required<MmFilters>();
   /** The matter's name is a column: the person has several matters (it would say the same on every row for one). */
