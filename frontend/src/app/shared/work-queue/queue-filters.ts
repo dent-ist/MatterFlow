@@ -93,6 +93,7 @@ export const SORT_FIELDS: readonly string[] = [
   'client',
   'onHoldSince',
   'type',
+  'attention',
 ];
 export const PAGE_SIZES: readonly number[] = [25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 50;

@@ -5,6 +5,7 @@ describe('sort sentences (issue #898)', () => {
     expect(directionWords('priority', 'asc')).toBe('most urgent first');
     expect(directionWords('priority', 'desc')).toBe('least urgent first');
     expect(directionWords('priorityAge', 'asc')).toBe('most urgent first');
+    expect(directionWords('attention', 'asc')).toBe('most urgent first');
     expect(directionWords('due', 'asc')).toBe('soonest first');
     expect(directionWords('due', 'desc')).toBe('latest first');
     expect(directionWords('created', 'asc')).toBe('oldest first');

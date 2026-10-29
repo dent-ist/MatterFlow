@@ -205,6 +205,10 @@ describe('queue filter state', () => {
     expect(queueArgs(state, { omitPod: true })[4]).toBeUndefined();
   });
 
+  it('accepts the attention (urgency) sort of the My Matters grid', () => {
+    expect(parse({ sort: 'attention', dir: 'asc' }).sort).toBe('attention');
+  });
+
   it('accepts the priorityAge sort used by the Dashboard', () => {
     expect(parse({ sort: 'priorityAge', dir: 'asc' }).sort).toBe('priorityAge');
   });

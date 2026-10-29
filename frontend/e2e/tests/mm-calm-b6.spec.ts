@@ -101,11 +101,20 @@ test.describe('Batch 6 review fixes', () => {
         );
         expect(cut, 'no Due cell is cut').toEqual([]);
         const due = page.locator('[data-panel=attention] th[data-col=due]');
+        // The default order is Urgency: the Urgency control is the marked one; a chosen heading is marked like the rest.
+        const urgency = page.locator('[data-panel=attention] [data-sort-urgency]');
+        await expect(urgency).toHaveAttribute('aria-pressed', 'true');
+        expect(
+          await urgency.evaluate((e) => getComputedStyle(e).textDecorationLine),
+          'the Urgency control is underlined',
+        ).toContain('underline');
+        const due = page.locator('[data-panel=attention] th[data-col=due]');
+        await due.locator('button.wt-sort').click();
         await expect(due).toHaveAttribute('aria-sort', /ascending|descending/);
         const mark = await due.locator('.wt-sort').evaluate((e) => getComputedStyle(e).boxShadow);
         expect(mark, 'the active heading is underlined').not.toBe('none');
         const other = await page
-          .locator('[data-panel=attention] th[data-col=ref] .wt-sort .pi')
+          .locator('[data-panel=attention] th[data-col=title] .wt-sort .pi')
           .evaluate((e) => getComputedStyle(e).opacity);
         expect(Number(other), 'inactive arrows are faint').toBeLessThan(1);
       }

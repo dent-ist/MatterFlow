@@ -601,14 +601,18 @@ test.describe('Clear sort (#898)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    // The grid says it in its column headings: Due, soonest first, is announced (aria-sort), and the heading's tooltip names it.
+    // The default order is Urgency (issue #935): the Urgency control is pressed, no column heading is marked, and the heading's tooltip names the order.
+    await expect(page.locator('[data-panel=attention] [data-sort-urgency]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await expect(page.locator('[data-panel=attention] th[data-col=due]')).toHaveAttribute(
       'aria-sort',
-      'ascending',
+      'none',
     );
     await expect(page.locator('[data-panel=attention] h2')).toHaveAttribute(
       'title',
-      /Soonest due first/,
+      /Most urgent first/,
     );
     // No Sort control and no arrow button remain on the page.
     await expect(page.locator('[data-sort], [data-sort-dir], [data-dir-select]')).toHaveCount(0);

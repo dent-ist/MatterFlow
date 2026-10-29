@@ -27,6 +27,7 @@ export const SORT_LABELS: Readonly<Record<string, string>> = {
   age: 'Age',
   assignee: 'Assignee',
   client: 'Client',
+  attention: 'Urgency',
 };
 
 /**

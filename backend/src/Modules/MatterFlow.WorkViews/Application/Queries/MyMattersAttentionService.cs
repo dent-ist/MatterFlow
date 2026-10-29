@@ -81,7 +81,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
             MyMattersRules.StuckOnHoldDays,
             total,
-            scope.QueueOpen(["needsAttention=true", .. opts.TaskTypeIds.Select(id => "type=" + id.ToString(System.Globalization.CultureInfo.InvariantCulture)), "sort=" + TaskQueueRules.SortDue]),
+            scope.QueueOpen(["needsAttention=true", .. opts.TaskTypeIds.Select(id => "type=" + id.ToString(System.Globalization.CultureInfo.InvariantCulture)), "sort=" + TaskQueueRules.SortAttention]),
             items,
             totalUnfiltered);
     }

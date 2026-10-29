@@ -170,7 +170,7 @@ public class TaskQueueQuery
     [FromQuery(Name = "onHoldReason")]
     public int[]? OnHoldReason { get; init; }
 
-    /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c> or <c>completed</c>.</summary>
+    /// <summary><c>default</c> (priority, ASAP above due dates, oldest), <c>priority</c>, <c>priorityAge</c> (priority, then oldest), <c>due</c>, <c>created</c>, <c>number</c>, <c>status</c>, <c>completed</c> or <c>attention</c> (urgency: overdue, at risk, due today, unassigned, on hold too long; ascending is most urgent first).</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
 

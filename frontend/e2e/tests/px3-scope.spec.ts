@@ -329,10 +329,10 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     await expect(page).not.toHaveURL(/sort=due/);
     await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
 
-    // The Needs my attention panel's one View all (the two overdue tasks are all that needs attention here): oldest due first as well.
+    // The Needs my attention panel's one View all (the two overdue tasks are all that needs attention here): most urgent first, so the oldest overdue first as well.
     await page.goto('/my-matters');
     await page.locator('[data-panel=attention] [data-view-all]').click();
-    await expect(page).toHaveURL(/sort=due/);
+    await expect(page).toHaveURL(/sort=attention/);
     await expect(page).toHaveURL(/needsAttention=true/);
     await expect(rows.first()).toContainText('Older overdue A');
 

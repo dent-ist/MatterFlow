@@ -51,6 +51,39 @@ public static class AttentionRules
     public static Expression<Func<WorkTask, bool>> NeedsAttention(DbContext db, QueueClock clock) =>
         Or([.. Reasons.Select(r => Of(r, db, clock))]);
 
+    /// <summary>The rank a task gets in the "attention" sort when it is none of the reasons (every task outside <see cref="NeedsAttention"/>): after all five.</summary>
+    public static int NoReasonRank => Reasons.Count;
+
+    /// <summary>
+    /// A task id with the rank of its first matching reason (0 overdue, 1 at risk, 2 due today, 3 unassigned, 4 on hold too long, <see cref="NoReasonRank"/> otherwise).
+    /// A task that is overdue and unassigned ranks as overdue, like the Overview's old ranked list.
+    /// </summary>
+    public sealed class IdRank
+    {
+        public long Id { get; init; }
+
+        public int Rank { get; init; }
+    }
+
+    /// <summary>The selector that gives every task its attention rank, to be applied to the filtered tasks and joined back on the id (issue #935).</summary>
+    public static Expression<Func<WorkTask, IdRank>> RankSelector(DbContext db, QueueClock clock)
+    {
+        var t = Expression.Parameter(typeof(WorkTask), "t");
+        Expression rank = Expression.Constant(NoReasonRank);
+        for (var i = Reasons.Count - 1; i >= 0; i--)
+        {
+            var predicate = Of(Reasons[i], db, clock);
+            var test = new Rebind(predicate.Parameters[0], t).Visit(predicate.Body)!;
+            rank = Expression.Condition(test, Expression.Constant(i), rank);
+        }
+
+        var body = Expression.MemberInit(
+            Expression.New(typeof(IdRank)),
+            Expression.Bind(typeof(IdRank).GetProperty(nameof(IdRank.Id))!, Expression.Property(t, nameof(WorkTask.Id))),
+            Expression.Bind(typeof(IdRank).GetProperty(nameof(IdRank.Rank))!, rank));
+        return Expression.Lambda<Func<WorkTask, IdRank>>(body, t);
+    }
+
     public static Expression<Func<WorkTask, bool>> And(params Expression<Func<WorkTask, bool>>[] parts) => Combine(Expression.AndAlso, parts);
 
     public static Expression<Func<WorkTask, bool>> Or(params Expression<Func<WorkTask, bool>>[] parts) => Combine(Expression.OrElse, parts);

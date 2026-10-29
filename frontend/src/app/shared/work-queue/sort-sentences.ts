@@ -10,6 +10,7 @@ export type SortKind = 'urgency' | 'due' | 'date' | 'age' | 'text' | 'number' | 
 const KINDS: Readonly<Record<string, SortKind>> = {
   priority: 'urgency',
   priorityAge: 'urgency',
+  attention: 'urgency',
   due: 'due',
   created: 'date',
   updated: 'date',

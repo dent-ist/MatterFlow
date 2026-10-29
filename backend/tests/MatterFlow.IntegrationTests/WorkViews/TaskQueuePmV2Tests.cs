@@ -118,6 +118,11 @@ public sealed class TaskQueuePmV2Tests(SqlServerFixture sql) : MyMattersTestBase
         // The base data: m1-overdue (also unassigned: once), m1-soon and m2-in5 (unassigned, due in 2 and 5 days), m1-hold (10 days on hold); m1-asap has no date, m2-far is far
         // away, m2-hold is 2 days old, m4-ok is assigned and far away. prod-old is at risk.
         TitlesOf(await QueueAsync("needsAttention=true")).Order().ShouldBe(["m1-hold", "m1-overdue", "m1-soon", "m2-in5", "prod-old"]);
+        // Issue #935: the urgency sort ranks by reason (overdue, at risk, due today, unassigned, long hold) and inside a reason by due date, so at risk and held tasks are not
+        // pushed out of the first rows by a due-date order; descending is the exact reverse.
+        var urgency = new[] { "m1-overdue", "prod-old", "m1-soon", "m2-in5", "m1-hold" };
+        TitlesOf(await QueueAsync("needsAttention=true&sort=attention")).ShouldBe(urgency);
+        TitlesOf(await QueueAsync("needsAttention=true&sort=attention&dir=desc")).ShouldBe(urgency.Reverse());
         // It combines with the other filters like any filter, and false is the same as leaving it out.
         TitlesOf(await QueueAsync($"needsAttention=true&type={_production}")).ShouldBe(["prod-old"]);
         (await QueueAsync("needsAttention=false")).Count.ShouldBeGreaterThan(5);

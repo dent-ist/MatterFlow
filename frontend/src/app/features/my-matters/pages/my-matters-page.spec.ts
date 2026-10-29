@@ -649,7 +649,7 @@ describe('MyMattersPage', () => {
     );
   });
 
-  it('shows Needs my attention as the shared grid: the Tasks columns, five rows asked for, soonest due first, one View all N with the Task Queue filter (#929)', async () => {
+  it('shows Needs my attention as the shared grid: the Tasks columns, five rows asked for, most urgent first, one View all N with the Task Queue filter (#929)', async () => {
     const h = await open('/my-matters');
     const panel = el(h).querySelector('[data-panel=attention]')!;
     expect(panel.querySelector('h2')!.textContent).toBe('Needs my attention');
@@ -672,7 +672,7 @@ describe('MyMattersPage', () => {
       managedByMe: true,
       needsAttention: true,
       status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-      sort: 'due',
+      sort: 'attention',
       dir: 'asc',
       page: 1,
       pageSize: 5,
@@ -681,7 +681,7 @@ describe('MyMattersPage', () => {
     expect(all).toHaveLength(1);
     expect(all[0].textContent!.trim()).toBe('View all 25');
     expect(all[0].getAttribute('href')).toBe(
-      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=due&dir=asc',
+      '/tasks?managedByMe=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD&needsAttention=true&sort=attention&dir=asc',
     );
   });
 
@@ -697,11 +697,19 @@ describe('MyMattersPage', () => {
       h.detectChanges();
     };
     const last = () => tqCall(tq.mock.calls.filter((c) => tqCall(c)['needsAttention']).at(-1)!);
-    // Due is the default order.
-    expect(th('due').getAttribute('aria-sort')).toBe('ascending');
+    const urgency = () => panel.querySelector<HTMLButtonElement>('[data-sort-urgency]')!;
+    // Urgency is the default order (issue #935): no heading is marked, the Urgency control is pressed.
+    expect(last()).toMatchObject({ sort: 'attention', dir: 'asc' });
+    expect(th('due').getAttribute('aria-sort')).toBe('none');
     expect(th('priority').getAttribute('aria-sort')).toBe('none');
+    expect(urgency().textContent!.trim()).toBe('Urgency');
+    expect(urgency().getAttribute('aria-pressed')).toBe('true');
     await press('due');
-    expect(last()).toMatchObject({ sort: 'due', dir: 'desc', page: 1, pageSize: 5 });
+    expect(last()).toMatchObject({ sort: 'due', dir: 'asc', page: 1, pageSize: 5 });
+    expect(th('due').getAttribute('aria-sort')).toBe('ascending');
+    expect(urgency().getAttribute('aria-pressed')).toBe('false');
+    await press('due');
+    expect(last()).toMatchObject({ sort: 'due', dir: 'desc' });
     expect(th('due').getAttribute('aria-sort')).toBe('descending');
     await press('priority');
     expect(last()).toMatchObject({ sort: 'priority', dir: 'asc' });
@@ -711,6 +719,17 @@ describe('MyMattersPage', () => {
     expect(
       panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
     ).toContain('sort=priority&dir=asc');
+    // The Urgency control brings the default order back.
+    urgency().click();
+    await h.fixture.whenStable();
+    h.detectChanges();
+    await h.fixture.whenStable();
+    h.detectChanges();
+    expect(last()).toMatchObject({ sort: 'attention', dir: 'asc' });
+    expect(urgency().getAttribute('aria-pressed')).toBe('true');
+    expect(
+      panel.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href'),
+    ).toContain('sort=attention&dir=asc');
     // The other grid is its own: its order did not change.
     expect(
       el(h).querySelector('[data-panel=deadlines] th[data-col=due]')!.getAttribute('aria-sort'),
@@ -1565,15 +1584,18 @@ describe('MyMattersPage', () => {
       expect(
         panel.querySelector('[data-views], [data-types-trigger], [data-sort], [data-dir]'),
       ).toBeNull();
-      // Besides the grid, the Calendar button, the "View all" link and the Options button, nothing is a control of the section.
+      // Besides the grid, the Calendar button, the Urgency order (#935), the "View all" link and the Options button, nothing is a control of the section.
       const controls = Array.from(
         panel.querySelectorAll('a, button, select, input, summary'),
       ).filter((c) => !c.closest('mf-options-menu') && !c.closest('mf-task-table'));
       expect(
         controls.map(
-          (c) => c.getAttribute('data-calendar-toggle') ?? c.getAttribute('data-view-all'),
+          (c) =>
+            c.getAttribute('data-calendar-toggle') ??
+            c.getAttribute('data-sort-urgency') ??
+            c.getAttribute('data-view-all'),
         ),
-      ).toEqual(['', '']);
+      ).toEqual(['', '', '']);
     });
 
     it('the matter is a column only for a person with several matters (#897, #929)', async () => {

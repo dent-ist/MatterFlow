@@ -94,6 +94,12 @@ public static class TaskQueueRules
 
     /// <summary>The Task Type name (A to Z), then the default order (PM v2, #860).</summary>
     public const string SortType = "type";
+
+    /// <summary>
+    /// Urgency (issue #935): by the reason a task needs attention (overdue, at risk, due today, unassigned, on hold too long), and inside a reason by due date (oldest
+    /// overdue first), at risk by due date then oldest, on hold by the longest wait. Tasks with no reason come after all five. Ascending is most urgent first.
+    /// </summary>
+    public const string SortAttention = "attention";
     public const string SortMatterName = "matterName";
     /// <summary>Priority (most urgent first), then oldest first; ignores due dates (the Dashboard's unassigned queue).</summary>
     public const string SortPriorityAge = "priorityAge";
@@ -110,7 +116,7 @@ public static class TaskQueueRules
     /// </summary>
     public const int DueSoonDays = 2;
 
-    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince, SortType];
+    public static readonly IReadOnlyList<string> SortFields = [SortDefault, SortPriority, SortDue, SortCreated, SortNumber, SortStatus, SortCompleted, SortPriorityAge, SortClosed, SortTitle, SortMatter, SortUpdated, SortAge, SortAssignee, SortClient, SortMatterName, SortOnHoldSince, SortType, SortAttention];
 
     /// <summary>NEW, IN_PROGRESS or ON_HOLD.</summary>
     public static Expression<Func<WorkTask, bool>> Open { get; } =
@@ -287,6 +293,21 @@ public static class TaskQueueRules
             default:
                 return WithDefaultTail(rows.OrderBy(r => r.PrioritySortOrder));
         }
+    }
+
+    /// <summary>
+    /// The "attention" sort over rows that carry their rank (<see cref="AttentionRules.RankSelector"/>): the reason first, then the due moment (the wait for tasks on hold),
+    /// then the oldest created and the id. Descending is the exact reverse.
+    /// </summary>
+    public static IQueryable<TaskSortRow> OrderByAttention(IQueryable<TaskSortRow> rows, IQueryable<AttentionRules.IdRank> ranks, bool descending)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(ranks);
+        const int stuck = 4;
+        var joined = rows.Join(ranks, r => r.Id, k => k.Id, (r, k) => new { Row = r, k.Rank });
+        return descending
+            ? joined.OrderByDescending(x => x.Rank).ThenByDescending(x => x.Rank == stuck ? null : x.Row.DueSortKey).ThenByDescending(x => x.Rank == stuck ? x.Row.StatusChangedAtUtc : x.Row.CreatedAtUtc).ThenByDescending(x => x.Row.Id).Select(x => x.Row)
+            : joined.OrderBy(x => x.Rank).ThenBy(x => x.Rank == stuck ? null : x.Row.DueSortKey).ThenBy(x => x.Rank == stuck ? x.Row.StatusChangedAtUtc : x.Row.CreatedAtUtc).ThenBy(x => x.Row.Id).Select(x => x.Row);
     }
 
     /// <summary>

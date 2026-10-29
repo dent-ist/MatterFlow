@@ -692,7 +692,7 @@ public sealed class TaskQueueService(
                            ClientKey = EF.Functions.Collate(c.Name, TitleCollation),
                            TypeKey = EF.Functions.Collate(sty.Name, TitleCollation),
                        };
-        var ordered = groupByDue ? TaskQueueRules.OrderByDueBucket(sortRows, queueClock) : queueGroups ? TaskQueueRules.OrderByDueGroups(sortRows, queueClock, descending) : sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
+        IQueryable<TaskSortRow> ordered = sort == TaskQueueRules.SortAttention ? TaskQueueRules.OrderByAttention(sortRows, rows.Select(AttentionRules.RankSelector(db, queueClock)), descending) : groupByDue ? TaskQueueRules.OrderByDueBucket(sortRows, queueClock) : queueGroups ? TaskQueueRules.OrderByDueGroups(sortRows, queueClock, descending) : sort == TaskQueueRules.SortDueSoonDefault ? TaskQueueRules.OrderDueSoon(sortRows, queueClock) : TaskQueueRules.Order(sortRows, sort, descending);
         var ids = await ordered.Select(r => r.Id).Skip(page.Skip).Take(page.PageSize).ToListAsync(ct);
         return (await LoadRowsAsync(ids, queueClock, ct), total);
     }

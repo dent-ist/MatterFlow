@@ -517,10 +517,12 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
       'status',
     ]);
     await expect(heads.locator('button.wt-sort')).toHaveCount(7);
-    // No group headings, no "also listed" notes; one View all. The default order is the Due column, soonest first.
+    // No group headings, no "also listed" notes; one View all. The default order is Urgency (issue #935): no column is marked, the Urgency control is.
     await expect(panel.locator('h3, [data-group], [data-repeated]')).toHaveCount(0);
     await expect(panel.locator('[data-view-all]')).toHaveCount(1);
-    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'ascending');
+    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
+    await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.locator('[data-sort-urgency]')).toHaveText('Urgency');
     // Overdue work comes first.
     await expect(rows.first().locator('td[data-col=due]')).toContainText(/Overdue/i);
     // View all N: N equals the Task Queue total of the link, and the section is no taller than 420 px.
@@ -571,6 +573,47 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
     await expect.poll(titles).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
     await panel.locator('th[data-col=due] button.wt-sort').click();
     await expect.poll(titles).toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C']);
+    // Urgency brings the default order back, and View all follows it.
+    await panel.locator('[data-sort-urgency]').click();
+    await expect.poll(titles).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
+    await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.locator('[data-view-all]')).toHaveAttribute(
+      'href',
+      /sort=attention&dir=asc/,
+    );
+  });
+
+  test('the default order of Needs my attention is Urgency: by reason, then by due date, so a held task due soon does not go before an unassigned task due later (#935)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    test.skip(!process.env['E2E_SQL_CONTAINER'], 'needs the SQL container to age the hold');
+    const w = await mmWorld(seed, personas, 'na6');
+    const m = await w.matter('Urgency');
+    await w.task(m, { dueDate: '2000-01-01', title: 'Urg overdue' });
+    await w.task(m, { dueDate: inDays(5), title: 'Urg unassigned later' });
+    const held = await w.task(m, {
+      dueDate: inDays(1),
+      assignedUserId: w.pm.userId,
+      title: 'Urg held sooner',
+    });
+    await seed.admin.post(`/api/v1/tasks/${held.taskId}/status`, {
+      status: 'ON_HOLD',
+      comment: 'Waiting',
+      rowVersion: held.rowVersion,
+    });
+    seed.sql(
+      `UPDATE dbo.Task SET StatusChangedAt = DATEADD(DAY, -9, SYSUTCDATETIME()) WHERE TaskId = ${Number(held.taskId)}`,
+    );
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    await settled(page);
+    const panel = page.locator('[data-panel=attention]');
+    await expect
+      .poll(async () => (await panel.locator('a.wt-title').allInnerTexts()).map((t) => t.trim()))
+      .toEqual(['Urg overdue', 'Urg unassigned later', 'Urg held sooner']);
   });
 
   test('a task is listed once per screen: a task that needs attention is not also in Next 7 days; there are no inline editors in the grids', async ({

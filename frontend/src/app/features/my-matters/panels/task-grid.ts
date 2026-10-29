@@ -61,11 +61,11 @@ interface GridConfig {
 const CONFIG: Readonly<Record<GridKind, GridConfig>> = {
   attention: {
     title: 'Needs my attention',
-    hint: 'Overdue, at risk, due today, unassigned with a date within 7 days, or on hold for more than 7 days. Soonest due first; click a heading to sort.',
+    hint: 'Overdue, at risk, due today, unassigned with a date within 7 days, or on hold for more than 7 days. Most urgent first, in that order; click a heading to sort.',
     rows: ATTENTION_ROWS,
     fetch: ATTENTION_ROWS,
     filter: { needsAttention: 'true' },
-    sort: 'due',
+    sort: 'attention',
     rowList: 'my-matters-attention',
     exportName: 'needs-my-attention',
     surface: 'my-matters.attention',
@@ -122,7 +122,9 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
  * - Next 7 days = `dueWithin=7` (open, due today to seven days ahead, not overdue), and it leaves out the tasks Needs my attention lists: a task is listed once per
  *   screen, in its most urgent place (so it asks for more rows than it shows).
  *
- * The default order is the Due column, soonest first (overdue work, oldest first, comes first); a click on a heading sorts the whole set, not just the rows on screen.
+ * The default order of Needs my attention is Urgency (issue #935): overdue (oldest first), at risk, due today, unassigned with a date within 7 days, on hold more than
+ * 7 days, so an at-risk or held task is never pushed out of the five rows by a due-date order; Next 7 days is Due, soonest first. A click on a heading sorts the whole set,
+ * not just the rows on screen (and "View all N" carries that order); the Urgency button brings the default back.
  */
 @Component({
   selector: 'mf-mm-grid',
@@ -140,6 +142,30 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
       }
       .tg__actions {
         display: contents;
+      }
+      /* The default order of Needs my attention is Urgency (issue #935): it has no column, so it is named here, marked like the active heading (underlined, bold) and a
+         click on it brings the order back after a heading was chosen. */
+      .tg__urgency {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--mf-s1);
+        min-height: 24px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--mf-text-muted);
+        font: inherit;
+        cursor: pointer;
+      }
+      .tg__urgency[aria-pressed='true'] {
+        color: var(--mf-text);
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .tg__urgency:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: 2px;
       }
       /* The table sits in the section like a list: no shadow, no second frame inside the flat section. */
       :host ::ng-deep .tg__grid .wt-wrap {
@@ -171,7 +197,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           align-items: center;
           min-height: 44px;
         }
-        .tg__all {
+        .tg__all,
+        .tg__urgency {
           min-height: 44px;
         }
       }
@@ -191,6 +218,19 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
     >
       <span mfPanelActions class="tg__actions">
         <ng-content select="[mfGridActions]" />
+        @if (!bare() && kind() === 'attention' && total() > 0) {
+          <button
+            type="button"
+            class="tg__urgency"
+            data-sort-urgency
+            aria-label="Sort by urgency, most urgent first"
+            [attr.aria-pressed]="sort() === 'attention'"
+            (click)="chosen.set(null)"
+          >
+            <i class="pi pi-sort-amount-down" aria-hidden="true"></i>
+            Urgency
+          </button>
+        }
         @if (!bare() && total() > 0) {
           <a
             class="tg__all"
