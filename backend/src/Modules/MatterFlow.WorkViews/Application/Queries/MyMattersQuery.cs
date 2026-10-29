@@ -10,7 +10,7 @@ namespace MatterFlow.WorkViews.Application.Queries;
 public class MyMattersQuery
 {
     /// <summary>The parameters the common part accepts (unknown parameters are a 400).</summary>
-    public static readonly IReadOnlyList<string> CommonKeys = ["scope", "role", "clientId", "from", "to", "managerId", "fresh"];
+    public static readonly IReadOnlyList<string> CommonKeys = ["scope", "role", "clientId", "from", "to", "managerId", "fresh", "matterId"];
 
     /// <summary><c>mine</c> (default): matters where the caller is Primary and/or Secondary manager. <c>all</c>: every active matter; needs <c>Matter.AssignManagers</c> (403 otherwise).</summary>
     [FromQuery(Name = "scope"), StringLength(10)]
@@ -43,6 +43,23 @@ public class MyMattersQuery
     /// <summary>True skips the short server-side cache of the summary.</summary>
     [FromQuery(Name = "fresh")]
     public bool? Fresh { get; init; }
+
+    /// <summary>
+    /// Only this one matter (the Matter filter of the page, issue #941). It narrows the scope after everything else: a matter outside the scope (not managed in the "mine" scope,
+    /// not visible to the caller) gives an empty scope, never an error that would tell it exists.
+    /// </summary>
+    [FromQuery(Name = "matterId"), Range(1, int.MaxValue)]
+    public int? MatterId { get; init; }
+}
+
+/// <summary>The counts of the Overview's pre-filter (issue #942): the common parameters plus the task types of the person's Focus, so a count equals the grid total.</summary>
+public sealed class MyMattersSummaryQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "taskTypeId"];
+
+    /// <summary>Only tasks of these task types (repeatable, OR): the Focus of the page.</summary>
+    [FromQuery(Name = "taskTypeId")]
+    public int[]? TaskTypeId { get; init; }
 }
 
 /// <summary>
@@ -64,30 +81,6 @@ public class MyMattersSectionQuery : MyMattersQuery
     /// <summary><c>asc</c> (default) or <c>desc</c>: reverses the sort key only.</summary>
     [FromQuery(Name = "dir"), StringLength(4)]
     public string? Dir { get; init; }
-}
-
-/// <summary>The health table: the common parameters plus sort and paging.</summary>
-public sealed class MyMattersHealthQuery : MyMattersQuery
-{
-    public const int DefaultPageSize = 50;
-
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "sort", "dir", "page", "pageSize"];
-
-    /// <summary><c>nextDeadline</c> (default, soonest first, matters with none last), <c>client</c>, <c>matter</c>, <c>open</c>, <c>overdue</c>, <c>dueThisWeek</c>, <c>unassigned</c>, <c>flag</c> or <c>worst</c> (most overdue, then most at risk, then most unassigned, then the soonest deadline; the Overview's compact list).</summary>
-    [FromQuery(Name = "sort"), StringLength(20)]
-    public string? Sort { get; init; }
-
-    /// <summary><c>asc</c> or <c>desc</c> (default: ascending, except the counts, which default to the largest first).</summary>
-    [FromQuery(Name = "dir"), StringLength(4)]
-    public string? Dir { get; init; }
-
-    /// <summary>1-based page number.</summary>
-    [FromQuery(Name = "page"), Range(1, int.MaxValue)]
-    public int Page { get; init; } = 1;
-
-    /// <summary>Rows per page (default 50, max 100).</summary>
-    [FromQuery(Name = "pageSize"), Range(1, 100)]
-    public int PageSize { get; init; } = DefaultPageSize;
 }
 
 /// <summary>Workload: the common parameters plus the optional split by matter.</summary>
@@ -117,14 +110,22 @@ public sealed class MyMattersDeadlinesQuery : MyMattersSectionQuery
     public string? GroupBy { get; init; }
 }
 
-/// <summary>Trends: the common parameters plus the number of weeks. The date range (<c>from</c>, <c>to</c>) is accepted and ignored: the weeks are the range.</summary>
-public sealed class MyMattersTrendsQuery : MyMattersQuery
+/// <summary>The Overview's Calendar (issue #944): the common parameters plus the month, the pre-filter and the Focus.</summary>
+public sealed class MyMattersCalendarQuery : MyMattersQuery
 {
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "weeks"];
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "month", "show", "taskTypeId"];
 
-    /// <summary><c>8</c> (default), <c>12</c> or <c>26</c>: how many weeks, the current week included.</summary>
-    [FromQuery(Name = "weeks")]
-    public int? Weeks { get; init; }
+    /// <summary>The month, <c>yyyy-MM</c> in the viewer's calendar; absent: the month of today.</summary>
+    [FromQuery(Name = "month"), StringLength(7)]
+    public string? Month { get; init; }
+
+    /// <summary><c>open</c> (default), <c>overdue</c>, <c>atRisk</c>, <c>unassigned</c>, <c>onHold</c> or <c>dueSoon</c> (due within 7 days): the pre-filter of the Overview's grid, so the calendar shows the tasks the grid does.</summary>
+    [FromQuery(Name = "show"), StringLength(10)]
+    public string? Show { get; init; }
+
+    /// <summary>Only tasks of these task types (repeatable, OR): the Focus of the page.</summary>
+    [FromQuery(Name = "taskTypeId")]
+    public int[]? TaskTypeId { get; init; }
 }
 
 /// <summary>Recent activity: the common parameters plus the size, the filters and the cursor.</summary>
@@ -132,15 +133,11 @@ public sealed class MyMattersActivityQuery : MyMattersQuery
 {
     public const int DefaultTake = 30;
 
-    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take", "matterId", "kind", "unread", "cursor"];
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "take", "kind", "unread", "cursor"];
 
     /// <summary>How many events (default 30, max 100), newest first.</summary>
     [FromQuery(Name = "take"), Range(1, 100)]
     public int Take { get; init; } = DefaultTake;
-
-    /// <summary>Only the events of this matter (it must be one of the scope's matters; any other id gives an empty list).</summary>
-    [FromQuery(Name = "matterId"), Range(1, int.MaxValue)]
-    public int? MatterId { get; init; }
 
     /// <summary>
     /// Only these kinds (repeatable): <c>TASK_CREATED</c>, <c>STATUS_CHANGED</c> (every status change), <c>COMPLETED</c> and <c>ON_HOLD</c> (the status changes to that status), <c>REASSIGNED</c>,

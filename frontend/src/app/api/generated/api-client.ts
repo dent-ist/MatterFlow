@@ -14138,7 +14138,6 @@ export class MatterOverviewClient implements IMatterOverviewClient {
 export interface IMyMattersClient {
     /**
      * @param take (optional) 
-     * @param matterId (optional) 
      * @param kind (optional) 
      * @param unread (optional) 
      * @param cursor (optional) 
@@ -14149,9 +14148,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, matterId?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity>;
+    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
@@ -14160,9 +14160,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSinceLastVisit>;
+    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersSinceLastVisit>;
     /**
      * @return OK
      */
@@ -14178,9 +14179,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention>;
+    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersAttention>;
     /**
      * @param view (optional) 
      * @param status (optional) 
@@ -14194,9 +14196,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersBreakdown>;
+    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersBreakdown>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
@@ -14233,14 +14236,14 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines>;
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersDeadlines>;
     /**
-     * @param sort (optional) 
-     * @param dir (optional) 
-     * @param page (optional) 
-     * @param pageSize (optional) 
+     * @param month (optional) 
+     * @param show (optional) 
+     * @param taskTypeId (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -14248,10 +14251,12 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersHealth(sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersHealthPage>;
+    getMyMattersCalendar(month?: string | undefined, show?: string | undefined, taskTypeId?: number[] | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersCalendar>;
     /**
+     * @param taskTypeId (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -14259,21 +14264,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary>;
-    /**
-     * @param weeks (optional) 
-     * @param scope (optional) 
-     * @param role (optional) 
-     * @param clientId (optional) 
-     * @param from (optional) 
-     * @param to (optional) 
-     * @param managerId (optional) 
-     * @param fresh (optional) 
-     * @return OK
-     */
-    getMyMattersTrends(weeks?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersTrends>;
+    getMyMattersSummary(taskTypeId?: number[] | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersSummary>;
     /**
      * @param include (optional) 
      * @param scope (optional) 
@@ -14283,9 +14277,10 @@ export interface IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload>;
+    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersWorkload>;
 }
 
 @Injectable({
@@ -14303,7 +14298,6 @@ export class MyMattersClient implements IMyMattersClient {
 
     /**
      * @param take (optional) 
-     * @param matterId (optional) 
      * @param kind (optional) 
      * @param unread (optional) 
      * @param cursor (optional) 
@@ -14314,18 +14308,15 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, matterId?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersActivity> {
+    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity> {
         let url_ = this.baseUrl + "/api/v1/my-matters/activity?";
         if (take === null)
             throw new globalThis.Error("The parameter 'take' cannot be null.");
         else if (take !== undefined)
             url_ += "take=" + encodeURIComponent("" + take) + "&";
-        if (matterId === null)
-            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
-        else if (matterId !== undefined)
-            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         if (kind === null)
             throw new globalThis.Error("The parameter 'kind' cannot be null.");
         else if (kind !== undefined)
@@ -14366,6 +14357,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -14419,9 +14414,10 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSinceLastVisit> {
+    getMyMattersSinceLastVisit(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersSinceLastVisit> {
         let url_ = this.baseUrl + "/api/v1/my-matters/since-last-visit?";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
@@ -14451,6 +14447,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -14561,9 +14561,10 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersAttention> {
+    getMyMattersAttention(taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersAttention> {
         let url_ = this.baseUrl + "/api/v1/my-matters/attention?";
         if (taskTypeId === null)
             throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
@@ -14605,6 +14606,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -14663,9 +14668,10 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersBreakdown> {
+    getMyMattersBreakdown(view?: string | undefined, status?: string | undefined, taskTypeId?: number[] | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersBreakdown> {
         let url_ = this.baseUrl + "/api/v1/my-matters/breakdown?";
         if (view === null)
             throw new globalThis.Error("The parameter 'view' cannot be null.");
@@ -14715,6 +14721,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -14948,9 +14958,10 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersDeadlines> {
+    getMyMattersDeadlines(days?: number | undefined, groupBy?: string | undefined, taskTypeId?: number[] | undefined, sort?: string | undefined, dir?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersDeadlines> {
         let url_ = this.baseUrl + "/api/v1/my-matters/deadlines?";
         if (days === null)
             throw new globalThis.Error("The parameter 'days' cannot be null.");
@@ -15000,6 +15011,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -15046,10 +15061,9 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
-     * @param sort (optional) 
-     * @param dir (optional) 
-     * @param page (optional) 
-     * @param pageSize (optional) 
+     * @param month (optional) 
+     * @param show (optional) 
+     * @param taskTypeId (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -15057,26 +15071,23 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersHealth(sort?: string | undefined, dir?: string | undefined, page?: number | undefined, pageSize?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersHealthPage> {
-        let url_ = this.baseUrl + "/api/v1/my-matters/health?";
-        if (sort === null)
-            throw new globalThis.Error("The parameter 'sort' cannot be null.");
-        else if (sort !== undefined)
-            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
-        if (dir === null)
-            throw new globalThis.Error("The parameter 'dir' cannot be null.");
-        else if (dir !== undefined)
-            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
-        if (page === null)
-            throw new globalThis.Error("The parameter 'page' cannot be null.");
-        else if (page !== undefined)
-            url_ += "page=" + encodeURIComponent("" + page) + "&";
-        if (pageSize === null)
-            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
-        else if (pageSize !== undefined)
-            url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+    getMyMattersCalendar(month?: string | undefined, show?: string | undefined, taskTypeId?: number[] | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersCalendar> {
+        let url_ = this.baseUrl + "/api/v1/my-matters/calendar?";
+        if (month === null)
+            throw new globalThis.Error("The parameter 'month' cannot be null.");
+        else if (month !== undefined)
+            url_ += "month=" + encodeURIComponent("" + month) + "&";
+        if (show === null)
+            throw new globalThis.Error("The parameter 'show' cannot be null.");
+        else if (show !== undefined)
+            url_ += "show=" + encodeURIComponent("" + show) + "&";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            taskTypeId && taskTypeId.forEach(item => { url_ += "taskTypeId=" + encodeURIComponent("" + item) + "&"; });
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -15105,6 +15116,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -15116,20 +15131,20 @@ export class MyMattersClient implements IMyMattersClient {
         };
 
         return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetMyMattersHealth(response_);
+            return this.processGetMyMattersCalendar(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processGetMyMattersHealth(response_ as any);
+                    return this.processGetMyMattersCalendar(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<MyMattersHealthPage>;
+                    return _observableThrow(e) as any as Observable<MyMattersCalendar>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<MyMattersHealthPage>;
+                return _observableThrow(response_) as any as Observable<MyMattersCalendar>;
         }));
     }
 
-    protected processGetMyMattersHealth(response: HttpResponseBase): Observable<MyMattersHealthPage> {
+    protected processGetMyMattersCalendar(response: HttpResponseBase): Observable<MyMattersCalendar> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -15139,7 +15154,7 @@ export class MyMattersClient implements IMyMattersClient {
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersHealthPage;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersCalendar;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -15151,6 +15166,7 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
+     * @param taskTypeId (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -15158,10 +15174,15 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersSummary(scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersSummary> {
+    getMyMattersSummary(taskTypeId?: number[] | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersSummary> {
         let url_ = this.baseUrl + "/api/v1/my-matters/summary?";
+        if (taskTypeId === null)
+            throw new globalThis.Error("The parameter 'taskTypeId' cannot be null.");
+        else if (taskTypeId !== undefined)
+            taskTypeId && taskTypeId.forEach(item => { url_ += "taskTypeId=" + encodeURIComponent("" + item) + "&"; });
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -15190,6 +15211,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -15236,96 +15261,6 @@ export class MyMattersClient implements IMyMattersClient {
     }
 
     /**
-     * @param weeks (optional) 
-     * @param scope (optional) 
-     * @param role (optional) 
-     * @param clientId (optional) 
-     * @param from (optional) 
-     * @param to (optional) 
-     * @param managerId (optional) 
-     * @param fresh (optional) 
-     * @return OK
-     */
-    getMyMattersTrends(weeks?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersTrends> {
-        let url_ = this.baseUrl + "/api/v1/my-matters/trends?";
-        if (weeks === null)
-            throw new globalThis.Error("The parameter 'weeks' cannot be null.");
-        else if (weeks !== undefined)
-            url_ += "weeks=" + encodeURIComponent("" + weeks) + "&";
-        if (scope === null)
-            throw new globalThis.Error("The parameter 'scope' cannot be null.");
-        else if (scope !== undefined)
-            url_ += "scope=" + encodeURIComponent("" + scope) + "&";
-        if (role === null)
-            throw new globalThis.Error("The parameter 'role' cannot be null.");
-        else if (role !== undefined)
-            url_ += "role=" + encodeURIComponent("" + role) + "&";
-        if (clientId === null)
-            throw new globalThis.Error("The parameter 'clientId' cannot be null.");
-        else if (clientId !== undefined)
-            url_ += "clientId=" + encodeURIComponent("" + clientId) + "&";
-        if (from === null)
-            throw new globalThis.Error("The parameter 'from' cannot be null.");
-        else if (from !== undefined)
-            url_ += "from=" + encodeURIComponent("" + from) + "&";
-        if (to === null)
-            throw new globalThis.Error("The parameter 'to' cannot be null.");
-        else if (to !== undefined)
-            url_ += "to=" + encodeURIComponent("" + to) + "&";
-        if (managerId === null)
-            throw new globalThis.Error("The parameter 'managerId' cannot be null.");
-        else if (managerId !== undefined)
-            url_ += "managerId=" + encodeURIComponent("" + managerId) + "&";
-        if (fresh === null)
-            throw new globalThis.Error("The parameter 'fresh' cannot be null.");
-        else if (fresh !== undefined)
-            url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processGetMyMattersTrends(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processGetMyMattersTrends(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<MyMattersTrends>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<MyMattersTrends>;
-        }));
-    }
-
-    protected processGetMyMattersTrends(response: HttpResponseBase): Observable<MyMattersTrends> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MyMattersTrends;
-            return _observableOf(result200);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    /**
      * @param include (optional) 
      * @param scope (optional) 
      * @param role (optional) 
@@ -15334,9 +15269,10 @@ export class MyMattersClient implements IMyMattersClient {
      * @param to (optional) 
      * @param managerId (optional) 
      * @param fresh (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined): Observable<MyMattersWorkload> {
+    getMyMattersWorkload(include?: string | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersWorkload> {
         let url_ = this.baseUrl + "/api/v1/my-matters/workload?";
         if (include === null)
             throw new globalThis.Error("The parameter 'include' cannot be null.");
@@ -15370,6 +15306,10 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'fresh' cannot be null.");
         else if (fresh !== undefined)
             url_ += "fresh=" + encodeURIComponent("" + fresh) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -19815,6 +19755,20 @@ export interface MyMattersBreakdown {
     [key: string]: any;
 }
 
+export interface MyMattersCalendar {
+    timeZone: string;
+    asOfUtc: string;
+    month: string;
+    fromDate: string;
+    toDate: string;
+    today: string;
+    total: number;
+    overdue: number;
+    days: MyMattersDeadlineDay[];
+
+    [key: string]: any;
+}
+
 export interface MyMattersDeadlineDay {
     date: string;
     isWeekend: boolean;
@@ -19853,41 +19807,6 @@ export interface MyMattersDeadlines {
     byMatter?: MyMattersDeadlineMatter[] | undefined;
     matterTotal?: number | undefined;
     totalUnfiltered?: number | undefined;
-
-    [key: string]: any;
-}
-
-export interface MyMattersHealthPage {
-    items: MyMattersHealthRow[];
-    total: number;
-    page: number;
-    pageSize: number;
-    sort: string;
-    dir: string;
-    amberDueDays: number;
-    stuckOnHoldDays: number;
-    timeZone: string;
-
-    [key: string]: any;
-}
-
-export interface MyMattersHealthRow {
-    matterId: number;
-    matterRef: string;
-    matterName: string;
-    clientId: number;
-    clientNumber: string;
-    clientName: string;
-    open: number;
-    overdue: number;
-    dueThisWeek: number;
-    unassigned: number;
-    atRisk: number;
-    percentComplete: number | undefined;
-    nextDeadline: string | undefined;
-    flag: string;
-    flagReasons: string[];
-    query: string;
 
     [key: string]: any;
 }
@@ -19982,43 +19901,6 @@ export interface MyMattersTaskItem {
     ageDays: number;
     onHold: MyMattersOnHold | undefined;
     atRisk: boolean;
-
-    [key: string]: any;
-}
-
-export interface MyMattersTrendNow {
-    open: number;
-    averageAgeDays: number | undefined;
-    onHold: number;
-    oldestOnHoldDays: number | undefined;
-    openQuery: string;
-    onHoldQuery: string;
-    overdueQuery: string;
-
-    [key: string]: any;
-}
-
-export interface MyMattersTrends {
-    timeZone: string;
-    asOfUtc: string;
-    weeks: number;
-    approximate: boolean;
-    limitations: string[];
-    points: MyMattersTrendWeek[];
-    now: MyMattersTrendNow;
-
-    [key: string]: any;
-}
-
-export interface MyMattersTrendWeek {
-    weekStart: string;
-    weekEnd: string;
-    isCurrent: boolean;
-    created: number;
-    closed: number;
-    overdueAtWeekEnd: number;
-    createdQuery: string;
-    closedQuery: string;
 
     [key: string]: any;
 }

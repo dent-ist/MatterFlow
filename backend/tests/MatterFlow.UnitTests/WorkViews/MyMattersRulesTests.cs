@@ -24,17 +24,6 @@ public class MyMattersRulesTests
         string.Join(',', why).ShouldBe(reasons);
     }
 
-    [Theory]
-    [InlineData(0, 0, null)]
-    [InlineData(4, 0, 0)]
-    [InlineData(4, 1, 25)]
-    [InlineData(3, 1, 33)]
-    [InlineData(3, 2, 66)]
-    [InlineData(3, 3, 100)]
-    [InlineData(3, 9, 100)]
-    public void Percent_complete_is_resolved_steps_over_all_steps_rounded_down(int total, int resolved, int? expected) =>
-        MyMattersRules.PercentComplete(total, resolved).ShouldBe(expected);
-
     [Fact]
     public void A_task_is_stuck_after_seven_full_days_on_hold_and_only_while_on_hold()
     {
@@ -65,10 +54,4 @@ public class MyMattersRulesTests
         MyMattersRules.WholeDaysSince(now.AddDays(-10).AddHours(-3), now).ShouldBe(10);
         MyMattersRules.WholeDaysSince(now.AddHours(1), now).ShouldBe(0);
     }
-
-    [Theory]
-    [InlineData("RED", 0)]
-    [InlineData("AMBER", 1)]
-    [InlineData("GREEN", 2)]
-    public void Flags_rank_red_first(string flag, int rank) => MyMattersRules.FlagRank(flag).ShouldBe(rank);
 }

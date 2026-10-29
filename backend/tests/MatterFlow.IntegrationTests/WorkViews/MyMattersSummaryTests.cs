@@ -68,6 +68,33 @@ public sealed class MyMattersSummaryTests(SqlServerFixture sql) : MyMattersTestB
     }
 
     [Fact]
+    public async Task The_matter_filter_and_the_focus_narrow_the_counts_and_their_links_alike()
+    {
+        // The Overview's pre-filter (issue #942) shows these counts, and the grid shows the list each one opens: they must be the same number.
+        var m1 = await Mine($"summary?matterId={M1}");
+        (Count(m1, "matters"), Count(m1, "openTasks"), Count(m1, "overdue"), Count(m1, "onHold")).ShouldBe((1, 4, 1, 1));
+        foreach (var cell in TaskCells)
+            (await TotalAsync(A, "task-queue", m1.GetProperty(cell).GetProperty("query").GetString()!)).ShouldBe(Count(m1, cell), "matter " + cell);
+
+        // A matter that is not one of A's (managed by nobody, or inactive) gives zeros, never an error that tells it exists.
+        var other = await Mine($"summary?matterId={M3}");
+        (Count(other, "matters"), Count(other, "openTasks")).ShouldBe((0, 0));
+        (Count(await Mine($"summary?matterId={M5}"), "matters")).ShouldBe(0);
+
+        // The Focus: every task of the fixture has the world's type, so the counts stay; another type leaves none.
+        var focus = await Mine($"summary?taskTypeId={W.TaskTypeId}");
+        Count(focus, "openTasks").ShouldBe(Count(await Mine("summary"), "openTasks"));
+        foreach (var cell in TaskCells)
+            (await TotalAsync(A, "task-queue", focus.GetProperty(cell).GetProperty("query").GetString()!)).ShouldBe(Count(focus, cell), "focus " + cell);
+        var none = await Mine($"summary?taskTypeId={W.TaskTypeId + 1000}");
+        foreach (var cell in TaskCells)
+        {
+            Count(none, cell).ShouldBe(0, cell);
+            (await TotalAsync(A, "task-queue", none.GetProperty(cell).GetProperty("query").GetString()!)).ShouldBe(0, "no type " + cell);
+        }
+    }
+
+    [Fact]
     public async Task The_date_range_narrows_the_counts_and_their_links_alike()
     {
         var s = await Mine($"summary?from={In(1)}&to={In(6)}");

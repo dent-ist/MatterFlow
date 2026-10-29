@@ -11,14 +11,10 @@ describe('SkipLinks (#820)', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('offers the three panels in page order as links to their headings', () => {
+  it('offers the two panels in page order as links to their headings', () => {
     const el = create();
     const links = Array.from(el.querySelectorAll<HTMLAnchorElement>('a[data-skip-to]'));
-    expect(links.map((a) => a.textContent?.trim())).toEqual([
-      'Needs my attention',
-      'Next 7 days',
-      'Matters',
-    ]);
+    expect(links.map((a) => a.textContent?.trim())).toEqual(['Needs my attention', 'Next 7 days']);
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
       SKIP_PANELS.map((p) => `#mm-${p.key}-h`),
     );
@@ -42,7 +38,7 @@ describe('SkipLinks (#820)', () => {
   it('does nothing when the panel is not on the page', () => {
     const el = create();
     const click = new MouseEvent('click', { bubbles: true, cancelable: true });
-    el.querySelector<HTMLAnchorElement>('a[data-skip-to=health]')!.dispatchEvent(click);
+    el.querySelector<HTMLAnchorElement>('a[data-skip-to=attention]')!.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(true);
   });
 });

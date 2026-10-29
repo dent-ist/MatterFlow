@@ -19,7 +19,7 @@ public sealed class MyMattersScope
     /// <summary>The largest number of matters the All matters scope serves; a bigger set must be narrowed by client or project manager.</summary>
     public const int MaxMatters = 5000;
 
-    internal MyMattersScope(DbContext db, int me, QueueClock clock, IQueryable<Matter> matters, string role, MyMattersQuery query, bool all)
+    internal MyMattersScope(DbContext db, int me, QueueClock clock, IQueryable<Matter> matters, string role, MyMattersQuery query, bool all, bool matterNarrows = true)
     {
         Db = db;
         Me = me;
@@ -29,9 +29,10 @@ public sealed class MyMattersScope
         All = all;
         ClientId = query.ClientId;
         ManagerId = query.ManagerId;
+        MatterId = matterNarrows ? query.MatterId : null;
         From = query.From;
         To = query.To;
-        Key = string.Join('|', all ? "all" : "mine", role, ClientId, ManagerId, From?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), To?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        Key = string.Join('|', all ? "all" : "mine", role, ClientId, ManagerId, MatterId, From?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), To?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
     }
 
     public DbContext Db { get; }
@@ -52,6 +53,9 @@ public sealed class MyMattersScope
     public int? ClientId { get; }
 
     public int? ManagerId { get; }
+
+    /// <summary>The one matter the page is limited to (issue #941), if any.</summary>
+    public int? MatterId { get; }
 
     public DateOnly? From { get; }
 
@@ -121,6 +125,9 @@ public sealed class MyMattersScope
     /// <summary>The open tasks of the scope without the scope's own date range (a bucket that names its own <c>dueFrom</c> / <c>dueTo</c> must not repeat the key).</summary>
     public string QueueOpenInWindow(params string[] extra) => DashboardRules.Open([.. ScopeParts(withRange: false), .. extra]);
 
+    /// <summary>The tasks of the scope in one status, without the scope's own date range (a day that names its own <c>dueFrom</c> / <c>dueTo</c> must not repeat the key).</summary>
+    public string QueueStatusInWindow(MatterFlow.SharedKernel.Tasks.TaskStatusCode status, params string[] extra) => DashboardRules.Status(status, [.. ScopeParts(withRange: false), .. extra]);
+
     private List<string> ScopeParts(bool withRange = true)
     {
         var parts = new List<string>();
@@ -132,6 +139,8 @@ public sealed class MyMattersScope
             parts.Add("role=" + Role);
         if (ClientId is { } client)
             parts.Add("client=" + client.ToString(CultureInfo.InvariantCulture));
+        if (MatterId is { } matter)
+            parts.Add("matter=" + matter.ToString(CultureInfo.InvariantCulture));
         if (withRange)
             parts.AddRange(RangeParts());
         return parts;
@@ -148,7 +157,7 @@ public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTime
     public const string ScopeMine = "mine";
     public const string ScopeAll = "all";
 
-    public async Task<Result<MyMattersScope>> ResolveAsync(MyMattersQuery query, CancellationToken ct)
+    public async Task<Result<MyMattersScope>> ResolveAsync(MyMattersQuery query, CancellationToken ct, bool matterNarrowsScope = true)
     {
         ArgumentNullException.ThrowIfNull(query);
         if (currentUser.UserId is not { } me)
@@ -200,9 +209,13 @@ public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTime
             matters = visibility.WhereMatterVisible(matters, m => m.Id);
         }
 
+        // The Matter filter narrows last, so a matter the caller may not reach is simply not in the set.
+        if (matterNarrowsScope && query.MatterId is { } matterId)
+            matters = matters.Where(m => m.Id == matterId);
+
         if (all && await matters.CountAsync(ct) > MyMattersScope.MaxMatters)
             return Error.Validation("scope", "SCOPE_TOO_LARGE", $"More than {MyMattersScope.MaxMatters} matters match. Choose a client or a project manager first.");
 
-        return new MyMattersScope(db, me, QueueClock.Create(clock.UtcNow, timeZone), matters, role, query, all);
+        return new MyMattersScope(db, me, QueueClock.Create(clock.UtcNow, timeZone), matters, role, query, all, matterNarrowsScope);
     }
 }

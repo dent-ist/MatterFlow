@@ -44,7 +44,8 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         if (unknown is not null)
             return Error.Validation("kind", "UNKNOWN_KIND", $"Unknown kind '{unknown}'. Allowed: {string.Join(", ", KindFilters)}.");
 
-        var resolved = await scopes.ResolveAsync(query, ct);
+        // The Matter filter narrows the LIST only: the unread badge counts the whole window, whatever the filter says (so the scope is not narrowed by it).
+        var resolved = await scopes.ResolveAsync(query, ct, matterNarrowsScope: false);
         if (resolved.IsFailure)
             return resolved.Error!;
         var scope = resolved.Value;

@@ -31,45 +31,6 @@ public sealed record MyMattersSummary(
     int? OldestHoldDays,
     DateTime? OldestHoldSinceUtc);
 
-/// <summary>One row of the health table (6.3).</summary>
-/// <param name="ClientNumber">The five-digit client number.</param>
-/// <param name="AtRisk">Open tasks of the matter that are At risk (<see cref="AtRiskRules"/>).</param>
-/// <param name="DueThisWeek">Open tasks due in the next 7 days, today included, not overdue (the strip's "due in 7 days" for this matter).</param>
-/// <param name="PercentComplete">Steps completed or skipped over all steps of the workflows of this matter's open tasks, whole percent; null with no open task.</param>
-/// <param name="NextDeadline">The earliest explicit due date among open tasks that are not overdue; null if none.</param>
-/// <param name="Flag"><c>RED</c>, <c>AMBER</c> or <c>GREEN</c> (see <see cref="MyMattersRules.Flag"/>); a label always travels with the colour in the UI.</param>
-/// <param name="FlagReasons">Every reason that applies, most severe first: <c>OVERDUE</c>, <c>UNASSIGNED</c>, <c>DUE_SOON</c>, <c>LONG_HOLD</c>; a green matter with no open task has <c>NO_OPEN_TASKS</c>.</param>
-/// <param name="Query">The Task Queue query for this matter's open tasks.</param>
-public sealed record MyMattersHealthRow(
-    [property: Required] int MatterId,
-    [property: Required] string MatterRef,
-    [property: Required] string MatterName,
-    [property: Required] int ClientId,
-    [property: Required] string ClientNumber,
-    [property: Required] string ClientName,
-    [property: Required] int Open,
-    [property: Required] int Overdue,
-    [property: Required] int DueThisWeek,
-    [property: Required] int Unassigned,
-    [property: Required] int AtRisk,
-    int? PercentComplete,
-    DateOnly? NextDeadline,
-    [property: Required] string Flag,
-    [property: Required] IReadOnlyList<string> FlagReasons,
-    [property: Required] string Query);
-
-/// <summary>A page of the health table. The thresholds are echoed so the UI can spell the rule out.</summary>
-public sealed record MyMattersHealthPage(
-    [property: Required] IReadOnlyList<MyMattersHealthRow> Items,
-    [property: Required] int Total,
-    [property: Required] int Page,
-    [property: Required] int PageSize,
-    [property: Required] string Sort,
-    [property: Required] string Dir,
-    [property: Required] int AmberDueDays,
-    [property: Required] int StuckOnHoldDays,
-    [property: Required] string TimeZone);
-
 /// <summary>The fact an attention row states: <c>OVERDUE</c> (days), <c>AT_RISK</c>, <c>DUE_TODAY</c>, <c>DUE_IN_DAYS</c> (days), <c>NO_ASSIGNEE</c>, <c>ON_HOLD_DAYS</c> (days).</summary>
 public static class AttentionFacts
 {
@@ -178,6 +139,25 @@ public sealed record MyMattersDeadlineDay(
     [property: Required] int Count,
     [property: Required] string Query,
     [property: Required] IReadOnlyList<MyMattersTaskItem> Items);
+
+/// <summary>
+/// One month of the Overview's Calendar (issue #944): every day of the month with the number of open tasks due on it and the first five of them. Overdue tasks sit on their own due
+/// dates, in past months too; each item's <c>FactCode</c> says <c>OVERDUE</c> for them. Tasks with no due date are not on a calendar.
+/// </summary>
+/// <param name="Month"><c>yyyy-MM</c>.</param>
+/// <param name="Total">Tasks due in the month (the sum of the days' counts).</param>
+/// <param name="Overdue">Of those, overdue now.</param>
+/// <param name="Days">One entry per day of the month, in order; <c>Query</c> of a day is the Task Queue query that lists exactly the tasks it counts.</param>
+public sealed record MyMattersCalendar(
+    [property: Required] string TimeZone,
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] string Month,
+    [property: Required] DateOnly FromDate,
+    [property: Required] DateOnly ToDate,
+    [property: Required] DateOnly Today,
+    [property: Required] int Total,
+    [property: Required] int Overdue,
+    [property: Required] IReadOnlyList<MyMattersDeadlineDay> Days);
 
 /// <summary>One matter with deadlines in the window: how many, the soonest date and its next five tasks.</summary>
 /// <param name="Total">All open, not overdue tasks of the matter due inside the window (the rows are capped at 5).</param>
@@ -355,54 +335,6 @@ public sealed record MyMattersSinceLastVisit(
 public sealed record MyMattersActivitySeen(
     [property: Required] long SeenEventId,
     [property: Required] DateTime SeenAtUtc);
-
-/// <summary>One week (Monday to Sunday in the viewer's zone) of the trends.</summary>
-/// <param name="WeekStart">The Monday.</param>
-/// <param name="WeekEnd">The Sunday.</param>
-/// <param name="IsCurrent">The week that contains today: it is not over, "at week end" means now.</param>
-/// <param name="Created">Tasks created in the week (<c>CreatedAt</c>).</param>
-/// <param name="Closed">Tasks completed in the week (the moment of the completion).</param>
-/// <param name="OverdueAtWeekEnd">Tasks that were open at the end of the week (now, for the current week) with a due moment before it. Derived, see <see cref="MyMattersTrends.Limitations"/>.</param>
-/// <param name="CreatedQuery">The Task Queue query that lists the created tasks.</param>
-/// <param name="ClosedQuery">The Task Queue query that lists the completed tasks.</param>
-public sealed record MyMattersTrendWeek(
-    [property: Required] DateOnly WeekStart,
-    [property: Required] DateOnly WeekEnd,
-    [property: Required] bool IsCurrent,
-    [property: Required] int Created,
-    [property: Required] int Closed,
-    [property: Required] int OverdueAtWeekEnd,
-    [property: Required] string CreatedQuery,
-    [property: Required] string ClosedQuery);
-
-/// <summary>The figures of today next to the weekly series.</summary>
-/// <param name="Open">Open tasks now.</param>
-/// <param name="AverageAgeDays">Average age of the open tasks (now minus <c>CreatedAt</c>), one decimal; null with no open task.</param>
-/// <param name="OnHold">Tasks on hold now.</param>
-/// <param name="OldestOnHoldDays">Whole days the longest-waiting task has been on hold; null when none is.</param>
-public sealed record MyMattersTrendNow(
-    [property: Required] int Open,
-    double? AverageAgeDays,
-    [property: Required] int OnHold,
-    int? OldestOnHoldDays,
-    [property: Required] string OpenQuery,
-    [property: Required] string OnHoldQuery,
-    [property: Required] string OverdueQuery);
-
-/// <summary>
-/// Trends of the matters in scope, week by week (epic #758, PX-09). Approximate on purpose: the schema keeps no history of due dates or statuses, so the series are derived from the current columns.
-/// </summary>
-/// <param name="Weeks">8, 12 or 26.</param>
-/// <param name="Approximate">Always true: the figures are derived, not recorded. Show <c>Limitations</c> next to them.</param>
-/// <param name="Limitations">Codes of what makes the figures approximate: <c>CURRENT_DUE_DATES</c> (a task that was re-dated is counted by its current due date), <c>CURRENT_STATUS</c> (a task that was re-opened is counted by its current status and last status change), <c>CURRENT_MATTER_SET</c> (the matters are those in scope now, with their tasks of all times).</param>
-public sealed record MyMattersTrends(
-    [property: Required] string TimeZone,
-    [property: Required] DateTime AsOfUtc,
-    [property: Required] int Weeks,
-    [property: Required] bool Approximate,
-    [property: Required] IReadOnlyList<string> Limitations,
-    [property: Required] IReadOnlyList<MyMattersTrendWeek> Points,
-    [property: Required] MyMattersTrendNow Now);
 
 /// <summary>
 /// One task type of the Breakdown: a column of the matrix, with its totals over <b>all</b> the matters of the scope (not just the page).

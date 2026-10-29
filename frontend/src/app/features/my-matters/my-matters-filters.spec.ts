@@ -6,7 +6,6 @@ import {
   deadlineArgs,
   filterSummary,
   filtersToParams,
-  mattersListParams,
   parseFilters,
   queryToParams,
   roleApplies,
@@ -144,23 +143,5 @@ describe('My Matters filters', () => {
     expect(
       filterSummary({ ...DEFAULT_FILTERS, scope: 'all', managerId: 9 }, null, 'Alex Kim'),
     ).toBe('all matters, project manager Alex Kim');
-  });
-
-  it('opens the Matters list with its own filter keys, so the list shows the matters counted', () => {
-    expect(mattersListParams(DEFAULT_FILTERS, 5)).toEqual({ mine: 'true' });
-    expect(mattersListParams({ ...DEFAULT_FILTERS, role: 'primary', clientId: 3 }, 5)).toEqual({
-      clientId: '3',
-      primaryManager: '5',
-    });
-    expect(mattersListParams({ ...DEFAULT_FILTERS, role: 'secondary' }, 5)).toEqual({
-      secondaryManager: '5',
-    });
-    expect(mattersListParams({ ...DEFAULT_FILTERS, scope: 'all' }, 5)).toEqual({});
-    expect(mattersListParams({ ...DEFAULT_FILTERS, scope: 'all', managerId: 9 }, 5)).toEqual({
-      managerId: '9',
-    });
-    expect(
-      mattersListParams({ ...DEFAULT_FILTERS, scope: 'all', managerId: 9, role: 'primary' }, 5),
-    ).toEqual({ primaryManager: '9' });
   });
 });

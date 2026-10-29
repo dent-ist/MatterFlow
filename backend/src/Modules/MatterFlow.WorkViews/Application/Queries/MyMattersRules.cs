@@ -78,15 +78,6 @@ public static class MyMattersRules
         return (flag, reasons);
     }
 
-    /// <summary>Sort rank of a flag: Red 0, Amber 1, Green 2.</summary>
-    public static int FlagRank(string flag) => flag == FlagRed ? 0 : flag == FlagAmber ? 1 : 2;
-
-    /// <summary>
-    /// Steps completed or skipped over all steps of the workflows of the matter's open tasks, as a whole percent (rounded down, so 100 means every step is
-    /// resolved); null when there are no steps (no open tasks).
-    /// </summary>
-    public static int? PercentComplete(int totalSteps, int resolvedSteps) => totalSteps <= 0 ? null : (int)(Math.Clamp(resolvedSteps, 0, totalSteps) * 100L / totalSteps);
-
     /// <summary>Whole days since an instant, never negative.</summary>
     public static int WholeDaysSince(DateTime sinceUtc, DateTime nowUtc) =>
         Math.Max(0, (int)Math.Floor((DateTime.SpecifyKind(nowUtc, DateTimeKind.Utc) - DateTime.SpecifyKind(sinceUtc, DateTimeKind.Utc)).TotalDays));

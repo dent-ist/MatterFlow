@@ -16,4 +16,17 @@ public partial class MyMattersController
         FilterParsing.EnsureKnown(Request.Query.Keys, MyMattersDeadlinesQuery.Keys).OrThrow();
         return (await attention.DeadlinesAsync(query, cancellationToken)).OrThrow();
     }
+
+    /// <summary>
+    /// The Calendar of the Overview, one month at a time (<c>month=yyyy-MM</c>, default the month of today in the viewer's zone): every day of the month with the number of open tasks due on it and the first five.
+    /// Overdue tasks sit on their own due dates, also in past months (their <c>factCode</c> is <c>OVERDUE</c>). <c>show</c> is the pre-filter of the grid (open, overdue, atRisk, unassigned, onHold, dueSoon) and
+    /// <c>taskTypeId</c> the Focus; the scope's Client, Matter and Role apply as everywhere. Every day carries the Task Queue query that lists exactly the tasks it counts.
+    /// </summary>
+    [HttpGet("calendar", Name = "GetMyMattersCalendar")]
+    [ProducesResponseType<MyMattersCalendar>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<MyMattersCalendar>> GetCalendar([FromQuery] MyMattersCalendarQuery query, [FromServices] MyMattersAttentionService attention, CancellationToken cancellationToken)
+    {
+        FilterParsing.EnsureKnown(Request.Query.Keys, MyMattersCalendarQuery.Keys).OrThrow();
+        return (await attention.CalendarAsync(query, cancellationToken)).OrThrow();
+    }
 }

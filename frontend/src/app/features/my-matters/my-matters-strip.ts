@@ -267,6 +267,7 @@ export class MyMattersStrip {
     () => {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersSummary(
+        undefined,
         a.scope,
         a.role,
         a.clientId,

@@ -9351,16 +9351,6 @@
             }
           },
           {
-            "name": "matterId",
-            "in": "query",
-            "schema": {
-              "maximum": 2147483647,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
             "name": "kind",
             "in": "query",
             "schema": {
@@ -9443,6 +9433,16 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -9521,6 +9521,16 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -9670,6 +9680,16 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -9797,6 +9817,16 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -10109,6 +10139,16 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -10125,49 +10165,40 @@
         }
       }
     },
-    "/api/v1/my-matters/health": {
+    "/api/v1/my-matters/calendar": {
       "get": {
         "tags": [
           "MyMatters"
         ],
-        "operationId": "GetMyMattersHealth",
+        "operationId": "GetMyMattersCalendar",
         "parameters": [
           {
-            "name": "sort",
+            "name": "month",
             "in": "query",
             "schema": {
-              "maxLength": 20,
+              "maxLength": 7,
               "minLength": 0,
               "type": "string"
             }
           },
           {
-            "name": "dir",
+            "name": "show",
             "in": "query",
             "schema": {
-              "maxLength": 4,
+              "maxLength": 10,
               "minLength": 0,
               "type": "string"
             }
           },
           {
-            "name": "page",
+            "name": "taskTypeId",
             "in": "query",
             "schema": {
-              "maximum": 2147483647,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32"
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           {
@@ -10226,6 +10257,16 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -10234,7 +10275,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MyMattersHealthPage"
+                  "$ref": "#/components/schemas/MyMattersCalendar"
                 }
               }
             }
@@ -10250,6 +10291,17 @@
         "operationId": "GetMyMattersSummary",
         "parameters": [
           {
+            "name": "taskTypeId",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          {
             "name": "scope",
             "in": "query",
             "schema": {
@@ -10304,6 +10356,16 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -10314,93 +10376,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyMattersSummary"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/my-matters/trends": {
-      "get": {
-        "tags": [
-          "MyMatters"
-        ],
-        "operationId": "GetMyMattersTrends",
-        "parameters": [
-          {
-            "name": "weeks",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "schema": {
-              "maxLength": 10,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "schema": {
-              "maxLength": 10,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
-            "name": "clientId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "from",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "managerId",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "fresh",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MyMattersTrends"
                 }
               }
             }
@@ -10479,6 +10454,16 @@
             "in": "query",
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -19508,6 +19493,58 @@
           }
         }
       },
+      "MyMattersCalendar": {
+        "required": [
+          "timeZone",
+          "asOfUtc",
+          "month",
+          "fromDate",
+          "toDate",
+          "today",
+          "total",
+          "overdue",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string"
+          },
+          "asOfUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "month": {
+            "type": "string"
+          },
+          "fromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "toDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyMattersDeadlineDay"
+            }
+          }
+        }
+      },
       "MyMattersDeadlineDay": {
         "required": [
           "date",
@@ -19674,146 +19711,6 @@
               "integer"
             ],
             "format": "int32"
-          }
-        }
-      },
-      "MyMattersHealthPage": {
-        "required": [
-          "items",
-          "total",
-          "page",
-          "pageSize",
-          "sort",
-          "dir",
-          "amberDueDays",
-          "stuckOnHoldDays",
-          "timeZone"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MyMattersHealthRow"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sort": {
-            "type": "string"
-          },
-          "dir": {
-            "type": "string"
-          },
-          "amberDueDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "stuckOnHoldDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "timeZone": {
-            "type": "string"
-          }
-        }
-      },
-      "MyMattersHealthRow": {
-        "required": [
-          "matterId",
-          "matterRef",
-          "matterName",
-          "clientId",
-          "clientNumber",
-          "clientName",
-          "open",
-          "overdue",
-          "dueThisWeek",
-          "unassigned",
-          "atRisk",
-          "percentComplete",
-          "nextDeadline",
-          "flag",
-          "flagReasons",
-          "query"
-        ],
-        "type": "object",
-        "properties": {
-          "matterId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "matterRef": {
-            "type": "string"
-          },
-          "matterName": {
-            "type": "string"
-          },
-          "clientId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "clientNumber": {
-            "type": "string"
-          },
-          "clientName": {
-            "type": "string"
-          },
-          "open": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "overdue": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "dueThisWeek": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "unassigned": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "atRisk": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "percentComplete": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "nextDeadline": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date"
-          },
-          "flag": {
-            "type": "string"
-          },
-          "flagReasons": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "query": {
-            "type": "string"
           }
         }
       },
@@ -20167,138 +20064,6 @@
           },
           "atRisk": {
             "type": "boolean"
-          }
-        }
-      },
-      "MyMattersTrendNow": {
-        "required": [
-          "open",
-          "averageAgeDays",
-          "onHold",
-          "oldestOnHoldDays",
-          "openQuery",
-          "onHoldQuery",
-          "overdueQuery"
-        ],
-        "type": "object",
-        "properties": {
-          "open": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "averageAgeDays": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "onHold": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "oldestOnHoldDays": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "openQuery": {
-            "type": "string"
-          },
-          "onHoldQuery": {
-            "type": "string"
-          },
-          "overdueQuery": {
-            "type": "string"
-          }
-        }
-      },
-      "MyMattersTrends": {
-        "required": [
-          "timeZone",
-          "asOfUtc",
-          "weeks",
-          "approximate",
-          "limitations",
-          "points",
-          "now"
-        ],
-        "type": "object",
-        "properties": {
-          "timeZone": {
-            "type": "string"
-          },
-          "asOfUtc": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "weeks": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "approximate": {
-            "type": "boolean"
-          },
-          "limitations": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "points": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MyMattersTrendWeek"
-            }
-          },
-          "now": {
-            "$ref": "#/components/schemas/MyMattersTrendNow"
-          }
-        }
-      },
-      "MyMattersTrendWeek": {
-        "required": [
-          "weekStart",
-          "weekEnd",
-          "isCurrent",
-          "created",
-          "closed",
-          "overdueAtWeekEnd",
-          "createdQuery",
-          "closedQuery"
-        ],
-        "type": "object",
-        "properties": {
-          "weekStart": {
-            "type": "string",
-            "format": "date"
-          },
-          "weekEnd": {
-            "type": "string",
-            "format": "date"
-          },
-          "isCurrent": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "closed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "overdueAtWeekEnd": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "createdQuery": {
-            "type": "string"
-          },
-          "closedQuery": {
-            "type": "string"
           }
         }
       },

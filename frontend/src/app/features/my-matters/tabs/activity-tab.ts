@@ -431,7 +431,6 @@ export class ActivityTab {
       const a = commonArgs(this.filters());
       return this.api.getMyMattersActivity(
         ACTIVITY_TAB_PAGE,
-        this.matterId() ?? undefined,
         this.kind() ? [this.kind()] : undefined,
         this.unreadOnly() ? true : undefined,
         undefined,
@@ -441,6 +440,8 @@ export class ActivityTab {
         undefined,
         undefined,
         a.managerId,
+        undefined,
+        this.matterId() ?? undefined,
       );
     },
   );
@@ -571,7 +572,6 @@ export class ActivityTab {
         firstValueFrom(
           this.api.getMyMattersActivity(
             ACTIVITY_TAB_PAGE,
-            this.matterId() ?? undefined,
             this.kind() ? [this.kind()] : undefined,
             this.unreadOnly() ? true : undefined,
             this.cursor(),
@@ -581,6 +581,8 @@ export class ActivityTab {
             undefined,
             undefined,
             a.managerId,
+            undefined,
+            this.matterId() ?? undefined,
           ),
         ),
       );

@@ -2,7 +2,6 @@ import { MyMattersActivityItem, MyMattersDeadlineDay } from '../../../api/genera
 import { figureLink } from '../panels/since-panel';
 import { activityRows } from './activity-tab';
 import { calendarWeeks } from '../panels/calendar-panel';
-import { limitationText, linePoints, niceMax, weekLabel, valueY } from './trends-tab';
 
 const day = (date: string, count = 0, extra: Partial<MyMattersDeadlineDay> = {}) =>
   ({
@@ -60,30 +59,6 @@ describe('calendarWeeks (Calendar)', () => {
 
   it('is empty without days', () => {
     expect(calendarWeeks([])).toEqual([]);
-  });
-});
-
-describe('Trends tab helpers', () => {
-  it('rounds an axis top to a readable number, at least 4', () => {
-    expect([0, 3, 4, 5, 8, 11, 26, 101].map(niceMax)).toEqual([4, 4, 4, 5, 10, 20, 50, 200]);
-  });
-
-  it('draws a line left to right, higher values higher up', () => {
-    const points = linePoints([0, 5, 10], 10)
-      .split(' ')
-      .map((p) => p.split(',').map(Number));
-    expect(points).toHaveLength(3);
-    expect(points[0][0]).toBeLessThan(points[1][0]);
-    expect(points[1][0]).toBeLessThan(points[2][0]);
-    expect(points[0][1]).toBeGreaterThan(points[2][1]);
-    expect(valueY(10, 10)).toBeLessThan(valueY(0, 10));
-  });
-
-  it('names a week by its Monday and explains the limitation codes, showing an unknown one as it is', () => {
-    expect(weekLabel('2026-08-31')).toBe('Aug 31');
-    expect(limitationText('CURRENT_DUE_DATES')).toContain('re-dated');
-    expect(limitationText('CURRENT_STATUS')).toContain('re-opened');
-    expect(limitationText('SOMETHING_NEW')).toBe('SOMETHING_NEW');
   });
 });
 

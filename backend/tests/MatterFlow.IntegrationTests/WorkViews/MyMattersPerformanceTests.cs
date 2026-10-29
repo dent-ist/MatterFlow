@@ -209,9 +209,6 @@ public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITes
     [
         ("summary", "/api/v1/my-matters/summary?fresh=true"),
         ("attention", "/api/v1/my-matters/attention"),
-        ("health (first page, next deadline)", "/api/v1/my-matters/health"),
-        ("health (sorted by open)", "/api/v1/my-matters/health?sort=open"),
-        ("health (page 2, size 50)", "/api/v1/my-matters/health?page=2"),
         ("workload", "/api/v1/my-matters/workload"),
         ("deadlines (14 days)", "/api/v1/my-matters/deadlines"),
         ("deadlines (28 days)", "/api/v1/my-matters/deadlines?days=28"),
@@ -223,8 +220,10 @@ public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITes
         ("workload (with matters)", "/api/v1/my-matters/workload?include=matters"),
         ("activity (filtered: status changes)", "/api/v1/my-matters/activity?kind=STATUS_CHANGED&take=50"),
         ("since your last visit", "/api/v1/my-matters/since-last-visit"),
-        ("trends (8 weeks)", "/api/v1/my-matters/trends"),
-        ("trends (26 weeks)", "/api/v1/my-matters/trends?weeks=26"),
+        // Epic #893 (#942, #944): the Overview's pre-filter counts with a matter chosen, and one month of the Calendar.
+        ("summary (Focus)", "/api/v1/my-matters/summary?fresh=true&taskTypeId=1"),
+        ("calendar (month)", "/api/v1/my-matters/calendar"),
+        ("calendar (month, overdue)", "/api/v1/my-matters/calendar?show=overdue"),
     ];
 
     [Fact]

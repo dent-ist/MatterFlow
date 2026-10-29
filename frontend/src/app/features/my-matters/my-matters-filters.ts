@@ -160,19 +160,3 @@ export function filterSummary(
   if (f.role !== 'both' && roleApplies(f)) parts.push(`${f.role} manager only`);
   return parts.length > 0 ? parts.join(', ') : 'all your matters, as primary or secondary manager';
 }
-
-/**
- * The Matters list address for the "Matters I manage" cell: the page's own filter keys (`mine`, `primaryManager`, `secondaryManager`,
- * `managerId`, `clientId`), so the list shows exactly the matters counted. The list's default Status (Active) is the strip's "active matters".
- */
-export function mattersListParams(f: MmFilters, me: number): Params {
-  const out: Params = {};
-  if (f.clientId !== null) out['clientId'] = String(f.clientId);
-  const who = f.scope === 'all' ? f.managerId : me;
-  if (who === null) return out;
-  if (f.role === 'primary') out['primaryManager'] = String(who);
-  else if (f.role === 'secondary') out['secondaryManager'] = String(who);
-  else if (f.scope === 'all') out['managerId'] = String(who);
-  else out['mine'] = 'true';
-  return out;
-}

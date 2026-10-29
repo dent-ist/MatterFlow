@@ -7,7 +7,7 @@ using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 namespace MatterFlow.IntegrationTests.WorkViews;
 
 /// <summary>
-/// My Matters (summary, health, attention, deadlines, workload, activity) under the sensitive-matter rule (epic #788, SM-10, inventory R39 and R40): the base set
+/// My Matters (summary, attention, deadlines, workload, activity) under the sensitive-matter rule (epic #788, SM-10, inventory R39 and R40): the base set
 /// is the matters the caller may see (scope all) or manages (scope mine), every number and row comes from it, the cache is partitioned by what the caller may see,
 /// and the activity feed shows events of visible matters only.
 /// </summary>
@@ -43,9 +43,13 @@ public sealed class SensitiveMyMattersTests(SqlServerFixture sql)
                 Count(summary, "matters").ShouldBe(visible.Length, name + ": matters tile");
                 Count(summary, "openTasks").ShouldBe(visible.Length, name + ": open tasks tile (one open task per matter)");
 
-                var health = await GetAsync(http, "/api/v1/my-matters/health?scope=all&pageSize=100");
-                health.GetProperty("total").GetInt32().ShouldBe(visible.Length, name + ": health total");
-                health.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("matterId").GetInt32()).Order().ToArray().ShouldBe([.. visible.Order()], name + ": health rows");
+                // The Matter filter of the page (issue #941) cannot reach a matter the person may not see: the scope is empty, not an error.
+                foreach (var hidden in u.SensitiveMatters.Except(visible))
+                {
+                    var one = await GetAsync(http, $"/api/v1/my-matters/summary?scope=all&matterId={hidden}");
+                    Count(one, "matters").ShouldBe(0, name + ": filter by a hidden matter");
+                    Count(one, "openTasks").ShouldBe(0, name + ": filter by a hidden matter, tasks");
+                }
 
                 var attention = await GetAsync(http, "/api/v1/my-matters/attention?scope=all");
                 var deadlines = await GetAsync(http, "/api/v1/my-matters/deadlines?scope=all");
@@ -55,7 +59,7 @@ public sealed class SensitiveMyMattersTests(SqlServerFixture sql)
                 var activity = await GetAsync(http, "/api/v1/my-matters/activity?scope=all&take=100");
                 activity.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("matterId").GetInt32()).Distinct().ShouldAllBe(id => visible.Contains(id), name + ": activity matters");
 
-                var text = summary.GetRawText() + health.GetRawText() + attention.GetRawText() + deadlines.GetRawText() + workload.GetRawText() + activity.GetRawText();
+                var text = summary.GetRawText() + attention.GetRawText() + deadlines.GetRawText() + workload.GetRawText() + activity.GetRawText();
                 foreach (var matter in u.SensitiveMatters.Except(visible))
                     text.ShouldNotContain(SensitiveUniverse.Sentinel(matter), Case.Sensitive, name);
             }
@@ -88,9 +92,6 @@ public sealed class SensitiveMyMattersTests(SqlServerFixture sql)
             // Asking for P1's matters: P5 may not see S1, so P5 gets none of them; the viewer gets S1.
             Count(await GetAsync(u.UnrelatedClient, $"/api/v1/my-matters/summary?scope=all&managerId={u.PmPrimary}"), "matters").ShouldBe(0);
             Count(await GetAsync(u.ViewerClient, $"/api/v1/my-matters/summary?scope=all&managerId={u.PmPrimary}"), "matters").ShouldBe(1);
-            var health = await GetAsync(u.UnrelatedClient, $"/api/v1/my-matters/health?scope=all&managerId={u.PmPrimary}");
-            health.GetProperty("total").GetInt32().ShouldBe(0);
-            health.GetRawText().ShouldNotContain(SensitiveUniverse.SentinelPrefix);
         }
         finally
         {

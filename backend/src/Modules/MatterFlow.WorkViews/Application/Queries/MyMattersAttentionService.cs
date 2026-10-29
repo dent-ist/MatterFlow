@@ -149,6 +149,85 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
             TotalUnfiltered: totalUnfiltered);
     }
 
+    /// <summary>The pre-filters of the Overview's grid that the Calendar understands (issue #942, #944).</summary>
+    public static readonly IReadOnlyList<string> CalendarShows = ["open", "overdue", "atRisk", "unassigned", "onHold", "dueSoon"];
+
+    /// <summary>
+    /// One month of the Calendar (issue #944): the open tasks with a due date in the month, overdue ones on their own due dates (past months too), narrowed by the page's Matter, Client and
+    /// Role (the scope), the pre-filter and the Focus. Three statements (the counts per day, the first five tasks of every day with a due task, the columns and names), whatever the number
+    /// of tasks or matters. The day is the task's calendar due date.
+    /// </summary>
+    public async Task<Result<MyMattersCalendar>> CalendarAsync(MyMattersCalendarQuery query, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var show = string.IsNullOrWhiteSpace(query.Show) ? "open" : query.Show.Trim();
+        if (!CalendarShows.Contains(show))
+            return Error.Validation("show", "UNKNOWN_SHOW", $"show must be one of {string.Join(", ", CalendarShows)}.");
+        var resolved = await scopes.ResolveAsync(query, ct);
+        if (resolved.IsFailure)
+            return resolved.Error!;
+        var scope = resolved.Value;
+        var clock = scope.Clock;
+        var today = clock.Today;
+
+        DateOnly first;
+        if (string.IsNullOrWhiteSpace(query.Month))
+            first = new DateOnly(today.Year, today.Month, 1);
+        else if (!DateOnly.TryParseExact(query.Month.Trim() + "-01", "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out first))
+            return Error.Validation("month", "INVALID_MONTH", "month must be yyyy-MM.");
+        var last = first.AddMonths(1).AddDays(-1);
+
+        var types = (query.TaskTypeId ?? []).Distinct().Order().ToList();
+        var typeParts = types.Select(id => "type=" + id.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        var tasks = scope.OpenTasks();
+        if (types.Count > 0)
+            tasks = tasks.Where(t => types.Contains(t.TaskTypeId));
+        tasks = show switch
+        {
+            "overdue" => tasks.Where(TaskQueueRules.Overdue(clock)),
+            "atRisk" => AtRiskRules.Where(tasks, db, clock),
+            "unassigned" => tasks.Where(MyMattersRules.Unassigned),
+            "onHold" => tasks.Where(MyMattersRules.OnHold),
+            "dueSoon" => tasks.Where(TaskQueueRules.DueWithin(clock, 7)),
+            _ => tasks,
+        };
+        var window = tasks.Where(t => t.DueDate != null && t.DueDate >= first && t.DueDate <= last);
+        var overdue = await window.Where(TaskQueueRules.Overdue(clock)).CountAsync(ct);
+        var byDay = await DayBucketsAsync(
+            scope,
+            window,
+            first,
+            last,
+            date => DayQuery(scope, show, typeParts, date),
+            r => IsOverdue(r, clock) ? (AttentionFacts.Overdue, DaysOverdue(r, today, clock.NowUtc)) : DueFactOf(r, today),
+            ct);
+        return new MyMattersCalendar(
+            clock.ZoneId,
+            DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
+            first.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture),
+            first,
+            last,
+            today,
+            byDay.Sum(d => d.Count),
+            overdue,
+            byDay);
+    }
+
+    /// <summary>The Task Queue query that lists the tasks a calendar day counts: the scope, the day, the pre-filter and the Focus.</summary>
+    private static string DayQuery(MyMattersScope scope, string show, string[] typeParts, DateOnly date)
+    {
+        string[] day = ["asap=false", "dueFrom=" + DashboardRules.Date(date), "dueTo=" + DashboardRules.Date(date), .. typeParts, "sort=due"];
+        return show switch
+        {
+            "overdue" => scope.QueueOpenInWindow([.. day, "overdue=true"]),
+            "atRisk" => scope.QueueOpenInWindow([.. day, "atRisk=true"]),
+            "unassigned" => scope.QueueOpenInWindow([.. day, "unassigned=true"]),
+            "dueSoon" => scope.QueueOpenInWindow([.. day, "dueWithin=7"]),
+            "onHold" => scope.QueueStatusInWindow(TaskStatusCode.OnHold, day),
+            _ => scope.QueueOpenInWindow(day),
+        };
+    }
+
     /// <summary>
     /// The calendar: every day of the window with its count (one grouped statement) and its first five tasks (one statement, a <c>CROSS APPLY</c> of a <c>TOP 5</c> per distinct due date),
     /// then the task columns and the names for all of them at once. The statements do not depend on the number of matters. The day is the task's calendar due date (the viewer's day).
@@ -159,6 +238,44 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         var today = clock.Today;
         var last = today.AddDays(days);
 
+        var byDay = await DayBucketsAsync(
+            scope,
+            window,
+            today,
+            last,
+            date => scope.QueueOpenInWindow("asap=false", "overdue=false", "dueFrom=" + DashboardRules.Date(date), "dueTo=" + DashboardRules.Date(date), "sort=due"),
+            r => DueFactOf(r, today),
+            ct);
+
+        return new MyMattersDeadlines(
+            clock.ZoneId,
+            DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
+            days,
+            today,
+            last,
+            byDay.Sum(d => d.Count),
+            windowQuery,
+            [],
+            "day",
+            byDay,
+            TotalUnfiltered: totalUnfiltered);
+    }
+
+    /// <summary>
+    /// Every day from <paramref name="from"/> to <paramref name="last"/> with its count (one grouped statement) and its first <see cref="BucketSize"/> tasks (one statement, a <c>CROSS APPLY</c> of a
+    /// <c>TOP</c> per distinct due date), then the task columns and the names for all of them at once. Shared by the deadlines calendar and the month Calendar.
+    /// </summary>
+    private async Task<List<MyMattersDeadlineDay>> DayBucketsAsync(
+        MyMattersScope scope,
+        IQueryable<WorkTask> window,
+        DateOnly from,
+        DateOnly last,
+        Func<DateOnly, string> queryOf,
+        Func<TaskRow, (string, int?)> factOf,
+        CancellationToken ct)
+    {
+        var clock = scope.Clock;
+        var today = clock.Today;
         var counts = (await window.GroupBy(t => t.DueDate).Select(g => new { Date = g.Key, Count = g.Count() }).ToListAsync(ct))
             .Where(c => c.Date != null).ToDictionary(c => c.Date!.Value, c => c.Count);
         var dates = window.Select(t => t.DueDate).Distinct();
@@ -171,7 +288,7 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
         var names = await NamesAsync(details.Values, clock, ct);
 
         var byDay = new List<MyMattersDeadlineDay>();
-        for (var date = today; date <= last; date = date.AddDays(1))
+        for (var date = from; date <= last; date = date.AddDays(1))
         {
             var items = topIds.Where(t => t.Date == date).Select(t => details[t.Id]).OrderBy(r => r.DueAtUtc ?? r.DueDate!.Value.ToDateTime(TimeOnly.MaxValue)).ThenBy(r => r.Id).ToList();
             byDay.Add(new MyMattersDeadlineDay(
@@ -179,23 +296,15 @@ public sealed class MyMattersAttentionService(MyMattersScopeResolver scopes, DbC
                 date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday,
                 date == today,
                 counts.GetValueOrDefault(date),
-                scope.QueueOpenInWindow("asap=false", "overdue=false", "dueFrom=" + DashboardRules.Date(date), "dueTo=" + DashboardRules.Date(date), "sort=due"),
-                [.. items.Select(r => ToItem(r, names, DueFactOf(r, today)))]));
+                queryOf(date),
+                [.. items.Select(r => ToItem(r, names, factOf(r)))]));
         }
 
-        return new MyMattersDeadlines(
-            clock.ZoneId,
-            DateTime.SpecifyKind(clock.NowUtc, DateTimeKind.Utc),
-            days,
-            today,
-            last,
-            counts.Values.Sum(),
-            windowQuery,
-            [],
-            "day",
-            byDay,
-            TotalUnfiltered: totalUnfiltered);
+        return byDay;
     }
+
+    private static bool IsOverdue(TaskRow r, QueueClock clock) =>
+        r.DueAtUtc is { } at ? DateTime.SpecifyKind(at, DateTimeKind.Utc) < clock.NowUtc : r.DueDate is { } due && due < clock.Today;
 
     /// <summary>
     /// The matters with deadlines in the window, soonest first (one grouped statement), and the first five tasks of the first <see cref="MatterGroupSize"/> of them (one statement, a

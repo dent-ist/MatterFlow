@@ -11,7 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PageTitle } from '../../../core/title/page-title';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -40,22 +40,19 @@ import { MyMattersStrip } from '../my-matters-strip';
 import { CalendarToggle } from '../calendar-toggle';
 import { CalendarPanel } from '../panels/calendar-panel';
 import { TaskGrid } from '../panels/task-grid';
-import { HealthPanel } from '../panels/health-panel';
 import { SincePanel, SinceFeed } from '../panels/since-panel';
 import { SkipLinks } from '../skip-links';
 import { ActivityTab } from '../tabs/activity-tab';
 import { BreakdownTab } from '../tabs/breakdown-tab';
 import { DataTab } from '../tabs/data-tab';
-import { TrendsTab } from '../tabs/trends-tab';
 
-/** The tabs (`?tab=`; Overview is the page as it was and is absent from the address). The Deadlines tab is gone (issue #929): `?tab=deadlines` opens the Overview. */
-export const MM_TABS = ['overview', 'breakdown', 'data', 'activity', 'trends'] as const;
+/** The tabs (`?tab=`; Overview is the page as it was and is absent from the address). The Deadlines tab (issue #929) and the Trends tab (issue #947) are gone: `?tab=deadlines` and `?tab=trends` open the Overview. */
+export const MM_TABS = ['overview', 'breakdown', 'data', 'activity'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 const TAB_LABELS: Record<MmTab, string> = {
   overview: 'Overview',
   breakdown: 'Breakdown',
   data: 'Data',
-  trends: 'Trends',
   activity: 'Activity',
 };
 
@@ -101,13 +98,13 @@ function storage(): Storage | null {
     ErrorReference,
     FocusChip,
     FocusControl,
-    HealthPanel,
     MyMattersActiveFilters,
     MyMattersFilterBar,
     MyMattersStrip,
     NewTaskControl,
     OptionsMenu,
     PageHeader,
+    RouterLink,
     ScopeChip,
     ScopeSwitch,
     SincePanel,
@@ -117,7 +114,6 @@ function storage(): Storage | null {
     ActivityTab,
     BreakdownTab,
     DataTab,
-    TrendsTab,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ManagedMatters, OverviewStates, LoadGroup, SinceFeed],
@@ -149,6 +145,29 @@ function storage(): Storage | null {
     /* Everything is quiet (issue #920): the four sections that have nothing to show give way to one line. */
     .mm__off {
       display: none;
+    }
+    .mm__none {
+      display: grid;
+      gap: var(--mf-s2);
+      justify-items: start;
+      margin: 0 0 var(--mf-s3);
+    }
+    .mm__none p {
+      margin: 0;
+    }
+    .mm__muted {
+      color: var(--mf-text-muted);
+    }
+    .mm__link {
+      color: var(--mf-link);
+    }
+    @media (max-width: 639.98px) {
+      .mm__none .mf-btn,
+      .mm__link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
     }
     .mm__quiet {
       margin: 0 0 var(--mf-s3);
@@ -343,13 +362,6 @@ function storage(): Storage | null {
               <p class="mm__loading" role="status">Loading data</p>
             }
           }
-          @case ('trends') {
-            @defer (on immediate) {
-              <mf-mm-trends-tab [filters]="filters()" />
-            } @placeholder {
-              <p class="mm__loading" role="status">Loading trends</p>
-            }
-          }
           @case ('activity') {
             <!-- What changed since the last visit (owner decision of 2026-10-28): not drawn on the Overview any more, shown here, with Mark as read; its number
                  is the badge on this tab. -->
@@ -362,11 +374,32 @@ function storage(): Storage | null {
           }
           @default {
             <mf-mm-skip-links [class.mm__off]="states.quiet() || calendarShown()" />
-            @if (states.quiet() && !states.noMatters() && !calendarShown()) {
+            @if (states.quiet() && !noMatters() && !calendarShown()) {
               <p class="mm__quiet" role="status" data-all-quiet>
                 Nothing is late and nothing is due in the next 7 days.
                 <mf-mm-calendar-toggle (flip)="setCalendar(true)" />
               </p>
+            }
+            @if (noMatters() && !calendarShown()) {
+              <!-- The Matters section is gone (issue #945), but a manager with no matter still gets this positive line and the way on. -->
+              <div class="mm__none" data-empty data-empty-kind="none">
+                <p data-no-matters>You are not the project manager of any matter yet.</p>
+                @if (canAll()) {
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    data-show-all
+                    (click)="update({ scope: 'all' })"
+                  >
+                    Show all matters
+                  </button>
+                } @else {
+                  <p class="mm__muted">Ask a director to assign you.</p>
+                }
+                @if (canMyWork()) {
+                  <a class="mm__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
+                }
+              </div>
             }
             <div class="mm__stack">
               @if (calendarShown()) {
@@ -404,11 +437,6 @@ function storage(): Storage | null {
                   }
                 </mf-mm-grid>
               }
-              <mf-mm-health
-                [filters]="filters()"
-                [filtered]="barActive() > 0"
-                (showAll)="update({ scope: 'all' })"
-              />
             </div>
           }
         }
@@ -476,6 +504,15 @@ export class MyMattersPage {
       this.managed.state() !== 'loading' &&
       (this.filters().scope === 'all' || this.managed.only() === null),
   );
+  /** The person manages no matter at all (scope Mine, no filter): the Overview says so and offers the way on. */
+  protected readonly noMatters = computed(
+    () =>
+      this.filters().scope === 'mine' &&
+      this.barActive() === 0 &&
+      this.managed.complete() &&
+      this.managed.items().length === 0,
+  );
+  protected readonly canMyWork = computed(() => this.auth.has('Task.View'));
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
 
@@ -518,9 +555,10 @@ export class MyMattersPage {
 
   constructor() {
     this.restoreRemembered();
-    // The Deadlines tab is gone (issue #929): its address opens the Overview (a calendar link keeps its `view`).
+    // The Deadlines tab (issue #929) and the Trends tab (issue #947) are gone: their addresses open the Overview (a calendar link keeps its `view`).
     effect(() => {
-      if (this.params().get('tab') === 'deadlines') untracked(() => this.go({ tab: null }, true));
+      const t = this.params().get('tab');
+      if (t === 'deadlines' || t === 'trends') untracked(() => this.go({ tab: null }, true));
     });
     effect(() => this.since.filters.set(this.filters()));
     const timer = setTimeout(() => this.waited.set(true), HOLD_MS);
