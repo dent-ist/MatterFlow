@@ -97,8 +97,8 @@
     align-items: center;
     gap: var(--mf-s3);
     min-height: var(--mf-row-h);
-    padding: 0 var(--mf-s3);
-    border-radius: var(--mf-radius);
+    padding: 0 var(--mf-s4);
+    border-radius: 999px;
     color: var(--mf-nav-text);
     text-decoration: none;
 
@@ -110,7 +110,7 @@
       background: var(--mf-nav-selected-bg);
       color: var(--mf-nav-selected-fg);
       font-weight: 600;
-      box-shadow: inset 3px 0 0 var(--mf-nav-marker);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
     }
   }
 
@@ -314,7 +314,8 @@
 
   .mf-nav :is(a, .mf-nav-morebtn) {
     justify-content: flex-start;
-    padding: 0 var(--mf-s3);
+    min-height: 44px;
+    padding: 0 var(--mf-s4);
   }
 
   .mf-nav-group + .mf-nav-group {

@@ -19,7 +19,7 @@ async function openMenuIfPhone(page: Page): Promise<void> {
 test.describe('Navigation panel colour and version (#939, #940)', () => {
   test.setTimeout(300_000);
 
-  test('own background, selected item marked without colour, version at the foot, axe clean, at every width', async ({
+  test('own background, selected item a filled pill (no thick border), bigger icons, version at the foot, axe clean, at every width', async ({
     page,
   }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
@@ -38,10 +38,26 @@ test.describe('Navigation panel colour and version (#939, #940)', () => {
       await expect(active).toHaveAttribute('aria-current', 'page');
       const marks = await active.evaluate((el) => {
         const s = getComputedStyle(el);
-        return { weight: Number(s.fontWeight), shadow: s.boxShadow };
+        const icon = getComputedStyle(el.querySelector('i')!);
+        return {
+          weight: Number(s.fontWeight),
+          bg: s.backgroundColor,
+          radius: parseFloat(s.borderTopLeftRadius),
+          left: s.borderLeftWidth,
+          shadowInset: s.boxShadow.includes('inset'),
+          icon: icon.fontSize,
+          height: el.getBoundingClientRect().height,
+        };
       });
-      expect(marks.weight, 'bold').toBeGreaterThanOrEqual(600);
-      expect(marks.shadow, 'bar').not.toBe('none');
+      expect(marks.weight, 'semi-bold').toBeGreaterThanOrEqual(600);
+      expect(marks.bg, 'filled').toBe('rgb(255, 255, 255)');
+      expect(marks.radius, 'rounded').toBeGreaterThanOrEqual(10);
+      expect(marks.left, 'no thick left border').toBe('0px');
+      expect(marks.shadowInset, 'no inset bar').toBe(false);
+      expect(marks.icon, 'icon size').toBe(
+        size.width >= 640 && size.width < 1100 ? '21px' : '19px',
+      );
+      if (size.width < 640) expect(marks.height, 'phone target').toBeGreaterThanOrEqual(44);
 
       const version = nav(page).getByTestId('nav-version');
       await expect(version).toHaveText('Version 0.1.1v0.1.1');

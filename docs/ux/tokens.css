@@ -17,7 +17,7 @@
   --mf-selected-bg: #E3ECFA;
   /* Navigation panel (MM-43, #939): its own soft blue-grey background, clearly apart from the page (--mf-bg) and the header (--mf-surface).
      Contrast (WCAG 1.4.3) on --mf-nav-bg #EAF0F7: text 14.4:1, muted text 6.6:1, selected text on #FFFFFF 8.0:1, hover text on #DAE4F0 12.8:1,
-     focus ring 4.4:1 (needs 3:1). The selected item is also marked by a bar and bold type, never by colour alone. Dark values: see the
+     focus ring 4.4:1 (needs 3:1). The selected item is a filled pill (rounded square in the rail) with bold type, never by colour alone and never a thick border. Dark values: see the
      [data-theme="dark"] block below (the app has no dark theme yet; the block is what a dark theme loads). */
   --mf-nav-bg: #EAF0F7;
   --mf-nav-text: var(--mf-text);
@@ -25,7 +25,6 @@
   --mf-nav-hover-bg: #DAE4F0;
   --mf-nav-selected-bg: #FFFFFF;
   --mf-nav-selected-fg: var(--mf-primary);
-  --mf-nav-marker: var(--mf-primary);
   --mf-nav-border: #C3CFDD;
   --mf-nav-focus: var(--mf-focus);
   /* Feedback */
@@ -110,7 +109,7 @@
   --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
 }
 /* Dark values of the navigation panel (MM-43). Contrast on #172131: text 13.5:1, muted text 8.2:1, selected text #BBD3FF on #2C3E5C 7.1:1,
-   hover text on #223049 11.0:1, focus ring #F5A524 7.9:1, selected bar #8DB4FF 5.2:1. */
+   hover text on #223049 11.0:1, focus ring #F5A524 7.9:1. */
 :root[data-theme="dark"] {
   --mf-nav-bg: #172131;
   --mf-nav-text: #E6EBF2;
@@ -118,7 +117,6 @@
   --mf-nav-hover-bg: #223049;
   --mf-nav-selected-bg: #2C3E5C;
   --mf-nav-selected-fg: #BBD3FF;
-  --mf-nav-marker: #8DB4FF;
   --mf-nav-border: #33445F;
   --mf-nav-focus: #F5A524;
 }

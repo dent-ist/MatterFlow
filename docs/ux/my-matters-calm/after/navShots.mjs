@@ -1,5 +1,5 @@
 // Navigation panel screenshots for MM-43 / MM-44 (#939, #940): node navShots.mjs (MF_BASE = origin of the running app, Dev auth).
-// "before-" pictures are the same build with the old nav tokens put back and the version line hidden; "dark" sets data-theme="dark"
+// MM-56 (#948): the pill version; the earlier bar version stays as nav-after-* (and nav-before-* is the pre-#939 look). "dark" sets data-theme="dark"
 // on <html> (the app has no dark theme yet; only the nav tokens react to it, so the page stays light).
 import { launch, BASE } from './lib.mjs';
 const SIZES = { '1366x768': [1366, 768], '768x1024': [768, 1024], '375x812': [375, 812] };
@@ -9,7 +9,7 @@ const out = new URL('./', import.meta.url).pathname;
 const browser = await launch();
 for (const [size, [w, h]] of Object.entries(SIZES)) {
   for (const theme of ['light', 'dark']) {
-    for (const variant of ['before', 'after']) {
+    for (const variant of ['pill']) {
       if (variant === 'before' && theme === 'dark') continue;
       const c = await browser.newContext({ viewport: { width: w, height: h } });
       const p = await c.newPage();
@@ -21,10 +21,10 @@ for (const [size, [w, h]] of Object.entries(SIZES)) {
       await p.waitForTimeout(600);
       const name = `nav-${variant}-${theme}-${size}`;
       await p.screenshot({ path: `${out}${name}.png` });
-      if (variant === 'after' && w >= 1366) {
+      if (variant === 'pill' && w >= 1366) {
         const link = p.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Clients' });
         await link.hover();
-        await p.screenshot({ path: `${out}nav-after-${theme}-hover-${size}.png` });
+        await p.screenshot({ path: `${out}nav-pill-${theme}-hover-${size}.png` });
         await p.mouse.move(700, 400);
         await p.keyboard.press('Tab');
         for (let i = 0; i < 12; i++) {
@@ -32,7 +32,7 @@ for (const [size, [w, h]] of Object.entries(SIZES)) {
           if (inNav) break;
           await p.keyboard.press('Tab');
         }
-        await p.screenshot({ path: `${out}nav-after-${theme}-focus-${size}.png` });
+        await p.screenshot({ path: `${out}nav-pill-${theme}-focus-${size}.png` });
       }
       await c.close();
     }

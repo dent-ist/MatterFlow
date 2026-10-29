@@ -4,7 +4,7 @@ import { expect, test } from '../support/fixtures';
 import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
- * S7 / S8 (#623): the 56 px icon rail has 18 px icons, a name that shows on hover and keyboard focus (Esc dismisses it), a dot instead of
+ * S7 / S8 (#623): the 56 px icon rail has 21 px icons, a name that shows on hover and keyboard focus (Esc dismisses it), a dot instead of
  * the pending count, and My Work has its own glyph.
  */
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
@@ -13,13 +13,13 @@ const tip = (page: Page) => page.locator('[data-nav-tip]');
 test.describe('Icon rail (#623)', () => {
   test.setTimeout(300_000);
 
-  test('18 px icons; My Work has its own glyph; tabbing shows each name and Esc dismisses it', async ({
+  test('21 px icons; My Work has its own glyph; tabbing shows each name and Esc dismisses it', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/clients');
     const icon = nav(page).getByRole('link', { name: 'Clients' }).locator('i');
-    expect(await icon.evaluate((i) => getComputedStyle(i).fontSize)).toBe('18px');
+    expect(await icon.evaluate((i) => getComputedStyle(i).fontSize)).toBe('21px');
     await expect(
       nav(page).getByRole('link', { name: 'My Work' }).locator('i.pi-check-square'),
     ).toHaveCount(1);
@@ -127,7 +127,7 @@ test.describe('Icon rail (#623)', () => {
             .nth(i)
             .locator('i')
             .evaluate((e) => getComputedStyle(e).fontSize),
-        ).toBe('18px');
+        ).toBe('21px');
       }
     }
   });

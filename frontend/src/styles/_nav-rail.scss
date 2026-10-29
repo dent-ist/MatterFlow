@@ -1,4 +1,9 @@
-/* The 56 px icon rail of the app shell (S7, #623; global because the shell component stylesheet is at its 5 kB budget): 18 px icons, the pending count as a dot at the icon's top right corner (the link keeps its accessible
+.mf-nav :is(a, .mf-nav-morebtn) > i {
+  flex: none;
+  font-size: 19px;
+}
+
+/* The 56 px icon rail of the app shell (S7, #623; global because the shell component stylesheet is at its 5 kB budget): 21 px icons (19 px in the full panel), the pending count as a dot at the icon's top right corner (the link keeps its accessible
    name with the count; the name tip is `nav-tip.ts`). Below 640 px the menu is a panel with visible names and keeps the default size. */
 @media (min-width: 640px) and (max-width: 1099px) {
   .mf-nav :is(a, .mf-nav-morebtn) {
@@ -6,7 +11,12 @@
   }
 
   .mf-nav :is(a, .mf-nav-morebtn) > i {
-    font-size: 18px;
+    font-size: 21px;
+  }
+
+  .mf-nav :is(a, .mf-nav-morebtn) {
+    /* !important: the shell component's own rule (pill) is more specific than this global sheet. */
+    border-radius: 10px !important;
   }
 
   .mf-nav a > .mf-badge {
@@ -34,10 +44,12 @@
   outline-color: var(--mf-nav-focus);
 }
 
-/* The selected item keeps a bar in forced-colors mode too (the inset shadow is dropped there). */
+/* The current page is a filled pill (a filled rounded square in the rail), bold, in the primary blue: never a thick border. In forced-colors
+   mode the fill is dropped, so it gets a full outline instead. Icons: 19 px in the panel, 21 px in the rail. */
 @media (forced-colors: active) {
   .mf-nav a.mf-active {
-    border-left: 3px solid;
+    outline: 2px solid CanvasText;
+    outline-offset: -2px;
   }
 }
 
