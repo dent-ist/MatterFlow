@@ -240,21 +240,21 @@ test.describe('Landing and menus of the personas (#632)', () => {
       }
     }
 
-    // The Project Manager's short menu: My Matters, Matters, Tasks, Assets; Clients, Projects and My Work under More.
+    // The Project Manager's menu (MM-59): one order, no More button; Clients, Projects and My Work are in the list.
     const pmPage = await asUser(pm.username);
     await pmPage.setViewportSize({ width: 1366, height: 768 });
     await pmPage.goto('/');
     const nav = pmPage.getByRole('navigation', { name: 'Main' });
     await expect(nav.locator('[data-nav-group] a')).toHaveText([
       /My Matters/,
-      /Matters/,
-      /Tasks/,
+      /My Work/,
+      /Clients/,
+      /^Matters$/,
+      /Projects/,
       /Assets/,
+      /Tasks/,
     ]);
-    await expect(nav.locator('[data-nav-more-toggle]')).toHaveAttribute(
-      'aria-expanded',
-      /true|false/,
-    );
+    await expect(nav.locator('[data-nav-more-toggle]')).toHaveCount(0);
     await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveCount(0);
     await shot(pmPage, 'final-pm-menu');
   });

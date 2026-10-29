@@ -29,7 +29,7 @@ import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
 import { landsOnMyMatters } from '../../core/auth/guards';
-import { ADMIN_NAV_ITEMS, NAV_GROUPS, NAV_ITEMS, NavItem, compactNav } from './nav-items';
+import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem, mainNav } from './nav-items';
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
 import { KeyboardShortcuts } from './keyboard-shortcuts';
@@ -49,15 +49,6 @@ import { RouteAnnouncer } from './route-announcer';
  * (Matter and Project records). A route opts in with `data: { hidesGlobalCreateTask: true }`.
  */
 export const HIDES_GLOBAL_CREATE_TASK = 'hidesGlobalCreateTask';
-
-/** One block of the navigation: the Work and Records groups, or the single block of the compact menu. */
-interface NavSection {
-  key: string;
-  label: string;
-  /** The heading is read by assistive technology only (the compact menu has one block). */
-  srOnly: boolean;
-  items: NavItem[];
-}
 
 /** Phones: below this width the navigation rail collapses behind the Menu button (PM decision, #164). */
 const PHONE_QUERY = '(max-width: 639px)';
@@ -124,30 +115,10 @@ export class AppShell {
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
-  /**
-   * The short menu of a person who lands on My Matters (epic #758, PX-17): My Matters, Matters, Tasks and Assets, with Clients, Projects and My Work
-   * in a collapsed "More" group. The rule is the landing test (permissions), not a role name: a System Admin who does not land there keeps the
-   * full menu.
-   */
-  protected readonly compact = computed(() => landsOnMyMatters(this.auth));
-  private readonly compactItems = computed(() => compactNav(this.navItems()));
-  /** The visible items under their group label (Work, Records); a group with nothing visible is not drawn (S6, #621). */
-  protected readonly navGroups = computed((): NavSection[] => {
-    if (this.compact()) {
-      const items = this.compactItems().main;
-      return items.length > 0 ? [{ key: 'main', label: 'Main menu', srOnly: true, items }] : [];
-    }
-    return NAV_GROUPS.map((g) => ({
-      ...g,
-      srOnly: false,
-      items: this.navItems().filter((i) => i.group === g.key),
-    })).filter((g) => g.items.length > 0);
-  });
-  /** The items of the compact menu's "More" group; empty in the full menu. */
-  protected readonly moreItems = computed(() => (this.compact() ? this.compactItems().more : []));
-  /** "More" open or closed: remembered per person (a convenience); a page inside the group opens it. */
-  protected readonly moreOpen = signal(false);
-  private readonly moreKey = computed(() => `mf.nav.more.${this.auth.profile()?.userId ?? 0}`);
+  /** A person who lands on My Matters (epic #758) sees "Tasks" and no Pod Work; the rule is the landing test (permissions), not a role name. */
+  private readonly compact = computed(() => landsOnMyMatters(this.auth));
+  /** The main menu in its one order (MM-59, #951); Projects and Assets are indented children of Matters. */
+  protected readonly mainItems = computed(() => mainNav(this.navItems(), this.compact()));
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));
 
   /** The global "Create task" button is redundant on the Create Task page itself (UXR-23). */
@@ -185,14 +156,8 @@ export class AppShell {
       inject(DestroyRef).onDestroy(() => phone.removeEventListener?.('change', onChange));
     }
     this.watchSkipTarget();
-    // The remembered state of "More" (read again when another person signs in); a page inside the group opens it.
-    effect(() => {
-      const key = this.moreKey();
-      untracked(() => this.moreOpen.set(this.readMore(key)));
-    });
-    effect(() => {
-      if (this.moreItems().some((i) => this.isActive(i))) untracked(() => this.moreOpen.set(true));
-    });
+    // "More" is gone (MM-59, #951): forget the state it used to remember.
+    this.forgetMore();
     // The pending-access badge needs User.View; load it once the profile (and so the permissions) are known.
     effect(() => {
       if (this.auth.has('User.View')) untracked(() => void this.pendingUsers.refresh());
@@ -259,21 +224,14 @@ export class AppShell {
     });
   }
 
-  protected toggleMore(): void {
-    const open = !this.moreOpen();
-    this.moreOpen.set(open);
+  private forgetMore(): void {
     try {
-      localStorage.setItem(this.moreKey(), open ? '1' : '0');
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('mf.nav.more.')) localStorage.removeItem(key);
+      }
     } catch {
-      // Not remembering is fine.
-    }
-  }
-
-  private readMore(key: string): boolean {
-    try {
-      return localStorage.getItem(key) === '1';
-    } catch {
-      return false;
+      // Nothing to forget.
     }
   }
 

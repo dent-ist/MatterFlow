@@ -114,6 +114,11 @@
     }
   }
 
+  /* Projects and Assets under Matters (MM-59, #951): indented, same row height and icon size. */
+  .mf-nav-child > a {
+    padding-left: calc(var(--mf-s4) + var(--mf-s5));
+  }
+
   hr {
     border: 0;
     border-top: 1px solid var(--mf-nav-border);
@@ -173,6 +178,10 @@
   .mf-nav :is(a, .mf-nav-morebtn) {
     justify-content: center;
     padding: 0;
+  }
+
+  .mf-nav .mf-nav-child > a {
+    padding-left: 0;
   }
 
   .mf-nav-group + .mf-nav-group {
@@ -316,6 +325,10 @@
     justify-content: flex-start;
     min-height: 44px;
     padding: 0 var(--mf-s4);
+  }
+
+  .mf-nav .mf-nav-child > a {
+    padding-left: calc(var(--mf-s4) + var(--mf-s5));
   }
 
   .mf-nav-group + .mf-nav-group {

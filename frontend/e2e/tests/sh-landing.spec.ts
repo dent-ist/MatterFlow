@@ -70,7 +70,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(page).toHaveURL(/\/my-work/);
   });
 
-  test('Project Managers land on My Matters; My Work stays reachable behind More (#691, #775)', async ({
+  test('Project Managers land on My Matters; My Work is in the menu after My Matters (#691, MM-59)', async ({
     personas,
     asUser,
     seed,
@@ -86,12 +86,8 @@ test.describe('Landing for oversight roles (#628)', () => {
       'You are not the project manager of any matter yet.',
     );
     const nav = page.getByRole('navigation').first();
-    // The short menu (#775): My Matters is first and My Work waits behind the collapsed "More" group, one click away.
-    expect((await nav.getByRole('link').allInnerTexts()).map((t) => t.trim())).not.toContain(
-      'My Work',
-    );
-    await nav.getByRole('button', { name: 'More' }).click();
-    await expect(nav.getByRole('link', { name: 'My Work' })).toBeVisible();
+    // The one menu order (MM-59, #951): My Matters, then My Work; no More button.
+    await expect(nav.getByRole('button', { name: 'More' })).toHaveCount(0);
     const items = await nav.getByRole('link').allInnerTexts();
     const work = items.map((t) => t.trim()).filter((t) => ['My Matters', 'My Work'].includes(t));
     expect(work).toEqual(['My Matters', 'My Work']);

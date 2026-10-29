@@ -5,7 +5,7 @@ import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
  * S5 (#620), S6 (#621), S2 / S22 (#626): the rail says "Asset types" for the administrator's page next to "Assets" for the records, the
- * main items sit under Work and Records (dividers in the 56 px rail), and the header carries the MatterFlow mark, which is also the favicon.
+ * main items are one list in one order with Projects and Assets indented under Matters (MM-59, a small gap in the 56 px rail), and the header carries the MatterFlow mark, which is also the favicon.
  */
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 
@@ -16,10 +16,10 @@ async function openMenuIfPhone(page: Page): Promise<void> {
   }
 }
 
-test.describe('The rail: groups and names (#620, #621)', () => {
+test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
   test.setTimeout(300_000);
 
-  test('Work and Records groups for a System Admin, at every width; "Asset types" differs from "Assets"', async ({
+  test('one main list in one order, Projects and Assets indented under Matters, for a System Admin, at every width; "Asset types" differs from "Assets"', async ({
     page,
   }) => {
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
@@ -27,21 +27,41 @@ test.describe('The rail: groups and names (#620, #621)', () => {
       await page.setViewportSize(size);
       await page.goto('/dashboard');
       await openMenuIfPhone(page);
-      const work = nav(page).getByRole('list', { name: 'Work' });
-      const records = nav(page).getByRole('list', { name: 'Records' });
-      await expect(work.getByRole('link')).toHaveText([
+      const main = nav(page).getByRole('list', { name: 'Main menu' });
+      await expect(main.getByRole('link')).toHaveText([
         /Dashboard/,
         /My Matters/,
         /My Work/,
+        /Clients/,
+        /^Matters$/,
+        /Projects/,
+        /^Assets$/,
         /Task Queue/,
         /Pod Work/,
       ]);
-      await expect(records.getByRole('link')).toHaveText([
-        /Clients/,
-        /Matters/,
-        /Projects/,
-        /^Assets$/,
-      ]);
+      await expect(nav(page).getByRole('button', { name: 'More' })).toHaveCount(0);
+      // Projects and Assets are children of Matters: indented in the panel and the phone Menu, a small gap instead in the 56 px rail.
+      const left = async (name: string): Promise<number> =>
+        (await main.getByRole('link', { name, exact: true }).boundingBox())!.x +
+        parseFloat(
+          await main
+            .getByRole('link', { name, exact: true })
+            .evaluate((a) => getComputedStyle(a).paddingLeft),
+        );
+      const rail = size.width >= 640 && size.width < 1100;
+      if (rail) {
+        const y = async (n: string): Promise<number> =>
+          (await main.getByRole('link', { name: n, exact: true }).boundingBox())!.y;
+        expect(
+          (await y('Projects')) - (await y('Matters')),
+          'gap above the children',
+        ).toBeGreaterThan(44);
+      } else {
+        expect(await left('Projects'), 'Projects is indented').toBeGreaterThan(
+          (await left('Matters')) + 16,
+        );
+        expect(await left('Assets')).toBe(await left('Projects'));
+      }
       const admin = nav(page).getByRole('list', { name: 'Administration' });
       await expect(admin.getByRole('link', { name: 'Asset types' })).toHaveAttribute(
         'href',
@@ -51,7 +71,7 @@ test.describe('The rail: groups and names (#620, #621)', () => {
         'data-tip',
         'Asset types',
       );
-      await expect(records.getByRole('link', { name: 'Assets', exact: true })).toHaveAttribute(
+      await expect(main.getByRole('link', { name: 'Assets', exact: true })).toHaveAttribute(
         'href',
         '/assets',
       );
@@ -60,35 +80,22 @@ test.describe('The rail: groups and names (#620, #621)', () => {
         1,
       );
 
-      const heading = nav(page).locator('#mf-nav-work-heading');
-      const visible = await heading.evaluate((h) => getComputedStyle(h).clipPath === 'none');
-      const dividerTop = await nav(page)
-        .locator('[data-nav-group="records"]')
-        .evaluate((g) => getComputedStyle(g).borderTopWidth);
-      if (size.width >= 1100 || size.width < 640) {
-        expect(visible, `labels shown at ${size.width}`).toBe(true);
-        expect(dividerTop).toBe('0px');
-      } else {
-        // The 56 px icon rail: the labels are for screen readers only, the groups are separated by a line.
-        expect(visible, `labels hidden at ${size.width}`).toBe(false);
-        expect(dividerTop).toBe('1px');
-      }
       await shot(page, 'rail-groups');
       expect(await axeViolations(page), `rail groups at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
     }
   });
 
-  test('permission variants: only the groups a person has items in are drawn, and nobody sees a Work label without Work items', async ({
+  test('permission variants: the main list is drawn only when the person has items in it, and its heading is for screen readers only', async ({
     personas,
     asUser,
   }) => {
     const cases = [
-      { who: 'technician' as const, groups: ['Work', 'Records'] },
-      { who: 'director' as const, groups: ['Work', 'Records'] },
-      { who: 'clientViewOnly' as const, groups: ['Records'] },
-      { who: 'taskViewOnly' as const, groups: ['Work', 'Records'] },
-      { who: 'configurationAdmin' as const, groups: [] as string[] },
+      { who: 'technician' as const, main: true },
+      { who: 'director' as const, main: true },
+      { who: 'clientViewOnly' as const, main: true },
+      { who: 'taskViewOnly' as const, main: true },
+      { who: 'configurationAdmin' as const, main: false },
     ];
     for (const c of cases) {
       const person = await personas.named(c.who);
@@ -96,16 +103,13 @@ test.describe('The rail: groups and names (#620, #621)', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto('/');
       await expect(nav(page)).toBeVisible();
-      const headings = await nav(page)
-        .locator('[data-nav-group] .mf-nav-heading')
-        .allTextContents();
-      expect(
-        headings.map((h) => h.trim()),
-        c.who,
-      ).toEqual(c.groups);
-      // Every list is named by its heading.
-      for (const g of c.groups)
-        await expect(nav(page).getByRole('list', { name: g })).toHaveCount(1);
+      await expect(nav(page).getByRole('list', { name: 'Main menu' }), c.who).toHaveCount(
+        c.main ? 1 : 0,
+      );
+      await expect(nav(page).locator('[data-nav-group] .mf-nav-heading')).toHaveCount(
+        c.main ? 1 : 0,
+      );
+      await expect(nav(page).getByRole('button', { name: 'More' }), c.who).toHaveCount(0);
     }
     // A person with an Asset Types page but no Assets records sees "Asset types" and no "Assets".
     const config = await personas.named('configurationAdmin');
@@ -115,7 +119,7 @@ test.describe('The rail: groups and names (#620, #621)', () => {
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toHaveCount(0);
   });
 
-  test('keyboard: Tab goes through Work then Records then Administration, and Enter on "Asset types" opens it', async ({
+  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Task Queue), and Enter on "Asset types" opens it', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -123,6 +127,12 @@ test.describe('The rail: groups and names (#620, #621)', () => {
     await nav(page).getByRole('link', { name: 'Clients' }).focus();
     await page.keyboard.press('Tab');
     await expect(nav(page).getByRole('link', { name: 'Matters', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(nav(page).getByRole('link', { name: 'Projects', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(nav(page).getByRole('link', { name: 'Task Queue', exact: true })).toBeFocused();
     await nav(page).getByRole('link', { name: 'Asset types', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/admin\/asset-types/);

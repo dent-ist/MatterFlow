@@ -15,18 +15,19 @@
   --mf-link: #1F4E9C;
   --mf-focus: #B45309;         /* focus ring colour, 2px solid + 2px offset; >=3:1 on bg and surface */
   --mf-selected-bg: #E3ECFA;
-  /* Navigation panel (MM-43, #939): its own soft blue-grey background, clearly apart from the page (--mf-bg) and the header (--mf-surface).
-     Contrast (WCAG 1.4.3) on --mf-nav-bg #EAF0F7: text 14.4:1, muted text 6.6:1, selected text on #FFFFFF 8.0:1, hover text on #DAE4F0 12.8:1,
-     focus ring 4.4:1 (needs 3:1). The selected item is a filled pill (rounded square in the rail) with bold type, never by colour alone and never a thick border. Dark values: see the
-     [data-theme="dark"] block below (the app has no dark theme yet; the block is what a dark theme loads). */
-  --mf-nav-bg: #EAF0F7;
-  --mf-nav-text: var(--mf-text);
-  --mf-nav-text-muted: #4B5563;
-  --mf-nav-hover-bg: #DAE4F0;
+  /* Navigation panel (MM-43 #939, MM-58 #950): dark navy, clearly apart from the page (--mf-bg) and the header (--mf-surface); light text and
+     icons. Contrast (WCAG 1.4.3) on --mf-nav-bg #1A3556: text 10.9:1, muted text (headings, version) 7.0:1, hover text on #2B4B75 7.8:1
+     (muted 5.0:1), selected text #17324F on the white pill 13.1:1, focus ring #FFC15A 7.7:1 (5.5:1 on hover; needs 3:1). The selected item is a
+     white pill (rounded square in the rail) with bold type, never colour alone and never a thick border. The pending badge keeps its red with a
+     white ring. Dark theme values: see the [data-theme="dark"] block below (the app has no dark theme yet). */
+  --mf-nav-bg: #1A3556;
+  --mf-nav-text: #EAF1FA;
+  --mf-nav-text-muted: #B4C3D8;
+  --mf-nav-hover-bg: #2B4B75;
   --mf-nav-selected-bg: #FFFFFF;
-  --mf-nav-selected-fg: var(--mf-primary);
-  --mf-nav-border: #C3CFDD;
-  --mf-nav-focus: var(--mf-focus);
+  --mf-nav-selected-fg: #17324F;
+  --mf-nav-border: #3E5C86;
+  --mf-nav-focus: #FFC15A;
   /* Feedback */
   --mf-danger: #B42318;  --mf-danger-bg: #FDECEA;
   --mf-warning: #8A4B00; --mf-warning-bg: #FFF4DB;
@@ -108,17 +109,12 @@
   --mf-shadow-1: 0 1px 2px rgba(0,0,0,.12);
   --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
 }
-/* Dark values of the navigation panel (MM-43). Contrast on #172131: text 13.5:1, muted text 8.2:1, selected text #BBD3FF on #2C3E5C 7.1:1,
-   hover text on #223049 11.0:1, focus ring #F5A524 7.9:1. */
+/* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
+   10.2:1, focus ring #FFC15A 10.3:1; the selected pill stays white with #17324F text (13.1:1). */
 :root[data-theme="dark"] {
-  --mf-nav-bg: #172131;
-  --mf-nav-text: #E6EBF2;
-  --mf-nav-text-muted: #AEB9C9;
-  --mf-nav-hover-bg: #223049;
-  --mf-nav-selected-bg: #2C3E5C;
-  --mf-nav-selected-fg: #BBD3FF;
-  --mf-nav-border: #33445F;
-  --mf-nav-focus: #F5A524;
+  --mf-nav-bg: #101F33;
+  --mf-nav-hover-bg: #1F3A5C;
+  --mf-nav-border: #2E4768;
 }
 :focus-visible { outline: 2px solid var(--mf-focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

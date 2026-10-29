@@ -5,13 +5,14 @@ import { pmFixtures } from '../support/pm-fixtures';
 import { SIZES, noHorizontalScroll } from '../support/screens';
 
 /**
- * The short menu of the Project Manager (epic #758, #775): My Matters, Matters, Tasks, Assets, with Clients, Projects and My Work behind a
- * remembered "More" group. The Reports item waits for epic #671 and is not there. Everybody who does not land on My Matters keeps the full menu.
+ * The menu of the Project Manager (epic #758; MM-59 #951 removed the "More" group): the one order, My Matters, My Work, Clients, Matters, Projects
+ * and Assets (indented), Tasks, and no Pod Work. The Reports item waits for epic #671 and is not there. Everybody who does not land on My
+ * Matters has the same order with "Task Queue" and Pod Work.
  */
 test.describe('The short menu of the Project Manager', () => {
   const links = (page: Page) => page.locator('nav[aria-label="Main"] a');
 
-  test('My Matters, Matters, Tasks, Assets; Clients, Projects and My Work behind a remembered More; no Pod Work', async ({
+  test('My Matters, My Work, Clients, Matters, Projects, Assets, Tasks; no More button and no Pod Work', async ({
     seed,
     personas,
     asUser,
@@ -19,28 +20,21 @@ test.describe('The short menu of the Project Manager', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmA.username);
     await page.goto('/my-matters');
-    await expect(links(page)).toHaveText(['My Matters', 'Matters', 'Tasks', 'Assets']);
-    const more = page.locator('[data-nav-more-toggle]');
-    await expect(more).toHaveAttribute('aria-expanded', 'false');
-    await more.click();
     await expect(links(page)).toHaveText([
       'My Matters',
-      'Matters',
-      'Tasks',
-      'Assets',
-      'Clients',
-      'Projects',
       'My Work',
+      'Clients',
+      'Matters',
+      'Projects',
+      'Assets',
+      'Tasks',
     ]);
-    await page.reload();
-    await expect(page.locator('[data-nav-more-toggle]')).toHaveAttribute('aria-expanded', 'true');
-    await page.locator('[data-nav-more-toggle]').click();
-    await page.reload();
-    await expect(page.locator('[data-nav-more-toggle]')).toHaveAttribute('aria-expanded', 'false');
-    // Every route stays reachable: the page inside More opens the group, with the current item marked.
+    await expect(page.locator('[data-nav-more], [data-nav-more-toggle]')).toHaveCount(0);
+    // Every route stays reachable, with the current item marked; an indented item is current without Matters.
     await page.goto('/my-work');
-    await expect(page.locator('[data-nav-more-toggle]')).toHaveAttribute('aria-expanded', 'true');
     await expect(page.locator('nav a[aria-current="page"]')).toHaveText('My Work');
+    await page.goto('/projects');
+    await expect(page.locator('nav a[aria-current="page"]')).toHaveText('Projects');
     // The go-to sequences keep working (no new or changed shortcut).
     await page.goto('/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
@@ -60,7 +54,6 @@ test.describe('The short menu of the Project Manager', () => {
     await page.goto('/matters');
     await expect(links(page).filter({ hasText: 'Pod Work' })).toHaveCount(1);
     await expect(links(page).filter({ hasText: 'Task Queue' })).toHaveCount(1);
-    await expect(page.locator('[data-nav-more]')).toHaveCount(0);
     const fx = await pmFixtures(seed, personas);
     const noTask = await asUser(fx.pmNoTask.username); // no Task.View: does not land on My Matters
     await noTask.goto('/matters');
@@ -74,7 +67,7 @@ test.describe('The short menu of the Project Manager', () => {
   });
 
   for (const size of SIZES) {
-    test(`axe and no sideways scroll at ${size.width}x${size.height}, menu open and More open`, async ({
+    test(`axe and no sideways scroll at ${size.width}x${size.height}, menu open`, async ({
       seed,
       personas,
       asUser,
@@ -97,9 +90,7 @@ test.describe('The short menu of the Project Manager', () => {
         }
       }
       if (size.width < 640) await page.getByRole('button', { name: 'Menu', exact: true }).click();
-      const toggle = page.locator('[data-nav-more-toggle]');
-      if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-      await expect(page.locator('[data-nav-more-list]')).toBeVisible();
+      await expect(page.getByRole('list', { name: 'Main menu' })).toBeVisible();
       expect(await axeViolations(page), `menu at ${size.width}`).toEqual([]);
       await noHorizontalScroll(page);
     });

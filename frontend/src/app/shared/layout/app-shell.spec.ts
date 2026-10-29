@@ -137,27 +137,37 @@ describe('AppShell header search', () => {
     expect(box.getAttribute('placeholder')).toContain('Ctrl+K');
   });
 
-  it('groups the rail under Work and Records, each list labelled by its heading (S6, #621)', async () => {
+  it('lists the main menu in one order with Projects and Assets indented under Matters, labelled by one hidden heading (MM-59, #951)', async () => {
     const fixture = await create([
       'Task.View',
       'Pod.View',
       'Client.View',
       'Matter.View',
+      'Project.View',
       'Asset.View',
       'AssetType.Manage',
     ]);
     const el = fixture.nativeElement as HTMLElement;
-    const groups = Array.from(el.querySelectorAll<HTMLElement>('[data-nav-group]')).map((g) => ({
-      heading: g.querySelector('.mf-nav-heading')!.textContent!.trim(),
-      labelledBy: g.querySelector('ul')!.getAttribute('aria-labelledby'),
-      headingId: g.querySelector('.mf-nav-heading')!.id,
-      items: Array.from(g.querySelectorAll('a')).map((a) => a.textContent!.trim()),
-    }));
-    expect(groups.map((g) => [g.heading, g.items])).toEqual([
-      ['Work', ['My Work', 'Task Queue', 'Pod Work']],
-      ['Records', ['Clients', 'Matters', 'Assets']],
+    const groups = Array.from(el.querySelectorAll<HTMLElement>('[data-nav-group]'));
+    expect(groups).toHaveLength(1);
+    const heading = groups[0].querySelector('.mf-nav-heading')!;
+    expect(heading.textContent!.trim()).toBe('Main menu');
+    expect(heading.classList).toContain('mf-sr-only');
+    expect(groups[0].querySelector('ul')!.getAttribute('aria-labelledby')).toBe(heading.id);
+    expect(Array.from(groups[0].querySelectorAll('a')).map((a) => a.textContent!.trim())).toEqual([
+      'My Work',
+      'Clients',
+      'Matters',
+      'Projects',
+      'Assets',
+      'Task Queue',
+      'Pod Work',
     ]);
-    for (const g of groups) expect(g.labelledBy).toBe(g.headingId);
+    const children = Array.from(groups[0].querySelectorAll('li.mf-nav-child')).map((li) =>
+      li.textContent!.trim(),
+    );
+    expect(children).toEqual(['Projects', 'Assets']);
+    expect(el.querySelector('[data-nav-more], [data-nav-more-toggle]')).toBeNull();
     // The two "assets" items differ in words (S5, #620), also in the tooltip of the icon rail.
     const names = Array.from(el.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
     expect(names).toContain('Asset types');
@@ -165,17 +175,34 @@ describe('AppShell header search', () => {
     expect(el.querySelector<HTMLElement>('nav a[data-tip="Asset types"]')).not.toBeNull();
   });
 
-  it('offers a manager with Task.View and Matter.View the short menu: My Matters first, My Work behind More (#691, #775)', async () => {
-    const fixture = await create(['Matter.BeManager', 'Matter.View', 'Task.View']);
-    expect(navLabels(fixture)).toEqual(['My Matters', 'Matters', 'Tasks']);
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('[data-nav-more-toggle]')!
-      .click();
-    fixture.detectChanges();
-    expect(navLabels(fixture)).toEqual(['My Matters', 'Matters', 'Tasks', 'My Work']);
+  it('keeps each item on its own permission: Projects without Matters stays, at its place', async () => {
+    expect(navLabels(await create(['Project.View', 'Asset.View']))).toEqual(['Projects', 'Assets']);
   });
 
-  describe('the compact menu of a person who lands on My Matters (epic #758, PX-17)', () => {
+  it('marks an indented item current without also marking Matters', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
+        provideFakeMe(new FakeMeApi(withPermissions('Matter.View', 'Project.View', 'Asset.View'))),
+        { provide: SearchClient, useValue: { search: vi.fn() } },
+      ],
+    });
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(AppShell);
+    const current = async (url: string): Promise<string[]> => {
+      await TestBed.inject(Router).navigateByUrl(url);
+      await settle(fixture);
+      return Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('nav a.mf-active'),
+      ).map((a) => a.textContent!.trim());
+    };
+    expect(await current('/projects')).toEqual(['Projects']);
+    expect(await current('/assets/5')).toEqual(['Assets']);
+    expect(await current('/matters')).toEqual(['Matters']);
+  });
+
+  describe('a person who lands on My Matters (epic #758, PX-17)', () => {
     const PM: Permission[] = [
       'Matter.BeManager',
       'Matter.View',
@@ -186,70 +213,31 @@ describe('AppShell header search', () => {
       'Asset.View',
       'Pod.View',
     ];
-    const toggle = (f: { nativeElement: HTMLElement }) =>
-      f.nativeElement.querySelector<HTMLButtonElement>('[data-nav-more-toggle]')!;
-    const moreLinks = (f: { nativeElement: HTMLElement }) =>
-      Array.from(f.nativeElement.querySelectorAll('[data-nav-more-list] a')).map((a) =>
-        a.textContent!.trim(),
-      );
 
-    it('lists My Matters, Matters, Tasks and Assets, and no Pod Work; More is collapsed by default', async () => {
+    it('sees the one order with "Tasks" and no Pod Work, and no More button', async () => {
+      localStorage.setItem('mf.nav.more.1', '1');
       const fixture = await create(PM);
-      expect(navLabels(fixture)).toEqual(['My Matters', 'Matters', 'Tasks', 'Assets']);
-      expect(toggle(fixture).getAttribute('aria-expanded')).toBe('false');
-      expect(toggle(fixture).getAttribute('aria-controls')).toBe('mf-nav-more-list');
-      expect(moreLinks(fixture)).toEqual([]);
-      // One heading, read by assistive technology only.
-      const headings = (fixture.nativeElement as HTMLElement).querySelectorAll('.mf-nav-heading');
-      expect(headings).toHaveLength(1);
-      expect(headings[0].classList).toContain('mf-sr-only');
-    });
-
-    it('keeps every route reachable: More holds Clients, Projects and My Work, and the choice is remembered', async () => {
-      const fixture = await create(PM);
-      toggle(fixture).click();
-      fixture.detectChanges();
-      expect(toggle(fixture).getAttribute('aria-expanded')).toBe('true');
-      expect(moreLinks(fixture)).toEqual(['Clients', 'Projects', 'My Work']);
-      expect(localStorage.getItem('mf.nav.more.1')).toBe('1');
-      TestBed.resetTestingModule();
-      const again = await create(PM);
-      expect(toggle(again).getAttribute('aria-expanded')).toBe('true');
-      toggle(again).click();
-      again.detectChanges();
-      expect(localStorage.getItem('mf.nav.more.1')).toBe('0');
-    });
-
-    it('opens More by itself on a page inside the group, so the current item is visible', async () => {
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([{ path: '**', children: [] }]),
-          { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
-          provideFakeMe(new FakeMeApi(withPermissions(...PM))),
-          { provide: SearchClient, useValue: { search: vi.fn() } },
-        ],
-      });
-      await TestBed.inject(AuthStore).ensureLoaded();
-      const fixture = TestBed.createComponent(AppShell);
-      await TestBed.inject(Router).navigateByUrl('/clients');
-      await settle(fixture);
-      expect(toggle(fixture).getAttribute('aria-expanded')).toBe('true');
-      expect(
-        (fixture.nativeElement as HTMLElement).querySelector('[data-nav-more-list] a.mf-active')
-          ?.textContent,
-      ).toContain('Clients');
+      expect(navLabels(fixture)).toEqual([
+        'My Matters',
+        'My Work',
+        'Clients',
+        'Matters',
+        'Projects',
+        'Assets',
+        'Tasks',
+      ]);
+      expect(fixture.nativeElement.querySelector('[data-nav-more-toggle]')).toBeNull();
+      // The state "More" used to remember is forgotten.
+      expect(localStorage.getItem('mf.nav.more.1')).toBeNull();
     });
 
     it('leaves everybody else the full menu: no manager permission, no Task.View, and a System Admin who is not a Project Manager', async () => {
       expect(navLabels(await create(['Task.View', 'Pod.View', 'Client.View']))).toEqual([
         'My Work',
+        'Clients',
         'Task Queue',
         'Pod Work',
-        'Clients',
       ]);
-      TestBed.resetTestingModule();
-      const noMore = await create(['Task.View', 'Pod.View']);
-      expect(noMore.nativeElement.querySelector('[data-nav-more]')).toBeNull();
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [
@@ -264,7 +252,6 @@ describe('AppShell header search', () => {
       await settle(admin);
       expect(navLabels(admin)).toContain('Pod Work');
       expect(navLabels(admin)).toContain('Task Queue');
-      expect(admin.nativeElement.querySelector('[data-nav-more]')).toBeNull();
     });
   });
 
@@ -288,14 +275,6 @@ describe('AppShell header search', () => {
     );
     TestBed.resetTestingModule();
     expect(navLabels(await create(['Matter.BeManager', 'Task.View']))).not.toContain('My Matters');
-  });
-
-  it('draws no group label for a group with nothing in it (S6, #621)', async () => {
-    const fixture = await create(['Client.View']);
-    const headings = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('.mf-nav-heading'),
-    ).map((h) => h.textContent!.trim());
-    expect(headings).toEqual(['Records']);
   });
 
   it('shows Pod Work with Pod.View and Task.View (#549)', async () => {

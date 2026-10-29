@@ -44,7 +44,7 @@
   outline-color: var(--mf-nav-focus);
 }
 
-/* The current page is a filled pill (a filled rounded square in the rail), bold, in the primary blue: never a thick border. In forced-colors
+/* The current page is a filled pill (a filled rounded square in the rail), bold, dark navy text on white: never a thick border. In forced-colors
    mode the fill is dropped, so it gets a full outline instead. Icons: 19 px in the panel, 21 px in the rail. */
 @media (forced-colors: active) {
   .mf-nav a.mf-active {
@@ -68,5 +68,19 @@
     text-align: center;
     white-space: nowrap;
     font-size: 11px;
+  }
+}
+
+/* Dark navy panel (MM-58, #950): the pending count keeps its red, with a white ring so it stands out on the navy. */
+.mf-nav .mf-badge {
+  box-shadow: 0 0 0 1.5px #fff;
+}
+
+/* Projects and Assets sit indented under Matters (MM-59, #951): normal links, one more step of left padding (in app-shell.scss), same row height and icon size. In
+   the 56 px rail there is no room to indent, so the children are set apart by a small gap above the first one and below the last. */
+@media (min-width: 640px) and (max-width: 1099px) {
+  .mf-nav li:not(.mf-nav-child) + li.mf-nav-child,
+  .mf-nav li.mf-nav-child + li:not(.mf-nav-child) {
+    margin-top: var(--mf-s2);
   }
 }

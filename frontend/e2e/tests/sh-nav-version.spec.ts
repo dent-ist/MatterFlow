@@ -31,7 +31,7 @@ test.describe('Navigation panel colour and version (#939, #940)', () => {
       const page_ = await page
         .locator('body')
         .evaluate((el) => getComputedStyle(el).backgroundColor);
-      expect(bg, `${size.width}: panel colour`).toBe('rgb(234, 240, 247)');
+      expect(bg, `${size.width}: panel colour`).toBe('rgb(26, 53, 86)');
       expect(bg).not.toBe(page_);
 
       const active = nav(page).locator('a.mf-active').first();

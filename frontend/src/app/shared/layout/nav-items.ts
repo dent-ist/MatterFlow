@@ -1,17 +1,7 @@
 import { Permission } from '../../core/auth/permissions';
 
-/** The two groups of the main rail (S6, #621); the Administration items are a section of their own. */
-export type NavGroup = 'work' | 'records';
-
-export const NAV_GROUPS: { key: NavGroup; label: string }[] = [
-  { key: 'work', label: 'Work' },
-  { key: 'records', label: 'Records' },
-];
-
 export interface NavItem {
   label: string;
-  /** The group label above it in the rail. Administration items have none. */
-  group?: NavGroup;
   /** PrimeIcons class. */
   icon: string;
   path: string;
@@ -25,127 +15,94 @@ export interface NavItem {
   pendingBadge?: boolean;
   /** Other paths whose pages belong to this item (a second tab of the same page); the item is highlighted on them too. */
   alsoActive?: string[];
-  /**
-   * The compact menu of people who land on My Matters (epic #758, PX-17; the rule is `landsOnMyMatters`, never a role name): `more` moves the
-   * item into the collapsed "More" group (every route stays reachable), `hide` leaves it out of the menu (the address still works). Without it
-   * the item stays where it is.
-   */
-  compact?: 'more' | 'hide';
-  /** The item's name in the compact menu, when it differs ("Tasks" for the Task Queue). */
+  /** Drawn indented under the item before it (Projects and Assets under Matters, MM-59 #951); a normal link, not a collapsible group. */
+  child?: boolean;
+  /** Left out of the menu of a person who lands on My Matters (epic #758; the rule is `landsOnMyMatters`, never a role name). The address still works. */
+  hideWhenCompact?: boolean;
+  /** The item's name in the menu of a person who lands on My Matters, when it differs ("Tasks" for the Task Queue). */
   compactLabel?: string;
-  /** The item's place in the compact menu's main list, or in its More group (ascending); items without one follow the others in menu order. */
-  compactOrder?: number;
 }
 
-/** Left navigation (UX 2.1). Items are hidden, never disabled, without the matching View permission. */
+/**
+ * Left navigation (UX 2.1; MM-59 #951): ONE order for everybody, Dashboard, My Matters, My Work, Clients, Matters (with Projects and Assets
+ * indented under it), Tasks, Pod Work. Items are hidden, never disabled, without the matching View permission; each keeps its own rule, so a
+ * person who may open Projects but not Matters still sees Projects at its place.
+ */
 export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Dashboard',
     icon: 'pi pi-home',
-    group: 'work',
     path: '/dashboard',
     permissions: ['Dashboard.View'],
     needsDashboardTab: true,
-    compactOrder: 0,
   },
   {
     // Project Managers' home (#691): above My Work, which stays in the menu. The same three permissions as the route's guard.
     label: 'My Matters',
-    group: 'work',
     icon: 'pi pi-clipboard',
     path: '/my-matters',
     permissions: ['Matter.BeManager'],
     permissionsAll: ['Matter.BeManager', 'Matter.View', 'Task.View'],
-    compactOrder: 1,
   },
   {
     label: 'My Work',
-    group: 'work',
     // Not `pi-user`, which is the header user button's glyph (S8, #623).
     icon: 'pi pi-check-square',
     path: '/my-work',
     permissions: ['Task.View'],
-    compact: 'more',
-    compactOrder: 12,
+  },
+  {
+    label: 'Clients',
+    icon: 'pi pi-building',
+    path: '/clients',
+    permissions: ['Client.View'],
+  },
+  {
+    label: 'Matters',
+    icon: 'pi pi-briefcase',
+    path: '/matters',
+    permissions: ['Matter.View'],
+  },
+  {
+    label: 'Projects',
+    icon: 'pi pi-folder',
+    path: '/projects',
+    permissions: ['Project.View'],
+    child: true,
+  },
+  {
+    label: 'Assets',
+    icon: 'pi pi-database',
+    path: '/assets',
+    permissions: ['Asset.View'],
+    child: true,
   },
   {
     label: 'Task Queue',
-    group: 'work',
     icon: 'pi pi-list-check',
     path: '/tasks',
     permissions: ['Task.View'],
     compactLabel: 'Tasks',
-    compactOrder: 3,
   },
   {
     label: 'Pod Work',
-    group: 'work',
     icon: 'pi pi-users',
     path: '/pods/work',
     // The page lists tasks, so it needs Task.View as well as Pod.View (UX spec S04): without it the item is hidden, never a dead link.
     permissions: ['Pod.View'],
     permissionsAll: ['Pod.View', 'Task.View'],
-    compact: 'hide',
-  },
-  {
-    label: 'Clients',
-    group: 'records',
-    icon: 'pi pi-building',
-    path: '/clients',
-    permissions: ['Client.View'],
-    compact: 'more',
-    compactOrder: 10,
-  },
-  {
-    label: 'Matters',
-    group: 'records',
-    icon: 'pi pi-briefcase',
-    path: '/matters',
-    permissions: ['Matter.View'],
-    compactOrder: 2,
-  },
-  {
-    label: 'Projects',
-    group: 'records',
-    icon: 'pi pi-folder',
-    path: '/projects',
-    permissions: ['Project.View'],
-    compact: 'more',
-    compactOrder: 11,
-  },
-  {
-    label: 'Assets',
-    group: 'records',
-    icon: 'pi pi-database',
-    path: '/assets',
-    permissions: ['Asset.View'],
-    compactOrder: 4,
+    hideWhenCompact: true,
   },
 ];
 
-/** The menu of a person who lands on My Matters (epic #758, PX-17): the short list, and the items that moved into the collapsed "More" group. */
-export interface CompactNav {
-  /** My Matters, Matters, Tasks, Assets (and the Dashboard in front when the person holds it), under their compact names. */
-  main: NavItem[];
-  /** Clients, Projects, My Work, in menu order. */
-  more: NavItem[];
-}
-
 /**
- * Splits the permitted items (already filtered by permission) into the compact menu. Pure data: the flags on the items decide, never a role
- * name. An item without a flag follows the main list in menu order, so a new item is never lost from the compact menu.
+ * The main menu of the permitted items (already filtered by permission). A person who lands on My Matters (epic #758) sees "Tasks" for the
+ * Task Queue and no Pod Work; everybody else sees the items as defined. Pure data: the flags on the items decide, never a role name.
  */
-export function compactNav(items: readonly NavItem[]): CompactNav {
-  const named = (i: NavItem): NavItem => (i.compactLabel ? { ...i, label: i.compactLabel } : i);
-  const ordered = (list: readonly NavItem[]): NavItem[] =>
-    list
-      .map((i, index) => ({ item: named(i), order: i.compactOrder ?? 100 + index }))
-      .sort((a, b) => a.order - b.order)
-      .map((x) => x.item);
-  return {
-    main: ordered(items.filter((i) => !i.compact)),
-    more: ordered(items.filter((i) => i.compact === 'more')),
-  };
+export function mainNav(items: readonly NavItem[], compact: boolean): NavItem[] {
+  return items
+    .filter((i) => !(compact && i.hideWhenCompact))
+    .map((i) => (compact && i.compactLabel ? { ...i, label: i.compactLabel } : i));
 }
 
 /** Administration section: shown only when at least one entry is permitted. */

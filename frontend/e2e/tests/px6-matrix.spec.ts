@@ -37,10 +37,6 @@ async function collectUi(page: Page, fx: PmFixtures): Promise<Omit<Facts, 'api'>
   await page.waitForLoadState('networkidle');
   const landing = new URL(page.url()).pathname;
   const links = page.locator('nav[aria-label="Main"] a');
-  const more = page.locator('[data-nav-more-toggle]');
-  if ((await more.count()) > 0 && (await more.getAttribute('aria-expanded')) !== 'true') {
-    await more.click();
-  }
   const menu = (await links.allInnerTexts()).map((t) => t.trim());
 
   await page.goto(`/matters?name=${fx.token}`);
@@ -93,7 +89,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
   return out;
 }
 
-const PM_MENU = ['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients', 'Projects', 'My Work'];
+const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Tasks'];
 const FOUR_TABS = ['Overview', 'Breakdown', 'Data', 'Activity']; // the Data tab (#870) is offered with Asset.View
 
 test.describe('Permission matrix of the Project Manager views', () => {
@@ -214,7 +210,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
   }) => {
     await page.goto('/my-work');
     await expect(page.locator('nav[aria-label="Main"] a', { hasText: 'Pod Work' })).toHaveCount(1);
-    await expect(page.locator('[data-nav-more]')).toHaveCount(0);
+    await expect(page.locator('[data-nav-more-toggle]')).toHaveCount(0);
     await page.goto('/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
   });
@@ -362,7 +358,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await expect(page.locator('[data-scope="mine"]')).toBeFocused();
   });
 
-  test('main menu: one stop per item, More is a button that opens a list of links, on the desktop rail and in the phone overlay', async ({
+  test('main menu: one stop per item, in the visual order, on the desktop rail and in the phone overlay', async ({
     seed,
     personas,
     asUser,
@@ -372,27 +368,21 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.setViewportSize(SIZES[2]);
     await page.goto('/my-matters');
     await page.waitForLoadState('networkidle');
-    const toggle = page.locator('[data-nav-more-toggle]');
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
     const desk = await tabStops(page, 'nav[aria-label="Main"]', 'nav[aria-label="Main"]');
     evidence('main-menu', '1366', desk);
     expectGoodStops('menu 1366', desk, 7);
-    expect(desk.stops.map((s) => s.name)).toEqual(
-      expect.arrayContaining(['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients']),
-    );
-    // Enter on More collapses and expands it again.
-    await toggle.focus();
-    await page.keyboard.press('Enter');
-    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(toggle).toBeFocused();
-    await page.keyboard.press('Space');
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-
+    expect(desk.stops.map((s) => s.name)).toEqual([
+      'My Matters',
+      'My Work',
+      'Clients',
+      'Matters',
+      'Projects',
+      'Assets',
+      'Tasks',
+    ]);
     await page.setViewportSize(SIZES[0]);
     await page.goto('/my-matters');
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    const phoneToggle = page.locator('[data-nav-more-toggle]');
-    if ((await phoneToggle.getAttribute('aria-expanded')) !== 'true') await phoneToggle.click();
     const phone = await tabStops(page, 'nav[aria-label="Main"]', 'nav[aria-label="Main"]');
     evidence('main-menu', '375', phone);
     expectGoodStops('menu 375', phone, 7);

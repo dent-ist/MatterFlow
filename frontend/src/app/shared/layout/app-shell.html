@@ -99,18 +99,12 @@
     >
       <i class="pi pi-times" aria-hidden="true"></i> Close menu
     </button>
-    @for (group of navGroups(); track group.key) {
-      <div class="mf-nav-group" [attr.data-nav-group]="group.key">
-        <p
-          class="mf-nav-heading"
-          [class.mf-sr-only]="group.srOnly"
-          [id]="'mf-nav-' + group.key + '-heading'"
-        >
-          {{ group.label }}
-        </p>
-        <ul [attr.aria-labelledby]="'mf-nav-' + group.key + '-heading'">
-          @for (item of group.items; track item.path) {
-            <li>
+    @if (mainItems().length > 0) {
+      <div class="mf-nav-group" data-nav-group="main">
+        <p class="mf-nav-heading mf-sr-only" id="mf-nav-main-heading">Main menu</p>
+        <ul aria-labelledby="mf-nav-main-heading">
+          @for (item of mainItems(); track item.path) {
+            <li [class.mf-nav-child]="item.child">
               <a
                 [routerLink]="item.path"
                 [class.mf-active]="isActive(item)"
@@ -123,47 +117,6 @@
             </li>
           }
         </ul>
-      </div>
-    }
-    @if (moreItems().length > 0) {
-      <div class="mf-nav-group mf-nav-more" data-nav-more>
-        <button
-          type="button"
-          class="mf-nav-morebtn"
-          data-nav-more-toggle
-          aria-controls="mf-nav-more-list"
-          [attr.aria-expanded]="moreOpen()"
-          data-tip="More"
-          (click)="toggleMore()"
-        >
-          <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
-          <span class="mf-nav-label"
-            >More
-            <i
-              class="pi"
-              [class.pi-chevron-up]="moreOpen()"
-              [class.pi-chevron-down]="!moreOpen()"
-              aria-hidden="true"
-            ></i
-          ></span>
-        </button>
-        @if (moreOpen()) {
-          <ul id="mf-nav-more-list" aria-label="More" data-nav-more-list>
-            @for (item of moreItems(); track item.path) {
-              <li>
-                <a
-                  [routerLink]="item.path"
-                  [class.mf-active]="isActive(item)"
-                  [attr.aria-current]="isActive(item) ? 'page' : null"
-                  [attr.data-tip]="item.label"
-                >
-                  <i [class]="item.icon" aria-hidden="true"></i>
-                  <span class="mf-nav-label">{{ item.label }}</span>
-                </a>
-              </li>
-            }
-          </ul>
-        }
       </div>
     }
     @if (adminItems().length > 0) {
