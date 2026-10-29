@@ -11,7 +11,10 @@ import { StatTile } from './stat-tile';
       [unit]="unit()"
       [label]="label()"
       [note]="note()"
+      [noteName]="noteName()"
       [muted]="muted()"
+      [icon]="icon()"
+      [tone]="tone()"
       [pressable]="pressable()"
       [pressed]="pressed()"
       (pick)="picks.set(picks() + 1)"
@@ -23,7 +26,10 @@ class Host {
   unit = signal('');
   label = signal('Total assets');
   note = signal('');
+  noteName = signal('');
   muted = signal(false);
+  icon = signal('');
+  tone = signal<'teal' | 'violet'>('teal');
   pressable = signal(false);
   pressed = signal(false);
   picks = signal(0);
@@ -62,6 +68,14 @@ describe('StatTile', () => {
     expect(el().querySelector('[role=group]')!.getAttribute('aria-label')).toBe(
       '2 pending disposition, oldest 41 days',
     );
+    // A short printed note keeps the tile one line; the name still has the words.
+    c.note.set('oldest 41 d');
+    c.noteName.set('oldest 41 days');
+    fixture.detectChanges();
+    expect(el().querySelector('[role=group]')!.getAttribute('aria-label')).toBe(
+      '2 pending disposition, oldest 41 days',
+    );
+    expect(el().querySelector('.st__note')!.textContent).toBe('oldest 41 d');
     expect(el().querySelector('.st--zero')).not.toBeNull();
   });
 
@@ -79,5 +93,25 @@ describe('StatTile', () => {
     expect(el().querySelector('button')!.getAttribute('aria-pressed')).toBe('true');
     expect(el().querySelector('.st__tick')).not.toBeNull();
     expect(el().querySelector('.st--on')).not.toBeNull();
+  });
+
+  it('shows a decorative icon chip in its accent when it has an icon, none otherwise (#934)', () => {
+    expect(el().querySelector('mf-tile-chip')).toBeNull();
+    const c = fixture.componentInstance;
+    c.icon.set('pi-hourglass');
+    c.tone.set('violet');
+    fixture.detectChanges();
+    const chip = el().querySelector('mf-tile-chip')!;
+    expect(chip.getAttribute('aria-hidden')).toBe('true');
+    expect(chip.getAttribute('data-tone')).toBe('violet');
+    expect(chip.querySelector('i.pi.pi-hourglass')).not.toBeNull();
+    expect(chip.classList.contains('muted')).toBe(false);
+    c.muted.set(true);
+    fixture.detectChanges();
+    expect(el().querySelector('mf-tile-chip')!.classList.contains('muted')).toBe(true);
+    // The name is still the value and the words; the icon adds nothing to it.
+    expect(el().querySelector('[role=group]')!.getAttribute('aria-label')).toBe(
+      '1,234 total assets',
+    );
   });
 });

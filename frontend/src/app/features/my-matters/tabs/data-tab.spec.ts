@@ -236,6 +236,20 @@ describe('DataTab', () => {
       '2 pending disposition, oldest 41 days',
       '1 disposed',
     ]);
+    // The printed note is one short line (the tiles of a row stay level), the name has the words (#937); each tile has its own decorative icon (#934).
+    expect(el().querySelector('[data-tile=pending] .st__note')!.textContent).toBe('oldest 41 d');
+    expect(
+      Array.from(el().querySelectorAll('[data-tiles] mf-tile-chip')).map((c) =>
+        c.querySelector('i')!.className.replace('pi ', ''),
+      ),
+    ).toEqual([
+      'pi-box',
+      'pi-database',
+      'pi-check-circle',
+      'pi-minus-circle',
+      'pi-hourglass',
+      'pi-trash',
+    ]);
     expect(el().querySelector('[data-tile=assets]')!.textContent).toContain('12');
     expect(el().querySelector('[data-tile=size]')!.textContent).toContain('GB');
 

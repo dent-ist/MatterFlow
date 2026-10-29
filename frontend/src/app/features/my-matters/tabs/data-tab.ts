@@ -35,6 +35,7 @@ import {
   phoneCards,
 } from '../../../shared/ui/record-card-list';
 import { StatTile } from '../../../shared/ui/stat-tile';
+import { TileTone } from '../../../shared/ui/tile-chip';
 import { formatSize } from '../../assets/disposition/asset-size';
 import { DataPeriodControl, PeriodChoice } from '../data/data-period';
 import { DataPick, PickOption } from '../data/data-pick';
@@ -80,16 +81,42 @@ const DISPOSITION_COLUMNS: readonly {
   status: DataStatus;
   label: string;
   noun: string;
+  /** The chip of the tile (issue #934): the icon and its accent. Red and amber are not used here: they belong to Overdue and At risk. */
+  icon: string;
+  tone: TileTone;
 }[] = [
-  { key: 'active', status: 'active', label: 'Active', noun: 'active' },
-  { key: 'inactive', status: 'inactive', label: 'Inactive', noun: 'inactive' },
+  {
+    key: 'active',
+    status: 'active',
+    label: 'Active',
+    noun: 'active',
+    icon: 'pi-check-circle',
+    tone: 'teal',
+  },
+  {
+    key: 'inactive',
+    status: 'inactive',
+    label: 'Inactive',
+    noun: 'inactive',
+    icon: 'pi-minus-circle',
+    tone: 'slate',
+  },
   {
     key: 'pendingDisposition',
     status: 'pending',
     label: 'Pending disposition',
     noun: 'pending disposition',
+    icon: 'pi-hourglass',
+    tone: 'violet',
   },
-  { key: 'disposed', status: 'disposed', label: 'Disposed', noun: 'disposed' },
+  {
+    key: 'disposed',
+    status: 'disposed',
+    label: 'Disposed',
+    noun: 'disposed',
+    icon: 'pi-trash',
+    tone: 'slate',
+  },
 ];
 
 /** One headline tile of the Data Area. */
@@ -99,9 +126,23 @@ interface DataTile {
   value: string;
   unit: string;
   note: string;
+  /** The note spelled out for the accessible name ("oldest 41 days"); the printed one is short so the tiles of a row stay level. */
+  noteName: string;
   muted: boolean;
   /** The status a press filters the grid to; null: not a button. */
   status: DataStatus | null;
+  icon: string;
+  tone: TileTone;
+}
+
+/** "oldest today" or "oldest 41 d": one short line, so the Pending disposition tile is as high as the others (issue #937). */
+function oldestShort(days: number): string {
+  return days <= 0 ? 'oldest today' : `oldest ${COUNT.format(days)} d`;
+}
+
+/** The same in full words for the accessible name. */
+function oldestLong(days: number): string {
+  return days <= 0 ? 'oldest today' : `oldest ${plural(days, 'day', 'days')}`;
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -187,7 +228,7 @@ function plural(n: number, one: string, many: string): string {
     /* The headline numbers: tiles that stand out, a row of six on a desktop, two across on a phone. */
     .dt__tiles {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
       gap: var(--mf-s2);
       margin: 0 0 var(--mf-s3);
       padding: 0;
@@ -452,7 +493,10 @@ function plural(n: number, one: string, many: string): string {
                   [unit]="t.unit"
                   [label]="t.label"
                   [note]="t.note"
+                  [noteName]="t.noteName"
                   [muted]="t.muted"
+                  [icon]="t.icon"
+                  [tone]="t.tone"
                   [pressable]="t.status !== null"
                   [pressed]="t.status !== null && t.status === status()"
                   (pick)="pickStatus(t.status)"
@@ -1202,8 +1246,11 @@ export class DataTab {
         value: this.count(t.assets),
         unit: '',
         note: '',
+        noteName: '',
         muted: t.assets === 0,
         status: null,
+        icon: 'pi-box',
+        tone: 'blue',
       },
     ];
     if (sizes.length <= 1) {
@@ -1214,8 +1261,11 @@ export class DataTab {
         value: one ? this.fmt(one.value) : 'None',
         unit: one?.unit ?? '',
         note: one ? '' : 'no size recorded',
+        noteName: '',
         muted: !one,
         status: null,
+        icon: 'pi-database',
+        tone: 'teal',
       });
     } else {
       for (const u of sizes) {
@@ -1225,25 +1275,29 @@ export class DataTab {
           value: this.fmt(u.value),
           unit: '',
           note: '',
+          noteName: '',
           muted: false,
           status: null,
+          icon: 'pi-database',
+          tone: 'teal',
         });
       }
     }
     const oldest = d.warnings.awaitingDisposition.oldestDays;
     for (const c of DISPOSITION_COLUMNS) {
       const n = t[c.key];
+      const showOldest = c.status === 'pending' && n > 0 && oldest !== undefined;
       out.push({
         key: c.status,
         label: c.label,
         value: this.count(n),
         unit: '',
-        note:
-          c.status === 'pending' && n > 0 && oldest !== undefined
-            ? `oldest ${plural(oldest, 'day', 'days')}`
-            : '',
+        note: showOldest ? oldestShort(oldest) : '',
+        noteName: showOldest ? oldestLong(oldest) : '',
         muted: n === 0,
         status: n > 0 || this.status() === c.status ? c.status : null,
+        icon: c.icon,
+        tone: c.tone,
       });
     }
     return out;

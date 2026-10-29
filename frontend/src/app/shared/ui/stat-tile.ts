@@ -1,8 +1,10 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { TileChip, TileTone } from './tile-chip';
 
 /**
- * A headline number that stands out (`mf-stat-tile`, epic #893 issue #933): the value large, its unit once next to it, the plain label under it and, when there
+ * A headline number that stands out (`mf-stat-tile`, epic #893 issues #933 and #934): a solid icon chip in the tile's accent (the same `mf-tile-chip` and the same white
+ * tile with a plain thin border as the My Matters tiles), the value large, its unit once next to it, the plain label under it and, when there
  * is one, a small note ("oldest 41 days"). A zero is muted, so the tiles that carry something are the ones the eye lands on. A tile that can filter the list below
  * it is a toggle button (`pressable`): pressed it is outlined, bold and ticked, never colour alone. The accessible name STARTS with the value ("2 pending
  * disposition, oldest 41 days"), the way the number is read first on screen. Put the tiles in a `ul` with one tile in each `li`.
@@ -17,14 +19,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
     }
     .st {
       box-sizing: border-box;
-      display: grid;
-      align-content: center;
-      gap: 2px;
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s3);
       width: 100%;
       height: 100%;
       min-height: 76px;
       padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
+      border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg, 8px);
       background: var(--mf-surface);
       color: var(--mf-text);
@@ -46,6 +48,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
       border-width: 2px;
       padding: calc(var(--mf-s2) - 1px) calc(var(--mf-s3) - 1px);
       background: var(--mf-selected-bg);
+    }
+    .st mf-tile-chip {
+      --chip: 32px;
+    }
+    .st__text {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
     }
     .st__value {
       display: flex;
@@ -84,6 +94,10 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
     @media (max-width: 639.98px) {
       .st {
         min-height: 64px;
+        gap: var(--mf-s2);
+      }
+      .st mf-tile-chip {
+        --chip: 28px;
       }
       button.st {
         min-height: 44px;
@@ -112,24 +126,29 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
       </div>
     }
     <ng-template #body>
-      <span class="st__value" aria-hidden="true">
-        <span>{{ value() }}</span>
-        @if (unit()) {
-          <span class="st__unit">{{ unit() }}</span>
-        }
-      </span>
-      <span class="st__label" aria-hidden="true">
-        @if (pressed()) {
-          <span class="st__tick"></span>
-        }
-        {{ label() }}
-      </span>
-      @if (note()) {
-        <span class="st__note" aria-hidden="true">{{ note() }}</span>
+      @if (icon()) {
+        <mf-tile-chip [icon]="icon()" [tone]="tone()" [muted]="muted()" />
       }
+      <span class="st__text">
+        <span class="st__value" aria-hidden="true">
+          <span>{{ value() }}</span>
+          @if (unit()) {
+            <span class="st__unit">{{ unit() }}</span>
+          }
+        </span>
+        <span class="st__label" aria-hidden="true">
+          @if (pressed()) {
+            <span class="st__tick"></span>
+          }
+          {{ label() }}
+        </span>
+        @if (note()) {
+          <span class="st__note" aria-hidden="true">{{ note() }}</span>
+        }
+      </span>
     </ng-template>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, TileChip],
 })
 export class StatTile {
   /** The number as shown ("1,234", "989.98"). */
@@ -138,8 +157,14 @@ export class StatTile {
   readonly label = input.required<string>();
   /** The unit of the value, shown once beside it ("GB"). */
   readonly unit = input('');
-  /** A small line under the label ("oldest 41 days"). */
+  /** A small line under the label ("oldest 41 d"). */
   readonly note = input('');
+  /** The note in full words for the accessible name ("oldest 41 days") when the printed one is short; empty: the note itself. */
+  readonly noteName = input('');
+  /** The icon of the chip (a primeicons class, decorative); none: no chip. */
+  readonly icon = input('');
+  /** The accent of the chip. */
+  readonly tone = input<TileTone>('slate');
   /** The value is zero (or nothing): muted. */
   readonly muted = input(false);
   /** The tile is a toggle that filters something else. */
@@ -152,6 +177,7 @@ export class StatTile {
   protected readonly name = computed(() => {
     const value = `${this.value()}${this.unit() ? ' ' + this.unit() : ''}`;
     const label = this.label().toLowerCase();
-    return `${value} ${label}${this.note() ? ', ' + this.note() : ''}`;
+    const note = this.noteName() || this.note();
+    return `${value} ${label}${note ? ', ' + note : ''}`;
   });
 }

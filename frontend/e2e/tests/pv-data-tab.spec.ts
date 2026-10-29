@@ -109,11 +109,18 @@ test.describe('My Matters: Data tab (PM v2)', () => {
     await expect(page.getByRole('button', { name: '2 active' })).toBeVisible();
     await expect(page.getByRole('button', { name: '1 inactive' })).toBeVisible();
     await expect(
-      page.getByRole('button', { name: '1 pending disposition, oldest 0 days' }),
+      page.getByRole('button', { name: '1 pending disposition, oldest today' }),
     ).toBeVisible();
     await expect(page.getByRole('group', { name: '0 disposed' })).toBeVisible();
     await expect(tile(page, 'disposed').locator('button')).toHaveCount(0);
     await expect(page.locator('[data-tiles] li')).toHaveCount(6);
+    // Issue #937: the Pending disposition note is one short line ("oldest today"), so the six tiles of the row are level; issue #934: each has a decorative icon chip.
+    await expect(tile(page, 'pending')).toContainText('oldest today');
+    const heights = await page
+      .locator('[data-tiles] mf-stat-tile')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    expect(new Set(heights).size, `tiles of one height: ${heights}`).toBe(1);
+    await expect(page.locator('[data-tiles] mf-tile-chip[aria-hidden="true"]')).toHaveCount(6);
 
     // The warning is one line with a link, not a colour.
     await expect(page.locator('[data-warning="inactive-linked"]')).toContainText(
@@ -419,6 +426,19 @@ test.describe('My Matters: Data tab (PM v2)', () => {
       if (size.width < 640) {
         await expect(page.locator('[data-type-cards]')).toBeVisible();
         await expect(page.locator('[data-types-table]')).toHaveCount(0);
+        // Issue #937: on a phone the picker buttons are as wide as the Period select.
+        const widths = await page.evaluate(() => {
+          const w = (sel: string) =>
+            document.querySelector(sel)?.getBoundingClientRect().width ?? 0;
+          return {
+            matters: w('[data-pick-matters] summary'),
+            period: w('#dp-period'),
+          };
+        });
+        expect(
+          Math.abs(widths.matters - widths.period),
+          JSON.stringify(widths),
+        ).toBeLessThanOrEqual(2);
       } else {
         await expect(page.locator('[data-types-table]')).toBeVisible();
       }
