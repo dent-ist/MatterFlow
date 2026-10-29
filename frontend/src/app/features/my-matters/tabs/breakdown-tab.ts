@@ -59,6 +59,7 @@ export function breakdownTotalLine(open: number, overdue: number, word: string):
   selector: 'mf-mm-breakdown-tab',
   imports: [ExportMenu, OptionsMenu, PanelBox, RouterLink, ScrollRegion, Segmented, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styles: `
     :host {
       display: block;
@@ -243,6 +244,7 @@ export function breakdownTotalLine(open: number, overdue: number, word: string):
   template: `
     <mf-mm-panel
       name="breakdown"
+      [fill]="true"
       title="Breakdown"
       [state]="loader.state()"
       [busy]="loader.busy()"

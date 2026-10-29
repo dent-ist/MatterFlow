@@ -59,6 +59,7 @@ export const ACTIVITY_KINDS: readonly { value: string; label: string }[] = [
   selector: 'mf-mm-activity-tab',
   imports: [OptionsMenu, PanelBox, Pager, RouterLink, RowLink, ScrollRegion, SortHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styles: `
     .at__opt {
       display: grid;
@@ -206,6 +207,7 @@ export const ACTIVITY_KINDS: readonly { value: string; label: string }[] = [
   template: `
     <mf-mm-panel
       name="activity-tab"
+      [fill]="true"
       title="Activity"
       [state]="loader.state()"
       [busy]="loader.busy()"

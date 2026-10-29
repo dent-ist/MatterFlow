@@ -12,12 +12,13 @@ import { LoadGroup, PanelState } from '../panel-loader';
   selector: 'mf-mm-panel',
   imports: [ErrorReference, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[attr.data-panel]': 'name()' },
+  host: { '[attr.data-panel]': 'name()', '[class.mf-fill]': 'filling()' },
   template: `
     <section
       class="mmp"
       [class.mmp--bare]="bare()"
       [class.mmp--flat]="flat()"
+      [class.mf-fill]="filling()"
       [attr.aria-labelledby]="id() + '-h'"
       [attr.aria-busy]="busy() ? 'true' : null"
     >
@@ -59,7 +60,7 @@ import { LoadGroup, PanelState } from '../panel-loader';
           }
         }
         @default {
-          <div class="mmp__body"><ng-content /></div>
+          <div class="mmp__body" [class.mf-fill]="filling()"><ng-content /></div>
         }
       }
     </section>
@@ -212,6 +213,12 @@ export class PanelBox {
   readonly busy = input(false);
   /** Nothing to show: the panel draws as one muted line (the panel hides its own toolbar). */
   readonly bare = input(false);
+  /**
+   * The panel fills what is left of a fixed page (MM-57, issue #949): the list inside it scrolls in its own frame and the pager stays below it. Only the panels that hold one
+   * ask for it; the Data tab's panels stay as tall as their content.
+   */
+  readonly fill = input(false);
+  protected readonly filling = computed(() => this.fill() && !this.bare());
   /** A section of the calm Overview: drawn without the card around it (issue #903). */
   readonly flat = input(false);
   /** What follows the title (`[mfPanelStart]`) is drawn while the data are on their way too: the month buttons of the Calendar must stay reachable. */

@@ -17,6 +17,8 @@ import { CreateTaskContext } from '../../../shared/layout/create-task-context';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { OptionsMenu } from '../../../shared/ui/options-menu';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { FixedPage } from '../../../shared/ui/fixed-page';
+import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { ScopeSwitch } from '../../../shared/scope/scope-switch';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -109,6 +111,8 @@ function storage(): Storage | null {
     ActivityTab,
     BreakdownTab,
     DataTab,
+    FixedPage,
+    ScrollRegion,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ManagedMatters, LoadGroup, SinceFeed],
@@ -127,6 +131,24 @@ function storage(): Storage | null {
     }
     .mm__since {
       margin-bottom: var(--mf-s1);
+    }
+    /* The page fits the window (MM-57, issue #949): the title row, the filters, the tab strip and the panel's own heading stay, and only the list inside the panel scrolls
+       (shared/ui/fixed-page.ts, styles/_fixed-page.scss). The chain from the page to the list is flex columns; the window must be 768 x 561 or more, else the page scrolls as before. */
+    @media (min-width: 768px) and (min-height: 561px) {
+      .mm__stack {
+        display: flex;
+        flex-direction: column;
+      }
+      .mm__scroll {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+      }
+      .mm__scroll:focus-visible {
+        outline: 2px solid var(--mf-focus);
+        outline-offset: -2px;
+      }
     }
     /* The calm Overview is tight above its first list (issue #903): 8 px, not 16, under the title row and under the tab strip. The page header's own
        numbers (22 px title, 36 px row, 12 px from the top) are untouched. */
@@ -221,191 +243,199 @@ function storage(): Storage | null {
     }
   `,
   template: `
-    <mf-page-header heading="My Matters" [description]="description()">
-      <!-- ONE Options menu in the title row at every width (issues #900, #922): the scope switch and the Focus checklist live in it (and, on a phone, the
+    <mf-fixed-page>
+      <mf-page-header heading="My Matters" [description]="description()">
+        <!-- ONE Options menu in the title row at every width (issues #900, #922): the scope switch and the Focus checklist live in it (and, on a phone, the
            matters for a new task), so the title row is the title, Options and New task. New task stays outside it, always in sight. A block projects into the
            header only with ONE root element, so each piece has its own condition. -->
-      @if (phone()) {
-        <mf-mm-filter-bar
-          mfActions
-          [filters]="filters()"
-          [active]="barActive()"
-          (filterChange)="update($event)"
-          (clear)="clear()"
-          (clientName)="clientName.set($event)"
-          (managerName)="managerName.set($event)"
-          (matterName)="matterName.set($event)"
-        />
-      }
-      <mf-options-menu
-        mfActions
-        data-header-options
-        label="My Matters"
-        [wide]="true"
-        [active]="headerActive()"
-        (opened)="focusList.reset()"
-      >
-        @if (canAll()) {
-          <div data-options-pick>
-            <mf-scope-switch
-              [scope]="filters().scope"
-              [canAll]="canAll()"
-              allLabel="All matters"
-              [description]="scopeText()"
-              (scopeChange)="
-                update({ scope: $event, managerId: $event === 'mine' ? null : filters().managerId })
-              "
-            />
-          </div>
-        }
-        <mf-mm-focus #focusList />
         @if (phone()) {
-          <mf-mm-new-task [inline]="true" [matterId]="filters().matterId" />
-        }
-      </mf-options-menu>
-      @if (!phone()) {
-        <mf-mm-new-task mfActions [matterId]="filters().matterId" />
-      }
-    </mf-page-header>
-
-    <!-- Everything under the title row waits for the two answers that decide whether something is drawn above it (the matters, for the Client / Role bar, and the
-         lists), for at most HOLD_MS: the lists then appear in one step and nothing moves (issue #921, layout shift under 0.05). -->
-    <div class="mm__body" [class.mm__hold]="hold()" data-mm-body>
-      @if (phone()) {
-        <mf-mm-active-filters
-          [filters]="filters()"
-          [clientName]="clientName()"
-          [managerName]="managerName()"
-          [matterName]="matterName()"
-          (remove)="update($event)"
-        />
-      }
-
-      @if (loads.many()) {
-        <!-- Two or more requests failed (a dropped connection fails all of them): ONE message and ONE Retry for the page (issue #921). -->
-        <div class="mm__banner" role="alert" data-page-error>
-          <span class="mm__banner-text">Couldn't load My Matters.</span>
-          <mf-error-reference />
-          <button type="button" class="mf-btn" data-page-retry (click)="loads.retryAll()">
-            Retry
-          </button>
-        </div>
-      }
-
-      <!-- The filters and the Focus chip share a line where the width allows (issue #899) and wrap to rows where it does not. -->
-      <div class="mm__top">
-        @if (!phone()) {
           <mf-mm-filter-bar
+            mfActions
             [filters]="filters()"
             [active]="barActive()"
             (filterChange)="update($event)"
             (clear)="clear()"
             (clientName)="clientName.set($event)"
             (managerName)="managerName.set($event)"
+            (matterName)="matterName.set($event)"
           />
         }
-        <mf-mm-focus-chip />
-        <mf-mm-scope-chip
-          [scope]="filters().scope"
-          (back)="update({ scope: 'mine', managerId: null })"
-        />
-      </div>
-
-      <mf-tabs
-        class="mm__tabs"
-        label="My Matters sections"
-        idPrefix="mm"
-        [tabs]="tabList()"
-        [selected]="tab()"
-        (tabChange)="selectTab($event)"
-      />
-      <div
-        class="mm__panel"
-        role="tabpanel"
-        id="mm-panel"
-        [attr.aria-labelledby]="'mm-tab-' + tab()"
-        data-mm-tabpanel
-      >
-        @switch (tab()) {
-          @case ('breakdown') {
-            @defer (on immediate) {
-              <mf-mm-breakdown-tab [filters]="filters()" />
-            } @placeholder {
-              <p class="mm__loading" role="status">Loading breakdown</p>
-            }
-          }
-          @case ('data') {
-            @defer (on immediate) {
-              <mf-mm-data-tab
-                [filters]="filters()"
+        <mf-options-menu
+          mfActions
+          data-header-options
+          label="My Matters"
+          [wide]="true"
+          [active]="headerActive()"
+          (opened)="focusList.reset()"
+        >
+          @if (canAll()) {
+            <div data-options-pick>
+              <mf-scope-switch
+                [scope]="filters().scope"
                 [canAll]="canAll()"
-                (showAll)="update({ scope: 'all' })"
+                allLabel="All matters"
+                [description]="scopeText()"
+                (scopeChange)="
+                  update({
+                    scope: $event,
+                    managerId: $event === 'mine' ? null : filters().managerId,
+                  })
+                "
               />
-            } @placeholder {
-              <p class="mm__loading" role="status">Loading data</p>
-            }
+            </div>
           }
-          @case ('activity') {
-            <!-- What changed since the last visit (owner decision of 2026-10-28): not drawn on the Overview any more, shown here, with Mark as read; its number
-                 is the badge on this tab. -->
-            <mf-mm-since class="mm__since" />
-            @defer (on immediate) {
-              <mf-mm-activity-tab [filters]="filters()" (marked)="since.loader.load()" />
-            } @placeholder {
-              <p class="mm__loading" role="status">Loading activity</p>
-            }
+          <mf-mm-focus #focusList />
+          @if (phone()) {
+            <mf-mm-new-task [inline]="true" [matterId]="filters().matterId" />
           }
-          @default {
-            @if (noMatters() && !calendarShown()) {
-              <!-- The Matters section is gone (issue #945), but a manager with no matter still gets this positive line and the way on. -->
-              <div class="mm__none" data-empty data-empty-kind="none">
-                <p data-no-matters>You are not the project manager of any matter yet.</p>
-                @if (canAll()) {
-                  <button
-                    type="button"
-                    class="mf-btn"
-                    data-show-all
-                    (click)="update({ scope: 'all' })"
-                  >
-                    Show all matters
-                  </button>
-                } @else {
-                  <p class="mm__muted">Ask a director to assign you.</p>
-                }
-                @if (canMyWork()) {
-                  <a class="mm__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
-                }
-              </div>
-            } @else {
-              <div class="mm__stack">
-                @if (calendarShown()) {
-                  <!-- The Calendar button of the task area (issues #929, #944): the calendar replaces the grid, "Show list" brings it back. It is its own lazy chunk. -->
-                  @defer (on immediate) {
-                    <mf-mm-calendar
-                      [filters]="filters()"
-                      [month]="calendarMonth()"
-                      (monthChange)="setMonth($event)"
-                      (closed)="setCalendar(false)"
-                    />
-                  } @placeholder {
-                    <p class="mm__loading" role="status">Loading calendar</p>
-                  }
-                } @else {
-                  <mf-mm-grid
-                    [filters]="filters()"
-                    [showMatter]="showMatter()"
-                    [only]="oneMatter()"
-                    (filterChange)="update($event)"
-                  >
-                    <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
-                  </mf-mm-grid>
-                }
-              </div>
-            }
-          }
+        </mf-options-menu>
+        @if (!phone()) {
+          <mf-mm-new-task mfActions [matterId]="filters().matterId" />
         }
+      </mf-page-header>
+
+      <!-- Everything under the title row waits for the two answers that decide whether something is drawn above it (the matters, for the Client / Role bar, and the
+         lists), for at most HOLD_MS: the lists then appear in one step and nothing moves (issue #921, layout shift under 0.05). -->
+      <div class="mm__body mf-fill" [class.mm__hold]="hold()" data-mm-body>
+        @if (phone()) {
+          <mf-mm-active-filters
+            [filters]="filters()"
+            [clientName]="clientName()"
+            [managerName]="managerName()"
+            [matterName]="matterName()"
+            (remove)="update($event)"
+          />
+        }
+
+        @if (loads.many()) {
+          <!-- Two or more requests failed (a dropped connection fails all of them): ONE message and ONE Retry for the page (issue #921). -->
+          <div class="mm__banner" role="alert" data-page-error>
+            <span class="mm__banner-text">Couldn't load My Matters.</span>
+            <mf-error-reference />
+            <button type="button" class="mf-btn" data-page-retry (click)="loads.retryAll()">
+              Retry
+            </button>
+          </div>
+        }
+
+        <!-- The filters and the Focus chip share a line where the width allows (issue #899) and wrap to rows where it does not. -->
+        <div class="mm__top">
+          @if (!phone()) {
+            <mf-mm-filter-bar
+              [filters]="filters()"
+              [active]="barActive()"
+              (filterChange)="update($event)"
+              (clear)="clear()"
+              (clientName)="clientName.set($event)"
+              (managerName)="managerName.set($event)"
+            />
+          }
+          <mf-mm-focus-chip />
+          <mf-mm-scope-chip
+            [scope]="filters().scope"
+            (back)="update({ scope: 'mine', managerId: null })"
+          />
+        </div>
+
+        <mf-tabs
+          class="mm__tabs"
+          label="My Matters sections"
+          idPrefix="mm"
+          [tabs]="tabList()"
+          [selected]="tab()"
+          (tabChange)="selectTab($event)"
+        />
+        <div
+          class="mm__panel mf-fill"
+          role="tabpanel"
+          id="mm-panel"
+          [attr.aria-labelledby]="'mm-tab-' + tab()"
+          data-mm-tabpanel
+        >
+          @switch (tab()) {
+            @case ('breakdown') {
+              @defer (on immediate) {
+                <mf-mm-breakdown-tab [filters]="filters()" />
+              } @placeholder {
+                <p class="mm__loading" role="status">Loading breakdown</p>
+              }
+            }
+            @case ('data') {
+              <!-- The Data tab is tall and not a list: on a fixed page it scrolls as a whole in its own frame (MM-57). -->
+              <div class="mm__scroll" mfScrollRegion="Data">
+                @defer (on immediate) {
+                  <mf-mm-data-tab
+                    [filters]="filters()"
+                    [canAll]="canAll()"
+                    (showAll)="update({ scope: 'all' })"
+                  />
+                } @placeholder {
+                  <p class="mm__loading" role="status">Loading data</p>
+                }
+              </div>
+            }
+            @case ('activity') {
+              <!-- What changed since the last visit (owner decision of 2026-10-28): not drawn on the Overview any more, shown here, with Mark as read; its number
+                 is the badge on this tab. -->
+              <mf-mm-since class="mm__since" />
+              @defer (on immediate) {
+                <mf-mm-activity-tab [filters]="filters()" (marked)="since.loader.load()" />
+              } @placeholder {
+                <p class="mm__loading" role="status">Loading activity</p>
+              }
+            }
+            @default {
+              @if (noMatters() && !calendarShown()) {
+                <!-- The Matters section is gone (issue #945), but a manager with no matter still gets this positive line and the way on. -->
+                <div class="mm__none" data-empty data-empty-kind="none">
+                  <p data-no-matters>You are not the project manager of any matter yet.</p>
+                  @if (canAll()) {
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      data-show-all
+                      (click)="update({ scope: 'all' })"
+                    >
+                      Show all matters
+                    </button>
+                  } @else {
+                    <p class="mm__muted">Ask a director to assign you.</p>
+                  }
+                  @if (canMyWork()) {
+                    <a class="mm__link" routerLink="/my-work" data-to-my-work>Go to My Work</a>
+                  }
+                </div>
+              } @else {
+                <div class="mm__stack mf-fill">
+                  @if (calendarShown()) {
+                    <!-- The Calendar button of the task area (issues #929, #944): the calendar replaces the grid, "Show list" brings it back. It is its own lazy chunk. -->
+                    @defer (on immediate) {
+                      <mf-mm-calendar
+                        [filters]="filters()"
+                        [month]="calendarMonth()"
+                        (monthChange)="setMonth($event)"
+                        (closed)="setCalendar(false)"
+                      />
+                    } @placeholder {
+                      <p class="mm__loading" role="status">Loading calendar</p>
+                    }
+                  } @else {
+                    <mf-mm-grid
+                      [filters]="filters()"
+                      [showMatter]="showMatter()"
+                      [only]="oneMatter()"
+                      (filterChange)="update($event)"
+                    >
+                      <mf-mm-calendar-toggle mfGridActions (flip)="setCalendar(true)" />
+                    </mf-mm-grid>
+                  }
+                </div>
+              }
+            }
+          }
+        </div>
       </div>
-    </div>
+    </mf-fixed-page>
   `,
 })
 export class MyMattersPage {

@@ -123,6 +123,7 @@ import { PickerOption, PickerSearch } from './entity-picker';
           <ul
             class="ss__list"
             role="listbox"
+            tabindex="-1"
             [id]="inputId() + '-list'"
             [attr.aria-label]="label()"
           >

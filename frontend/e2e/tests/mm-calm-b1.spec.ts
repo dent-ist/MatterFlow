@@ -6,6 +6,18 @@ import { mmWorld } from '../support/my-matters-fixtures';
 import { pmSolo, pmThree } from '../support/pm-fixtures';
 import { SIZES } from '../support/screens';
 
+/** How tall the content of the tab panel is: from its top to the bottom of the last thing drawn in it (the panel itself fills the window on a fixed page, issue #949). */
+const contentHeight = (page: Page): Promise<number> =>
+  page.evaluate(() => {
+    const panel = document.querySelector('[data-mm-tabpanel]') as HTMLElement;
+    const top = panel.getBoundingClientRect().top;
+    const drawn = [...panel.querySelectorAll('h2, p, a, button, select, input, li, table')].filter(
+      (e) => e.getClientRects().length > 0,
+    );
+    const last = Math.max(0, ...drawn.map((e) => e.getBoundingClientRect().bottom));
+    return last - top;
+  });
+
 /**
  * My Matters, a calmer page: batch 1 of epic #893.
  *
@@ -339,8 +351,9 @@ test.describe('Empty states are one line (#920)', () => {
       for (const hidden of ['tasks', 'activity', 'since']) {
         await expect(page.locator(`[data-panel=${hidden}]`)).toBeHidden();
       }
-      const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
-      expect(panel!.height, 'the Overview content is shorter than 300 px').toBeLessThan(300);
+      expect(await contentHeight(page), 'the Overview content is shorter than 300 px').toBeLessThan(
+        300,
+      );
       expect(await drawn(page, '[data-mm-tabpanel] select'), 'no select').toBe(0);
       expect(
         await page.getByRole('button', { name: 'Clear filters' }).count(),
@@ -367,8 +380,7 @@ test.describe('Empty states are one line (#920)', () => {
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
     await expect(page.locator('[data-prefilter]')).toHaveCount(0);
     expect(await drawn(page, '[data-mm-tabpanel] [data-views], [data-mm-tabpanel] select')).toBe(0);
-    const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
-    expect(panel!.height).toBeLessThan(300);
+    expect(await contentHeight(page)).toBeLessThan(300);
     await page.getByRole('button', { name: 'Clear filters' }).click();
     await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeVisible();
   });
@@ -434,8 +446,7 @@ test.describe('Empty states are one line (#920)', () => {
         await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input'),
         `${tab}: no controls`,
       ).toBe(0);
-      const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
-      expect(panel!.height, `${tab}: short`).toBeLessThan(200);
+      expect(await contentHeight(page), `${tab}: short`).toBeLessThan(200);
     }
     // The Calendar keeps its month buttons (another month can show something) and says so in one line.
     await page.goto('/my-matters?view=calendar');

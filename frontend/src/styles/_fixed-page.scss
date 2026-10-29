@@ -148,6 +148,51 @@
   }
 }
 
+/*
+ * My Matters (MM-57, issue #949): the Activity table, the Breakdown table and the Calendar month scroll in their own frame, like the Task grid, with the heading row
+ * sticky. The frame is as tall as its rows and no taller than what is left of the window, with room for about five rows; the pager and the legend stay under it.
+ */
+@media (min-width: 768px) and (min-height: 561px) {
+  .at__wrap,
+  .bd__scroll,
+  .cal__frame {
+    flex: 0 1 auto;
+    min-height: min(13rem, 100%);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* A window too short for the list's own minimum (about five rows) scrolls the page instead of cutting the list. */
+  mf-mm-grid .mf-scroll-area {
+    min-height: 13rem;
+  }
+
+  html .mf-shell--fixed .mf-main:has([data-mm-body]) {
+    overflow-y: auto;
+  }
+
+  .at__wrap:focus-visible,
+  .bd__scroll:focus-visible,
+  .cal__frame:focus-visible {
+    outline: 2px solid var(--mf-focus);
+    outline-offset: -2px;
+  }
+
+  .at__wrap thead th,
+  .bd__scroll thead th,
+  .cal__frame thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--mf-surface-alt);
+    box-shadow: inset 0 -1px 0 var(--mf-border);
+  }
+
+  html .bd__scroll .bd__table thead th:first-child {
+    z-index: 4;
+  }
+}
+
 /* Short and narrow windows: normal page scrolling, nothing pinned. */
 @media (max-width: 767px), (max-height: 560px) {
   .mf-scroll-area {
@@ -175,14 +220,21 @@
   .mf-fill,
   mf-list-state,
   mf-work-list,
-  .mf-scroll-area {
+  .mf-scroll-area,
+  .at__wrap,
+  .bd__scroll,
+  .cal__frame,
+  .mm__scroll {
     display: block !important;
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
   }
 
-  .mf-scroll-area thead th {
+  .mf-scroll-area thead th,
+  .at__wrap thead th,
+  .bd__scroll thead th,
+  .cal__frame thead th {
     position: static !important;
     box-shadow: none !important;
   }

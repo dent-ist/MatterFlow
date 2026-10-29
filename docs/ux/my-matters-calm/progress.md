@@ -389,3 +389,31 @@ The whole e2e suite, axe over every page, the performance suites, the persona an
 * **Decision to confirm:** the issue's list has no Pod Work; I kept it (only for people who may use it, not for the My Matters landing group) after Tasks.
 * Screenshots: `after/nav-navy-{light,dark}-{1366x768,768x1024,375x812}.png` plus hover and focus at 1366x768 (the previous pill look stays as `nav-pill-*`). Dark = nav tokens under `data-theme="dark"`.
 * Checks run: lint, prettier, tsc (app, spec, e2e), unit tests of `shared/layout` and `core/auth` (181 passed; `nav-compact.spec.ts` rewritten for the order, `app-shell.spec.ts` for the list, indent, current item and forgotten More state), production initial bundle 646.54 kB. e2e specs updated but NOT run: `sh-nav-brand`, `sh-landing`, `px3-menu`, `px6-matrix`, `sh-final-contract`, `sh-nav-version` (colour). The real stack could not start again: `ng build` inside `deploy/publish.sh` finished its bundle but never exited.
+
+## Overview fits the window (MM-57, #949) (cheap checks only, QA pending)
+
+Owner feedback of 2026-10-29: the whole page scrolled instead of the grid.
+
+### Built
+
+* The page is now a fixed page (`mf-fixed-page`, the shared mechanism of Matters, Assets and the Dashboard): on a window of at least 768 x 561 px the title row, the filter bar, the pre-filter, the tab strip and the panel heading stay, and ONLY the list scrolls in its frame, with the heading row sticky and the pager pinned below it. The frame is "the rest of the window" (flex columns from the page down to the table, no pixel heights), with a minimum of 13 rem (about 5 rows); a window too short for that scrolls the page. A phone, a short window and 200% zoom keep the normal page scroll and the cards.
+* The same for the Calendar month, the Activity table and the Breakdown table (sticky heading rows; `styles/_fixed-page.scss`, section "My Matters"). The Data tab (not a list) scrolls as a whole in its own named frame.
+* Keyboard: the grid frame is one Tab stop with an accessible name while it scrolls (arrows and Page keys scroll it, Tab leaves it, no new shortcuts); the Calendar and the Breakdown/Activity frames get the same through `mfScrollRegion`. Back restores the grid position (the shared `ScrollMemory`). Print drops every frame and the pager so the whole page list prints.
+* `mf-mm-panel` has a `fill` input (the panels that hold a list ask for it); the Data tab's panels stay as tall as their content.
+* Found on the way: the Matter dropdown's list (a scrolling listbox) was a Tab stop of its own in Chrome, so Tab from the Matter box landed on the list; the list is now `tabindex="-1"` (`search-select.ts`). The Calendar's month buttons are at least 32 px again on a desktop (they had become 28 px with the flat panel heading).
+
+### Measured / checked in a browser (fresh DB)
+
+`mm-fit.spec.ts` (new): with 154 open tasks at 1366x768, 1920x1080 and 768x1024 the page itself does not scroll, the grid does, the heading row stays at the top of its frame, the title, tab strip, pre-filter and pager stay in view while rows scroll, PageDown scrolls the frame and Tab leaves it; the Calendar, Activity, Breakdown and Data pages do not scroll either; print shows 25 rows without a cut frame; a phone scrolls as a whole; axe 0 at each size. The first task row numbers are unchanged (222 / 262 px desktop, 270 px phone), `mm-calm-budget` passes unchanged. Screenshots: `docs/ux/my-matters-calm/after/fit-*.png` (1366x768, 1920x1080, 768x1024, 375x812 and the Calendar, Activity, Breakdown and Data at 1366).
+
+### Specs edited
+
+`mm-calm-b1` (the empty states measure what is drawn, not the panel, which now fills the window), `mm-controls-tabs` (the all-calls-failing case also fails the Task Queue; a person with no matter has no grid and so no banner on the Overview).
+
+### Not run (left for QA)
+
+The full e2e, axe and performance suites. `pv-data-tab` ("tiles of one height": the Pending disposition tile wraps to two lines at 1366 px since the navigation rail narrowed the content) fails and is not caused by this change.
+
+### Deviations
+
+* The 16 px sideways scroll of the grid at 768 px stays: the navigation rail leaves 664 px and the narrowest form of the six locked and default columns is 680 px (the column minimums are the shared table's). The grid shows its hint and is a Tab stop; fixing it needs a narrower rail or smaller shared minimums.

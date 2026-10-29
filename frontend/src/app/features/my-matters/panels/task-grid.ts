@@ -70,6 +70,7 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
   selector: 'mf-mm-grid',
   imports: [ExportMenu, OptionsMenu, PanelBox, Pager, PrefilterSelect, RouterLink, TaskTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styles: [
     PANEL_LIST_STYLES,
     `
@@ -150,8 +151,11 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
         min-height: 32px;
         margin-block: -2px;
       }
-      :host ::ng-deep .tg__grid.mf-fill {
-        display: block;
+      /* On a page that scrolls as a whole (a phone, a short window) the table is a plain block; in a fixed page it fills what is left (shared/ui/fixed-page.ts). */
+      @media (max-width: 767px), (max-height: 560px) {
+        :host ::ng-deep .tg__grid.mf-fill {
+          display: block;
+        }
       }
       .tg__pager {
         display: block;
@@ -182,6 +186,7 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
     <mf-mm-panel
       name="tasks"
       title="Open tasks"
+      [fill]="true"
       [hint]="hint"
       [flat]="true"
       [skeleton]="6"

@@ -20,6 +20,7 @@ import {
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { parseDateOnly } from '../../../core/time/time';
 import { restoreRowFocus } from '../../../shared/ui/row-nav';
+import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
 import { dayHeading } from '../facts';
@@ -104,8 +105,9 @@ export function monthWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCell[
  */
 @Component({
   selector: 'mf-mm-calendar',
-  imports: [CalendarToggle, PanelBox, RouterLink],
+  imports: [CalendarToggle, PanelBox, RouterLink, ScrollRegion],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   styles: [
     PANEL_LIST_STYLES,
     `
@@ -116,8 +118,8 @@ export function monthWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCell[
         gap: var(--mf-s2);
       }
       .cal__nav .mf-btn {
-        min-width: var(--mf-options-h, 32px);
-        min-height: var(--mf-options-h, 32px);
+        min-width: max(32px, var(--mf-options-h, 32px));
+        min-height: max(32px, var(--mf-options-h, 32px));
         padding-inline: var(--mf-s2);
       }
       .cal__month {
@@ -255,6 +257,7 @@ export function monthWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCell[
     <mf-mm-panel
       name="calendar"
       title="Calendar"
+      [fill]="true"
       [flat]="true"
       [startAlways]="true"
       [state]="loader.state()"
@@ -297,89 +300,91 @@ export function monthWeeks(days: readonly MyMattersDeadlineDay[]): CalendarCell[
       </span>
       @if (calendar()) {
         <p class="mf-sr-only" role="status" data-calendar-summary>{{ summary() }}</p>
-        <table class="dc" data-calendar role="grid" [attr.aria-label]="title(shown())">
-          <thead>
-            <tr>
-              @for (w of weekdays; track w.short) {
-                <th scope="col" [attr.abbr]="w.long">{{ w.short }}</th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (week of weeks(); track $index) {
+        <div class="cal__frame" mfScrollRegion="Calendar month">
+          <table class="dc" data-calendar role="grid" [attr.aria-label]="title(shown())">
+            <thead>
               <tr>
-                @for (c of week; track $index) {
-                  @if (c.date === null) {
-                    <td class="dc__blank" role="gridcell" aria-hidden="true"></td>
-                  } @else {
-                    <td
-                      role="gridcell"
-                      [class.dc__weekend]="c.weekend"
-                      [class.dc__today]="c.today"
-                      [attr.data-day]="c.date"
-                      [attr.tabindex]="c.date === active() ? 0 : -1"
-                      [attr.aria-label]="cellName(c)"
-                      (keydown)="cellKey($event, c)"
-                      (focus)="active.set(c.date)"
-                    >
-                      <div class="dc__head">
-                        <span class="dc__date">{{ c.label }}</span>
-                        @if (c.today) {
-                          <span class="dc__today-word">Today</span>
-                        }
-                      </div>
-                      @if (c.items.length > 0) {
-                        <ul class="dc__items">
-                          @for (t of shownOf(c); track t.taskId) {
-                            <li>
-                              <a
-                                data-deadline-row
-                                tabindex="-1"
-                                [routerLink]="['/tasks', t.taskId]"
-                                [queryParams]="origin.params('my-matters')"
-                                [state]="origin.state()"
-                                [attr.title]="entryTitle(t)"
-                                (keydown)="entryKey($event, c)"
-                              >
-                                @if (isOverdue(t)) {
-                                  <i
-                                    class="pi pi-exclamation-triangle cal__late"
-                                    data-overdue-icon
-                                    aria-hidden="true"
-                                  ></i>
-                                  <span class="mf-sr-only">Overdue: </span>
-                                }
-                                <span class="dc__title">{{ t.title }}</span>
-                              </a>
-                            </li>
-                          }
-                        </ul>
-                        @if (c.count > shownPerDay) {
-                          <a
-                            class="dt__more"
-                            data-day-more
-                            tabindex="-1"
-                            routerLink="/tasks"
-                            [queryParams]="c.params"
-                            [attr.aria-label]="
-                              c.count -
-                              shownPerDay +
-                              ' more tasks due ' +
-                              c.full +
-                              ', open in the Task Queue'
-                            "
-                            (keydown)="entryKey($event, c)"
-                            >+{{ c.count - shownPerDay }} more</a
-                          >
-                        }
-                      }
-                    </td>
-                  }
+                @for (w of weekdays; track w.short) {
+                  <th scope="col" [attr.abbr]="w.long">{{ w.short }}</th>
                 }
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (week of weeks(); track $index) {
+                <tr>
+                  @for (c of week; track $index) {
+                    @if (c.date === null) {
+                      <td class="dc__blank" role="gridcell" aria-hidden="true"></td>
+                    } @else {
+                      <td
+                        role="gridcell"
+                        [class.dc__weekend]="c.weekend"
+                        [class.dc__today]="c.today"
+                        [attr.data-day]="c.date"
+                        [attr.tabindex]="c.date === active() ? 0 : -1"
+                        [attr.aria-label]="cellName(c)"
+                        (keydown)="cellKey($event, c)"
+                        (focus)="active.set(c.date)"
+                      >
+                        <div class="dc__head">
+                          <span class="dc__date">{{ c.label }}</span>
+                          @if (c.today) {
+                            <span class="dc__today-word">Today</span>
+                          }
+                        </div>
+                        @if (c.items.length > 0) {
+                          <ul class="dc__items">
+                            @for (t of shownOf(c); track t.taskId) {
+                              <li>
+                                <a
+                                  data-deadline-row
+                                  tabindex="-1"
+                                  [routerLink]="['/tasks', t.taskId]"
+                                  [queryParams]="origin.params('my-matters')"
+                                  [state]="origin.state()"
+                                  [attr.title]="entryTitle(t)"
+                                  (keydown)="entryKey($event, c)"
+                                >
+                                  @if (isOverdue(t)) {
+                                    <i
+                                      class="pi pi-exclamation-triangle cal__late"
+                                      data-overdue-icon
+                                      aria-hidden="true"
+                                    ></i>
+                                    <span class="mf-sr-only">Overdue: </span>
+                                  }
+                                  <span class="dc__title">{{ t.title }}</span>
+                                </a>
+                              </li>
+                            }
+                          </ul>
+                          @if (c.count > shownPerDay) {
+                            <a
+                              class="dt__more"
+                              data-day-more
+                              tabindex="-1"
+                              routerLink="/tasks"
+                              [queryParams]="c.params"
+                              [attr.aria-label]="
+                                c.count -
+                                shownPerDay +
+                                ' more tasks due ' +
+                                c.full +
+                                ', open in the Task Queue'
+                              "
+                              (keydown)="entryKey($event, c)"
+                              >+{{ c.count - shownPerDay }} more</a
+                            >
+                          }
+                        }
+                      </td>
+                    }
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       } @else if (listDays().length === 0) {
         <p class="pl__empty" data-empty>No tasks due in {{ title(shown()) }}.</p>
       } @else {
