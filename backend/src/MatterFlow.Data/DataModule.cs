@@ -24,6 +24,7 @@ public static class DataModule
         services.AddAuditServices();
         services.AddScoped<AuditColumnsInterceptor>();
         services.AddScoped<AuditSaveChangesInterceptor>();
+        services.AddSingleton<StablePlanInterceptor>();
         // Modules cannot reference Data (dependency rules), so they take the plain DbContext, which resolves to the shared context.
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<MatterFlowDbContext>());
         services.AddDbContext<MatterFlowDbContext>((sp, options) =>
@@ -33,7 +34,8 @@ public static class DataModule
             options.UseSqlServer(connectionString);
             options.AddInterceptors(
                 sp.GetRequiredService<AuditColumnsInterceptor>(),
-                sp.GetRequiredService<AuditSaveChangesInterceptor>());
+                sp.GetRequiredService<AuditSaveChangesInterceptor>(),
+                sp.GetRequiredService<StablePlanInterceptor>());
         });
         return services;
     }

@@ -279,6 +279,41 @@ public sealed partial class MyMattersPerformanceTests
         }
     }
 
+    /// <summary>
+    /// Issue #938: the first caller after a restart (or a plan cache flush) decides the plan of a statement whose cost depends on how many matters the caller manages (the scope is a
+    /// subquery on the caller's id). The statement-count harness asks the 5-matter person first and showed 2.1 s for the 145-matter person on the volume reads while the budget test, which
+    /// asks the larger people first, showed at most 618 ms. This test makes that order explicit: the plan cache is emptied, the small person asks once, then the heavy person is measured
+    /// (cold and warm), and the same again with the heavy person asking first. Both orders print their numbers; neither may pass twice the Data budget.
+    /// </summary>
+    [Fact]
+    public async Task The_data_reads_of_the_heavy_person_do_not_depend_on_which_person_compiled_the_plan_first()
+    {
+        await SeedPmV2Async();
+        await LoadTypeIdsAsync();
+        foreach (var client in new[] { _pm5, _heavy })
+            await OkAsync(await client.GetAsync("/api/v1/my-matters/activity"));
+
+        string[] shapes = ["data", "data volume (24 months)", "data volume (period, 60 months)", "data (two size fields, GB and Items)", "data volume (20 matters, two size fields)"];
+        await PrepareChosenAsync((_pm5, string.Empty), (_heavy, string.Empty));
+        var failures = new List<string>();
+        foreach (var call in PmV2Calls(string.Empty).Where(c => shapes.Contains(c.Name)))
+        {
+            foreach (var (label, firstAsks) in new[] { ("the 5-matter person compiled first", true), ("the 145-matter person compiled first", false) })
+            {
+                await _factory.WithDbAsync(db => db.Database.ExecuteSqlRawAsync("DBCC FREEPROCCACHE"));
+                if (firstAsks)
+                    await Ok(await call.Send(_pm5), call);
+
+                output.WriteLine($"--- {call.Name}, {label}");
+                var m = await MeasureCallAsync(_heavy, call);
+                if (m.Warm95 > CeilingFactor * DataSelectionBudgetMs || m.Cold > CeilingFactor * 800)
+                    failures.Add($"{call.Name}, {label}: cold {m.Cold} ms, warm p95 {m.Warm95} ms (ceiling {CeilingFactor * DataSelectionBudgetMs} ms)");
+            }
+        }
+
+        failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
     [Fact]
     public async Task The_typed_index_is_read_by_seeks_no_statement_uses_json_value_and_a_few_matters_read_tasks_by_seeks()
     {

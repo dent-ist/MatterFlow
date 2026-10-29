@@ -1,5 +1,6 @@
 using MatterFlow.Assets.Domain;
 using MatterFlow.Organization.Domain;
+using MatterFlow.SharedKernel.Data;
 using MatterFlow.SharedKernel.Identity;
 using MatterFlow.SharedKernel.Results;
 using MatterFlow.SharedKernel.Visibility;
@@ -39,7 +40,8 @@ public sealed class AssetScope
     public IQueryable<Asset> Assets()
     {
         var ids = Matters.Select(m => m.Id);
-        return Db.Set<Asset>().AsNoTracking().Where(a => ids.Contains(a.MatterId));
+        // Tagged: these statements are made for the average caller, not for whoever asked first (issue #938).
+        return Db.Set<Asset>().AsNoTracking().TagWith(QueryPlanTags.StablePlan).Where(a => ids.Contains(a.MatterId));
     }
 
     /// <summary>
