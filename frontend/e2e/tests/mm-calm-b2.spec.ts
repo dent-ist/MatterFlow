@@ -9,9 +9,9 @@ import { SIZES } from '../support/screens';
  * My Matters, a calmer page: batch 2 of epic #893.
  *
  *  - #909 + #895 one "what changed" line, drawn only when something that needs a decision changed; no Recent activity on the Overview;
- *  - #902 the count strip as five chips (buttons), zeros muted, counts equal to the lists they open;
- *  - #908 no matters list for one matter; for several, one line each with counts, the worst first, no Red / Amber / Green wall;
- *  - #905 Needs my attention as ONE ranked list of at most five rows with a reason column, At risk included, each task once per screen.
+ *  - #942 (owner change of 2026-10-29) the six tiles are gone: a pre-filter dropdown with the counts in its options filters the grid in place, the counts equal the grid totals;
+ *  - #945 no Matters section on the Overview at any width (it replaced #908);
+ *  - #943 ONE grid of the open tasks (it replaced #905 and the two grids of #929): urgency order, 25 a page, sortable headings, each task once.
  */
 const settled = async (page: Page, tab = 'overview'): Promise<void> => {
   await expect(page.locator(`#mm-tab-${tab}`)).toHaveAttribute('aria-selected', 'true');
@@ -218,8 +218,14 @@ test.describe('One "what changed" line, on the Activity tab (#909, #895, owner d
   }
 });
 
-test.describe('Count tiles (#902, #927)', () => {
-  test('six equal tiles with their count in the name; each opens a Task Queue whose total is the count', async ({
+test.describe('Pre-filter dropdown with counts (#942)', () => {
+  const OPTIONS = ['open', 'overdue', 'atRisk', 'unassigned', 'onHold', 'dueSoon'] as const;
+  const optionCount = async (page: Page, key: string): Promise<number> => {
+    const text = (await page.locator(`option[data-prefilter-option=${key}]`).textContent()) ?? '';
+    return Number(/\((\d+)\)\s*$/.exec(text.trim())![1]);
+  };
+
+  test('no tiles; the six choices carry their count in the option; each filters the grid in place and its total is the count', async ({
     seed,
     personas,
     asUser,
@@ -230,89 +236,97 @@ test.describe('Count tiles (#902, #927)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const keys = ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7', 'open'];
-    for (const key of keys) {
-      const chip = page.locator(`button[data-strip-item=${key}]`);
-      await expect(chip, key).toBeVisible();
-      expect((await chip.getAttribute('aria-label')) ?? '', key).toMatch(/^\d+ /);
+    await expect(page.locator('[data-mm-strip], button[data-strip-item], .tile')).toHaveCount(0);
+    const select = page.locator('select[data-prefilter]');
+    await expect(select).toHaveAccessibleName('Show tasks');
+    expect(
+      await select
+        .locator('option')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('data-prefilter-option'))),
+    ).toEqual([...OPTIONS]);
+    for (const key of OPTIONS) {
+      const text = (await page
+        .locator(`option[data-prefilter-option=${key}]`)
+        .textContent())!.trim();
+      expect(text, key).toMatch(/\(\d+\)$/);
     }
-    await expect(page.locator('[data-strip-item=matters], [data-strip-item=due3]')).toHaveCount(0);
-    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\d+\s+Open\s*$/);
-    // The six tiles are one size (issue #927).
-    const sizes = await page
-      .locator('button[data-strip-item]')
-      .evaluateAll((els) =>
-        els.map((e) => [
-          Math.round(e.getBoundingClientRect().width),
-          Math.round(e.getBoundingClientRect().height),
-        ]),
-      );
-    expect(sizes.length).toBe(6);
-    for (const sz of sizes) expect(sz, 'equal tiles').toEqual(sizes[0]);
-    // Every tile opens the Task Queue with exactly the tasks it counts.
-    for (const key of keys) {
-      await page.goto('/my-matters');
-      await settled(page);
-      const chip = page.locator(`button[data-strip-item=${key}]`);
-      const count = Number(((await chip.getAttribute('aria-label')) ?? '').split(' ')[0]);
+    await expect(select).toHaveValue('open');
+    // Every choice filters the grid in place (no jump to the Tasks page) and the grid's total is the count in the option.
+    for (const key of OPTIONS.slice(1)) {
+      const count = await optionCount(page, key);
       const [queue] = await Promise.all([
         page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
-        chip.click(),
+        select.selectOption(key),
       ]);
-      await expect(page).toHaveURL(/\/tasks\?/);
-      expect(((await queue.json()) as { total: number }).total, `${key}: tile = list`).toBe(count);
+      await expect(page).toHaveURL(new RegExp(`/my-matters\\?show=${key}`));
+      expect(((await queue.json()) as { total: number }).total, `${key}: option = grid`).toBe(
+        count,
+      );
+      if (count > 0)
+        await expect(page.locator('[data-grid-status]'), key).toContainText(String(count));
+      await expect(page.locator('[data-panel=tasks]')).toBeVisible();
     }
+    // One way back.
+    await expect(page.locator('[data-clear-prefilter]')).toHaveCount(1);
+    await page.locator('[data-clear-prefilter]').click();
+    await expect(select).toHaveValue('open');
+    await expect(page).not.toHaveURL(/show=/);
   });
 
-  test('red only for Overdue and amber only for At risk, only above zero; a zero tile is muted and still reachable', async ({
+  test('the counts follow the Client and Matter filters, and the choice is kept in the address and remembered', async ({
     seed,
     personas,
     asUser,
   }) => {
-    const p = await pmSolo(seed, personas, 'ch2');
+    test.slow();
+    const p = await pmThree(seed, personas, 'ch3');
     const page = await asUser(p.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const state = await page.evaluate(() =>
-      [...document.querySelectorAll<HTMLButtonElement>('button[data-strip-item]')].map((b) => ({
-        key: b.getAttribute('data-strip-item'),
-        zero: b.classList.contains('tile--zero'),
-        danger: b.classList.contains('tile--danger'),
-        warning: b.classList.contains('tile--warning'),
-        count: Number(b.getAttribute('aria-label')!.split(' ')[0]),
-        disabled: b.disabled,
-      })),
-    );
-    // Six tiles are always drawn (the strip does not rearrange itself).
-    expect(state.map((s) => s.key)).toEqual([
-      'overdue',
-      'atRisk',
-      'unassigned',
-      'onHold',
-      'due7',
-      'open',
+    const all = await optionCount(page, 'open');
+    await page.goto(`/my-matters?matterId=${p.matters[0].matterId}`);
+    await settled(page);
+    const one = await optionCount(page, 'open');
+    expect(one).toBeLessThan(all);
+    // The grid agrees with the option.
+    const [queue] = await Promise.all([
+      page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
+      page.locator('select[data-prefilter]').selectOption('open'),
     ]);
-    for (const s of state) {
-      expect(s.disabled, `${s.key}: reachable`).toBe(false);
-      expect(s.danger, `${s.key}: red exactly for Overdue above zero`).toBe(
-        s.key === 'overdue' && s.count > 0,
-      );
-      expect(s.warning, `${s.key}: amber exactly for At risk above zero`).toBe(
-        s.key === 'atRisk' && s.count > 0,
-      );
-      expect(s.zero, `${s.key}: muted exactly when zero`).toBe(s.count === 0);
-    }
-    // A zero tile works with the keyboard like any other.
-    const zero = page.locator('button[data-strip-item].tile--zero').first();
-    if ((await zero.count()) > 0) {
-      await zero.focus();
-      await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/\/tasks\?/);
-    }
+    void queue;
+    await page.goto('/my-matters?show=unassigned');
+    await settled(page);
+    await expect(page.locator('select[data-prefilter]')).toHaveValue('unassigned');
+    // A visit with nothing in the address comes back to the last choice.
+    await page.goto('/my-matters');
+    await expect(page).toHaveURL(/show=unassigned/);
+    await expect(page.locator('select[data-prefilter]')).toHaveValue('unassigned');
+  });
+
+  test('a zero stays selectable but muted, and the word of the option still says (0)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ch2');
+    const m = await w.matter('Calm only');
+    await w.task(m, { dueDate: '2099-01-01', assignedUserId: w.pm.userId });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await settled(page);
+    const overdue = page.locator('option[data-prefilter-option=overdue]');
+    await expect(overdue).toHaveText(/Overdue \(0\)/);
+    await expect(overdue).toHaveClass(/pf__zero/);
+    expect(await overdue.evaluate((e) => (e as HTMLOptionElement).disabled)).toBe(false);
+    await page.locator('select[data-prefilter]').selectOption('overdue');
+    await expect(page.locator('[data-panel=tasks] [data-empty]')).toHaveText('No overdue tasks.');
+    await expect(page.locator('select[data-prefilter]')).toBeVisible();
+    await expect(page.locator('[data-clear-prefilter]')).toHaveCount(1);
   });
 
   for (const size of SIZES) {
-    test(`the tiles are clean (axe, no sideways scroll) at ${size.width} px`, async ({
+    test(`the dropdown and the grid are clean (axe, no sideways scroll) at ${size.width} px; 44 px on a phone`, async ({
       seed,
       personas,
       asUser,
@@ -322,44 +336,22 @@ test.describe('Count tiles (#902, #927)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      await expect(page.locator('[data-mm-strip]')).toBeVisible();
-      if (size.width < 640) {
-        // A phone draws the six tiles three across and two rows (issue #927 and the owner's review of batch 6): every one is a 44 px target and all six are on screen at once.
-        const boxes = await page
-          .locator('button[data-strip-item]')
-          .evaluateAll((els) =>
-            els
-              .map((e) => e.getBoundingClientRect())
-              .map((r) => [r.left, r.top, r.width, r.height]),
-          );
-        expect(boxes.length).toBe(6);
-        for (const [, , w, h] of boxes) {
-          expect(h, 'phone targets are 44 px').toBeGreaterThanOrEqual(43.5);
-          expect(w, 'phone tiles share the width').toBeGreaterThan(100);
-        }
-        expect(new Set(boxes.map((b) => Math.round(b[0]))).size, 'three columns').toBe(3);
-        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'two rows').toBe(2);
-      } else {
-        // Wider screens: ONE horizontal row of six equal tiles (owner review of batch 6: they had stacked in one column).
-        const boxes = await page
-          .locator('button[data-strip-item]')
-          .evaluateAll((els) =>
-            els.map((e) => e.getBoundingClientRect()).map((r) => [r.left, r.top, r.width]),
-          );
-        expect(boxes.length).toBe(6);
-        expect(new Set(boxes.map((b) => Math.round(b[1]))).size, 'one row').toBe(1);
-        const widths = boxes.map((b) => Math.round(b[2]));
-        expect(Math.max(...widths) - Math.min(...widths), 'equal tiles').toBeLessThanOrEqual(1);
-        expect(Math.min(...widths), 'wide enough for the word').toBeGreaterThanOrEqual(96);
-      }
+      const select = page.locator('select[data-prefilter]');
+      await expect(select).toBeVisible();
+      const box = await select.boundingBox();
+      if (size.width < 640) expect(box!.height, 'phone target').toBeGreaterThanOrEqual(43.5);
+      else expect(box!.height, 'compact height').toBeLessThanOrEqual(34);
+      expect(box!.x + box!.width, 'inside the screen').toBeLessThanOrEqual(size.width);
+      await page.locator('select[data-prefilter]').selectOption('overdue');
+      await settled(page);
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });
   }
 });
 
-test.describe('Matters list (#908)', () => {
-  test('one matter: no matters list, no New task button of a row; the matter is named and linked after the tiles', async ({
+test.describe('No Matters section on the Overview (#945)', () => {
+  test('one matter: no section, no row menu; the matter is named and linked after the heading of the grid on a wide screen', async ({
     seed,
     personas,
     asUser,
@@ -370,175 +362,88 @@ test.describe('Matters list (#908)', () => {
     await page.goto('/my-matters');
     await settled(page);
     await expect(page.locator('[data-panel=health]')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Matter health' })).toHaveCount(0);
-    await expect(page.locator('[data-health-list], [data-health-row]')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /^Matters?( health)?$/ })).toHaveCount(0);
+    await expect(
+      page.locator('[data-health-list], [data-health-row], [data-all-matters]'),
+    ).toHaveCount(0);
     // One create button for the whole page: the shell's.
     await expect(page.getByRole('button', { name: /New task|Task on a matter/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Create task' })).toHaveCount(1);
-    const link = page.locator('[data-strip-matter]');
+    const link = page.locator('[data-grid-matter] a');
     await expect(link).toHaveAttribute('href', `/matters/${p.matters[0].matterId}`);
     await expect(link).toContainText(p.matters[0].name);
   });
 
-  test('several matters: at most 8 one-line rows, worst first, chips that differ (0, 1 and 5 overdue), no Red / Amber / Green, one menu per row', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'mh3');
-    const calm = await w.matter('Calm');
-    const some = await w.matter('Some');
-    const many = await w.matter('Many');
-    await w.task(calm, { dueDate: '2099-01-01' });
-    await w.task(some, { dueDate: '2000-01-01' });
-    for (let i = 0; i < 5; i++) await w.task(many, { dueDate: '2000-01-0' + (i + 1) });
-    const page = await asUser(w.pm.username);
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/my-matters');
-    await settled(page);
-
-    const rows = page.locator('[data-health-row]');
-    await expect(rows).toHaveCount(3);
-    const overdue = await rows.evaluateAll((els) =>
-      els.map((e) => ({
-        id: Number(e.getAttribute('data-matter-id')),
-        text: e.querySelector('[data-overdue]')!.textContent!.replace(/\s+/g, ' ').trim(),
-        red: e.querySelector('[data-overdue]')!.classList.contains('mh__chip--danger'),
-      })),
-    );
-    expect(overdue.map((o) => o.id)).toEqual([many.matterId, some.matterId, calm.matterId]);
-    expect(overdue.map((o) => o.text)).toEqual(['5 overdue', '1 overdue', '0 overdue']);
-    expect(overdue.map((o) => o.red)).toEqual([true, true, false]);
-    // No colour words, no table, no per-row button; one menu per row with New task in it.
-    await expect(page.getByText(/^(Red|Amber|Green)$/)).toHaveCount(0);
-    await expect(page.locator('[data-health-table], [data-flag], [data-new-task]')).toHaveCount(0);
-    await expect(rows.first().locator('[data-row-actions] button')).toHaveCount(1);
-    await rows.first().locator('[data-row-actions] button').click();
-    await expect(page.getByRole('menuitem', { name: '+ New task' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    // The names do not wrap.
-    const heights = await rows
-      .locator('a[data-matter-link]')
-      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-    for (const h of heights) expect(h, 'one line').toBeLessThanOrEqual(30);
-    const rowHeights = await rows.evaluateAll((els) =>
-      els.map((e) => e.getBoundingClientRect().height),
-    );
-    for (const h of rowHeights) expect(h, 'a row is one line').toBeLessThanOrEqual(48);
-    // Reading order for a screen reader: matter, overdue, next deadline.
-    const text = (await rows.first().innerText()).replace(/\s+/g, ' ');
-    expect(text.indexOf(many.name)).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf('5 overdue')).toBeGreaterThan(text.indexOf(many.name));
-    expect(text.indexOf('Next deadline')).toBeGreaterThan(text.indexOf('5 overdue'));
-    // The rule is stated once, behind the info button; All matters (N) opens the list.
-    await expect(page.locator('[data-rule]')).toHaveCount(0);
-    await page.locator('[data-how]').click();
-    await expect(page.locator('[data-rule]')).toContainText('Worst first');
-    await expect(page.locator('[data-all-matters]')).toContainText('All matters (3)');
-    await page.getByRole('link', { name: /All matters/ }).click();
-    await expect(page).toHaveURL(/\/matters/);
-  });
-
-  test('at risk and unassigned appear on a row only above zero, and the worst matter is first', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const p = await pmThree(seed, personas, 'mh4');
-    const page = await asUser(p.pm.username);
-    await page.goto('/my-matters');
-    await settled(page);
-    const rows = page.locator('[data-health-row]');
-    await expect(rows).toHaveCount(3);
-    const first = rows.first();
-    await expect(first.locator('[data-overdue]')).toContainText('1 overdue');
-    const withRisk = await rows.evaluateAll((els) =>
-      els.map((e) => !!e.querySelector('[data-at-risk]')),
-    );
-    if (p.aged) expect(withRisk.some(Boolean)).toBe(true);
-    // Chips exist only for counts above zero.
-    const chips = await page
-      .locator('[data-health-row] [data-at-risk], [data-health-row] [data-unassigned]')
-      .evaluateAll((els) => els.map((e) => Number(e.textContent!.trim().split(/\s+/)[0])));
-    for (const n of chips) expect(n).toBeGreaterThan(0);
-  });
-
   for (const size of SIZES) {
-    test(`the matters list is clean (axe, no sideways scroll) at ${size.width} px; on a phone a row is two lines`, async ({
+    test(`several matters: no Matters section, no "All matters" link, nothing below the grid at ${size.width} px`, async ({
       seed,
       personas,
       asUser,
     }) => {
-      const p = await pmThree(seed, personas, `mha${size.width}`);
+      const p = await pmThree(seed, personas, `mh3${size.width}`);
       const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      await expect(page.locator('[data-health-row]')).toHaveCount(3);
-      if (size.width < 640) {
-        const row = await page.locator('[data-health-row]').first().boundingBox();
-        expect(row!.height, 'two lines of text and a 44 px menu').toBeLessThan(150);
-        const name = await page.locator('[data-health-row] .mh__name').first().boundingBox();
-        const counts = await page.locator('[data-health-row] .mh__counts').first().boundingBox();
-        expect(counts!.y, 'counts under the name').toBeGreaterThan(name!.y + name!.height - 2);
-      }
+      await expect(page.locator('[data-panel]')).toHaveCount(1);
+      await expect(
+        page.locator('[data-panel=health], [data-health-row], [data-all-matters]'),
+      ).toHaveCount(0);
+      await expect(page.getByRole('link', { name: /^All matters/ })).toHaveCount(0);
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });
   }
 });
 
-test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
-  test('one grid of the shared table, at most five rows, sortable headings, one View all N that opens the Task Queue with the same tasks', async ({
+test.describe('One grid of the open tasks (#943)', () => {
+  test('one grid of the shared table with sortable headings and 25 a page: a second page by keyboard; no second grid, no View all', async ({
     seed,
     personas,
     asUser,
   }) => {
-    const p = await pmThree(seed, personas, 'na1');
-    const page = await asUser(p.pm.username);
+    const w = await mmWorld(seed, personas, 'na1');
+    const m = await w.matter('Paging');
+    for (let i = 0; i < 27; i++)
+      await w.task(m, {
+        dueDate: '2000-02-' + String((i % 27) + 1).padStart(2, '0'),
+        title: `Page ${String(i).padStart(2, '0')}`,
+      });
+    const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const panel = page.locator('[data-panel=attention]');
-    const rows = panel.locator('tbody tr[data-task]');
-    const n = await rows.count();
-    expect(n).toBeGreaterThan(0);
-    expect(n).toBeLessThanOrEqual(5);
-    // The same table as the Tasks pages: Ref, Title, Matter name, Priority, Assignee, Due, Status, every heading a sort button with aria-sort.
+    const panel = page.locator('[data-panel=tasks]');
+    await expect(page.locator('[data-panel]')).toHaveCount(1);
+    await expect(page.locator('[data-mm-tabpanel] h2')).toHaveCount(1);
+    await expect(panel.locator('[data-view-all]')).toHaveCount(0);
     await expect(panel.locator('mf-task-table table.wt')).toBeVisible();
     const heads = panel.locator('thead th');
+    // One matter: no Matter column.
     expect(await heads.evaluateAll((els) => els.map((e) => e.getAttribute('data-col')))).toEqual([
       'ref',
       'title',
-      'matterName',
       'priority',
       'assignee',
       'due',
       'status',
     ]);
-    await expect(heads.locator('button.wt-sort')).toHaveCount(7);
-    // No group headings, no "also listed" notes; one View all. The default order is Urgency (issue #935): no column is marked, the Urgency control is.
-    await expect(panel.locator('h3, [data-group], [data-repeated]')).toHaveCount(0);
-    await expect(panel.locator('[data-view-all]')).toHaveCount(1);
-    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
-    await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(panel.locator('[data-sort-urgency]')).toHaveText('Urgency');
-    // Overdue work comes first.
-    await expect(rows.first().locator('td[data-col=due]')).toContainText(/Overdue/i);
-    // View all N: N equals the Task Queue total of the link, and the section is no taller than 420 px.
-    const all = panel.locator('[data-view-all]');
-    const total = Number((await all.innerText()).replace(/\D+/g, ''));
-    const box = await panel.boundingBox();
-    expect(box!.height, 'at most 420 px').toBeLessThanOrEqual(420);
-    const [queue] = await Promise.all([
-      page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
-      all.click(),
-    ]);
-    await expect(page).toHaveURL(/needsAttention=true/);
-    expect(((await queue.json()) as { total: number }).total).toBe(total);
+    await expect(heads.locator('button.wt-sort')).toHaveCount(6);
+    await expect(panel.locator('tbody tr[data-task]')).toHaveCount(25);
+    const pager = page.locator('mf-pager');
+    await expect(pager).toContainText('Page 1 of 2');
+    // The page control is reachable and works with the keyboard.
+    const next = pager.getByRole('button', { name: 'Next' });
+    await next.focus();
+    await page.keyboard.press('Enter');
+    await expect(pager).toContainText('Page 2 of 2');
+    await expect(panel.locator('tbody tr[data-task]')).toHaveCount(2);
+    // A task is listed once.
+    const links = await taskLinks(page);
+    expect(new Set(links).size, `no task id twice: ${links.join(' ')}`).toBe(links.length);
   });
 
-  test('a click on a heading sorts all the tasks that need attention, not only the rows on screen, and View all follows the order', async ({
+  test('a click on a heading sorts ALL the tasks on the server, not the rows on screen; Urgency brings the default order back', async ({
     seed,
     personas,
     asUser,
@@ -554,36 +459,45 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const panel = page.locator('[data-panel=attention]');
+    const panel = page.locator('[data-panel=tasks]');
     const titles = async () =>
       (await panel.locator('a.wt-title').allInnerTexts()).map((t) => t.trim());
-    expect(await titles()).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
-    // Title, Z to A: the five that sort last of ALL seven, not the same five turned round.
+    expect(await titles()).toEqual([
+      'Sort A',
+      'Sort B',
+      'Sort C',
+      'Sort D',
+      'Sort E',
+      'Sort F',
+      'Sort G',
+    ]);
+    await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
+    await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.locator('[data-sort-urgency]')).toHaveText('Urgency');
     const titleSort = panel.locator('th[data-col=title] button.wt-sort');
     await titleSort.click();
     await expect(panel.locator('th[data-col=title]')).toHaveAttribute('aria-sort', 'ascending');
     await titleSort.click();
     await expect(panel.locator('th[data-col=title]')).toHaveAttribute('aria-sort', 'descending');
-    await expect.poll(titles).toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C']);
+    await expect
+      .poll(titles)
+      .toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C', 'Sort B', 'Sort A']);
     await expect(panel.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
-    await expect(panel.locator('[data-view-all]')).toHaveText('View all 7');
-    await expect(panel.locator('[data-view-all]')).toHaveAttribute('href', /sort=title&dir=desc/);
-    // Due again, and the order turns round with a second press.
-    await panel.locator('th[data-col=due] button.wt-sort').click();
-    await expect.poll(titles).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
-    await panel.locator('th[data-col=due] button.wt-sort').click();
-    await expect.poll(titles).toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C']);
-    // Urgency brings the default order back, and View all follows it.
+    await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'false');
+    // The pre-filter keeps the order the person chose.
+    await page.locator('select[data-prefilter]').selectOption('overdue');
+    await expect
+      .poll(titles)
+      .toEqual(['Sort G', 'Sort F', 'Sort E', 'Sort D', 'Sort C', 'Sort B', 'Sort A']);
+    // Urgency brings the default order back.
     await panel.locator('[data-sort-urgency]').click();
-    await expect.poll(titles).toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E']);
+    await expect
+      .poll(titles)
+      .toEqual(['Sort A', 'Sort B', 'Sort C', 'Sort D', 'Sort E', 'Sort F', 'Sort G']);
     await expect(panel.locator('[data-sort-urgency]')).toHaveAttribute('aria-pressed', 'true');
-    await expect(panel.locator('[data-view-all]')).toHaveAttribute(
-      'href',
-      /sort=attention&dir=asc/,
-    );
   });
 
-  test('the default order of Needs my attention is Urgency: by reason, then by due date, so a held task due soon does not go before an unassigned task due later (#935)', async ({
+  test('the default order is Urgency: by reason, then by due date, so a held task due soon does not go before an unassigned task due later (#935)', async ({
     seed,
     personas,
     asUser,
@@ -610,13 +524,13 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const panel = page.locator('[data-panel=attention]');
+    const panel = page.locator('[data-panel=tasks]');
     await expect
       .poll(async () => (await panel.locator('a.wt-title').allInnerTexts()).map((t) => t.trim()))
       .toEqual(['Urg overdue', 'Urg unassigned later', 'Urg held sooner']);
   });
 
-  test('a task is listed once per screen: a task that needs attention is not also in Next 7 days; there are no inline editors in the grids', async ({
+  test('every task is listed once; overdue work comes first; no inline editors in the grid', async ({
     seed,
     personas,
     asUser,
@@ -624,6 +538,7 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
     const w = await mmWorld(seed, personas, 'na2');
     const m = await w.matter('Once');
     await w.task(m, { dueDate: inDays(0), title: 'Due today and unassigned' });
+    await w.task(m, { dueDate: '2000-01-01', title: 'Long overdue', assignedUserId: w.pm.userId });
     for (let i = 1; i <= 3; i++)
       await w.task(m, { dueDate: inDays(i), title: `Soon ${i}`, assignedUserId: w.pm.userId });
     const page = await asUser(w.pm.username);
@@ -632,58 +547,31 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
     await settled(page);
     const links = await taskLinks(page);
     expect(new Set(links).size, `no task id twice: ${links.join(' ')}`).toBe(links.length);
-    await expect(
-      page.locator('[data-panel=attention] tr[data-task]', { hasText: 'Due today and unassigned' }),
-    ).toHaveCount(1);
-    await expect(
-      page.locator('[data-panel=deadlines] tr[data-task]', { hasText: 'Due today and unassigned' }),
-    ).toHaveCount(0);
-    await expect(page.locator('[data-panel=deadlines] tr[data-task]')).toHaveCount(3);
-    // Read-only: Status, Priority and Assignee are text and badges, not editors.
-    await expect(
-      page.locator(
-        '[data-panel=attention] [data-inline-trigger], [data-panel=deadlines] [data-inline-trigger]',
-      ),
-    ).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(5);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toContainText(
+      'Long overdue',
+    );
+    await expect(page.locator('[data-panel=tasks] [data-inline-trigger]')).toHaveCount(0);
   });
 
-  test('more than five need attention: the grid stops at five, the oldest overdue first, View all counts all of them', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'na3');
-    const m = await w.matter('Late');
-    for (let i = 0; i < 8; i++)
-      await w.task(m, { dueDate: `2000-01-0${i + 1}`, title: `Late ${i}` });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    await settled(page);
-    const panel = page.locator('[data-panel=attention]');
-    await expect(panel.locator('tbody tr[data-task]')).toHaveCount(5);
-    const titles = await panel.locator('a.wt-title').allInnerTexts();
-    expect(titles.map((t) => t.trim())).toEqual(['Late 0', 'Late 1', 'Late 2', 'Late 3', 'Late 4']);
-    await expect(panel.locator('[data-view-all]')).toHaveText('View all 8');
-  });
-
-  test('nothing needs attention: one muted line, no toolbar', async ({
+  test('nothing open: one muted line, no toolbar, only the Calendar button', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'na4');
-    const m = await w.matter('Quiet');
-    await w.task(m, { dueDate: inDays(30), assignedUserId: w.pm.userId });
+    await w.matter('Quiet');
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await settled(page);
-    const panel = page.locator('[data-panel=attention]');
-    await expect(panel).toContainText('Nothing needs your attention.');
-    await expect(panel.locator('button, select, a')).toHaveCount(0);
+    const panel = page.locator('[data-panel=tasks]');
+    await expect(panel).toContainText('No open tasks.');
+    await expect(panel.locator('select, table, mf-options-menu')).toHaveCount(0);
+    await expect(panel.locator('[data-calendar-toggle]')).toBeVisible();
   });
 
   for (const size of SIZES) {
-    test(`the list is clean (axe, no sideways scroll) at ${size.width} px`, async ({
+    test(`the grid is clean (axe, no sideways scroll) at ${size.width} px`, async ({
       seed,
       personas,
       asUser,
@@ -693,7 +581,7 @@ test.describe('Needs my attention: a sortable grid (#905, #929)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      await expect(page.locator('[data-panel=attention] [data-task]').first()).toBeVisible();
+      await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
     });

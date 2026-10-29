@@ -10,11 +10,12 @@ import { SIZES } from '../support/screens';
  * My Matters, a calmer page: batch 1 of epic #893.
  *
  *  - #904 the title block: no description line, exactly one create-task button for a person with one matter;
- *  - #906 a filter is drawn only when it can change the result; the filter bar is the same on every tab; Dates lives in the Calendar (#929: the Deadlines tab is gone);
+ *  - #906 a filter is drawn only when it can change the result; the filter bar is the same on every tab; the Calendar is a month with Previous / Next / Today and no Dates choice (#929, #944);
+ *  - #941 Client and Matter dropdowns have no visible label; a one-matter person sees neither;
  *  - #920 an empty list is one line with no toolbar; a page with nothing to show is a few lines;
  *  - #923 a long reason on a held task never squeezes the title.
  */
-const TABS = ['overview', 'breakdown', 'data', 'activity', 'trends'] as const;
+const TABS = ['overview', 'breakdown', 'data', 'activity'] as const;
 type Tab = (typeof TABS)[number];
 const url = (tab: Tab, extra = ''): string =>
   `/my-matters?${tab === 'overview' ? '' : `tab=${tab}`}${extra}`;
@@ -110,7 +111,6 @@ test.describe('Title block (#904)', () => {
       const create = page.getByRole('button', { name: 'Create task' });
       await expect(create).toHaveCount(1);
       await expect(create).toBeVisible();
-      // (The Matter health table has its own "New task for ..." button per matter row until #908 removes that table for one matter.)
       await expect(
         page
           .locator('mf-page-header')
@@ -126,7 +126,7 @@ test.describe('Title block (#904)', () => {
     });
   }
 
-  test('several matters: the shell button plus New task and its Matter chooser; no description line on any tab', async ({
+  test('several matters: the shell button plus New task and no matter chooser; no description line on any tab', async ({
     seed,
     personas,
     asUser,
@@ -145,7 +145,9 @@ test.describe('Title block (#904)', () => {
     const menu = page.locator('[data-header-new-task]');
     await expect(menu).toBeVisible();
     await expect(menu.getByRole('button', { name: /^New task/ })).toBeVisible();
-    await expect(menu).toContainText('Matter:');
+    // The chooser "Matter: ..." is gone (#941): the Matter dropdown of the filter bar is the one place a matter is chosen.
+    await expect(menu).not.toContainText('Matter:');
+    await expect(page.locator('#mm-matter')).toBeVisible();
     // The scope switch carries what the sentence used to say.
     await expect(page.locator('[data-scope-switch]')).toHaveAttribute(
       'title',
@@ -170,7 +172,7 @@ test.describe('Title block (#904)', () => {
 });
 
 test.describe('Filters only when they can change the result (#906)', () => {
-  test('one matter: no filter bar on any of the six tabs, at any width', async ({
+  test('one matter: no filter bar on any of the four tabs, at any width', async ({
     seed,
     personas,
     asUser,
@@ -189,7 +191,7 @@ test.describe('Filters only when they can change the result (#906)', () => {
     }
   });
 
-  test('several clients and both roles: the bar is the same on all six tabs; Dates is only in the Deadlines tab', async ({
+  test('several clients and both roles: the bar is the same on all four tabs; there is no Dates choice anywhere', async ({
     seed,
     personas,
     asUser,
@@ -203,7 +205,12 @@ test.describe('Filters only when they can change the result (#906)', () => {
       await page.goto(url(tab));
       await settled(page, tab);
       await expect(page.locator('#mm-client')).toBeVisible();
+      await expect(page.locator('#mm-matter')).toBeVisible();
       await expect(page.locator('#mm-role')).toBeVisible();
+      // Client and Matter have no visible label; an aria-label names them (#941).
+      await expect(page.locator('label[for=mm-client], label[for=mm-matter]')).toHaveCount(0);
+      await expect(page.locator('#mm-client')).toHaveAttribute('aria-label', 'Client');
+      await expect(page.locator('#mm-matter')).toHaveAttribute('aria-label', 'Matter');
       const box = await page.locator('[data-mm-filters]').boundingBox();
       expect(box, `${tab}: the bar is drawn`).not.toBeNull();
       boxes.set(tab, box!);
@@ -225,7 +232,7 @@ test.describe('Filters only when they can change the result (#906)', () => {
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(0);
   });
 
-  test('one client with only Primary matters: neither Client nor Role is offered; a filter in force is never hidden', async ({
+  test('one client with only Primary matters: no Client and no Role, but the Matter dropdown (two matters); a filter in force is never hidden', async ({
     seed,
     personas,
     asUser,
@@ -239,17 +246,20 @@ test.describe('Filters only when they can change the result (#906)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-mm-filters]')).toHaveCount(0);
+    await expect(page.locator('#mm-client')).toHaveCount(0);
+    await expect(page.locator('#mm-role')).toHaveCount(0);
+    await expect(page.locator('#mm-matter')).toBeVisible();
     // An address (or a remembered filter) that sets a role: the control comes back, so the person can see and clear it.
     await page.goto('/my-matters?role=secondary');
     await settled(page);
     await expect(page.locator('#mm-role')).toHaveValue('secondary');
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
     await page.getByRole('button', { name: 'Clear filters' }).click();
-    await expect(page.locator('[data-mm-filters]')).toHaveCount(0);
+    await expect(page.locator('#mm-role')).toHaveCount(0);
+    await expect(page.locator('#mm-matter')).toBeVisible();
   });
 
-  test('the Dates control in the Calendar chooses the weeks (the old 2 / 4 week buttons are gone)', async ({
+  test('the Calendar is a month: Previous, Next and Today change it, and there is no Dates choice (#944)', async ({
     seed,
     personas,
     asUser,
@@ -259,13 +269,20 @@ test.describe('Filters only when they can change the result (#906)', () => {
     await page.goto('/my-matters?view=calendar');
     await settled(page);
     await expect(page.locator('[data-panel=calendar]')).toBeVisible();
-    await expect(page.locator('[data-mm-tabpanel] [data-range]')).toHaveCount(0);
-    await page.locator('#mm-range').selectOption('2w');
-    await expect(page).toHaveURL(/range=2w/);
-    await page.locator('#mm-range').selectOption('custom');
-    await expect(page.locator('#mm-from')).toBeVisible();
-    await expect(page.locator('#mm-to')).toBeVisible();
-    // The grids have no Dates control, and the bar is not drawn for one matter.
+    await expect(
+      page.locator('#mm-range, [data-mm-dates], [data-mm-tabpanel] [data-range]'),
+    ).toHaveCount(0);
+    const title = page.locator('[data-cal-month]');
+    const before = (await title.textContent())!.trim();
+    await expect(page.locator('[data-cal-today]')).toBeDisabled();
+    await page.locator('[data-cal-next]').click();
+    await expect(page).toHaveURL(/month=\d{4}-\d{2}/);
+    await expect(title).not.toHaveText(before);
+    await expect(page.locator('[data-cal-today]')).toBeEnabled();
+    await page.locator('[data-cal-today]').click();
+    await expect(title).toHaveText(before);
+    await expect(page).not.toHaveURL(/month=/);
+    // The old range addresses are no filters any more.
     await page.goto('/my-matters?range=2w');
     await settled(page);
     await expect(page.locator('#mm-range')).toHaveCount(0);
@@ -289,10 +306,14 @@ test.describe('Filters only when they can change the result (#906)', () => {
           page.getByRole('dialog', { name: 'Filters' }).locator('#mm-client'),
         ).toBeVisible();
         await expect(
+          page.getByRole('dialog', { name: 'Filters' }).locator('#mm-matter'),
+        ).toBeVisible();
+        await expect(
           page.getByRole('dialog', { name: 'Filters' }).locator('#mm-role'),
         ).toBeVisible();
       } else {
         await expect(page.locator('#mm-client')).toBeVisible();
+        await expect(page.locator('#mm-matter')).toBeVisible();
       }
       await noSideways(page);
       if (axeAvailable()) expect(await axeViolations(page), `axe ${size.width}`).toEqual([]);
@@ -313,9 +334,9 @@ test.describe('Empty states are one line (#920)', () => {
       await page.goto('/my-matters');
       await settled(page);
       await expect(page.locator('[data-no-matters]')).toBeVisible();
-      // Nothing but the message: no Views / Export / Sort / Task types controls, no strip of zeros.
-      await expect(page.locator('[data-mm-strip]')).toHaveCount(0);
-      for (const hidden of ['attention', 'deadlines', 'activity', 'since']) {
+      // Nothing but the message: no Views / Export / Sort / Task types controls, no dropdown of counts.
+      await expect(page.locator('[data-prefilter]')).toHaveCount(0);
+      for (const hidden of ['tasks', 'activity', 'since']) {
         await expect(page.locator(`[data-panel=${hidden}]`)).toBeHidden();
       }
       const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
@@ -342,19 +363,17 @@ test.describe('Empty states are one line (#920)', () => {
     const other = await seed.client({ name: `Nobody client ${p.token}` });
     await page.goto(`/my-matters?clientId=${other.clientId}`);
     await settled(page);
-    await expect(page.locator('[data-empty-kind=filtered]')).toContainText(
-      'No matters match these filters.',
-    );
+    await expect(page.locator('[data-panel=tasks] [data-empty]')).toContainText('No open tasks.');
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
-    await expect(page.locator('[data-mm-strip]')).toHaveCount(0);
+    await expect(page.locator('[data-prefilter]')).toHaveCount(0);
     expect(await drawn(page, '[data-mm-tabpanel] [data-views], [data-mm-tabpanel] select')).toBe(0);
     const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
     expect(panel!.height).toBeLessThan(300);
     await page.getByRole('button', { name: 'Clear filters' }).click();
-    await expect(page.locator('[data-empty-kind]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeVisible();
   });
 
-  test('a manager with matters but no work and nothing recent: one line says so, the empty sections are gone', async ({
+  test('a manager with matters but no work and nothing recent: the grid is one line, with the Calendar button and no toolbar', async ({
     seed,
     personas,
     asUser,
@@ -368,34 +387,31 @@ test.describe('Empty states are one line (#920)', () => {
     await nothingRecent(page);
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-all-quiet]')).toHaveText(
-      'Nothing is late and nothing is due in the next 7 days.',
+    const panel = page.locator('[data-panel=tasks]');
+    await expect(panel.locator('[data-empty]')).toHaveText('No open tasks.');
+    expect(await panel.locator('table, select, mf-options-menu, [data-sort-urgency]').count()).toBe(
+      0,
     );
-    for (const hidden of ['attention', 'deadlines']) {
-      await expect(page.locator(`[data-panel=${hidden}]`)).toBeHidden();
-    }
-    // The matters list is still there (two matters), and no Recent activity is on the Overview any more (#909).
-    await expect(page.locator('[data-panel=health]')).toBeVisible();
-    await expect(page.locator('[data-panel=activity]')).toHaveCount(0);
+    await expect(panel.locator('[data-calendar-toggle]')).toBeVisible();
+    // No Matters section (#945) and no Recent activity on the Overview (#909).
+    await expect(page.locator('[data-panel=health], [data-panel=activity]')).toHaveCount(0);
   });
 
-  test('a section with nothing in it is one muted line when the others have work', async ({
+  test('a person with work: ONE grid, one heading, and a dropdown of counts above it, with no section that has nothing in it (#943)', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'ems');
     const a = await w.matter('Some work');
-    await w.task(a, { dueDate: '2000-01-01' }); // overdue: Needs my attention has a row; nothing is due soon
+    await w.task(a, { dueDate: '2000-01-01' }); // overdue
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(1);
-    const deadlines = page.locator('[data-panel=deadlines]');
-    await expect(deadlines).toContainText('Nothing is due in the next 7 days.');
-    // No toolbar controls in the empty panel: its heading and its sentence are all there is.
-    expect(await deadlines.locator('button, select, a, input').count()).toBe(0);
+    await expect(page.locator('[data-panel]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] a.wt-title')).toHaveCount(1);
+    await expect(page.locator('[data-prefilter]')).toBeVisible();
     await expect(page.locator('[data-all-quiet]')).toHaveCount(0);
   });
 
@@ -421,11 +437,12 @@ test.describe('Empty states are one line (#920)', () => {
       const panel = await page.locator('[data-mm-tabpanel]').boundingBox();
       expect(panel!.height, `${tab}: short`).toBeLessThan(200);
     }
-    // The Calendar keeps its one range control (another range can show something) and says so in one line.
+    // The Calendar keeps its month buttons (another month can show something) and says so in one line.
     await page.goto('/my-matters?view=calendar');
     await settled(page);
     await expect(page.locator('[data-panel=calendar] [data-empty]')).toBeVisible();
-    expect(await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input')).toBe(1);
+    await expect(page.locator('[data-cal-prev], [data-cal-next], [data-cal-today]')).toHaveCount(3);
+    expect(await drawn(page, '[data-mm-tabpanel] select, [data-mm-tabpanel] input')).toBe(0);
   });
 });
 
@@ -462,7 +479,7 @@ test.describe('The held row keeps its title (#923)', () => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
-      const group = page.locator('[data-panel=attention] [data-task]').first();
+      const group = page.locator('[data-panel=tasks] [data-task]').first();
       await expect(group).toBeVisible();
       const link = group.locator('a.wt-title').first();
       // The grid shows the reference in its own column; the title link is the title.
