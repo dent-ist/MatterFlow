@@ -116,6 +116,7 @@ const LONG_PRESS_MS = 500;
       #wrap
       class="wt-wrap"
       [mfScrollArea]="listLabel()"
+      [whileScrolling]="scrollStopWhenScrolling()"
       [resetKey]="resetKey()"
       [class.wt-dim]="loading() && rows().length > 0"
     >
@@ -714,6 +715,8 @@ export class TaskTable {
    * is for reading and opening a task, so it adds no editing controls to the page.
    */
   readonly readOnly = input(false);
+  /** The scroll box is a Tab stop only while it really scrolls (a short list inside a page that scrolls as a whole, issue #937). */
+  readonly scrollStopWhenScrolling = input(false);
   /** Quiet badges (My Matters grids): Priority is a pill only for High and Critical, Status only for On hold and At risk, an overdue Due says "Overdue 26d" without the date. */
   readonly quiet = input(false);
   protected readonly loudPriority = loudPriority;

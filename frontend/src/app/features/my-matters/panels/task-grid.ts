@@ -282,6 +282,7 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
           [dir]="dir()"
           [density]="'compact'"
           [readOnly]="true"
+          [scrollStopWhenScrolling]="true"
           [quiet]="true"
           [colWidths]="widths()"
           [widthsEditable]="false"
@@ -298,6 +299,8 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 export class TaskGrid {
   /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
   private readonly wide = viewportAtLeast(1000);
+  /** Tablet portrait (below 800 px): the Ref column gives way so the grid fits without scrolling sideways (issue #937); the title link opens the task. */
+  private readonly roomy = viewportAtLeast(800);
   protected readonly widths = computed(() => (this.wide() ? WIDE_WIDTHS : TABLET_WIDTHS));
   readonly kind = input.required<GridKind>();
   readonly filters = input.required<MmFilters>();
@@ -371,7 +374,7 @@ export class TaskGrid {
   );
 
   protected readonly columns = computed(() => [
-    'ref',
+    ...(this.roomy() ? ['ref'] : []),
     'title',
     ...(this.showMatter() ? ['matterName'] : []),
     'priority',

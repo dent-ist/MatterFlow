@@ -87,6 +87,21 @@ export interface PickOption {
       .dp__item {
         min-height: 44px;
       }
+      /* A phone: the button is as wide as the Period select under it (issue #937), its chevron at the right like a select. */
+      :host ::ng-deep mf-options-menu {
+        display: block;
+      }
+      :host ::ng-deep .om__summary {
+        display: flex;
+        width: 100%;
+      }
+      :host ::ng-deep .om__summary > span:not(.om__n) {
+        flex: 1 1 auto;
+        max-width: none;
+      }
+      :host ::ng-deep .om__summary > i {
+        order: 3;
+      }
     }
   `,
   template: `

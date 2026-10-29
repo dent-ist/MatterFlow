@@ -5,6 +5,7 @@ import {
   Directive,
   ElementRef,
   Injectable,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -173,9 +174,9 @@ export function sameListAddress(a: string, b: string, ignore: readonly string[])
   selector: '[mfScrollArea]',
   host: {
     class: 'mf-scroll-area',
-    role: 'region',
-    tabindex: '0',
-    '[attr.aria-label]': 'name()',
+    '[attr.role]': 'focusable() ? "region" : null',
+    '[attr.tabindex]': 'focusable() ? 0 : null',
+    '[attr.aria-label]': 'focusable() ? name() : null',
     '[attr.data-scrolled]': 'scrolled() ? "" : null',
     '(scroll)': 'onScroll()',
   },
@@ -196,8 +197,16 @@ export class ScrollArea {
    */
   readonly keepOn = input<readonly string[]>([]);
 
+  /**
+   * A short list inside a page that scrolls as a whole (the My Matters grids, issue #937): the region is a Tab stop only while the box really scrolls, like `mfScrollRegion`,
+   * so a grid that fits adds no empty stop to the keyboard order. Off (the default): always a focusable region, as the fixed pages need.
+   */
+  readonly whileScrolling = input(false);
+
   protected readonly name = computed(() => `${this.mfScrollArea() || 'List'}, scrollable`);
   protected readonly scrolled = signal(false);
+  private readonly overflowing = signal(false);
+  protected readonly focusable = computed(() => !this.whileScrolling() || this.overflowing());
 
   private key = this.memory.key();
   private lastUrl = this.router.url;
@@ -206,6 +215,27 @@ export class ScrollArea {
 
   constructor() {
     this.restore(this.memory.restoreTop(this.key));
+
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      if (!this.whileScrolling()) return;
+      const measure = (): void =>
+        this.overflowing.set(
+          this.el.scrollHeight > this.el.clientHeight + 1 ||
+            this.el.scrollWidth > this.el.clientWidth + 1,
+        );
+      measure();
+      const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+      resize?.observe(this.el);
+      const content = new MutationObserver(measure);
+      content.observe(this.el, { childList: true, subtree: true, characterData: true });
+      window.addEventListener('resize', measure);
+      destroyRef.onDestroy(() => {
+        resize?.disconnect();
+        content.disconnect();
+        window.removeEventListener('resize', measure);
+      });
+    });
 
     this.router.events.pipe(takeUntilDestroyed()).subscribe((e) => {
       if (!(e instanceof NavigationEnd)) return;

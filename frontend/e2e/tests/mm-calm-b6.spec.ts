@@ -49,6 +49,7 @@ test.describe('Batch 6 review fixes', () => {
         tiles.filter((t) => t.cut),
         'no tile word is cut',
       ).toEqual([]);
+
       if (size.width >= 640) {
         expect(new Set(tiles.map((t) => t.top)).size, 'one row of six').toBe(1);
         const widths = tiles.map((t) => t.width);
@@ -100,7 +101,6 @@ test.describe('Batch 6 review fixes', () => {
             .map((e) => e.textContent?.trim()),
         );
         expect(cut, 'no Due cell is cut').toEqual([]);
-        const due = page.locator('[data-panel=attention] th[data-col=due]');
         // The default order is Urgency: the Urgency control is the marked one; a chosen heading is marked like the rest.
         const urgency = page.locator('[data-panel=attention] [data-sort-urgency]');
         await expect(urgency).toHaveAttribute('aria-pressed', 'true');
@@ -117,6 +117,26 @@ test.describe('Batch 6 review fixes', () => {
           .locator('[data-panel=attention] th[data-col=title] .wt-sort .pi')
           .evaluate((e) => getComputedStyle(e).opacity);
         expect(Number(other), 'inactive arrows are faint').toBeLessThan(1);
+      }
+      // Issue #937: the grids fit without scrolling sideways at 768 px, and a grid that fits is no extra Tab stop.
+      if (size.width >= 640) {
+        const grids = await page.evaluate(() =>
+          [
+            ...document.querySelectorAll(
+              '[data-panel=attention] .wt-wrap, [data-panel=deadlines] .wt-wrap',
+            ),
+          ].map((e) => ({
+            sideways: e.scrollWidth - e.clientWidth,
+            scrolls: e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1,
+            stop: e.hasAttribute('tabindex'),
+          })),
+        );
+        expect(grids.length).toBeGreaterThan(0);
+        for (const g of grids) {
+          expect(g.sideways, 'no sideways scroll inside a grid').toBeLessThanOrEqual(1);
+          expect(g.stop, 'a grid is a Tab stop only while it scrolls').toBe(g.scrolls);
+        }
+        await expect(page.locator('[data-scroll-hint].wt-hint--show')).toHaveCount(0);
       }
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),

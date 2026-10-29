@@ -194,6 +194,16 @@ class Host {
 })
 class MasterDetailHost {}
 
+/** A short list inside a page that scrolls as a whole: its box is a Tab stop only while it really scrolls (issue #937). */
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ScrollArea],
+  template: `<div mfScrollArea="Needs my attention list" [whileScrolling]="true" data-area>
+    <p>One short row</p>
+  </div>`,
+})
+class ShortListHost {}
+
 describe('mf-fixed-page and the scroll area', () => {
   async function render() {
     TestBed.configureTestingModule({
@@ -240,6 +250,18 @@ describe('mf-fixed-page and the scroll area', () => {
     expect(area.getAttribute('role')).toBe('region');
     expect(area.getAttribute('tabindex')).toBe('0');
     expect(area.getAttribute('aria-label')).toBe('Task list, scrollable');
+    expect(area.classList.contains('mf-scroll-area')).toBe(true);
+  });
+
+  it('a short list that fits is no region and no Tab stop (whileScrolling), and becomes one while it overflows (#937)', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(ShortListHost);
+    await fixture.whenStable();
+    const area = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[data-area]')!;
+    // jsdom lays nothing out, so the box never overflows: no role, no tab stop, no name.
+    expect(area.getAttribute('role')).toBeNull();
+    expect(area.getAttribute('tabindex')).toBeNull();
+    expect(area.getAttribute('aria-label')).toBeNull();
     expect(area.classList.contains('mf-scroll-area')).toBe(true);
   });
 
