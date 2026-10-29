@@ -318,12 +318,12 @@ export const ACTIVITY_KINDS: readonly { value: string; label: string }[] = [
                 }}.
               </caption>
               <colgroup>
-                <col [style.width]="showMatter() ? '15%' : '16%'" />
-                <col [style.width]="showMatter() ? '15%' : '16%'" />
-                <col [style.width]="showMatter() ? '28%' : '30%'" />
+                <col [style.width]="showMatter() ? '14%' : '15%'" />
+                <col [style.width]="showMatter() ? '13%' : '15%'" />
+                <col [style.width]="showMatter() ? '23%' : '28%'" />
                 <col />
                 @if (showMatter()) {
-                  <col style="width: 16%" />
+                  <col style="width: 20%" />
                 }
               </colgroup>
               <thead>
