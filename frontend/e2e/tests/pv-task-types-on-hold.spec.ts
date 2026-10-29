@@ -163,7 +163,7 @@ test.describe('My Matters section toolbar (#857)', () => {
     await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const rows = page.locator('[data-panel="attention"] a.wt-title');
+    const rows = page.locator('[data-panel="tasks"] a.wt-title');
     await expect(rows).toHaveCount(3);
     // The task-type choice is the Focus, inside the one Options menu of the title row (batch 3, #894): the checklist, Save, a chip that removes it.
     await openHeaderOptions(page);
@@ -175,12 +175,13 @@ test.describe('My Matters section toolbar (#857)', () => {
     await expect(rows).toHaveCount(1);
     await page.locator('[data-focus-chip] button').click();
     await expect(rows).toHaveCount(3);
-    // The grids are sortable by their headings (#929): the active heading says so.
-    await expect(
-      page.locator(
-        '[data-panel="attention"] th[aria-sort="ascending"], [data-panel="attention"] th[aria-sort="descending"]',
-      ),
-    ).toHaveCount(1);
+    // The grid is sortable by its headings (#929): the default order is Urgency (no heading is marked); a chosen heading says so.
+    const sorted = page.locator(
+      '[data-panel="tasks"] th[aria-sort="ascending"], [data-panel="tasks"] th[aria-sort="descending"]',
+    );
+    await expect(sorted).toHaveCount(0);
+    await page.locator('[data-panel="tasks"] th[data-col=due] button.wt-sort').click();
+    await expect(sorted).toHaveCount(1);
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');

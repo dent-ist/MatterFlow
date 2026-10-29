@@ -5,7 +5,7 @@ import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 
 /**
- * My Matters tabs (epic #758, WP-PX4: #776 to #781): Overview with "Since your last visit", Deadlines, Trends and Activity. Every test
+ * My Matters tabs (epic #758, WP-PX4: #776 to #781): Overview, Breakdown, Data and Activity (the Deadlines tab became the Calendar, #929, and the Trends tab was removed, #947). Every test
  * builds the matters and tasks it needs in a world of its own, so the numbers on the page are written down here instead of read back.
  */
 const tab = (page: Page, key: string) => page.locator(`[role=tab][data-tab="${key}"]`);
@@ -37,14 +37,13 @@ test.describe('My Matters: the tab shell', () => {
       /^\s*Breakdown\s*$/,
       /^\s*Data\s*$/,
       /^\s*Activity(\s+\d+)?\s*$/,
-      /^\s*Trends\s*$/,
     ]);
     await expect(tab(page, 'overview')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('[data-mm-tabpanel]')).toHaveAttribute(
       'aria-labelledby',
       'mm-tab-overview',
     );
-    await expect(panel(page, 'health')).toBeVisible();
+    await expect(panel(page, 'tasks')).toBeVisible();
 
     await page.locator('[data-filter=role]').selectOption('primary');
     await tab(page, 'breakdown').click();
@@ -52,9 +51,10 @@ test.describe('My Matters: the tab shell', () => {
     await expect(page).toHaveURL(/role=primary/);
     await expect(panel(page, 'breakdown')).toBeVisible();
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
-    await tab(page, 'trends').click();
-    await expect(panel(page, 'trends')).toBeVisible();
-    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // the dates belong to the Calendar (#906, #929)
+    await tab(page, 'activity').click();
+    await expect(panel(page, 'activity-tab')).toBeVisible();
+    await expect(page.locator('[data-filter=range]')).toHaveCount(0); // no Dates choice anywhere (#944)
+    await expect(page.locator('[role=tab][data-tab=trends]')).toHaveCount(0); // the Trends tab is gone (#947)
 
     // Back returns to the earlier tab and puts focus on its tab.
     await page.goBack();
@@ -88,12 +88,12 @@ test.describe('My Matters: the tab shell', () => {
       await personas.named('technician'),
     ]) {
       const page = await asUser(who.username);
-      await page.goto('/my-matters?tab=trends');
+      await page.goto('/my-matters?tab=breakdown');
       await expect(page.locator('[role=tab]')).toHaveCount(0);
     }
     const page = await asUser(w.pm.username); // the Project Manager role holds Matter.AssignManagers
-    await page.goto('/my-matters?scope=all&tab=trends');
-    await expect(panel(page, 'trends')).toBeVisible();
+    await page.goto('/my-matters?scope=all&tab=breakdown');
+    await expect(panel(page, 'breakdown')).toBeVisible();
     await expect(page.locator('[data-scope="all"]')).toHaveAttribute('aria-pressed', 'true');
     await tab(page, 'activity').click();
     await expect(panel(page, 'activity-tab')).toBeVisible();
@@ -191,8 +191,8 @@ test.describe('My Matters: what changed, one line on the Activity tab with its c
   });
 });
 
-test.describe('My Matters: Calendar (the Deadlines tab moved to the Overview, #929)', () => {
-  test('the Deadlines tab address opens the Overview; the Calendar button shows a calendar of week rows with the range, every day count equals the Task Queue it opens, a phone gets the list by matter', async ({
+test.describe('My Matters: Calendar (the Deadlines tab moved to the Overview, #929; one month, #944)', () => {
+  test('the Deadlines tab address opens the Overview; the Calendar button shows one month with its tasks on their own dates, overdue ones marked, Previous and Next; a phone gets the list by day', async ({
     seed,
     personas,
     asUser,
@@ -200,11 +200,10 @@ test.describe('My Matters: Calendar (the Deadlines tab moved to the Overview, #9
     const w = await mmWorld(seed, personas, 'dl');
     const a = await w.matter('Alpha');
     const b = await w.matter('Bravo');
-    await w.task(a, { dueDate: inDays(3), title: 'A near one' });
-    await w.task(a, { dueDate: inDays(3), title: 'A near two' });
-    await w.task(a, { dueDate: inDays(20), title: 'A far' });
-    await w.task(b, { dueDate: inDays(5), title: 'B middle' });
-    await w.task(b, { dueDate: '2000-01-01', title: 'B overdue' }); // overdue work is not a deadline
+    const near = inDays(3);
+    await w.task(a, { dueDate: near, title: 'A near one' });
+    await w.task(a, { dueDate: near, title: 'A near two' });
+    await w.task(b, { dueDate: '2000-01-05', title: 'B overdue' }); // overdue work is on its own date, in its own month
     const page = await asUser(w.pm.username);
 
     // The old address opens the Overview (the address is replaced, so Back does not return to it).
@@ -213,90 +212,42 @@ test.describe('My Matters: Calendar (the Deadlines tab moved to the Overview, #9
     await expect(page).not.toHaveURL(/tab=deadlines/);
     await expect(page.getByRole('tab', { name: 'Deadlines' })).toHaveCount(0);
 
-    // The Calendar button swaps the grids for the calendar.
+    // The Calendar button swaps the grid for the calendar.
     await page.getByRole('button', { name: 'Show calendar' }).click();
     await expect(page).toHaveURL(/view=calendar/);
     const cal = panel(page, 'calendar');
     await expect(cal.locator('[data-calendar]')).toBeVisible();
-    await expect(panel(page, 'attention')).toHaveCount(0);
-    await expect(cal.getByText('Today', { exact: true })).toBeVisible();
-    // 4 weeks: three days have deadlines (two tasks on one of them); 2 weeks leaves out the task due in 20 days.
-    await expect(cal.locator('[data-day-count]')).toHaveCount(3);
-    await page.locator('#mm-range').selectOption('2w'); // the Dates control of the Calendar (#906)
-    await expect(page).toHaveURL(/range=2w/);
-    await expect(cal.locator('[data-day-count]')).toHaveCount(2);
-    await page.locator('#mm-range').selectOption('4w');
-    await expect(cal.locator('[data-day-count]')).toHaveCount(3);
-    // A count per day opens the Task Queue with the same tasks.
-    const day = cal.locator('[data-day-count]').filter({ hasText: /^2$/ });
-    await expect(day).toHaveCount(1);
-    await day.click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect(page.locator('[data-range]').first()).toContainText('of 2');
-    await page.goBack();
-    await expect(cal.locator('[data-calendar]')).toBeVisible();
+    await expect(panel(page, 'tasks')).toHaveCount(0);
+    // The month of the near tasks: both are on their date, a cell says "2 tasks due".
+    await page.goto(`/my-matters?view=calendar&month=${near.slice(0, 7)}`);
+    const cell = cal.locator(`td[data-day="${near}"]`);
+    await expect(cell.locator('[data-deadline-row]')).toHaveCount(2);
+    await expect(cell).toHaveAttribute('aria-label', /2 tasks due/);
+    await expect(cell.locator('[data-overdue-icon]')).toHaveCount(0);
+    // Past months show the overdue task on its own date, with the warning icon and the word Overdue for screen readers.
+    await page.goto('/my-matters?view=calendar&month=2000-01');
+    const late = cal.locator('td[data-day="2000-01-05"]');
+    await expect(late.locator('[data-overdue-icon]')).toHaveCount(1);
+    await expect(late.locator('.mf-sr-only')).toContainText('Overdue');
+    await expect(late).toHaveAttribute('aria-label', /1 overdue/);
+    // Previous and Next walk the months, and the title follows.
+    await page.locator('[data-cal-next]').click();
+    await expect(page).toHaveURL(/month=2000-02/);
+    await expect(cal.locator('[data-cal-month]')).toHaveText('February 2000');
+    await page.locator('[data-cal-prev]').click();
+    await expect(cal.locator('[data-cal-month]')).toHaveText('January 2000');
 
-    // A phone gets the same tasks as a list grouped by matter, not a calendar.
+    // A phone gets the same tasks as a list by day, not a calendar.
     await page.setViewportSize({ width: 375, height: 812 });
     await expect(cal.locator('[data-calendar]')).toHaveCount(0);
-    await expect(cal.locator('[data-matter-group]')).toHaveCount(2);
-    await expect(cal.locator('[data-matter-group]').first()).toContainText('(3)');
+    await expect(cal.locator('[data-list-day]')).toHaveCount(1);
+    await expect(cal.locator('[data-deadline-row]')).toHaveCount(1);
+    await expect(cal.locator('[data-overdue-icon]')).toHaveCount(1);
 
-    // "Show list" brings the grids back.
+    // "Show list" brings the grid back.
     await page.getByRole('button', { name: 'Show list' }).click();
-    await expect(panel(page, 'attention')).toBeVisible();
+    await expect(panel(page, 'tasks')).toBeVisible();
     await expect(panel(page, 'calendar')).toHaveCount(0);
-  });
-});
-
-test.describe('My Matters: Trends', () => {
-  test('charts with a text summary and a table, the approximate note on the screen, weeks 8, 12 and 26, and tables on a phone', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'tr');
-    const a = await w.matter('Alpha');
-    await w.task(a, { dueDate: '2000-01-01' });
-    await w.task(a);
-    const held = await w.task(a);
-    await seed.admin.post(`/api/v1/tasks/${held.taskId}/status`, {
-      status: 'ON_HOLD',
-      comment: 'Waiting',
-      rowVersion: held.rowVersion,
-    });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters?tab=trends');
-    const trends = panel(page, 'trends');
-    await expect(trends.locator('[data-approximate]')).toContainText('Approximate');
-    // One line while closed (PV-12): the limitations open under it.
-    await expect(trends.locator('[data-limitations] li').first()).toBeHidden();
-    await trends.locator('[data-approximate] summary').click();
-    await expect(trends.locator('[data-limitations] li').first()).toBeVisible();
-    await expect(trends.locator('svg[role=img]')).toHaveCount(2);
-    await expect(trends.locator('[data-chart=flow] [data-summary]')).toContainText(
-      '3 tasks were created',
-    );
-    await expect(trends.locator('[data-hold]')).toHaveText('1');
-    await expect(trends.locator('[data-chart=overdue] [data-table]')).toHaveCount(0);
-    await trends.locator('[data-chart=overdue] [data-show-table]').click();
-    await expect(trends.locator('[data-table=overdue] tbody tr')).toHaveCount(12);
-    await trends.locator('[data-weeks="26"]').click();
-    await expect(page).toHaveURL(/weeks=26/);
-    await expect(trends.locator('[data-table=overdue] tbody tr')).toHaveCount(26);
-    await trends.locator('[data-weeks="8"]').click();
-    await expect(trends.locator('[data-table=overdue] tbody tr')).toHaveCount(8);
-    await trends.locator('[data-how] summary').click();
-    await expect(trends.locator('[data-how]')).toContainText('Monday to Sunday');
-    // The age is a number with a link to the tasks it averages.
-    await trends.getByRole('link', { name: /open tasks/ }).click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await page.goBack();
-
-    // Below 480 px the tables replace the charts.
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(trends.locator('svg')).toHaveCount(0);
-    await expect(trends.locator('[data-table=flow]')).toBeVisible();
   });
 });
 
@@ -408,7 +359,7 @@ test.describe('My Matters: Activity (a grid, issue #946)', () => {
 });
 
 test.describe('My Matters: the first screen on a phone, and the skip links', () => {
-  test('375x812: the Overview has no "what changed" line (a badge on the Activity tab), where it is one 44 px row, and Needs my attention starts in the first screen (#818, #909)', async ({
+  test('375x812: the Overview has no "what changed" line (a badge on the Activity tab), where it is one 44 px row, and the grid starts in the first screen (#818, #909)', async ({
     seed,
     personas,
     asUser,
@@ -424,13 +375,13 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     await expect(panel(page, 'since')).toHaveCount(0);
     await expect(page.locator('[data-since-toggle], [data-since-item]')).toHaveCount(0);
     await expect(tab(page, 'activity').locator('[data-tab-badge]')).toBeVisible();
-    // The Overdue chip is in the first screen, whole.
-    const overdue = (await page.locator('[data-strip-item=overdue]').boundingBox())!;
-    expect(overdue.x + overdue.width).toBeLessThanOrEqual(375);
-    expect(overdue.y + overdue.height).toBeLessThanOrEqual(812);
-    // Needs my attention starts in the first screen.
-    const attention = (await panel(page, 'attention').locator('h2.mmp__title').boundingBox())!;
-    expect(attention.y + attention.height).toBeLessThanOrEqual(812);
+    // The pre-filter dropdown is in the first screen, whole.
+    const select = (await page.locator('select[data-prefilter]').boundingBox())!;
+    expect(select.x + select.width).toBeLessThanOrEqual(375);
+    expect(select.y + select.height).toBeLessThanOrEqual(812);
+    // The grid starts in the first screen.
+    const heading = (await panel(page, 'tasks').locator('h2.mmp__title').boundingBox())!;
+    expect(heading.y + heading.height).toBeLessThanOrEqual(812);
     expect(await axeViolations(page), 'phone').toEqual([]);
     await noHorizontalScroll(page);
     // On the Activity tab the line is one row of 44 px targets that scrolls sideways.
@@ -441,57 +392,27 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     expect(await axeViolations(page), 'phone, activity').toEqual([]);
   });
 
-  test('skip links: the first stops after the tab strip, each moves focus to its panel heading, the Tab order of the panels is unchanged (#820)', async ({
+  test('there are no skip links (one grid): after the tab strip the Tab order goes straight to the pre-filter, the Calendar button, Urgency and the rows', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'skip');
     const m = await w.matter('Alpha');
-    await w.matter('Beta'); // two matters: the matters list is on the page
+    await w.matter('Beta');
     await w.task(m, { dueDate: inDays(-2), title: 'Fell due' });
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
-    await expect(panel(page, 'health').locator('[data-health-row]').first()).toBeVisible();
-    await expect(page.locator('[data-skip-links]')).toBeAttached();
-
-    const keys = ['attention', 'deadlines', 'health'];
+    await expect(panel(page, 'tasks').locator('tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-skip-links], [data-skip-to]')).toHaveCount(0);
     await page.locator('[role=tab][aria-selected=true]').focus();
     await page.keyboard.press('Tab');
-    for (const key of keys) {
-      await expect(page.locator(`[data-skip-to=${key}]`), key).toBeFocused();
-      await expect(page.locator('[data-skip-links]')).toBeVisible(); // shown while a link has the focus
-      await page.keyboard.press('Tab');
-    }
-    // After the skip links the Tab order is what it was: the first control of Needs my attention (its Calendar button, #929).
-    await expect(page.locator('[data-panel=attention] [data-calendar-toggle]')).toBeFocused();
-
-    // Enter moves focus to the panel heading, with a visible ring; Tab goes on into that panel.
-    for (const key of keys) {
-      await page.locator('[role=tab][aria-selected=true]').focus();
-      await page.keyboard.press('Tab');
-      for (let i = 0; i < keys.indexOf(key); i++) await page.keyboard.press('Tab');
-      await expect(page.locator(`[data-skip-to=${key}]`)).toBeFocused();
-      await page.keyboard.press('Enter');
-      const heading = page.locator(`#mm-${key}-h`);
-      await expect(heading, key).toBeFocused();
-      expect(
-        await heading.evaluate((e) => getComputedStyle(e).outlineStyle !== 'none'),
-        `${key}: a visible focus ring`,
-      ).toBe(true);
-      await expect(page).toHaveURL(/\/my-matters/);
-      await page.keyboard.press('Tab');
-      const inside = await page.evaluate(
-        (k) => !!document.activeElement?.closest(`[data-panel=${k}]`),
-        key,
-      );
-      // A panel that has rows continues with them; one with nothing to focus hands the focus on, never back to the top.
-      if (key === 'attention' || key === 'health')
-        expect(inside, `${key}: Tab continues`).toBe(true);
-    }
-    // axe counts a control under the sticky header as obscured; the focus walk leaves the page scrolled, so look from the top.
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.locator('select[data-prefilter]')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-panel=tasks] [data-calendar-toggle]')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-panel=tasks] [data-sort-urgency]')).not.toBeFocused(); // one task: no Urgency control
     expect(await axeViolations(page)).toEqual([]);
   });
 });
@@ -513,7 +434,6 @@ test.describe('My Matters tabs: four sizes', () => {
       const urls: [string, string][] = [
         ['overview', '/my-matters'],
         ['calendar', '/my-matters?view=calendar'],
-        ['trends', '/my-matters?tab=trends'],
         ['breakdown', '/my-matters?tab=breakdown'],
         ['activity', '/my-matters?tab=activity'],
       ];

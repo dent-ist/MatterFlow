@@ -4,22 +4,19 @@ import { expect, test } from '../support/fixtures';
 import { openHeaderOptions } from '../support/mm-header';
 
 /**
- * Scope "All matters" and manager assignment (epic #667, #701): the switch exists only for holders of Matter.AssignManagers, re-runs every panel
- * with scope=all, adds a Project manager filter, pages the health table, keeps the strip equal to the lists it opens, and links to the Matters
- * list in selection mode ("Set project managers"). A matter nobody manages is listed like any other: no warning.
+ * Scope "All matters" and manager assignment (epic #667, #701): the switch exists only for holders of Matter.AssignManagers, re-runs the grid and the
+ * counts with scope=all, adds a Project manager filter, searches every matter of the firm in the Matter dropdown (#941), keeps the counts equal to the grid, and
+ * links to the Matters list in selection mode ("Set project managers"). A matter nobody manages is listed like any other: no warning.
  */
-const chip = (page: import('@playwright/test').Page, key: string) =>
-  page.locator(`[data-strip-item="${key}"]`);
-/** A chip's number: its accessible name starts with the count ("9 overdue"). */
-const count = async (page: import('@playwright/test').Page, key: string): Promise<number> =>
-  Number(((await chip(page, key).getAttribute('aria-label')) ?? '').split(' ')[0]);
-const total = async (page: import('@playwright/test').Page): Promise<number> => {
-  const text = await page.locator('[data-range]').first().innerText();
-  return Number(/of (\d+)/.exec(text)?.[1] ?? -1);
+type Page = import('@playwright/test').Page;
+const optionCount = async (page: Page, key: string): Promise<number> => {
+  const text = (await page.locator(`option[data-prefilter-option="${key}"]`).textContent()) ?? '';
+  const m = /\((\d+)\)\s*$/.exec(text.trim());
+  return m ? Number(m[1]) : Number.NaN;
 };
 
 test.describe('My Matters: All matters', () => {
-  test('the switch re-runs every panel, the manager filter narrows it, and the numbers equal the lists', async ({
+  test('the switch re-runs the grid and the counts, the manager filter narrows them, and the numbers equal the grid', async ({
     seed,
     personas,
     asUser,
@@ -35,82 +32,79 @@ test.describe('My Matters: All matters', () => {
     const clientId = w.world.client.clientId;
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?clientId=${clientId}`);
-    await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '1 overdue');
-    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b1\s+Open/);
-    await expect(page.locator('[data-scope=mine]')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => optionCount(page, 'overdue')).toBe(1);
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(1);
 
     await openHeaderOptions(page);
+    await expect(page.locator('[data-scope=mine]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('[data-scope=all]').click();
     await expect(page).toHaveURL(/scope=all/);
     await expect(page.locator('[data-scope=all]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    // The world's own matter (00001), mine, theirs and the orphan: four active matters of this client.
-    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b4\s+Open/);
-    await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '3 overdue');
-    expect(await count(page, 'open')).toBe(4);
-    await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(4);
+    // The world's own matter (00001, no task), mine, theirs and the orphan: four active matters of this client, four open tasks, three overdue.
+    await expect.poll(() => optionCount(page, 'open')).toBe(4);
+    expect(await optionCount(page, 'overdue')).toBe(3);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(4);
     await expect(
-      page.locator('[data-panel=health] [data-health-row]', { hasText: 'Scope orphan' }),
+      page.locator('[data-panel=tasks] tr[data-task]', { hasText: 'Scope orphan' }),
     ).toBeVisible();
     await expect(page.locator('main')).not.toContainText(
       /no (project )?manager|unmanaged|not managed/i,
     );
-    await expect(page.locator('[data-mm-strip]')).toHaveAttribute('aria-label', /all matters/);
     await expect(page.locator('main')).toContainText('All active matters, whoever manages them');
+    // There is no Matters section any more (#945).
+    await expect(page.locator('[data-panel=health], [data-all-matters]')).toHaveCount(0);
     // Role does not apply until a manager is named.
     await expect(page.locator('[data-filter=role]')).toHaveCount(0);
 
-    // The strip equals the lists it opens in the All scope.
+    // The counts equal the grid in the All scope.
     for (const key of ['open', 'overdue', 'unassigned']) {
       await page.goto(`/my-matters?scope=all&clientId=${clientId}`);
-      await expect.poll(() => count(page, key)).not.toBeNaN();
-      const n = await count(page, key);
-      await chip(page, key).click();
-      await expect.poll(() => total(page), { message: key }).toBe(n);
+      await expect.poll(() => optionCount(page, key)).not.toBeNaN();
+      const n = await optionCount(page, key);
+      const [queue] = await Promise.all([
+        page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
+        page.locator('select[data-prefilter]').selectOption(key),
+      ]);
+      expect(((await queue.json()) as { total: number }).total, key).toBe(n);
     }
-    // The matters: "All matters (4)" opens the Matters list with the same four.
-    await page.goto(`/my-matters?scope=all&clientId=${clientId}`);
-    await expect(page.locator('[data-all-matters]')).toContainText('All matters (4)');
-    await page.locator('[data-all-matters]').click();
-    await expect(page).toHaveURL(/\/matters\?/);
-    await expect.poll(() => total(page), { message: 'matters' }).toBe(4);
 
-    // The Project manager filter narrows every panel to that person's matters; the role then applies.
+    // The Project manager filter narrows the grid and the counts to that person's matters; the role then applies.
     await page.goto(`/my-matters?scope=all&clientId=${clientId}`);
     await page.getByRole('combobox', { name: 'Project manager' }).fill(w.other.displayName!);
     await page.getByRole('option', { name: w.other.displayName! }).click();
     await expect(page).toHaveURL(new RegExp(`managerId=${w.other.userId}`));
-    await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '1 overdue');
-    await expect.poll(() => count(page, 'open')).toBe(2);
-    // That person has one matter: nothing to compare, so no matters list.
-    await expect(page.locator('[data-panel=health]')).toHaveCount(0);
-    await expect(page.locator('[data-mm-strip]')).toHaveAttribute('aria-label', /project manager/);
+    await expect.poll(() => optionCount(page, 'overdue')).toBe(1);
+    await expect.poll(() => optionCount(page, 'open')).toBe(2);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(2);
     await expect(page.locator('[data-filter=role]')).toBeVisible();
     // Back to My matters clears the manager and the scope.
     await openHeaderOptions(page);
     await page.locator('[data-scope=mine]').click();
     await expect(page).not.toHaveURL(/scope=all|managerId/);
-    await expect(chip(page, 'overdue')).toHaveAttribute('aria-label', '1 overdue');
+    await expect.poll(() => optionCount(page, 'overdue')).toBe(1);
   });
 
-  test('the matters list stops at eight rows in the All scope and "All matters (N)" opens the Matters list', async ({
+  test('in the All scope the Matter dropdown searches every matter on the server and limits the page to the one chosen', async ({
     seed,
     personas,
     asUser,
   }) => {
-    test.setTimeout(240_000);
     const w = await mmWorld(seed, personas, 'all2');
-    for (let i = 0; i < 10; i++) await w.matter(`Paged ${String(i).padStart(2, '0')}`, null, null);
+    for (let i = 0; i < 3; i++) await w.matter(`Paged ${String(i).padStart(2, '0')}`, null, null);
+    const wanted = await w.matter('Needle in the haystack', null, null);
+    await w.task(wanted, { dueDate: '2000-01-01', title: 'Needle task' });
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?scope=all&clientId=${w.world.client.clientId}`);
-    await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(8);
-    await expect(
-      page.locator('[data-panel=health] [data-page], [data-panel=health] mf-pager'),
-    ).toHaveCount(0);
-    await expect(page.locator('[data-all-matters]')).toContainText('All matters (11)'); // 10 + the world's own matter
-    await page.locator('[data-all-matters]').click();
-    await expect(page).toHaveURL(/\/matters\?/);
-    await expect.poll(() => total(page)).toBe(11);
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
+    await page.locator('#mm-matter').fill('Needle');
+    await expect(page.locator('#mm-matter-list [role=option]')).toHaveCount(1);
+    await page.locator('#mm-matter-list [role=option]').click();
+    await expect(page).toHaveURL(new RegExp(`matterId=${wanted.matterId}`));
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks]')).toContainText('Needle task');
+    await expect(page.locator('#mm-matter')).toHaveValue(new RegExp('Needle in the haystack'));
   });
 
   test('Set project managers opens the Matters list in selection mode', async ({
@@ -150,7 +144,7 @@ test.describe('My Matters: All matters', () => {
     await expect(page.locator('[data-scope]')).toHaveCount(0);
     await expect(page.getByRole('combobox', { name: 'Project manager' })).toHaveCount(0);
     await expect(page.locator('[data-set-managers]')).toHaveCount(0);
-    await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing to count: no strip of zeros (#920)
+    await expect(page.locator('[data-no-matters]')).toBeVisible(); // nothing to count: one positive line (#920)
     expect(forbidden).toEqual([]);
     const api = await Api.as(plain.username);
     for (const path of ['scope=all', 'scope=mine&managerId=1']) {

@@ -6,10 +6,10 @@ import { Seeder } from '../support/seed';
 import { axeAvailable } from '../support/axe';
 
 /**
- * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), Needs my attention and Next 7 days (#693, #896), the matters list
- * with the "+ New task" of its row menu (#695, reworked in epic #893 issue #908), the activity events (#697; they moved to the Activity tab in
- * issue #909; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs in a
- * world of its own, so the numbers on the page are written down here instead of read back from the page.
+ * My Matters (epic #667, WP-PM4): the page shell and its filters (#692), the one grid of open tasks with its pre-filter dropdown (#693, #896, and the owner's
+ * rework of 2026-10-29: #942, #943), "New task" with the chosen matter (#695, #941; the Matters section of #908 is gone, #945), the activity events (#697; they
+ * moved to the Activity tab in issue #909; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs
+ * in a world of its own, so the numbers on the page are written down here instead of read back from the page.
  */
 const total = async (page: Page): Promise<number> => {
   const text = await page.locator('[data-range]').first().innerText();
@@ -17,13 +17,16 @@ const total = async (page: Page): Promise<number> => {
   return m ? Number(m[1]) : -1;
 };
 
-const cell = (page: Page, key: string) => page.locator(`[data-strip-item="${key}"]`);
-/** A chip's number: its accessible name starts with the count ("9 overdue"). */
-const cellCount = async (page: Page, key: string): Promise<number> =>
-  Number(((await cell(page, key).getAttribute('aria-label')) ?? '').split(' ')[0]);
+/** An option of the pre-filter dropdown, and the number in its words ("Overdue (9)"). */
+const option = (page: Page, key: string) => page.locator(`option[data-prefilter-option="${key}"]`);
+const optionCount = async (page: Page, key: string): Promise<number> => {
+  const text = (await option(page, key).textContent()) ?? '';
+  const m = /\((\d+)\)\s*$/.exec(text.trim());
+  return m ? Number(m[1]) : Number.NaN;
+};
 
-test.describe('My Matters: shell, filters and the count strip', () => {
-  test('every strip cell opens a list whose total equals the cell, and the numbers are the world written down', async ({
+test.describe('My Matters: shell, filters and the pre-filter counts', () => {
+  test('every option of the pre-filter filters the grid to a total that equals its count, and the numbers are the world written down', async ({
     seed,
     personas,
     asUser,
@@ -47,40 +50,30 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    await expect.poll(() => cellCount(page, 'open')).toBe(6);
-    expect(await cellCount(page, 'overdue')).toBe(1);
-    expect(await cellCount(page, 'due7')).toBe(2);
-    expect(await cellCount(page, 'unassigned')).toBe(4);
-    expect(await cellCount(page, 'onHold')).toBe(1);
-    // "Matters I manage" and "Due in 3 days" are gone from the strip; the open count says how many matters it is on.
-    await expect(page.locator('[data-strip-item="matters"], [data-strip-item="due3"]')).toHaveCount(
-      0,
-    );
-    await expect(page.locator('button[data-strip-item=open]')).toContainText(/\b6\s+Open/);
-    // The name carries the count and, for On hold, the oldest hold after it (#821).
-    await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 0 days');
-    await expect(cell(page, 'onHold')).toHaveText(/^\s*1\s+On hold\s*$/);
+    await expect.poll(() => optionCount(page, 'open')).toBe(6);
+    expect(await optionCount(page, 'overdue')).toBe(1);
+    expect(await optionCount(page, 'dueSoon')).toBe(2);
+    expect(await optionCount(page, 'unassigned')).toBe(4);
+    expect(await optionCount(page, 'onHold')).toBe(1);
+    // No tiles, no "Matters I manage": the dropdown is the one place of the counts.
+    await expect(page.locator('[data-strip-item], [data-mm-strip], .tile')).toHaveCount(0);
+    await expect(option(page, 'open')).toHaveText('All open (6)');
+    await shot(page, 'my-matters-prefilter');
 
-    const label = await page.locator('[data-mm-strip]').getAttribute('aria-label');
-    expect(label).toContain('your matters');
-    await shot(page, 'my-matters-strip');
-
-    for (const key of ['open', 'overdue', 'due7', 'unassigned', 'onHold']) {
-      await page.goto('/my-matters');
-      await expect.poll(() => cellCount(page, key)).not.toBeNaN();
-      const n = await cellCount(page, key);
-      await cell(page, key).click();
-      await expect(page).toHaveURL(/\/tasks\?/);
-      await expect.poll(() => total(page), { message: `list total for ${key}` }).toBe(n);
+    // Each choice filters the grid in place; the grid's total (the Task Queue's answer) is the count in the option.
+    for (const key of ['overdue', 'dueSoon', 'unassigned', 'onHold', 'open']) {
+      const n = await optionCount(page, key);
+      const [queue] = await Promise.all([
+        page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
+        page.locator('select[data-prefilter]').selectOption(key),
+      ]);
+      await expect(page).toHaveURL(/\/my-matters/);
+      expect(((await queue.json()) as { total: number }).total, `grid total for ${key}`).toBe(n);
+      await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(n);
     }
-    // The Matters list is one link in the matters list of the page.
-    await page.goto('/my-matters');
-    await page.locator('[data-all-matters]').click();
-    await expect(page).toHaveURL(/\/matters\?/);
-    await expect.poll(() => total(page), { message: 'list total for the matters' }).toBe(2);
   });
 
-  test('Role, Client and Dates are in the address, change every panel and survive Back', async ({
+  test('Role, Client and Matter are in the address, change the grid and the counts and survive Back', async ({
     seed,
     personas,
     asUser,
@@ -92,48 +85,37 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await w.task(asSecondary, { dueDate: inDays(30) });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect.poll(() => cellCount(page, 'open')).toBe(2);
-    await expect(page.locator('[data-health-row]')).toHaveCount(2);
+    await expect.poll(() => optionCount(page, 'open')).toBe(2);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(2);
     await page.locator('[data-filter=role]').selectOption('primary');
     await expect(page).toHaveURL(/role=primary/);
-    await expect.poll(() => cellCount(page, 'open')).toBe(1);
-    // One matter is left: there is nothing to compare, so the matters list is not drawn.
-    await expect(page.locator('[data-panel=health]')).toHaveCount(0);
-    await expect(page.locator('[data-mm-strip]')).toHaveAttribute(
-      'aria-label',
-      /primary manager only/,
-    );
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(1);
     await page.locator('[data-filter=role]').selectOption('secondary');
     await expect(page).toHaveURL(/role=secondary/);
-    await expect.poll(() => cellCount(page, 'open')).toBe(1);
-    // The Dates control belongs to the Calendar (PV-08, #929); opening it replaces the address, so Back skips it.
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
+    // The Calendar replaces the address (PV-08, #929), so Back skips it.
     await page.getByRole('button', { name: 'Show calendar' }).click();
-    await page.locator('[data-filter=range]').selectOption('2w');
-    await expect(page).toHaveURL(/range=2w/);
-    await page.locator('[data-filter=range]').selectOption('custom');
-    await expect(page.locator('[data-filter=from]')).toBeVisible();
+    await expect(page.locator('[data-panel=calendar]')).toBeVisible();
     await page.goBack();
-    await expect(page.locator('[data-filter=range]')).toHaveValue('2w');
-    await expect(page.locator('[data-filter=role]')).toHaveValue('secondary');
-    await page.goBack();
-    await expect(page.locator('[data-filter=range]')).toHaveValue('4w');
-    await expect(page.locator('[data-filter=role]')).toHaveValue('secondary');
-    await page.goBack(); // the Calendar replaced the address of the secondary filter: back to the primary one
     await expect(page.locator('[data-filter=role]')).toHaveValue('primary');
-    await expect.poll(() => cellCount(page, 'open')).toBe(1);
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
     // Clear filters
     await page.locator('[data-clear-filters]').first().click();
     await expect(page).toHaveURL(/\/my-matters$/);
-    await expect.poll(() => cellCount(page, 'open')).toBe(2);
-    // the client filter by the address
+    await expect.poll(() => optionCount(page, 'open')).toBe(2);
+    // The Matter filter by the address (issue #941): the grid and the counts follow, and the box shows the matter.
+    await page.goto(`/my-matters?matterId=${asSecondary.matterId}`);
+    await expect.poll(() => optionCount(page, 'open')).toBe(1);
+    await expect(page.locator('#mm-matter')).toHaveValue(new RegExp(asSecondary.name));
+    await expect(page.locator('[data-panel=tasks] tr[data-task]')).toHaveCount(1);
+    // The client filter by the address
     await page.goto(`/my-matters?clientId=${w.world.client.clientId}`);
-    await expect.poll(() => cellCount(page, 'open')).toBe(2);
+    await expect.poll(() => optionCount(page, 'open')).toBe(2);
     await expect(page.locator('#mm-client')).toHaveValue(new RegExp(w.world.client.name));
     await page.goto('/my-matters?clientId=99999999');
-    await expect(page.locator('[data-mm-strip]')).toHaveCount(0); // nothing counted: no strip of zeros (#920)
-    await expect(page.locator('[data-panel=health] [data-empty-kind=filtered]')).toContainText(
-      'No matters match these filters.',
-    );
+    await expect(page.locator('[data-panel=tasks] [data-empty]')).toContainText('No open tasks.');
+    await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(1);
   });
 
   test('a manager with no matters sees a positive empty state and no scolding', async ({
@@ -150,20 +132,20 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     void w;
     const page = await asUser(plain.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=health] [data-no-matters]')).toContainText(
+    await expect(page.locator('[data-no-matters]')).toContainText(
       'You are not the project manager of any matter yet.',
     );
-    await expect(page.locator('[data-panel=health]')).toContainText(
+    await expect(page.locator('[data-empty-kind=none]')).toContainText(
       'Ask a director to assign you.',
     );
-    // Nothing else is drawn: no strip of zeros, no empty cards (#920).
-    await expect(page.locator('[data-mm-strip]')).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention]')).toBeHidden();
+    // Nothing else is drawn: no dropdown of counts, no grid, no empty cards (#920).
+    await expect(page.locator('[data-prefilter]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks]')).toHaveCount(0);
     await page.locator('[data-to-my-work]').click();
     await expect(page).toHaveURL(/\/my-work/);
   });
 
-  test('panels fail and load on their own: one panel failing leaves the page and the others working', async ({
+  test('the grid and the counts fail and load on their own: the grid failing leaves the counts working', async ({
     seed,
     personas,
     asUser,
@@ -173,24 +155,23 @@ test.describe('My Matters: shell, filters and the count strip', () => {
     await w.matter('Beta');
     await w.task(m, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
-    // Needs my attention is a grid over the Task Queue (issue #929): its call fails.
-    await page.route('**/api/v1/task-queue*needsAttention=true*', (route) =>
+    // The grid is over the Task Queue (issue #929): its call fails.
+    await page.route('**/api/v1/task-queue*', (route) =>
       route.fulfill({ status: 500, body: '{}' }),
     );
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=attention] [data-panel-error]')).toContainText(
-      "Couldn't load needs my attention.",
+    await expect(page.locator('[data-panel=tasks] [data-panel-error]')).toContainText(
+      "Couldn't load open tasks.",
     );
-    await expect(page.locator('[data-panel=health] [data-health-row]')).toHaveCount(2);
-    await expect(page.locator('[data-mm-strip]')).toBeVisible();
-    await page.unroute('**/api/v1/task-queue*needsAttention=true*');
-    await page.locator('[data-panel=attention] [data-panel-retry]').click();
-    await expect(page.locator('[data-panel=attention] tr[data-task]').first()).toBeVisible();
+    await expect(option(page, 'open')).toHaveText(/\(1\)$/);
+    await page.unroute('**/api/v1/task-queue*');
+    await page.locator('[data-panel=tasks] [data-panel-retry]').click();
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible();
   });
 });
 
-test.describe('My Matters: Needs my attention and Next 7 days', () => {
-  test('one grid, rows that open the task and Back, one View all with its total, and no item about a matter nobody manages', async ({
+test.describe('My Matters: the one grid of open tasks', () => {
+  test('rows that open the task and Back, paging instead of View all, and no item about a matter nobody manages', async ({
     seed,
     personas,
     asUser,
@@ -204,43 +185,37 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     await w.task(nobody, { dueDate: '2000-01-01', title: 'On a matter without manager' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const attention = page.locator('[data-panel=attention]');
-    // The overdue task is also unassigned: it is listed once, as overdue (no tags, no "also listed" notes). The unassigned task with a date is next.
-    // The unassigned task with no date is not attention yet.
-    const rows = attention.locator('tr[data-task]');
-    await expect(rows).toHaveCount(2);
+    const grid = page.locator('[data-panel=tasks]');
+    // Every open task of the person's matters is in the one grid, in the urgency order: the overdue one, the unassigned one with a date, then the rest.
+    const rows = grid.locator('tr[data-task]');
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toContainText('Late filing');
+    await expect(rows.nth(1)).toContainText('Soon filing');
+    await expect(rows.nth(2)).toContainText('Nobody holds this');
     await expect(rows.first().locator('td[data-col=due]')).toContainText(/overdue/i);
-    // An unassigned task says so in the Assignee column; its Due cell is the day it is due.
-    await expect(rows.first().locator('td[data-col=assignee]')).toHaveText(/Unassigned/);
-    await expect(rows.nth(1).locator('td[data-col=assignee]')).toHaveText(/Unassigned/);
-    await expect(attention.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(
-      0,
-    );
-    await expect(attention).not.toContainText('Nobody holds this');
-    await expect(attention).not.toContainText('On a matter without manager');
-    await expect(attention).not.toContainText(nobody.name);
+    // An unassigned task says so in the Assignee column.
+    for (const i of [0, 1, 2])
+      await expect(rows.nth(i).locator('td[data-col=assignee]')).toHaveText(/Unassigned/);
+    await expect(grid.locator('[data-group], [data-also-tag], [data-repeated]')).toHaveCount(0);
+    await expect(grid).not.toContainText('On a matter without manager');
+    await expect(grid).not.toContainText(nobody.name);
+    await expect(grid.locator('[data-view-all]')).toHaveCount(0);
     // The row opens the task; Back returns to the page with its filters.
     await page.goto('/my-matters?role=primary');
-    await attention.locator('tr[data-task]').first().locator('a.wt-title').click();
+    await grid.locator('tr[data-task]').first().locator('a.wt-title').click();
     await expect(page).toHaveURL(new RegExp(`/tasks/${od.taskId}\\?from=my-matters`));
     await expect(page.getByRole('link', { name: /My Matters/ }).first()).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(/\/my-matters\?role=primary/);
-    // One View all, with the total of the list it opens.
-    await expect(attention.locator('[data-view-all]')).toHaveText('View all 2');
-    await attention.locator('[data-view-all]').click();
-    await expect(page).toHaveURL(/needsAttention=true/);
-    await expect.poll(() => total(page)).toBe(2);
   });
 
-  test('Next 7 days lists what falls due within a week as a grid, no range control, and View all N opens the Task Queue; the Calendar owns the range', async ({
+  test('"Due soon" lists what falls due within a week, in place, with no range control; the Calendar shows the task of another week in its month', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'dead');
     const m = await w.matter('Alpha');
-    // Assigned: an unassigned task due within a week is listed in Needs my attention and, being listed once, not here.
     const mine = { assignedUserId: w.other.userId };
     await w.task(m, { dueDate: inDays(3), title: 'Within a week', ...mine });
     await w.task(m, { dueDate: inDays(3), title: 'Same day', ...mine });
@@ -248,33 +223,23 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     await w.task(m, { dueDate: '2000-01-01', title: 'Long overdue' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const panel = page.locator('[data-panel=deadlines]');
-    await expect(panel.locator('h2')).toHaveText('Next 7 days');
-    await expect(panel.locator('tr[data-task]')).toHaveCount(2);
-    await expect(panel.locator('td[data-col=assignee]')).toHaveCount(2);
-    await expect(panel).not.toContainText('Long overdue');
-    await expect(panel).not.toContainText('Within four weeks');
-    // The section has no toolbar of its own: no 2 / 4 week buttons, no Views, no Sort menu, no Task types, no Options (the headings sort).
-    await expect(panel.locator('[data-range], select, details, button:not(.wt-sort)')).toHaveCount(
-      0,
-    );
-    await panel.locator('[data-view-all]').click();
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect(page).toHaveURL(/dueWithin=7/);
-    await expect.poll(() => total(page)).toBe(2);
-    // The Calendar owns the range: its window holds the task due in 20 days as well.
-    await page.goto('/my-matters');
-    await page.getByRole('button', { name: 'Show calendar' }).click();
-    await expect(page.locator('[data-panel=calendar] [data-day-count]')).toHaveCount(2);
+    const grid = page.locator('[data-panel=tasks]');
+    await expect(grid.locator('tr[data-task]')).toHaveCount(4);
+    await page.locator('select[data-prefilter]').selectOption('dueSoon');
+    await expect(grid.locator('tr[data-task]')).toHaveCount(2);
+    await expect(grid).not.toContainText('Long overdue');
+    await expect(grid).not.toContainText('Within four weeks');
+    await expect(grid.locator('[data-grid-status]')).toContainText('2 tasks due within 7 days');
+    // The grid has no 2 / 4 week buttons and no Views, Sort menu or Task types of its own.
+    await expect(grid.locator('[data-range], details')).toHaveCount(0);
+    // The Calendar is a month: the task due in 20 days is on its own date, in its month.
+    await page.goto(`/my-matters?view=calendar&month=${inDays(20).slice(0, 7)}`);
     await expect(page.locator('[data-panel=calendar]')).toContainText('Within four weeks');
-    // "Today" is a due-date range of one day: nothing is due today here, and the empty text is positive.
-    await page.locator('[data-filter=range]').selectOption('today');
-    await expect(page.locator('[data-panel=calendar] [data-empty]')).toContainText(
-      'No deadlines in this period.',
-    );
+    // The old "Dates" choices are gone.
+    await expect(page.locator('[data-filter=range], #mm-range')).toHaveCount(0);
   });
 
-  test('a stuck hold shows with its age and the group links to the held tasks', async ({
+  test('a stuck hold shows with its status, the On hold option counts it and filters to it', async ({
     seed,
     personas,
     asUser,
@@ -293,67 +258,18 @@ test.describe('My Matters: Needs my attention and Next 7 days', () => {
     );
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const row = page.locator('[data-panel=attention] tr[data-task]');
+    const row = page.locator('[data-panel=tasks] tr[data-task]');
     await expect(row.locator('td[data-col=status]')).toContainText(/On Hold/i);
     await expect(row).toContainText('Waiting on client');
-    await expect(cell(page, 'onHold')).toHaveAttribute('aria-label', '1 on hold, oldest 10 days');
-    // The one View all counts it, and opens the Task Queue with the same tasks.
-    await page.locator('[data-panel=attention] [data-view-all]').click();
-    await expect(page).toHaveURL(/needsAttention=true/);
-    await expect.poll(() => total(page)).toBe(1);
+    await expect.poll(() => optionCount(page, 'onHold')).toBe(1);
+    await page.locator('select[data-prefilter]').selectOption('onHold');
+    await expect(page.locator('[data-grid-status]')).toContainText('1 task on hold');
+    await expect(row).toHaveCount(1);
   });
 });
 
-test.describe('My Matters: the matters list', () => {
-  test('rows with counts, the worst first, no flag words, the matter link, and the rule behind the info button', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'health');
-    const red = await w.matter('Reddish');
-    const amber = await w.matter('Amberish');
-    const green = await w.matter('Greenish');
-    await w.matter('Quiet');
-    await w.task(red, { dueDate: '2000-01-01' });
-    await w.task(amber, { dueDate: inDays(30), assignedUserId: w.other.userId });
-    await w.task(amber, { dueDate: inDays(30) }); // unassigned
-    await w.task(green, { dueDate: inDays(30), assignedUserId: w.other.userId });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    const row = (name: string) => page.locator('[data-health-row]', { hasText: name });
-    await expect(page.locator('[data-health-row]')).toHaveCount(4);
-    // Worst first: the overdue matter, then the one with an unassigned task, then the one with a deadline, then the one with none.
-    await expect(page.locator('[data-health-row] [data-matter-link]')).toHaveText([
-      new RegExp('Reddish'),
-      new RegExp('Amberish'),
-      new RegExp('Greenish'),
-      new RegExp('Quiet'),
-    ]);
-    await expect(row('Reddish').locator('[data-overdue]')).toHaveText('1 overdue');
-    await expect(row('Greenish').locator('[data-overdue]')).toHaveText('0 overdue');
-    await expect(row('Amberish').locator('[data-unassigned]')).toHaveText('1 unassigned');
-    await expect(row('Reddish').locator('[data-at-risk]')).toHaveCount(0);
-    await expect(row('Greenish').locator('[data-unassigned], [data-at-risk]')).toHaveCount(0);
-    // No Red / Amber / Green word anywhere in the list, no table, no sort controls.
-    await expect(page.locator('[data-panel=health]')).not.toContainText(/\b(Red|Amber|Green)\b/);
-    await expect(page.locator('[data-panel=health] [data-sort], [data-health-table]')).toHaveCount(
-      0,
-    );
-    // The rule is stated once, behind the info button.
-    await expect(page.locator('[data-rule]')).toHaveCount(0);
-    await page.locator('[data-how]').click();
-    await expect(page.locator('[data-rule]')).toContainText('Worst first');
-    await expect(page.locator('[data-rule]')).toContainText('never changes the order');
-    // The matter cell is the link.
-    await row('Reddish').locator('[data-matter-link]').click();
-    await expect(page).toHaveURL(new RegExp(`/matters/${red.matterId}`));
-    await page.goBack();
-    await expect(page).toHaveURL(/\/my-matters$/);
-    await expect(page.locator('[data-health-row]')).toHaveCount(4);
-  });
-
-  test('a matter nobody manages is never flagged, listed or counted on the page of someone who manages others', async ({
+test.describe('My Matters: no Matters section, and New task with the chosen matter', () => {
+  test('a matter nobody manages is never listed or counted on the page of someone who manages others', async ({
     seed,
     personas,
     asUser,
@@ -365,11 +281,11 @@ test.describe('My Matters: the matters list', () => {
     await w.task(orphan, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no list
+    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // no Matters section any more (#945)
     await expect(page.locator('main')).not.toContainText('Orphaned');
-    // Nothing is overdue: the Overdue tile stays, muted and not red (issue #927).
-    await expect(cell(page, 'overdue')).toHaveClass(/tile--zero/);
-    await expect(cell(page, 'overdue')).not.toHaveClass(/tile--danger/);
+    // Nothing is overdue: the Overdue option says (0), muted.
+    await expect.poll(() => optionCount(page, 'overdue')).toBe(0);
+    await expect(option(page, 'overdue')).toHaveClass(/pf__zero/);
     await expect(page.locator('main')).not.toContainText(
       /no (project )?manager|unmanaged|not managed/i,
     );
@@ -379,7 +295,7 @@ test.describe('My Matters: the matters list', () => {
     { width: 1366, height: 768 },
     { width: 375, height: 812 },
   ]) {
-    test(`+ New task in the row menu opens Create task with the matter and creating the task returns to My Matters (${size.width})`, async ({
+    test(`New task with a matter chosen in the Matter filter opens Create task with it and creating the task returns to My Matters (${size.width})`, async ({
       seed,
       personas,
       asUser,
@@ -389,17 +305,19 @@ test.describe('My Matters: the matters list', () => {
       await w.matter('Other');
       const page = await asUser(w.pm.username);
       await page.setViewportSize(size);
-      await page.goto('/my-matters?role=primary');
-      const menu = page
-        .locator('[data-health-row]', { hasText: m.matterRef })
-        .locator('[data-row-actions] button');
-      await menu.scrollIntoViewIfNeeded();
+      await page.goto(`/my-matters?role=primary&matterId=${m.matterId}`);
+      let go;
       if (size.width < 640) {
-        const box = await menu.boundingBox();
+        // On a phone the button sits inside the title row's Options menu.
+        await page.locator('[data-header-options] [data-options-trigger]').click();
+        go = page.locator('[data-new-task-inline] [data-new-task-go]');
+        const box = await go.boundingBox();
         expect(box!.height, 'touch target').toBeGreaterThanOrEqual(43.5);
+      } else {
+        go = page.locator('[data-header-new-task] [data-new-task-go]');
       }
-      await menu.click();
-      await page.getByRole('menuitem', { name: '+ New task' }).click();
+      await expect(go).toHaveAccessibleName(`New task for ${m.matterRef} ${m.name}`);
+      await go.click();
       await expect(page).toHaveURL(new RegExp(`/tasks/new\\?matterId=${m.matterId}`));
       await expect(page.getByRole('heading', { name: 'Create task', level: 1 })).toBeVisible();
       // Task type first, then the form; the matter is already chosen.
@@ -409,26 +327,30 @@ test.describe('My Matters: the matters list', () => {
       await page.getByRole('textbox', { name: 'Title (required)' }).fill(title);
       await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Rita Requestor');
       await page.getByRole('button', { name: 'Create task', exact: true }).click();
-      await expect(page).toHaveURL(/\/my-matters\?role=primary$/);
+      await expect(page).toHaveURL(new RegExp(`/my-matters\\?.*matterId=${m.matterId}`));
       const made = await seed.admin.get<{
         items: { title: string; matterId: number }[];
       }>(`/api/v1/tasks?matterId=${m.matterId}&q=${encodeURIComponent(title)}`);
       expect(made.items.map((t) => t.matterId)).toEqual([m.matterId]);
-      await expect(page.locator('[data-health-row], [data-record-card]').first()).toBeVisible();
+      await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
     });
   }
 
-  test('Cancel on Create task returns to My Matters too', async ({ seed, personas, asUser }) => {
+  test('with no matter chosen New task asks for the matter itself; Cancel on Create task returns to My Matters', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
     const w = await mmWorld(seed, personas, 'cancel');
-    const m = await w.matter('Target');
+    await w.matter('Target');
     await w.matter('Other');
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await page
-      .locator('[data-health-row]', { hasText: m.matterRef })
-      .locator('[data-row-actions] button')
-      .click();
-    await page.getByRole('menuitem', { name: '+ New task' }).click();
+    const go = page.locator('[data-header-new-task] [data-new-task-go]');
+    await expect(go).toHaveAccessibleName('New task');
+    await go.click();
+    await expect(page).toHaveURL(/\/tasks\/new\?/);
+    await expect(page).not.toHaveURL(/matterId=/);
     await page.getByRole('radio', { name: new RegExp(w.world.taskType.name) }).click();
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(page).toHaveURL(/\/my-matters$/);
@@ -546,7 +468,7 @@ test.describe('My Matters: layout and accessibility', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await atEverySize(page, 'my-matters', async () => {
-      await expect(page.locator('[data-health-row], [data-record-card]').first()).toBeVisible();
+      await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
     });
   });
 });

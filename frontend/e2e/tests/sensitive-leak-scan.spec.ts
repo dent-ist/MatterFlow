@@ -149,12 +149,12 @@ async function walk(
     '/pods/work',
     '/my-matters',
     '/my-matters?scope=all',
-    // PM v2 (epic #851, PV-37): the Breakdown and Data tabs, in the default and the All matters scope, and Trends.
+    // PM v2 (epic #851, PV-37): the Breakdown and Data tabs, in the default and the All matters scope, and the Calendar month (epic #893, #944; Trends was removed, #947).
     '/my-matters?tab=breakdown',
     '/my-matters?tab=breakdown&scope=all',
     '/my-matters?tab=data',
     '/my-matters?tab=data&scope=all',
-    '/my-matters?tab=trends&scope=all',
+    '/my-matters?view=calendar&scope=all',
     '/matters',
     '/projects',
     '/assets',

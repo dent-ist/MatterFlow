@@ -7,8 +7,8 @@ import { SIZES } from '../support/screens';
 /**
  * My Matters, a calmer page: the owner's review of batch 6 (epic #893, Release 3).
  *
- *  - the six tiles are ONE horizontal row at every desktop and tablet width (a phone: three across, two rows);
- *  - the Client dropdown never runs over the next filter's label;
+ *  - the pre-filter dropdown (it replaced the six tiles, #942) is inside the screen at every width;
+ *  - the Client and Matter dropdowns stay inside their fields and never cover the next control;
  *  - the grids use quiet badges: a pill only for High and Critical priority, On hold and At risk, plain words otherwise;
  *  - the Due cell is never cut ("Overdue 26d" in full), the Matter name has room;
  *  - the sort order is visible: the active column heading is underlined and its arrow is the bold one.
@@ -16,73 +16,54 @@ import { SIZES } from '../support/screens';
 const settled = async (page: Page): Promise<void> => {
   await expect(page.locator('#mm-tab-overview')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
-  await expect(page.locator('[data-panel=attention] [data-task]').first()).toBeVisible();
+  await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
 };
 
 test.describe('Batch 6 review fixes', () => {
   for (const size of SIZES) {
-    test(`${size.width}x${size.height}: tiles, filters and grids`, async ({
-      seed,
-      personas,
-      asUser,
-    }) => {
+    test(`${size.width}x${size.height}: dropdowns and grid`, async ({ seed, personas, asUser }) => {
       const p = await pmThree(seed, personas, `b6${size.width}`);
       const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
       await settled(page);
 
-      // Tiles: one row from 640 px up, equal widths, each word whole.
-      const tiles = await page.locator('button[data-strip-item]').evaluateAll((els) =>
-        els.map((e) => {
-          const r = e.getBoundingClientRect();
-          const label = e.querySelector('.tile__l') as HTMLElement | null;
-          return {
-            top: Math.round(r.top),
-            width: Math.round(r.width),
-            cut: label ? label.scrollWidth > label.clientWidth : false,
-          };
-        }),
-      );
-      expect(tiles).toHaveLength(6);
-      expect(
-        tiles.filter((t) => t.cut),
-        'no tile word is cut',
-      ).toEqual([]);
+      // No tiles any more; the pre-filter dropdown is whole and inside the screen.
+      await expect(page.locator('button[data-strip-item], [data-mm-strip]')).toHaveCount(0);
+      const select = (await page.locator('select[data-prefilter]').boundingBox())!;
+      expect(select.x).toBeGreaterThanOrEqual(0);
+      expect(select.x + select.width).toBeLessThanOrEqual(size.width);
+      const words = await page
+        .locator('select[data-prefilter] option')
+        .evaluateAll((os) => os.map((o) => (o.textContent ?? '').trim()));
+      expect(words).toHaveLength(6);
 
-      if (size.width >= 640) {
-        expect(new Set(tiles.map((t) => t.top)).size, 'one row of six').toBe(1);
-        const widths = tiles.map((t) => t.width);
-        expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
-      } else {
-        expect(new Set(tiles.map((t) => t.top)).size, 'two rows').toBe(2);
-      }
-
-      // The Client dropdown stays inside its field (wide screens: the bar is not drawn on a phone).
+      // The Client and Matter dropdowns stay inside their fields (wide screens: the bar is not drawn on a phone).
       if (size.width >= 640) {
         const overlap = await page.evaluate(() => {
-          const client = document.querySelector('.fb__client')!.getBoundingClientRect();
-          const input = document.querySelector('#mm-client')!.getBoundingClientRect();
-          const next = document.querySelector('label[for=mm-role]')?.getBoundingClientRect();
+          const field = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+          const client = field('.fb__client');
+          const clientInput = field('#mm-client');
+          const matter = field('.fb__matter');
+          const matterInput = field('#mm-matter');
           return {
-            inside: input.right <= client.right + 0.5,
-            clear: next ? input.right <= next.left + 0.5 || next.top >= input.bottom : true,
+            clientInside: clientInput.right <= client.right + 0.5,
+            matterInside: matterInput.right <= matter.right + 0.5,
+            apart:
+              clientInput.right <= matterInput.left + 0.5 || matterInput.top >= clientInput.bottom,
           };
         });
-        expect(overlap.inside, 'the dropdown is inside its field').toBe(true);
-        expect(overlap.clear, 'the dropdown does not cover the next label').toBe(true);
+        expect(overlap.clientInside, 'the Client dropdown is inside its field').toBe(true);
+        expect(overlap.matterInside, 'the Matter dropdown is inside its field').toBe(true);
+        expect(overlap.apart, 'the two dropdowns do not cover each other').toBe(true);
       }
 
       // Quiet badges: pills only for what needs a look.
       const pills = await page.evaluate(() => {
         const out = { priority: [] as string[], status: [] as string[] };
-        for (const e of document.querySelectorAll(
-          '[data-panel=attention] mf-priority-badge, [data-panel=deadlines] mf-priority-badge',
-        ))
+        for (const e of document.querySelectorAll('[data-panel=tasks] mf-priority-badge'))
           out.priority.push((e.textContent ?? '').trim());
-        for (const e of document.querySelectorAll(
-          '[data-panel=attention] mf-status-badge, [data-panel=deadlines] mf-status-badge',
-        ))
+        for (const e of document.querySelectorAll('[data-panel=tasks] mf-status-badge'))
           out.status.push((e.textContent ?? '').trim());
         return out;
       });
@@ -94,7 +75,7 @@ test.describe('Batch 6 review fixes', () => {
         const cut = await page.evaluate(() =>
           [
             ...document.querySelectorAll(
-              '[data-panel=attention] td[data-col=due] .dc-l2, [data-panel=attention] td[data-col=due] .dc-l1',
+              '[data-panel=tasks] td[data-col=due] .dc-l2, [data-panel=tasks] td[data-col=due] .dc-l1',
             ),
           ]
             .filter((e) => (e as HTMLElement).scrollWidth > (e as HTMLElement).clientWidth)
@@ -102,30 +83,26 @@ test.describe('Batch 6 review fixes', () => {
         );
         expect(cut, 'no Due cell is cut').toEqual([]);
         // The default order is Urgency: the Urgency control is the marked one; a chosen heading is marked like the rest.
-        const urgency = page.locator('[data-panel=attention] [data-sort-urgency]');
+        const urgency = page.locator('[data-panel=tasks] [data-sort-urgency]');
         await expect(urgency).toHaveAttribute('aria-pressed', 'true');
         expect(
           await urgency.evaluate((e) => getComputedStyle(e).textDecorationLine),
           'the Urgency control is underlined',
         ).toContain('underline');
-        const due = page.locator('[data-panel=attention] th[data-col=due]');
+        const due = page.locator('[data-panel=tasks] th[data-col=due]');
         await due.locator('button.wt-sort').click();
         await expect(due).toHaveAttribute('aria-sort', /ascending|descending/);
         const mark = await due.locator('.wt-sort').evaluate((e) => getComputedStyle(e).boxShadow);
         expect(mark, 'the active heading is underlined').not.toBe('none');
         const other = await page
-          .locator('[data-panel=attention] th[data-col=title] .wt-sort .pi')
+          .locator('[data-panel=tasks] th[data-col=title] .wt-sort .pi')
           .evaluate((e) => getComputedStyle(e).opacity);
         expect(Number(other), 'inactive arrows are faint').toBeLessThan(1);
       }
       // Issue #937: the grids fit without scrolling sideways at 768 px, and a grid that fits is no extra Tab stop.
       if (size.width >= 640) {
         const grids = await page.evaluate(() =>
-          [
-            ...document.querySelectorAll(
-              '[data-panel=attention] .wt-wrap, [data-panel=deadlines] .wt-wrap',
-            ),
-          ].map((e) => ({
+          [...document.querySelectorAll('[data-panel=tasks] .wt-wrap')].map((e) => ({
             sideways: e.scrollWidth - e.clientWidth,
             scrolls: e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1,
             stop: e.hasAttribute('tabindex'),
@@ -159,7 +136,7 @@ test.describe('Batch 6 review fixes', () => {
       const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
 
-      // The Calendar view (a month of weeks on a desktop, the list by matter on a phone).
+      // The Calendar view (a month on a desktop, the list by day on a phone).
       await page.goto('/my-matters?view=calendar');
       await expect(page.locator('[data-panel=calendar]')).toBeVisible();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });

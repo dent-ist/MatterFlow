@@ -267,19 +267,6 @@ test.describe('Quick actions per matter', () => {
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.locator('[data-comment-text]')).toHaveCount(0);
     await expect(rowMenu).toBeFocused();
-
-    // My Matters: the matters list has the same menu, New task first (it is no button of its own any more, #908). With one matter there is no list.
-    await w.matter('Beta');
-    await page.goto('/my-matters');
-    const health = page.locator('[data-health-row]', { hasText: m.matterRef });
-    await expect(health.locator('[data-new-task]')).toHaveCount(0);
-    await health.locator('[data-overflow]').click();
-    await expect(page.locator('[role=menuitem]')).toHaveText([
-      /New task/,
-      /Bulk re-assign/,
-      /Add comment/,
-      /Open the matter's tasks/,
-    ]);
   });
 
   test('a person without Task.Comment or Task.Assign does not get those actions (absent, not greyed); without Task.View there is no menu', async ({

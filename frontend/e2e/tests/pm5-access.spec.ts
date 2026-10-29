@@ -63,7 +63,7 @@ const FORBIDDEN_WORDS =
   /no project manager|without a (project )?manager|not managed|unmanaged|needs? a (project )?manager|missing (project )?manager|assign a (project )?manager|warning/i;
 
 test.describe('My Matters: keyboard', () => {
-  test('Tab visits the filters, the chips, the panels in reading order, the matters list and the row menu, with the keys the app already has', async ({
+  test('Tab visits the filters, the pre-filter, the Calendar button, Urgency, Options and the rows in reading order, with the keys the app already has', async ({
     seed,
     personas,
     asUser,
@@ -76,55 +76,43 @@ test.describe('My Matters: keyboard', () => {
     await w.task(a, { dueDate: inDays(3), title: 'Keyboard soon' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
       /Options for My Matters/, // the title row's one Options menu: the scope switch and the Focus are inside it (issue #900)
-      /^button: New task$/,
-      /Matter for New task/, // the chooser of the matter New task uses (several matters)
+      /^button: New task$/, // no chooser of the matter any more: the Matter filter below is the one place (issue #941)
       /Client/,
+      /Matter/,
       /I am/,
-      /^button: \d+ overdue$/,
-      /^button: \d+ unassigned$/,
-      /^button: \d+ on hold/,
-      /^button: \d+ due soon/,
-      /^button: \d+ open tasks$/,
-      /View all/,
-      /Options for Needs my attention/,
+      /Show tasks/, // the pre-filter dropdown with the counts (issue #942)
+      /Show calendar/,
+      /Sort by urgency/,
+      /Options for Open tasks/,
       /Keyboard overdue/,
-      /View all \d+ tasks? due in the next 7 days/, // the Next 7 days grid's own link (the Deadlines tab is gone, #929)
-      /How the matters are ordered/,
-      /Keyboard alpha/,
-      /More actions for/,
     ]);
     // Evidence for the review: the stops in order (written once per run to the test output).
     test.info().annotations.push({ type: 'tab-stops', description: stops.join(' > ') });
 
-    // Enter on the row menu opens it, Enter on New task opens Create task with the matter; Back returns.
-    await page.locator('[data-health-row] [data-row-actions] button').first().focus();
+    // Enter on New task opens Create task (no matter is chosen: it asks); Back returns.
+    await page.locator('[data-header-new-task] [data-new-task-go]').focus();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('menuitem', { name: '+ New task' })).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/tasks\/new\?matterId=/);
+    await expect(page).toHaveURL(/\/tasks\/new/);
     await page.goBack();
-    await expect(page.locator('[data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
 
     // A task link from the keyboard, then Back: focus returns to the row that was left.
-    const link = page.locator('[data-panel=attention] a.wt-title').first();
+    const link = page.locator('[data-panel=tasks] a.wt-title').first();
     await link.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/tasks\/\d+/);
     await page.goBack();
-    await expect(page.locator('[data-panel=attention] a.wt-title').first()).toBeFocused();
+    await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeFocused();
 
-    // The info button opens and closes the rule from the keyboard and keeps focus.
-    const how = page.locator('[data-how]');
-    await how.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-rule]')).toBeVisible();
-    await expect(how).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-rule]')).toBeHidden();
+    // The pre-filter works with the keyboard like any select.
+    const select = page.locator('select[data-prefilter]');
+    await select.focus();
+    await select.selectOption('overdue');
+    await expect(page).toHaveURL(/show=overdue/);
   });
 
   test('no new or changed shortcut: the keys the app has still do their one job and My Matters adds none', async ({
@@ -137,7 +125,7 @@ test.describe('My Matters: keyboard', () => {
     await w.matterInOtherClient('Shortcut beta'); // a second client: the Client filter is offered
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
     // Typing in a filter is typing, not a shortcut.
     await page.locator('#mm-client').fill('mg');
     await expect(page).toHaveURL(/\/my-matters$/);
@@ -158,7 +146,7 @@ test.describe('My Matters: keyboard', () => {
 });
 
 test.describe('My Matters: axe with the menus and the sheet open', () => {
-  test('client and manager suggestions, the Role menu, the explanation and the filter sheet at four sizes', async ({
+  test('client, matter and manager suggestions, the Role menu, the pre-filter and the filter sheet at four sizes', async ({
     seed,
     personas,
     asUser,
@@ -177,7 +165,7 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
       await page.setViewportSize(size);
       await expect(
         page
-          .locator('[data-panel=health] [data-health-row], [data-panel=health] [data-record-card]')
+          .locator('[data-panel=tasks] [data-task], [data-panel=tasks] [data-record-card]')
           .first(),
       ).toBeVisible();
       const phone = size.width < 640;
@@ -202,18 +190,23 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
       expect(await axeViolations(page), `manager suggestions at ${size.width}`).toEqual([]);
       await manager.fill('');
       await manager.blur();
+      await page.locator('main h1').scrollIntoViewIfNeeded();
+      const matter = page.locator('#mm-matter');
+      await matter.fill('Axe');
+      await expect(page.getByRole('listbox').first()).toBeVisible();
+      expect(await axeViolations(page), `matter suggestions at ${size.width}`).toEqual([]);
+      await matter.fill('');
+      await matter.blur();
       if (phone) {
         expect(await axeViolations(page), 'filter sheet').toEqual([]);
         await shot(page, 'pm5-filter-sheet');
         await page.getByRole('button', { name: 'Show results' }).click();
         await expect(page.getByRole('dialog', { name: 'Filters' })).toBeHidden();
       }
-      await page.locator('[data-how]').click();
-      await expect(page.locator('[data-rule]')).toBeVisible();
-      // Axe judges what a fixed header covers: look at the page from its top.
+      // The pre-filter dropdown, open by keyboard focus, and the Calendar month buttons.
       await page.locator('main h1').scrollIntoViewIfNeeded();
-      expect(await axeViolations(page), `explanation at ${size.width}`).toEqual([]);
-      await page.locator('[data-how]').click();
+      await page.locator('select[data-prefilter]').focus();
+      expect(await axeViolations(page), `pre-filter focused at ${size.width}`).toEqual([]);
     }
   });
 });
@@ -243,7 +236,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     const page = await asUser(fx.pmA.username);
     const { refused, toastCount } = await visit(page, '/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    await expect(page.locator('[data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
     expect(refused).toEqual([]);
     expect(toastCount).toBe(0);
     const links = await page.$$eval('main a[href^="/"]', (as) =>
@@ -324,7 +317,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     });
     const page = await asUser(plain.username);
     const { refused, toastCount } = await visit(page, '/my-matters');
-    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // one matter: no matters list (#908)
+    await expect(page.locator('[data-panel=health]')).toHaveCount(0); // no Matters section at all (#945)
     await expect(page.locator('[data-scope]')).toHaveCount(0);
     expect(refused).toEqual([]);
     expect(toastCount).toBe(0);
@@ -334,7 +327,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     await expect(page.getByRole('button', { name: /Change|Add project manager/ })).toHaveCount(0);
   });
 
-  test('a matter without a manager is never a warning: Matters list, matter header, My Matters (All scope), the strip and the panels', async ({
+  test('a matter without a manager is never a warning: Matters list, matter header, My Matters (All scope), the counts and the grid', async ({
     seed,
     personas,
     asUser,
@@ -364,13 +357,12 @@ test.describe('My Matters and the manager fields: who sees what', () => {
         expect(await toasts(page).count()).toBe(0);
       }
     }
-    // Where the orphan matter shows on My Matters it counts its own overdue task and nothing else: never a warning for lacking a manager.
+    // Where the orphan matter shows on My Matters its task is a row like any other: overdue for its own date, never a warning for lacking a manager.
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?scope=all&clientId=${w.world.client.clientId}`);
-    const row = page.locator('[data-health-row]', { hasText: 'Orphan matter' });
+    const row = page.locator('[data-panel=tasks] tr[data-task]', { hasText: 'Orphan overdue' });
     await expect(row).toBeVisible();
-    await expect(row.locator('[data-overdue]')).toHaveText('1 overdue'); // because of its overdue task, and for no other reason
-    await expect(row.locator('[data-at-risk], [data-unassigned]')).toHaveCount(1); // the task has no assignee: counted as such
+    await expect(row.locator('td[data-col=due]')).toContainText(/overdue/i);
     await expect(row).not.toContainText(/manager/i);
     await shot(page, 'pm5-no-manager');
   });

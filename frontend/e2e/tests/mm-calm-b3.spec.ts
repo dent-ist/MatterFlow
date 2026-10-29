@@ -10,7 +10,7 @@ import { SIZES } from '../support/screens';
  * My Matters, a calmer page: batch 3 of epic #893.
  *
  *  - #894 one Options menu per list (Export inside), no Views / Sort / Task types toolbar; #907 Focus is the only task-type filter;
- *  - #896 Next 7 days never repeats a task; "View all N" opens the Task Queue (#929: the grids replaced the lists and the Deadlines tab);
+ *  - #896 a task is never listed twice (#929: the grids replaced the lists and the Deadlines tab; #943: ONE grid, no View all);
  *  - #897 lighter rows (matter name only with several matters, a pill only for what is unusual, one status text on the right);
  *  - #903 one column, the first task row within about 300 px at 1366x768.
  */
@@ -28,7 +28,7 @@ const firstTaskRowTop = (page: Page): Promise<number> =>
   });
 
 test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', () => {
-  test('three matters: the sections follow each other in one column, the first task row is within 300 px, no task id is listed twice', async ({
+  test('three matters: ONE grid in one column, the first task row is within 300 px, no task id is listed twice', async ({
     seed,
     personas,
     asUser,
@@ -38,16 +38,9 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const boxes = await Promise.all(
-      ['attention', 'deadlines', 'health'].map((k) =>
-        page.locator(`[data-panel=${k}]`).boundingBox(),
-      ),
-    );
-    for (const b of boxes) expect(b, 'every section is drawn').not.toBeNull();
-    expect(Math.abs(boxes[0]!.x - boxes[1]!.x)).toBeLessThan(2);
-    expect(boxes[1]!.y).toBeGreaterThanOrEqual(boxes[0]!.y + boxes[0]!.height - 2);
-    expect(boxes[2]!.y).toBeGreaterThanOrEqual(boxes[1]!.y + boxes[1]!.height - 2);
-    // The Client / Role bar is drawn here (three clients, both roles) and the first task row is still within 300 px at 1366x768.
+    await expect(page.locator('[data-panel]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks]')).toBeVisible();
+    // The Client / Matter / Role bar is drawn here (three clients, both roles) and the first task row is still within 300 px at 1366x768.
     await expect(page.locator('[data-mm-filters]')).toBeVisible();
     expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(300); // the "since" line is on the Activity tab now
     const hrefs = await page
@@ -66,9 +59,9 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const rows = page.locator('[data-panel=attention] tbody tr[data-task]');
+    const rows = page.locator('[data-panel=tasks] tbody tr[data-task]');
     expect(await rows.count()).toBeGreaterThan(0);
-    await expect(page.locator('[data-panel=attention] td[data-col=matterName]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] td[data-col=matterName]')).toHaveCount(0);
     for (const box of await rows.evaluateAll((els) =>
       els.map((e) => e.getBoundingClientRect().height),
     ))
@@ -77,15 +70,21 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     const link = rows.first().locator('a.wt-title');
     await expect(link).toHaveText(/\S/);
     await expect(rows.first().locator('[data-inline-trigger]')).toHaveCount(0);
-    // No toolbar: the section's only controls are the Calendar button, View all and Options (and the sortable headings); the Next 7 days grid has no Options.
+    // No toolbar: the section's only controls are the pre-filter, the Calendar button, Urgency and Options (and the sortable headings); no View all.
     await expect(
-      page.locator('[data-types-trigger], [data-sort], [data-views], [data-range]'),
+      page.locator(
+        '[data-types-trigger], [data-sort], [data-views], [data-range], [data-view-all]',
+      ),
     ).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention] mf-options-menu')).toHaveCount(1);
-    await expect(page.locator('[data-panel=deadlines] mf-options-menu')).toHaveCount(0);
-    await expect(
-      page.locator('[data-panel=deadlines] button:not(.wt-sort), [data-panel=deadlines] select'),
-    ).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] mf-options-menu')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] select')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] button:not(.wt-sort)')).toHaveCount(
+      await page
+        .locator(
+          '[data-panel=tasks] [data-calendar-toggle], [data-panel=tasks] [data-sort-urgency], [data-panel=tasks] [data-options-trigger], [data-panel=tasks] [data-clear-prefilter], [data-panel=tasks] [data-prefilter-retry]',
+        )
+        .count(),
+    );
   });
 
   test('Options opens with Export, closes with Escape and returns the focus; a click outside closes it', async ({
@@ -97,20 +96,20 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     const page = await asUser(p.pm.username);
     await page.goto('/my-matters');
     await settled(page);
-    const trigger = page.locator('[data-panel=attention] [data-options-trigger]');
-    await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeHidden();
+    const trigger = page.locator('[data-panel=tasks] [data-options-trigger]');
+    await expect(page.locator('[data-panel=tasks] [data-export=csv]')).toBeHidden();
     await trigger.click();
-    await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeVisible();
-    await expect(page.locator('[data-panel=attention] [data-export=copy]')).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-export=csv]')).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-export=copy]')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeHidden();
+    await expect(page.locator('[data-panel=tasks] [data-export=csv]')).toBeHidden();
     await expect(trigger).toBeFocused();
     await trigger.click();
     await page.locator('h1').click();
-    await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeHidden();
+    await expect(page.locator('[data-panel=tasks] [data-export=csv]')).toBeHidden();
   });
 
-  test('Focus is the one task-type filter: it narrows Needs my attention and Next 7 days, and there is no per-list Task types control', async ({
+  test('Focus is the one task-type filter: it narrows the grid and its counts, and there is no per-list Task types control', async ({
     seed,
     personas,
     asUser,
@@ -123,14 +122,16 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(2);
+    await expect(page.locator('[data-panel=tasks] a.wt-title')).toHaveCount(2);
     await openHeaderOptions(page);
     await page.locator(`[data-focus-option="${second.id}"]`).check();
     await page.locator('[data-focus-save]').click();
-    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] a.wt-title')).toHaveCount(1);
     await expect(page.locator('[data-types-trigger]')).toHaveCount(0);
+    // The counts in the dropdown follow the Focus, so they stay the totals of the grid.
+    await expect(page.locator('option[data-prefilter-option=open]')).toHaveText(/\(1\)/);
     await page.locator('[data-focus-chip] button').click();
-    await expect(page.locator('[data-panel=attention] a.wt-title')).toHaveCount(2);
+    await expect(page.locator('[data-panel=tasks] a.wt-title')).toHaveCount(2);
   });
 
   for (const size of SIZES) {
@@ -146,8 +147,8 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
       await page.goto('/my-matters');
       await settled(page);
       expect(await axeViolations(page), `closed at ${size.width}`).toEqual([]);
-      await page.locator('[data-panel=attention] [data-options-trigger]').click();
-      await expect(page.locator('[data-panel=attention] [data-export=csv]')).toBeVisible();
+      await page.locator('[data-panel=tasks] [data-options-trigger]').click();
+      await expect(page.locator('[data-panel=tasks] [data-export=csv]')).toBeVisible();
       expect(await axeViolations(page), `Options open at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
       await page.goto('/my-matters?view=calendar');
@@ -155,7 +156,7 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
       await expect(
         page
           .locator(
-            '[data-panel=calendar] [data-calendar], [data-panel=calendar] [data-matter-group]',
+            '[data-panel=calendar] [data-calendar], [data-panel=calendar] [data-list-day], [data-panel=calendar] [data-empty]',
           )
           .first(),
       ).toBeVisible();

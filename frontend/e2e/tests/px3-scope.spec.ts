@@ -239,18 +239,28 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
       await page.locator(`[data-quick-views] [data-view="${view}"]`).getAttribute('data-count'),
     );
 
-  test('Overdue, Unassigned, On hold and Due cells: My matters pressed, chip counts equal the list, All and My matters follow, Back restores', async ({
+  /** The Task Queue address the Overview's tiles used to open (the tiles are gone since 2026-10-29, #942): the same filters, as a plain link. */
+  const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
+  const link = {
+    overdue: `/tasks?managedByMe=true&${OPEN}&overdue=true&sort=due&dir=asc`,
+    unassigned: `/tasks?managedByMe=true&${OPEN}&unassigned=true`,
+    due7: `/tasks?managedByMe=true&${OPEN}&dueWithin=7`,
+    onHold: '/tasks?managedByMe=true&status=ON_HOLD',
+    open: `/tasks?managedByMe=true&${OPEN}`,
+  };
+
+  test('Overdue, Unassigned, On hold and Due links: My matters pressed, chip counts equal the list, All and My matters follow, Back restores', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await world(seed, personas);
     const page = await asUser(w.pm.username);
+    // The Overview's pre-filter counts the same 2 overdue (the dropdown replaced the tiles); the Task Queue link carries the same filters.
     await page.goto('/my-matters');
-    const strip = page.locator('[data-mm-strip]');
-    await expect(strip.locator('[data-strip-item=overdue]')).toContainText('2');
+    await expect(page.locator('option[data-prefilter-option=overdue]')).toHaveText('Overdue (2)');
 
-    await strip.locator('[data-strip-item=overdue]').click();
+    await page.goto(link.overdue);
     await expect(page).toHaveURL(/\/tasks\?/);
     await expect(page).toHaveURL(/scope=mine/);
     await expect(page).not.toHaveURL(/managedByMe/);
@@ -276,36 +286,14 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     await expect(page).toHaveURL(/scope=all/);
     expect(await pressed(page, 'all')).toBe('true');
 
-    // The other cells of the strip: the same agreement.
-    for (const cell of ['unassigned', 'due7', 'onHold', 'open']) {
-      await page.goto('/my-matters');
-      const item = page.locator(`[data-mm-strip] [data-strip-item=${cell}]`);
-      await expect(item).toBeVisible();
-      await item.click();
+    // The other links: the same agreement.
+    for (const cell of ['unassigned', 'due7', 'onHold', 'open'] as const) {
+      await page.goto(link[cell]);
       await expect(page).toHaveURL(/scope=mine/);
       expect(await pressed(page, 'mine'), cell).toBe('true');
       await expect(page.locator('[data-quick-views]')).toBeVisible();
       await expect.poll(() => count(page, 'allOpen'), cell).toBe(3);
     }
-  });
-
-  test('the Matters list: the All matters link opens on My matters with the scope in the address', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await world(seed, personas);
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    await expect(page.locator('[data-all-matters]')).toContainText('All matters (2)');
-    await page.locator('[data-all-matters]').click();
-    await expect(page).toHaveURL(/\/matters/);
-    await expect(page).toHaveURL(/scope=mine/);
-    expect(await pressed(page, 'mine')).toBe('true');
-    await expect(page.locator('tbody tr')).toHaveCount(2);
-    await page.locator('[data-scope="all"]').click();
-    await expect(page).toHaveURL(/scope=all/);
-    await expect.poll(async () => page.locator('tbody tr').count()).toBeGreaterThan(1);
   });
 
   test('Overdue links open the oldest overdue task first, the Due header says so, Priority is one click away, a plain link keeps the default order (#817)', async ({
@@ -315,8 +303,7 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
   }) => {
     const w = await world(seed, personas);
     const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    await page.locator('[data-mm-strip] [data-strip-item=overdue]').click();
+    await page.goto(link.overdue);
     await expect(page).toHaveURL(/sort=due/);
     await expect(page).toHaveURL(/dir=asc/);
     const rows = page.locator('tbody tr[data-task]');
@@ -329,12 +316,11 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     await expect(page).not.toHaveURL(/sort=due/);
     await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
 
-    // The Needs my attention panel's one View all (the two overdue tasks are all that needs attention here): most urgent first, so the oldest overdue first as well.
+    // The Overview's grid itself (the urgency order, #935) puts the oldest overdue first as well; it has no View all any more (#943).
     await page.goto('/my-matters');
-    await page.locator('[data-panel=attention] [data-view-all]').click();
-    await expect(page).toHaveURL(/sort=attention/);
-    await expect(page).toHaveURL(/needsAttention=true/);
-    await expect(rows.first()).toContainText('Older overdue A');
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toContainText(
+      'Older overdue A',
+    );
 
     // A Task Queue link of any other kind keeps the default order (a bare /tasks restores the view last used, sort included).
     await page.goto('/tasks?overdue=true&status=NEW&status=IN_PROGRESS&status=ON_HOLD');
@@ -343,15 +329,14 @@ test.describe('My Matters links open the Task Queue on My matters', () => {
     await expect(page.locator('th[data-col=due]')).toHaveAttribute('aria-sort', 'none');
   });
 
-  test('the Task Queue opened from the strip: axe 0 and no sideways scroll at four sizes', async ({
+  test('the Task Queue opened from an Overview link: axe 0 and no sideways scroll at four sizes', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await world(seed, personas);
     const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    await page.locator('[data-mm-strip] [data-strip-item=overdue]').click();
+    await page.goto(link.overdue);
     await expect(page.locator('tbody tr').first()).toBeVisible();
     for (const size of SIZES) {
       await page.setViewportSize(size);

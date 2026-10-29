@@ -5,9 +5,9 @@ import { mmWorld } from '../support/my-matters-fixtures';
 import { SIZES, noHorizontalScroll } from '../support/screens';
 
 /**
- * Adding work from the first screen of My Matters (PM experience follow-up #814): a "New task" control in the page header (the matters the
- * person manages, the last one used first) and a "Recently used" row of task types in the chooser. The click counts are the ones the review
- * counted (7 clicks and a 2,000 px scroll before).
+ * Adding work from the first screen of My Matters (PM experience follow-up #814): a "New task" button in the page header, which uses the matter chosen
+ * in the Matter filter when exactly one is chosen and otherwise asks (issue #941; the chooser "Matter: ..." of #900 is gone), and a "Recently used" row of
+ * task types in the chooser. The click counts are the ones the review counted (7 clicks and a 2,000 px scroll before).
  */
 async function setup(
   seed: Parameters<typeof mmWorld>[0],
@@ -47,10 +47,11 @@ test.describe('Add work from My Matters', () => {
     expect(box.y + box.height, 'New task is on the first screen').toBeLessThan(
       page.viewportSize()!.height,
     );
-    // No matter used yet: the Matter chooser picks the matter for New task (the last one used is chosen next time).
-    await click(control.getByRole('button', { name: /Matter for New task/ }));
-    await click(page.getByRole('menuitem', { name: new RegExp(`^${alpha.matterRef}`) }));
-    await expect(page).toHaveURL(/\/my-matters/); // choosing only picks the matter
+    // The Matter filter chooses the matter (it limits the page too); New task then uses it.
+    await expect(control.getByRole('button', { name: /^New task$/ })).toBeVisible();
+    await click(page.locator('#mm-matter'));
+    await click(page.locator('#mm-matter-list [role=option]').filter({ hasText: alpha.matterRef }));
+    await expect(page).toHaveURL(new RegExp(`matterId=${alpha.matterId}`));
     await click(control.getByRole('button', { name: /^New task for / }));
     await expect(page).toHaveURL(new RegExp(`/tasks/new\\?matterId=${alpha.matterId}`));
     await expect(page.locator('[data-recent-types]')).toHaveCount(0); // nothing used yet
@@ -60,7 +61,7 @@ test.describe('Add work from My Matters', () => {
     await page.getByRole('textbox', { name: 'Title (required)' }).fill('First task of the type');
     await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Jane Doe');
     await click(page.getByRole('button', { name: 'Create task', exact: true }));
-    await expect(page).toHaveURL(/\/my-matters/);
+    await expect(page).toHaveURL(new RegExp(`/my-matters\\?.*matterId=${alpha.matterId}`)); // the page comes back with the matter still chosen
     // The focus returns to the control.
     await expect(page.locator('[data-new-task-go]')).toBeFocused();
     console.log(`first task: ${clicks} clicks from the landing page`);
@@ -87,7 +88,7 @@ test.describe('Add work from My Matters', () => {
     expect(made.items.map((t) => t.matterId)).toEqual([alpha.matterId]);
   });
 
-  test('the Matter chooser lists the matters I manage and only picks the matter for New task; Another matter opens Create task with its own search; Cancel comes back with the focus', async ({
+  test('with no matter chosen New task asks for the matter itself (its own search); with one chosen it opens Create task with that matter; Cancel comes back with the focus', async ({
     seed,
     personas,
     asUser,
@@ -95,35 +96,23 @@ test.describe('Add work from My Matters', () => {
     const { w, alpha, bravo } = await setup(seed, personas, 'othermatter');
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const chooser = page
-      .locator('[data-header-new-task]')
-      .getByRole('button', { name: /Matter for New task/ });
-    await expect(chooser).toContainText('Matter: choose');
-    await chooser.click();
-    const items = page.getByRole('menuitem');
-    await expect(items).toHaveCount(3); // Alpha, Bravo, Another matter
-    await expect(items.last()).toContainText('Another matter');
-    await page.getByRole('menuitem', { name: new RegExp(`^${bravo.matterRef}`) }).click();
-    // Picking a matter opens nothing and filters nothing (owner decision Q6): the page stays, the chooser names the matter.
-    await expect(page).toHaveURL(/\/my-matters$/);
-    await expect(chooser).toContainText(`Matter: ${bravo.name}`.slice(0, 24));
+    // There is no chooser of the matter beside New task any more.
+    await expect(page.locator('[data-header-new-task]').getByRole('button')).toHaveCount(1);
     const go = page.locator('[data-new-task-go]');
     await expect(go).toHaveText('New task');
-    await expect(go).toHaveAccessibleName(new RegExp(`^New task for ${bravo.matterRef}`));
+    await expect(go).toHaveAccessibleName('New task');
     await go.click();
-    await expect(page).toHaveURL(new RegExp(`matterId=${bravo.matterId}`));
+    await expect(page).toHaveURL(/\/tasks\/new\?returnTo=/);
+    await expect(page).not.toHaveURL(/matterId=/);
     await page.getByRole('radio').first().click(); // Cancel is on the form
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL(/\/my-matters/);
-    // Bravo is the last matter used now: the focus is back on New task and the chooser lists it as the current one.
     await expect(go).toBeFocused();
-    await chooser.click();
-    await expect(
-      page.getByRole('menuitem', { name: new RegExp(`^${bravo.matterRef}`) }),
-    ).toHaveAttribute('aria-current', 'true');
-    await page.getByRole('menuitem', { name: /Another matter/ }).click();
-    await expect(page).toHaveURL(/\/tasks\/new\?returnTo=/);
-    await expect(page).not.toHaveURL(/matterId=/);
+    // With Bravo chosen in the Matter filter, New task opens Create task with Bravo.
+    await page.goto(`/my-matters?matterId=${bravo.matterId}`);
+    await expect(go).toHaveAccessibleName(`New task for ${bravo.matterRef} ${bravo.name}`);
+    await go.click();
+    await expect(page).toHaveURL(new RegExp(`matterId=${bravo.matterId}`));
     expect(alpha.matterId).not.toBe(bravo.matterId);
   });
 
@@ -136,12 +125,12 @@ test.describe('Add work from My Matters', () => {
     // The second Project Manager manages nothing here.
     const page = await asUser(w.other.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=health]')).toBeVisible();
+    await expect(page.locator('[data-no-matters]')).toBeVisible();
     await expect(page.locator('[data-header-new-task]')).toHaveCount(0);
   });
 
   for (const size of SIZES) {
-    test(`axe 0 and no sideways scroll at ${size.width}x${size.height}: the control, its menu and the chooser`, async ({
+    test(`axe 0 and no sideways scroll at ${size.width}x${size.height}: the control, the Options menu and the chooser of task types`, async ({
       seed,
       personas,
       asUser,
@@ -150,34 +139,26 @@ test.describe('Add work from My Matters', () => {
       const { w, alpha, type } = await setup(seed, personas, `axe${size.width}`);
       const page = await asUser(w.pm.username);
       await page.setViewportSize(size);
-      await page.goto('/my-matters');
+      await page.goto(`/my-matters?matterId=${alpha.matterId}`);
       const phone = size.width < 640;
-      // A phone has the matters in the one Options menu of the title row (issue #922); a wide screen has the Matter chooser beside New task.
+      // A phone has New task in the one Options menu of the title row (issue #922); a wide screen has the button in the title row.
       const trigger = phone
         ? page.locator('[data-header-options] [data-options-trigger]')
-        : page
-            .locator('[data-header-new-task]')
-            .getByRole('button', { name: /Matter for New task/ });
+        : page.locator('[data-new-task-go]');
       await expect(trigger).toBeVisible();
       const box = (await trigger.boundingBox())!;
       expect(box.y + box.height, 'on the first screen').toBeLessThan(size.height);
       if (phone) expect(box.height).toBeGreaterThanOrEqual(44);
       expect(await axeViolations(page), 'closed').toEqual([]);
-      await trigger.click();
-      if (phone) await expect(page.locator('[data-new-task-inline]')).toBeVisible();
-      else await expect(page.getByRole('menu')).toBeVisible();
-      expect(await axeViolations(page), 'menu open').toEqual([]);
-      await noHorizontalScroll(page);
-      if (phone)
-        await page
-          .locator('[data-new-task-inline]')
-          .getByRole('button', { name: new RegExp(alpha.matterRef) })
-          .click();
-      else {
-        // The chooser only picks the matter; New task opens Create task with it.
-        await page.getByRole('menuitem', { name: new RegExp(`^${alpha.matterRef}`) }).click();
-        await page.locator('[data-new-task-go]').click();
+      if (phone) {
+        await trigger.click();
+        await expect(page.locator('[data-new-task-inline]')).toBeVisible();
+        expect(await axeViolations(page), 'menu open').toEqual([]);
       }
+      await noHorizontalScroll(page);
+      if (phone) await page.locator('[data-new-task-inline] [data-new-task-go]').click();
+      else await trigger.click();
+      await expect(page).toHaveURL(new RegExp(`matterId=${alpha.matterId}`));
       await page.getByRole('radio', { name: new RegExp(type.name) }).click();
       await page.getByRole('textbox', { name: 'Title (required)' }).fill(`Axe ${size.width}`);
       await page.getByRole('textbox', { name: 'Requestor name (required)' }).fill('Rita');

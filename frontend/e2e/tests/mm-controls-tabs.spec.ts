@@ -8,14 +8,14 @@ import { SIZES } from '../support/screens';
 /**
  * My Matters layout stability (issues #824, #825).
  *
- * #824: every control of the filter row (Client, Role, Clear filters) has the same height and the same top and bottom edge, at the
- * four widths (on a phone the controls are in the Filters sheet); the Dates controls of the Deadlines tab (#906) are as high as one another.
- * The Client and Role controls are only drawn for a person whose matters have several clients and both roles, so these tests use the
+ * #824: every control of the filter row (Client, Matter, Role, Clear filters) has the same height and the same top and bottom edge, at the
+ * four widths (on a phone the controls are in the Filters sheet); the month buttons of the Calendar (#944) are as high as one another.
+ * The Client, Matter and Role controls are only drawn for a person whose matters have several clients and both roles, so these tests use the
  * three-matter persona (`pmThree`).
  * #825: the tab strip stays at exactly the same top (y) on all four tabs: with data and with none, while loading, with an error, after a
  * reload and on a deep link.
  */
-const TABS = ['overview', 'breakdown', 'data', 'activity', 'trends'] as const;
+const TABS = ['overview', 'breakdown', 'data', 'activity'] as const;
 type Tab = (typeof TABS)[number];
 const url = (tab: Tab, extra = ''): string =>
   `/my-matters?${tab === 'overview' ? '' : `tab=${tab}`}${extra}`;
@@ -86,7 +86,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       const page = await asUser(p.pm.username);
       await page.setViewportSize({ width: size.width, height: size.height });
 
-      // Overview: Client, Role and Clear filters (a non-default role makes Clear filters appear).
+      // Overview: Client, Matter, Role and Clear filters (a non-default role makes Clear filters appear).
       await page.goto('/my-matters?role=primary');
       const phone = size.width < 640;
       let scope = page.locator('body');
@@ -99,6 +99,7 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       const prefix = phone ? '[role=dialog] ' : '';
       const row = async (): Promise<Measure[]> => [
         await measure(page, `${prefix}#mm-client`, 'Client'),
+        await measure(page, `${prefix}#mm-matter`, 'Matter'),
         await measure(page, `${prefix}#mm-role`, 'Role'),
         await measure(page, `${prefix}[data-clear-filters]`, 'Clear filters'),
       ];
@@ -109,18 +110,19 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       if (!phone) expectSameBox(all, `${size.width} px (row)`);
       if (phone) await page.getByRole('button', { name: 'Show results' }).click();
 
-      // The Dates controls live in the Calendar (they are never in the bar): one height, also with the custom range's From / To.
-      await page.goto(`/my-matters?view=calendar&role=primary&range=custom`);
-      await expect(page.locator('#mm-from')).toBeVisible();
-      await expect(page.locator('[data-mm-filters] #mm-range')).toHaveCount(0);
+      // The month buttons of the Calendar (they are never in the bar): one height, and the Dates choices are gone.
+      await page.goto(`/my-matters?view=calendar&role=primary`);
+      await expect(page.locator('[data-cal-prev]')).toBeVisible();
+      await expect(page.locator('[data-mm-filters] #mm-range, #mm-range')).toHaveCount(0);
       await still(page);
-      const dates = [
-        await measure(page, '#mm-range', 'Dates'),
-        await measure(page, '#mm-from', 'From'),
-        await measure(page, '#mm-to', 'To'),
+      const months = [
+        await measure(page, '[data-cal-prev]', 'Previous'),
+        await measure(page, '[data-cal-next]', 'Next'),
+        await measure(page, '[data-cal-today]', 'Today'),
       ];
-      for (const m of dates) expect(m.height, `${m.tag} height`).toBeCloseTo(dates[0].height, 1);
-      if (!phone) expectSameBox(dates, `${size.width} px (custom dates)`);
+      for (const m of months) expect(m.height, `${m.tag} height`).toBeCloseTo(months[0].height, 1);
+      expect(months[0].height).toBeGreaterThanOrEqual(phone ? 44 : 32);
+      if (!phone) expectSameBox(months, `${size.width} px (month buttons)`);
 
       await noHorizontalScroll(page);
       if (axeAvailable()) {
@@ -146,9 +148,10 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       await expect(input).toHaveValue(new RegExp(p.clients[0].name.slice(0, 12)));
       await still(page);
       const chosen = await measure(page, `${prefix}#mm-client`, 'Chosen client');
+      const matter = await measure(page, `${prefix}#mm-matter`, 'Matter');
       const role = await measure(page, `${prefix}#mm-role`, 'Role');
       const clear = await measure(page, `${prefix}[data-clear-filters]`, 'Clear filters');
-      expectSameBox([role, chosen, clear], `${size.width} px (chosen client)`);
+      expectSameBox([role, chosen, matter, clear], `${size.width} px (chosen client)`);
     });
   }
 
@@ -216,13 +219,13 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
         await settled(page, tab);
         tops.set(`reload ${tab}`, await stripTop(page));
       }
-      // The same filters (Client + Role + a custom range) on every tab.
+      // The same filters (Role) on every tab.
       for (const tab of TABS) {
-        await page.goto(url(tab, '&role=primary&range=custom&from=2026-01-01&to=2026-12-31'));
+        await page.goto(url(tab, '&role=primary'));
         await settled(page, tab);
         tops.set(`filtered ${tab}`, await stripTop(page));
       }
-      // The strip is where it is on every tab; a filter that adds a line to the row (a custom range) moves it, but alike on every tab.
+      // The strip is where it is on every tab; a filter that adds a line to the row moves it, but alike on every tab.
       for (const group of ['deep|click|reload', 'filtered']) {
         const entries = [...tops].filter(([k]) => new RegExp(`^(${group}) `).test(k));
         const first = entries[0][1];
@@ -262,7 +265,6 @@ test.describe('My Matters: filter row and tab strip are stable', () => {
       'Breakdown',
       'Data',
       'Activity',
-      'Trends',
     ]);
   });
 

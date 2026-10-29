@@ -5,10 +5,9 @@ import { expect, test } from '../support/fixtures';
 import { SIZES, shot } from '../support/screens';
 
 /**
- * Phone and tablet layout of My Matters (epic #667, #700; #818; epic #893 batch 2): at 375 px the filters are one "Filters (n)" button with a sheet, the strip is a
- * wrapping row of chips with every count (Overdue included) in the first screen, the panels follow the reading order of the plan, the matters list is cards of two lines with a
- * 44 px row menu, Needs my attention is one ranked list of five rows (the events left the Overview in #909; the Workload panel was removed, #826), and the first screen shows the
- * strip and the first panel. From 640 px the lower panels are two columns.
+ * Phone and tablet layout of My Matters (epic #667, #700; #818; epic #893 and the owner's rework of 2026-10-29): at 375 px the filters are one "Filters (n)" button with a sheet, the
+ * pre-filter dropdown (it replaced the tiles, #942) and the first card are on the first screen, the grid is cards (25 a page, #943), and the Matters section is gone (#945). The
+ * events left the Overview in #909; the Workload panel was removed, #826.
  */
 /** No page-level sideways scroll once the layout has settled after a resize (polled: the table measures itself on the next frame). */
 const noHorizontalScroll = async (page: Page): Promise<void> => {
@@ -29,7 +28,7 @@ const y = async (page: Page, selector: string): Promise<number> => {
 };
 
 test.describe('My Matters on a phone and a tablet', () => {
-  test('phone: the first screen shows the strip and the first panel; panels in reading order; cards; no sideways scroll', async ({
+  test('phone: the first screen shows the dropdown and the first card; cards; no sideways scroll; the Filters sheet holds Client, Matter and Role', async ({
     seed,
     personas,
     asUser,
@@ -43,30 +42,25 @@ test.describe('My Matters on a phone and a tablet', () => {
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=health] [data-health-row]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] li[data-task]').first()).toBeVisible();
     await shot(page, 'my-matters-phone');
     // Filters: one button; its sheet holds every filter.
     const filtersButton = page.locator('[data-filters-open]');
     await expect(filtersButton).toHaveText(/Filters/);
     await expect(page.locator('[data-filter=role]')).toHaveCount(0);
     expect((await filtersButton.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    // The strip is six tiles in two columns by three rows on a phone (issue #927): all six inside the page width, every one a 44 px target.
-    const strip = page.locator('[data-mm-strip]');
-    const box = (await strip.boundingBox())!;
-    expect(box.height).toBeLessThanOrEqual(150);
-    expect(box.x + box.width).toBeLessThanOrEqual(375);
-    // Every tile is drawn, also at zero (this person has one overdue task and none at risk).
-    for (const key of ['overdue', 'atRisk', 'unassigned', 'onHold', 'due7', 'open']) {
-      const cell = (await page.locator(`[data-strip-item=${key}]`).boundingBox())!;
-      expect(cell.x, `${key} starts inside the page`).toBeGreaterThanOrEqual(0);
-      expect(cell.x + cell.width, `${key} ends inside the page`).toBeLessThanOrEqual(375);
-      expect(cell.y + cell.height, `${key} is on the first screen`).toBeLessThanOrEqual(812);
-      expect(cell.height, `${key} is a 44 px target`).toBeGreaterThanOrEqual(43.5);
-    }
-    // The first screen (375x812) shows the whole strip and the heading of the first panel; Needs my attention starts in it.
-    const attention = (await page.locator('[data-panel=attention] h2.mmp__title').boundingBox())!;
-    expect(attention.y + attention.height).toBeLessThanOrEqual(812);
-    expect(box.y + box.height).toBeLessThanOrEqual(812);
+    // No tiles: the dropdown of counts is a 44 px target inside the page width and on the first screen, with the first card under it.
+    await expect(page.locator('[data-strip-item], [data-mm-strip]')).toHaveCount(0);
+    const select = (await page.locator('select[data-prefilter]').boundingBox())!;
+    expect(select.x).toBeGreaterThanOrEqual(0);
+    expect(select.x + select.width).toBeLessThanOrEqual(375);
+    expect(select.height).toBeGreaterThanOrEqual(43.5);
+    const heading = (await page.locator('[data-panel=tasks] h2.mmp__title').boundingBox())!;
+    expect(heading.y + heading.height).toBeLessThanOrEqual(812);
+    const card = (await page.locator('[data-panel=tasks] li[data-task]').first().boundingBox())!;
+    expect(card.y + card.height, 'the first card is whole on the first screen').toBeLessThanOrEqual(
+      812,
+    );
     // The one-line description would only be cut off: it is kept for screen readers and takes no room.
     const description = (await page.locator('[data-page-description]').boundingBox())!;
     expect(description.height).toBeLessThanOrEqual(1);
@@ -79,23 +73,14 @@ test.describe('My Matters on a phone and a tablet', () => {
     await page.locator('[data-header-options] [data-options-trigger]').click();
     await expect(page.locator('[data-header-options] [data-new-task-inline]')).toBeVisible();
     await page.keyboard.press('Escape');
-    // Reading order: attention, matters, deadlines.
-    const order = await Promise.all(
-      ['attention', 'deadlines', 'health'].map((p) => y(page, `[data-panel=${p}]`)),
-    );
-    expect(order).toEqual([...order].sort((p, q) => p - q));
-    // Cards of two lines, each with a 44 px row menu (New task is in it).
-    const card = page.locator('[data-panel=health] [data-health-row]').first();
-    const menu = (await card.locator('[data-row-actions] button').boundingBox())!;
-    expect(menu.height).toBeGreaterThanOrEqual(43.5);
-    await expect(card).toContainText('overdue');
-    await expect(card.locator('[data-new-task]')).toHaveCount(0);
-    await expect(page.locator('[data-health-table]')).toHaveCount(0);
+    // No Matters section under the grid.
+    await expect(page.locator('[data-panel=health], [data-health-row]')).toHaveCount(0);
     await noHorizontalScroll(page);
     // The sheet.
     await filtersButton.click();
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet.locator('[data-filter=role]')).toBeVisible();
+    await expect(sheet.locator('#mm-matter')).toBeVisible();
     await sheet.locator('[data-filter=role]').selectOption('primary');
     await expect(page).toHaveURL(/role=primary/);
     expect(await axeViolations(page), 'filter sheet open at 375').toEqual([]);
@@ -103,34 +88,35 @@ test.describe('My Matters on a phone and a tablet', () => {
     await expect(filtersButton).toHaveText(/Filters \(1\)/);
   });
 
-  test('phone: Needs my attention is five cards at most, each with its title, matter and due, and "View all N"', async ({
+  test('phone: the grid is cards, each with its title, matter and due; all of them on one page of 25, no View all', async ({
     seed,
     personas,
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'lay2');
     const a = await w.matter('Layout many');
-    await w.matter('Layout many two'); // several matters: the matter's name is on each row (a matter named on every row says nothing for one)
+    await w.matter('Layout many two'); // several matters: the matter's name is on each card (a matter named on every row says nothing for one)
     for (let i = 0; i < 7; i++)
       await w.task(a, { dueDate: `2000-01-0${i + 1}`, title: `Layout task ${i}` });
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
-    const attention = page.locator('[data-panel=attention]');
+    const grid = page.locator('[data-panel=tasks]');
     // The shared table is cards on a phone (#929): a title, the client and matter, and the Due cell that says overdue.
-    await expect(attention.locator('li[data-task]')).toHaveCount(5);
-    for (const item of await attention.locator('li[data-task]').all()) {
+    await expect(grid.locator('li[data-task]')).toHaveCount(7);
+    for (const item of await grid.locator('li[data-task]').all()) {
       await expect(item.locator('a.wt-title')).toBeVisible();
       await expect(item.locator('[data-card-matter]')).toBeVisible();
       await expect(item.locator('[data-col=due]')).toContainText(/overdue/i);
     }
-    await expect(attention.locator('[data-view-all]')).toHaveText('View all 7');
+    await expect(grid.locator('[data-view-all]')).toHaveCount(0);
+    await expect(page.locator('mf-pager')).toHaveCount(0); // 7 of 25: no page control
     // The events are not on the Overview.
     await expect(page.locator('[data-panel=activity], [data-activity-row]')).toHaveCount(0);
     await noHorizontalScroll(page);
   });
 
-  test('tablet: one column (Needs my attention, then Next 7 days, then the matters), and a matter is one line', async ({
+  test('tablet: one column, the grid fits without sideways scroll', async ({
     seed,
     personas,
     asUser,
@@ -142,23 +128,14 @@ test.describe('My Matters on a phone and a tablet', () => {
     const page = await asUser(w.pm.username);
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/my-matters');
-    await expect(page.locator('[data-health-row]').first()).toBeVisible();
-    const [attention, deadlines, health] = await Promise.all([
-      page.locator('[data-panel=attention]').boundingBox(),
-      page.locator('[data-panel=deadlines]').boundingBox(),
-      page.locator('[data-panel=health]').boundingBox(),
-    ]);
-    // No two-column grid at any width (issue #903): the sections follow each other and share one left edge.
-    expect(Math.abs(deadlines!.x - attention!.x)).toBeLessThan(2);
-    expect(deadlines!.y).toBeGreaterThanOrEqual(attention!.y + attention!.height - 2);
-    expect(health!.y).toBeGreaterThanOrEqual(deadlines!.y + deadlines!.height - 2);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-panel]')).toHaveCount(1);
     await shot(page, 'my-matters-tablet');
     await noHorizontalScroll(page);
-    // A matter is one line at 768 px and at 1366 px: the name does not wrap.
     for (const width of [768, 1366]) {
       await page.setViewportSize({ width, height: 900 });
-      const row = (await page.locator('[data-health-row]').first().boundingBox())!;
-      expect(row.height, `a matter row at ${width}`).toBeLessThanOrEqual(48);
+      const row = (await page.locator('[data-panel=tasks] tr[data-task]').first().boundingBox())!;
+      expect(row.height, `a task row at ${width}`).toBeLessThanOrEqual(48);
     }
   });
 
@@ -179,7 +156,7 @@ test.describe('My Matters on a phone and a tablet', () => {
       await page.setViewportSize(size);
       await expect(
         page
-          .locator('[data-panel=health] [data-health-row], [data-panel=health] [data-record-card]')
+          .locator('[data-panel=tasks] [data-task], [data-panel=tasks] [data-record-card]')
           .first(),
       ).toBeVisible();
       expect(await axeViolations(page), `page at ${size.width}`).toEqual([]);
@@ -187,15 +164,13 @@ test.describe('My Matters on a phone and a tablet', () => {
       await shot(page, 'my-matters');
       if (size.width < 640) {
         const small = await page.evaluate(() =>
-          Array.from(document.querySelectorAll<HTMLElement>('main a[href], main button'))
+          Array.from(
+            document.querySelectorAll<HTMLElement>('main a[href], main button, main select'),
+          )
             .filter((el) => {
               const r = el.getBoundingClientRect();
               return (
-                r.width > 0 &&
-                r.height > 0 &&
-                r.height < 44 &&
-                !el.closest('[data-mm-strip]') &&
-                !el.classList.contains('rc-name')
+                r.width > 0 && r.height > 0 && r.height < 44 && !el.classList.contains('rc-name')
               );
             })
             .map(

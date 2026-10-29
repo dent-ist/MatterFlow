@@ -81,7 +81,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
   out['my-matters/summary?scope=all'] = await get('/api/v1/my-matters/summary?scope=all');
   out['my-matters/deadlines'] = await get('/api/v1/my-matters/deadlines');
   out['my-matters/workload'] = await get('/api/v1/my-matters/workload');
-  out['my-matters/trends'] = await get('/api/v1/my-matters/trends');
+  out['my-matters/calendar'] = await get('/api/v1/my-matters/calendar'); // the Overview's Calendar (#944; the trends endpoint was removed, #947)
   out['my-matters/activity'] = await get('/api/v1/my-matters/activity');
   out['my-matters/since-last-visit'] = await get('/api/v1/my-matters/since-last-visit');
   out['matters/{id}/overview'] = await get(`/api/v1/matters/${fx.m.primary.matterId}/overview`);
@@ -94,7 +94,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'Matters', 'Tasks', 'Assets', 'Clients', 'Projects', 'My Work'];
-const FOUR_TABS = ['Overview', 'Breakdown', 'Data', 'Activity', 'Trends']; // the Data tab (#870) is offered with Asset.View
+const FOUR_TABS = ['Overview', 'Breakdown', 'Data', 'Activity']; // the Data tab (#870) is offered with Asset.View
 
 test.describe('Permission matrix of the Project Manager views', () => {
   test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, four tabs, the full Overview and header menu, every endpoint', async ({
@@ -164,7 +164,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
       'my-matters/summary?scope=all',
       'my-matters/deadlines',
       'my-matters/workload',
-      'my-matters/trends',
+      'my-matters/calendar',
       'my-matters/activity',
       'my-matters/since-last-visit',
       'task-queue?managedByMe',
@@ -414,12 +414,11 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 250);
     evidence('my-matters-overview', '1366', result);
     expectGoodStops('my matters', { stops: result.stops, left: true }, 6);
-    // The skip links are the first stops after the tab strip (#820): three links (the events left the Overview, #909), each with a name and a visible focus.
+    // There are no skip links (one grid, #943): the first stop after the tab strip is the pre-filter dropdown, then the Calendar button.
     const tabAt = result.stops.findIndex((s) => s.role === 'tab');
-    expect(result.stops.slice(tabAt + 1, tabAt + 4).map((s) => s.name)).toEqual([
-      'Needs my attention',
-      'Next 7 days',
-      'Matters',
+    expect(result.stops.slice(tabAt + 1, tabAt + 3).map((s) => s.name)).toEqual([
+      'Show tasks',
+      'Show calendar',
     ]);
     expect(result.left, 'the whole page was walked').toBe(true);
     const tabStopsInStrip = result.stops.filter((s) => s.role === 'tab');
@@ -494,7 +493,7 @@ test.describe('Reduced motion and focus after a change', () => {
       '/my-matters',
       '/my-matters?view=calendar',
       '/my-matters?tab=workload', // the removed Workload tab: an old link opens Overview
-      '/my-matters?tab=trends',
+      '/my-matters?tab=breakdown',
       '/my-matters?tab=activity',
       '/matters',
       '/tasks',
@@ -525,7 +524,7 @@ test.describe('Reduced motion and focus after a change', () => {
       '/tasks',
       '/assets',
       '/my-matters',
-      '/my-matters?tab=trends',
+      '/my-matters?tab=breakdown',
       `/matters/${fx.m.primary.matterId}`,
     ]) {
       await page.goto(url);

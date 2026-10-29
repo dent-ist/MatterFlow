@@ -8,7 +8,7 @@ import { TaskDetailPage } from '../pages/task-detail.page';
 
 /**
  * PM v2 lanes B, C and F (epic #851): the on-hold reason in the UI (#877), At risk (#878), the Breakdown tab (#862), Focus (#858), the Overview
- * first screen (#859) and the demoted Trends tab (#863). Numbers are written down, not read back: each test builds its own matters and tasks.
+ * first screen (#859; the Trends tab, #863, was removed on 2026-10-29, #947). Numbers are written down, not read back: each test builds its own matters and tasks.
  */
 const SIZES = [
   { name: '1920x1080', width: 1920, height: 1080 },
@@ -136,10 +136,11 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
 
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const cell = page.locator('[data-strip-item="atRisk"]');
-    await expect(cell).toHaveAttribute('aria-label', '1 at risk');
-    await cell.click();
-    await expect(page).toHaveURL(/atRisk=true/);
+    // The At risk option of the pre-filter counts it and filters the grid to it in place (the tiles are gone, #942).
+    const atRisk = page.locator('option[data-prefilter-option="atRisk"]');
+    await expect(atRisk).toHaveText('At risk (1)');
+    await page.locator('select[data-prefilter]').selectOption('atRisk');
+    await expect(page).toHaveURL(/show=atRisk/);
     const row = page.locator(`tr[data-task="${risky.taskNumber}"]`);
     await expect(row).toBeVisible();
     await expect(row.locator('[data-at-risk]')).toContainText('At risk');
@@ -204,7 +205,7 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
     await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    const rows = page.locator('[data-panel="attention"] a.wt-title');
+    const rows = page.locator('[data-panel="tasks"] a.wt-title');
     await expect(rows).toHaveCount(3);
 
     await openHeaderOptions(page);
@@ -243,13 +244,13 @@ test.describe('At risk, the Breakdown tab and Focus', () => {
   });
 });
 
-test.describe('Overview first screen and Trends (#859, #863)', () => {
-  test('Needs my attention is above the fold, nothing is listed twice, the flag says why, Trends is last and one line', async ({
+test.describe('Overview first screen (#859; Trends was removed, #947)', () => {
+  test('the grid is above the fold, nothing is listed twice, the tabs are four and have no Trends', async ({
     seed,
     personas,
     asUser,
   }) => {
-    test.slow(); // four sizes with axe on two tabs
+    test.slow(); // four sizes with axe
     const w = await mmWorld(seed, personas, 'ov');
     const a = await w.matter('Alpha');
     const both = await w.task(a, { dueDate: '2000-01-01' }); // overdue and unassigned
@@ -259,13 +260,12 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
     for (const size of SIZES) {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/my-matters');
-      const heading = page.locator('[data-panel="attention"] h2.mmp__title');
+      const heading = page.locator('[data-panel="tasks"] h2.mmp__title');
       await expect(heading).toBeVisible();
       const box = await heading.boundingBox();
-      expect(
-        box!.y + box!.height,
-        `Needs my attention above the fold at ${size.name}`,
-      ).toBeLessThan(size.height);
+      expect(box!.y + box!.height, `the grid above the fold at ${size.name}`).toBeLessThan(
+        size.height,
+      );
       await noSidewaysScroll(page, `Overview at ${size.name}`);
       await clean(page, `Overview at ${size.name}`);
     }
@@ -274,13 +274,14 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
     await page.goto('/my-matters');
     const rowsOfBoth = page.locator(`a.wt-title[href^="/tasks/${both.taskId}"]`);
     await expect(rowsOfBoth).toHaveCount(1);
-    await expect(page.locator('[data-panel="attention"] td[data-col=due]').first()).toContainText(
+    await expect(page.locator('[data-panel="tasks"] td[data-col=due]').first()).toContainText(
       /overdue/i,
     );
-    // The Dates control is in the Calendar only (the Deadlines tab moved there, #929).
-    await expect(page.locator('[data-filter="range"]')).toBeHidden();
+    // There is no Dates choice any more: the Calendar is a month with Previous, Next and Today (#944).
+    await expect(page.locator('[data-filter="range"]')).toHaveCount(0);
     await page.goto('/my-matters?view=calendar');
-    await expect(page.locator('[data-filter="range"]')).toBeVisible();
+    await expect(page.locator('[data-filter="range"]')).toHaveCount(0);
+    await expect(page.locator('[data-cal-prev]')).toBeVisible();
 
     const tabs = await page.locator('[role=tab]').allTextContents();
     // (The Activity tab may carry a small number: the changes since the last visit.)
@@ -289,19 +290,10 @@ test.describe('Overview first screen and Trends (#859, #863)', () => {
       'Breakdown',
       'Data', // PM v2 (#870): needs Asset.View, which the Project Manager role holds
       'Activity',
-      'Trends',
     ]);
+    // The old address opens the Overview.
     await page.goto('/my-matters?tab=trends');
-    await expect(page).toHaveTitle(/My Matters: Trends - /);
-    const approx = page.locator('[data-approximate]');
-    await expect(approx).toContainText('Approximate');
-    await expect(approx).not.toHaveAttribute('open', '');
-    for (const size of SIZES) {
-      await page.setViewportSize({ width: size.width, height: size.height });
-      await page.goto('/my-matters?tab=trends');
-      await expect(approx).toBeVisible();
-      await noSidewaysScroll(page, `Trends at ${size.name}`);
-      await clean(page, `Trends at ${size.name}`);
-    }
+    await expect(page).toHaveURL(/\/my-matters$/);
+    await expect(page).toHaveTitle(/My Matters - /);
   });
 });

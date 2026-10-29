@@ -11,7 +11,7 @@ import { SIZES } from '../support/screens';
  *  - #919 one toggle pattern (the scope switch and the tab toggles share one component, one look, one keyboard behaviour);
  *  - #922 the phone's first screen shows tasks (the first task row within 420 px at 375x812);
  *  - #921 one error banner and one Retry per page; a skeleton without toolbars;
- *  - #899 the Client and Role filters share one label style and plain wording;
+ *  - #899 the Role filter has plain wording; Client and Matter have no visible label (#941) and the same height;
  *  - #898 plain sort labels and the server's Priority order;
  *  - #901 the same right-hand detail pattern in every list.
  */
@@ -74,7 +74,6 @@ test.describe('One toggle pattern (#919)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     for (const [tab, group, words] of [
       ['breakdown', 'Matters shown', ['By matter', 'All together']],
-      ['trends', 'Weeks shown', ['8 weeks', '12 weeks', '26 weeks']],
     ] as const) {
       await page.goto(`/my-matters?tab=${tab}`);
       const g = page.locator(`[role=group][aria-label="${group}"]`);
@@ -112,7 +111,7 @@ test.describe('One toggle pattern (#919)', () => {
     const header = page.locator('[data-header-options] [data-options-trigger]');
     await expect(header).toContainText('Options');
     expect(await header.evaluate((e) => Math.round(e.getBoundingClientRect().height))).toBe(32);
-    const options = page.locator('[data-panel=attention] [data-options-trigger]');
+    const options = page.locator('[data-panel=tasks] [data-options-trigger]');
     expect(
       await options.evaluate((e) => Math.round(e.getBoundingClientRect().height)),
     ).toBeLessThanOrEqual(32);
@@ -133,7 +132,7 @@ test.describe('One toggle pattern (#919)', () => {
       const p = await pmThree(seed, personas, `b4x${size.width}`);
       const page = await asUser(p.pm.username);
       await page.setViewportSize(size);
-      for (const tab of ['', '?tab=breakdown', '?tab=trends']) {
+      for (const tab of ['', '?tab=breakdown']) {
         await page.goto(`/my-matters${tab}`);
         await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 20_000 });
         expect(await axeViolations(page), `${tab || 'overview'} at ${size.width}`).toEqual([]);
@@ -167,7 +166,7 @@ test.describe('Phone first screen (#922)', () => {
       expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(420);
       // The shared table is cards on a phone (issue #929), taller than the old one-line rows: the first card is whole on the first screen.
       const visibleRows = await page
-        .locator('[data-panel=attention] li[data-task]')
+        .locator('[data-panel=tasks] li[data-task]')
         .evaluateAll(
           (rows) => rows.filter((r) => r.getBoundingClientRect().bottom <= innerHeight).length,
         );
@@ -201,17 +200,18 @@ test.describe('Phone first screen (#922)', () => {
         return out;
       });
       expect(small).toEqual([]);
-      // The strip is three columns by two rows of 44 px tiles (issue #927): 2 x 44 plus the gap.
-      const strip = await page.locator('[data-mm-strip]').boundingBox();
-      expect(strip!.height).toBeLessThanOrEqual(110);
-      // All six tiles are on a phone, each a 44 px target.
-      await expect(page.locator('[data-mm-strip] .tile')).toHaveCount(6);
+      // The pre-filter dropdown is on the first screen and is a 44 px target (the tiles are gone, #942).
+      await expect(page.locator('[data-mm-strip], .tile')).toHaveCount(0);
+      const prefilter = (await page.locator('select[data-prefilter]').boundingBox())!;
+      expect(prefilter.height).toBeGreaterThanOrEqual(43.5);
+      expect(prefilter.y + prefilter.height).toBeLessThanOrEqual(812);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         ),
       ).toBeLessThanOrEqual(0);
       if (name === 'three matters') {
+        // One grid and nothing under it: the page is far shorter than the two grids and the matters list were.
         expect(
           await page.evaluate(() => document.documentElement.scrollHeight),
         ).toBeLessThanOrEqual(2400);
@@ -219,13 +219,13 @@ test.describe('Phone first screen (#922)', () => {
     });
   }
 
-  test('375x812: a long matter name wraps and the client name under it never overlaps it', async ({
+  test('375x812: a long matter name wraps inside its card and never widens the page', async ({
     seed,
     personas,
     asUser,
   }) => {
     const p = await pmThree(seed, personas, 'b4long');
-    // A matter whose name wraps to two lines on a phone (the case batch 3 found overlapping the client's name).
+    // A matter whose name wraps to two lines on a phone.
     const long = await seed.matter({
       client: { clientId: p.clients[0].clientId },
       number: '09999',
@@ -236,24 +236,29 @@ test.describe('Phone first screen (#922)', () => {
       secondaryManagerId: null,
       rowVersion: long.rowVersion,
     });
+    await seed.task(
+      {
+        matter: { matterId: long.matterId },
+        taskType: p.world.taskType,
+        workflow: p.world.workflow,
+      },
+      { title: `On the long matter ${p.token}`, dueDate: '2000-01-01' },
+    );
     const page = await asUser(p.pm.username);
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
     await settled(page);
-    const rows = page.locator('[data-health-row]');
-    await expect(rows.first()).toBeVisible();
-    let wrapped = 0;
-    for (const row of await rows.all()) {
-      const link = await row.locator('[data-matter-link]').boundingBox();
-      if (link!.height > 50) wrapped++;
-      const client = row.locator('[data-client]');
-      if ((await client.count()) === 0) continue;
-      const c = await client.boundingBox();
-      expect(c!.y, 'the client name starts below the matter name').toBeGreaterThanOrEqual(
-        link!.y + link!.height - 1,
-      );
-    }
-    expect(wrapped, 'the fixture has a matter name that wraps on a phone').toBeGreaterThan(0);
+    const card = page.locator('[data-panel=tasks] li[data-task]', {
+      hasText: `On the long matter ${p.token}`,
+    });
+    await expect(card).toBeVisible();
+    const box = (await card.boundingBox())!;
+    expect(box.x + box.width, 'the card is inside the screen').toBeLessThanOrEqual(376);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
   });
 });
 
@@ -278,23 +283,26 @@ test.describe('Loading and error (#921)', () => {
     const page = await asUser(p.pm.username);
     await page.setViewportSize({ width: 1366, height: 768 });
     await fail(page, '**/api/v1/my-matters/**');
-    await fail(page, '**/api/v1/task-queue*'); // the two grids ask the Task Queue (#929)
+    await fail(page, '**/api/v1/task-queue*'); // the grid asks the Task Queue (#929, #943)
     await page.goto('/my-matters');
     await expect(page.locator('[data-page-error]')).toHaveCount(1);
     await expect(page.locator('[data-page-error]')).toContainText("Couldn't load My Matters.");
     await expect(retries(page)).toHaveCount(1);
-    expect(await page.locator('[data-panel-notloaded]').count()).toBeGreaterThanOrEqual(3);
-    await expect(page.locator('[data-panel-error], [data-strip-error]')).toHaveCount(0);
+    expect(await page.locator('[data-panel-notloaded]').count()).toBeGreaterThanOrEqual(1);
+    await expect(
+      page.locator('[data-panel-error], [data-prefilter-error], [data-prefilter-retry]'),
+    ).toHaveCount(0);
     if (axeAvailable()) expect(await axeViolations(page), 'with the banner').toEqual([]);
     await page.unroute('**/api/v1/my-matters/**');
     await page.unroute('**/api/v1/task-queue*');
     await retries(page).click();
     await expect(page.locator('[data-page-error]')).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention] tr[data-task]').first()).toBeVisible();
-    await expect(page.locator('[data-mm-strip] .tile').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible();
+    await expect(page.locator('select[data-prefilter]')).toBeVisible();
+    await expect(page.locator('option[data-prefilter-option=open]')).toHaveText(/\(\d+\)$/);
   });
 
-  test('one section failing keeps its own message and Retry, no banner; a strip failure does not move the tabs', async ({
+  test('one request failing keeps its own message and Retry, no banner; a failure of the counts does not move the tabs', async ({
     seed,
     personas,
     asUser,
@@ -307,16 +315,16 @@ test.describe('Loading and error (#921)', () => {
     const tabsY = (await page.locator('#mm-tab-overview').boundingBox())!.y;
     await fail(page, '**/api/v1/my-matters/summary*');
     await page.reload();
-    await expect(page.locator('[data-strip-error]')).toHaveCount(1);
+    await expect(page.locator('[data-prefilter-error]')).toHaveCount(1);
+    // The dropdown still works without numbers.
+    await expect(page.locator('select[data-prefilter]')).toBeVisible();
     await expect(page.locator('[data-page-error]')).toHaveCount(0);
     await expect(retries(page)).toHaveCount(1);
     expect((await page.locator('#mm-tab-overview').boundingBox())!.y).toBe(tabsY);
     await page.unroute('**/api/v1/my-matters/summary*');
-    // Only the Needs my attention request fails (Next 7 days asks the same endpoint with another filter): that section alone says so.
+    // Only the grid's request fails: that section alone says so, and the counts above it are left alone.
     await page.route(
-      (url) =>
-        url.pathname.endsWith('/api/v1/task-queue') &&
-        url.searchParams.get('needsAttention') === 'true',
+      (url) => url.pathname.endsWith('/api/v1/task-queue'),
       (route) =>
         route.fulfill({
           status: 500,
@@ -325,8 +333,8 @@ test.describe('Loading and error (#921)', () => {
         }),
     );
     await page.reload();
-    await expect(page.locator('[data-panel=attention] [data-panel-error]')).toHaveCount(1);
-    await expect(page.locator('[data-panel=attention] [data-panel-retry]')).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] [data-panel-error]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] [data-panel-retry]')).toBeVisible();
     await expect(page.locator('[data-page-error]')).toHaveCount(0);
   });
 
@@ -376,25 +384,25 @@ test.describe('Loading and error (#921)', () => {
       });
       expect(cls, `layout shift at ${size.width}: ${shifts.join(' | ')}`).toBeLessThan(0.05);
     }
-    // While a list is still loading it shows no toolbar (no Options, no View all).
-    await page.route('**/api/v1/task-queue*needsAttention=true*', async (route) => {
+    // While the grid is still loading it shows no toolbar (no Options, no Urgency).
+    await page.route('**/api/v1/task-queue*', async (route) => {
       await new Promise((r) => setTimeout(r, 2500));
       await route.continue();
     });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=attention] [data-loading]')).toHaveCount(1);
-    await expect(page.locator('[data-panel=attention] mf-options-menu')).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention] [data-view-all]')).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention] tr[data-task]').first()).toBeVisible({
+    await expect(page.locator('[data-panel=tasks] [data-loading]')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] mf-options-menu')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] [data-sort-urgency]')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.locator('[data-panel=attention] mf-options-menu')).toHaveCount(1);
+    await expect(page.locator('[data-panel=tasks] mf-options-menu')).toHaveCount(1);
   });
 });
 
 test.describe('Client and Role filters (#899)', () => {
-  test('one label style, equal heights, plain wording "I am: Primary or secondary / Primary / Secondary"', async ({
+  test('Client and Matter have no visible label and one height; Role keeps its label and plain wording "I am: Primary or secondary / Primary / Secondary"', async ({
     seed,
     personas,
     asUser,
@@ -406,14 +414,11 @@ test.describe('Client and Role filters (#899)', () => {
     await settled(page);
     const bar = page.locator('[data-mm-filters]');
     await expect(bar).toBeVisible();
-    const style = (sel: string) =>
-      bar.locator(sel).evaluate((el) => {
-        const s = getComputedStyle(el);
-        return `${s.fontSize}/${s.fontWeight}/${s.color}`;
-      });
-    const client = await style('label[for=mm-client]');
-    const role = await style('label[for=mm-role]');
-    expect(role, 'Role has the label style of Client').toBe(client);
+    await expect(bar.locator('label[for=mm-client], label[for=mm-matter]')).toHaveCount(0);
+    await expect(bar.locator('#mm-client')).toHaveAccessibleName('Client');
+    await expect(bar.locator('#mm-matter')).toHaveAccessibleName('Matter');
+    await expect(bar.locator('#mm-client')).toHaveValue('All clients');
+    await expect(bar.locator('#mm-matter')).toHaveValue('All matters');
     await expect(bar.locator('label[for=mm-role]')).toHaveText('I am');
     expect(await bar.locator('#mm-role option').allInnerTexts()).toEqual([
       'Primary or secondary',
@@ -422,37 +427,39 @@ test.describe('Client and Role filters (#899)', () => {
     ]);
     const h = async (sel: string) => Math.round((await bar.locator(sel).boundingBox())!.height);
     expect(await h('#mm-client')).toBe(await h('#mm-role'));
-    // The Dates control of the Calendar uses the same label style.
-    await page.goto('/my-matters?view=calendar');
-    const dates = await page.locator('label[for=mm-range]').evaluate((el) => {
-      const s = getComputedStyle(el);
-      return `${s.fontSize}/${s.fontWeight}/${s.color}`;
-    });
-    expect(dates).toBe(client);
+    expect(await h('#mm-matter')).toBe(await h('#mm-role'));
+    // The Client and Matter dropdowns are side by side (same line).
+    const client = (await bar.locator('#mm-client').boundingBox())!;
+    const matter = (await bar.locator('#mm-matter').boundingBox())!;
+    expect(Math.abs(client.y - matter.y)).toBeLessThan(2);
+    expect(matter.x).toBeGreaterThan(client.x + client.width - 1);
   });
 
-  test('1920x1080: the filters and the strip share one line; 1366x768: they stack', async ({
+  test('the Matter dropdown narrows to the chosen client, and choosing a client clears a matter of another client', async ({
     seed,
     personas,
     asUser,
   }) => {
     const p = await pmThree(seed, personas, 'b4f2');
     const page = await asUser(p.pm.username);
-    const top = async () => {
-      await page.goto('/my-matters');
-      await settled(page);
-      const b = (await page.locator('[data-mm-filters]').boundingBox())!;
-      const s = (await page.locator('[data-mm-strip]').boundingBox())!;
-      return { b, s };
-    };
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    const wide = await top();
-    expect(Math.abs(wide.b.y + wide.b.height / 2 - (wide.s.y + wide.s.height / 2))).toBeLessThan(
-      24,
-    );
     await page.setViewportSize({ width: 1366, height: 768 });
-    const narrow = await top();
-    expect(narrow.s.y).toBeGreaterThanOrEqual(narrow.b.y + narrow.b.height - 1);
+    await page.goto(`/my-matters?clientId=${p.clients[0].clientId}`);
+    await settled(page);
+    await page.locator('#mm-matter').click();
+    const names = await page.locator('#mm-matter-list [role=option]').allInnerTexts();
+    expect(names[0]).toBe('All matters');
+    expect(names.length, 'one matter of that client (and the way back to all)').toBe(2);
+    await page.locator('#mm-matter-list [role=option]').nth(1).click();
+    await expect(page).toHaveURL(/matterId=/);
+    // A client choice of another client clears the matter.
+    await page.locator('#mm-client').click();
+    await page
+      .locator('#mm-client-list [role=option]')
+      .filter({ hasText: p.clients[1].name })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`clientId=${p.clients[1].clientId}`));
+    await expect(page).not.toHaveURL(/matterId=/);
+    await expect(page.locator('#mm-matter')).toHaveValue('All matters');
   });
 
   test('375x812: a filter in force is a removable chip, so the closed Filters sheet still says what the page is filtered by', async ({
@@ -475,6 +482,14 @@ test.describe('Client and Role filters (#899)', () => {
       expect((await x.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     }
     await expect(page.locator('[data-filters-open]')).toContainText('Filters (2)');
+    // The Matter filter is a chip too.
+    await page.goto(`/my-matters?matterId=${p.matters[0].matterId}`);
+    await settled(page);
+    await expect(page.locator('[data-active-filter=matter]')).toContainText(
+      `Matter: ${p.matters[0].matterRef} ${p.matters[0].name}`,
+    );
+    await page.goto(`/my-matters?role=primary&clientId=${p.clients[0].clientId}`);
+    await settled(page);
     await page.locator('[data-active-filter=role] button').click();
     await expect(page).not.toHaveURL(/role=/);
     await expect(page.locator('[data-active-filters] li')).toHaveCount(1);
@@ -500,16 +515,16 @@ test.describe('Client and Role filters (#899)', () => {
   }
 });
 
-test.describe('The same columns in both grids (#901, #929)', () => {
+test.describe('The columns of the grid (#901, #929, #943)', () => {
   const soonDay = (): string => new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
 
-  test('Needs my attention and Next 7 days have the same columns at the same places; Unassigned is said in the Assignee column; the Due cell says overdue', async ({
+  test('the grid has the Tasks columns; Unassigned is said in the Assignee column; the holder is named; the Due cell says overdue', async ({
     seed,
     personas,
     asUser,
   }) => {
     const p = await pmThree(seed, personas, 'b4r1');
-    // A task that is assigned and due in 3 days: Next 7 days lists it (an unassigned one is listed under Needs my attention instead).
+    // A task that is assigned and due in 3 days.
     const tech = await seed.user(['Data Technician'], 'b4r1tech');
     const pod = await seed.pod(`B4 pod ${p.token}`, [tech.userId]);
     await seed.task(
@@ -525,7 +540,7 @@ test.describe('The same columns in both grids (#901, #929)', () => {
         assignedPodId: pod['podId'],
       },
     );
-    // And one that nobody holds, due in 2 days: it is listed under Needs my attention with "Unassigned" in the assignee column.
+    // And one that nobody holds, due in 2 days: "Unassigned" in the assignee column.
     await seed.task(
       {
         matter: { matterId: p.matters[1].matterId },
@@ -541,34 +556,24 @@ test.describe('The same columns in both grids (#901, #929)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/my-matters');
     await settled(page);
-    const attention = page.locator('[data-panel=attention]');
-    const deadlines = page.locator('[data-panel=deadlines]');
-    await expect(attention.locator('tr[data-task]').first()).toBeVisible();
-    await expect(deadlines.locator('tr[data-task]').first()).toBeVisible();
-    // The same columns in the same places (the two tables share the width of the page).
-    const columns = async (panel: typeof attention) =>
-      panel
+    const grid = page.locator('[data-panel=tasks]');
+    await expect(grid.locator('tr[data-task]').first()).toBeVisible();
+    expect(
+      await grid
         .locator('thead th')
-        .evaluateAll((ths) =>
-          ths.map((t) => [
-            t.getAttribute('data-col'),
-            Math.round(t.getBoundingClientRect().left),
-            Math.round(t.getBoundingClientRect().width),
-          ]),
-        );
-    expect(await columns(attention)).toEqual(await columns(deadlines));
-    // The first row of Needs my attention is overdue; the Due cell says so; the unassigned one says Unassigned in the Assignee column.
+        .evaluateAll((ths) => ths.map((t) => t.getAttribute('data-col'))),
+    ).toEqual(['ref', 'title', 'matterName', 'priority', 'assignee', 'due', 'status']);
+    // The first row is overdue (urgency order); its Due cell says so.
+    await expect(grid.locator('tr[data-task]').first().locator('td[data-col=due]')).toContainText(
+      /overdue/i,
+    );
     await expect(
-      attention.locator('tr[data-task]').first().locator('td[data-col=due]'),
-    ).toContainText(/overdue/i);
-    await expect(
-      attention
+      grid
         .locator('tr[data-task]', { hasText: `Nobody ${p.token}` })
         .locator('td[data-col=assignee]'),
     ).toContainText('Unassigned');
-    // Next 7 days names the person who holds the task.
     await expect(
-      deadlines
+      grid
         .locator('tr[data-task]', { hasText: `Soon ${p.token}` })
         .locator('td[data-col=assignee]'),
     ).not.toContainText('Unassigned');
@@ -584,14 +589,14 @@ test.describe('The same columns in both grids (#901, #929)', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/my-matters');
     await settled(page);
-    await expect(page.locator('[data-panel=attention] table')).toHaveCount(0);
-    await expect(page.locator('[data-panel=attention] li[data-task]').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] table')).toHaveCount(0);
+    await expect(page.locator('[data-panel=tasks] li[data-task]').first()).toBeVisible();
     expect(await firstTaskRowTop(page)).toBeLessThanOrEqual(420);
   });
 });
 
 test.describe('Clear sort (#898)', () => {
-  test('Needs my attention names its order in its headings; the Task Queue says what comes first instead of an arrow, and Priority is Critical first', async ({
+  test('The grid names its order in its heading; the Task Queue says what comes first instead of an arrow, and Priority is Critical first', async ({
     seed,
     personas,
     asUser,
@@ -602,15 +607,15 @@ test.describe('Clear sort (#898)', () => {
     await page.goto('/my-matters');
     await settled(page);
     // The default order is Urgency (issue #935): the Urgency control is pressed, no column heading is marked, and the heading's tooltip names the order.
-    await expect(page.locator('[data-panel=attention] [data-sort-urgency]')).toHaveAttribute(
+    await expect(page.locator('[data-panel=tasks] [data-sort-urgency]')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await expect(page.locator('[data-panel=attention] th[data-col=due]')).toHaveAttribute(
+    await expect(page.locator('[data-panel=tasks] th[data-col=due]')).toHaveAttribute(
       'aria-sort',
       'none',
     );
-    await expect(page.locator('[data-panel=attention] h2')).toHaveAttribute(
+    await expect(page.locator('[data-panel=tasks] h2')).toHaveAttribute(
       'title',
       /Most urgent first/,
     );

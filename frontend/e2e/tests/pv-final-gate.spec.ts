@@ -9,7 +9,7 @@ import { uid } from '../support/seed';
 /**
  * PM v2 final gate (epic #851, issue #889, PV-38): what is true of every new screen together, on top of the per-screen specs (`pv-*.spec.ts`).
  * One Project Manager with a task of two types, an overdue task and assets, then:
- *  - all six My Matters tabs: the title rule `My Matters: <Tab> - MatterFlow`, one level-one heading, axe (including best practice) finds nothing and the page
+ *  - all four My Matters tabs: the title rule `My Matters: <Tab> - MatterFlow`, one level-one heading, axe (including best practice) finds nothing and the page
  *    does not scroll sideways at 1920x1080, 1366x768, 768x1024 and 375x812;
  *  - keyboard only: the Options menu, Focus, the Views and Export menus open from the keyboard, Escape closes them and puts focus back on their button, and a
  *    Breakdown cell is a link that Enter follows to the Task Queue;
@@ -18,7 +18,7 @@ import { uid } from '../support/seed';
  * Screenshots: E2E_SCREENSHOTS=docs/ux/pm-v2-review/after.
  */
 const TABS = [
-  { tab: 'overview', title: 'My Matters - MatterFlow', ready: '[data-panel=attention] a.wt-title' },
+  { tab: 'overview', title: 'My Matters - MatterFlow', ready: '[data-panel=tasks] a.wt-title' },
   {
     tab: 'breakdown',
     title: 'My Matters: Breakdown - MatterFlow',
@@ -26,7 +26,6 @@ const TABS = [
   },
   { tab: 'data', title: 'My Matters: Data - MatterFlow', ready: '[data-panel="data"]' },
   { tab: 'activity', title: 'My Matters: Activity - MatterFlow', ready: '#mm-tab-activity' },
-  { tab: 'trends', title: 'My Matters: Trends - MatterFlow', ready: '#mm-tab-trends' },
 ] as const;
 
 test.describe('PM v2 final gate', () => {
@@ -90,7 +89,7 @@ test.describe('PM v2 final gate', () => {
     ).toEqual([]);
   }
 
-  test('all six My Matters tabs follow the title rule and are clean at four widths', async ({
+  test('all four My Matters tabs follow the title rule and are clean at four widths', async ({
     seed,
     personas,
     asUser,
@@ -129,13 +128,13 @@ test.describe('PM v2 final gate', () => {
     const g = await world(seed, personas);
     const page = await asUser(g.w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=attention] a.wt-title').first()).toBeVisible();
+    await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeVisible();
 
     // The one Options menu of the list (issue #894): opens from the keyboard, Escape closes it and returns the focus to its button.
-    const trigger = page.locator('[data-panel=attention] [data-options-trigger]');
+    const trigger = page.locator('[data-panel=tasks] [data-options-trigger]');
     await trigger.focus();
     await page.keyboard.press('Enter');
-    const csv = page.locator('[data-panel=attention] [data-export=csv]');
+    const csv = page.locator('[data-panel=tasks] [data-export=csv]');
     await expect(csv).toBeVisible();
     await csv.focus();
     await expect(csv).toBeFocused();
