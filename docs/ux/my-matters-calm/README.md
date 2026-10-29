@@ -487,6 +487,42 @@ The first thing the three-second test shows at 1366x768 is "5 overdue  2 at risk
 | Words on the first screen | 150 | 215 | 110 | one matter: the issue's 150 (measured 125); three matters: measured 207; phone measured 93 to 99 |
 | A task id twice on the Overview | none | none | none | measured 0 |
 
-The Deadlines and Activity tabs are not rebuilt yet (Release 3), so they get a ratchet at their measured numbers plus about 5 percent (Deadlines: row 400 / 430 px, controls 30 / 22, words 125 / 90; Activity: row 400 / 560 px, controls 42 / 27, words 215 / 90, desktop / phone). Release 3 lowers them.
+The Deadlines and Activity tabs were not rebuilt in Release 2, so they got a ratchet at their measured numbers plus about 5 percent (Deadlines: row 400 / 430 px, controls 30 / 22, words 125 / 90; Activity: row 400 / 560 px, controls 42 / 27, words 215 / 90, desktop / phone). **Superseded by the Release 3 numbers below** (the Deadlines tab is gone, the Calendar and the Data tab have their own ratchet).
 
 Screenshots of every tab at four widths for both people are in `after/` under the file names of `before/`; `after/listControls.mjs` lists the controls of a screen (where a budget goes); the numbers of each batch are kept in `after/metrics-batch*.json`.
+
+## 8b. Result after Release 3, first part (batch 6 and the Data Area), combined QA of 2026-10-29
+
+Same two people, same method and demo data as section 8 (`npm run seed:demo -- --tasks 150 --seed 7 --aged`, `after/stageA.mjs`, `after/stageData.mjs`, `after/metrics.json`). What changed on the page: six equal tiles (#927), the Client filter is a searchable dropdown (#928), Needs my attention and Next 7 days are the shared sortable task grids with a Matter column (#929), the Deadlines tab is gone and the Calendar is one icon button on the Overview, the Breakdown lost the turnaround column (#930), the Data tab is one selection bar, tiles and a grid with a Table / Bar / Pie switch (#931 to #933). The owner's review of the first build (screenshot at 1888 px) found the tiles stacked in one column, a coloured pill on every row, the Due cell cut and no mark of the sort; all four are fixed (below).
+
+| 1366x768, Overview | After Release 2 | **After Release 3 (first part)** | Target | Met? |
+|---|---|---|---|---|
+| First task row, one matter / three matters | 233 / 273 px | **291 / 299 px** | 300 at most | yes, by 9 px and 1 px |
+| Controls reached, one matter / three matters | 24 / 36 | **39 / 58** (the reach method of the budget spec; the plain count of `stageA.mjs` is 63 / 84) | about 25 | **no** |
+| Words seen, one matter / three matters | 122 / 218 | **204 / 274** (budget spec) | about 120 to 150 | **no** |
+| Page height | 773 / 798 px | **773 / 856 px** | about 700 / 1,100 | yes |
+| Repeated task ids | 0 | **0** | none | yes |
+
+| 375x812 phone, Overview | After Release 2 | **After Release 3 (first part)** | Target |
+|---|---|---|---|
+| First task row, one / three matters | 278 / 278 px | **343 / 343 px** | 420 |
+| Controls / words (budget spec), one matter | 19 / 96 | **22 / 100** | |
+| Controls / words (budget spec), three matters | 19 / 100 | **23 / 101** | |
+
+Why the numbers rose, honestly: every column heading of the two grids is a sort button (about 7 per grid, 14 in all), the second grid has its own heading row, there is a Matter column on every row for several matters, the Calendar button is new and six tiles replace three chips. The owner asked for all of these. The first task row is 18 px lower than in Release 2 (the extra heading row) but inside the 300 px limit: to get there the tiles are one row of 36 px tiles, the grid heading row is 30 px, the heading rows of the panels are 28 px and the tab strip sits 4 px closer; the limits were not raised. On a phone the six tiles are three across and two rows (the number over its word, 44 px targets, 92 px in all) and the cards' links are 44 px targets.
+
+### The calm budget after Release 3 (`mm-calm-budget.spec.ts`)
+
+| Budget | One matter, 1366x768 | Three matters, 1366x768 | Phone one / three |
+|---|---|---|---|
+| First task row | 300 px (291) | 300 px (299) | 420 px (343) |
+| Controls on the first screen | 41 (39) | 61 (58) | 22 (22) / 24 (23) |
+| Words on the first screen | 215 (204) | 290 (274) | 110 (100) / 110 (101) |
+| A task id twice | none | none | none |
+
+Ratchet for the views behind the Overview (measured plus about 5 percent, so later work only lowers them; row = first task row where the view lists tasks): **Calendar** desktop row 410 / controls 30 / words 96 (measured 381 to 389, 25 to 28, 91 to 92), phone 470 / 22 / 85 (446, 20 to 21, 80 to 81); **Data** (fixture with four assets; no task row) desktop controls 29 / words 78 (23 to 27, 74), phone 22 / 56 (20 to 21, 49 to 53); **Activity** desktop row 400 / controls 40 / words 200 (374 to 382, 35 to 38, 191 to 192), phone row 605 / 27 / 85 (577, 24 to 25, 79 to 80). The old Deadlines ratchet is gone with the tab. The first-task-row limits (300 px desktop, 420 px phone) and "no repeated task id" are unchanged. New in `mm-calm-b6.spec.ts`: six tiles in one row at 768, 1366 and 1920 (equal width, every word whole), the dropdown inside its field, quiet badges, Due never cut, the sort mark, and axe at four sizes for the Calendar and for the Data Area with each picker, the info point and each chart view open.
+
+### What the owner can look at
+
+`after/pm1-*` and `after/pm3-*` for overview, calendar, breakdown, data, activity and trends at 1366x768, 1920x1080, 768x1024 and 375x812; the Data states `pm1-data-<state>-<size>.png` and `pm3-data-<state>-<size>.png` (default, pick-matters, several-matters, one-matter, pick-types, pick-sizes, size-field, period, bar, pie, info). Findings of the critical look are issues #935 to #938.
+
