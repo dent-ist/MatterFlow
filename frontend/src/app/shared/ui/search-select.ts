@@ -95,7 +95,9 @@ import { PickerOption, PickerSearch } from './entity-picker';
   `,
   template: `
     <div class="mf-field">
-      <label class="mf-field__label" [attr.for]="inputId()">{{ label() }}</label>
+      @if (!hideLabel()) {
+        <label class="mf-field__label" [attr.for]="inputId()">{{ label() }}</label>
+      }
       <div class="ss__box">
         <input
           class="mf-field__input ss__input"
@@ -105,6 +107,7 @@ import { PickerOption, PickerSearch } from './entity-picker';
           aria-autocomplete="list"
           data-search-select
           [id]="inputId()"
+          [attr.aria-label]="hideLabel() ? label() : null"
           [attr.aria-expanded]="open()"
           [attr.aria-controls]="inputId() + '-list'"
           [attr.aria-activedescendant]="activeId()"
@@ -148,7 +151,10 @@ import { PickerOption, PickerSearch } from './entity-picker';
   `,
 })
 export class SearchSelect implements OnDestroy {
+  /** The name of the field. Shown above the box, or only as its accessible name (`aria-label`) when {@link hideLabel} is set. */
   readonly label = input.required<string>();
+  /** No visible label: the placeholder ("All clients") says what the box is and `label` is its accessible name (issue #941). */
+  readonly hideLabel = input(false);
   readonly inputId = input.required<string>();
   /** The choice that means "no filter" ("All clients"): the first entry of the list and what the box says while nothing is chosen. */
   readonly allLabel = input.required<string>();

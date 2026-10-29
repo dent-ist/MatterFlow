@@ -4,7 +4,6 @@ import {
   afterNextRender,
   computed,
   effect,
-  signal,
   input,
   inject,
   Injector,
@@ -13,34 +12,23 @@ import {
 import { Router } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { ManagedMatters } from './managed-matters';
-import { ActionMenu, MenuAction } from '../../shared/ui/action-menu';
 import {
   flagFocusReturn,
-  lastMatterId,
   rememberMatter,
   takeFocusReturn,
 } from '../../shared/tasks/recent-choices';
 
-/** How many matters the menu lists; "Another matter" opens Create task with its own matter search for the rest. */
-const MENU_MAX = 25;
-
-/** How many characters of the matter's name the chooser's button shows. */
-const CHOOSER_NAME_MAX = 24;
-
 /**
- * "New task" in the header of My Matters (issues #814, #900): adding work starts on the first screen, not 2,000 px down in Matter health. The main button
- * says "New task" and nothing else; with several matters a second control, "Matter: <name>", is the chooser of the matter the button uses (the one the
- * person used last, and still manages, to begin with). The chooser ONLY picks the matter for New task: it is not a page filter and changes nothing else
- * (owner decision Q6). "New task" opens Create task with that matter fixed (without a chosen matter Create task has its own matter search); "Another
- * matter..." at the end of the chooser opens Create task to search all of them. Create task returns to this page (`returnTo`, only an address on
- * /my-matters is accepted there) and the focus comes back to this control. Nothing is drawn without Task.Create or when the person manages no active
- * matter, and (issue #904) not for exactly one matter either: the shell's "Create task" is then the one create button and opens Create task with that matter
- * filled in (the page tells the shell, see `CreateTaskContext`), so a one-matter person has no chooser. On a phone the matters are listed inside the
- * title row's Options menu (`inline`); each opens Create task at once.
+ * "New task" in the header of My Matters (issues #814, #900, #941): adding work starts on the first screen. The one button says "New task" and nothing else. It opens Create task with
+ * the matter fixed when exactly ONE matter is chosen in the page's Matter filter (the button's name then says which: "New task for 90001-80001 Merger"); with no matter chosen it opens
+ * Create task with its own matter search, so the person is asked (as before). There is no matter chooser of its own any more: the Matter dropdown of the filter bar is the one place
+ * where a matter is chosen, and it limits the whole page. Create task returns to this page (`returnTo`, only an address on /my-matters is accepted there) and the focus comes back to
+ * this control. Nothing is drawn without Task.Create or when the person manages no active matter, and (issue #904) not for exactly one matter either: the shell's "Create task" is then the
+ * one create button and opens Create task with that matter filled in (the page tells the shell, see `CreateTaskContext`). On a phone the button sits inside the title row's Options menu
+ * (`inline`).
  */
 @Component({
   selector: 'mf-mm-new-task',
-  imports: [ActionMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -48,13 +36,6 @@ const CHOOSER_NAME_MAX = 24;
     }
     :host(:empty) {
       display: none;
-    }
-    .nt {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-width: 0;
     }
     .nt__go {
       display: inline-flex;
@@ -68,175 +49,64 @@ const CHOOSER_NAME_MAX = 24;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .nti__title {
-      margin: 0 0 var(--mf-s1);
-      font-size: var(--mf-fs-md);
-      font-weight: 700;
-    }
-    .nti__list {
-      display: grid;
-      gap: var(--mf-s1);
-      max-height: 9rem;
-      margin: 0;
-      padding: 0;
-      overflow-y: auto;
-      list-style: none;
-    }
-    .nti__item {
-      justify-content: flex-start;
-      width: 100%;
-      min-height: 44px;
-      font-weight: 400;
-      text-align: left;
-    }
-    .nti__text {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
     @media (max-width: 639.98px) {
-      :host,
-      .nt {
+      :host {
         width: 100%;
       }
       .nt__go {
         flex: 1 1 12rem;
+        width: 100%;
         min-height: 44px;
         justify-content: center;
       }
     }
   `,
   template: `
-    @if (inline()) {
-      <!-- Inside the phone's header menu: the matters as a list, no second popover. -->
-      @if (shown()) {
-        <div
-          class="nti"
-          role="group"
-          aria-labelledby="nti-h"
-          data-header-new-task
-          data-new-task-inline
-        >
-          <p class="nti__title" id="nti-h">New task on a matter</p>
-          <ul class="nti__list">
-            @for (it of items(); track it.id) {
-              <li>
-                <button
-                  type="button"
-                  class="mf-btn nti__item"
-                  data-options-pick
-                  [attr.data-new-task-item]="it.id"
-                  (click)="it.run()"
-                >
-                  <i class="pi" [class]="it.icon" aria-hidden="true"></i>
-                  <span class="nti__text">{{ it.label }}</span>
-                </button>
-              </li>
-            }
-          </ul>
-        </div>
-      }
-    } @else if (shown()) {
-      <div class="nt" data-header-new-task>
+    @if (shown()) {
+      <div class="nt" data-header-new-task [attr.data-new-task-inline]="inline() ? '' : null">
         <button
           type="button"
-          class="mf-btn mf-btn--primary nt__go"
+          class="mf-btn nt__go"
+          [class.mf-btn--primary]="!inline()"
           data-new-task-go
-          [attr.aria-label]="
-            chosen() ? 'New task for ' + chosen()!.matterRef + ' ' + chosen()!.name : 'New task'
-          "
-          [attr.title]="
-            chosen() ? 'New task for ' + chosen()!.matterRef + ' ' + chosen()!.name : null
-          "
-          (click)="open(chosen()?.matterId ?? null)"
+          [attr.aria-label]="label()"
+          [attr.title]="matterId() !== null ? label() : null"
+          (click)="open(matterId())"
         >
           <i class="pi pi-plus" aria-hidden="true"></i>
           <span class="nt__text">New task</span>
         </button>
-        <mf-action-menu
-          label="Matter for New task"
-          [triggerText]="chooserText()"
-          align="start"
-          [floating]="true"
-          [items]="chooserItems()"
-        />
       </div>
     }
   `,
 })
 export class NewTaskControl {
-  /** Drawn inside another menu (the phone's header menu): the matters as a list. */
+  /** Drawn inside another menu (the phone's header menu). */
   readonly inline = input(false);
+  /** The page's Matter filter: the matter New task uses when one is chosen. */
+  readonly matterId = input<number | null>(null);
   private readonly managed = inject(ManagedMatters);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
 
-  private readonly matters = computed(() => this.managed.items().slice(0, MENU_MAX));
   protected readonly shown = computed(
-    () => this.auth.has('Task.Create') && this.matters().length > 0 && this.managed.only() === null,
+    () =>
+      this.auth.has('Task.Create') &&
+      this.managed.items().length > 0 &&
+      this.managed.only() === null,
   );
 
-  /** The matter the person picked in the chooser this visit (`undefined`: not yet, the one used last counts). */
-  private readonly picked = signal<number | null | undefined>(undefined);
-
-  /** The matter New task uses: the one picked in the chooser, else the one used last, when the person still manages it and it is active. */
+  /** The chosen matter, when it is one the person manages (its name is then in the button's name). */
   protected readonly chosen = computed(() => {
-    const picked = this.picked();
-    const id = picked !== undefined ? picked : lastMatterId(this.auth.profile()?.userId ?? 0);
-    return id === null ? null : (this.matters().find((m) => m.matterId === id) ?? null);
+    const id = this.matterId();
+    return id === null ? null : (this.managed.items().find((m) => m.matterId === id) ?? null);
   });
 
-  /** "Matter: <name>" (cut when long; the full name is in the list), or "Matter: choose" before one is picked. */
-  protected readonly chooserText = computed(() => {
+  protected readonly label = computed(() => {
     const m = this.chosen();
-    if (!m) return 'Matter: choose';
-    return `Matter: ${m.name.length > CHOOSER_NAME_MAX ? `${m.name.slice(0, CHOOSER_NAME_MAX - 1)}\u2026` : m.name}`;
-  });
-
-  /** The chooser: each matter only becomes the one New task uses (nothing opens), then Another matter opens Create task with its own search. */
-  protected readonly chooserItems = computed<MenuAction[]>(() => {
-    const rows = this.matters().map<MenuAction>((m) => ({
-      id: `matter-${m.matterId}`,
-      label: `${m.matterRef} ${m.name}`,
-      icon: m.matterId === this.chosen()?.matterId ? 'pi-check' : 'pi-briefcase',
-      current: m.matterId === this.chosen()?.matterId,
-      run: () => {
-        this.picked.set(m.matterId);
-        rememberMatter(this.auth.profile()?.userId ?? 0, m.matterId);
-      },
-    }));
-    rows.push({
-      id: 'another',
-      label: 'Another matter...',
-      icon: 'pi-search',
-      separated: true,
-      run: () => this.open(null),
-    });
-    return rows;
-  });
-
-  /** The phone's list: each matter opens Create task at once (the person's last one first). */
-  protected readonly items = computed<MenuAction[]>(() => {
-    const lastId = this.chosen()?.matterId;
-    const ordered = [...this.matters()].sort(
-      (a, b) => Number(b.matterId === lastId) - Number(a.matterId === lastId),
-    );
-    const rows = ordered.map<MenuAction>((m) => ({
-      id: `matter-${m.matterId}`,
-      label: `${m.matterRef} ${m.name}`,
-      icon: 'pi-plus',
-      run: () => this.open(m.matterId),
-    }));
-    rows.push({
-      id: 'another',
-      label: 'Another matter...',
-      icon: 'pi-search',
-      separated: true,
-      run: () => this.open(null),
-    });
-    return rows;
+    if (m) return `New task for ${m.matterRef} ${m.name}`;
+    return this.matterId() === null ? 'New task' : 'New task for the chosen matter';
   });
 
   constructor() {

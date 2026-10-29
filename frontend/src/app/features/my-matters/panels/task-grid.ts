@@ -330,6 +330,7 @@ export class TaskGrid {
       ...(a.managerId === undefined ? {} : { managerId: String(a.managerId) }),
       ...(a.role === undefined ? {} : { role: a.role }),
       ...(a.clientId === undefined ? {} : { client: String(a.clientId) }),
+      ...(a.matterId === undefined ? {} : { matter: String(a.matterId) }),
       status: [...OPEN_STATUSES],
       ...prefilterParams(this.show()),
     };

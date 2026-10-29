@@ -60,6 +60,8 @@ export class SinceFeed {
         undefined,
         undefined,
         a.managerId,
+        undefined,
+        a.matterId,
       );
     },
     { enabled: () => this.filters() !== null },

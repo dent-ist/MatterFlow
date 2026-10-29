@@ -837,9 +837,14 @@ export class DataTab {
   private readonly remembered = signal(fromRemembered(this.views.cached('my-matters.data')));
 
   /** The four choices of the selection bar: the address when it says anything, else what was remembered. */
-  protected readonly selection = computed<DataSelection>(() =>
-    hasExplicitSelection(this.query()) ? parseSelection(this.query()) : this.remembered().selection,
-  );
+  protected readonly selection = computed<DataSelection>(() => {
+    const own = hasExplicitSelection(this.query())
+      ? parseSelection(this.query())
+      : this.remembered().selection;
+    // The page's Matter filter (issue #941) is where the matter selection starts: with no matter ticked in the bar, the chosen matter is the selection.
+    const chosen = this.filters().matterId;
+    return chosen !== null && own.matterIds.length === 0 ? { ...own, matterIds: [chosen] } : own;
+  });
   protected readonly view = computed<DataView>(() =>
     hasExplicitSelection(this.query()) ? parseView(this.query()) : this.remembered().view,
   );

@@ -534,6 +534,8 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
     TestBed.inject(MyMattersFocus).set([7, 9]);
     await settle(h);
@@ -542,6 +544,8 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       4,
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -559,6 +563,8 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
     const role = el(h).querySelector<HTMLSelectElement>('[data-filter=role]')!;
     expect(role.value).toBe('primary');
@@ -571,6 +577,8 @@ describe('MyMattersPage', () => {
       undefined,
       'secondary',
       4,
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -815,6 +823,8 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
   });
 
@@ -822,6 +832,8 @@ describe('MyMattersPage', () => {
     const h = await open('/my-matters?scope=all&managerId=7');
     expect(el(h).querySelector('[data-scope]')).toBeNull();
     expect(api['getMyMattersSummary']).toHaveBeenCalledWith(
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -951,6 +963,8 @@ describe('MyMattersPage', () => {
       undefined,
       undefined,
       'secondary',
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -1215,14 +1229,20 @@ describe('MyMattersPage', () => {
       );
     });
 
-    it('several clients and both roles: Client and Role are offered, the header has New task and its Matter chooser', async () => {
+    it('several clients and both roles: Client, Matter and Role are offered, none with a visible label; the header has New task and no matter chooser (#941)', async () => {
       const h = await open('/my-matters', undefined, undefined, [
         matter(5, 2, 'primary'),
         matter(6, 3, 'secondary'),
       ]);
       expect(el(h).querySelector('[data-mm-filters]')).not.toBeNull();
       expect(el(h).querySelector('#mm-client')).not.toBeNull();
+      expect(el(h).querySelector('#mm-matter')).not.toBeNull();
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
+      // Client and Matter have no label of their own: the placeholder says what they are and an aria-label names them.
+      const bar = el(h).querySelector('[data-mm-filters]')!;
+      expect(bar.querySelector('label[for=mm-client], label[for=mm-matter]')).toBeNull();
+      expect(bar.querySelector('#mm-client')!.getAttribute('aria-label')).toBe('Client');
+      expect(bar.querySelector('#mm-matter')!.getAttribute('aria-label')).toBe('Matter');
       // The Client filter is a searchable dropdown of the clients of the person's matters (issue #928): it lists them when it is opened and narrows as they type.
       const client = el(h).querySelector<HTMLInputElement>('#mm-client')!;
       expect(client.getAttribute('role')).toBe('combobox');
@@ -1236,28 +1256,107 @@ describe('MyMattersPage', () => {
       client.dispatchEvent(new Event('input'));
       h.detectChanges();
       expect(listed()).toEqual(['90003 Client 3']);
+      // The Matter filter is the same component, "All matters" until one is chosen.
+      const matterBox = el(h).querySelector<HTMLInputElement>('#mm-matter')!;
+      expect(matterBox.getAttribute('role')).toBe('combobox');
+      expect(matterBox.value).toBe('All matters');
       const create = el(h).querySelector('[data-header-new-task]')!;
       expect(create.querySelector('[data-new-task-go]')!.textContent!.trim()).toBe('New task');
-      // The chooser only picks the matter for New task (no page filter): "Matter: choose" until one is picked or was used last.
-      expect(create.textContent).toContain('Matter: choose');
+      // The old chooser "Matter: ..." is gone; New task asks for the matter itself while none is chosen.
+      expect(create.textContent).not.toContain('Matter:');
+      expect(el(h).querySelector('[data-header-new-task] mf-action-menu')).toBeNull();
       // The scope switch and the Focus checklist are inside the one Options menu of the title row.
       expect(el(h).querySelectorAll('[data-header-options]').length).toBe(1);
       expect(el(h).querySelector('[data-header-options] [data-focus-inline]')).not.toBeNull();
       expect(TestBed.inject(CreateTaskContext).matterId()).toBeNull();
     });
 
-    it('one client and only Primary matters: neither Client nor Role; a role in the address brings its control back', async () => {
+    it('one client and only Primary matters: no Client and no Role, but the Matter dropdown (two matters); a role in the address brings its control back', async () => {
       const h = await open('/my-matters', undefined, undefined, [
         matter(5, 2, 'primary'),
         matter(6, 2, 'primary'),
       ]);
-      expect(el(h).querySelector('[data-mm-filters]')).toBeNull();
+      expect(el(h).querySelector('#mm-client')).toBeNull();
+      expect(el(h).querySelector('#mm-role')).toBeNull();
+      expect(el(h).querySelector('#mm-matter')).not.toBeNull();
       await TestBed.inject(Router).navigateByUrl('/my-matters?role=secondary');
       await h.fixture.whenStable();
       h.detectChanges();
       expect(el(h).querySelector('#mm-role')).not.toBeNull();
       expect(el(h).querySelector('[data-clear-filters]')).not.toBeNull();
       expect(el(h).querySelector('#mm-client')).toBeNull();
+    });
+
+    it('the Matter filter is a page filter: it lists the matters of the chosen client, goes to the address, the grid, the counts and the New task button (#941)', async () => {
+      const h = await open('/my-matters?clientId=2', undefined, undefined, [
+        matter(5, 2, 'primary'),
+        matter(6, 3, 'secondary'),
+        matter(7, 2, 'primary'),
+      ]);
+      const box = el(h).querySelector<HTMLInputElement>('#mm-matter')!;
+      box.dispatchEvent(new Event('focus'));
+      h.detectChanges();
+      const options = () =>
+        Array.from(el(h).querySelectorAll('#mm-matter-list [role=option]')).map((o) =>
+          o.textContent!.trim(),
+        );
+      // Only the matters of Client 2 (and the way back to all).
+      expect(options()).toEqual(['All matters', '90002-80005 Matter 5', '90002-80007 Matter 7']);
+      el(h)
+        .querySelector<HTMLElement>('#mm-matter-list [data-option="7"]')!
+        .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      await settle(h);
+      const router = TestBed.inject(Router);
+      expect(router.parseUrl(router.url).queryParams).toEqual({
+        clientId: '2',
+        matterId: '7',
+        dm: '7',
+      });
+      // The grid, the counts and the shell's Create task follow.
+      expect(lastGrid()).toMatchObject({ matter: 7, client: 2, managedByMe: true });
+      expect(api['getMyMattersSummary']).toHaveBeenLastCalledWith(
+        undefined,
+        undefined,
+        undefined,
+        2,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        7,
+      );
+      expect(TestBed.inject(CreateTaskContext).matterId()).toBe(7);
+      const go = el(h).querySelector<HTMLButtonElement>('[data-new-task-go]')!;
+      expect(go.getAttribute('aria-label')).toBe('New task for 90002-80007 Matter 7');
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+      go.click();
+      expect(navigate.mock.calls.at(-1)![1]!.queryParams).toMatchObject({ matterId: 7 });
+      expect((box as HTMLInputElement).value).toBe('90002-80007 Matter 7');
+      // One Clear filters clears the matter with the others.
+      el(h).querySelector<HTMLButtonElement>('[data-clear-filters]')!.click();
+      await settle(h);
+      expect(TestBed.inject(Router).url).toBe('/my-matters');
+    });
+
+    it('choosing a client clears a matter of another client, and keeps one of that client (#941)', async () => {
+      const h = await open('/my-matters?matterId=6', undefined, undefined, [
+        matter(5, 2, 'primary'),
+        matter(6, 3, 'secondary'),
+      ]);
+      const client = el(h).querySelector<HTMLInputElement>('#mm-client')!;
+      const choose = async (id: number) => {
+        client.dispatchEvent(new Event('focus'));
+        h.detectChanges();
+        el(h)
+          .querySelector<HTMLElement>(`#mm-client-list [data-option="${id}"]`)!
+          .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        await settle(h);
+      };
+      const router = TestBed.inject(Router);
+      await choose(3);
+      expect(router.parseUrl(router.url).queryParams).toEqual({ clientId: '3', matterId: '6' });
+      await choose(2);
+      expect(router.parseUrl(router.url).queryParams).toEqual({ clientId: '2' });
     });
 
     it('a failed read of the matters hides nothing', async () => {

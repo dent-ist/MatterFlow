@@ -23,6 +23,7 @@ describe('My Matters filters', () => {
         scope: 'all',
         role: 'primary',
         clientId: '12',
+        matterId: '31',
         range: 'custom',
         from: '2026-10-01',
         to: '2026-10-31',
@@ -35,6 +36,7 @@ describe('My Matters filters', () => {
       scope: 'all',
       role: 'primary',
       clientId: 12,
+      matterId: 31,
       range: 'custom',
       from: '2026-10-01',
       to: '2026-10-31',
@@ -45,6 +47,7 @@ describe('My Matters filters', () => {
       scope: 'all',
       role: 'primary',
       clientId: 12,
+      matterId: 31,
       range: 'custom',
       from: '2026-10-01',
       to: '2026-10-31',
@@ -58,6 +61,7 @@ describe('My Matters filters', () => {
       scope: null,
       role: null,
       clientId: null,
+      matterId: null,
       range: null,
       from: null,
       to: null,
@@ -102,6 +106,17 @@ describe('My Matters filters', () => {
       clientId: undefined,
       managerId: undefined,
     });
+  });
+
+  it('the Matter filter is read from the address, counts for Clear filters and goes to every call (#941)', () => {
+    const f = parseFilters(map({ matterId: '31', clientId: '4' }), false);
+    expect(f.matterId).toBe(31);
+    expect(commonArgs(f).matterId).toBe(31);
+    expect(filtersToParams(f)['matterId']).toBe(31);
+    expect(activeFilterCount(f)).toBe(2);
+    expect(parseFilters(map({ matterId: 'abc' }), false).matterId).toBeNull();
+    expect(parseFilters(map({ matterId: '0' }), false).matterId).toBeNull();
+    expect(commonArgs(DEFAULT_FILTERS).matterId).toBeUndefined();
   });
 
   it('does not send a role in the All scope until a manager is named (it would select nothing)', () => {

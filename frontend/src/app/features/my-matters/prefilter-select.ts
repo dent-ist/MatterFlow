@@ -118,6 +118,8 @@ export class PrefilterSelect {
         undefined,
         undefined,
         a.managerId,
+        undefined,
+        a.matterId,
       );
     },
   );

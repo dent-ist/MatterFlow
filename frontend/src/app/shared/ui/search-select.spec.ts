@@ -53,6 +53,20 @@ describe('mf-search-select (issue #928)', () => {
     );
   });
 
+  it('can be unlabelled: no visible label, the label is the accessible name of the box and the list (issue #941)', async () => {
+    await make([acme, beta]);
+    expect(el().querySelector('label')).not.toBeNull();
+    expect(input().getAttribute('aria-label')).toBeNull();
+    fixture.componentRef.setInput('hideLabel', true);
+    fixture.detectChanges();
+    expect(el().querySelector('label')).toBeNull();
+    expect(input().getAttribute('aria-label')).toBe('Client');
+    expect(input().value).toBe('All clients');
+    input().dispatchEvent(new Event('focus'));
+    fixture.detectChanges();
+    expect(el().querySelector('[role=listbox]')!.getAttribute('aria-label')).toBe('Client');
+  });
+
   it('narrows the list as the person types and reports the number of matches', async () => {
     await make([acme, beta, gamma]);
     input().dispatchEvent(new Event('focus'));

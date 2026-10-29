@@ -14,6 +14,8 @@ export interface MmFilters {
   scope: MmScope;
   role: MmRole;
   clientId: number | null;
+  /** The Matter filter (`?matterId=`, issue #941): one matter limits the grid, the Calendar, the Breakdown and the Data tab. */
+  matterId: number | null;
   range: MmRange;
   /** `yyyy-mm-dd`; only with `range=custom`. */
   from: string | null;
@@ -28,6 +30,7 @@ export const DEFAULT_FILTERS: MmFilters = {
   scope: 'mine',
   role: 'both',
   clientId: null,
+  matterId: null,
   range: '4w',
   from: null,
   to: null,
@@ -67,6 +70,7 @@ export function parseFilters(q: ParamMap, canAll: boolean): MmFilters {
     scope,
     role: role === 'primary' || role === 'secondary' ? role : 'both',
     clientId: positive(q.get('clientId')),
+    matterId: positive(q.get('matterId')),
     range: r,
     from: r === 'custom' && from && DATE.test(from) ? from : null,
     to: r === 'custom' && to && DATE.test(to) ? to : null,
@@ -81,6 +85,7 @@ export function filtersToParams(f: MmFilters): Params {
     scope: f.scope === 'all' ? 'all' : null,
     role: f.role === 'both' ? null : f.role,
     clientId: f.clientId,
+    matterId: f.matterId,
     range: f.range === '4w' ? null : f.range,
     from: f.range === 'custom' ? f.from : null,
     to: f.range === 'custom' ? f.to : null,
@@ -99,13 +104,14 @@ export function activeFilterCount(f: MmFilters): number {
   let n = 0;
   if (f.managerId !== null) n++;
   if (f.clientId !== null) n++;
+  if (f.matterId !== null) n++;
   if (f.role !== 'both' && roleApplies(f)) n++;
   if (f.range !== '4w') n++;
   return n;
 }
 
 /**
- * The arguments every `/my-matters/*` call shares, in the order of the generated client: `scope, role, clientId, from, to, managerId`.
+ * The arguments every `/my-matters/*` call shares: `scope, role, clientId, from, to, managerId` in the order of the generated client, then `fresh` (never sent) and `matterId`.
  * The date range is a due-date range of tasks: it is sent to Upcoming deadlines only (`range` below), never to the strip, the attention
  * list, the health table, the workload or the activity, which are about all open work (a range would drop overdue and undated tasks).
  */
@@ -114,6 +120,7 @@ export interface MmCommonArgs {
   role: string | undefined;
   clientId: number | undefined;
   managerId: number | undefined;
+  matterId: number | undefined;
 }
 
 export function commonArgs(f: MmFilters): MmCommonArgs {
@@ -122,6 +129,7 @@ export function commonArgs(f: MmFilters): MmCommonArgs {
     role: f.role !== 'both' && roleApplies(f) ? f.role : undefined,
     clientId: f.clientId ?? undefined,
     managerId: f.scope === 'all' ? (f.managerId ?? undefined) : undefined,
+    matterId: f.matterId ?? undefined,
   };
 }
 

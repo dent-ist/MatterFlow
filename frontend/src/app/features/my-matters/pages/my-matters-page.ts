@@ -60,6 +60,7 @@ const FILTER_KEYS = [
   'scope',
   'role',
   'clientId',
+  'matterId',
   'range',
   'from',
   'to',
@@ -72,6 +73,7 @@ function same(a: MmFilters, b: MmFilters): boolean {
     a.scope === b.scope &&
     a.role === b.role &&
     a.clientId === b.clientId &&
+    a.matterId === b.matterId &&
     a.range === b.range &&
     a.from === b.from &&
     a.to === b.to &&
@@ -244,6 +246,7 @@ function storage(): Storage | null {
           (clear)="clear()"
           (clientName)="clientName.set($event)"
           (managerName)="managerName.set($event)"
+          (matterName)="matterName.set($event)"
         />
       }
       <mf-options-menu
@@ -269,11 +272,11 @@ function storage(): Storage | null {
         }
         <mf-mm-focus #focusList />
         @if (phone()) {
-          <mf-mm-new-task [inline]="true" />
+          <mf-mm-new-task [inline]="true" [matterId]="filters().matterId" />
         }
       </mf-options-menu>
       @if (!phone()) {
-        <mf-mm-new-task mfActions />
+        <mf-mm-new-task mfActions [matterId]="filters().matterId" />
       }
     </mf-page-header>
 
@@ -285,6 +288,7 @@ function storage(): Storage | null {
           [filters]="filters()"
           [clientName]="clientName()"
           [managerName]="managerName()"
+          [matterName]="matterName()"
           (remove)="update($event)"
         />
       }
@@ -488,6 +492,7 @@ export class MyMattersPage {
   protected readonly canMyWork = computed(() => this.auth.has('Task.View'));
   protected readonly clientName = signal<string | null>(null);
   protected readonly managerName = signal<string | null>(null);
+  protected readonly matterName = signal<string | null>(null);
 
   /** What the scope means. No sentence is drawn under the title (issue #904): it is the tooltip of the scope switch and stays for screen readers. */
   protected readonly scopeText = computed(() =>
@@ -543,10 +548,11 @@ export class MyMattersPage {
       this.pageTitle.unpin();
       this.createContext.matterId.set(null);
     });
-    // One managed matter: the shell's "Create task" is the one create button and opens Create task with that matter (issue #904).
+    // One matter, the person's only one or the one chosen in the Matter filter (issue #941): the shell's "Create task" is the one create button and opens Create task with that matter (issue #904).
     effect(() =>
       this.createContext.matterId.set(
-        this.filters().scope === 'mine' ? (this.managed.only()?.matterId ?? null) : null,
+        this.filters().matterId ??
+          (this.filters().scope === 'mine' ? (this.managed.only()?.matterId ?? null) : null),
       ),
     );
     effect(() => {
@@ -662,7 +668,12 @@ export class MyMattersPage {
   protected update(patch: Partial<MmFilters>): void {
     const next: MmFilters = { ...this.filters(), ...patch };
     if (patch.scope === 'mine') next.managerId = null;
-    this.go({ ...filtersToParams(next), page: null });
+    // A new Matter choice starts the Data tab's own matter selection (`dm`) from it: the tab keeps its multi-select, initialised from this choice (issue #941).
+    const data: Record<string, string | null> =
+      patch.matterId === undefined
+        ? {}
+        : { dm: patch.matterId === null ? null : String(patch.matterId) };
+    this.go({ ...filtersToParams(next), ...data, page: null });
   }
 
   /** A tab was chosen: the address changes (Overview leaves it), the filters stay. */
@@ -677,6 +688,7 @@ export class MyMattersPage {
         ...DEFAULT_FILTERS,
         scope: this.filters().scope === 'all' ? 'all' : 'mine',
       }),
+      dm: null,
       page: null,
     });
   }

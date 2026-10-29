@@ -3,7 +3,7 @@ import { MmFilters, ROLE_LABELS, roleApplies } from './my-matters-filters';
 
 /** One filter that is in force, as a removable chip. */
 interface ActiveFilter {
-  key: 'client' | 'role' | 'manager';
+  key: 'client' | 'matter' | 'role' | 'manager';
   /** "Client: Acme Corp". */
   text: string;
   /** What removing it means. */
@@ -12,7 +12,7 @@ interface ActiveFilter {
 
 /**
  * The filters that are in force, as removable chips (issue #899), for a phone: its Filters button is a sheet, so without these a person could not see what
- * the page is filtered by without opening it. One chip per filter ("Client: Acme Corp", "I am: Secondary"), each with a 44 px button that removes it; nothing is
+ * the page is filtered by without opening it. One chip per filter ("Client: Acme Corp", "Matter: 90001-80001 Merger", "I am: Secondary"), each with a 44 px button that removes it; nothing is
  * drawn when no filter is in force. On a wider screen the controls themselves show their value, so the page draws none there.
  */
 @Component({
@@ -91,6 +91,7 @@ export class MyMattersActiveFilters {
   readonly filters = input.required<MmFilters>();
   readonly clientName = input<string | null>(null);
   readonly managerName = input<string | null>(null);
+  readonly matterName = input<string | null>(null);
   readonly remove = output<Partial<MmFilters>>();
 
   protected readonly items = computed<ActiveFilter[]>(() => {
@@ -107,6 +108,12 @@ export class MyMattersActiveFilters {
         key: 'client',
         text: `Client: ${this.clientName() ?? f.clientId}`,
         patch: { clientId: null },
+      });
+    if (f.matterId !== null)
+      out.push({
+        key: 'matter',
+        text: `Matter: ${this.matterName() ?? f.matterId}`,
+        patch: { matterId: null },
       });
     if (f.role !== 'both' && roleApplies(f))
       out.push({
