@@ -261,7 +261,7 @@ Done by the QA agent on `origin/dev` at `17f57ae`, own worktree, own SQL contain
 
 * Backend: build with warnings as errors clean; unit, architecture and schema tests green; **full integration suite 1,617 passed, 0 failed** (performance class excluded, run alone below); frontend unit 355 files, 4,325 tests, form-engine 319; eslint, Prettier, tsc clean; initial bundle 646.11 kB (limit 700).
 * Sensitive-matter e2e with `E2E_SENSITIVE_ACCESS=1` on a fresh database: **14 passed**.
-* Playwright groups after fixes: mm-calm-b1..b4, b6 (new), budget, mm-focus-scroll, mm-controls-tabs, pm4-*, pm5-access, px3 to px7, pv-*, sh-*, wp12-phone-cards, dashboard-breakdowns, my-work-*, tq-*, pm-matters: 100 percent green after the fixes below (first run of the second group: 379 of 391 passed, 12 failed, all classified below). The full-suite result is at the end of this section.
+* Playwright groups: mm-calm-b1..b4, b6 (new), budget, mm-focus-scroll, mm-controls-tabs, pm4-*, pm5-access, px3 to px7, pv-*, sh-*, wp12-phone-cards, dashboard-breakdowns, my-work-*, tq-*, pm-matters ran once (379 of 391 passed, 12 failed, all classified below) and the failed ones were fixed and re-run green, except the one open item below.
 * Performance (quiet machine): Data p95 83 to 374 ms for all shapes except one (618 ms, heavy person, two size fields, still inside the test's 2x ceiling); statement counts 8, 12, 4, 7, 11, independent of the number of matters; seek test green; a 2.1 s volume read for the heavy person in the statement-count harness is recorded as #938.
 
 ### Failures found and how they were classified
@@ -295,3 +295,11 @@ Done by the QA agent on `origin/dev` at `17f57ae`, own worktree, own SQL contain
 ### Issues filed
 
 #935 (attention order), #936 (task tiles above Data and Trends), #937 (small polish: tablet scroll, 1920 width, phone picker widths, wording, extra Tab stop, Activity on a phone), #938 (volume read 2.1 s in one harness).
+
+### Status at the end of this QA (owner decision: the full-suite gate moves to the final QA)
+
+* **Closed on the evidence above:** #927 to #933 (targeted groups, integration 1,617 passed, sensitive e2e 14 passed, Data performance, axe at four sizes for Overview, Calendar and Data Area).
+* **The full Playwright suite was NOT completed.** It was started on the final build and stopped at test 1,942 of 3,101 (alphabetical, ad* to ty-permissions-matrix) when the owner moved the gate to the final QA. 15 failures were seen up to that point; the ones in the My Matters scope are all listed in the table above. The others, re-run alone on the same database: `assets-keyboard`, `assets-screen`, `column-filters-records`, 6 of `pv-asset-report-builder`, `pv-data-tab:198`: all wait for an asset type created by the test in a list that does not show it. The database had 219 asset types by then (the full run creates one or more per spec) and the lookup list stops at 200: **test-data pollution of a long-lived database, not a regression** (the same specs passed in the earlier group run on the same build when the database was smaller); to be confirmed on a fresh database at the final QA. `dashboard-breakdowns:266` (wide layout, Priority above Status) failed alone too; no file of the Dashboard was touched by this work, not investigated, check on a fresh database. `pm4-bulk-tasks:33` and `task-detail-t1:172` passed when re-run alone (load flakes).
+* **Open defect:** `pv-pm-ui:185` "Focus is picked once..." fails axe `target-size` for the Assignee sort heading while the Focus popover is open (the popover covers part of the heading; it passed with the taller heading row of the first build). Not fixed (the heading row had to get lower to keep the first task row at 299 px). Options: let the popover open below the grids' heading or use a 32 px heading again and move the 300 px budget (owner decision).
+* **Not run:** the rest of the full suite (from `ty-permissions-matrix` on: ty*, users-*, wp*, ...), the Windows / IIS check, the performance tests on a Windows machine.
+* Last measured first task row at 1366x768: 290 px (one matter), 298 px (three matters); phone 343 px.

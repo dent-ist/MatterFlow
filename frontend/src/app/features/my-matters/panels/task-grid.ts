@@ -176,12 +176,15 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
       :host ::ng-deep .tg__grid {
         max-width: 82rem;
       }
-      /* A heading row of 30 px (the rows are 36): the first task sits higher on the first screen. */
+      /* A heading row of 28 px (the rows are 36): the first task sits higher on the first screen; the sort button fills it (a 28 px target). */
       :host ::ng-deep .tg__grid .wt thead th {
-        height: 30px;
+        height: 28px;
+        padding-block: 0;
       }
+      /* The sort button is a 32 px target inside the 28 px heading row (the extra 2 px each side overlap the row's padding, so the row stays low). */
       :host ::ng-deep .tg__grid .wt-sort {
-        min-height: 24px;
+        min-height: 32px;
+        margin-block: -2px;
       }
       :host ::ng-deep .tg__grid.mf-fill {
         display: block;
