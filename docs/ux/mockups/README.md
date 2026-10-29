@@ -74,3 +74,46 @@ Pick a client and watch Matter narrow (type to search); pick Focus types (multi-
 4. Should B be the default once a matter is chosen, and A when none is?
 5. Board (C): is a status board wanted at all for a PM, or only as a Pod Work view?
 6. Should Due (period) stay a filter next to Focus, or be dropped as it overlaps "Due soon"?
+
+
+---
+
+# Dashboard mockup v2 (`dashboard-mockup-v2.html`)
+
+Owner feedback on v1: "I like option A look and feel, but the box and font in the tiles are too big. Using the similar style, re-design the current Dashboard." This is a new standalone file; `dashboard-mockup.html` (v1) is untouched, so the two can be opened side by side. Mock data is v1's (4 clients, 8 matters, 60 tasks, 8 people, today = Thu 2026-10-29). Screenshots: `screenshots/dashboard-v2-*.png` (A and Recommended at 1366, 1920, 768, 375; roles; every tab; empty, loading and stale states; the mockup panel).
+Deep links: `dashboard-mockup-v2.html#design=R&role=pm&tab=swimlane&state=stale&client=nw&matter=m2041&list=asap&win=2` (`design` A or R; `role` director, pm, pod, tech; `state` live, empty, loading, stale).
+
+### What changed against v1
+- **Tiles are compact and calm.** About 96 px tall (v1 about 156), 203 to 232 px wide, number 30 px semi-bold (v1 56 px bold), label 13.5 px, hint 13 px, icon chip 32 px (v1 56), inner padding 14 px. Still one row at 1366 and 1920. The number is the first thing the eye lands on: it is the largest, darkest text in the row, in the tone's dark ink. Selected tile = 2 px ring plus a small chevron (no thick coloured borders); zero = teal "All clear".
+- **Type scale for the whole page** (v1 mixed 15 to 30 px): page title 22 px, section titles 17 px, body and tables 14 px, labels 13 px, smallest text 12 px (chart axes only). Controls are 38 px (v1 44), table rows 42 px (v1 44), page gutters 24 px (32 px from 1500 px), gaps 16 px, card padding 16 px.
+- **No thick coloured borders anywhere.** v1 had 5 px accent strips on client cards, swimlane cards, KPI and user cards; v2 uses a state chip, a pill or a dot instead (checked by script: no border of 3 px or more).
+- Summary is two rows: tiles, then the list with its right-hand column. The radar (ASAP, On hold, Open, Completed) moved into the tile row in design A; in Recommended ASAP and On hold became tiles and Open and Completed live in the "Show" dropdown.
+- "Updated 09:42" is gone from the header: the real page shows no timestamp in a normal session (decision S) and says "Updated N min ago" only when the figures are stale. The Stale state in the mockup panel shows it.
+- Breakdowns now has the four cards the real page has (Priority, Status, Task type, Age), each with Bars, Table or Pie. Trends has the Measure switch (Created and completed, Open backlog). Swimlane cards show an out-of-office marker on the avatar. Users, Coverage, Technician queue, empty and loading states are all restyled.
+- The Project Manager role and the Pod Lead role are now in "View as". Tabs follow the seeded permissions: Director all five, Pod Lead Summary, Swimlane and Users, Technician the unassigned queue only. The Project Manager has no Dashboard by default (architecture.md); the mockup shows Summary and Swimlane as if an administrator granted them.
+
+### The two designs ("Mockup" button, bottom right, Design)
+- **A compact** is your option A with smaller tiles and nothing else rethought: three tiles (Overdue, Due in 2 days, Unassigned), a quiet radar card (ASAP, On hold, Open, Completed) in the same row, one task list that the tiles switch, "What changed" beside it. Five-column task table with Priority, sortable headers.
+- **Recommended** applies the answers below. Five tiles in a fixed order (what is late, what is next, who is waiting): Overdue, ASAP, Due in 7 days, Unassigned, On hold. A one-line sentence under the title ("2 of 8 matters are late. 10 tasks overdue, 6 ASAP."). The list has a "Show" dropdown with counts that stays in sync with the tiles, urgency order by default, pills only for unusual values (ASAP, High, On hold), overdue shown as "12 days late". Beside it a Clients card (then Matters of the chosen client) with Late, At risk or On track, then "What changed" with 3 items. It follows the My Matters decisions: one task grid with a pre-filter dropdown, urgency order, pills for unusual values only, Client then Matter dropdowns, same colour words and the same 7-day look-ahead.
+
+### My answers to the six open questions (shown in Recommended)
+1. **ASAP visibility: its own tile, second in the row.** ASAP work has no date, so it can never appear in Overdue or Due soon; that is why it felt invisible. A badge on rows only helps after you open the list, a tile costs one small box and shows "Oldest 11 days". Rows also carry an ASAP pill. If the owner wants only four tiles, ASAP is the last one to drop and would then live in the "Show" dropdown.
+2. **Due soon window: 7 days by default, with a 2 days / 7 days switch in the list header.** Document review and production deadlines need lead time, and My Matters already looks 7 days ahead, so the two pages agree. The tile hint keeps today's question ("2 today, 3 tomorrow"). Design A keeps today's 2 days.
+3. **On hold: a quiet slate tile at the end, next to Unassigned.** It is waiting, not late, so never red or amber and never in the headline sentence. It sits beside Unassigned because both are "waiting for a person or a decision", the same grouping as "Needs a decision" in My Matters. On-hold tasks are not counted again in Overdue or Due soon.
+4. **Role-based default (Recommended design).** Director: tiles in the order above, the Clients health card on the right (firm-wide: which client, which matter). Project Manager: scoped to their own matters (My matters / All matters toggle), the card lists their matters; list starts on Overdue. Pod Lead: Unassigned is the first tile and the first list, the right-hand card is Team capacity (who has room), Users tab one click away. Technician: only the unassigned queue, ASAP first, "Assign to me". Design A is not role-based, except that the Technician sees the queue.
+5. **Client and matter health rule (one sentence each, shown under "How health is decided").** Late = 3 or more overdue tasks, or any task 10 or more days overdue. At risk = 1 or 2 overdue, or 3 or more due in the next 2 days, or a task unassigned for 7 days or more. On track = none of these. A client is as healthy as its worst matter and says why ("1 of 2 matters late"). Counts, not percentages, so a big matter is not judged differently from a small one; the same three words as My Matters.
+6. **Matter when no client is chosen: keep it enabled, grouped by client.** Disabling it forces two steps when you already know the matter. Picking a matter sets the client; picking a client narrows the matter list. The Clients card, the dropdowns and the tiles all drive the same filter chain.
+
+### How to compare
+Open `dashboard-mockup.html#opt=A` (v1) next to `dashboard-mockup-v2.html#design=A` to judge tile size only; then switch Design to Recommended. Walk the roles in "View as" (Director, Project Manager, Pod Lead, Technician) and the states (Empty, Loading, Stale). Click every tile; use the "Show" dropdown; switch the Due window 2 / 7 days; click a client, then a matter in the right-hand card (the dropdowns follow); open a task row (Esc closes); sort a header, then "Back to urgency order"; walk the five tabs (Pod Lead has three, Project Manager two).
+
+### Measurements (Playwright)
+Tiles are 96 px tall everywhere on desktop. At 1366: A 232 px wide (3 tiles plus the radar card), Recommended 203 px wide (5 tiles in one row). At 1920: 232 px wide, one row. At 768 the tiles wrap (3 + 2); at 375 they are two columns. No horizontal page scroll at any size tested; no console errors. Text pairs were checked with a WCAG ratio script (about 100 pairs, text 4.5:1, icon and ring colours 3:1): none fails.
+
+### Open questions
+1. Five tiles or four? ASAP and On hold are the candidates; the list dropdown keeps them reachable either way.
+2. Should the Project Manager get the Dashboard at all? By default the role has none and works from My Matters; if yes, is "My matters" the right default scope?
+3. 7 days as the default for Due soon changes today's meaning of the number (8 becomes 11 in the mock data). Acceptable, or keep 2 as the default and show 7 as the switch?
+4. Is "Late / At risk / On track" the right wording on the Dashboard, or keep "Overdue work / Watch" from v1?
+5. The sentence under the title (Recommended) is computed; keep it, or leave the subtitle as the date only?
+6. Pod Lead sees Team capacity instead of Clients on Summary. Should Directors also get a team strip, or is the Users tab enough?
