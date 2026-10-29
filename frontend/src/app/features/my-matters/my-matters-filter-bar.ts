@@ -106,11 +106,20 @@ const matterOption = (m: MatterResponse): PickerOption => ({
       font-weight: 600;
       line-height: 1.4;
     }
+    /* Definite widths (not percentages): the bar is a flex item of the page's top row, and a percentage would make its max-content too small and wrap Role and
+       Clear filters under the dropdowns. */
     .fb__client {
-      width: min(16rem, 100%);
+      width: 16rem;
+      max-width: 100%;
     }
     .fb__matter {
-      width: min(24rem, 100%);
+      width: 24rem;
+      max-width: 100%;
+    }
+    /* The picker keeps its label beside its box (about 7 rem for "Project manager" and 15 rem for the box), so it gets its own, wider, definite width. */
+    .fb__manager {
+      width: 26rem;
+      max-width: 100%;
     }
     .fb__select {
       min-width: 9rem;
@@ -159,9 +168,13 @@ const matterOption = (m: MatterResponse): PickerOption => ({
         align-items: center;
         gap: var(--mf-s2);
       }
-      :host ::ng-deep :is(.fb__client, .fb__matter) .mf-field > * {
+      :host ::ng-deep :is(.fb__client, .fb__matter) .mf-field > :not(label) {
         flex: 1 1 auto;
         min-width: 0;
+      }
+      :host ::ng-deep :is(.fb__client, .fb__matter) .mf-field__label {
+        margin: 0;
+        white-space: nowrap;
       }
     }
     @media (max-width: 639.98px) {
@@ -171,6 +184,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
       .fb__field,
       .fb__client,
       .fb__matter,
+      .fb__manager,
       .fb__select {
         width: 100%;
         max-width: none;
@@ -237,7 +251,7 @@ const matterOption = (m: MatterResponse): PickerOption => ({
           </div>
         }
         @if (filters().scope === 'all') {
-          <div class="fb__field fb__client">
+          <div class="fb__field fb__manager">
             <mf-entity-picker
               label="Project manager"
               inputId="mm-manager"

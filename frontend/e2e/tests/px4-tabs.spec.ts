@@ -412,7 +412,7 @@ test.describe('My Matters: the first screen on a phone, and the skip links', () 
     await page.keyboard.press('Tab');
     await expect(page.locator('[data-panel=tasks] [data-calendar-toggle]')).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.locator('[data-panel=tasks] [data-sort-urgency]')).not.toBeFocused(); // one task: no Urgency control
+    await expect(page.locator('[data-panel=tasks] [data-sort-urgency]')).toHaveCount(0); // one task: no Urgency control
     expect(await axeViolations(page)).toEqual([]);
   });
 });

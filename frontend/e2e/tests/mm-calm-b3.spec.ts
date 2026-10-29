@@ -78,10 +78,12 @@ test.describe('One column, lighter rows, one Options menu (#903, #897, #894)', (
     ).toHaveCount(0);
     await expect(page.locator('[data-panel=tasks] mf-options-menu')).toHaveCount(1);
     await expect(page.locator('[data-panel=tasks] select')).toHaveCount(1);
-    await expect(page.locator('[data-panel=tasks] button:not(.wt-sort)')).toHaveCount(
+    await expect(
+      page.locator('[data-panel=tasks] button:not(.wt-sort):not(.em__item)'),
+    ).toHaveCount(
       await page
         .locator(
-          '[data-panel=tasks] [data-calendar-toggle], [data-panel=tasks] [data-sort-urgency], [data-panel=tasks] [data-options-trigger], [data-panel=tasks] [data-clear-prefilter], [data-panel=tasks] [data-prefilter-retry]',
+          '[data-panel=tasks] [data-calendar-toggle], [data-panel=tasks] [data-sort-urgency], [data-panel=tasks] [data-clear-prefilter], [data-panel=tasks] [data-prefilter-retry]',
         )
         .count(),
     );

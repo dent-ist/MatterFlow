@@ -50,10 +50,10 @@ const WIDE_WIDTHS: Record<string, number> = {
 const TABLET_WIDTHS: Record<string, number> = {
   ref: 5,
   matterName: 7,
-  priority: 6,
-  assignee: 7,
+  priority: 5.5,
+  assignee: 6.5,
   due: 7.5,
-  status: 7,
+  status: 6.5,
 };
 
 /** The sorts that start descending (the newest first), as in the Task Queue. */
@@ -294,14 +294,12 @@ const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 })
 export class TaskGrid {
   protected readonly hint =
-    'Open tasks of your matters, most urgent first: overdue, at risk, due today, unassigned with a date within 7 days, then on hold for more than 7 days. Click a heading to sort.';
+    'Most urgent first: overdue, at risk, due today, unassigned with a date within 7 days, then on hold for more than 7 days. Click a heading to sort.';
   protected readonly rowList = 'my-matters-tasks';
   protected readonly pageSize = GRID_PAGE_SIZE;
 
   /** Column widths in rem: Due is never cut ("Overdue 126d" in full), Matter and the others stay short; the Title takes the rest. */
   private readonly wide = viewportAtLeast(1000);
-  /** Tablet portrait (below 800 px): the Ref column gives way so the grid fits without scrolling sideways (issue #937); the title link opens the task. */
-  private readonly roomy = viewportAtLeast(800);
   protected readonly widths = computed(() => (this.wide() ? WIDE_WIDTHS : TABLET_WIDTHS));
 
   readonly filters = input.required<MmFilters>();
@@ -380,7 +378,7 @@ export class TaskGrid {
   });
 
   protected readonly columns = computed(() => [
-    ...(this.roomy() ? ['ref'] : []),
+    'ref',
     'title',
     ...(this.showMatter() ? ['matterName'] : []),
     'priority',

@@ -11,12 +11,11 @@ import { PmPersona, pmSolo, pmThree } from '../support/pm-fixtures';
  * A busy fixture is built first (five late tasks, three due soon) so the lists are full, as they are for a real Project Manager.
  *
  * The budgets and why (README, "The calm budget"):
- *  - first task row: 300 px at 1366x768 (the issue's number; measured 291 for one matter, 299 for three after the tiles became one row), 420 px on a phone (measured 343);
+ *  - first task row: 300 px at 1366x768 (the issue's number; after the Overview rework measured 222 for one matter and 262 for three), 420 px on a phone (measured 270);
  *  - controls and words on the first screen, per person, set from the measured result of Release 3 with a small margin, NOT the issue's 25 / 150 for both. They ROSE
- *    in Release 3 on purpose: every column heading of the two grids is a sort button (about 7 each), the second grid has its own heading row, there is a Matter
- *    column and a Calendar button, and the six tiles replace three chips. Measured at 1366x768: one matter 39 controls / 204 words, three matters 58 / 274
- *    (the Client and Role filters, the New task chooser, three matter rows with a menu each); on a phone 22 / 100 and 23 / 101. The ceilings stop the page getting
- *    busier; the issue's targets stay open and are said so in the README;
+ *    in Release 3 on purpose. The Overview rework (MM-45..MM-49, MM-51) took them down again: ONE grid, no tiles, no second heading row, no Matters section.
+ *    Measured at 1366x768: one matter 27 controls / 213 words, three matters 42 / 257 (the Client, Matter and Role filters, the pre-filter, one grid of
+ *    task rows); on a phone 17 / 91 and 18 / 92. The ceilings stop the page getting busier;
  *  - no task id twice on the Overview; no sideways scroll.
  * The Calendar view, the Data tab and the Activity tab get a ratchet, their measured numbers plus a margin, so that work only lowers them.
  */
@@ -28,12 +27,12 @@ interface Budget {
 
 const OVERVIEW: Record<'solo' | 'three', Record<'desktop' | 'phone', Budget>> = {
   solo: {
-    desktop: { row: 300, controls: 41, words: 215 },
-    phone: { row: 420, controls: 22, words: 110 },
+    desktop: { row: 300, controls: 29, words: 225 },
+    phone: { row: 420, controls: 19, words: 98 },
   },
   three: {
-    desktop: { row: 300, controls: 61, words: 290 },
-    phone: { row: 420, controls: 24, words: 110 },
+    desktop: { row: 300, controls: 45, words: 270 },
+    phone: { row: 420, controls: 20, words: 100 },
   },
 };
 
@@ -46,8 +45,10 @@ const TABS: Record<
   Record<'desktop' | 'phone', Budget>
 > = {
   calendar: {
-    desktop: { row: 410, controls: 30, words: 96 },
-    phone: { row: 470, controls: 22, words: 85 },
+    // The month grid has no task row (its "row" would be a day chip), so the row is not measured (0); controls and words are.
+    // Measured (one matter / three matters): 1366x768 11 / 15 controls, 53 / 57 words; 375x812 11 / 12 controls, 19 / 20 words.
+    desktop: { row: 0, controls: 17, words: 62 },
+    phone: { row: 0, controls: 14, words: 24 },
   },
   // The Breakdown (issues #911, #912; no task row, the cells are counts). Measured after the rework (1366x768 / 375x812): one matter 17 / 16 controls and 57 / 45 words,
   // three matters 29 / 23 controls and 87 / 78 words. The ratchet is the higher of the two people plus about 5 percent.
@@ -90,7 +91,7 @@ const settled = async (page: Page, tab: string): Promise<void> => {
   await expect(page.locator('[data-mm-body]')).toHaveCSS('visibility', 'visible');
 };
 
-/** A busy person: the persona's four tasks plus four more overdue (five in Needs my attention), three due within the week and four assets (the Data tab). */
+/** A busy person: the persona's four tasks plus four more overdue (five late in the grid), three due within the week and four assets (the Data tab). */
 async function fill(
   seed: import('../support/seed').Seeder,
   p: PmPersona,
@@ -160,7 +161,7 @@ for (const who of ['solo', 'three'] as const) {
           test.info().annotations.push({ type: `${who}-${size}-${tab}`, description: say(t) });
           console.log(`BUDGET ${who} ${size} ${tab}: ${say(t)}`);
           const tb = TABS[tab][size];
-          if (t.firstTaskRowTop !== null)
+          if (t.firstTaskRowTop !== null && tb.row > 0)
             expect(t.firstTaskRowTop, `${tab}: first task row (${say(t)})`).toBeLessThanOrEqual(
               tb.row,
             );

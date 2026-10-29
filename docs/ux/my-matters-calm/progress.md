@@ -335,3 +335,49 @@ The whole e2e, axe and performance suites; `mm-calm-b4`, `mm-controls-tabs`, `pv
 * Breakdown cells lost their second "N overdue" link on purpose (#911); the overdue tasks are one click away in the Task Queue (Overdue tile and Needs my attention).
 * The phone's "since your last visit" line is the #922 one-row line that scrolls sideways: "Mark as read" can be partly out of sight on 375 px (not part of this work).
 * The Focus note repeats what the chip under the filters says; it stays because the owner asked for it in #907 and it is one short line.
+
+## Overview rework (MM-45..MM-49, MM-51) (epic #893): #947, #945, #942, #943, #941, #944 (cheap checks only, QA pending)
+
+Owner change of 2026-10-29: the Overview is ONE page of one idea. No tiles, no Trends tab, no Matters section, no second grid; a pre-filter dropdown with counts filters one merged grid; Client and Matter are page filters; the Calendar is one month.
+
+### Built
+
+* **#947 and #945 (commit 53c5a4f).** The Trends tab, the Matters section and the API, OpenAPI entries, nswag client and tests that only they used are gone. `?tab=trends` lands on the Overview. `GET /my-matters/attention` and `/deadlines` are still in the API (nothing on the page reads them now); removing them is a clean-up for the owner to decide.
+* **New API (same commit).** `matterId` on the My Matters queries (the page's Matter filter; the sensitive-matter rule is unchanged: a matter the person may not see gives an empty answer, not an error), the Focus on the summary counts, and `GET /my-matters/calendar` (one month, counts per day and the first five tasks of each day, narrowed by Client, Matter, Role, the pre-filter and the Focus). OpenAPI and the nswag client were regenerated, not merged by hand.
+* **#942 and #943 (commit e420b78).** One grid over `GET /task-queue`: urgency order (#935), 25 per page, server-side sort and filter. The dropdown (All open, Overdue, At risk, Unassigned, On hold, Due soon within 7 days) shows a count per choice, follows the Client and Matter filters, is kept in the address (`show=`) and remembered. A zero stays selectable but muted. A phone shows cards.
+* **#941 (commit 130edc9).** Client dropdown with no label, a Matter dropdown, both page filters (in the address). New task uses the chosen matter when exactly one is chosen and asks otherwise; the header chooser is gone. The Activity tab reads the same Matter filter (its own picker was removed, as the Activity agent did).
+* **#944 (commit 76af3eb).** The Calendar is one month with Previous, Next and Today (lazy chunk), an overdue warning icon with accessible text, no Dates control. The Calendar icon button, Focus in the header Options, the New task button and the one-matter rules are kept.
+* Addendum AO in `docs/requirements/decisions-addendum.md` (item 15) and `docs/ux/pm-review/my-matters-api.md` are updated.
+
+### Measured (1366x768 and 375x812, a busy person: five late, three due soon)
+
+| | one matter | three matters |
+|---|---|---|
+| desktop first task row | 222 px | 262 px |
+| desktop controls / words | 27 / 213 | 42 / 257 |
+| phone first task row | 270 px | 270 px |
+| phone controls / words | 17 / 91 | 18 / 92 |
+| Calendar controls / words, desktop | 11 / 53 | 15 / 57 |
+| Calendar controls / words, phone | 11 / 19 | 12 / 20 |
+
+The row limits are unchanged (300 desktop, 420 phone); only the controls and words ceilings of `mm-calm-budget.spec.ts` came down (Overview 29 / 225 and 45 / 270 on a desktop, 19 / 98 and 20 / 100 on a phone). The Calendar row is not measured (0): its only "task" is a day chip.
+
+### Specs edited
+
+e2e: `mm-calm-b1`, `b2`, `b3`, `b4`, `b6`, `mm-calm-budget`, `pm4-my-matters`, `pm4-all-scope`, `px4-tabs` (and others that named the tiles, the strip or the skip links). Unit: page, prefilter, calendar-month, filters, tabs-helpers, facts. On a fresh DB these ran in a browser and passed: b2, b3, b4, b6, budget, pm4-all-scope, pm4-my-matters, px4-tabs (98 and 62 tests in the last two runs; the earlier first run had 127 of 140).
+
+### Cheap checks run
+
+`dotnet build -warnaserror`, `dotnet format --verify-no-changes`, unit, architecture and schema tests, the WorkViews integration classes I touched; frontend tsc (app, spec, e2e), eslint and prettier on the changed files, `npm test` (4348 passed), initial bundle 648.31 kB (limit 700).
+
+### Not run (left for QA)
+
+The whole e2e suite, axe over every page, the performance suites, the persona and endpoint-catalog integration suites beyond the touched classes.
+
+### Deviations and things QA should know
+
+* When the grid fails, the pre-filter and its counts are not drawn (they are the grid's header); the grid's own Retry brings them back.
+* At 768 px the navigation rail leaves 664 px; the grid's narrowest form is 680 px, so it scrolls sideways by 16 px there (with its hint and as a Tab stop). `mm-calm-b6` now allows that at 768 only.
+* The Calendar and the grid both follow the remembered pre-filter, so a visit to the Calendar with "Overdue" chosen shows only overdue tasks.
+* In the All scope the Project manager picker has its own width so "Set project managers" is not covered.
+* The export surface name stays `my-matters.attention`.

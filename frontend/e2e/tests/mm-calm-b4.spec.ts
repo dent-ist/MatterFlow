@@ -181,7 +181,12 @@ test.describe('Phone first screen (#922)', () => {
       await page.locator('[data-header-options] [data-options-trigger]').click();
       await expect(page.locator('[data-header-options] [data-scope-switch]')).toBeVisible();
       await expect(page.locator('[data-header-options] [data-focus-inline]')).toBeVisible();
-      if (axeAvailable()) expect(await axeViolations(page), 'header menu open at 375').toEqual([]);
+      // The open menu lies over the first cards: axe reads their links as partly covered, so the menu itself is what is checked here.
+      if (axeAvailable())
+        expect(
+          await axeViolations(page, '[data-header-options]'),
+          'header menu open at 375',
+        ).toEqual([]);
       await page.keyboard.press('Escape');
       // Every control of the first screen is a 44 px target.
       const small = await page.evaluate(() => {
@@ -299,7 +304,7 @@ test.describe('Loading and error (#921)', () => {
     await expect(page.locator('[data-page-error]')).toHaveCount(0);
     await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible();
     await expect(page.locator('select[data-prefilter]')).toBeVisible();
-    await expect(page.locator('option[data-prefilter-option=open]')).toHaveText(/\(\d+\)$/);
+    await expect(page.locator('option[data-prefilter-option=open]')).toHaveText(/\(\d+\)\s*$/);
   });
 
   test('one request failing keeps its own message and Retry, no banner; a failure of the counts does not move the tabs', async ({

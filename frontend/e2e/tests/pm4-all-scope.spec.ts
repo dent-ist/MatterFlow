@@ -60,13 +60,14 @@ test.describe('My Matters: All matters', () => {
 
     // The counts equal the grid in the All scope.
     for (const key of ['open', 'overdue', 'unassigned']) {
-      await page.goto(`/my-matters?scope=all&clientId=${clientId}`);
-      await expect.poll(() => optionCount(page, key)).not.toBeNaN();
-      const n = await optionCount(page, key);
       const [queue] = await Promise.all([
         page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
-        page.locator('select[data-prefilter]').selectOption(key),
+        page.goto(
+          `/my-matters?scope=all&clientId=${clientId}${key === 'open' ? '' : `&show=${key}`}`,
+        ),
       ]);
+      await expect.poll(() => optionCount(page, key)).not.toBeNaN();
+      const n = await optionCount(page, key);
       expect(((await queue.json()) as { total: number }).total, key).toBe(n);
     }
 

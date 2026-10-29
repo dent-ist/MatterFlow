@@ -11,12 +11,6 @@ import { axeAvailable } from '../support/axe';
  * moved to the Activity tab in issue #909; Workload and capacity, #696, was removed for Project Managers, #826). Each test builds the matters and tasks it needs
  * in a world of its own, so the numbers on the page are written down here instead of read back from the page.
  */
-const total = async (page: Page): Promise<number> => {
-  const text = await page.locator('[data-range]').first().innerText();
-  const m = /of (\d+)/.exec(text);
-  return m ? Number(m[1]) : -1;
-};
-
 /** An option of the pre-filter dropdown, and the number in its words ("Overdue (9)"). */
 const option = (page: Page, key: string) => page.locator(`option[data-prefilter-option="${key}"]`);
 const optionCount = async (page: Page, key: string): Promise<number> => {
@@ -104,6 +98,11 @@ test.describe('My Matters: shell, filters and the pre-filter counts', () => {
     await page.locator('[data-clear-filters]').first().click();
     await expect(page).toHaveURL(/\/my-matters$/);
     await expect.poll(() => optionCount(page, 'open')).toBe(2);
+    // The Calendar choice is remembered for the next visit: leave it off, so the pages below open on the grid.
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
     // The Matter filter by the address (issue #941): the grid and the counts follow, and the box shows the matter.
     await page.goto(`/my-matters?matterId=${asSecondary.matterId}`);
     await expect.poll(() => optionCount(page, 'open')).toBe(1);
@@ -145,7 +144,7 @@ test.describe('My Matters: shell, filters and the pre-filter counts', () => {
     await expect(page).toHaveURL(/\/my-work/);
   });
 
-  test('the grid and the counts fail and load on their own: the grid failing leaves the counts working', async ({
+  test('the grid fails and loads on its own: the failure stays in the grid, with its own Retry, and the tabs keep working', async ({
     seed,
     personas,
     asUser,
@@ -163,10 +162,13 @@ test.describe('My Matters: shell, filters and the pre-filter counts', () => {
     await expect(page.locator('[data-panel=tasks] [data-panel-error]')).toContainText(
       "Couldn't load open tasks.",
     );
-    await expect(option(page, 'open')).toHaveText(/\(1\)$/);
+    // The pre-filter and its counts are part of the grid's header: they wait for the grid, and the page around them (tabs, filters) stays.
+    await expect(page.locator('select[data-prefilter]')).toHaveCount(0);
+    await expect(page.locator('#mm-tab-overview')).toBeVisible();
     await page.unroute('**/api/v1/task-queue*');
     await page.locator('[data-panel=tasks] [data-panel-retry]').click();
     await expect(page.locator('[data-panel=tasks] tr[data-task]').first()).toBeVisible();
+    await expect(option(page, 'open')).toHaveText(/\(1\)\s*$/);
   });
 });
 
@@ -230,10 +232,10 @@ test.describe('My Matters: the one grid of open tasks', () => {
     await expect(grid).not.toContainText('Long overdue');
     await expect(grid).not.toContainText('Within four weeks');
     await expect(grid.locator('[data-grid-status]')).toContainText('2 tasks due within 7 days');
-    // The grid has no 2 / 4 week buttons and no Views, Sort menu or Task types of its own.
-    await expect(grid.locator('[data-range], details')).toHaveCount(0);
-    // The Calendar is a month: the task due in 20 days is on its own date, in its month.
-    await page.goto(`/my-matters?view=calendar&month=${inDays(20).slice(0, 7)}`);
+    // The grid has no 2 / 4 week buttons and no Views or Task types of its own.
+    await expect(grid.locator('[data-range], [data-views], [data-types-trigger]')).toHaveCount(0);
+    // The Calendar is a month: the task due in 20 days is on its own date, in its month. (The pre-filter is kept and the Calendar follows it, so "All open" is asked for.)
+    await page.goto(`/my-matters?view=calendar&show=open&month=${inDays(20).slice(0, 7)}`);
     await expect(page.locator('[data-panel=calendar]')).toContainText('Within four weeks');
     // The old "Dates" choices are gone.
     await expect(page.locator('[data-filter=range], #mm-range')).toHaveCount(0);

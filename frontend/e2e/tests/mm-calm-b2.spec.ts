@@ -290,11 +290,7 @@ test.describe('Pre-filter dropdown with counts (#942)', () => {
     const one = await optionCount(page, 'open');
     expect(one).toBeLessThan(all);
     // The grid agrees with the option.
-    const [queue] = await Promise.all([
-      page.waitForResponse((r) => /\/api\/v1\/task-queue\?/.test(r.url()) && r.ok()),
-      page.locator('select[data-prefilter]').selectOption('open'),
-    ]);
-    void queue;
+    await expect(page.locator('[data-panel=tasks] [data-task]')).toHaveCount(Math.min(one, 25));
     await page.goto('/my-matters?show=unassigned');
     await settled(page);
     await expect(page.locator('select[data-prefilter]')).toHaveValue('unassigned');
