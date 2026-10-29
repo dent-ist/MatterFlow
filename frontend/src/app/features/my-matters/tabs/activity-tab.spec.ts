@@ -132,7 +132,7 @@ describe('ActivityTab (the grid, issue #946)', () => {
     const h = await open('/my-matters', [item(12)], 1, 1);
     expect(api.getMyMattersActivity.mock.calls[0][0]).toBe(ACTIVITY_TAB_PAGE);
     expect(ACTIVITY_TAB_PAGE).toBe(25);
-    expect(api.getMyMattersActivity.mock.calls[0][5]).toBeUndefined(); // dir
+    expect(api.getMyMattersActivity.mock.calls[0][4]).toBeUndefined(); // dir
     expect(
       Array.from(root(h).querySelectorAll('thead th')).map((t) => t.textContent!.trim()),
     ).toEqual(['When', 'Who', 'What', 'Task']);
@@ -141,8 +141,8 @@ describe('ActivityTab (the grid, issue #946)', () => {
   it('sorts oldest first from the address and pages with the shared pager', async () => {
     const h = await open('/my-matters?asort=when&apage=2', [item(3), item(2)], 27);
     const call = api.getMyMattersActivity.mock.calls[0];
-    expect(call[5]).toBe('asc');
-    expect(call[6]).toBe(2);
+    expect(call[4]).toBe('asc');
+    expect(call[5]).toBe(2);
     expect(root(h).querySelector('th[data-sort-when]')!.getAttribute('aria-sort')).toBe(
       'ascending',
     );
@@ -160,7 +160,7 @@ describe('ActivityTab (the grid, issue #946)', () => {
     expect(panel.querySelector('details[data-options] [data-filter=kind]')).not.toBeNull();
     expect(panel.querySelector('details[data-options] [data-filter=unread]')).not.toBeNull();
     expect(panel.querySelector('[data-options-count]')!.textContent!.trim()).toBe('1');
-    expect(api.getMyMattersActivity.mock.calls[0][2]).toEqual(['COMPLETED']);
+    expect(api.getMyMattersActivity.mock.calls[0][1]).toEqual(['COMPLETED']);
   });
 
   it('says what is empty, with a filter or without', async () => {

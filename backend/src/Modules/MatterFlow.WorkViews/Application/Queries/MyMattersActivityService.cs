@@ -72,7 +72,7 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
 
         // The unread badge counts the whole window, whatever the matter / kind filter on the list says; the total is the list's own "of N". One statement for both.
         Expression<Func<AuditRow, bool>> isUnread = e => e.AuditEventId > seen && e.ActorUserId != me;
-        var filter = ListFilter(kinds, query.Unread == true ? isUnread : null);
+        var filter = ListFilter(query.MatterId, kinds, query.Unread == true ? isUnread : null);
         var counts = await events.GroupBy(_ => 1).Select(g => new { Unread = g.AsQueryable().Count(isUnread), Total = g.AsQueryable().Count(filter) }).FirstOrDefaultAsync(ct);
         var unreadCount = counts?.Unread ?? 0;
         var total = counts?.Total ?? 0;
@@ -89,12 +89,14 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         return new MyMattersActivity(clock.ZoneId, now, since, seen, page.Count == 0 ? 0 : page.Max(e => e.AuditEventId), unreadCount, total, hasMore, items, hasMore ? page[^1].AuditEventId : null);
     }
 
-    /// <summary>The kind and unread filters of the list as one predicate (ANDed; no filter matches everything). The matter is the page's own filter and already narrowed the scope.</summary>
-    private static Expression<Func<AuditRow, bool>> ListFilter(IReadOnlyCollection<string> kinds, Expression<Func<AuditRow, bool>>? unread)
+    /// <summary>The matter, kind and unread filters of the list as one predicate (ANDed; no filter matches everything). The matter narrows the list only, never the unread badge.</summary>
+    private static Expression<Func<AuditRow, bool>> ListFilter(int? matterId, IReadOnlyCollection<string> kinds, Expression<Func<AuditRow, bool>>? unread)
     {
         var parameter = Expression.Parameter(typeof(AuditRow), "e");
         Expression body = Expression.Constant(true);
         void And(LambdaExpression part) => body = Expression.AndAlso(body, new ReplaceParameter(part.Parameters[0], parameter).Visit(part.Body)!);
+        if (matterId is { } onlyMatter)
+            And((Expression<Func<AuditRow, bool>>)(e => e.MatterId == onlyMatter));
         if (kinds.Count > 0)
             And(KindPredicate(kinds));
         if (unread is not null)

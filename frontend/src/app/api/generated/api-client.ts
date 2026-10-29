@@ -14141,6 +14141,8 @@ export interface IMyMattersClient {
      * @param kind (optional) 
      * @param unread (optional) 
      * @param cursor (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -14151,7 +14153,7 @@ export interface IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity>;
+    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, dir?: string | undefined, page?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity>;
     /**
      * @param scope (optional) 
      * @param role (optional) 
@@ -14301,6 +14303,8 @@ export class MyMattersClient implements IMyMattersClient {
      * @param kind (optional) 
      * @param unread (optional) 
      * @param cursor (optional) 
+     * @param dir (optional) 
+     * @param page (optional) 
      * @param scope (optional) 
      * @param role (optional) 
      * @param clientId (optional) 
@@ -14311,7 +14315,7 @@ export class MyMattersClient implements IMyMattersClient {
      * @param matterId (optional) 
      * @return OK
      */
-    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity> {
+    getMyMattersActivity(take?: number | undefined, kind?: string[] | undefined, unread?: boolean | undefined, cursor?: number | undefined, dir?: string | undefined, page?: number | undefined, scope?: string | undefined, role?: string | undefined, clientId?: number | undefined, from?: string | undefined, to?: string | undefined, managerId?: number | undefined, fresh?: boolean | undefined, matterId?: number | undefined): Observable<MyMattersActivity> {
         let url_ = this.baseUrl + "/api/v1/my-matters/activity?";
         if (take === null)
             throw new globalThis.Error("The parameter 'take' cannot be null.");
@@ -14329,6 +14333,14 @@ export class MyMattersClient implements IMyMattersClient {
             throw new globalThis.Error("The parameter 'cursor' cannot be null.");
         else if (cursor !== undefined)
             url_ += "cursor=" + encodeURIComponent("" + cursor) + "&";
+        if (dir === null)
+            throw new globalThis.Error("The parameter 'dir' cannot be null.");
+        else if (dir !== undefined)
+            url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "page=" + encodeURIComponent("" + page) + "&";
         if (scope === null)
             throw new globalThis.Error("The parameter 'scope' cannot be null.");
         else if (scope !== undefined)
@@ -19684,6 +19696,7 @@ export interface MyMattersActivity {
     seenEventId: number;
     latestEventId: number;
     unreadCount: number;
+    total: number;
     hasMore: boolean;
     items: MyMattersActivityItem[];
     nextCursor?: number | undefined;
