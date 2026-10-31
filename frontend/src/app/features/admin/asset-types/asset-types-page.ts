@@ -177,24 +177,26 @@ const LOAD_PAGE_SIZE = 100;
               @for (t of rows(); track t.assetTypeId) {
                 <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
                   <td class="mf-cell-name">
-                    <mf-task-type-chip
-                      class="at-chip"
-                      [decorative]="true"
-                      [iconKey]="t.iconKey"
-                      [colourKey]="t.colourKey"
-                      [typeId]="t.assetTypeId"
-                      [name]="t.name"
-                    />
-                    <a
-                      class="mf-name"
-                      [routerLink]="['/admin/asset-types', t.assetTypeId]"
-                      [mfRowLink]="listId"
-                      [rowKey]="t.assetTypeId"
-                      [state]="leave.state()"
-                      [attr.title]="t.name"
-                      data-open
-                      >{{ t.name }}</a
-                    >
+                    <div class="at-name">
+                      <mf-task-type-chip
+                        class="at-chip"
+                        [decorative]="true"
+                        [iconKey]="t.iconKey"
+                        [colourKey]="t.colourKey"
+                        [typeId]="t.assetTypeId"
+                        [name]="t.name"
+                      />
+                      <a
+                        class="mf-name"
+                        [routerLink]="['/admin/asset-types', t.assetTypeId]"
+                        [mfRowLink]="listId"
+                        [rowKey]="t.assetTypeId"
+                        [state]="leave.state()"
+                        [attr.title]="t.name"
+                        data-open
+                        >{{ t.name }}</a
+                      >
+                    </div>
                   </td>
                   <td class="mf-cell-badge" data-fields>
                     <mf-form-status-cell
@@ -265,9 +267,15 @@ const LOAD_PAGE_SIZE = 100;
     }
   `,
   styles: `
-    .at-chip {
-      margin-right: var(--mf-s2);
-      vertical-align: middle;
+    .at-name {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .at-name .mf-name {
+      flex: 1 1 0;
+      min-width: 0;
     }
     .at-failure {
       display: flex;
