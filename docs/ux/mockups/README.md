@@ -361,3 +361,142 @@ The grid adapts with container queries: below 640 px Priority moves into the tas
 4. Workflow step names and counts are mock data; does the list API return "step n of m" per task?
 5. Should the side panel and tree states be remembered per user on the server rather than per browser?
 6. Cancelled needs a comment in the app; is the reason in the hover enough in the grid?
+
+
+# Notes mockup (`notes-mockup.html`)
+
+One self-contained file, no network, system fonts, inline SVG, a small hand-built rich-text editor (no editor library). Mock data only; nothing is saved. Open it in a browser and use the **Mockup** button in the top bar.
+
+(The Mockup button sits in the top bar this time, not bottom right as in the earlier files: at bottom right it covered the editor's Save button.)
+
+## What the owner asked for
+
+Under Matter, a new entity **Notes**: rich text; the author adds **tags** when writing; the UI **groups notes by tag**, so a note with several tags shows up several times; an **admin** creates the tags on the Labels page, under **Notes tags**, and users only pick; notes support **tables, hyperlinks, "tags of names"** and show **who updated last and when**.
+
+### Interpretation to confirm
+
+- **"Notes Tags"** = the admin-managed categories (Privilege, Custodians, Search terms, ...). Users pick up to 5; they cannot create tags.
+- **"tags of names"** = **@mentions of people by name inside the text** (type `@`, pick a person from a list, the name becomes a chip). The mockup does not notify anyone: you decided earlier that mentions are not needed for notifications (#737, closed not planned), so a mention here is a visible name chip that links to the person. The mention stores the user id, so a renamed person updates everywhere. **Please confirm this reading.** If you meant something else (for example free-text name labels, or tagging a note with people as a second kind of tag), say so and I will change it.
+
+## What it shows
+
+| Where | What |
+|---|---|
+| Matter record page | New **Notes** tab after Assets (Overview, Tasks, Projects, Assets, **Notes**), a **Notes 12** count chip in the header (opens the tab), and a "Notes, open the tab" tile plus a "Latest notes" list on Overview. |
+| My Matters page | Notes appears as an extra tab for the selected matter (Overview, Calendar, Assets, Metrics, **Notes**, Activity), and the Overview tab gets a small "Recent notes" card. The tree panel can be collapsed to give the notes more room. |
+| Notes view | Grouped by tag (one collapsible group per tag: colour chip, name, count; plus a last group **Untagged**), each note with title, 2-line plain-text preview, tag chips, author avatar, and "Updated by <name> . MM/DD hh:mm AM/PM". Search (title and text, with the match highlighted), tag filter (multi-select), sort, Expand/Collapse all, **+ New note**, empty state, loading state, "no match" state. |
+| Reader and editor | Read mode renders tables, links and mention chips. Edit mode has the toolbar, the tag picker, a footer with **Created by** and **Last updated by**, Save and Cancel, Delete and Pin. |
+| Labels page | New tab **Notes tags** beside Priorities, Status labels and On-hold reasons (create, rename, recolour, deactivate, delete only when unused). |
+
+### How a note with several tags reads (the duplication)
+
+The same note appears under each of its tags. Three cues make that obvious instead of confusing:
+
+1. In every group the note's chip row starts with **this group's tag (ringed)**, then the words **"also in"**, then the other tags. So "Litigation hold: second notice sent" under Hold notices reads *Hold notices, also in Custodians, Privilege*.
+2. **Hovering or focusing a note highlights every copy** of it (blue outline), in the list and on the board.
+3. The numbers say it: in the tag rail (design B) the footer states "12 notes, 20 tag placements. Counts add up to more than 12 because a note with several tags is counted under each." The header chip counts each note once (12). **Latest first** shows every note exactly once. Switch "Tags per note" to "One tag only" in the Mockup panel to see the same data without repeats.
+
+### The three designs (Mockup panel, Design option)
+
+| | A. Grouped list + editor panel | B. Tag rail + notes + reader | C. Tag board |
+|---|---|---|---|
+| Layout | Groups fill the left; the reader opens in a right panel. **Edit opens the panel full width** (one click on the shrink icon brings the list back). | Left rail of tags with counts is the grouping (All notes, each tag, Untagged); middle list; right reader and editor. The rail collapses to a 56 px strip of dots. | One column per tag, cards inside, horizontal scroll in the frame. A card opens in a right drawer. |
+| View switch | By tag / Latest first | none (the rail is the switch) | Tag board / Latest first |
+| Scanning | Best: every note's preview, tags and last update in one column; groups are sticky headers | Good for one tag at a time; the rail shows the shape of the matter | Good for "what is in each bucket", weak for reading previews (about 3 columns visible at 1366) |
+| Duplication | Same note repeated down the page, tied together by "also in" and hover | A note is shown once per selected tag, rail counts overlap | The same card sits in several columns side by side: clearest that it is one note |
+| Editing comfort | Full-width editor (about 1080 px) or side panel | Reader and editor about 536 px at 1366 (list only 324 px), toolbar wraps | Drawer 580 px, expandable to 980 px |
+
+**Recommendation: A.** At 1366 x 768 it gives the list about 583 px and the reader about 497 px (the editor opens at the full 1080 px); B has a 220 px rail, a 324 px list and a 536 px reader, so the list is narrow and the rail repeats what A's group headers already show; C shows three columns of previews at a time. A is also the only one that reads like a document: scan down, open one, edit full width. Keep B as the option for a matter with many tags on a wide screen (1920) and C for a visual "triage" mode if people ask. On My Matters, with the tree panel open the notes frame is only about 800 px wide, so A and B open the note in a drawer; collapse the tree and they dock. That is a good reason to keep the drawer behaviour in the build.
+
+## The editor
+
+- **Title** (required, 120 characters), **tags** (picker), **body**.
+- **Toolbar** (`role="toolbar"`, one tab stop, arrow keys, Home and End move between buttons): text style menu (Paragraph, Heading 1, 2, 3), bold, italic, underline, bulleted list, numbered list, quote, link, table, mention, clear formatting, undo, redo.
+- **Link**: dialog with the address (and the text to show if nothing is selected). Accepts `https://` and `onenote:https://` (the same rule as the app's documentation URL); anything else, including `http://`, shows an inline error. Remove link is offered when the cursor is in a link.
+- **Table**: inserts 3 x 3 with a header row. A "Table" strip appears while the cursor is in a table: + Row, - Row, + Col, - Col, Header on/off, Delete. **Tab and Shift+Tab move between cells**; at the first or last cell Tab leaves the table as usual (no keyboard trap).
+- **Mention**: type `@` (or press the @ button), a list of people opens at the cursor, arrows and Enter or Tab insert a name chip, Esc closes. The list says "no notification".
+- **Tag picker**: a multi-select popover (rounded list, colour dot, name, count of notes right-aligned, check at the right), with search. Selected tags are removable chips in the field. The list shows **only active tags**; at 5 selected the others are disabled with a note. Users cannot create tags: the footer says "Ask an administrator" (an administrator gets a link to Labels). An inactive tag that is already on the note stays visible, marked "(inactive)", and can be removed.
+- **Footer**: "Created by X . MM/DD hh:mm AM/PM" and "Last updated by Y . MM/DD hh:mm AM/PM" in both read and edit mode, plus an "Unsaved changes" indicator in the header.
+- **Unsaved-changes guard**: leaving a dirty editor (another note, Cancel, closing, another tab or screen, the Mockup controls) asks "Discard unsaved changes?". The browser's own prompt covers closing the tab.
+- **Concurrent edit**: Mockup panel > "Simulate: someone else saved". A warning banner (`role="alert"`) says who saved and when, with **Reload their version** or **Keep mine**. Save stays blocked until you choose; "Keep mine" shows that saving replaces their version. In the build this is the `rowVersion` check: the save returns 409 and the page shows this banner.
+- **Delete**: confirmation dialog that names the tag groups the note will leave. **Pin/Unpin**: pinned notes stay on top of their groups (pin does not change "updated by").
+- **Read-only user**: no New, Edit, Pin or Delete; a quiet line explains why.
+- **Editor-local keys** (only while the cursor is in the note body, nothing is added to `shortcut-registry.ts`, #420): Ctrl+B bold, Ctrl+I italic, Ctrl+U underline, Ctrl+K link, Ctrl+Z undo, Ctrl+Y or Ctrl+Shift+Z redo, Tab and Shift+Tab inside a table, and the mention list keys (arrows, Enter, Tab, Esc). **Ctrl+K collides with the app's global search shortcut** (Ctrl+K in the top search box): inside the editor it opens the link dialog instead. Open question 13.
+
+## The admin page: Labels > Notes tags
+
+A fourth tab **Notes tags** (marked "New") next to Priorities, Status labels and On-hold reasons, with a primary button **New notes tag**. The table lists the tag chip, colour name, **notes using it**, **Active/Inactive**, and the actions Edit, Deactivate/Activate, Delete.
+
+- **Create and edit** in a dialog: name (40 characters), colour from the **shared task type palette** (the same ten names, so chip contrast is already proven), Active on edit, live preview. **Duplicate names** (case-insensitive) show an inline error. Renaming warns "changes the tag on all N notes".
+- **Deactivate**: the notes keep the tag and stay in its group (the group is labelled "inactive"), but the tag leaves the picker. Activate reverses it.
+- **Delete only when unused**: with notes on it, a dialog says it cannot be deleted and offers "Deactivate instead"; with 0 notes, a plain confirmation. (Try Privilege for the blocked case and Deadlines for the allowed one; in the "None" data state every tag can be deleted.)
+- **Permission note** at the foot of the table: needs the Label manage permission. The build would add `NoteTag.Manage` to `contracts/permissions.json`, like `StatusLabel.Manage`. Anyone who can see a matter can read its notes and pick active tags. A user without the permission sees a "no access" page (Role: Project Manager, then open Labels).
+- Tags are ordered A to Z everywhere (table, picker, groups). Question 11 asks whether you want a manual order.
+
+## Design rationale
+
+- **Tokens and look** are those of the My Matters work: navy navigation with the white pill, 22 px page title, calm spacing, white cards on the grey page, no thick coloured left borders (quotes and banners use a tinted box), the shared dropdown (rounded popover, check right, counts right-aligned), coloured chips from the task type palette, MM/DD hh:mm AM/PM dates.
+- **Fit to window**: on desktop the page never scrolls; the group list, the board, the editor and the admin table scroll inside their frames with sticky headers (group headers, the editor toolbar, the table head). On a tablet or phone the page scrolls and the panel becomes a full-width drawer.
+- **Colour is never the only signal**: every tag chip has its name; pinned, inactive, "also in" and "Unsaved changes" have words or icons; focus is a 2 px amber ring.
+- **Why one expand button per group set** ("Collapse all" turns into "Expand all"): one control, one state.
+
+## Definitions (please confirm)
+
+- **Note**: a titled, rich-text entry that belongs to one matter. It has a creator, a last updater, and a version number.
+- **Notes tag**: an admin-managed category with a name and a palette colour; active or inactive.
+- **Group**: all notes that carry a tag; a note with 3 tags is in 3 groups. **Untagged**: notes with no tag.
+- **Updated by / when**: the person and time of the last save. Pinning does not count as an update.
+- **Mention**: `@Name` in the body; stores the user id; no notification.
+
+## What to click
+
+1. Matter page, Notes tab: hover "Litigation hold: second notice sent" (it is in three groups; all three copies light up). Collapse a group; press **Collapse all**; switch **Latest first**; search `hold`; filter Tags; change Sort.
+2. Open "Privilege log protocol" (table, link, mention chips). **Edit**: the editor opens full width. Try the style menu, Bold, a list, then **table** (Tab between cells, + Row, - Col, Header), **link** (Ctrl+K; try `http://x` then `https://example.com` or `onenote:https://x`), type `@ma` and press Enter, **Add tag** (search, pick, remove), undo and redo.
+3. Mockup > **Simulate: someone else saved**, then Reload or Keep mine, then Save. Save, then Delete (confirmation). Start a new note, type a title, then click another note to see the discard guard.
+4. Mockup > Design option B and C; Role: Read-only user; Notes on the matter: None, or 120 notes; Tags per note: One tag only; Sensitive matter; Loading state.
+5. Screen: My Matters page (open a note, then collapse the tree to dock it). Screen: Admin, Labels > Notes tags: New notes tag (type `privilege` for the duplicate error), Edit, Deactivate, then Delete on Privilege (blocked) and on Deadlines (allowed).
+6. **Show stored HTML** (Mockup panel) shows what the server would keep after sanitising, plus the plain-text copy for search.
+7. The address records the state, for example `notes-mockup.html#screen=matter&opt=B&role=ro&data=many&note=n4`; keys: `screen` (matter, mymatters, admin), `opt` (A, B, C), `role` (pm, ro, admin), `data` (normal, many, empty), `tagmode` (many, one), `sens` (0, 1), `tab`, `view` (tag, latest, board), `note`.
+
+## Security note for the build
+
+The body is **HTML typed by users**, so the server is the only place that can be trusted:
+
+- **Sanitise on the server with an allow-list** before storing: elements `p, br, strong, em, u, ul, ol, li, blockquote, h1, h2, h3, a, table, thead, tbody, tr, th, td, span`; on `a` only `href` (scheme `https:` or `onenote:https:`; the brief also listed `http:`, the mockup and the app's documentation rule do not accept it, please decide) with `rel="noopener"` forced and no `target`; on `span` only a mention data attribute (`data-user-id`, a number); everything else is dropped. Strip `script`, `style`, event handlers (`onclick` and the like), `img`, `iframe`, `object`, `embed`, `form`, `svg` and inline styles; unwrap unknown elements and keep their text. Use a maintained library (for example HtmlSanitizer or AngleSharp based) rather than regular expressions, and add tests with the usual XSS strings.
+- The client only helps: the editor pastes **plain text** (no foreign HTML) and ignores drops, and the mockup runs a small allow-list on Save (see "Show stored HTML"), but the real check is on the server for every write, and the reader should render only what the server returns.
+- **Store** the sanitised HTML and a **plain-text copy** for search (and for the 2-line preview). Put a **size limit** on both (the mockup uses 100 KB of HTML; a note rarely needs more) and a title limit (120).
+- **Mentions** store a **user id**, never trust the displayed name; resolve the current name when rendering. No notification is sent.
+- Links open with `rel="noopener"` in a new tab. Authorisation: reading and writing a note follows the matter (sensitive-matter rules included); a user who cannot see a matter must not get its notes from any endpoint, search or export.
+- Audit: create, edit, pin and delete go to the audit log with the user and time.
+
+## Open questions
+
+1. Confirm the reading of **"tags of names"** as @mentions (name chips, no notification), and that **"Notes Tags"** are the admin-managed categories.
+2. **Who may add, edit and delete notes?** Suggestion: people who can edit the matter plus the Primary and Secondary PM (the same rule as matter events); everyone who can see the matter can read; sensitive-matter rules apply. May an author delete a colleague's note, or only the author and PMs?
+3. **Concurrent edits**: last writer wins with the conflict banner (suggested: `rowVersion`, 409 on save), or lock a note while someone edits it?
+4. **Version history**: suggested later (the audit log already records who and when; a per-note history with restore is a separate feature).
+5. **Attachments and images**: suggested out of scope for now (images are not in the allow-list; links to the document system cover it).
+6. **Delete**: hard or **soft delete**? Suggested soft delete (hidden, recoverable by an administrator, kept in the audit log).
+7. **Tag limits per note**: suggested maximum 5 (the mockup enforces it). Required at least one tag, or allow untagged (the mockup allows it and shows an Untagged group)?
+8. **Mentions without notification**: confirm that is final (#737). Should a mention link to the person's profile page?
+9. **Search**: only within the matter (the mockup), or also in the global search box and a global Notes search? Suggested: matter only first, global later.
+10. **Export and print** of notes (one note, or all notes of a matter, perhaps as PDF or Word)?
+11. **Order of tags**: A to Z (the mockup) or a manual order the admin sets? Do you want a tag description?
+12. **Audit of changes**: log each note save with the changed fields, or only create/delete? (Suggested: every save, no body diff.)
+13. **Ctrl+K in the editor**: keep it for the link dialog (it hides the global search shortcut only while typing in a note), or leave it out and use the toolbar button only? Ctrl+B, I, U and Z are normal editor habits.
+14. **Editor library**: the mockup uses the browser's built-in editing so it needs no library. The build should use a maintained editor (TipTap or ProseMirror, Quill, CKEditor or Angular-friendly equivalents) that produces the same allow-listed HTML, for tables and undo that behave across browsers. Choice and licence need your OK (bundle limit 700 kB applies).
+15. Permission name `NoteTag.Manage` and whether the Notes tab is shown to people with no notes permission at all (it is shown to everyone who can see the matter).
+
+## Measurements (Playwright, Chromium)
+
+- Windows: 1366 x 768, 1920 x 1080, 768 x 1024, 375 x 812; no console errors or page errors in any scripted run.
+- Page scroll: on desktop (1366 and 1920) the document and the main area do not scroll in any screen or state (matter, My Matters, Labels, all three designs, empty, 120 notes, drawer open); there is no horizontal page scroll at any size.
+- Controls exercised by script: group collapse and expand all, view switch, search and clear, tag filter (search, keyboard, clear), sort, open and edit, toolbar (bold, style menu, table insert, Tab between cells, add and delete row and column, header toggle, undo, redo), link dialog (rejects `ftp://` and `http://`, accepts `onenote:https://`), mention list (filter, Enter), tag picker (add, remove, inactive hidden), save with updated-by and time, conflict banner (Reload, Keep mine), delete confirm, discard guard, pin, design B rail (filter, collapse), design C board and drawer (Esc closes), My Matters tab and tree collapse, tab arrow keys, roving toolbar arrows, all Mockup panel states, admin create, duplicate error, rename, recolour, deactivate, activate, blocked delete, delete unused.
+- Contrast: `notes-mockup-contrast.js` (run `node docs/ux/mockups/notes-mockup-contrast.js`) checks the colour pair of every visible text element in 22 states at the four sizes: **0 failures in 88 state and size combinations** (text 4.5:1, large text 3:1; the chips use the task type palette whose pairs are already proven)
+- Screenshots (small, 256-colour PNG): `docs/ux/mockups/screenshots/notes-*.png`, for example `notes-A-1366-list-twin.png` (the duplication cues), `notes-A-1366-edit.png`, `notes-A-1366-edit-table.png`, `notes-A-1366-conflict.png`, `notes-B-1366.png`, `notes-C-1366-board.png`, `notes-mymatters-1366-tree-collapsed.png`, `notes-admin-tags-1366.png`, `notes-admin-blocked-delete-1366.png`, and the 1920, 768 and 375 sizes.
+- Review iterations: the first build had the Mockup button at bottom right over the Save button (moved to the top bar), an editor so short at 1366 x 768 that the toolbar covered the text (Edit now opens full width and the notes header hides), a table preview that printed stray dots (fixed), drawers that covered the Mockup button (they now start under the top bar), a Labels page with zero height below 1000 px (fixed) and a phone header that took half the screen (compacted).
+
+## Notes for the build
+
+- Tables: `notes` (matter id, title, sanitised html, plain text, created by/at, updated by/at, pinned, row version, deleted flag) and `note_tags` (note id, tag id); `note_tag` (name, colour key, active, unique name). API: list notes of a matter (grouping is a client concern; return tag ids), get, create, update with row version, delete, pin; tags: list active (picker) and admin CRUD. Counts for the tab chip come with the matter's summary.
+- Permissions: `NoteTag.Manage` (admin), and note write rights as in question 2. Update `contracts/openapi`, the nswag client and `contracts/permissions.json` together.
