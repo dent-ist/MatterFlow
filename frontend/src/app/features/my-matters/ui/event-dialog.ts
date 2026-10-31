@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   input,
@@ -354,6 +355,19 @@ export class MmEventDialog {
   protected readonly errors = signal<Errors>({});
   private busy = false;
 
+  /**
+   * The page hosts this dialog in an `@if`, so closing it destroys the component, and with it the focus-return of `mfDialogFocus` (which needs a component that stays). Focus is
+   * therefore handed back here: to the control that opened the dialog (found again by its id or data attribute if the page drew it afresh), else to "+ New", else to the main area.
+   */
+  private readonly opener = document.activeElement;
+  private readonly openerSelector = (() => {
+    const el = this.opener;
+    if (!(el instanceof HTMLElement) || el === document.body) return null;
+    if (el.id) return `[id="${el.id}"]`;
+    const data = el.getAttributeNames().find((n) => n.startsWith('data-'));
+    return data ? `${el.tagName.toLowerCase()}[${data}="${el.getAttribute(data) ?? ''}"]` : null;
+  })();
+
   protected readonly client = signal<number | null>(null);
   protected readonly clientItems = computed<DropdownItem[]>(() => [
     { value: '', label: 'Choose a client' },
@@ -405,6 +419,7 @@ export class MmEventDialog {
   );
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.returnFocus());
     effect(() => {
       if (!this.visible()) return;
       untracked(() => {
@@ -424,6 +439,25 @@ export class MmEventDialog {
         this.note.set(e?.note ?? '');
       });
     });
+  }
+
+  private returnFocus(): void {
+    const first = this.opener instanceof HTMLElement ? this.opener : null;
+    const restore = (): void => {
+      const active = document.activeElement;
+      if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;
+      const target =
+        (first?.isConnected && !first.hasAttribute('disabled') ? first : null) ??
+        (this.openerSelector ? document.querySelector<HTMLElement>(this.openerSelector) : null) ??
+        document.querySelector<HTMLElement>('#mm-new-btn') ??
+        document.querySelector<HTMLElement>('main');
+      if (!target) return;
+      if (!target.matches('a, button, input, select, textarea, [tabindex]'))
+        target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
+    };
+    setTimeout(restore, 0);
+    setTimeout(restore, 150);
   }
 
   private validate(): Errors {
