@@ -184,3 +184,130 @@ No console errors; no horizontal page scroll at 1366, 1920, 768 or 375 for the s
 
 ### Notes for the build
 The real page needs a matter-level query that returns, per matter, the counts (open, overdue, critical, unassigned), the asset adds and updates for N days and the next event. That is one aggregate per matter, so it scales to 100 or more matters with paging on the server. The events feature needs a table and API (create, update, delete, list by date range and matter), the permission catalog entries, the OpenAPI contract and the generated client, as the architecture rules require. Nothing in this mockup changes product code.
+
+# My Matters v3 samples (`my-matters-v3-a-dropdowns.html`, `my-matters-v3-b-tree.html`, `my-matters-v3-c-recommended.html`)
+
+Three self-contained, clickable samples (inline CSS and JS, system fonts, inline SVG, no network). They reuse the data of v2 (3 clients, 40 open matters of which 12 are active, 90 tasks, 155 assets, 25 events of the 8 types) with today = Saturday 31 October 2026, signed in as Test User 19. Mock data only; nothing here changes product code, tests, contracts or configuration. The older mockups are untouched.
+
+| File | What it is |
+|---|---|
+| `my-matters-v3-a-dropdowns.html` | **A.** The project managers' layout built exactly as specified: title with icon, Client and Matter dropdowns and `+ New` on one row, tabs Overview, Calendar, Assets, Metrics, Activity. |
+| `my-matters-v3-b-tree.html` | **B.** The same page plus a docked tree of clients and matters on the left that collapses to a thin rail after you choose. The dropdowns stay and stay in sync. |
+| `my-matters-v3-c-recommended.html` | **C. Recommended.** The PM page, plus the v2 active-matters list with indicators, plus the tree as an on-demand Browse panel instead of a permanent column. |
+
+Screenshots: `screenshots/my-matters-v3-*.png` (A, B and C at 1366, 1920, 768 and 375; calendar and Shows dropdown; assets with side panel; Metrics breakdown and data; Activity; task opened in a new window (A, B) and in the drawer (C); + New menu with a disabled option and its reason; New calendar item dialog; matter dropdown; tree open, rail, search and 100 matters (B); Browse panel and group by client (C); one matter, empty and 100 matters).
+
+Open any file and use the dashed **Mockup** button (bottom right): number of matters (40, one, none, 100), what you may create (everything or limited), and what a click on a task does (new window or right drawer). Deep links: `my-matters-v3-c-recommended.html#client=nw&matter=m01&tab=calendar&month=2026-11` (`client` nw, hv, oc; `matter` m01 to m40; `tab` overview, calendar, assets, metrics, activity; `mview` data; `state` one or empty; `n=100`; `perm=limited`; `open` window or drawer; `tree=1` keeps B's tree open with a selection).
+
+## How the PM feedback was applied
+
+The PM list (item 8 is empty in the source, so there are seven items; please send the missing one) was built in A exactly, then judged.
+
+| PM item | In A (exact) | Review decision applied in B and C |
+|---|---|---|
+| 1. Title with icon | Navy clipboard icon plus "My Matters". | Same. |
+| 2. Client and Matter dropdowns | Two searchable dropdowns in the header, Client first. Picking a client narrows the Matter list; picking a matter sets the client. "Clear" resets both. | Same. In C the Matter list shows active matters first (teal dot), then quiet ones, and each matter shows a lock chip when it is sensitive. |
+| 3. `+ New` on the right of the same row | Button with a menu: New task, New calendar item, New asset, New project. Each opens a dialog prefilled with the chosen client and matter; the project dialog opens with no matter when none is chosen. The calendar-item dialog has the 8 event types with icons. In the Mockup panel, "Limited" disables New asset and New project, each with a tooltip reason (hover or focus). With no matters at all, all four are disabled with a reason. | C moves the item that fits the current tab to the top and marks it "suggested here". |
+| 4. Tabs | Overview, Calendar, Assets, Metrics, Activity (arrow keys move between tabs). Activity shows an unread count. | Same. |
+| 5. Overview | Left: task list of the chosen scope. Right top: upcoming events (next 14 days). Right bottom: recent activity. Changing client or matter updates all panels at once with a short, subtle highlight and a polite screen-reader announcement. | The task list is the shared task grid (urgency order, "All open tasks (69)" pre-filter with counts, pills only for High, Critical, On hold and At risk, sortable headers, 25 per page, scrolls inside its frame), scoped to all of the PM's matters when none is chosen. The activity panel is a 6-item preview with filter chips and "View all" to the Activity tab. |
+| 5. Click on an activity item opens a new window | A and B open a simulated browser window (tab, address bar, task page, closable with its X or Esc). | C opens a right-hand drawer with an **Open in new window** button. Both behaviours exist in all three files (Mockup panel). |
+| 6. Calendar | Current month, previous, Today, next; `+ Add Event` above the calendar; **Shows** multi-select (Calendar events on, Critical tasks on, High priority tasks, All task due dates, Overdue tasks); the 8 event icons; adding an event with a type picker; click a day for details. | Same. The calendar follows the client and matter on top. |
+| 7. Assets | Columns client, matter, asset type, created, updated, status (Active, Inactive, Pending disposition, Disposed), comment. Sortable headers, a filter under every column, a search box, 25 per page inside the frame, click a row for a side panel (fields, size, disposition history, linked tasks, comments, add a comment). | Same. |
+| "Metrics" tab | One tab with a small toggle: **Breakdown** (matters by task type, click a number to drill into those tasks; one matter shows task type by status instead) and **Data** (group by, tiles including volume, Table, Bar, Pie). Nothing from v2 is lost. | Same. |
+| "Activity" tab | Its own grid: When, Who, What, Task, Matter, unread dots, kind chips, Mark as read, paging. | Same. |
+
+Activity kinds (6, owner decision): New assets, New comments, New status updates, On hold, Overdue, Due date updated. The PM's "Delayed" was merged into Overdue by the owner's decision, so there is no separate Delayed kind anywhere.
+
+## Where I deviated from the PM list, and why
+
+1. **Metrics holds two views.** The PM list had no place for the v2 Breakdown and Data; a toggle keeps both so no capability is lost and the tab bar stays at five tabs.
+2. **Overview shows only 6 activity items.** The full grid already lives in the Activity tab; a preview that repeats it would show each activity twice. The chips filter the preview; "View all" carries the chosen chip to the tab.
+3. **Click on an activity opens a drawer in C (new window kept as an option).** A new window loses the page behind it, is blocked by pop-up blockers on some browsers, needs its own permission check and a deep-linkable task URL, and makes the PM juggle windows. A right drawer keeps the list in view, closes with Esc, and still offers **Open in new window** for the PM who wants a second screen. I recommend the drawer as the default. An asset activity opens the Assets tab with that asset's side panel (there is no task to show).
+4. **"Criticality" is task priority.** The Shows dropdown says Critical tasks (priority Critical) and High priority tasks; the app has no separate criticality weight (earlier owner decision).
+5. **Tasks are one grid.** Each task appears once per screen: the calendar shows task due dates as chips that open the same task view, and the Overview lists each task once.
+6. **The global "Create task" button in the top bar is not drawn** in these samples so there is one obvious place to create things (`+ New`). Please confirm whether the top-bar button stays.
+7. **Asset name.** The PM's seven columns do not include the asset name; the asset type cell shows the name on its first line and the type below it, so sorting by "Asset type" sorts by type.
+8. **C does not dock the tree** (see the verdict below).
+
+## The tree view, judged honestly
+
+What B does: a 280 px tree (clients, then their matters) docked left of the content. Each node shows a count and indicators: a teal dot for an active matter, a hollow dot for a quiet one (with screen-reader words), a red warning count for overdue tasks, a lock for a sensitive matter, and the number of matters or open tasks. Choosing a client or a matter selects it everywhere and the tree **collapses to a 48 px rail** (expand button, the current "Client > Matter" written vertically, a clear button). The pin button keeps the tree open after choosing. Search filters the tree and opens the clients that match; "Active only" hides quiet matters; "Expand all" and "Collapse all" are one toggle. Open or closed state of each client and the pin are remembered (browser storage). The tree follows the dropdowns and the dropdowns follow the tree. Keyboard: `role="tree"`, Up and Down move, Right opens or goes to the first child, Left closes or goes to the parent, Home and End, Enter or Space select, `*` opens all, typing jumps to the next label (type-ahead). Below 1100 px the docked tree is not used; the same tree opens as a panel from the Browse button.
+
+When it helps:
+- A PM with many matters across several clients who wants the whole structure on screen at once with overdue counts per matter and per client.
+- Keyboard users who like arrow navigation, and screens of about 1600 px or wider, where docking costs little (at 1920 px the content is still about 1330 px wide).
+- A deeper hierarchy later (client, matter, project): a tree is the natural picture.
+
+When it hurts:
+- **Width.** At 1366 px the navy navigation takes 232 px; a docked tree takes another 296 px (280 plus the gap). The content falls from 1070 px to **774 px**, the right-hand panels drop below the task list, and the PM sees less of the page that matters. Collapsed it is 1006 px, still 64 px less than without the rail.
+- **Jumping.** Choosing a node collapses the tree and widens the content by about 230 px, so the whole page re-flows (the right column moves back beside the tasks). The page changes shape on every selection. The highlight helps, but it is the largest layout change in the app.
+- **Two ways to do the same thing.** The dropdowns and the tree both choose; a new PM must learn both, and the rail text is vertical, which is slow to read.
+- **Shallow data.** With three clients and about 14 matters each, a two-level tree is little more than a long dropdown. It earns its place only when the structure itself is the information.
+- It does not say which matters need attention unless the dots are read; the v2 active list does that better.
+
+**Recommended form:** do not dock it. Offer it on demand as a **Browse** panel next to the dropdowns (as in C): same tree, same keyboard semantics, search and counts, but it costs no width and closes after choosing. Group by client appears inline in the active matters list for the same overview. If the owner wants it docked, dock it only at 1600 px or wider and use the Browse panel below that.
+
+## Comparison
+
+| | A. Dropdowns (PM spec) | B. Dropdowns plus tree | C. Recommended |
+|---|---|---|---|
+| Content width at 1366 px (after the 232 px navigation) | 1070 px (78 percent) | 774 px with the tree open, 1006 px with the rail | 1070 px (the Browse panel floats over the page) |
+| Right-hand panels beside the task list at 1366 | Yes | No with the tree open (they stack under the tasks), yes with the rail | Yes |
+| Clicks from page load to a matter | 2 (Matter dropdown, pick; typing "tess" narrows it) | 1 if its client is open in the tree, 2 with the search; switching later is 2 or 3 (rail, click) | 1 if it is active (click its row in the list), 2 with the dropdown or Browse |
+| Learnability | High: standard controls | Medium: two controls for one job, auto-collapse and a rail | High: the list explains itself; dropdowns work as in A |
+| Which matters need me | Not shown | Dots and counts in the tree | Indicators in the list (overdue, critical, unassigned, assets, next date) |
+| Scaling to 100 matters | Searchable dropdown (60 shown, "keep typing"); no overview | Tree with search and Active only; long scrolling lists per client | Active list of about 35 rows (pages by 25, groups by client); dropdown grouped Active and Quiet; Browse tree with search |
+| Build cost | Low | High (tree component, accessibility, state memory, responsive) | Medium to high (list plus the same tree component, no docking) |
+| Risk | Tasks only, so a quiet matter with a new asset is easy to miss | Layout jumps, narrower grid | Taller Overview: the list sits above the tasks (it scrolls inside its frame, 4 rows visible) |
+
+**Recommendation: C.** It keeps everything the PM asked for (dropdowns, `+ New`, five tabs, the three-part Overview), keeps the owner's liked v2 ideas (active matters with indicators, calm look), and gives the tree idea its best use without charging width for it.
+
+### Improvements in C and the reason for each
+1. **Active matters list above the tasks when no matter is chosen** (v2 rule, indicators, attention order). Reason: the first question of a PM with many matters is "which of them needs me"; tasks alone do not answer it. It becomes a one-line context strip once a matter is chosen, with count buttons that filter the task list (overdue, critical, unassigned, due in 7 days).
+2. **Browse tree as a panel, not a column.** Reason: width (see above) and no layout jump.
+3. **Matter dropdown grouped Active first, Quiet second, sensitive chip.** Reason: the active list is where the PM works; quiet matters stay reachable by search.
+4. **Group by client in the active list, collapsible, with counts.** Reason: the tree's best idea (the client as a parent) at no width cost.
+5. **Task opens in a drawer with Open in new window.** Reason: see deviation 3.
+6. **`+ New` puts the fitting item first on the Calendar and Assets tabs.** Reason: fewer clicks for the common case; the order of the four items otherwise stays fixed.
+7. **Asset activity opens the asset's side panel.** Reason: the PM asked for the task; an asset has no task, so the nearest useful thing is shown.
+8. **Real-time update** is instant and visible: all panels highlight together and a screen reader hears "Showing 40 open tasks, 5 upcoming events and 17 assets for ...".
+
+## Definitions (please confirm)
+- **Overdue** = an open task (New or In progress) whose due date is before today. Red. A task On hold is not overdue. The PM's "Delayed" is the same thing and was merged into Overdue (owner decision); the activity "Overdue" item appears when a task passes its due date.
+- **Due date updated** = the due date of a task changed, later or earlier. Amber. The item says by how many days and which way.
+- **On hold** = a task was put On hold. Slate. **New status update** = a task changed status (for example New to In progress). Teal. **New comment** = a comment on a task. **New assets** = an asset was added to, or updated in, a matter in the last 7 days. Blue.
+- **At risk** (grid pill) = due within 2 days, as before.
+- **Active matter** = a matter where you are Primary or Secondary PM and it has an open task (New or In progress) **or** assets added or updated in the last 7 days (teal dot, "Active" in the list header and tree legend; the same rule as v2). With the sample data: 12 of 40 (35 of 100 in the stress test).
+- **Critical** is the task priority Critical; **High** is priority High. There is no separate criticality weight.
+- **Asset status**: Active, Inactive, Pending disposition (amber, waiting for a retention decision), Disposed (dark slate). New assets can be created Active, Inactive or Pending disposition; Disposed is a result, not a starting state.
+- **Content width** (comparison table) = the width of the page area that holds the tabs and their panels, measured at a 1366 x 768 window, after the navy navigation (232 px) and the 32 px gutters.
+- **Sensitive matter** = invisible to people without access; this PM can see three of the 40 (lock chip in lists, tree, dropdown and dialogs; the event dialog says who can see the event).
+
+## Kept from the owner's earlier rules
+Little on the first screen, 24 to 32 px gutters and 16 to 24 px card padding, red overdue, amber at risk or due soon, blue information, teal healthy, violet needs a person, deep orange Critical, slate neutral (always icon plus word, 4.5:1), Client then Matter order, each task once per screen, no thick coloured borders, navy navigation #1A3556 with the white pill, menu order Dashboard, My Matters, My Work, Clients, Matters (Projects, Assets indented), Pod Work, Tasks, Administration, v0.1.1, no new keyboard shortcut concept (only the standard Esc, arrows, Enter, Home and End inside widgets; no global shortcut was added, phase rule, issue #420).
+
+## What to click
+Open **A**: choose a client in the Client dropdown, then the Matter dropdown (it only lists that client's matters); pick a matter and watch the three panels flash together; pick a matter of another client via **Clear** and see the client change by itself. Click **+ New** and open each of the four dialogs (save one empty to see the messages); in the Mockup panel switch "What you may create" to Limited and hover or Tab to the greyed New asset. On the Overview click an activity chip (Overdue), then an item: a simulated browser window opens (X or Esc closes it). Click **View all**. Open Calendar: Next, Today, the **Shows** dropdown (tick All task due dates), `+ Add Event` (pick a type, save), click a day. Open Assets: sort a header, filter Status = Pending disposition, type in a column filter, click a row for the side panel. Open Metrics: click a red number (it returns to the Overview with a filter chip), then Data (Table, Bar, Pie).
+Open **B**: click a client in the tree (it collapses to the rail), click the rail button to expand again, use the keyboard in the tree (Up, Down, Right, Left, Home, End, type "orion", Enter), search "tess", turn on the pin, choose a matter in the Matter dropdown and see the tree follow. Compare the content width with the tree open and as a rail.
+Open **C**: read the first row of the active list; click a matter row (it becomes the strip with count buttons), click **All matters**; tick Group by client; click **Browse** and use the tree; click an activity item (drawer) and **Open in new window**; use the Mockup panel for one matter, no matters, 100 matters. Resize to 768 and 375.
+
+## Measurements (Playwright, Chromium)
+- No console errors in any file, state or size (1366 x 768, 1920 x 1080, 768 x 1024, 375 x 812).
+- No horizontal page scroll at 1366, 1920, 768 or 375 on all five tabs of all three files.
+- About 390 scripted checks passed: dropdown sync in both directions, narrowing, the four dialogs with prefill and validation, limited permissions and tooltips, empty, one-matter and 100-matter states, every tab, calendar navigation, Shows, Add Event, asset sort, filters, search, side panel, Metrics drill-down and toggles, activity chips, window and drawer, tree open, rail, pin, search, keyboard and type-ahead, expand state memory, Browse panel.
+- WCAG contrast (4.5:1) checked over every visible text and background pair in 106 view and overlay combinations at 1366 and 375 (tabs, dialogs, menus, tooltips, drawer, window, side panel, tree, Browse panel, empty state): no failures.
+- Content width at 1366 x 768: A 1070 px, B 774 px (tree open) and 1006 px (rail), C 1070 px.
+- Design review iterations: the first screenshots showed the event card title truncated, the task grid's Due column cut off, the tasks squeezed to 42 px in B when the tree was open, and the C list rows three lines tall. Fixes: header wrapping rules, the grid uses container-width rules (the right-hand panels drop below the list when the content is under 1000 px; Assignee hides under 620 px and Priority moves inside the task cell under 560 px), a two-line clamp and compact indicators in the C list, and the next-date column shortened to an icon, a short type name and a date.
+
+## Open questions for the owner
+1. Please confirm the definitions of Overdue and Due date updated (Delayed was merged into Overdue).
+2. PM list item 8 is empty. What was meant to go there?
+3. **New project without a matter**: must a project belong to a matter? The sample opens the dialog with no matter when none is chosen and asks for one before saving.
+4. Who may create what? New permission catalog entries are likely (for example `Assets.Create`, `Projects.Create`, `Events.Manage`), and "limited" here is a placeholder for them. The top-bar "Create task" button: keep or remove?
+5. **New window**: a real browser window or tab? It needs a deep-linkable task URL, a permission check on open (sensitive matters), and may be blocked by pop-up blockers. Is the drawer with "Open in new window" acceptable as the default?
+6. Asset **Comment** column: one note on the asset, or the latest comment of a thread? Who edits it? Who may change the status to Pending disposition and Disposed, and who approves a disposal?
+7. Should the Overview list tasks assigned to other people on the PM's matters (shown here, with the assignee column) or only the PM's own?
+8. "Real time": the sample updates instantly on the PM's own clicks. Do other people's changes need to appear without a reload (push) or is a refresh fine?
+9. Should the app remember the last chosen client and matter between visits, and the last tab?
+10. Event data model and permissions from v2 still apply (see the v2 open questions); the calendar here adds the Shows options, so are "High priority tasks" and "All task due dates" worth keeping, or are Critical and Overdue enough?
+11. Docked tree: acceptable at 1600 px and wider only, or not at all?
