@@ -1,19 +1,19 @@
 # UI update: QA report (epic #953)
 
-## PROGRESS (updated 2026-10-31 21:25 UTC)
+## PROGRESS (updated 2026-10-31 22:15 UTC)
 
-Weights unchanged. Overall: **about 66%**.
+Weights unchanged. Overall: **about 80%**.
 
 | # | Stage | Weight | Status | Progress inside the stage | Pass / fail so far | Now running, expected remaining |
 | - | ----- | ------ | ------ | ------------------------- | ------------------ | ------------------------------- |
 | 1 | Setup, build, fresh stack | 5% | done | | all ok | - |
-| 2 | Unit/arch/schema, lint, prettier, tsc, frontend unit, bundle, contracts, OpenAPI/nswag | 10% | running (90%) | frontend unit re-run done: 4312 / 4312; only the Release build and OpenAPI/nswag drift check are left (queued) | unit 2455, arch 47, schema 102, frontend 4312 all pass; bundle 652.96 kB | queued, 15 min |
-| 3 | FULL backend integration | 20% | running (about 45%) | re-run started 19:47 (the first run was cut by my own 2 h timeout at about 1,480 of 1,642, 0 failures) | none reported yet | `/tmp/qa-it2.log`, `/tmp/qa-it2.trx`; about 1.5 h |
-| 4 | FULL Playwright | 30% | running (86% + part 2 queued) | 2,501 / 2,930 done, then my own 3 h 50 min timeout stopped it; the remaining 36 spec files (wp1.. to the end, branding) are queued as part 2. Log `/tmp/qa-e2e-full.log`, part 2 `/tmp/qa-e2e-part2.log` | 12 failures, classification below | about 1 h once a slot is free |
-| 5 | Sensitive e2e + axe four sizes + fit-to-window | 7% | running (70%) | axe 0 violations at 375, 1366, 1920, 768 on all tabs and states; fit-to-window in `mm-ui-update` passed; sensitive e2e (rule ON, fresh DB) not started | 0 axe violations | needs a free slot, 20 min |
-| 6 | Exploratory bug hunt | 18% | done (95%) | scale done: 125 extra matters (PM sees 128), 1,200 tasks: first rows 1.5 s, every tab 1 to 1.6 s, tree 302 rows, no page scroll | see findings | - |
-| 7 | Fixes and re-runs | 5% | running (60%) | 16 fix and test commits pushed; re-run of the 8 failing spec files on the fixed build queued | 35 / 35 targeted re-run passed earlier | queued |
-| 8 | Report, issues, epic refresh | 5% | running (30%) | 4 issues filed (#976 to #979) and linked under #953; report to finish | - | after the runs |
+| 2 | Unit/arch/schema, lint, prettier, tsc, frontend unit, bundle, contracts, OpenAPI/nswag | 10% | running (90%) | only the Release build and OpenAPI/nswag drift check are left (queued) | unit 2455, arch 47, schema 102, frontend 4312, all pass; bundle 652.96 kB | queued, 15 min |
+| 3 | FULL backend integration | 20% | running (about 70%) | run 2 was killed by the kernel (out of memory, test host 5 GB) after 1,046 tests passed, 0 failed (863 distinct names); the remaining 372 test names (the Dashboard, My Work, Task Queue, performance and Sensitive classes) are queued as run 3 with 2 stacks stopped to free memory. Logs `/tmp/qa-it2.*`, `/tmp/qa-it3.*` | 0 failed in 2 partial runs | about 1 to 1.5 h once the slot is free |
+| 4 | FULL Playwright | 30% | done except the last re-run | 2,860 tests ran in two parts (`/tmp/qa-e2e-full.log`, `/tmp/qa-e2e-part2.log`): 16 failed first time; 12 of them passed on re-run (load or shared-output-folder flakes), 4 real or stale and fixed; re-run of `sh-rail-icons`, `sh-nav-version`, `sh-final-contract`, `ty-permissions-matrix` and `matter-client-details-tab` on the last build is queued | see section 3 | build queued |
+| 5 | Sensitive e2e + axe four sizes + fit-to-window | 7% | done | sensitive e2e (rule ON, fresh SQL and API): 14 / 14 passed; axe 0 violations at 375, 1366, 1920, 768 on every tab and state; fit-to-window in `mm-ui-update` passed | 0 failures | - |
+| 6 | Exploratory bug hunt | 18% | done | includes scale (128 matters for a PM, 225+ for the admin, 1,200 tasks: first rows 1.5 s, tabs 1 to 1.6 s) | see findings | - |
+| 7 | Fixes and re-runs | 5% | running (80%) | 19 fix and test commits pushed | 35 / 35 and 55 / 57 targeted re-runs | last build and re-run queued |
+| 8 | Report, issues, epic refresh | 5% | running (40%) | issues #976 to #979 filed and linked under #953 | - | after the runs |
 
 ### Findings so far
 
