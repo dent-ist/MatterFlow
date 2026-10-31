@@ -311,3 +311,53 @@ Open **C**: read the first row of the active list; click a matter row (it become
 9. Should the app remember the last chosen client and matter between visits, and the last tab?
 10. Event data model and permissions from v2 still apply (see the v2 open questions); the calendar here adds the Shows options, so are "High priority tasks" and "All task due dates" worth keeping, or are Critical and Overdue enough?
 11. Docked tree: acceptable at 1600 px and wider only, or not at all?
+
+# My Matters v3 B, revision 2 (`my-matters-v3-b-tree-r2.html`)
+
+Owner feedback: "I like v3 B style." This is one new self-contained file (inline CSS and JS, no network, mock data of v3, today = 31 October 2026). The older files are untouched. Screenshots: `screenshots/my-matters-v3-b-r2-*.png` (both panels open at 1920, tree open, right panel open and collapsed, rail tooltip, 1920, 768, 375, Assets, Metrics, Activity, Calendar, Completed chip, On Hold tooltip, task drawer, and `1366-both-forced-418` which shows why both wide panels are not allowed at 1366).
+
+## What changed
+
+1. **Smaller title.** "My Matters" is 19 px semi-bold (was 28), the icon stays (28 px chip), the title row is about 30 px high.
+2. **Dropdowns under the title.** Client and Matter (plus Browse and Clear) sit on their own row; `+ New` is at the right end of that row. On a phone the dropdowns stack and `+ New` is full width.
+3. **Collapsible side panel.** Upcoming events on top, Recent activity below. A chevron button in the panel header (`aria-expanded`, `aria-controls`, visible focus) collapses it to a 48 px rail with two icon buttons (events with a count of the next 14 days, activity with the unread count). Hover or keyboard focus shows a tooltip; a click or Enter re-opens the panel and moves focus to that section. The state is remembered in `localStorage` (`mm3r2-ui`) and in the link: `side=0` or `side=1`, `tree=0` or `tree=1`. The grid takes the freed width.
+   - **Defaults and the turn-taking rule.** The grid needs at least 560 px. Below about 1510 px the tree and the side panel cannot both be wide, so they take turns: opening one collapses the other to its rail (a polite screen-reader message says so) and the one you used last stays wide. Choosing a matter collapses the tree as in v3 B, and the side panel then opens in the room that was freed (unless you closed it yourself). At 1366 the first load is therefore tree open and side rail; after the first choice it is tree rail and side open. Reason: the tree is needed to choose, the events and activity are needed once a matter is chosen, and the grid never drops below 650 px.
+4. **Fit to the window.** Header, title, dropdown row, tabs, status row and pager stay in place; only the frames scroll (grid with sticky header row, calendar month area, assets list, metrics tables, both side-panel sections). The chain is `shell (100dvh) > main > page > work > panel`, all `flex: 1 1 0; min-height: 0`; no pixel heights, only a minimum derived from the row height (header + 5 rows + the card chrome, about 412 px). Below that the page scrolls. Up to 768 px wide the page scrolls normally and tasks are cards. Every frame reaches the bottom gutter even with few rows or an empty result (the empty space is inside the frame).
+5. **Task status.** See below.
+
+## Task status
+Real statuses of the app (`status-badge.ts`, `work-vocabulary.ts`): **New, In Progress, On Hold, Completed, Cancelled** (Cancelled needs a comment, from any open state).
+
+| Status | Look (icon, word, colour) | More |
+|---|---|---|
+| New | outlined chip, dot-in-circle, slate blue | not started |
+| In Progress | blue chip, play-circle | workflow step as a segmented bar plus "3 of 5" (bar shown from 900 px grid width, text always) |
+| On Hold | slate chip, pause | hover or focus: "On hold for 6 days because Waiting for client data" |
+| Completed | teal chip, check | tooltip with the date |
+| Cancelled | grey chip, x-circle | tooltip with the date and the reason |
+
+The **Status row** above the grid has chips with counts: All open (default, New + In Progress + On Hold), New, In Progress, On Hold, Completed, Cancelled. Completed and Cancelled show only when their chip is chosen. Status is a sortable column (workflow order); urgency order stays the default sort. The task drawer shows Status, workflow step and the hold or cancel reason. The title row has a stacked **workflow bar** (New, In Progress, On Hold, Completed, Cancelled; counts on hover or focus) for the chosen client or matter.
+
+**How the two filters relate.** *Status* answers "where is the work in the workflow"; *Show* (Everything, Overdue, At risk, Unassigned, Critical, Due in 7 days) answers "what needs attention". They combine (AND) and each one's counts respect the other, so every number matches what you get after the click. Overdue, At risk and Due in 7 days only apply to New and In Progress tasks by definition; Critical and Unassigned apply to any status. The old "On hold" entry of Show moved to the Status chips. Changing client or matter resets both. Deep links: `status=open|new|progress|hold|completed|cancelled`, `show=overdue|risk|critical|unassigned|due7`.
+
+## Measurements (Playwright, Chromium)
+Width of the task grid card (px):
+
+| Window | Both wide | Tree rail + right open | Tree rail + right rail | Tree open + right rail |
+|---|---|---|---|---|
+| 1366 x 768 | 426 (not allowed, auto-collapse) | 658 | 950 | 718 (first-load default) |
+| 1920 x 1080 | 980 (default) | 1212 | 1504 | 1272 |
+
+The grid adapts with container queries: below 640 px Priority moves into the task cell, below 780 px Assignee is hidden, the step bar needs 900 px.
+- Page scroll: `scrollingElement.scrollHeight <= innerHeight` and `main.scrollHeight <= main.clientHeight` on all tabs (Overview, Calendar, Assets, Metrics both views, Activity, with and without a matter) at 1366 x 768 (768 = 768, main 712) and 1920 x 1080 (1080, main 1024): pass; the grid frames scroll inside (for example 1140 px of rows in a 350 px frame).
+- Bottom edge: the bottom of every frame (task grid, side-panel last card and rail, calendar, assets, metrics, activity, including few-row and empty cases) is exactly 16 px (the page gutter) above the window bottom at both sizes, 28 states checked.
+- 69 scripted checks (panels, memory, keyboard, tooltips, status chips, filters, sort, drawer, dropdowns, four dialogs, calendar, assets panel, 768 and 375) pass; no console errors; WCAG 4.5:1 over 76 view and overlay combinations: 0 failures.
+- Design review iterations: first screenshots showed a document scroll height of 1828 px (screen-reader text inside scroll frames escaped them; fixed with positioned frames), clipped Priority and Due cells (columns widened), the status row wrapping onto two lines, an empty-filter message styled as success, a duplicate status in the drawer, and the phone top bar overflowing. All fixed.
+
+## Open questions
+1. The real app colours In Progress teal; here it is blue and Completed teal, as asked. Should the app follow?
+2. Is "All open" the right name and default for the first chip (the request listed "All")?
+3. Where does the workflow bar live in the real matter header (this page has none in B)?
+4. Workflow step names and counts are mock data; does the list API return "step n of m" per task?
+5. Should the side panel and tree states be remembered per user on the server rather than per browser?
+6. Cancelled needs a comment in the app; is the reason in the hover enough in the grid?
