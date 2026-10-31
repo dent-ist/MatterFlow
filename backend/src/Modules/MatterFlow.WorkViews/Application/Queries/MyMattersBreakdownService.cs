@@ -40,7 +40,8 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
             return resolved.Error!;
         var scope = resolved.Value;
         var clock = scope.Clock;
-        var overdue = TaskQueueRules.Overdue(clock);
+        // The page's own rule (ShowFilter): a New or In Progress task past its due date; On Hold is never overdue. The same rule as the Overdue chip of the Overview and its count, so every number here opens a grid with that total.
+        var overdue = ShowFilter.OverdueNow(clock);
 
         var counted = scope.OpenTasks();
         if (status == StatusOnHold)
@@ -82,7 +83,7 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
                 c.OnHold,
                 typeAtRisk.GetValueOrDefault(id),
                 Queue(typeParam),
-                Queue(typeParam, "overdue=true"));
+                Queue(typeParam, "show=overdue"));
         }).OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase).ThenBy(t => t.TaskTypeId).ToList();
 
         var totals = new BreakdownTotals(
@@ -91,7 +92,7 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
             typeCounts.Sum(t => t.OnHold),
             typeAtRisk.Values.Sum(),
             Queue(typeFilter.Select(id => "type=" + id.ToString(CultureInfo.InvariantCulture)).ToArray()),
-            Queue([.. typeFilter.Select(id => "type=" + id.ToString(CultureInfo.InvariantCulture)), "overdue=true"]));
+            Queue([.. typeFilter.Select(id => "type=" + id.ToString(CultureInfo.InvariantCulture)), "show=overdue"]));
 
         var page = query.Page;
         var pageSize = Math.Clamp(query.PageSize, 1, 50);
@@ -143,7 +144,7 @@ public sealed class MyMattersBreakdownService(MyMattersScopeResolver scopes, DbC
                         [.. cells.Where(c => c.MatterId == m.MatterId).OrderBy(c => c.TaskTypeId).Select(c =>
                         {
                             var typeParam = "type=" + c.TaskTypeId.ToString(CultureInfo.InvariantCulture);
-                            return new BreakdownCell(c.TaskTypeId, c.Open, c.Overdue, c.OnHold, risk.GetValueOrDefault((c.MatterId, c.TaskTypeId)), Queue(matterParam, typeParam), Queue(matterParam, typeParam, "overdue=true"));
+                            return new BreakdownCell(c.TaskTypeId, c.Open, c.Overdue, c.OnHold, risk.GetValueOrDefault((c.MatterId, c.TaskTypeId)), Queue(matterParam, typeParam), Queue(matterParam, typeParam, "show=overdue"));
                         })]);
                 })];
             }
