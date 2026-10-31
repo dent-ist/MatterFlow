@@ -18,7 +18,10 @@ test.describe('Page header icons', () => {
       await page.goto(href);
       const heading = page.getByRole('heading', { level: 1 }).first();
       await expect(heading, href).toBeVisible();
-      const glyph = heading.locator('i[data-page-icon]');
+      // The icon sits inside the heading, or (My Matters, after the mockup) in the coloured tile just before it.
+      const glyph = heading
+        .locator('i[data-page-icon]')
+        .or(heading.locator('xpath=preceding-sibling::*[contains(@class,"chip-i")]//i'));
       await expect(glyph, `${href} shows ${icon}`).toHaveClass(new RegExp(`\\b${icon}\\b`));
       await expect(glyph).toHaveAttribute('aria-hidden', 'true');
       // The icon adds nothing to the heading's name.

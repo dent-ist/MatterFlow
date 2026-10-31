@@ -191,7 +191,9 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
   template: `
     <mf-fixed-page>
       <div class="hdr">
-        <span class="chip-i"><i class="pi pi-briefcase" aria-hidden="true"></i></span>
+        <span class="chip-i"
+          ><i class="pi pi-clipboard" data-page-icon aria-hidden="true"></i
+        ></span>
         <h1>My Matters</h1>
         <mf-mm-workflow-bar [filters]="scope.filters()" [scopeName]="scopeName()" />
       </div>
