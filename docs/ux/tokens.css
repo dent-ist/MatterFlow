@@ -109,6 +109,102 @@
   --mf-shadow-1: 0 1px 2px rgba(0,0,0,.12);
   --mf-shadow-2: 0 4px 16px rgba(0,0,0,.18);
 }
+/* ==========================================================================================================================================
+   UI update (epic #953, UI-01 #954): the shared theme layer, "option A" of the owner decision: ONE set of tokens in code that every component
+   reads. Three layers, so a theme editor or a dark theme can later change values without touching a component:
+     1. Palette   --mf-p-<hue>[-bg|-solid|-line]     raw hues; only this layer and the neutrals above hold hex values.
+     2. Semantic  --mf-sem-<meaning>-*               what a colour MEANS (overdue, at risk, info, healthy, needs a person, critical, neutral).
+     3. Component --mf-status-*, --mf-event-*, --mf-nav-*, --mf-chip-*   the look of one thing; they point at layer 2 or 1 with var().
+   Components use layers 2 and 3 (or the neutrals/feedback tokens above); a component never contains a colour literal (checked by
+   frontend/scripts/check-theme-colours.mjs; contrast of every pairing below checked by check-theme-contrast.mjs). No dark theme and no editor yet.
+   Guide, contrast table and the "change one token" example: docs/ux/theme-guide.md.
+   ========================================================================================================================================== */
+:root {
+  /* 1. Palette. For each hue: text colour on its tint (-fg, 4.5:1 or better), the tint (-bg), a solid for dots, bars and icons on white
+     (-solid, 3:1 or better) and a hairline (-line, decorative). */
+  --mf-p-red-fg: #B42318;     --mf-p-red-bg: #FDECEA;     --mf-p-red-solid: #C62828;     --mf-p-red-line: #F4C7C2;
+  --mf-p-amber-fg: #8A4B00;   --mf-p-amber-bg: #FFF4DB;   --mf-p-amber-solid: #B45309;   --mf-p-amber-line: #F1D9A0;
+  --mf-p-blue-fg: #1F4E9C;    --mf-p-blue-bg: #E3ECFA;    --mf-p-blue-solid: #1F4E9C;    --mf-p-blue-line: #C3D5F2;
+  --mf-p-teal-fg: #0B6B5F;    --mf-p-teal-bg: #DDF3EF;    --mf-p-teal-solid: #0F766E;    --mf-p-teal-line: #B5E0D9;
+  --mf-p-violet-fg: #5B3FA6;  --mf-p-violet-bg: #EFEAFB;  --mf-p-violet-solid: #6D4BC2;  --mf-p-violet-line: #D6CBF1;
+  --mf-p-orange-fg: #9A3A06;  --mf-p-orange-bg: #FDEBDC;  --mf-p-orange-solid: #C2410C;  --mf-p-orange-line: #F5CDAE;
+  --mf-p-slate-fg: #475569;   --mf-p-slate-bg: #EEF1F5;   --mf-p-slate-solid: #475569;   --mf-p-slate-line: #CBD2DC;
+
+  /* 2. Semantic colours (what the colour says). Red = overdue, amber = at risk, blue = information, teal = healthy / done, violet = needs a
+     person, deep orange = critical, slate = neutral. Colour is never the only signal: the UI always adds an icon or a word. */
+  --mf-sem-overdue-fg: var(--mf-p-red-fg);       --mf-sem-overdue-bg: var(--mf-p-red-bg);       --mf-sem-overdue-solid: var(--mf-p-red-solid);       --mf-sem-overdue-line: var(--mf-p-red-line);
+  --mf-sem-risk-fg: var(--mf-p-amber-fg);        --mf-sem-risk-bg: var(--mf-p-amber-bg);        --mf-sem-risk-solid: var(--mf-p-amber-solid);        --mf-sem-risk-line: var(--mf-p-amber-line);
+  --mf-sem-info-fg: var(--mf-p-blue-fg);         --mf-sem-info-bg: var(--mf-p-blue-bg);         --mf-sem-info-solid: var(--mf-p-blue-solid);         --mf-sem-info-line: var(--mf-p-blue-line);
+  --mf-sem-healthy-fg: var(--mf-p-teal-fg);      --mf-sem-healthy-bg: var(--mf-p-teal-bg);      --mf-sem-healthy-solid: var(--mf-p-teal-solid);      --mf-sem-healthy-line: var(--mf-p-teal-line);
+  --mf-sem-person-fg: var(--mf-p-violet-fg);     --mf-sem-person-bg: var(--mf-p-violet-bg);     --mf-sem-person-solid: var(--mf-p-violet-solid);     --mf-sem-person-line: var(--mf-p-violet-line);
+  --mf-sem-critical-fg: var(--mf-p-orange-fg);   --mf-sem-critical-bg: var(--mf-p-orange-bg);   --mf-sem-critical-solid: var(--mf-p-orange-solid);   --mf-sem-critical-line: var(--mf-p-orange-line);
+  --mf-sem-neutral-fg: var(--mf-p-slate-fg);     --mf-sem-neutral-bg: var(--mf-p-slate-bg);     --mf-sem-neutral-solid: var(--mf-p-slate-solid);     --mf-sem-neutral-line: var(--mf-p-slate-line);
+  --mf-border-soft: #D5D9E1;     /* hairlines inside cards (decorative) */
+  --mf-border-mid: #C0C6D1;      /* control and chip outlines that are not the only cue */
+
+  /* 3a. Task status (New, In Progress, On Hold, Completed, Cancelled) as used by the new My Matters and every converted page.
+     fg / bg / line per status. The older --mf-st-* tokens above stay for pages that are not converted yet (In Progress teal there, blue here). */
+  --mf-status-new-fg: #2B4A78;         --mf-status-new-bg: #FFFFFF;                   --mf-status-new-line: #8EA2C2;
+  --mf-status-progress-fg: var(--mf-sem-info-fg);    --mf-status-progress-bg: var(--mf-sem-info-bg);    --mf-status-progress-line: var(--mf-sem-info-line);
+  --mf-status-hold-fg: var(--mf-sem-neutral-fg);     --mf-status-hold-bg: var(--mf-sem-neutral-bg);     --mf-status-hold-line: var(--mf-sem-neutral-line);
+  --mf-status-done-fg: var(--mf-sem-healthy-fg);     --mf-status-done-bg: var(--mf-sem-healthy-bg);     --mf-status-done-line: var(--mf-sem-healthy-line);
+  --mf-status-cancel-fg: #374151;      --mf-status-cancel-bg: #E5E7EB;                --mf-status-cancel-line: #C9CED8;
+
+  /* 3b. Calendar event types (8 fixed types; code list and icon keys come from the API, GET /matter-event-types): text/icon colour on its tint. */
+  --mf-event-court-fg: #1E3A8A;        --mf-event-court-bg: #E4E9F7;
+  --mf-event-trial-fg: #86198F;        --mf-event-trial-bg: #F6E4F8;
+  --mf-event-deposition-fg: #0B627D;   --mf-event-deposition-bg: #D9EFF5;
+  --mf-event-production-fg: #4D6310;   --mf-event-production-bg: #E9F1CE;
+  --mf-event-filing-fg: #A3194F;       --mf-event-filing-bg: #FBE3EC;
+  --mf-event-mediation-fg: #17683A;    --mf-event-mediation-bg: #DAF1E2;
+  --mf-event-meeting-fg: #6B4600;      --mf-event-meeting-bg: #F3E8CF;
+  --mf-event-other-fg: var(--mf-sem-neutral-fg);     --mf-event-other-bg: #E8ECF1;
+
+  /* 3c. Navigation panel (colours are the ones above: --mf-nav-*). Geometry of the new menu: a 36 px pill row, 19 px icons, 220 px panel,
+     a 56 px rail. The selected item is a white pill with bold type, never a coloured left border. */
+  --mf-nav-w: 220px;
+  --mf-nav-rail-w: 56px;
+  --mf-nav-item-h: 36px;
+  --mf-nav-item-radius: 999px;
+  --mf-nav-icon: 19px;
+  --mf-nav-indent: 36px;               /* Projects and Assets under Matters */
+  --mf-nav-heading: #B4C3D8;           /* ADMINISTRATION heading (same as --mf-nav-text-muted: 7.0:1 on the panel) */
+
+  /* Radius scale. --mf-radius (4px) and --mf-radius-lg (8px) above stay. */
+  --mf-radius-md: 6px;
+  --mf-radius-xl: 12px;
+  --mf-radius-pill: 999px;
+
+  /* Type scale. Body 14 px (--mf-fs-md); page title 19 px on the fixed pages (My Matters), 22 px (--mf-fs-h2) on record pages. */
+  --mf-fs-title: 19px;
+  --mf-fs-title-lg: 22px;
+  --mf-fs-chip: 12px;
+  --mf-fw-semibold: 600;
+  --mf-fw-bold: 700;
+
+  /* Density: control and chip heights. A later "compact" density only changes these. */
+  --mf-ctl-h: 36px;
+  --mf-ctl-h-sm: 30px;
+  --mf-chip-h: 26px;
+  --mf-gutter: 16px;                   /* page gutter of the fixed pages */
+
+  /* Shadows. --mf-shadow-1 and --mf-shadow-2 above stay. */
+  --mf-shadow-card: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .06);
+  --mf-shadow-pop: 0 12px 32px rgba(16, 24, 40, .18), 0 2px 6px rgba(16, 24, 40, .1);
+
+  /* Focus ring (WCAG 2.4.7 / 1.4.11): 2px solid, 2px offset; --mf-focus on the page, --mf-nav-focus on the navy panel. */
+  --mf-focus-width: 2px;
+  --mf-focus-offset: 2px;
+
+  /* PrimeNG toasts (the preset reads these; values as before). */
+  --mf-toast-success-bg: #E6F4EA;  --mf-toast-success-border: #9ED2AD;  --mf-toast-success-fg: #14532D;  --mf-toast-success-hover: #CDE9D5;
+  --mf-toast-info-bg: #E3ECFA;     --mf-toast-info-border: #9DB9E6;     --mf-toast-info-fg: #173C79;     --mf-toast-info-hover: #C5D6F2;
+  --mf-toast-warn-bg: #FEF3C7;     --mf-toast-warn-border: #EBC663;     --mf-toast-warn-fg: #78350F;     --mf-toast-warn-hover: #FCE79A;
+  --mf-toast-error-bg: #FDECEA;    --mf-toast-error-border: #F4B6AE;    --mf-toast-error-fg: #7F1710;    --mf-toast-error-hover: #FADBD7;
+  --mf-toast-detail: #1B1F27;
+  --mf-white: #FFFFFF;
+  --mf-btn-secondary-border: #6B7280;
+}
 /* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
    10.2:1, focus ring #FFC15A 10.3:1; the selected pill stays white with #17324F text (13.1:1). */
 :root[data-theme="dark"] {

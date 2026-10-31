@@ -2,8 +2,9 @@ import { definePreset } from '@primeuix/themes';
 import { AuraLite } from './aura-lite';
 
 /**
- * PrimeNG Aura preset (AuraLite: only the components the app renders) themed from docs/ux/tokens.css (light theme only in Phase 1).
- * Brand primary #1F4E9C, focus ring #B45309 (2px solid, 2px offset), 4px radius, Segoe UI stack.
+ * PrimeNG Aura preset (AuraLite: only the components the app renders) themed from docs/ux/tokens.css (light theme only). UI-01 (#954): every
+ * colour that has a design token reads it with var(--mf-...), so changing a token re-themes PrimeNG too; the only literals left are the tint steps
+ * of the red and primary scales (50-950) that no component reads directly. Brand primary --mf-primary, focus ring --mf-focus, 4px radius.
  */
 export const MfPreset = definePreset(AuraLite, {
   components: {
@@ -16,43 +17,43 @@ export const MfPreset = definePreset(AuraLite, {
     // of the same hue on the same kind of tint is 7:1 or better, the detail line is the normal text colour.
     toast: {
       success: {
-        background: '#E6F4EA',
-        borderColor: '#9ED2AD',
-        color: '#14532D',
-        detailColor: '#1B1F27',
+        background: 'var(--mf-toast-success-bg)',
+        borderColor: 'var(--mf-toast-success-border)',
+        color: 'var(--mf-toast-success-fg)',
+        detailColor: 'var(--mf-toast-detail)',
         closeButton: {
-          hoverBackground: '#CDE9D5',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          hoverBackground: 'var(--mf-toast-success-hover)',
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
       },
       info: {
-        background: '#E3ECFA',
-        borderColor: '#9DB9E6',
-        color: '#173C79',
-        detailColor: '#1B1F27',
+        background: 'var(--mf-toast-info-bg)',
+        borderColor: 'var(--mf-toast-info-border)',
+        color: 'var(--mf-toast-info-fg)',
+        detailColor: 'var(--mf-toast-detail)',
         closeButton: {
-          hoverBackground: '#C5D6F2',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          hoverBackground: 'var(--mf-toast-info-hover)',
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
       },
       warn: {
-        background: '#FEF3C7',
-        borderColor: '#EBC663',
-        color: '#78350F',
-        detailColor: '#1B1F27',
+        background: 'var(--mf-toast-warn-bg)',
+        borderColor: 'var(--mf-toast-warn-border)',
+        color: 'var(--mf-toast-warn-fg)',
+        detailColor: 'var(--mf-toast-detail)',
         closeButton: {
-          hoverBackground: '#FCE79A',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          hoverBackground: 'var(--mf-toast-warn-hover)',
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
       },
       error: {
-        background: '#FDECEA',
-        borderColor: '#F4B6AE',
-        color: '#7F1710',
-        detailColor: '#1B1F27',
+        background: 'var(--mf-toast-error-bg)',
+        borderColor: 'var(--mf-toast-error-border)',
+        color: 'var(--mf-toast-error-fg)',
+        detailColor: 'var(--mf-toast-detail)',
         closeButton: {
-          hoverBackground: '#FADBD7',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          hoverBackground: 'var(--mf-toast-error-hover)',
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
       },
     },
@@ -66,19 +67,19 @@ export const MfPreset = definePreset(AuraLite, {
         label: { fontWeight: '600' },
         sm: { fontSize: '0.875rem', paddingX: '0.75rem', paddingY: '0.375rem' },
         secondary: {
-          background: '#FFFFFF',
+          background: 'var(--mf-white)',
           hoverBackground: '{surface.100}',
           activeBackground: '{surface.200}',
-          borderColor: '#6B7280',
-          hoverBorderColor: '#6B7280',
-          activeBorderColor: '#6B7280',
-          color: '#1B1F27',
-          hoverColor: '#1B1F27',
-          activeColor: '#1B1F27',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          borderColor: 'var(--mf-btn-secondary-border)',
+          hoverBorderColor: 'var(--mf-btn-secondary-border)',
+          activeBorderColor: 'var(--mf-btn-secondary-border)',
+          color: 'var(--mf-text)',
+          hoverColor: 'var(--mf-text)',
+          activeColor: 'var(--mf-text)',
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
         danger: {
-          background: '#FFFFFF',
+          background: 'var(--mf-white)',
           hoverBackground: '{red.50}',
           activeBackground: '{red.100}',
           borderColor: '{red.500}',
@@ -87,12 +88,12 @@ export const MfPreset = definePreset(AuraLite, {
           color: '{red.500}',
           hoverColor: '{red.700}',
           activeColor: '{red.800}',
-          focusRing: { color: '#B45309', shadow: 'none' },
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
         },
       },
       text: {
         secondary: {
-          color: '#1F4E9C',
+          color: 'var(--mf-primary)',
           hoverBackground: '{primary.100}',
           activeBackground: '{primary.200}',
         },
@@ -113,7 +114,7 @@ export const MfPreset = definePreset(AuraLite, {
       200: '#F4B6AE',
       300: '#EC8B80',
       400: '#D9534A',
-      500: '#B42318',
+      500: 'var(--mf-danger)',
       600: '#9A1D14',
       700: '#7F1710',
       800: '#64120D',
@@ -129,31 +130,48 @@ export const MfPreset = definePreset(AuraLite, {
       300: '#9DB9E6',
       400: '#6C92D3',
       500: '#3E6DB9',
-      600: '#1F4E9C',
-      700: '#173C79',
+      600: 'var(--mf-primary)',
+      700: 'var(--mf-primary-hover)',
       800: '#112D5C',
       900: '#0C2144',
       950: '#081630',
     },
-    focusRing: { width: '2px', style: 'solid', color: '#B45309', offset: '2px', shadow: 'none' },
+    focusRing: {
+      width: 'var(--mf-focus-width)',
+      style: 'solid',
+      color: 'var(--mf-focus)',
+      offset: 'var(--mf-focus-offset)',
+      shadow: 'none',
+    },
     // One control look (UXR-25): 14 px text, 40 px high (the min-height is in styles/_forms.scss) and the same focus ring as the
     // native controls (.mf-control), so a p-select next to a native select cannot be told apart.
     formField: {
       fontSize: '0.875rem',
       paddingX: '0.75rem',
       paddingY: '0.5rem',
-      focusRing: { width: '2px', style: 'solid', color: '#B45309', offset: '2px', shadow: 'none' },
+      focusRing: {
+        width: 'var(--mf-focus-width)',
+        style: 'solid',
+        color: 'var(--mf-focus)',
+        offset: 'var(--mf-focus-offset)',
+        shadow: 'none',
+      },
     },
     colorScheme: {
       light: {
         primary: {
           color: '{primary.600}',
-          contrastColor: '#FFFFFF',
+          contrastColor: 'var(--mf-white)',
           hoverColor: '{primary.700}',
           activeColor: '{primary.800}',
         },
-        surface: { 0: '#FFFFFF', 50: '#F5F6F8', 100: '#EEF0F4', 200: '#C9CED8' },
-        formField: { borderColor: '#6B7280' },
+        surface: {
+          0: 'var(--mf-surface)',
+          50: 'var(--mf-bg)',
+          100: 'var(--mf-surface-alt)',
+          200: 'var(--mf-border)',
+        },
+        formField: { borderColor: 'var(--mf-border-strong)' },
       },
     },
   },
