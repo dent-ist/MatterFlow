@@ -190,7 +190,11 @@ export class GeneratedMmApi extends MmApi {
       )
       .pipe(map((r) => r as unknown as AssetPage));
   }
-  asset(assetId: number): Observable<AssetDetail> {
-    return this.my.getMyMattersAsset(assetId).pipe(map((r) => r as unknown as AssetDetail));
+  asset(assetId: number, f: MmFilters): Observable<AssetDetail> {
+    // The scope only (not the chosen client or matter): an asset opened from an activity item belongs to whatever matter it belongs to.
+    const a = commonArgs({ ...f, clientId: null, matterId: null });
+    return this.my
+      .getMyMattersAsset(assetId, a.scope, a.role, undefined, undefined, undefined, a.managerId)
+      .pipe(map((r) => r as unknown as AssetDetail));
   }
 }

@@ -59,5 +59,6 @@ export abstract class MmApi {
     show: ShowFilter,
   ): Observable<TaskCounts>;
   abstract assets(f: MmFilters, q: AssetQuery): Observable<AssetPage>;
-  abstract asset(assetId: number): Observable<AssetDetail>;
+  /** One asset for the side panel; the scope (mine / all, role, manager) decides whether its matter is in reach, so an administrator on All matters can open it. */
+  abstract asset(assetId: number, filters: MmFilters): Observable<AssetDetail>;
 }

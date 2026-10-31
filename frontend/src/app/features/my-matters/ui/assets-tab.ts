@@ -229,7 +229,12 @@ const HEADS = [
       </mf-grid-frame>
 
       @if (assetId() !== null) {
-        <aside class="side" aria-label="Asset details" data-asset-panel>
+        <aside
+          class="side"
+          aria-label="Asset details"
+          data-asset-panel
+          (keydown.escape)="assetChange.emit(null)"
+        >
           <div class="sh">
             <h2 tabindex="-1" data-side-title>{{ detail.data()?.name ?? 'Asset' }}</h2>
             <button
@@ -751,8 +756,8 @@ export class MmAssetsTab {
     () => this.api.assets(this.filters(), this.query()),
   );
   protected readonly detail = panelLoader(
-    () => this.assetId(),
-    () => this.api.asset(this.assetId() ?? 0),
+    () => [this.assetId(), this.filters()],
+    () => this.api.asset(this.assetId() ?? 0, this.filters()),
     { enabled: () => this.assetId() !== null },
   );
   protected readonly rows = computed<AssetRow[]>(() => this.list.data()?.items ?? []);
