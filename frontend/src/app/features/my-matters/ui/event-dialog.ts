@@ -442,7 +442,8 @@ export class MmEventDialog {
   }
 
   private returnFocus(): void {
-    const first = this.opener instanceof HTMLElement ? this.opener : null;
+    const first =
+      this.opener instanceof HTMLElement && this.opener !== document.body ? this.opener : null;
     const restore = (): void => {
       const active = document.activeElement;
       if (active && active !== document.body && !active.closest('.p-dialog-mask')) return;

@@ -783,6 +783,15 @@ export class MmAssetsTab {
       untracked(() => {
         if (id !== null && id !== last)
           setTimeout(() => document.querySelector<HTMLElement>('[data-side-title]')?.focus(), 0);
+        // Closing the panel (Escape, its button) gives focus back to the row that opened it.
+        if (id === null && last !== null) {
+          const from = last;
+          setTimeout(() => {
+            const active = document.activeElement;
+            if (active && active !== document.body && !active.closest('[data-asset-panel]')) return;
+            document.querySelector<HTMLElement>(`[data-open="${from}"]`)?.focus();
+          }, 0);
+        }
         last = id;
       });
     });
