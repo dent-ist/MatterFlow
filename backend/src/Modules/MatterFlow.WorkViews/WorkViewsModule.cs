@@ -24,6 +24,11 @@ public static class WorkViewsModule
         services.AddScoped<WorkloadService>();
         services.AddScoped<CoverageService>();
         services.AddScoped<MyMattersActivityService>();
+        services.AddScoped<MyMattersTaskCountsService>();
+        services.AddScoped<MyMattersEventsService>();
+        services.AddScoped<MyMattersFeedService>();
+        services.AddScoped<MyMattersTreeService>();
+        services.AddScoped<MyMattersAssetsService>();
         services.AddScoped<MyMattersSinceLastVisitService>();
         services.AddScoped<MatterOverviewService>();
         services.AddScoped<MyMattersWorkloadService>();

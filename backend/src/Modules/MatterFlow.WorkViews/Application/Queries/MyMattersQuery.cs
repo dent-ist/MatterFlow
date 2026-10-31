@@ -204,3 +204,147 @@ public sealed class MyMattersBreakdownQuery : MyMattersQuery
     [FromQuery(Name = "pageSize"), Range(1, 50)]
     public int PageSize { get; init; } = DefaultPageSize;
 }
+
+/// <summary>The status and Show counts of the Overview (UI-04, #957): the scope plus the other filter, so every number equals the grid total after the click.</summary>
+public sealed class MyMattersTaskCountsQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "status", "show"];
+
+    /// <summary>Status codes (<c>NEW</c>, <c>IN_PROGRESS</c>, <c>ON_HOLD</c>, <c>COMPLETED</c>, <c>CANCELLED</c>), repeatable or comma separated. They narrow the <c>byShow</c> counts; absent = the open statuses (New, In Progress, On Hold).</summary>
+    [FromQuery(Name = "status")]
+    public string[]? Status { get; init; }
+
+    /// <summary>One of <c>overdue</c>, <c>risk</c>, <c>due7</c>, <c>critical</c>, <c>unassigned</c> (see the Task Queue's <c>show</c>). It narrows the <c>byStatus</c> counts; absent = every task.</summary>
+    [FromQuery(Name = "show"), StringLength(12)]
+    public string? Show { get; init; }
+}
+
+/// <summary>The Calendar tab's events (UI-05, #958): the scope plus the required day range (<c>from</c>, <c>to</c>, inclusive, at most 100 days) and optional types.</summary>
+public sealed class MyMattersEventsQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys, "typeCode"];
+
+    /// <summary>Only these event types (repeatable); see <c>GET /matter-event-types</c>.</summary>
+    [FromQuery(Name = "typeCode")]
+    public string[]? TypeCode { get; init; }
+}
+
+/// <summary>The side panel's Upcoming events: the scope plus the window from today and the number of rows.</summary>
+public sealed class MyMattersUpcomingEventsQuery : MyMattersQuery
+{
+    public const int DefaultDays = 14;
+    public const int DefaultTake = 10;
+
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys.Where(k => k is not ("from" or "to")), "days", "take"];
+
+    /// <summary>Days from today, today included (default 14, max 60), in the viewer's calendar.</summary>
+    [FromQuery(Name = "days"), Range(1, 60)]
+    public int Days { get; init; } = DefaultDays;
+
+    /// <summary>Rows returned (default 10, max 50); <c>total</c> counts the whole window.</summary>
+    [FromQuery(Name = "take"), Range(1, 50)]
+    public int Take { get; init; } = DefaultTake;
+}
+
+/// <summary>The six-kind recent activity feed (UI-03, #956): the scope plus the kinds, the window, the unread filter and the page.</summary>
+public sealed class MyMattersFeedQuery : MyMattersQuery
+{
+    public const int DefaultDays = 30;
+    public const int DefaultPageSize = 25;
+    public const int MaxItems = 500;
+
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys.Where(k => k is not ("from" or "to")), "kind", "days", "unread", "page", "pageSize"];
+
+    /// <summary>Only these kinds (repeatable): <c>NEW_ASSETS</c>, <c>NEW_COMMENTS</c>, <c>NEW_STATUS_UPDATES</c>, <c>ON_HOLD</c>, <c>OVERDUE</c>, <c>DUE_DATE_UPDATED</c>. Absent: all six.</summary>
+    [FromQuery(Name = "kind")]
+    public string[]? Kind { get; init; }
+
+    /// <summary>The window of the event kinds in days (default 30, max 90). Overdue and On hold are states and are not limited by it.</summary>
+    [FromQuery(Name = "days"), Range(1, 90)]
+    public int Days { get; init; } = DefaultDays;
+
+    /// <summary>True: only items newer than the person's marker that they did not cause themselves.</summary>
+    [FromQuery(Name = "unread")]
+    public bool? Unread { get; init; }
+
+    [FromQuery(Name = "page"), Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
+
+    /// <summary>Items per page (default 25, max 100); <c>page</c> times <c>pageSize</c> may not exceed 500.</summary>
+    [FromQuery(Name = "pageSize"), Range(1, 100)]
+    public int PageSize { get; init; } = DefaultPageSize;
+}
+
+/// <summary>The matter tree (UI-03, #956): the scope plus the "active" window and a search.</summary>
+public sealed class MyMattersTreeQuery : MyMattersQuery
+{
+    public const int DefaultActiveDays = 7;
+
+    public static readonly IReadOnlyList<string> Keys = [.. CommonKeys.Where(k => k is not ("from" or "to")), "activeDays", "q", "activeOnly"];
+
+    /// <summary>A matter is active when it has an open task or an asset created or updated in the last N days (default: the setting <c>MyMatters:ActiveDays</c>, else 7; 1 to 90).</summary>
+    [FromQuery(Name = "activeDays"), Range(1, 90)]
+    public int? ActiveDays { get; init; }
+
+    /// <summary>Fragment of the client name or number, or the matter name or reference. A client whose own name matches keeps all its matters.</summary>
+    [FromQuery(Name = "q"), StringLength(200)]
+    public string? Q { get; init; }
+
+    /// <summary>True: only active matters (a client without one is left out).</summary>
+    [FromQuery(Name = "activeOnly")]
+    public bool? ActiveOnly { get; init; }
+}
+
+/// <summary>The PM's asset list (UI-03, #956): the scope plus column filters, sort and paging.</summary>
+public sealed class MyMattersAssetsQuery : MyMattersQuery
+{
+    public static readonly IReadOnlyList<string> SortFields = ["name", "client", "matter", "assetType", "created", "updated", "status", "linkedTasks"];
+
+    public static readonly IReadOnlyList<string> Keys =
+    [
+        .. CommonKeys.Where(k => k is not ("from" or "to")),
+        "q", "name", "assetTypeId", "status", "createdFrom", "createdTo", "updatedFrom", "updatedTo", "sort", "dir", "page", "pageSize",
+    ];
+
+    /// <summary>Fragment of the asset name, external reference, asset type or matter name.</summary>
+    [FromQuery(Name = "q"), StringLength(200)]
+    public string? Q { get; init; }
+
+    /// <summary>Column filter: fragment of the asset name.</summary>
+    [FromQuery(Name = "name"), StringLength(200)]
+    public string? Name { get; init; }
+
+    [FromQuery(Name = "assetTypeId")]
+    public int[]? AssetTypeId { get; init; }
+
+    /// <summary>Disposition codes, repeatable: <c>ACTIVE</c>, <c>INACTIVE</c>, <c>PENDING_DISPOSITION</c>, <c>DISPOSED</c>.</summary>
+    [FromQuery(Name = "status")]
+    public string[]? Status { get; init; }
+
+    [FromQuery(Name = "createdFrom")]
+    public DateOnly? CreatedFrom { get; init; }
+
+    [FromQuery(Name = "createdTo")]
+    public DateOnly? CreatedTo { get; init; }
+
+    /// <summary>Updated on or after this day; an asset never updated does not match.</summary>
+    [FromQuery(Name = "updatedFrom")]
+    public DateOnly? UpdatedFrom { get; init; }
+
+    [FromQuery(Name = "updatedTo")]
+    public DateOnly? UpdatedTo { get; init; }
+
+    /// <summary><c>name</c>, <c>client</c>, <c>matter</c>, <c>assetType</c>, <c>created</c>, <c>updated</c> (default), <c>status</c>, <c>linkedTasks</c>.</summary>
+    [FromQuery(Name = "sort"), StringLength(20)]
+    public string? Sort { get; init; }
+
+    /// <summary><c>asc</c> or <c>desc</c> (default: descending for created and updated, else ascending).</summary>
+    [FromQuery(Name = "dir"), StringLength(4)]
+    public string? Dir { get; init; }
+
+    [FromQuery(Name = "page"), Range(1, int.MaxValue)]
+    public int Page { get; init; } = 1;
+
+    [FromQuery(Name = "pageSize"), Range(1, 100)]
+    public int PageSize { get; init; } = 25;
+}

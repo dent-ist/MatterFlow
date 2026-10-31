@@ -19,7 +19,7 @@ public class TaskQueueQuery
         "createdFrom", "createdTo", "dueFrom", "dueTo", "asap", "overdue", "requestor", "completedFrom", "completedTo",
         "matterText", "clientText", "projectText", "updatedFrom", "updatedTo",
         "managedByMe", "managerId", "role", "dueWithin",
-        "atRisk", "onHoldReason", "needsAttention",
+        "atRisk", "onHoldReason", "needsAttention", "show",
     ];
 
     /// <summary>All parameters of the Task Queue.</summary>
@@ -166,6 +166,14 @@ public class TaskQueueQuery
     [FromQuery(Name = "needsAttention")]
     public bool? NeedsAttention { get; init; }
 
+    /// <summary>
+    /// The Show filter of the new My Matters Overview (UI-04, #957), one of <c>overdue</c>, <c>risk</c>, <c>due7</c>, <c>critical</c>, <c>unassigned</c>; absent = everything. It combines with <c>status</c> (AND) and every other filter.
+    /// <c>overdue</c>, <c>risk</c> and <c>due7</c> only match New and In Progress tasks (an On Hold task is never overdue here); <c>critical</c> (priority Critical) and <c>unassigned</c> match any status.
+    /// Unknown value: 400 <c>UNKNOWN_SHOW</c>.
+    /// </summary>
+    [FromQuery(Name = "show"), StringLength(12)]
+    public string? Show { get; init; }
+
     /// <summary>On-hold reason ids; repeatable. Matches Tasks that are On Hold with one of those reasons; <c>0</c> matches Tasks On Hold with no reason chosen.</summary>
     [FromQuery(Name = "onHoldReason")]
     public int[]? OnHoldReason { get; init; }
@@ -290,7 +298,8 @@ public sealed record TaskQueueFilter(
     int? DueWithinDays = null,
     bool AtRisk = false,
     IReadOnlyList<int>? OnHoldReasons = null,
-    bool NeedsAttention = false)
+    bool NeedsAttention = false,
+    string? Show = null)
 {
     public const string RolePrimary = "primary";
     public const string RoleSecondary = "secondary";
@@ -322,6 +331,14 @@ public sealed record TaskQueueFilter(
 
         if (query.DueWithin is { } within && !DueWithinValues.Contains(within))
             return Error.Validation("dueWithin", "UNKNOWN_DUE_WITHIN", "dueWithin must be 3 or 7.");
+
+        string? show = null;
+        if (!string.IsNullOrWhiteSpace(query.Show))
+        {
+            show = query.Show.Trim().ToLowerInvariant();
+            if (!ShowFilter.All.Contains(show))
+                return Error.Validation("show", "UNKNOWN_SHOW", $"Unknown show '{query.Show}'. Allowed: {string.Join(", ", ShowFilter.All)}.");
+        }
 
         return new TaskQueueFilter(
             Clean(query.Q),
@@ -357,7 +374,8 @@ public sealed record TaskQueueFilter(
             query.DueWithin,
             query.AtRisk == true,
             query.OnHoldReason is null ? [] : [.. query.OnHoldReason.Where(id => id >= 0).Distinct()],
-            query.NeedsAttention == true);
+            query.NeedsAttention == true,
+            show);
     }
 
     /// <summary>True when no filter is set at all (a plain link): My Work then counts and lists Created by me as open tasks only.</summary>
@@ -366,7 +384,7 @@ public sealed record TaskQueueFilter(
         && Creators.Count == 0 && ClientId is null && MatterId is null && ProjectId is null && TaskTypes.Count == 0 && Workflows.Count == 0
         && CreatedFrom is null && CreatedTo is null && DueFrom is null && DueTo is null && Asap is null && Overdue is null && Requestor is null
         && CompletedFrom is null && CompletedTo is null && MatterText is null && ClientText is null && ProjectText is null
-        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null && !AtRisk && !NeedsAttention && (OnHoldReasons is null || OnHoldReasons.Count == 0);
+        && UpdatedFrom is null && UpdatedTo is null && !ManagedByMe && ManagerId is null && DueWithinDays is null && !AtRisk && !NeedsAttention && Show is null && (OnHoldReasons is null || OnHoldReasons.Count == 0);
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 

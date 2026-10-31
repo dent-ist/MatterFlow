@@ -307,7 +307,7 @@ public sealed class PersonaWalk
             return reference is null ? null : _ids.MatterRefs[reference];
         }
 
-        var token = kind switch { IdKind.Task => "{task}", IdKind.Matter => "{matter}", IdKind.Project => "{project}", IdKind.Asset => "{asset}", _ => null };
+        var token = kind switch { IdKind.Task => "{task}", IdKind.Matter => "{matter}", IdKind.Project => "{project}", IdKind.Asset or IdKind.MatterAsset => "{asset}", _ => null };
         if (token is null)
             return null;
 
@@ -323,6 +323,7 @@ public sealed class PersonaWalk
         IdKind.Matter => persona.Matters.Contains((int)id),
         IdKind.Project => persona.Projects.Contains((int)id),
         IdKind.Asset => persona.Assets.Contains((int)id),
+        IdKind.MatterAsset => persona.Matters.Contains(MatterOfAsset((int)id)),
         _ => true,
     };
 

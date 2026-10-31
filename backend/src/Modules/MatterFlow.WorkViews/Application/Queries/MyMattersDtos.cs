@@ -411,3 +411,193 @@ public sealed record MyMattersBreakdown(
     [property: Required] int Page,
     [property: Required] int PageSize,
     [property: Required] BreakdownTotals Totals);
+
+/// <summary>Tasks per status for a scope with the Show filter applied; <c>AllOpen</c> is New + In Progress + On Hold.</summary>
+public sealed record TaskStatusCounts(
+    [property: Required] int AllOpen,
+    [property: Required] int New,
+    [property: Required] int InProgress,
+    [property: Required] int OnHold,
+    [property: Required] int Completed,
+    [property: Required] int Cancelled);
+
+/// <summary>Tasks per Show filter for a scope with the status selection applied (<c>Everything</c> is the selection itself).</summary>
+public sealed record TaskShowCounts(
+    [property: Required] int Everything,
+    [property: Required] int Overdue,
+    [property: Required] int Risk,
+    [property: Required] int Unassigned,
+    [property: Required] int Critical,
+    [property: Required] int Due7);
+
+/// <summary>
+/// The numbers of the Status chips and the Show chips of the Overview, and of the stacked workflow bar of the chosen client or matter (UI-04, #957). <c>ByStatus</c> respects the
+/// Show filter, <c>ByShow</c> respects the status selection, so each number equals the Task Queue total of the same two filters.
+/// </summary>
+public sealed record MyMattersTaskCounts(
+    [property: Required] string TimeZone,
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] TaskStatusCounts ByStatus,
+    [property: Required] TaskShowCounts ByShow);
+
+/// <summary>The six kinds of the recent activity feed (UI-03).</summary>
+public static class FeedKinds
+{
+    public const string NewAssets = "NEW_ASSETS";
+    public const string NewComments = "NEW_COMMENTS";
+    public const string NewStatusUpdates = "NEW_STATUS_UPDATES";
+    public const string OnHold = "ON_HOLD";
+    public const string Overdue = "OVERDUE";
+    public const string DueDateUpdated = "DUE_DATE_UPDATED";
+
+    /// <summary>All kinds in the order they win a tie of time.</summary>
+    public static readonly IReadOnlyList<string> All = [Overdue, OnHold, DueDateUpdated, NewStatusUpdates, NewComments, NewAssets];
+}
+
+/// <summary>
+/// One item of the feed. Fields that do not apply to the kind are null. A comment is only ever "a comment was added to a task": its text is never read here.
+/// </summary>
+/// <param name="ItemKey">Unique and stable within an answer (<c>KIND:id</c>); use it as the track key.</param>
+/// <param name="OccurredAtUtc">Asset created, comment created, status or due date changed, put on hold, or the due moment of an overdue task.</param>
+/// <param name="ActorName">Who did it; null for the states On hold and Overdue.</param>
+/// <param name="OnHoldReason">The structured reason of the current hold (kind <c>ON_HOLD</c>), when one was chosen.</param>
+/// <param name="OnHoldDays">Whole days on hold (kind <c>ON_HOLD</c>).</param>
+/// <param name="DaysOverdue">Whole days past the due date (kind <c>OVERDUE</c>).</param>
+/// <param name="OldDueDate">The due date before (kind <c>DUE_DATE_UPDATED</c>); null = it was ASAP.</param>
+/// <param name="NewDueDate">The due date now; null = it became ASAP.</param>
+public sealed record MyMattersFeedItem(
+    [property: Required] string ItemKey,
+    [property: Required] string Kind,
+    [property: Required] DateTime OccurredAtUtc,
+    [property: Required] bool IsUnread,
+    string? ActorName,
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] int ClientId,
+    [property: Required] string ClientName,
+    long? TaskId,
+    string? TaskNumber,
+    string? TaskTitle,
+    int? AssetId,
+    string? AssetName,
+    string? AssetTypeName,
+    string? FromStatus,
+    string? ToStatus,
+    string? OnHoldReason,
+    int? OnHoldDays,
+    int? DaysOverdue,
+    DateOnly? OldDueDate,
+    DateOnly? NewDueDate);
+
+/// <summary>
+/// The recent activity feed of the scope, newest first (UI-03, #956; docs/ux/ui-update/api-contract.md section 3).
+/// </summary>
+/// <param name="Since">Start of the window of the event kinds.</param>
+/// <param name="SeenAtUtc">The person's read marker: items after it, done by somebody else, are unread.</param>
+/// <param name="UnreadCount">Unread items of all six kinds (ignores the kind and unread filters).</param>
+/// <param name="Total">Items matching the kind and unread filters (the pager's "of N").</param>
+/// <param name="CountsByKind">Items per kind (ignores the kind and unread filters); every kind is present.</param>
+public sealed record MyMattersFeed(
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] string TimeZone,
+    [property: Required] DateTime Since,
+    [property: Required] DateTime SeenAtUtc,
+    [property: Required] int UnreadCount,
+    [property: Required] int Total,
+    [property: Required] int Page,
+    [property: Required] int PageSize,
+    [property: Required] IReadOnlyDictionary<string, int> CountsByKind,
+    [property: Required] IReadOnlyList<MyMattersFeedItem> Items);
+
+/// <summary>One matter of the tree. Counts: open = New + In Progress + On Hold; overdue = New or In Progress past due; unassigned = open with nobody assigned; critical = open with priority Critical.</summary>
+/// <param name="IsActive">Has an open task, or an asset created or updated in the last N days (the tree's <c>activeDays</c>).</param>
+/// <param name="LastAssetChangeUtc">When an asset of the matter was last created or updated; null when it has none.</param>
+public sealed record MyMattersTreeMatter(
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string Name,
+    [property: Required] bool IsSensitive,
+    [property: Required] bool IsActive,
+    [property: Required] int OpenTasks,
+    [property: Required] int Overdue,
+    [property: Required] int Unassigned,
+    [property: Required] int Critical,
+    DateTime? LastAssetChangeUtc);
+
+/// <summary>A client with its visible matters in the scope; the counts are the sums of its matters.</summary>
+public sealed record MyMattersTreeClient(
+    [property: Required] int ClientId,
+    [property: Required] string ClientNumber,
+    [property: Required] string Name,
+    [property: Required] int MatterCount,
+    [property: Required] int ActiveMatterCount,
+    [property: Required] int OpenTasks,
+    [property: Required] int Overdue,
+    [property: Required] int Unassigned,
+    [property: Required] int Critical,
+    [property: Required] IReadOnlyList<MyMattersTreeMatter> Matters);
+
+/// <summary>The client/matter tree of My Matters (UI-03, #956; api-contract section 1).</summary>
+public sealed record MyMattersTree(
+    [property: Required] DateTime AsOfUtc,
+    [property: Required] string TimeZone,
+    [property: Required] int ActiveDays,
+    [property: Required] int ClientCount,
+    [property: Required] int MatterCount,
+    [property: Required] IReadOnlyList<MyMattersTreeClient> Clients);
+
+/// <summary>One row of the PM's asset list. <c>StatusCode</c> is the disposition.</summary>
+public sealed record MyMattersAssetRow(
+    [property: Required] int AssetId,
+    [property: Required] string Name,
+    [property: Required] int ClientId,
+    [property: Required] string ClientName,
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] int AssetTypeId,
+    [property: Required] string AssetTypeName,
+    [property: Required] DateTime CreatedAtUtc,
+    DateTime? UpdatedAtUtc,
+    [property: Required] string StatusCode,
+    [property: Required] int LinkedTaskCount,
+    [property: Required] int OpenLinkedTaskCount);
+
+/// <summary>The latest ordinary comment of a task: author, time and a plain-text excerpt (never a hold or cancel reason comment).</summary>
+public sealed record MyMattersLatestComment(
+    [property: Required] long CommentId,
+    [property: Required] string AuthorName,
+    [property: Required] DateTime CreatedAtUtc,
+    [property: Required] string Excerpt);
+
+/// <summary>A task linked to an asset, with its latest task comment (assets have no comments of their own).</summary>
+public sealed record MyMattersLinkedTask(
+    [property: Required] long TaskId,
+    [property: Required] string TaskNumber,
+    [property: Required] string Title,
+    [property: Required] string StatusCode,
+    [property: Required] string StatusLabel,
+    DateOnly? DueDate,
+    [property: Required] bool IsOverdue,
+    string? AssigneeName,
+    MyMattersLatestComment? LatestComment);
+
+/// <summary>An asset with the tasks linked to it (UI-03, #956; api-contract section 5.2).</summary>
+public sealed record MyMattersAssetDetail(
+    [property: Required] int AssetId,
+    [property: Required] string Name,
+    [property: Required] int ClientId,
+    [property: Required] string ClientName,
+    [property: Required] int MatterId,
+    [property: Required] string MatterRef,
+    [property: Required] string MatterName,
+    [property: Required] int AssetTypeId,
+    [property: Required] string AssetTypeName,
+    string? Description,
+    string? ExternalReference,
+    [property: Required] DateTime CreatedAtUtc,
+    string? CreatedByName,
+    DateTime? UpdatedAtUtc,
+    [property: Required] string StatusCode,
+    [property: Required] IReadOnlyList<MyMattersLinkedTask> LinkedTasks);

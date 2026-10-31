@@ -133,6 +133,13 @@ public sealed class SensitiveUniverse
             await h.ExecuteAsync($"UPDATE dbo.Task SET Title = N'{Sentinel(matter)} task' WHERE TaskId = {task}");
         }
 
+        // Calendar events (UI-05): one per matter, the sensitive ones carry the sentinel in the title and the note.
+        foreach (var matter in AllMatters)
+        {
+            var text = matter == N1 ? "Normal hearing" : $"{Sentinel(matter)} hearing";
+            await h.ExecuteAsync($"INSERT dbo.MatterEvent (MatterId, EventTypeCode, Title, EventDate, Note) VALUES ({matter}, 'COURT_HEARING', N'{text}', '2030-01-15', N'{text} note'), ({matter}, 'OTHER', N'{text} soon', CAST(DATEADD(day, 5, SYSUTCDATETIME()) AS date), NULL)");
+        }
+
         await h.ExecuteAsync($"UPDATE dbo.Matter SET PrimaryManagerId = {PmPrimary}, SecondaryManagerId = {PmSecondary} WHERE MatterId = {S1}");
         h.Factory.InvalidateAll();
     }

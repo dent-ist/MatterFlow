@@ -33,6 +33,9 @@ public enum IdKind
     Project,
     Asset,
     Notification,
+
+    /// <summary>An asset reached through its matter only (the My Matters page): visible exactly when its matter is, not through a task assigned to the viewer.</summary>
+    MatterAsset,
 }
 
 /// <summary>One classified endpoint operation. <paramref name="Calls"/> are the requests the persona walk sends (placeholders <c>{matter}</c>, <c>{task}</c>, <c>{project}</c>, <c>{asset}</c>, <c>{client}</c>, <c>{user}</c> expand to the universe ids).</summary>
@@ -119,6 +122,18 @@ public static class SensitiveAccessCatalog
         ["POST api/v1/on-hold-reasons"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
         ["PUT api/v1/on-hold-reasons/{id:int}"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
         ["PUT api/v1/on-hold-reasons/order"] = new(AccessKind.Neutral, IdKind.None, "configuration write: no matter data", []),
+        ["GET api/v1/matter-event-types"] = new(AccessKind.Neutral, IdKind.None, "the fixed list of event types: no matter data", ["api/v1/matter-event-types"]),
+        ["GET api/v1/matters/{matterId:int}/events"] = new(AccessKind.Gated, IdKind.Matter, "events of one matter: hidden matter = 404 like a missing id (UI-05)", ["api/v1/matters/{matter}/events"]),
+        ["POST api/v1/matters/{matterId:int}/events"] = new(AccessKind.Write, IdKind.Matter, "hidden target = 404 and no change; covered by MatterEventsApiTests (UI-05)", []),
+        ["PUT api/v1/matter-events/{eventId:int}"] = new(AccessKind.Write, IdKind.None, "hidden event = 404 and no change; covered by MatterEventsApiTests (UI-05)", []),
+        ["DELETE api/v1/matter-events/{eventId:int}"] = new(AccessKind.Write, IdKind.None, "hidden event = 404 and no change; covered by MatterEventsApiTests (UI-05)", []),
+        ["GET api/v1/my-matters/events"] = new(AccessKind.Aggregate, IdKind.None, "events of matters the caller may see (UI-05)", ["api/v1/my-matters/events?scope=all&from=2030-01-01&to=2030-03-01"]),
+        ["GET api/v1/my-matters/events/upcoming"] = new(AccessKind.Aggregate, IdKind.None, "events of matters the caller may see (UI-05)", ["api/v1/my-matters/events/upcoming?scope=all&days=60&take=50"]),
+        ["GET api/v1/my-matters/feed"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (UI-03)", ["api/v1/my-matters/feed?scope=all&pageSize=100", "api/v1/my-matters/feed?scope=all&kind=NEW_ASSETS&kind=OVERDUE&days=90"]),
+        ["GET api/v1/my-matters/tree"] = new(AccessKind.Aggregate, IdKind.None, "clients and matters the caller may see, counts over visible tasks (UI-03)", ["api/v1/my-matters/tree?scope=all"]),
+        ["GET api/v1/my-matters/task-counts"] = new(AccessKind.Aggregate, IdKind.None, "counts over the scope's visible tasks (UI-04)", ["api/v1/my-matters/task-counts?scope=all", "api/v1/my-matters/task-counts?scope=all&show=critical&status=NEW"]),
+        ["GET api/v1/my-matters/assets"] = new(AccessKind.List, IdKind.None, "assets of matters the caller may see (UI-03)", ["api/v1/my-matters/assets?scope=all&pageSize=100", "api/v1/my-matters/assets?scope=all&q=ZZSENS"]),
+        ["GET api/v1/my-matters/assets/{assetId:int}"] = new(AccessKind.Gated, IdKind.MatterAsset, "asset by id through its matter: hidden = 404 like a missing id (UI-03)", ["api/v1/my-matters/assets/{asset}?scope=all"]),
         ["GET api/v1/my-matters/breakdown"] = new(AccessKind.Aggregate, IdKind.None, "computed from matters the caller may see (SM-10)", ["api/v1/my-matters/breakdown?scope=all", "api/v1/my-matters/breakdown?scope=all&view=types"]),
         ["GET api/v1/me/notification-preferences"] = new(AccessKind.Neutral, IdKind.None, "people, pods and availability: no matter data (swept)", ["api/v1/me/notification-preferences"]),
         ["GET api/v1/me/notifications"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/me/notifications?pageSize=100"]),

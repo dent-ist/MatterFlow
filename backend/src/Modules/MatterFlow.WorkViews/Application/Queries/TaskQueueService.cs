@@ -497,6 +497,9 @@ public sealed class TaskQueueService(
         if (f.NeedsAttention)
             rows = rows.Where(AttentionRules.NeedsAttention(db, c));
 
+        if (f.Show is { } show)
+            rows = ShowFilter.Apply(rows, show, db, c);
+
         if (f.OnHoldReasons is { Count: > 0 } reasons)
         {
             var ids = reasons.Where(id => id > 0).ToList();

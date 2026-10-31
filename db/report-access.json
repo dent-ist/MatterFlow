@@ -85,6 +85,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "MatterEvent",
+      "access": "deny",
+      "reason": "Calendar items of a matter (hearings, deadlines); shown through the application's visibility rule only, not report data."
+    },
+    {
       "name": "Notification",
       "access": "deny",
       "reason": "Per-person notifications (personal inbox), not report data."

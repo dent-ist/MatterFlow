@@ -42,3 +42,18 @@ internal sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
         b.HasIndex(x => new { x.MatterId, x.Name }).IsUnique().HasDatabaseName("UQ_Project_MatterName");
     }
 }
+
+internal sealed class MatterEventConfiguration : IEntityTypeConfiguration<MatterEvent>
+{
+    public void Configure(EntityTypeBuilder<MatterEvent> b)
+    {
+        b.ToTable("MatterEvent");
+        b.Property(x => x.EventTypeCode).HasMaxLength(30).IsUnicode(false).IsRequired();
+        b.Property(x => x.Title).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Note).HasMaxLength(2000);
+        b.Property(x => x.EventDate).HasColumnType("date");
+        b.Property(x => x.EventTime).HasColumnType("time(0)");
+        b.HasIndex(x => new { x.EventDate, x.MatterId }).HasDatabaseName("IX_MatterEvent_Date");
+        b.HasIndex(x => new { x.MatterId, x.EventDate }).HasDatabaseName("IX_MatterEvent_Matter");
+    }
+}

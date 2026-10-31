@@ -44,6 +44,7 @@ public class SourceHygieneRulesTests
         {
             ["VisibilityPredicates.cs"] = 2,
             ["MatterService.cs"] = 2, // changed-manager detection when the managers are set (a write, not a filter)
+            ["MatterEventService.cs"] = 2, // "may this caller change this event": the Primary or Secondary PM check on ONE loaded matter row (UI-05, #958); the matter was already read through the visibility rule
         };
         var found = ProductSources()
             .Select(f => (Name: Path.GetFileName(f), Count: pattern.Matches(File.ReadAllText(f)).Count))

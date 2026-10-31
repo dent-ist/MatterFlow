@@ -29,6 +29,7 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
     internal const string AssignedEvent = "TASK_ASSIGNED";
     internal const string CommentEvent = "COMMENT_ADDED";
     internal const string ManagerEvent = "MATTER_MANAGER_CHANGED";
+    internal const string FieldChangedEvent = "FIELD_CHANGED";
     internal const string NormalComment = "NORMAL";
 
     /// <summary>The values of the <c>kind</c> filter: the five kinds of an item, plus <c>COMPLETED</c> and <c>ON_HOLD</c> (the status changes to that status).</summary>
@@ -112,15 +113,16 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
     /// The audit events of the scope's matters from event id <paramref name="fromId"/> on, of the five kinds (ordinary comments only), with the sensitive-matter rule applied: history
     /// written while a matter was sensitive stays restricted after un-marking, only for the matter's managers and see-all viewers.
     /// </summary>
-    internal IQueryable<AuditRow> ScopedEvents(MyMattersScope scope, long fromId, DateTime since, DateTime? until)
+    internal IQueryable<AuditRow> ScopedEvents(MyMattersScope scope, long fromId, DateTime since, DateTime? until, IReadOnlyCollection<string>? eventTypes = null)
     {
+        var types = eventTypes ?? Kinds;
         var ids = scope.Matters.Select(m => m.Id);
         var events = db.Database.SqlQuery<AuditRow>($"""
             SELECT AuditEventId, OccurredAtUtc, ActorUserId, EventType, MatterId, TaskId, FieldKey, OldValue, NewValue, IsSensitiveScope
             FROM dbo.AuditEvent
             """)
             .Where(e => e.AuditEventId >= fromId && e.OccurredAtUtc >= since && e.MatterId != null && ids.Contains(e.MatterId.Value))
-            .Where(e => Kinds.Contains(e.EventType) && (e.EventType != CommentEvent || e.NewValue == NormalComment));
+            .Where(e => types.Contains(e.EventType) && (e.EventType != CommentEvent || e.NewValue == NormalComment));
         if (until is { } end)
             events = events.Where(e => e.OccurredAtUtc < end);
 
@@ -273,6 +275,14 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
         }
 
         return await db.Database.SqlQuery<long>($"SELECT SeenAuditEventId AS [Value] FROM dbo.UserMatterActivitySeen WHERE UserId = {me}").FirstAsync(ct);
+    }
+
+    /// <summary>The person's marker as an audit event id and the instant it was set (the feed's "unread" is time based, so assets and states can be unread too).</summary>
+    internal async Task<(long EventId, DateTime AtUtc)> EnsureSeenWithTimeAsync(int me, CancellationToken ct)
+    {
+        var eventId = await EnsureSeenAsync(me, ct);
+        var at = await db.Database.SqlQuery<DateTime>($"SELECT SeenAtUtc AS [Value] FROM dbo.UserMatterActivitySeen WHERE UserId = {me}").FirstAsync(ct);
+        return (eventId, DateTime.SpecifyKind(at, DateTimeKind.Utc));
     }
 
     private static (int? PodId, int? UserId) ParseAssignment(string? json)
