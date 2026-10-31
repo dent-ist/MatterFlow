@@ -103,12 +103,12 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     expect(navLabels(document.body)).toEqual([
       'Dashboard',
       'My Work',
-      'Task Queue',
-      'Pod Work',
       'Clients',
       'Matters',
       'Projects',
       'Assets',
+      'Pod Work',
+      'Task Queue',
     ]);
     expect(document.body.textContent).not.toContain('Administration');
     expect(document.querySelector('input[type=search]')?.getAttribute('placeholder')).toContain(
@@ -151,7 +151,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
     };
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/');
-    expect(navLabels(document.body)).toEqual(['My Work', 'Task Queue', 'Clients']);
+    expect(navLabels(document.body)).toEqual(['My Work', 'Clients', 'Task Queue']);
     expect(document.body.textContent).not.toContain('Create task');
   });
 
