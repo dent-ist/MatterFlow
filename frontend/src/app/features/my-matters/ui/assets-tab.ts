@@ -426,45 +426,6 @@ const HEADS = [
       margin: var(--mf-s4);
       color: var(--mf-text-muted);
     }
-    .tt {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      font-size: var(--mf-fs-md);
-    }
-    .tt th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      height: 40px;
-      padding: 0 var(--mf-s3);
-      background: var(--mf-surface-alt);
-      border-bottom: 1px solid var(--mf-border);
-      text-align: left;
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: var(--mf-text-muted);
-    }
-    .sort {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s1);
-      min-height: 32px;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
-      font: inherit;
-      letter-spacing: inherit;
-      text-transform: inherit;
-      cursor: pointer;
-    }
-    th[aria-sort='ascending'],
-    th[aria-sort='descending'] {
-      color: var(--mf-text);
-    }
     .tt td {
       height: 48px;
       padding: 0 var(--mf-s3);

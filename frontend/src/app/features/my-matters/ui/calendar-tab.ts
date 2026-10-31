@@ -435,7 +435,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       align-items: center;
       gap: var(--mf-s1);
       color: var(--mf-sem-overdue-fg);
-      font-weight: 700;
     }
     .grid-wrap {
       display: flex;
@@ -537,6 +536,9 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: var(--mf-fs-xs);
+    }
+    .chip mf-event-icon {
+      flex: none;
     }
     .chip.tk {
       color: var(--mf-text-muted);

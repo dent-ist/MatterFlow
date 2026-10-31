@@ -42,6 +42,46 @@ import { ScrollArea } from './fixed-page';
       container-name: gc;
       overflow: hidden;
     }
+    /* The table every grid in a frame shares: a sticky heading row and a sort button in each heading (the rows are the grid's own). */
+    :host ::ng-deep .tt {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: var(--mf-fs-md);
+    }
+    :host ::ng-deep .tt th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      height: 40px;
+      padding: 0 var(--mf-s3);
+      background: var(--mf-surface-alt);
+      border-bottom: 1px solid var(--mf-border);
+      text-align: left;
+      font-size: var(--mf-fs-xs);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--mf-text-muted);
+    }
+    :host ::ng-deep .tt th[aria-sort='ascending'],
+    :host ::ng-deep .tt th[aria-sort='descending'] {
+      color: var(--mf-text);
+    }
+    :host ::ng-deep .tt .sort {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-height: 32px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      cursor: pointer;
+    }
     .head:empty,
     .status:empty,
     .foot:empty {
