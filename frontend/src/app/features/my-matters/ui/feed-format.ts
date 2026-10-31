@@ -1,4 +1,5 @@
-import { dayIndex, formatDateOnly, parseDateOnly } from '../../../core/time/time';
+import { dayIndex, parseDateOnly } from '../../../core/time/time';
+import { numericDate } from '../../../shared/ui/numeric-date';
 import { FEED_KINDS, FeedItem, FeedKind } from './mm-models';
 
 export interface KindLook {
@@ -31,7 +32,7 @@ const word = (code: string | null): string => (code ? (STATUS_WORDS[code] ?? cod
 const days = (n: number): string => `${n} ${n === 1 ? 'day' : 'days'}`;
 
 /** What happened, in one line without the task title ("Moved from New to In Progress"). */
-export function feedWhat(i: FeedItem): string {
+export function feedWhat(i: FeedItem, now: Date = new Date(), zone = 'UTC'): string {
   switch (i.kind) {
     case 'NEW_ASSETS':
       return `Asset added: ${i.assetName ?? 'asset'}${i.assetTypeName ? ` (${i.assetTypeName})` : ''}`;
@@ -44,15 +45,15 @@ export function feedWhat(i: FeedItem): string {
     case 'OVERDUE':
       return i.daysOverdue != null ? `${days(i.daysOverdue)} overdue` : 'Overdue';
     case 'DUE_DATE_UPDATED':
-      return dueMove(i);
+      return dueMove(i, now, zone);
   }
 }
 
-/** "Due date moved 3 days later (Nov 4 to Nov 7)". A null date is ASAP. */
-export function dueMove(i: FeedItem): string {
+/** "Due date moved 3 days later (11/04 to 11/07)". A null date is ASAP. */
+export function dueMove(i: FeedItem, now: Date = new Date(), zone = 'UTC'): string {
   const a = i.oldDueDate ? parseDateOnly(i.oldDueDate) : null;
   const b = i.newDueDate ? parseDateOnly(i.newDueDate) : null;
-  const text = (d: string | null): string => (d ? formatDateOnly(d) : 'ASAP');
+  const text = (d: string | null): string => (d ? numericDate(d, now, zone) : 'ASAP');
   const range = `${text(i.oldDueDate)} to ${text(i.newDueDate)}`;
   if (!a || !b) return `Due date changed (${range})`;
   const n = dayIndex(b) - dayIndex(a);

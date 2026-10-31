@@ -218,3 +218,14 @@ styles: [
 ```
 
 Better still, use `<mf-status-chip code="COMPLETED" />` and delete the style.
+
+## 8. Date and time format of the new My Matters (UI-23, issue #974)
+
+One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUMERIC_DATE`, pattern `MM/DD hh:mm AM/PM`). Change it there and every date of the page follows.
+
+- A date with no time of day is `MM/DD` (`10/26`); a date in another year than the current one is `MM/DD/YYYY` (`01/05/2027`, with the time when there is one).
+- A time is a 12-hour clock with a leading zero and a space before AM or PM: `04:00 PM`, `12:00 AM` at midnight, `12:00 PM` at noon. Example: `10/26 04:00 PM`.
+- The person's time zone decides the day, the clock and "the current year" (instants only; calendar dates are floating days).
+- In templates use the `mfNum` pipe (`value | mfNum`, `| mfNum: 'date'`, `| mfNum: 'time'`); in code use `numericDate`, `numericInstant`, `numericDateAndTime`.
+- Accessible text and tooltips keep a readable full date: `readableDate` / `readableInstant` give "October 26, 2026, 4:00 PM". Relative words ("Today", "2 days ago", "Due in 2 d") stay as they are. The month title of the calendar ("October 2026") is a heading, not a date, and stays.
+- Other pages keep `mfDate` for now. The native date and time inputs of the event dialog follow the browser's locale.

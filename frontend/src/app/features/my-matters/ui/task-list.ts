@@ -20,6 +20,12 @@ import { todayText } from '../calendar-month';
 import { GridFilters } from './mm-scope';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { DueCell, describeDueCell } from '../../../core/time/time';
+import {
+  numericDate,
+  numericInstant,
+  readableDate,
+  readableInstant,
+} from '../../../shared/ui/numeric-date';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { GridFrame } from '../../../shared/ui/grid-frame';
@@ -377,14 +383,14 @@ export function statusCodes(status: StatusFilter): string[] {
                 </td>
                 <td class="c-due" data-cell="due">
                   @let d = due(t);
-                  <span [class]="'due ' + d.tone" [attr.title]="d.tooltip">
+                  <span [class]="'due ' + d.tone" [attr.title]="dueTitle(t, d)">
                     <span class="l1">
                       @if (d.tone === 'overdue') {
                         <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
                       } @else if (d.tone === 'today' || d.tone === 'soon') {
                         <i class="pi pi-clock" aria-hidden="true"></i>
                       }
-                      {{ d.line1 }}
+                      {{ dueText(t, d) }}
                     </span>
                     @if (dueNote(t, d); as note) {
                       <span class="rel">{{ note }}</span>
@@ -953,7 +959,7 @@ export class MmTaskList {
     if (g.due)
       out.push({
         key: 'due',
-        label: `Due: ${this.dueItems.find((d) => d.value === g.due)?.label ?? g.due}${g.due === 'range' && (g.from || g.to) ? ` ${g.from ?? ''} to ${g.to ?? ''}` : ''}`,
+        label: `Due: ${this.dueItems.find((d) => d.value === g.due)?.label ?? g.due}${g.due === 'range' && (g.from || g.to) ? ` ${this.numDay(g.from)} to ${this.numDay(g.to)}` : ''}`,
         clear: { due: null, dfrom: null, dto: null },
       });
     if (g.types.length)
@@ -1086,6 +1092,24 @@ export class MmTaskList {
     if (d.overdue) return d.line2;
     if (n === 0) return 'Due today';
     return n <= 7 ? `Due in ${n} d` : '';
+  }
+
+  /** Line 1 of the Due cell in the numeric format (`10/26 04:00 PM`, `10/26` without a time, `ASAP`). */
+  protected dueText(t: TaskQueueRow, d: DueCell): string {
+    if (d.tone === 'asap') return d.line1;
+    if (t.dueAtUtc) return numericInstant(t.dueAtUtc, this.clock.now(), this.zone);
+    return t.dueDate ? numericDate(t.dueDate, this.clock.now(), this.zone) : d.line1;
+  }
+
+  /** The hover text keeps the readable full date ("October 26, 2026, 4:00 PM"). */
+  protected dueTitle(t: TaskQueueRow, d: DueCell): string {
+    if (d.tone === 'asap') return d.tooltip;
+    if (t.dueAtUtc) return readableInstant(t.dueAtUtc, this.zone);
+    return t.dueDate ? readableDate(t.dueDate) : d.tooltip;
+  }
+
+  protected numDay(v: string | null): string {
+    return v ? numericDate(v, this.clock.now(), this.zone) : '';
   }
 
   protected due(t: TaskQueueRow) {

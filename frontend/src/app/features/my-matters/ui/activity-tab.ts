@@ -8,8 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { Clock } from '../../../core/time/clock';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
@@ -30,7 +30,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-mm-activity-tab',
-  imports: [AssetTypeChip, TaskTypeChip, FilterChips, GridFrame, MfDatePipe, Pager],
+  imports: [AssetTypeChip, TaskTypeChip, FilterChips, GridFrame, NumericDatePipe, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -109,7 +109,7 @@ const PAGE_SIZE = 25;
                   @if (i.isUnread) {
                     <span class="dot" aria-hidden="true"></span><span class="sr">Unread. </span>
                   }
-                  {{ ago(i) }}<span class="m">{{ i.occurredAtUtc | mfDate: 'date' }}</span>
+                  {{ ago(i) }}<span class="m">{{ i.occurredAtUtc | mfNum: 'date' }}</span>
                 </td>
                 <td class="c-k">
                   <div class="kw">
@@ -416,6 +416,7 @@ export class MmActivityTab {
   private readonly api = inject(MmApi);
   private readonly router = inject(Router);
   private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   readonly filters = input.required<MmFilters>();
   readonly kind = input<string | null>(null);
@@ -467,7 +468,7 @@ export class MmActivityTab {
     return feedTitle(i);
   }
   protected what(i: FeedItem): string {
-    return feedWhat(i);
+    return feedWhat(i, this.clock.now(), this.zone);
   }
   protected ago(i: FeedItem): string {
     return agoShort(i.occurredAtUtc, this.clock.now());

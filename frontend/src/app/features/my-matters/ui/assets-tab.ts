@@ -12,7 +12,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetTypesClient } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
@@ -49,7 +49,7 @@ const HEADS = [
  */
 @Component({
   selector: 'mf-mm-assets-tab',
-  imports: [AssetTypeChip, Dropdown, GridFrame, MfDatePipe, Pager, RouterLink, StatusChip],
+  imports: [AssetTypeChip, Dropdown, GridFrame, NumericDatePipe, Pager, RouterLink, StatusChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -200,9 +200,9 @@ const HEADS = [
                       </button>
                     </div>
                   </td>
-                  <td class="c-cr">{{ a.createdAtUtc | mfDate: 'date' }}</td>
+                  <td class="c-cr">{{ a.createdAtUtc | mfNum: 'date' }}</td>
                   <td class="c-up">
-                    {{ a.updatedAtUtc ? (a.updatedAtUtc | mfDate: 'date') : 'Never' }}
+                    {{ a.updatedAtUtc ? (a.updatedAtUtc | mfNum: 'date') : 'Never' }}
                   </td>
                   <td class="c-st">
                     <span class="ast" [attr.data-status]="a.statusCode"
@@ -260,9 +260,9 @@ const HEADS = [
                 >
               </dd>
               <dt>Created</dt>
-              <dd>{{ d.createdAtUtc | mfDate }} by {{ d.createdByName }}</dd>
+              <dd>{{ d.createdAtUtc | mfNum }} by {{ d.createdByName }}</dd>
               <dt>Updated</dt>
-              <dd>{{ d.updatedAtUtc ? (d.updatedAtUtc | mfDate) : 'Never' }}</dd>
+              <dd>{{ d.updatedAtUtc ? (d.updatedAtUtc | mfNum) : 'Never' }}</dd>
               @if (d.sizeValue) {
                 <dt>Size</dt>
                 <dd>{{ d.sizeValue }} {{ d.sizeUnit }}</dd>
@@ -298,7 +298,7 @@ const HEADS = [
                         ·
                       }
                       @if (t.dueDate) {
-                        due {{ t.dueDate | mfDate }}
+                        due {{ t.dueDate | mfNum }}
                       } @else {
                         no due date
                       }
@@ -309,7 +309,7 @@ const HEADS = [
                     @if (t.latestComment; as c) {
                       <blockquote class="cm">
                         <span class="m"
-                          >{{ c.authorName }}, {{ c.createdAtUtc | mfDate: 'date' }}</span
+                          >{{ c.authorName }}, {{ c.createdAtUtc | mfNum: 'date' }}</span
                         >
                         {{ c.excerpt }}
                       </blockquote>

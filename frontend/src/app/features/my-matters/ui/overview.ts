@@ -11,7 +11,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { todayText } from '../calendar-month';
-import { formatMonthDay, parseDateOnly } from '../../../core/time/time';
+import { NumericDatePipe, numericDate } from '../../../shared/ui/numeric-date';
 import { EventIcon } from '../../../shared/ui/event-type';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SidePanel, SideSection } from '../../../shared/ui/side-panel';
@@ -35,7 +35,7 @@ const UPCOMING_DAYS = 14;
  */
 @Component({
   selector: 'mf-mm-overview',
-  imports: [Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, SidePanel],
+  imports: [Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, NumericDatePipe, SidePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -103,7 +103,7 @@ const UPCOMING_DAYS = 14;
                     <span class="when">
                       <b>{{ when(e) }}</b>
                       @if (e.time) {
-                        <span>{{ e.time }}</span>
+                        <span>{{ e.time | mfNum: 'time' }}</span>
                       }
                     </span>
                     <span class="body">
@@ -526,10 +526,10 @@ export class MmOverview {
     return feedTitle(i);
   }
   protected what(i: FeedItem): string {
-    return feedWhat(i);
+    return feedWhat(i, this.clock.now(), this.zone);
   }
   protected label(i: FeedItem): string {
-    return `${KIND_LOOK[i.kind].label}: ${feedTitle(i)}, ${feedWhat(i)}`;
+    return `${KIND_LOOK[i.kind].label}: ${feedTitle(i)}, ${feedWhat(i, this.clock.now(), this.zone)}`;
   }
   protected ago(i: FeedItem): string {
     return agoShort(i.occurredAtUtc, this.clock.now());
@@ -540,8 +540,7 @@ export class MmOverview {
     next.setUTCDate(next.getUTCDate() + 1);
     if (e.date === today) return 'Today';
     if (e.date === next.toISOString().slice(0, 10)) return 'Tomorrow';
-    const d = parseDateOnly(e.date);
-    return d ? formatMonthDay(d) : e.date;
+    return numericDate(e.date, this.clock.now(), this.zone);
   }
   protected taskHref(id: number): string {
     return this.router.serializeUrl(this.router.createUrlTree(['/tasks', id]));

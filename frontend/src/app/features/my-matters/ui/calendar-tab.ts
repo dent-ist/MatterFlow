@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
 import { MyMattersClient, MyMattersTaskItem } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { formatDateOnly } from '../../../core/time/time';
+import { NumericDatePipe, readableDate } from '../../../shared/ui/numeric-date';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
@@ -84,7 +84,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
  */
 @Component({
   selector: 'mf-mm-calendar-tab',
-  imports: [Dropdown, EventIcon, MmEventDialog, RouterLink, TaskTypeChip],
+  imports: [Dropdown, EventIcon, MmEventDialog, NumericDatePipe, RouterLink, TaskTypeChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'mf-fill',
@@ -206,7 +206,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                     <span class="chips" aria-hidden="true">
                       @for (e of c.events.slice(0, 3); track e.eventId) {
                         <span class="chip ev"
-                          ><mf-event-icon [type]="e.typeCode" />{{ e.time ?? '' }}
+                          ><mf-event-icon [type]="e.typeCode" />{{ e.time | mfNum: 'time' }}
                           {{ e.title }}</span
                         >
                       }
@@ -256,7 +256,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
           (keydown.escape)="closeDay(true)"
         >
           <div class="dph">
-            <h3>{{ longDate(d.date) }}</h3>
+            <h3>{{ d.date | mfNum }}</h3>
             <button
               type="button"
               class="x"
@@ -278,7 +278,10 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                   <mf-event-icon [type]="e.typeCode" [chip]="true" />
                   <span class="dt"
                     ><b>{{ e.title }}</b>
-                    <span class="m">{{ e.time ?? 'All day' }} · {{ e.matterName }}</span></span
+                    <span class="m"
+                      >{{ e.time ? (e.time | mfNum: 'time') : 'All day' }} ·
+                      {{ e.matterName }}</span
+                    ></span
                   >
                   @if (e.canEdit) {
                     <button
@@ -804,11 +807,11 @@ export class MmCalendarTab {
   }
 
   protected longDate(date: string): string {
-    return formatDateOnly(date);
+    return readableDate(date);
   }
 
   protected dayLabel(c: Cell): string {
-    const parts = [formatDateOnly(c.date)];
+    const parts = [readableDate(c.date)];
     if (c.today) parts.push('today');
     parts.push(`${c.events.length} ${c.events.length === 1 ? 'event' : 'events'}`);
     parts.push(`${c.tasks.length} ${c.tasks.length === 1 ? 'task' : 'tasks'} due`);

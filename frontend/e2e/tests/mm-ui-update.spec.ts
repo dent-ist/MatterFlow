@@ -254,9 +254,7 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
       await page.locator(id).click();
       const list = page.getByRole('listbox', { name });
       await expect(list).toBeVisible();
-      await expect(list.locator('[role=option][aria-selected=true] .tick .pi-check')).toHaveCount(
-        1,
-      );
+      await expect(list.locator('[role=option][aria-selected=true] .tick.pi-check')).toHaveCount(1);
       await page.keyboard.press('Escape');
       await expect(list).toHaveCount(0);
       await expect(page.locator(id)).toBeFocused();
@@ -494,12 +492,7 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     await expect(page.locator('[data-asset-panel]')).toContainText('Linked tasks');
   });
 
-  test('an activity item opens the task in a NEW tab', async ({
-    seed,
-    personas,
-    asUser,
-    context,
-  }) => {
+  test('an activity item opens the task in a NEW tab', async ({ seed, personas, asUser }) => {
     const w = await mmWorld(seed, personas, 'ui10');
     const a = await w.matter('Alpha');
     await w.task(a, { dueDate: '2000-01-01', title: 'Late for the feed' });
