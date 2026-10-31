@@ -27,27 +27,27 @@ Update the Navigation panel and the My Matters page to the new mockup, and build
 
 ## Two-agent split and order
 
-| Issue | Title | Owner | Hours |
-| --- | --- | --- | --- |
-| #954 UI-01 | Design tokens (push early) | Agent 1 | 6.0 |
-| #955 UI-02 | API contract document (push FIRST) | Agent 1 | 1.5 |
-| #956 UI-03 | My Matters scope APIs | Agent 1 | 8.0 |
-| #957 UI-04 | Task status and step progress in the task list API | Agent 1 | 4.0 |
-| #958 UI-05 | Matter events backend | Agent 1 | 8.0 |
-| #959 UI-06 | Navigation panel update | Agent 1 | 3.0 |
-| #960 UI-07 | Theme adoption guide and conversion plan | Agent 1 | 2.5 |
-| | Agent 1 subtotal | | 33.0 |
-| #961 UI-10 | Shared UI building blocks | Agent 2 | 8.0 |
-| #962 UI-11 | Page shell | Agent 2 | 5.0 |
-| #963 UI-12 | Tree panel | Agent 2 | 5.0 |
-| #964 UI-13 | Overview | Agent 2 | 8.0 |
-| #965 UI-14 | "+ New" menu and dialogs | Agent 2 | 4.0 |
-| #966 UI-15 | Calendar tab | Agent 2 | 7.0 |
-| #967 UI-16 | Assets tab | Agent 2 | 5.0 |
-| #968 UI-17 | Metrics and Activity tabs | Agent 2 | 4.0 |
-| #969 UI-18 | Retire old code, tidy, addendum AP, hand-back checks | Agent 2 | 4.0 |
-| | Agent 2 subtotal | | 50.0 |
-| | **Total** | | **83.0** |
+| Issue      | Title                                                | Owner   | Hours    |
+| ---------- | ---------------------------------------------------- | ------- | -------- |
+| #954 UI-01 | Design tokens (push early)                           | Agent 1 | 6.0      |
+| #955 UI-02 | API contract document (push FIRST)                   | Agent 1 | 1.5      |
+| #956 UI-03 | My Matters scope APIs                                | Agent 1 | 8.0      |
+| #957 UI-04 | Task status and step progress in the task list API   | Agent 1 | 4.0      |
+| #958 UI-05 | Matter events backend                                | Agent 1 | 8.0      |
+| #959 UI-06 | Navigation panel update                              | Agent 1 | 3.0      |
+| #960 UI-07 | Theme adoption guide and conversion plan             | Agent 1 | 2.5      |
+|            | Agent 1 subtotal                                     |         | 33.0     |
+| #961 UI-10 | Shared UI building blocks                            | Agent 2 | 8.0      |
+| #962 UI-11 | Page shell                                           | Agent 2 | 5.0      |
+| #963 UI-12 | Tree panel                                           | Agent 2 | 5.0      |
+| #964 UI-13 | Overview                                             | Agent 2 | 8.0      |
+| #965 UI-14 | "+ New" menu and dialogs                             | Agent 2 | 4.0      |
+| #966 UI-15 | Calendar tab                                         | Agent 2 | 7.0      |
+| #967 UI-16 | Assets tab                                           | Agent 2 | 5.0      |
+| #968 UI-17 | Metrics and Activity tabs                            | Agent 2 | 4.0      |
+| #969 UI-18 | Retire old code, tidy, addendum AP, hand-back checks | Agent 2 | 4.0      |
+|            | Agent 2 subtotal                                     |         | 50.0     |
+|            | **Total**                                            |         | **83.0** |
 
 Order: Agent 1 does UI-02 and UI-01 first and pushes both. Agent 2 starts with UI-10 once those are pushed, then follows its list in order, coding against `api-contract.md` and picking up real endpoints as Agent 1 pushes UI-03, UI-04 and UI-05. UI-06 consumes the tokens; UI-07 follows UI-10 so it can list the shared components.
 
