@@ -113,3 +113,25 @@
   align-items: center;
   gap: var(--mf-s3);
 }
+
+/* Icon and Colour: the label above its control, like the Task Type form (the same picker and chip). */
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: var(--mf-s1);
+  margin-bottom: var(--mf-s3);
+
+  label {
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  select.text {
+    min-height: var(--mf-row-h);
+    padding: 0 var(--mf-s3);
+  }
+}
