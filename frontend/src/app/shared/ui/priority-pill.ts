@@ -18,8 +18,15 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
 @Component({
   selector: 'mf-priority-pill',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="pill" [attr.data-kind]="kind()"
-    ><i class="pi" [class]="def().icon" aria-hidden="true"></i>{{ text() }}</span
+  template: `<span class="pill" [attr.data-kind]="kind()">
+    @if (svg(); as p) {
+      <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false">
+        <path [attr.d]="p" />
+      </svg>
+    } @else {
+      <i class="pi" [class]="def().icon" aria-hidden="true"></i>
+    }
+    {{ text() }}</span
   >`,
   styles: `
     :host {
@@ -40,6 +47,14 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
     }
     .pill .pi {
       font-size: 0.7rem;
+    }
+    .pill svg {
+      flex: none;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .pill[data-kind='critical'] {
       --p-bg: var(--mf-pr-critical-bg);
@@ -67,5 +82,13 @@ export class PriorityPill {
   readonly kind = input.required<PillKind>();
   readonly label = input<string | null | undefined>(null);
   protected readonly def = computed(() => PILLS[this.kind()]);
+  /** The mockup's icons for the two priorities it draws: a flame for Critical and an up chevron for High. */
+  protected readonly svg = computed(() =>
+    this.kind() === 'critical'
+      ? 'M12 22c4 0 7-2.7 7-7 0-3-1.8-5-3.2-6.5-.4 1.6-1.3 2.5-2.3 2.8.5-3-.5-6.3-3.5-8.3.3 3-1.3 4.6-2.7 6.4C6 11 5 12.6 5 15c0 4.3 3 7 7 7z'
+      : this.kind() === 'high'
+        ? 'm6 15 6-6 6 6'
+        : null,
+  );
   protected readonly text = computed(() => this.label() ?? this.def().label);
 }

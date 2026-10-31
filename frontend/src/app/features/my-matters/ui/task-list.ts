@@ -12,6 +12,8 @@ import { RouterLink, convertToParamMap } from '@angular/router';
 import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { describeDueCell } from '../../../core/time/time';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
@@ -26,6 +28,15 @@ import { SHOW_FILTERS, STATUS_FILTERS, ShowFilter, StatusFilter, TaskCounts } fr
 
 export const GRID_PAGE_SIZE = 25;
 const DEFAULT_SORT = 'attention';
+/** The icons of the Status chips (the mockup's: layers for All open, then the status icons). */
+const STATUS_ICONS: Record<StatusFilter, string> = {
+  open: 'pi-clone',
+  new: 'pi-circle',
+  progress: 'pi-play-circle',
+  hold: 'pi-pause-circle',
+  completed: 'pi-check-circle',
+  cancelled: 'pi-times-circle',
+};
 const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 
 /** The statuses the Status chip asks for (the Show rules, with their own status limits, are applied by the server through `show`). */
@@ -43,7 +54,16 @@ export function statusCodes(status: StatusFilter): string[] {
  */
 @Component({
   selector: 'mf-mm-task-list',
-  imports: [FilterChips, GridFrame, Pager, PriorityPill, RouterLink, StatusChip],
+  imports: [
+    Dropdown,
+    FilterChips,
+    GridFrame,
+    Pager,
+    PriorityPill,
+    RouterLink,
+    StatusChip,
+    TaskTypeBadge,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -56,20 +76,19 @@ export function statusCodes(status: StatusFilter): string[] {
           }
         </h2>
         <div class="tools">
-          <label class="show">
-            <span class="lab">Show</span>
-            <select
-              data-show
-              [value]="show()"
-              (change)="showChange.emit($any($event.target).value)"
-            >
-              @for (s of showOptions(); track s.key) {
-                <option [value]="s.key" [selected]="s.key === show()">
-                  {{ s.label }}{{ s.count === null ? '' : ' (' + s.count + ')' }}
-                </option>
-              }
-            </select>
-          </label>
+          <mf-dropdown
+            class="show"
+            buttonId="mm-show"
+            label="Show"
+            prefix="Show:"
+            size="sm"
+            [items]="showOptions()"
+            [value]="show()"
+            (valueChange)="showChange.emit($any($event))"
+            [countOnButton]="true"
+            neutralValue="everything"
+            [panelWidth]="260"
+          />
           @if (total() > 1) {
             <button
               type="button"
@@ -136,17 +155,30 @@ export function statusCodes(status: StatusFilter): string[] {
             @for (t of rows(); track t.taskId) {
               <tr [attr.data-task]="t.taskId">
                 <td class="td-t" data-cell="title">
-                  <a class="lnk" [routerLink]="['/tasks', t.taskId]" data-task-link>
-                    <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
-                  </a>
-                  @if (showMatter()) {
-                    <span class="mt">{{ t.matterName }}</span>
-                  }
-                  <span class="ppl">
-                    @if (pill(t); as p) {
-                      <mf-priority-pill [kind]="p" />
+                  <div class="cell">
+                    <mf-task-type-badge
+                      [decorative]="true"
+                      [iconKey]="t.taskTypeIconKey"
+                      [colourKey]="t.taskTypeColourKey"
+                      [name]="t.taskTypeName"
+                    />
+                    <span class="tcell">
+                      <a class="lnk" [routerLink]="['/tasks', t.taskId]" data-task-link>
+                        <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
+                      </a>
+                      @if (showMatter()) {
+                        <span class="mt">{{ t.matterName }}</span>
+                      }
+                    </span>
+                    @if (t.atRisk && (t.status === 'NEW' || t.status === 'IN_PROGRESS')) {
+                      <mf-priority-pill kind="risk" />
                     }
-                  </span>
+                    <span class="ppl">
+                      @if (pill(t); as p) {
+                        <mf-priority-pill [kind]="p" />
+                      }
+                    </span>
+                  </div>
                 </td>
                 <td class="c-st" data-cell="status">
                   <mf-status-chip
@@ -161,26 +193,34 @@ export function statusCodes(status: StatusFilter): string[] {
                   @if (pill(t); as p) {
                     <mf-priority-pill [kind]="p" [label]="t.priority.label" />
                   } @else {
-                    {{ t.priority.label }}
+                    <span class="sr">{{ t.priority.label }} priority</span>
                   }
                 </td>
                 <td class="c-asg" data-cell="assignee">
-                  {{ t.assignedUser?.displayName ?? t.assignedPod?.name ?? 'Unassigned' }}
+                  @if (t.assignedUser?.displayName ?? t.assignedPod?.name; as who) {
+                    <div class="cell">
+                      <span class="av" aria-hidden="true">{{ initials(who) }}</span>
+                      <span>{{ who }}</span>
+                    </div>
+                  } @else {
+                    <span class="una"
+                      ><i class="pi pi-user-minus" aria-hidden="true"></i>Unassigned</span
+                    >
+                  }
                 </td>
                 <td class="c-due" data-cell="due">
                   @let d = due(t);
                   <span [class]="'due ' + d.tone" [attr.title]="d.tooltip">
                     @if (d.tone === 'overdue') {
-                      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                    } @else if (d.tone === 'today' || d.tone === 'soon') {
+                      <i class="pi pi-clock" aria-hidden="true"></i>
                     }
                     {{ d.line1 }}
                     @if (d.line2) {
                       <span class="rel">{{ d.line2 }}</span>
                     }
                   </span>
-                  @if (t.atRisk && t.status !== 'ON_HOLD') {
-                    <mf-priority-pill kind="risk" />
-                  }
                 </td>
               </tr>
             }
@@ -237,25 +277,6 @@ export function statusCodes(status: StatusFilter): string[] {
       gap: var(--mf-s3);
       margin-left: auto;
       flex-wrap: wrap;
-    }
-    .show {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      font-size: var(--mf-fs-sm);
-    }
-    .lab {
-      color: var(--mf-text-muted);
-      font-weight: 600;
-    }
-    select {
-      min-height: 32px;
-      padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
     }
     .urg,
     .lnk-btn {
@@ -326,6 +347,41 @@ export function statusCodes(status: StatusFilter): string[] {
       line-height: 1.3;
     }
     .td-t .lnk {
+      font-weight: 600;
+    }
+    .cell {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .tcell {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    .cell > mf-priority-pill,
+    .ppl {
+      flex: none;
+    }
+    .av {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--mf-sem-info-bg);
+      color: var(--mf-primary);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .una {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      color: var(--mf-sem-person-fg);
       font-weight: 600;
     }
     .ref {
@@ -545,9 +601,14 @@ export class MmTaskList {
       completed: c?.completed ?? null,
       cancelled: c?.cancelled ?? null,
     };
-    return STATUS_FILTERS.map((s) => ({ key: s.key, label: s.label, count: n[s.key] }));
+    return STATUS_FILTERS.map((s) => ({
+      key: s.key,
+      label: s.label,
+      count: n[s.key],
+      icon: STATUS_ICONS[s.key],
+    }));
   });
-  protected readonly showOptions = computed(() => {
+  protected readonly showOptions = computed<DropdownItem[]>(() => {
     const c = this.counts()?.byShow;
     const n: Record<ShowFilter, number | null> = {
       everything: c?.everything ?? null,
@@ -557,7 +618,7 @@ export class MmTaskList {
       critical: c?.critical ?? null,
       due7: c?.due7 ?? null,
     };
-    return SHOW_FILTERS.map((s) => ({ ...s, count: n[s.key] }));
+    return SHOW_FILTERS.map((s) => ({ value: s.key, label: s.label, count: n[s.key] }));
   });
   protected readonly emptyText = computed(() =>
     this.show() === 'everything' && this.status() === 'open'
@@ -590,6 +651,11 @@ export class MmTaskList {
         ? 'pi-sort-amount-up-alt'
         : 'pi-sort-amount-down'
       : 'pi-sort-alt';
+  }
+
+  protected initials(name: string): string {
+    const p = name.trim().split(/\s+/);
+    return ((p[0]?.[0] ?? '') + (p.length > 1 ? (p[p.length - 1][0] ?? '') : '')).toUpperCase();
   }
 
   protected step(t: TaskQueueRow): number | null {

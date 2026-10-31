@@ -8,8 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { PickerOption } from '../../../shared/ui/entity-picker';
-import { SearchSelect } from '../../../shared/ui/search-select';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { MatterTree } from './mm-models';
 import { MmTreePanel } from './tree-panel';
 
@@ -20,30 +19,36 @@ import { MmTreePanel } from './tree-panel';
  */
 @Component({
   selector: 'mf-mm-scope-bar',
-  imports: [SearchSelect, MmTreePanel],
+  imports: [Dropdown, MmTreePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sel" role="group" aria-label="Client and matter">
       <div class="dd">
-        <mf-search-select
+        <mf-dropdown
+          buttonId="mm-client"
           label="Client"
-          [hideLabel]="true"
-          inputId="mm-client"
-          allLabel="All clients"
-          [options]="clientOptions()"
-          [selected]="client()"
-          (selectedChange)="pickClient($event)"
+          icon="pi-building"
+          [items]="clientItems()"
+          [value]="clientValue()"
+          (valueChange)="pickClient($event)"
+          [search]="true"
+          searchLabel="Search clients"
+          [limit]="60"
+          [panelWidth]="320"
         />
       </div>
       <div class="dd">
-        <mf-search-select
+        <mf-dropdown
+          buttonId="mm-matter"
           label="Matter"
-          [hideLabel]="true"
-          inputId="mm-matter"
-          allLabel="All matters"
-          [options]="matterOptions()"
-          [selected]="matter()"
-          (selectedChange)="pickMatter($event)"
+          icon="pi-briefcase"
+          [items]="matterItems()"
+          [value]="matterValue()"
+          (valueChange)="pickMatter($event)"
+          [search]="true"
+          searchLabel="Search matters"
+          [limit]="60"
+          [panelWidth]="440"
         />
       </div>
       @if (showBrowse()) {
@@ -103,6 +108,9 @@ import { MmTreePanel } from './tree-panel';
     .dd {
       flex: 0 1 280px;
       min-width: 140px;
+    }
+    .dd mf-dropdown {
+      display: block;
     }
     .btn,
     .clr {
@@ -189,49 +197,56 @@ export class MmScopeBar {
     () => !this.docked() && (this.tree()?.matterCount ?? 0) > 1,
   );
 
-  protected readonly clientOptions = computed<PickerOption[]>(() =>
-    (this.tree()?.clients ?? []).map((c) => ({ id: c.clientId, label: c.name })),
-  );
-  protected readonly matterOptions = computed<PickerOption[]>(() => {
+  protected readonly clientValue = computed(() => (this.clientId() ? String(this.clientId()) : ''));
+  protected readonly matterValue = computed(() => (this.matterId() ? String(this.matterId()) : ''));
+  protected readonly clientItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'All clients', count: this.tree()?.matterCount ?? 0 },
+    ...(this.tree()?.clients ?? []).map((c) => ({
+      value: String(c.clientId),
+      label: c.name,
+      count: c.matters.length,
+    })),
+  ]);
+  protected readonly matterItems = computed<DropdownItem[]>(() => {
     const cid = this.clientId();
-    const out: PickerOption[] = [];
+    const rows: DropdownItem[] = [];
     for (const c of this.tree()?.clients ?? []) {
       if (cid && c.clientId !== cid) continue;
       for (const m of c.matters)
-        out.push({
-          id: m.matterId,
-          label: cid ? m.name : `${m.name} (${c.name})`,
-          flag: m.isSensitive ? 'Sensitive matter' : undefined,
+        rows.push({
+          value: String(m.matterId),
+          label: m.name,
+          sub: cid ? m.matterRef : `${c.name} · ${m.matterRef}`,
+          dot: m.isActive ? 'active' : 'quiet',
+          lock: m.isSensitive,
         });
     }
-    return out;
-  });
-  protected readonly client = computed(
-    () => this.clientOptions().find((o) => o.id === this.clientId()) ?? null,
-  );
-  protected readonly matter = computed(() => {
-    const id = this.matterId();
-    if (!id) return null;
-    for (const c of this.tree()?.clients ?? []) {
-      const m = c.matters.find((x) => x.matterId === id);
-      if (m) return { id, label: m.name } as PickerOption;
-    }
-    return null;
+    return [
+      {
+        value: '',
+        label: 'All matters',
+        count: rows.length,
+        sub: cid ? undefined : 'Every matter you manage',
+      },
+      ...rows,
+    ];
   });
 
-  protected pickClient(o: PickerOption | null): void {
-    if ((o?.id ?? null) === this.clientId()) return;
-    this.pickedClient.emit(o?.id ?? null);
+  protected pickClient(v: string): void {
+    const id = v ? Number(v) : null;
+    if (id === this.clientId()) return;
+    this.pickedClient.emit(id);
   }
 
-  protected pickMatter(o: PickerOption | null): void {
-    if ((o?.id ?? null) === this.matterId()) return;
-    if (!o) {
+  protected pickMatter(v: string): void {
+    const id = v ? Number(v) : null;
+    if (id === this.matterId()) return;
+    if (id === null) {
       this.pickedMatter.emit({ matterId: null, clientId: this.clientId() });
       return;
     }
-    const c = this.tree()?.clients.find((x) => x.matters.some((m) => m.matterId === o.id));
-    this.pickedMatter.emit({ matterId: o.id, clientId: c?.clientId ?? null });
+    const c = this.tree()?.clients.find((x) => x.matters.some((m) => m.matterId === id));
+    this.pickedMatter.emit({ matterId: id, clientId: c?.clientId ?? null });
   }
 
   protected chosenClient(id: number): void {

@@ -30,10 +30,10 @@ export interface FilterChip {
             [attr.data-key]="c.key"
             (click)="pick(c.key)"
           >
-            @if (c.key === value()) {
-              <i class="pi pi-check tick" aria-hidden="true"></i>
-            } @else if (c.icon) {
+            @if (c.icon) {
               <i class="pi ico" [class]="c.icon" aria-hidden="true"></i>
+            } @else if (c.key === value()) {
+              <i class="pi pi-check tick" aria-hidden="true"></i>
             }
             <span>{{ c.label }}</span>
             @if ((c.count ?? -1) >= 0) {
@@ -90,6 +90,11 @@ export interface FilterChip {
     }
     .chip[aria-pressed='true'] .n {
       color: inherit;
+    }
+    @container gc (max-width: 759px) {
+      .ico {
+        display: none;
+      }
     }
     @media (max-width: 767.98px) {
       .chip {

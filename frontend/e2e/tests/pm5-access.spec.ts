@@ -96,11 +96,15 @@ test.describe('My Matters: keyboard', () => {
     await page.goBack();
     await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
 
-    // The Show filter works with the keyboard like any select.
-    const select = page.locator('select[data-show]');
-    await select.focus();
-    await select.selectOption('overdue');
+    // The Show filter is a listbox dropdown: Enter opens it, the arrows move, Enter chooses.
+    const show = page.locator('#mm-show');
+    await show.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('listbox', { name: 'Show' })).toBeVisible();
+    await page.locator('[role=option][data-value="overdue"]').focus();
+    await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/show=overdue/);
+    await expect(show).toBeFocused();
   });
 
   test('no new or changed shortcut: the keys the app has still do their one job and My Matters adds none', async ({
@@ -116,9 +120,10 @@ test.describe('My Matters: keyboard', () => {
     await page.goto('/my-matters');
     await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     // Typing in a filter is typing, not a shortcut.
-    await page.locator('#mm-client').fill('mg');
+    await page.locator('#mm-client').click();
+    await page.getByRole('combobox', { name: 'Search clients' }).fill('mg');
     await expect(page).toHaveURL(/\/my-matters$/);
-    await page.locator('#mm-client').fill('');
+    await page.keyboard.press('Escape');
     await page.locator('main h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
@@ -152,18 +157,20 @@ test.describe('My Matters: axe with the menus open', () => {
       await page.setViewportSize(size);
       await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
       await page.locator('main h1').scrollIntoViewIfNeeded();
-      const client = page.locator('#mm-client');
-      await client.fill('E2E');
-      await expect(page.getByRole('listbox').first()).toBeVisible();
-      expect(await axeViolations(page), `client suggestions at ${size.width}`).toEqual([]);
-      await client.fill('');
-      await client.blur();
-      const matter = page.locator('#mm-matter');
-      await matter.fill('Axe');
-      await expect(page.getByRole('listbox').first()).toBeVisible();
-      expect(await axeViolations(page), `matter suggestions at ${size.width}`).toEqual([]);
-      await matter.fill('');
-      await matter.blur();
+      await page.locator('#mm-client').click();
+      await page.getByRole('combobox', { name: 'Search clients' }).fill('E2E');
+      await expect(page.getByRole('listbox', { name: 'Client' })).toBeVisible();
+      expect(await axeViolations(page), `client list at ${size.width}`).toEqual([]);
+      await page.keyboard.press('Escape');
+      await page.locator('#mm-matter').click();
+      await page.getByRole('combobox', { name: 'Search matters' }).fill('Axe');
+      await expect(page.getByRole('listbox', { name: 'Matter' })).toBeVisible();
+      expect(await axeViolations(page), `matter list at ${size.width}`).toEqual([]);
+      await page.keyboard.press('Escape');
+      await page.locator('#mm-show').click();
+      await expect(page.getByRole('listbox', { name: 'Show' })).toBeVisible();
+      expect(await axeViolations(page), `Show list at ${size.width}`).toEqual([]);
+      await page.keyboard.press('Escape');
       await page.locator('[data-new-menu]').click();
       await expect(page.getByRole('menu'), `+ New menu open at ${size.width}`).toBeVisible();
       expect(await axeViolations(page), `+ New menu at ${size.width}`).toEqual([]);
@@ -177,8 +184,6 @@ test.describe('My Matters: axe with the menus open', () => {
         expect(await axeViolations(page), `Browse tree at ${size.width}`).toEqual([]);
         await page.keyboard.press('Escape');
       }
-      await page.locator('select[data-show]').focus();
-      expect(await axeViolations(page), `Show focused at ${size.width}`).toEqual([]);
     }
   });
 });

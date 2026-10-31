@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetTypesClient } from '../../../api/generated/api-client';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
 import { StatusChip } from '../../../shared/ui/status-chip';
@@ -47,7 +48,7 @@ const HEADS = [
  */
 @Component({
   selector: 'mf-mm-assets-tab',
-  imports: [GridFrame, MfDatePipe, Pager, RouterLink, StatusChip],
+  imports: [Dropdown, GridFrame, MfDatePipe, Pager, RouterLink, StatusChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -70,28 +71,26 @@ const HEADS = [
           </label>
         </div>
         <div frameStatus class="flt" role="group" aria-label="Asset filters">
-          <label
-            >Type
-            <select data-f-type [value]="type()" (change)="type.set($any($event.target).value)">
-              <option value="">All types</option>
-              @for (t of types(); track t.id) {
-                <option [value]="t.id">{{ t.name }}</option>
-              }
-            </select>
-          </label>
-          <label
-            >Status
-            <select
-              data-f-status
-              [value]="status()"
-              (change)="status.set($any($event.target).value)"
-            >
-              <option value="">All statuses</option>
-              @for (s of statusKeys; track s) {
-                <option [value]="s">{{ statusMap[s].label }}</option>
-              }
-            </select>
-          </label>
+          <mf-dropdown
+            buttonId="mm-asset-type"
+            label="Asset type"
+            prefix="Type:"
+            size="sm"
+            [items]="typeItems()"
+            [value]="type()"
+            (valueChange)="type.set($event)"
+            [panelWidth]="260"
+          />
+          <mf-dropdown
+            buttonId="mm-asset-status"
+            label="Status"
+            prefix="Status:"
+            size="sm"
+            [items]="statusItems"
+            [value]="status()"
+            (valueChange)="status.set($event)"
+            [panelWidth]="240"
+          />
           <button
             type="button"
             class="lnk dt"
@@ -685,6 +684,17 @@ export class MmAssetsTab {
   protected readonly sort = signal('updated');
   protected readonly dir = signal<'asc' | 'desc'>('desc');
   protected readonly types = signal<{ id: number; name: string }[]>([]);
+  protected readonly typeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'All types' },
+    ...this.types().map((t) => ({ value: String(t.id), label: t.name })),
+  ]);
+  protected readonly statusItems: DropdownItem[] = [
+    { value: '', label: 'All statuses' },
+    ...(Object.keys(ASSET_STATUS) as AssetStatusCode[]).map((k) => ({
+      value: k,
+      label: ASSET_STATUS[k].label,
+    })),
+  ];
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly filtered = computed(

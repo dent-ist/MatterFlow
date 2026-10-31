@@ -13,6 +13,7 @@ import { MyMattersClient, MyMattersTaskItem } from '../../../api/generated/api-c
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatDateOnly } from '../../../core/time/time';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { MyMattersFocus } from '../focus';
@@ -29,6 +30,14 @@ const SHOW_LABELS: Record<CalShow, string> = {
   high: 'High priority tasks',
   all: 'All task due dates',
   overdue: 'Overdue tasks',
+};
+
+const SHOW_HINTS: Record<CalShow, string> = {
+  events: 'Hearings, depositions, deadlines',
+  critical: 'Priority Critical',
+  high: 'Priority High',
+  all: 'Every open task',
+  overdue: 'Past due and open',
 };
 
 interface Cell {
@@ -74,7 +83,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
  */
 @Component({
   selector: 'mf-mm-calendar-tab',
-  imports: [EventIcon, MmEventDialog, RouterLink],
+  imports: [Dropdown, EventIcon, MmEventDialog, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'mf-fill',
@@ -115,40 +124,18 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         </div>
         <h2 class="mt" aria-live="polite" data-month-title>{{ titleOf(shown()) }}</h2>
         <div class="acts">
-          <div class="shows">
-            <button
-              type="button"
-              class="b"
-              data-shows
-              aria-haspopup="true"
-              [attr.aria-expanded]="showsOpen()"
-              (click)="showsOpen.set(!showsOpen())"
-              (keydown.escape)="showsOpen.set(false)"
-            >
-              <i class="pi pi-filter" aria-hidden="true"></i> Shows: {{ showsLabel() }}
-              <i class="pi pi-angle-down" aria-hidden="true"></i>
-            </button>
-            @if (showsOpen()) {
-              <div
-                class="pop"
-                role="group"
-                aria-label="Show on the calendar"
-                (keydown.escape)="showsOpen.set(false)"
-              >
-                @for (k of showKeys; track k) {
-                  <label class="chk"
-                    ><input
-                      type="checkbox"
-                      [checked]="shows().includes(k)"
-                      [attr.data-show]="k"
-                      (change)="toggleShow(k)"
-                    />
-                    {{ showLabels[k] }}</label
-                  >
-                }
-              </div>
-            }
-          </div>
+          <mf-dropdown
+            buttonId="mm-cal-shows"
+            label="Shows"
+            icon="pi-filter"
+            prefix="Shows:"
+            [multi]="true"
+            [items]="showItems"
+            [values]="shows()"
+            (valuesChange)="showsChange.emit(ordered($event))"
+            placeholder="Nothing"
+            [panelWidth]="300"
+          />
           <button
             type="button"
             class="b primary"
@@ -396,29 +383,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       background: var(--mf-surface-alt);
       border-color: var(--mf-border-strong);
       color: var(--mf-text-muted);
-    }
-    .shows {
-      position: relative;
-    }
-    .pop {
-      position: absolute;
-      right: 0;
-      top: calc(100% + 4px);
-      z-index: 20;
-      display: grid;
-      gap: var(--mf-s1);
-      min-width: 220px;
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-pop);
-    }
-    .chk {
-      display: flex;
-      gap: var(--mf-s2);
-      align-items: center;
-      min-height: 32px;
     }
     .legend {
       display: flex;
@@ -688,12 +652,17 @@ export class MmCalendarTab {
   readonly showsChange = output<CalShow[]>();
   readonly changed = output<void>();
 
-  protected readonly showKeys = CAL_SHOWS;
-  protected readonly showLabels = SHOW_LABELS;
+  protected readonly showItems: DropdownItem[] = CAL_SHOWS.map((k) => ({
+    value: k,
+    label: SHOW_LABELS[k],
+    sub: SHOW_HINTS[k],
+  }));
   protected readonly types = EVENT_TYPES;
   protected readonly dows = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   protected readonly titleOf = monthTitle;
-  protected readonly showsOpen = signal(false);
+  protected ordered(v: readonly string[]): CalShow[] {
+    return CAL_SHOWS.filter((k) => v.includes(k));
+  }
   protected readonly dayOpen = signal<{
     date: string;
     events: MatterEvent[];
@@ -712,11 +681,6 @@ export class MmCalendarTab {
   protected readonly canManage = computed(
     () => this.auth.has('Matter.Edit') || this.auth.has('Matter.BeManager'),
   );
-  protected readonly showsLabel = computed(() => {
-    const s = this.shows();
-    if (s.length === 0) return 'Nothing';
-    return SHOW_LABELS[s[0]] + (s.length > 1 ? ` +${s.length - 1}` : '');
-  });
 
   private readonly days = computed(() => gridDays(this.shown()));
 
@@ -803,14 +767,8 @@ export class MmCalendarTab {
     return parts.join(', ');
   }
 
-  protected toggleShow(k: CalShow): void {
-    const cur = this.shows();
-    this.showsChange.emit(CAL_SHOWS.filter((x) => (x === k ? !cur.includes(x) : cur.includes(x))));
-  }
-
   protected outside(e: MouseEvent): void {
     const t = e.target as HTMLElement;
-    if (this.showsOpen() && !t.closest('.shows')) this.showsOpen.set(false);
     if (this.dayOpen() && !t.closest('.dp') && !t.closest('.day')) this.dayOpen.set(null);
   }
 

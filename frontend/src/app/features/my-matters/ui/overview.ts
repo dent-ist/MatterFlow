@@ -13,7 +13,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { todayText } from '../calendar-month';
 import { formatMonthDay, parseDateOnly } from '../../../core/time/time';
 import { EventIcon } from '../../../shared/ui/event-type';
-import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { SidePanel, SideSection } from '../../../shared/ui/side-panel';
 import { MmFilters } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
@@ -34,7 +34,7 @@ const UPCOMING_DAYS = 14;
  */
 @Component({
   selector: 'mf-mm-overview',
-  imports: [EventIcon, FilterChips, MmTaskList, NgTemplateOutlet, SidePanel],
+  imports: [Dropdown, EventIcon, MmTaskList, NgTemplateOutlet, SidePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -135,12 +135,17 @@ const UPCOMING_DAYS = 14;
           }
         </div>
         <div class="kc">
-          <mf-filter-chips
+          <mf-dropdown
+            buttonId="mm-feed-kind"
             label="Kind of activity"
-            [chips]="kindChips()"
+            prefix="Show:"
+            size="sm"
+            [items]="kindItems()"
             [value]="kind()"
-            emptyKey="ALL"
             (valueChange)="kind.set($any($event))"
+            [countOnButton]="true"
+            neutralValue="ALL"
+            [panelWidth]="280"
           />
         </div>
         <div class="list" [attr.aria-busy]="feed.busy()">
@@ -298,7 +303,9 @@ const UPCOMING_DAYS = 14;
     .kc {
       padding: 0 var(--mf-s4) var(--mf-s2);
       flex: none;
-      overflow-x: auto;
+    }
+    .kc mf-dropdown {
+      display: block;
     }
     .list {
       flex: 1 1 auto;
@@ -471,12 +478,12 @@ export class MmOverview {
     const all = this.feed.data()?.items ?? [];
     return (k === 'ALL' ? all : all.filter((i) => i.kind === k)).slice(0, PREVIEW_ITEMS);
   });
-  protected readonly kindChips = computed<FilterChip[]>(() => {
+  protected readonly kindItems = computed<DropdownItem[]>(() => {
     const c = this.feed.data()?.countsByKind;
     const total = c ? Object.values(c).reduce((a, b) => a + b, 0) : null;
     return [
-      { key: 'ALL', label: 'All', count: total },
-      ...FEED_KINDS.map((k) => ({ key: k.kind, label: k.label, count: c ? c[k.kind] : null })),
+      { value: 'ALL', label: 'All', count: total },
+      ...FEED_KINDS.map((k) => ({ value: k.kind, label: k.label, count: c ? c[k.kind] : null })),
     ];
   });
   protected readonly sections = computed<SideSection[]>(() => [

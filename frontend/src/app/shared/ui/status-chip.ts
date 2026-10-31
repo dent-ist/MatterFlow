@@ -35,7 +35,12 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
         [attr.aria-label]="detail() ? style().label + '. ' + detail() : null"
         [mfTip]="detail()"
       >
-        <i class="pi" [class]="style().icon" aria-hidden="true"></i>{{ style().label }}
+        @if (code() === 'NEW') {
+          <span class="newic" aria-hidden="true"></span>
+        } @else {
+          <i class="pi" [class]="style().icon" aria-hidden="true"></i>
+        }
+        {{ style().label }}
       </span>
       @if (step(); as s) {
         @if (showBar()) {
@@ -80,6 +85,17 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
     }
     .chip .pi {
       font-size: var(--mf-fs-xs);
+    }
+    /* The New icon: a ring with a dot (the mockup's "not started"). */
+    .newic {
+      display: inline-block;
+      box-sizing: border-box;
+      flex: none;
+      width: 12px;
+      height: 12px;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      background: radial-gradient(circle, currentColor 0 2px, transparent 2.5px);
     }
     .chip[data-tone='new'] {
       --st-bg: var(--mf-status-new-bg);

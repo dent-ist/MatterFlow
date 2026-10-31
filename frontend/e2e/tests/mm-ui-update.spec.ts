@@ -76,9 +76,10 @@ test.describe('My Matters: the page', () => {
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
     await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
-    await page.locator('select[data-show]').selectOption('overdue');
+    await page.locator('#mm-show').click();
+    await page.locator('[role=option][data-value="overdue"]').click();
     await expect(page).toHaveURL(/show=overdue/);
-    const label = await page.locator('select[data-show] option:checked').innerText();
+    const label = await page.locator('#mm-show').innerText();
     const n = Number(/\((\d+)\)/.exec(label)?.[1]);
     await expect(page.locator('mf-mm-task-list a[data-task-link]')).toHaveCount(n);
     await page.locator('mf-mm-task-list [data-key="new"]').click();
@@ -109,8 +110,8 @@ test.describe('My Matters: the page', () => {
     await tree.getByRole('treeitem', { name: new RegExp(a.name) }).click();
     await expect(page).toHaveURL(/matterId=\d+/);
     await expect(page).toHaveURL(/clientId=\d+/);
-    await expect(page.locator('#mm-client')).not.toHaveValue('');
-    await expect(page.locator('#mm-matter')).toHaveValue(new RegExp(a.name));
+    await expect(page.locator('#mm-client')).not.toContainText('All clients');
+    await expect(page.locator('#mm-matter')).toContainText(a.name);
     // The tree went to its rail; the side panel opened in the room.
     await expect(page.locator('mf-mm-tree-rail')).toBeVisible();
     await page.locator('[data-tree-expand-rail]').click();
@@ -214,6 +215,56 @@ test.describe('My Matters: the page', () => {
         expect(await axeViolations(page), `${tab} at ${size.width}`).toEqual([]);
       }
     }
+  });
+});
+
+test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
+  test('Show, Recent activity kind, Client and Matter are the same listbox dropdown; the pin shows its state; the grid has its icons', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui13');
+    const a = await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Late icon task' });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/my-matters');
+    await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
+    // The icons of the first row: task type chip, status chip icon, assignee cell (Unassigned has its icon), the overdue warning.
+    const row = page.locator('mf-mm-task-list tr[data-task]').first();
+    await expect(row.locator('mf-task-type-badge')).toHaveCount(1);
+    await expect(row.locator('mf-status-chip .newic, mf-status-chip .pi')).not.toHaveCount(0);
+    await expect(row.locator('[data-cell=assignee] .pi-user-minus')).toHaveCount(1);
+    await expect(row.locator('[data-cell=due] .pi-exclamation-triangle')).toHaveCount(1);
+    // One dropdown component for every list.
+    for (const [id, name] of [
+      ['#mm-show', 'Show'],
+      ['#mm-feed-kind', 'Kind of activity'],
+      ['#mm-client', 'Client'],
+      ['#mm-matter', 'Matter'],
+    ] as const) {
+      await page.locator(id).click();
+      const list = page.getByRole('listbox', { name });
+      await expect(list).toBeVisible();
+      await expect(list.locator('[role=option][aria-selected=true] .tick .pi-check')).toHaveCount(
+        1,
+      );
+      await page.keyboard.press('Escape');
+      await expect(list).toHaveCount(0);
+      await expect(page.locator(id)).toBeFocused();
+    }
+    // The activity kind is ONE dropdown with counts, not a row of chips.
+    await expect(page.locator('mf-mm-overview mf-filter-chips')).toHaveCount(0);
+    // The pin: a different icon and aria-pressed, and the words Unpin / Pin.
+    const pin = page.locator('[data-tree-pin]');
+    await expect(pin).toHaveAttribute('aria-pressed', 'false');
+    const before = await pin.locator('svg').getAttribute('class');
+    await pin.click();
+    await expect(pin).toHaveAttribute('aria-pressed', 'true');
+    expect(await pin.locator('svg').getAttribute('class')).not.toBe(before);
+    await expect(pin).toHaveAttribute('aria-label', /Unpin/);
   });
 });
 

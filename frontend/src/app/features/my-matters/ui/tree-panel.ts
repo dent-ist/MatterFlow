@@ -62,20 +62,29 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
             class="ib"
             data-tree-pin
             [attr.aria-pressed]="pinned()"
-            aria-label="Keep the tree open after choosing"
+            [attr.aria-label]="
+              pinned()
+                ? 'Unpin the tree (it stays open after choosing)'
+                : 'Pin the tree open after choosing'
+            "
             [mfTip]="
               pinned()
-                ? 'Pinned open: the tree stays open after you choose'
+                ? 'Unpin: let the tree close after you choose'
                 : 'Pin open: keep the tree open after you choose'
             "
             (click)="pin.emit(!pinned())"
           >
-            <i
-              class="pi"
-              [class.pi-lock]="false"
-              [class]="pinned() ? 'pi pi-thumbtack' : 'pi pi-thumbtack'"
+            <svg
+              class="pin"
+              [class.on]="pinned()"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
               aria-hidden="true"
-            ></i>
+              focusable="false"
+            >
+              <path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7" />
+            </svg>
           </button>
           <button
             type="button"
@@ -184,6 +193,16 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       background: var(--mf-surface);
       color: var(--mf-text);
       cursor: pointer;
+    }
+    .pin {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .pin.on {
+      fill: currentColor;
     }
     .ib[aria-pressed='true'] {
       background: var(--mf-selected-bg);
