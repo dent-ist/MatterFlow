@@ -555,3 +555,85 @@ A new file; `notes-mockup.html` is untouched. Same Mockup button (top bar), same
 5. Should the asset window open in a new tab or a real pop-up window (the earlier decision was "new browser tab/window")?
 6. The splitter default of 380 px: wide enough for the list previews, or do you prefer previews hidden below a width?
 7. All earlier open questions (soft delete, version history, search, export, audit, editor library, Ctrl+K) are unchanged.
+
+
+# Notes mockup, revision 3 (`notes-mockup-r3.html`)
+
+New file; `notes-mockup.html` (r1) and `notes-mockup-r2.html` are untouched. Everything from r2 stays (three note permissions in the Role switch, tab icons, resizable splitter, `#` asset references, one-line Notes bar, no page scroll on desktop). Screenshots: `screenshots/notes-r3-*.png`. Contrast script: `notes-mockup-r3-contrast.js`. New Mockup panel entries: Role cases for locks, data **"12 notes, 2 locked"**, **"Simulate: someone locks the note"**. New hash values: `data=locked`, `view=templates`, `note=tpl_m2`.
+
+## 1 and 2. Slash commands and second-level lists
+
+Type `/` at the start of a line or after a space in the editor. A popover (`role="listbox"`, the editor keeps focus and points to the active row with `aria-activedescendant`) lists **Template, Asset, Task, Project**, each with an icon, a name and a one-line description.
+
+- **Keys**: type to filter (`/as` leaves Asset), Up/Down move, **Enter or Tab choose**, **Esc closes**, **Backspace goes back**.
+- **Two levels in the same popover.** Choosing a command turns the typed text into `/asset ` and the popover shows the breadcrumb **"Asset ›"** with that command's list; keep typing to search. Deleting the space with Backspace returns to the command list. Choosing an item deletes the typed `/...` text and puts the chip (or template) in its place.
+  - **/asset**: the assets of this matter (type chip, name, "type . identifier", status chip), same chip as `#`.
+  - **/task**: the tasks of this matter (task type chip in the type's colour, `TSK-nnn`, title, status chip, due date). Type a number (`/task 218`), a code (`/task TSK-218`) or words (`/task priv`).
+  - **/project**: the projects of this matter (icon, name, status chip). A project always belongs to a matter.
+  - **/template**: the template pages (see 3).
+- **`#` and `@` stay.** `#` is the quick shortcut for `/asset` (same list, one keystroke less); `@` stays for people. They overlap on purpose; `/` is the discoverable door, `#` and `@` are the fast path for people who know them (open question 1).
+- **Chips** are clickable and keyboard-reachable (Enter or Space) in read mode and in the "Referenced items" list. Accessible names: "Asset <name>, opens in a new window", "**Task TSK-218 <title>, opens in a new window**", "Project <name>, opens in a new window" (the state is added in brackets when it is not Active or In Progress). Task and project open a simulated **new browser window** (closable, Esc, focus returns to the chip) with a summary: type, status, due, assignee, project, linked assets, and **notes that reference it**.
+- **States**: completed, cancelled, on hold, disposed or inactive items carry a small state tag on the chip; a removed item shows "Removed task" (and so on) and a restricted one "Restricted task", neither is clickable. Try "Old load-file notes" (a removed task, a completed project, a disposed asset) and "Litigation hold" (a completed task). The restricted task, project and asset are visible to the Administrator only (the server's visibility rule).
+- **Stored HTML**: one safe span per reference with ONE attribute and no class, style or other attribute: `data-user-id`, `data-asset-id`, `data-task-id`, `data-project-id` (ids must match `u123`, `a123`, `t218`, `p4`; the text is a snapshot such as `TSK-218 Interview R. Alvarez (Finance)`). "Show stored HTML" in the Mockup panel proves it. Only ids of the same matter may be saved, the server rejects others, and the server decides what each reader may see.
+- **Referenced items** (read mode, bottom of the note): assets, tasks and projects, deduplicated, grouped by kind with counts.
+
+## 3. Templates (UI only; the data structure is for the project manager)
+
+A template is a pre-defined note: title, tags and a body with tables, headings and **placeholders**. `{{date}}`, `{{matter}}`, `{{author}}` (and `{{time}}`) are filled when the template is used; any other placeholder, such as `{{custodian}}`, stays for the person to fill in. Four mock templates: **Custodian interview log** (table), **Production QC checklist** (table), **Weekly status update**, **Meet and confer notes** (two Firm-wide, two This matter).
+
+- **`/template`**: the list shows name, description, the first words, "used N times" and the scope chip (**This matter** or **Firm-wide**). Choosing one inserts the content at the cursor; when the note is empty it **fills the note and sets the title** and offers "Apply tags / No thanks" for the template's tags.
+- **+ New note is a split button**: the main part makes a blank note; the arrow offers **Blank note** and **From template...** (a dialog with one card per template; the new note opens prefilled and tagged).
+- **Save as template**: the "more" menu (...) in the note header, a dialog with name, description, scope (Firm-wide only for an administrator) and "include tags". It works on a locked note too, since it only reads it.
+- **Templates view** (view switch: By tag, Latest, Board, **Templates**): a list with **Use, Edit, Duplicate, Delete** per row, a "New template" button and a read panel with the placeholders highlighted. The **template editor** is the note editor with a description, a scope field and highlighted `{{placeholder}}` tokens (the browser's text highlight, so the text stays plain).
+- **Permissions (suggestion, please decide)**: using a template and creating or changing a matter template need **Matter Note Edit**; Firm-wide templates are created, changed and deleted by an **administrator**; a Reader sees the list but every action is disabled with the reason. Disabled buttons stay visible, with the reason in the tooltip, the accessible name and a message on click.
+- **Data structure suggestion (for later, 5 lines)**: `note_template(id, scope firm|matter, matter_id null, name, description, title_pattern, body_html sanitised, created/updated by+at, used_count, active)`; `note_template_tag(template_id, tag_id)`; placeholders are plain `{{name}}` text resolved on insert by the client with the known set (`date`, `time`, `matter`, `author`); the body uses the same sanitiser allow-list as notes (references keep their `data-*` ids); using a template copies it into a new note (no link kept), and `used_count` is incremented by the server.
+
+## 4. Expanded edit with history
+
+- In the full-width edit mode the **editor and its controls are on the left** (as wide as possible) and a **History panel** is on the right: newest first, **grouped by day** (Today, Yesterday, Fri 10/23), each entry with avatar, **name and action** ("Priya Nair edited", "created this note", "changed the tags", "locked this note", "unlocked this note"), the absolute time and the relative time ("10/30 11:25 AM . yesterday"). It scrolls inside its frame. **WHO and WHEN only: no versions, no comparison, no restore**; the footer of the panel says so.
+- It **collapses** to a 46 px rail with the entry count (button in the panel, `aria-expanded`), and has its own **splitter** with the same behaviour as the list splitter (role separator, values, Left/Right 16 px, Home, End, Enter resets, drag, remembered). It shows whenever the note area is at least 820 px wide (the expanded edit mode, and the expanded read mode); on narrower layouts the History button in the header opens the same list in a dialog.
+- **Chrome made smaller**: the "Created by / Last updated by" footer is gone from the editor (it lives in the history). The footer row is gone too: **Cancel and Save are in the header** with the unsaved-changes dot. Title and tags are **one compact row**; the toolbar is one line (it wraps only when the width is small); the table tools strip appears only in a table. In read mode the title is followed by **one compact line: "Last updated by <name> . MM/DD hh:mm AM/PM"**.
+- **Measured editing area at 1366 x 768** (text box of the note body, expanded edit, same note):
+
+| | r2 | r3, history open | r3, history collapsed |
+|---|---|---|---|
+| width x visible height | 940 x 174 px (240 px box, clipped; the toolbar sat at 469 px from the top) | **751 x 370 px** | **1005 x 370 px** |
+| at 1920 x 1080 | 940 x 240 | 1305 x 682 | n/a |
+
+So the typing area is **2.1 times taller** (and 6 percent narrower with the history open, 7 percent wider without). The box now fills the frame instead of staying at a minimum height.
+
+## 5. Lock
+
+- **Who may lock**: anyone with Matter Note Edit (suggestion; question 4). The **Lock / Unlock** icon button is in the note header (read mode).
+- **A locked note is read only for everybody**: no edit, no retagging, no delete, no template applied to it. **Pin stays allowed.** Header: a **badge "Locked by Priya Nair . 10/30 05:00 PM"** and a note line; a **lock icon on its row** in every group, list, rail and board card; a **Locked filter** in the tag filter menu (with a count); the **Edit button is disabled** with the reason "Locked by Priya Nair" (and Delete: "Locked by Priya Nair: unlock it before deleting").
+- **Who may unlock**: only **the person who locked it, or an administrator**. Everyone else sees Unlock **disabled** with "Only Priya Nair or an administrator can unlock this note".
+- **Lock and unlock appear in the history.**
+- **Locked while you edit**: Mockup > "Simulate: someone locks the note" shows the warning "This note was locked by Marcus Oyelaran; your changes cannot be saved" with **Copy my text** and **Close**; Save is disabled with the reason.
+- **Cases to try** (data "12 notes, 2 locked": "Privilege log protocol" and "Production volume 3 specifications", locked by Priya Nair): role **Editor + Delete** is Priya Nair (the locker: can unlock), role **Editor** is Dana Whitfield (another editor: Unlock disabled), **Administrator** can unlock, **Reader** sees the badge only.
+
+## Decisions I made
+
+- History also appears in the expanded read mode, and as a dialog when the area is narrow, so the lock history is visible everywhere.
+- Cancel and Save moved to the header to free the footer row for the editor.
+- Lock blocks Delete (assumed), retagging and editing, not pinning; it does not block "Save as template" (read only).
+- `/` is only recognised after a space or at a line start (so URLs and "and/or" never open it).
+- Board and List both show the lock icon; the Locked filter combines with tags (a locked note with the chosen tag).
+- Seed data: 10 tasks (one restricted), 5 projects (one restricted), 8 assets (one restricted); templates 4.
+
+## Measurements (Playwright, Chromium)
+
+- 1366 x 768, 1920 x 1080, 768 x 1024, 375 x 812 over 7 screens or states each (list, locked note, rail, board, templates, My Matters, admin): no console or page errors, no page scroll on desktop, no horizontal scroll.
+- Contrast (`node docs/ux/mockups/notes-mockup-r3-contrast.js`): **0 failures in 192 state and size combinations** (48 states at four sizes; the history-collapse state does not exist below 820 px, so that step is skipped at 768 and 375)
+- Scripted checks: slash keys (open, filter, Enter, Backspace back, Esc), asset/task/project search and chips, stored HTML, referenced items, windows by keyboard, templates (view, use, new menu, choose, save as, edit with tokens, duplicate, delete, permissions for reader, editor, admin), history (panel, collapse, splitter keys), lock (locker, other editor, admin, pin, filter, lock while editing, history), one-line bar at 1366 on the Matter page (A and C) and My Matters.
+
+## Open questions
+
+1. **`#` versus `/asset`**: keep both (suggested), or drop `#` so there is one way?
+2. **Template scope and permissions**: matter and firm-wide only, or also "personal"? Who creates firm-wide templates (administrator only, as mocked)? Does "Use" need only Matter Note Edit?
+3. Should a template keep a **link** to the notes made from it (no, as suggested), or be versioned?
+4. **Who may lock**: anyone with Matter Note Edit (suggested), or only the PMs? Does lock/unlock need **its own permission**?
+5. **Lock also blocks Delete** (assumed yes): confirm; may an administrator delete a locked note without unlocking it first?
+6. Is the history **kept forever** or trimmed (for example 12 months or 200 entries)? Should it also list pins, template saves and permission changes?
+7. Should **"Copy my text"** also offer "Save as a new note" when the note was locked under you?
+8. Task and project references: may a note reference a task the author sees but a reader does not (suggested yes, rendered "Restricted task")?
+9. The earlier open questions (soft delete, version history, search, export, editor library, Ctrl+K, tag permission) are unchanged.
