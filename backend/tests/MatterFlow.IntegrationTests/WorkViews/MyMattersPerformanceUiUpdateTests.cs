@@ -1,5 +1,6 @@
 using MatterFlow.IntegrationTests.Fixtures;
 using Shouldly;
+using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 
 namespace MatterFlow.IntegrationTests.WorkViews;
 
