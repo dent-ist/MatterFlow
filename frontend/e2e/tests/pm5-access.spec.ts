@@ -63,7 +63,7 @@ const FORBIDDEN_WORDS =
   /no project manager|without a (project )?manager|not managed|unmanaged|needs? a (project )?manager|missing (project )?manager|assign a (project )?manager|warning/i;
 
 test.describe('My Matters: keyboard', () => {
-  test('Tab visits the filters, the pre-filter, the Calendar button, Urgency, Options and the rows in reading order, with the keys the app already has', async ({
+  test('Tab visits the Client and Matter dropdowns, + New and the rows in reading order, with the keys the app already has', async ({
     seed,
     personas,
     asUser,
@@ -76,40 +76,28 @@ test.describe('My Matters: keyboard', () => {
     await w.task(a, { dueDate: inDays(3), title: 'Keyboard soon' });
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     const stops = await tabStops(page);
     inOrder(stops, [
-      /Options for My Matters/, // the title row's one Options menu: the scope switch and the Focus are inside it (issue #900)
-      /^button: New task$/, // no chooser of the matter any more: the Matter filter below is the one place (issue #941)
-      /Client/,
+      /Client/, // the two dropdowns first: Client, then Matter
       /Matter/,
-      /I am/,
-      /Show tasks/, // the pre-filter dropdown with the counts (issue #942)
-      /Show calendar/,
-      /Sort by urgency/,
-      /Options for Open tasks/,
+      /^button: New$/, // "+ New" is at the right end of the same row
       /Keyboard overdue/,
     ]);
     // Evidence for the review: the stops in order (written once per run to the test output).
     test.info().annotations.push({ type: 'tab-stops', description: stops.join(' > ') });
 
-    // Enter on New task opens Create task (no matter is chosen: it asks); Back returns.
-    await page.locator('[data-header-new-task] [data-new-task-go]').focus();
+    // Enter on "+ New" opens the menu; New task opens Create task (no matter is chosen: it asks); Back returns.
+    await page.locator('[data-new-menu]').focus();
     await page.keyboard.press('Enter');
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.locator('[data-new="task"]').click();
     await expect(page).toHaveURL(/\/tasks\/new/);
     await page.goBack();
-    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
 
-    // A task link from the keyboard, then Back: focus returns to the row that was left.
-    const link = page.locator('[data-panel=tasks] a.wt-title').first();
-    await link.focus();
-    await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/tasks\/\d+/);
-    await page.goBack();
-    await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeFocused();
-
-    // The pre-filter works with the keyboard like any select.
-    const select = page.locator('select[data-prefilter]');
+    // The Show filter works with the keyboard like any select.
+    const select = page.locator('select[data-show]');
     await select.focus();
     await select.selectOption('overdue');
     await expect(page).toHaveURL(/show=overdue/);
@@ -125,7 +113,7 @@ test.describe('My Matters: keyboard', () => {
     await w.matterInOtherClient('Shortcut beta'); // a second client: the Client filter is offered
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     // Typing in a filter is typing, not a shortcut.
     await page.locator('#mm-client').fill('mg');
     await expect(page).toHaveURL(/\/my-matters$/);
@@ -145,14 +133,12 @@ test.describe('My Matters: keyboard', () => {
   });
 });
 
-test.describe('My Matters: axe with the menus and the sheet open', () => {
-  test('client, matter and manager suggestions, the Role menu, the pre-filter and the filter sheet at four sizes', async ({
+test.describe('My Matters: axe with the menus open', () => {
+  test('client and matter suggestions, the + New menu, the Show filter and the Browse tree at four sizes', async ({
     seed,
     personas,
     asUser,
   }) => {
-    // Twelve axe runs over the page of every matter (scope=all): 43 s on a fresh database, over a minute after three full runs left
-    // their matters behind. The time limit follows the data; no assertion changes.
     test.slow();
     expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
     const w = await mmWorld(seed, personas, 'ax1');
@@ -160,22 +146,10 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
     await w.matter('Axe bravo', w.pm, w.other);
     await w.task(a, { dueDate: '2000-01-01' });
     const page = await asUser(w.pm.username);
-    await page.goto('/my-matters?scope=all');
+    await page.goto('/my-matters');
     for (const size of SIZES) {
       await page.setViewportSize(size);
-      await expect(
-        page
-          .locator('[data-panel=tasks] [data-task], [data-panel=tasks] [data-record-card]')
-          .first(),
-      ).toBeVisible();
-      const phone = size.width < 640;
-      if (phone) {
-        await page.locator('[data-filters-open]').click();
-        await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
-      }
-      // The suggestion lists of the two typeaheads.
-      // Axe judges what the fixed header covers: the filters are looked at from the top of the page (a 32 px input that Playwright scrolls
-      // under the header would be half covered whatever the page does).
+      await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
       await page.locator('main h1').scrollIntoViewIfNeeded();
       const client = page.locator('#mm-client');
       await client.fill('E2E');
@@ -183,30 +157,27 @@ test.describe('My Matters: axe with the menus and the sheet open', () => {
       expect(await axeViolations(page), `client suggestions at ${size.width}`).toEqual([]);
       await client.fill('');
       await client.blur();
-      await page.locator('main h1').scrollIntoViewIfNeeded();
-      const manager = page.locator('#mm-manager');
-      await manager.fill('PM');
-      await expect(page.getByRole('listbox').first()).toBeVisible();
-      expect(await axeViolations(page), `manager suggestions at ${size.width}`).toEqual([]);
-      await manager.fill('');
-      await manager.blur();
-      await page.locator('main h1').scrollIntoViewIfNeeded();
       const matter = page.locator('#mm-matter');
       await matter.fill('Axe');
       await expect(page.getByRole('listbox').first()).toBeVisible();
       expect(await axeViolations(page), `matter suggestions at ${size.width}`).toEqual([]);
       await matter.fill('');
       await matter.blur();
-      if (phone) {
-        expect(await axeViolations(page), 'filter sheet').toEqual([]);
-        await shot(page, 'pm5-filter-sheet');
-        await page.getByRole('button', { name: 'Show results' }).click();
-        await expect(page.getByRole('dialog', { name: 'Filters' })).toBeHidden();
+      await page.locator('[data-new-menu]').click();
+      await expect(page.getByRole('menu')).toBeVisible();
+      expect(await axeViolations(page), `+ New menu at ${size.width}`).toEqual([]);
+      await page.keyboard.press('Escape');
+      const browse = page.locator('[data-browse]');
+      if (await browse.count()) {
+        await browse.click();
+        await expect(
+          page.getByRole('dialog', { name: 'Browse clients and matters' }),
+        ).toBeVisible();
+        expect(await axeViolations(page), `Browse tree at ${size.width}`).toEqual([]);
+        await page.keyboard.press('Escape');
       }
-      // The pre-filter dropdown, open by keyboard focus, and the Calendar month buttons.
-      await page.locator('main h1').scrollIntoViewIfNeeded();
-      await page.locator('select[data-prefilter]').focus();
-      expect(await axeViolations(page), `pre-filter focused at ${size.width}`).toEqual([]);
+      await page.locator('select[data-show]').focus();
+      expect(await axeViolations(page), `Show focused at ${size.width}`).toEqual([]);
     }
   });
 });

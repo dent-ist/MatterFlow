@@ -12,6 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { PageTitle } from '../../../core/title/page-title';
 import { CreateTaskContext } from '../../../shared/layout/create-task-context';
@@ -54,6 +55,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmWorkflowBar,
     MmTreePanel,
     MmTreeRail,
+    RouterLink,
     Tabs,
   ],
   providers: [MmScopeStore, MmLayout, LoadGroup, { provide: MmApi, useExisting: InterimMmApi }],
@@ -217,8 +219,9 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
         <div class="empty work" data-no-matters>
           <i class="pi pi-info-circle" aria-hidden="true"></i>
           <span
-            ><b>No matters yet.</b> You are not the Primary or Secondary PM on any matter. When a
-            Pod Lead assigns you one, it will appear here.</span
+            ><b>No matters yet.</b> You are not the project manager of any matter yet. When a Pod
+            Lead assigns you one, it will appear here.
+            <a routerLink="/my-work" class="mf-link">Go to My Work</a></span
           >
         </div>
       } @else {

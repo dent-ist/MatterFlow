@@ -90,10 +90,10 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 }
 
 const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Tasks'];
-const FOUR_TABS = ['Overview', 'Breakdown', 'Data', 'Activity']; // the Data tab (#870) is offered with Asset.View
+const FOUR_TABS = ['Overview', 'Calendar', 'Assets', 'Metrics', 'Activity']; // the five tabs of the UI update (epic #953); Metrics holds Breakdown and Data
 
 test.describe('Permission matrix of the Project Manager views', () => {
-  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, four tabs, the full Overview and header menu, every endpoint', async ({
+  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, five tabs, the full Overview and header menu, every endpoint', async ({
     seed,
     personas,
     asUser,
@@ -116,7 +116,7 @@ test.describe('Permission matrix of the Project Manager views', () => {
     for (const [name, code] of Object.entries(status)) expect(code, name).toBe(200);
   });
 
-  test('PM without Matter.AssignManagers: no switch, scope=all refused (403), four tabs, everything else as the Project Manager', async ({
+  test('PM without Matter.AssignManagers: no switch, scope=all refused (403), five tabs, everything else as the Project Manager', async ({
     seed,
     personas,
     asUser,
@@ -401,15 +401,9 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.goto('/my-matters');
     await page.waitForLoadState('networkidle');
     // No cap that hides the end of the page: the whole Overview is walked (#820 lists the stop count in docs/qa/pm-keyboard-evidence.md).
-    const result = await tabStops(page, 'h1', '[data-mm-tabpanel], mf-fixed-page, main', 250);
+    const result = await tabStops(page, 'h1', '#mm-panel, mf-fixed-page, main', 250);
     evidence('my-matters-overview', '1366', result);
     expectGoodStops('my matters', { stops: result.stops, left: true }, 6);
-    // There are no skip links (one grid, #943): the first stop after the tab strip is the pre-filter dropdown, then the Calendar button.
-    const tabAt = result.stops.findIndex((s) => s.role === 'tab');
-    expect(result.stops.slice(tabAt + 1, tabAt + 3).map((s) => s.name)).toEqual([
-      'Show tasks',
-      'Show calendar',
-    ]);
     expect(result.left, 'the whole page was walked').toBe(true);
     const tabStopsInStrip = result.stops.filter((s) => s.role === 'tab');
     expect(tabStopsInStrip.length, 'the tab strip is a single Tab stop').toBe(1);
@@ -423,8 +417,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await page.keyboard.press('Home');
     await expect(page.locator('[role=tab]').first()).toBeFocused();
     await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/tab=breakdown/);
+    await expect(page).toHaveURL(/tab=calendar/);
     await page.goBack();
     await expect(page.locator('[role=tab][aria-selected=true]')).toHaveText(/Overview/);
   });

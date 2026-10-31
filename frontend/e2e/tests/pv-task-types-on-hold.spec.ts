@@ -1,6 +1,4 @@
 import { Page } from '@playwright/test';
-import { openHeaderOptions } from '../support/mm-header';
-import { mmWorld } from '../support/my-matters-fixtures';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
@@ -147,50 +145,4 @@ test.describe('On-hold reasons', () => {
       expect(overflow, 'no sideways page scroll').toBeLessThanOrEqual(0);
     });
   }
-});
-
-test.describe('My Matters section toolbar (#857)', () => {
-  test('filter by task type, the choice is remembered, and the page stays clean at four sizes', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const w = await mmWorld(seed, personas, 'tb');
-    const second = await seed.taskType({ workflows: [w.world.workflow] });
-    const a = await w.matter('Alpha');
-    await w.task(a, { dueDate: '2000-01-01' });
-    await w.task(a, { dueDate: '2000-01-02' });
-    await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id });
-    const page = await asUser(w.pm.username);
-    await page.goto('/my-matters');
-    const rows = page.locator('[data-panel="tasks"] a.wt-title');
-    await expect(rows).toHaveCount(3);
-    // The task-type choice is the Focus, inside the one Options menu of the title row (batch 3, #894): the checklist, Save, a chip that removes it.
-    await openHeaderOptions(page);
-    await page.locator(`[data-focus-option="${second.id}"]`).check();
-    await page.locator('[data-focus-save]').click();
-    await expect(rows).toHaveCount(1);
-    await expect(page.locator('[data-focus-chip]').first()).toContainText(second.name);
-    await page.reload();
-    await expect(rows).toHaveCount(1);
-    await page.locator('[data-focus-chip] button').click();
-    await expect(rows).toHaveCount(3);
-    // The grid is sortable by its headings (#929): the default order is Urgency (no heading is marked); a chosen heading says so.
-    const sorted = page.locator(
-      '[data-panel="tasks"] th[aria-sort="ascending"], [data-panel="tasks"] th[aria-sort="descending"]',
-    );
-    await expect(sorted).toHaveCount(0);
-    await page.locator('[data-panel="tasks"] th[data-col=due] button.wt-sort').click();
-    await expect(sorted).toHaveCount(1);
-    for (const size of SIZES) {
-      await page.setViewportSize({ width: size.width, height: size.height });
-      await page.goto('/my-matters');
-      await expect(rows.first()).toBeVisible();
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-      );
-      expect(overflow, `no sideways scroll at ${size.name}`).toBe(false);
-      await clean(page, `My Matters toolbar at ${size.name}`);
-    }
-  });
 });

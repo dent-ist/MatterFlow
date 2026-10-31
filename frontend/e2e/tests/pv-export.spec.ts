@@ -76,7 +76,7 @@ test.describe('Export (#879)', () => {
     await w.task(a, { dueDate: '2000-01-01' });
     await w.task(a);
     const pm = await asUser(w.pm.username);
-    await pm.goto('/my-matters?tab=breakdown');
+    await pm.goto('/my-matters?tab=metrics');
     await expect(pm.locator('table[data-bd-table="matrix"]')).toBeVisible();
     // Export is inside the tab's Options menu (issue #911).
     await pm.locator('[data-panel=breakdown] [data-options-trigger]').click();

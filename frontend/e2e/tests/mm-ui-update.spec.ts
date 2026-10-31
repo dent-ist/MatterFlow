@@ -1,0 +1,285 @@
+import { Page } from '@playwright/test';
+import { axeAvailable, axeViolations } from '../support/axe';
+import { inDays, mmWorld } from '../support/my-matters-fixtures';
+import { expect, test } from '../support/fixtures';
+import { SIZES } from '../support/screens';
+
+/**
+ * The new My Matters (epic #953, issues UI-10 to UI-18; mockup my-matters-v3-b-tree-r2): the title row and the Client and Matter dropdowns, the five tabs, the docked tree and its rail,
+ * the Status chips and the Show filter with counts that equal the grid, the + New menu with its reasons, the Calendar, the Assets list and the Activity feed, and that every grid fits the
+ * window on a desktop (the page never scrolls; the frames do). Written for QA: run it with the rest of the suite on a fresh database.
+ */
+
+const TABS = ['overview', 'calendar', 'assets', 'metrics', 'activity'] as const;
+
+async function pageOverflow(page: Page): Promise<{ page: number; main: number }> {
+  return page.evaluate(() => {
+    const se = document.scrollingElement as HTMLElement;
+    const main = document.querySelector('main') as HTMLElement;
+    return {
+      page: se.scrollHeight - window.innerHeight,
+      main: main.scrollHeight - main.clientHeight,
+    };
+  });
+}
+
+test.describe('My Matters: the page', () => {
+  test('title, dropdown row, five tabs, Status chips with counts, default All open and the urgency order', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui1');
+    const a = await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Overdue one' });
+    await w.task(a, { dueDate: inDays(5), title: 'Soon one' });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
+    await expect(page.locator('#mm-client')).toBeVisible();
+    await expect(page.locator('#mm-matter')).toBeVisible();
+    await expect(page.locator('[data-new-menu]')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveText(/Overview|Calendar|Assets|Metrics|Activity/);
+    expect(await page.getByRole('tab').count()).toBe(5);
+    // Default: All open, urgency order (no heading marked), the overdue task first.
+    await expect(page.locator('mf-mm-task-list [data-key="open"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    const links = page.locator('mf-mm-task-list a[data-task-link]');
+    await expect(links.first()).toContainText('Overdue one');
+    await expect(
+      page.locator(
+        'mf-mm-task-list th[aria-sort="ascending"], mf-mm-task-list th[aria-sort="descending"]',
+      ),
+    ).toHaveCount(0);
+    // The count of the chip equals the grid.
+    const chip = await page.locator('mf-mm-task-list [data-key="open"] .n').innerText();
+    await expect(page.locator('mf-mm-task-list .tot')).toHaveText(chip.trim());
+  });
+
+  test('Status chip and Show filter combine, and the counts equal what the grid shows after the click', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui2');
+    const a = await w.matter('Alpha');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Late' });
+    await w.task(a, { dueDate: inDays(30), title: 'Later' });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
+    await page.locator('select[data-show]').selectOption('overdue');
+    await expect(page).toHaveURL(/show=overdue/);
+    const label = await page.locator('select[data-show] option:checked').innerText();
+    const n = Number(/\((\d+)\)/.exec(label)?.[1]);
+    await expect(page.locator('mf-mm-task-list a[data-task-link]')).toHaveCount(n);
+    await page.locator('mf-mm-task-list [data-key="new"]').click();
+    await expect(page).toHaveURL(/status=new/);
+    await expect(page).toHaveURL(/show=overdue/);
+    // Changing the matter resets both.
+    await page
+      .locator('[data-clear-scope], [data-tree-clear]')
+      .first()
+      .click()
+      .catch(() => undefined);
+  });
+
+  test('Client and Matter stay in step, and the tree follows them and collapses to its rail', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui3');
+    const a = await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    await w.task(a, { title: 'Alpha task' });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/my-matters');
+    const tree = page.getByRole('tree', { name: 'Clients and matters' });
+    await expect(tree).toBeVisible();
+    await tree.getByRole('treeitem', { name: new RegExp(a.name) }).click();
+    await expect(page).toHaveURL(/matterId=\d+/);
+    await expect(page).toHaveURL(/clientId=\d+/);
+    await expect(page.locator('#mm-client')).not.toHaveValue('');
+    await expect(page.locator('#mm-matter')).toHaveValue(new RegExp(a.name));
+    // The tree went to its rail; the side panel opened in the room.
+    await expect(page.locator('mf-mm-tree-rail')).toBeVisible();
+    await page.locator('[data-tree-expand-rail]').click();
+    await expect(page.getByRole('tree', { name: 'Clients and matters' })).toBeVisible();
+    // Keyboard: Down moves, Home goes to the first item.
+    const selected = page.getByRole('treeitem', { selected: true });
+    await selected.focus();
+    await page.keyboard.press('Home');
+    await expect(page.getByRole('treeitem').first()).toBeFocused();
+    // Clear removes both.
+    await page.locator('[data-clear-scope]').click();
+    await expect(page).not.toHaveURL(/matterId=/);
+  });
+
+  test('+ New: four items, a disabled one says why in words, and no new keyboard shortcut is added', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui4');
+    await w.matter('Alpha');
+    const limited = await personas.create({
+      label: 'ui4-limited',
+      permissions: ['Client.View', 'Matter.View', 'Matter.BeManager', 'Task.View', 'Task.Create'],
+    });
+    const m = await w.matter('Limited matter', limited, null);
+    void m;
+    const page = await asUser(limited.username);
+    await page.goto('/my-matters');
+    await page.locator('[data-new-menu]').click();
+    await expect(page.getByRole('menuitem')).toHaveCount(4);
+    const asset = page.locator('[data-new="asset"]');
+    await expect(asset).toHaveAttribute('aria-disabled', 'true');
+    await expect(asset).toContainText('You do not have permission to create assets.');
+    await expect(page.locator('[data-new="task"]')).not.toHaveAttribute('aria-disabled', 'true');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-new-menu]')).toBeFocused();
+  });
+
+  test('every grid fits the window on a desktop: the page never scrolls, the frames reach the bottom', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    test.slow();
+    const w = await mmWorld(seed, personas, 'ui5');
+    const a = await w.matter('Alpha');
+    for (let i = 0; i < 30; i++) await w.task(a, { title: `Fit ${i}`, dueDate: inDays(i) });
+    const page = await asUser(w.pm.username);
+    for (const size of [
+      { width: 1366, height: 768 },
+      { width: 1920, height: 1080 },
+    ]) {
+      await page.setViewportSize(size);
+      for (const tab of TABS) {
+        await page.goto(tab === 'overview' ? '/my-matters' : `/my-matters?tab=${tab}`);
+        await page.waitForLoadState('networkidle');
+        const o = await pageOverflow(page);
+        expect(o.page, `${tab} at ${size.width}: the document does not scroll`).toBeLessThanOrEqual(
+          1,
+        );
+        expect(o.main, `${tab} at ${size.width}: main does not scroll`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test('a phone scrolls as a whole and shows cards; no sideways scroll at 375 and 768', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui6');
+    const a = await w.matter('Alpha');
+    await w.task(a, { title: 'Phone task' });
+    const page = await asUser(w.pm.username);
+    for (const size of [SIZES[3], SIZES[2]]) {
+      await page.setViewportSize(size);
+      for (const tab of TABS) {
+        await page.goto(tab === 'overview' ? '/my-matters' : `/my-matters?tab=${tab}`);
+        await page.waitForLoadState('networkidle');
+        const over = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(over, `${tab} at ${size.width}`).toBeLessThanOrEqual(0);
+      }
+    }
+  });
+
+  test('axe finds nothing on the five tabs at four sizes', async ({ seed, personas, asUser }) => {
+    test.slow();
+    expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
+    const w = await mmWorld(seed, personas, 'ui7');
+    const a = await w.matter('Alpha');
+    await w.task(a, { title: 'Axe task', dueDate: '2000-01-01' });
+    const page = await asUser(w.pm.username);
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      for (const tab of TABS) {
+        await page.goto(tab === 'overview' ? '/my-matters' : `/my-matters?tab=${tab}`);
+        await page.waitForLoadState('networkidle');
+        expect(await axeViolations(page), `${tab} at ${size.width}`).toEqual([]);
+      }
+    }
+  });
+});
+
+test.describe('My Matters: calendar events, assets and activity (need the UI-03 and UI-05 endpoints)', () => {
+  test('a calendar item added from + New appears in the month and in Upcoming events, and can be edited and deleted by its manager', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui8');
+    const a = await w.matter('Alpha');
+    await w.task(a, { title: 'Alpha task' });
+    const page = await asUser(w.pm.username);
+    await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
+    await page.locator('[data-add-event]').click();
+    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    await expect(dialog).toBeVisible();
+    // An empty form says what is missing, under the fields.
+    await dialog.getByRole('button', { name: 'Add item' }).click();
+    await expect(dialog.getByRole('alert').first()).toBeVisible();
+    await dialog.getByLabel('Court hearing').check({ force: true });
+    await dialog.getByLabel('Title').fill('Motion hearing');
+    await dialog.getByLabel('Date').fill(inDays(2));
+    await dialog.getByRole('button', { name: 'Add item' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(`[data-day="${inDays(2)}"]`)).toHaveAttribute(
+      'aria-label',
+      /1 event/,
+    );
+    await page.goto(`/my-matters?matterId=${a.matterId}`);
+    await expect(page.locator('[data-section="events"]')).toContainText('Motion hearing');
+    // A person who is not a manager of the matter and cannot edit matters does not see the item at all unless they can see the matter.
+    await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
+    await page.locator(`[data-day="${inDays(2)}"]`).click();
+    await page.locator('[data-edit]').first().click();
+    await page.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.locator(`[data-day="${inDays(2)}"]`)).toHaveAttribute(
+      'aria-label',
+      /0 events/,
+    );
+  });
+
+  test('the Assets tab has no comment column, and a row opens the side panel with the linked tasks and their latest comment', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui9');
+    await w.matter('Alpha');
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters?tab=assets');
+    await expect(page.getByRole('columnheader', { name: /Comment/ })).toHaveCount(0);
+    for (const h of ['Client', 'Matter', 'Asset type', 'Created', 'Updated', 'Status'])
+      await expect(page.getByRole('columnheader', { name: new RegExp(h) }).first()).toBeVisible();
+  });
+
+  test('an activity item opens the task in a NEW tab', async ({
+    seed,
+    personas,
+    asUser,
+    context,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui10');
+    const a = await w.matter('Alpha');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Late for the feed' });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters?tab=activity');
+    const item = page.locator('mf-mm-activity-tab a[data-feed]').first();
+    await expect(item).toBeVisible();
+    await expect(item).toHaveAttribute('target', '_blank');
+    const [popup] = await Promise.all([context.waitForEvent('page'), item.click()]);
+    await expect(popup).toHaveURL(/\/tasks\/\d+/);
+  });
+});

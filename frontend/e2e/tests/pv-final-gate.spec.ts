@@ -18,14 +18,15 @@ import { uid } from '../support/seed';
  * Screenshots: E2E_SCREENSHOTS=docs/ux/pm-v2-review/after.
  */
 const TABS = [
-  { tab: 'overview', title: 'My Matters - MatterFlow', ready: '[data-panel=tasks] a.wt-title' },
+  { tab: 'overview', title: 'My Matters - MatterFlow', ready: 'mf-mm-task-list a[data-task-link]' },
+  { tab: 'calendar', title: 'My Matters: Calendar - MatterFlow', ready: '[data-month-title]' },
+  { tab: 'assets', title: 'My Matters: Assets - MatterFlow', ready: 'mf-mm-assets-tab' },
   {
-    tab: 'breakdown',
-    title: 'My Matters: Breakdown - MatterFlow',
+    tab: 'metrics',
+    title: 'My Matters: Metrics - MatterFlow',
     ready: '[data-bd-table], [data-bd-cards]',
   },
-  { tab: 'data', title: 'My Matters: Data - MatterFlow', ready: '[data-panel="data"]' },
-  { tab: 'activity', title: 'My Matters: Activity - MatterFlow', ready: '#mm-tab-activity' },
+  { tab: 'activity', title: 'My Matters: Activity - MatterFlow', ready: 'mf-mm-activity-tab' },
 ] as const;
 
 test.describe('PM v2 final gate', () => {
@@ -120,7 +121,7 @@ test.describe('PM v2 final gate', () => {
     }
   });
 
-  test('keyboard only: Options, Focus and the Views and Export of the Task Queue open, Escape closes and returns focus; a Breakdown cell is followed with Enter', async ({
+  test('keyboard only: the Status chips and the Views and Export of the Task Queue open, Escape closes and returns focus; a Breakdown cell is followed with Enter', async ({
     seed,
     personas,
     asUser,
@@ -128,32 +129,19 @@ test.describe('PM v2 final gate', () => {
     const g = await world(seed, personas);
     const page = await asUser(g.w.pm.username);
     await page.goto('/my-matters');
-    await expect(page.locator('[data-panel=tasks] a.wt-title').first()).toBeVisible();
+    await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
 
-    // The one Options menu of the list (issue #894): opens from the keyboard, Escape closes it and returns the focus to its button.
-    const trigger = page.locator('[data-panel=tasks] [data-options-trigger]');
-    await trigger.focus();
-    await page.keyboard.press('Enter');
-    const csv = page.locator('[data-panel=tasks] [data-export=csv]');
-    await expect(csv).toBeVisible();
-    await csv.focus();
-    await expect(csv).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(csv).toBeHidden();
-    await expect(trigger).toBeFocused();
-    // There is no per-list task type filter any more (issue #907): Focus is the one filter.
-    await expect(page.locator('[data-types-trigger], [data-chips]')).toHaveCount(0);
-
-    const focus = page.locator('[data-header-options] [data-options-trigger]');
-    await focus.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-focus-save]')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.locator('[data-focus-save]')).toBeHidden();
-    await expect(focus).toBeFocused();
+    // The Status chips and the Show filter of the grid are plain controls: Tab reaches the chip, Space chooses it, the pressed state follows.
+    const chip = page.locator('mf-mm-task-list [data-key="new"]');
+    await chip.focus();
+    await expect(chip).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Space');
+    await expect(chip).toHaveAttribute('aria-pressed', 'false');
 
     // A Breakdown cell is a real link: Tab reaches it, Enter follows it to exactly the tasks it counts.
-    await page.goto('/my-matters?tab=breakdown');
+    await page.goto('/my-matters?tab=metrics');
     const cell = page.locator('table[data-bd-table="matrix"] a[data-bd-cell]').first();
     await expect(cell).toBeVisible();
     await cell.focus();
@@ -204,10 +192,10 @@ test.describe('PM v2 final gate', () => {
     };
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/my-matters?tab=breakdown');
+    await page.goto('/my-matters?tab=metrics');
     await expect(page.locator('table[data-bd-table="matrix"]')).toBeVisible();
     expect(await animations(), 'Breakdown').toBe(0);
-    await page.goto('/my-matters?tab=data');
+    await page.goto('/my-matters?tab=metrics&mview=data');
     await expect(page.locator('[data-panel="data"] [data-loading]')).toHaveCount(0);
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     expect(await animations(), 'Data tab').toBe(0);
@@ -245,8 +233,8 @@ test.describe('PM v2 final gate', () => {
     await page.setViewportSize({ width: 375, height: 812 });
     // The Create task chooser lists every task type, so the long one must not widen it either (it did, once other specs had left such a type).
     for (const url of [
-      '/my-matters?tab=breakdown',
-      '/my-matters?tab=data',
+      '/my-matters?tab=metrics',
+      '/my-matters?tab=metrics&mview=data',
       '/assets/reports',
       '/tasks/new',
     ]) {
