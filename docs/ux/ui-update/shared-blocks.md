@@ -1,0 +1,23 @@
+# Shared UI blocks of the UI update (UI-10, issue #961)
+
+Where they live: `frontend/src/app/shared/ui/`. They read only the design tokens (`docs/ux/tokens.css`, guide `docs/ux/theme-guide.md`); none contains a colour literal. Each has a unit test in `building-blocks.spec.ts`. This page feeds the theme adoption guide (UI-07).
+
+| Block         | Selector                  | Use it for                                                                                                                        | Key inputs and outputs                                                                                                                                           |
+| ------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status chip   | `mf-status-chip`          | A task status with its icon and word; for In Progress "step n of m" and an optional segmented bar                                 | `code` (NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED), `stepNumber`, `stepTotal`, `showBar`, `detail` (hover and focus text: hold reason and age, close date) |
+| Priority pill | `mf-priority-pill`        | Only what needs the eye: Critical, High, At risk, Overdue, On hold                                                                | `kind`, `label`                                                                                                                                                  |
+| Event icon    | `mf-event-icon`           | The eight matter event types with their fixed icons and tinted colours; `EVENT_TYPES` lists code, name and colour key             | `type` (API code), `chip` (writes the name)                                                                                                                      |
+| Filter chips  | `mf-filter-chips`         | A row of toggle chips with counts (Status row, activity kinds); `aria-pressed`, a tick as well as the fill                        | `chips`, `value`, `emptyKey`, `valueChange`                                                                                                                      |
+| Side panel    | `mf-side-panel`           | A right column that collapses to a 48 px rail with count badges and tooltips; the page owns the open state                        | `open` (model), `sections`, `sectionOpened`; projected sections carry `data-section`                                                                             |
+| Tree          | `mf-tree`                 | The ARIA tree (`role=tree`, levels, `aria-expanded`, arrows, Home, End, Enter, `*`, type-ahead) with `filterTree` for search      | `nodes`, `selectedId`, `expanded` (model), `filter`, `choose`                                                                                                    |
+| Grid frame    | `mf-grid-frame`           | The card that holds a grid and reaches the bottom of the window; slots `frameHead`, `frameStatus`, the table, `frameFoot` (pager) | `scrollLabel`, `resetKey`                                                                                                                                        |
+| Tooltip       | `[mfTip]`                 | A tooltip on hover and keyboard focus; Esc hides it                                                                               | the text                                                                                                                                                         |
+| Stat tile     | `mf-stat-tile` (existing) | Headline numbers                                                                                                                  | unchanged                                                                                                                                                        |
+
+Rules for any page that uses them:
+
+- One grid per frame: the table carries the class `tt` and its headings use a `button.sort` inside `th[aria-sort]`; the frame styles the sticky heading row once.
+- A desktop window (768 x 561 or more) is a fixed page (`mf-fixed-page`); the frame takes the height its parent leaves. Below that the page scrolls and the rows may become cards.
+- Colour is never the only signal: every chip, pill, dot and icon has a word or an accessible name.
+- The tree keys and the calendar keys are widget navigation inside the widget; nothing is added to `shortcut-registry.ts` (#420).
+- A phone target is at least 44 px.
