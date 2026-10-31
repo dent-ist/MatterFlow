@@ -11,7 +11,8 @@
   }
 
   .mf-nav :is(a, .mf-nav-morebtn) > i {
-    font-size: 21px;
+    /* !important: the shell component's icon rule (the --mf-nav-icon token, 19 px) is more specific than this global sheet; the rail keeps its 21 px (#623). */
+    font-size: 21px !important;
   }
 
   .mf-nav :is(a, .mf-nav-morebtn) {

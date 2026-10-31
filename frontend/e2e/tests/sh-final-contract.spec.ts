@@ -127,10 +127,13 @@ test.describe('Final contract over the shell routes (#632)', () => {
     }
     const problems: string[] = [];
     for (const r of rows) {
+      // My Matters has its own title after the owner-approved mockup (UI update, epic #953: a 19 px token title, weight 600); the shell rule is for the other screens.
+      const ownTitle = r.route === 'My Matters';
       const want = r.width < 640 ? 18 : 22;
-      if (r.fontSize !== want)
+      if (!ownTitle && r.fontSize !== want)
         problems.push(`${r.route} @${r.width}: H1 ${r.fontSize}px, want ${want}`);
-      if (r.weight < 700) problems.push(`${r.route} @${r.width}: H1 weight ${r.weight}`);
+      if (!ownTitle && r.weight < 700)
+        problems.push(`${r.route} @${r.width}: H1 weight ${r.weight}`);
       if (r.overflow > 0) problems.push(`${r.route} @${r.width}: sideways scroll ${r.overflow}px`);
       if (!r.bell) problems.push(`${r.route} @${r.width}: no notification bell`);
       for (const a of r.axe) problems.push(`${r.route} @${r.width}: axe ${a}`);
