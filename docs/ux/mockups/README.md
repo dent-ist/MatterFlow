@@ -500,3 +500,58 @@ The body is **HTML typed by users**, so the server is the only place that can be
 
 - Tables: `notes` (matter id, title, sanitised html, plain text, created by/at, updated by/at, pinned, row version, deleted flag) and `note_tags` (note id, tag id); `note_tag` (name, colour key, active, unique name). API: list notes of a matter (grouping is a client concern; return tag ids), get, create, update with row version, delete, pin; tags: list active (picker) and admin CRUD. Counts for the tab chip come with the matter's summary.
 - Permissions: `NoteTag.Manage` (admin), and note write rights as in question 2. Update `contracts/openapi`, the nswag client and `contracts/permissions.json` together.
+
+
+# Notes mockup, revision 2 (`notes-mockup-r2.html`)
+
+A new file; `notes-mockup.html` is untouched. Same Mockup button (top bar), same three design options, same hash keys (the roles changed, see 1). Screenshots: `screenshots/notes-r2-*.png`. Contrast script: `notes-mockup-r2-contrast.js`.
+
+## What changed, per item
+
+1. **Permissions (owner decision, recorded).** The build adds three separate permissions: **Matter Note Read**, **Matter Note Edit**, **Matter Note Delete**. Nothing is built for them here; the Role switch only shows their effect: **Reader** (Read), **Editor** (Read + Edit; **Delete stays visible but disabled** with the reason "needs the Matter Note Delete permission", in the reader header, the editor footer and as a message when clicked), **Editor + Delete**, **Administrator** (all three and Label manage). This replaces the earlier proposal `NoteTag.Manage`: **tags stay under the Label manage permission unless you say otherwise (question 1 below).** Old hash roles `pm` and `ro` still work (they map to Editor + Delete and Reader); new values: `reader`, `editor`, `editdel`, `admin`.
+2. **No attachments.** Confirmed: files and images are out of scope for now (they are not in the allow-list; the only embeds are links, mentions and asset references).
+3. **Icons on tabs.** Icon plus label, the My Matters tab style: Matter page Overview (dashboard grid), Tasks (checklist), Projects (folder), Assets (database), Notes (document); My Matters Overview, Calendar, Assets, Metrics (bars), Notes, Activity (history). The Labels tabs got icons too.
+4. **Wider note, resizable split.** The list defaults to **380 px** at 1366 (B: 360 px) and the note gets the rest (A: 380 + 699 px; before it was 583 + 497). A **splitter** sits between them:
+   - Pointer drag; the hit area is **44 px wide**; a grip appears on hover; a visible 2 px focus ring on the grip.
+   - **Keyboard**: it is `role="separator"`, `aria-orientation="vertical"`, with `aria-valuenow`, `aria-valuemin` (260), `aria-valuemax` (frame width minus the rail minus 420 px for the note) and a text value ("Note list 380 pixels wide"). **Left/Right arrows change the width by 16 px, Home jumps to the minimum, End to the maximum, Enter or a double-click restores the default**. A **Reset** icon in the note header does the same.
+   - **Remembered per browser** (`localStorage`, with a try/catch; separate values for A and B). The maximum keeps the note at least 420 px wide, so the page never gets a horizontal scroll (tested at the maximum, with the rail collapsed, and at the drawer maximum).
+   - **Drawer (design C, narrow frames, Board view)**: its left edge has the same kind of splitter (420 px to 1100 px, default 580 px; Left arrow widens it), also remembered. Dragging it ends the "expanded" state.
+   - **Fallback**: below a 1024 px window, or a notes frame narrower than 760 px (A) or 900 px (B, where the rail needs room), the note opens in the drawer and the splitter is not shown. On My Matters with the tree open the frame is about 800 px, so A uses docking only after the tree is collapsed (a splitter then works there too).
+5. **Asset references with `#`.** `@` is still a person; **`#` opens a type-ahead list of the assets of this matter** (the `#` toolbar button does the same). Each entry shows the **asset type icon in a 32 px coloured square**, the name, "type . identifier" and a **status chip** (Active, Inactive, Pending disposition, Disposed); typing after `#` filters by name, type or identifier; arrows, Enter or Tab insert, Esc closes. The inserted **inline chip** (type icon + name) is **clickable and reachable by keyboard (Enter or Space)** in read mode and in the "Referenced assets" list; its accessible name is "Asset <name>, opens in a new window", with the status in brackets when it is not Active. Clicking opens the **Asset details in a simulated new browser window** (chrome with tab and address bar, a Close button, Esc closes, focus returns to the chip): fields, status, custodian, location, **linked tasks**, and a **"Notes that reference this asset"** list (computed from the notes). Chips of **disposed** or **inactive** assets carry a visible state tag; an asset that was **removed**, or one the user **may not see**, shows as "Removed asset" or "Restricted asset" and is not clickable (try the note "Old load-file notes", and "Custodian interview schedule" as Administrator vs another role: the *Legal hold archive* asset is restricted and appears only to the Administrator in the picker and the text). A **Referenced assets** list (one chip per asset, deduplicated) closes every note in read mode.
+   - *How it is stored*: the stored HTML contains `<span data-asset-id="a3">Procurement laptop, K. Mbeki</span>`, **one attribute only** (no class, no style, no icon), exactly like the mention's `data-user-id`. The text is a snapshot for search and old exports; the page draws the chip, icon, current name and state from the **asset id**. "Show stored HTML" in the Mockup panel proves it (the sanitiser drops everything else).
+   - *Rules for the build*: the id is stored; **only assets of the same matter** can be referenced (the picker endpoint is scoped to the note's matter; the server **rejects** an id from another matter on save); the **visibility rule is enforced by the server** (sensitive or restricted assets are not offered to people who may not see them, and an existing reference they may not see is rendered as "Restricted asset" without name or link); disposal and removal change the chip, they do not delete the reference. Asset detail opens in a new window with the normal asset permission check.
+6. **One-line header.** At 1366 the Notes bar is one line, with the navigation open, on the Matter page (A, B and C) and on My Matters (tree open or collapsed): **Notes 12** at the left (plus a "Sensitive" or "Read only" chip when it applies), then search (it takes the free space), tag filter, view switch **By tag / Latest / Board**, a collapse-or-expand-all icon button, sort, and **+ New note** at the right. To fit, the "Tags" and "Sort" prefixes are hidden below an 1120 px frame (the value remains, and the accessible name says "Filter by tag: all" / "Sort: Newest"), the view labels turn into icons below 1000 px, and it wraps only below about 690 px (phones) or when the frame is that small. No "More" menu was needed. Measured: control centres differ by 0 px in all of A, B, C and My Matters at 1366 and 1920 (the 88 px spread seen at a 1100 px window is My Matters with the tree open: a 560 px frame, which wraps by design). In note editing the bar is hidden (the editor takes the full width).
+   - The **Board** view is also in A now (it uses the drawer for the note, as the board has no room to dock one).
+
+## Decisions I made
+
+- Default role is **Editor + Delete** so the full feature set shows first; **Editor** is one click away.
+- The splitter also controls the drawer in C and narrow frames (it "makes sense" there and costs little).
+- The inactive/disposed asset state shows as a small tag on the chip, not by hiding the chip.
+- Asset names in a note follow the live asset (id lookup); the stored text is only a snapshot.
+- The restricted asset is a mock of the server's visibility rule (administrator only).
+- Pinning, the conflict banner (the other author is now Marcus Oyelaran so it differs from the Editor + Delete user) and all earlier behaviour are unchanged.
+
+## What to click
+
+1. Matter page, Notes: open "Hosting: workspace set-up and access": the content is wide, the asset chip and "Referenced assets" are at the bottom. Press Enter on the chip to open the asset window; Esc closes it.
+2. Tab to the splitter (between list and note): arrows, Home, End, Enter; drag it; reload the page (the width is remembered); the reset icon in the note header.
+3. Edit a note, type `#lap` and press Enter, then `#` alone to see the full list; type `@ma` for a person. Mockup > Show stored HTML.
+4. Mockup > Role: Editor (Delete disabled with the reason), Reader (no edit buttons), Administrator.
+5. Design option B and C (drawer edge splitter), Screen: My Matters (the one-line bar with the tree open; collapse the tree), Notes tag admin as Administrator.
+
+## Measurements (Playwright, Chromium)
+
+- 1366 x 768, 1920 x 1080, 768 x 1024, 375 x 812: no console or page errors in any scripted run; no page scroll on desktop; no horizontal scroll at any size, including the splitter at its maximum.
+- Contrast (`node docs/ux/mockups/notes-mockup-r2-contrast.js`): **0 failures in 108 state and size combinations** (27 states, including the asset window, the `#` list, the disabled Delete and the focused splitter).
+- Scripted checks: splitter keyboard (Left/Right 16 px, Home, End, Enter, double-click, drag, remembered after reload, Reset button) in A, B and the drawer; fallback at 1023 px; roles (disabled Delete with reason, reader without edit controls); `#` filter and insert, the six or seven visible assets, restricted asset hidden for non-admins, chip keyboard open, window Esc, disposed and removed chips, stored HTML free of class, style and script; one-line header in 15 combinations.
+
+## Open questions
+
+1. **Tags**: do they stay under the existing **Label manage** permission (this mockup assumes yes), or do you want a separate tag permission?
+2. Should **Edit imply Read** and **Delete imply Edit** automatically in the role setup, or are the three fully independent (the mock treats them as additive roles)? May a user with Delete but no Edit delete notes?
+3. Asset references: may a note reference an asset the author sees but a reader does not? (Suggested: yes; the reader sees "Restricted asset".)
+4. Should a disposed or removed asset still be offered in the `#` list (suggested: disposed yes with its status chip, removed no)?
+5. Should the asset window open in a new tab or a real pop-up window (the earlier decision was "new browser tab/window")?
+6. The splitter default of 380 px: wide enough for the list previews, or do you prefer previews hidden below a width?
+7. All earlier open questions (soft delete, version history, search, export, audit, editor library, Ctrl+K) are unchanged.
