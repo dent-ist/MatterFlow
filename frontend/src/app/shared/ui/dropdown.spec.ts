@@ -85,7 +85,7 @@ describe('Dropdown (UI-19)', () => {
     expect(panel()!.querySelector('[role=listbox]')).not.toBeNull();
     expect(btn('d1').getAttribute('aria-expanded')).toBe('true');
     expect(opts().map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
-    expect(opts()[0].querySelector('.tick .pi-check')).not.toBeNull();
+    expect(opts()[0].querySelector('.tick.pi-check')).not.toBeNull();
     expect(opts()[1].querySelector('.n')!.textContent).toBe('3');
     expect(opts()[2].querySelector('.n')!.textContent).toBe('0');
   });

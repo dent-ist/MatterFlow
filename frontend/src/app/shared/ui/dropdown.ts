@@ -44,8 +44,7 @@ export interface DropdownItem {
 let nextId = 0;
 
 /**
- * The one dropdown of the app (`mf-dropdown`, epic #953 UI-19): a button that opens a rounded popover list in the mockup's style, a check mark on the chosen row, a light blue chosen
- * row, counts right-aligned, comfortable rows, and `role="listbox"`. Single choice (`value`) or several (`multi`, `values`, with a Done button). A search box only where the list is
+ * The one dropdown of the app (`mf-dropdown`, epic #953 UI-19): a button that opens a rounded popover list in the mockup's style, a light blue chosen row with a check mark at its right edge (before the count; no reserved left column), counts right-aligned, comfortable rows, and `role="listbox"`. Single choice (`value`) or several (`multi`, `values`, with a Done button). A search box only where the list is
  * long (`search`; matches the label and the second line); `limit` shows the first rows and says "keep typing". Keys: Down or Enter on the button opens it; in the list Up, Down, Home, End,
  * type-ahead, Enter (or Space) choose, Escape closes and returns focus to the button, Tab closes. The popover is drawn in the page's overlay layer (the body), so a frame that clips
  * or contains its children cannot cut it. Rows are 44 px on a phone. Colours are tokens only; the button is 36 px (`sm` 30 px, 44 px on a phone).
@@ -137,19 +136,6 @@ let nextId = 0;
                 [attr.aria-selected]="isOn(it.value)"
                 [class.on]="isOn(it.value)"
               >
-                @if (multi()) {
-                  <span class="ck" aria-hidden="true">
-                    @if (isOn(it.value)) {
-                      <i class="pi pi-check"></i>
-                    }
-                  </span>
-                } @else {
-                  <span class="tick" aria-hidden="true">
-                    @if (isOn(it.value)) {
-                      <i class="pi pi-check"></i>
-                    }
-                  </span>
-                }
                 @if (it.typeChip; as tc) {
                   <mf-task-type-chip
                     size="sm"
@@ -163,6 +149,10 @@ let nextId = 0;
                 @if (it.icon) {
                   <span class="ki" [attr.data-tone]="it.tone" aria-hidden="true"
                     ><i class="pi" [class]="it.icon"></i
+                  ></span>
+                } @else if (hasIcons() && !it.typeChip && !it.dot && it.value === '') {
+                  <span class="ki" data-tone="neutral" aria-hidden="true"
+                    ><i class="pi pi-list"></i
                   ></span>
                 }
                 @if (it.dot) {
@@ -179,6 +169,9 @@ let nextId = 0;
                     <small>{{ it.sub }}</small>
                   }
                 </span>
+                @if (isOn(it.value)) {
+                  <i class="pi pi-check tick" aria-hidden="true"></i>
+                }
                 @if ((it.count ?? -1) >= 0) {
                   <span class="n">{{ it.count }}</span>
                 }
@@ -308,15 +301,15 @@ let nextId = 0;
     .list {
       flex: 1;
       margin: 0;
-      padding: 6px;
+      padding: var(--mf-s1);
       overflow: auto;
       list-style: none;
     }
     .list li[role='option'] {
       display: flex;
       align-items: center;
-      gap: var(--mf-s3);
-      padding: var(--mf-s2) var(--mf-s3);
+      gap: var(--mf-s2);
+      padding: var(--mf-s1) 12px;
       min-height: 40px;
       box-sizing: border-box;
       border-radius: var(--mf-radius-md);
@@ -350,24 +343,8 @@ let nextId = 0;
     }
     .tick {
       flex: none;
-      width: 18px;
       color: var(--mf-primary);
-    }
-    .ck {
-      display: grid;
-      place-items: center;
-      flex: none;
-      width: 18px;
-      height: 18px;
-      box-sizing: border-box;
-      border: 1.5px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius);
-      color: var(--mf-primary-contrast);
-      font-size: 10px;
-    }
-    li.on .ck {
-      background: var(--mf-primary);
-      border-color: var(--mf-primary);
+      font-size: var(--mf-fs-sm);
     }
     .dot {
       flex: none;
@@ -552,6 +529,11 @@ export class Dropdown {
   constructor() {
     inject(DestroyRef).onDestroy(() => this.destroyView());
   }
+
+  /** Some row has an icon or type chip, so the "All ..." row gets a list icon and the left edges line up. */
+  protected readonly hasIcons = computed(() =>
+    this.items().some((i) => !i.heading && (i.icon || i.typeChip)),
+  );
 
   protected isOn(v: string): boolean {
     return this.multi() ? this.values().includes(v) : this.value() === v;
