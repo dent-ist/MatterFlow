@@ -11862,15 +11862,6 @@
             }
           },
           {
-            "name": "show",
-            "in": "query",
-            "schema": {
-              "maxLength": 12,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -11917,6 +11908,15 @@
               "minimum": 1,
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "show",
+            "in": "query",
+            "schema": {
+              "maxLength": 12,
+              "minLength": 0,
+              "type": "string"
             }
           }
         ],
@@ -12234,15 +12234,6 @@
             }
           },
           {
-            "name": "show",
-            "in": "query",
-            "schema": {
-              "maxLength": 12,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -12289,6 +12280,15 @@
               "minimum": 1,
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "show",
+            "in": "query",
+            "schema": {
+              "maxLength": 12,
+              "minLength": 0,
+              "type": "string"
             }
           },
           {
@@ -12685,15 +12685,6 @@
             }
           },
           {
-            "name": "show",
-            "in": "query",
-            "schema": {
-              "maxLength": 12,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -12740,6 +12731,15 @@
               "minimum": 1,
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "show",
+            "in": "query",
+            "schema": {
+              "maxLength": 12,
+              "minLength": 0,
+              "type": "string"
             }
           }
         ],
@@ -13065,15 +13065,6 @@
             }
           },
           {
-            "name": "show",
-            "in": "query",
-            "schema": {
-              "maxLength": 12,
-              "minLength": 0,
-              "type": "string"
-            }
-          },
-          {
             "name": "onHoldReason",
             "in": "query",
             "schema": {
@@ -13120,6 +13111,15 @@
               "minimum": 1,
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "show",
+            "in": "query",
+            "schema": {
+              "maxLength": 12,
+              "minLength": 0,
+              "type": "string"
             }
           }
         ],

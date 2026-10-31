@@ -166,14 +166,6 @@ public class TaskQueueQuery
     [FromQuery(Name = "needsAttention")]
     public bool? NeedsAttention { get; init; }
 
-    /// <summary>
-    /// The Show filter of the new My Matters Overview (UI-04, #957), one of <c>overdue</c>, <c>risk</c>, <c>due7</c>, <c>critical</c>, <c>unassigned</c>; absent = everything. It combines with <c>status</c> (AND) and every other filter.
-    /// <c>overdue</c>, <c>risk</c> and <c>due7</c> only match New and In Progress tasks (an On Hold task is never overdue here); <c>critical</c> (priority Critical) and <c>unassigned</c> match any status.
-    /// Unknown value: 400 <c>UNKNOWN_SHOW</c>.
-    /// </summary>
-    [FromQuery(Name = "show"), StringLength(12)]
-    public string? Show { get; init; }
-
     /// <summary>On-hold reason ids; repeatable. Matches Tasks that are On Hold with one of those reasons; <c>0</c> matches Tasks On Hold with no reason chosen.</summary>
     [FromQuery(Name = "onHoldReason")]
     public int[]? OnHoldReason { get; init; }
@@ -193,6 +185,14 @@ public class TaskQueueQuery
     /// <summary>Rows per page (default 25, max 100).</summary>
     [FromQuery(Name = "pageSize"), Range(1, 100)]
     public int PageSize { get; init; } = PageRequest.DefaultPageSize;
+
+    /// <summary>
+    /// The Show filter of the new My Matters Overview (UI-04, #957), one of <c>overdue</c>, <c>risk</c>, <c>due7</c>, <c>critical</c>, <c>unassigned</c>; absent = everything. It combines with <c>status</c> (AND) and every other filter.
+    /// <c>overdue</c>, <c>risk</c> and <c>due7</c> only match New and In Progress tasks (an On Hold task is never overdue here); <c>critical</c> (priority Critical) and <c>unassigned</c> match any status.
+    /// Unknown value: 400 <c>UNKNOWN_SHOW</c>.
+    /// </summary>
+    [FromQuery(Name = "show"), StringLength(12)]
+    public string? Show { get; init; }
 }
 
 /// <summary>The Task Queue: the queue filters plus the optional grouping.</summary>

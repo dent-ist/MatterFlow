@@ -187,8 +187,11 @@ public sealed class MyMattersUiUpdateTests(SqlServerFixture sql) : MyMattersTest
         var soon = await H.GetTaskAsync(Ids["m2-in5"]);
         await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/tasks/{Ids["m2-in5"]}", new Dictionary<string, object?>
         {
-            ["rowVersion"] = RowVersion(soon), ["title"] = soon.GetProperty("title").GetString(), ["requestorName"] = soon.GetProperty("requestorName").GetString(),
-            ["requestorEmail"] = soon.GetProperty("requestorEmail").GetString(), ["dueDate"] = In(20),
+            ["rowVersion"] = RowVersion(soon),
+            ["title"] = soon.GetProperty("title").GetString(),
+            ["requestorName"] = soon.GetProperty("requestorName").GetString(),
+            ["requestorEmail"] = soon.GetProperty("requestorEmail").GetString(),
+            ["dueDate"] = In(20),
         }));
         await H.StatusAsync(await H.GetTaskAsync(Ids["m2-far"]), "ON_HOLD", "Waiting"); // a third task on hold: a state, not a status update
 
