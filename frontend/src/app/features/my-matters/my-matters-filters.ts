@@ -1,5 +1,4 @@
 import { ParamMap, Params } from '@angular/router';
-import { MmPrefilter, parsePrefilter } from './prefilter';
 
 /**
  * The filters of My Matters (README 6.8), kept in the address (`?clientId=&matterId=&role=&show=&scope=all&managerId=`) so Back restores them.
@@ -17,7 +16,6 @@ export interface MmFilters {
   /** All matters scope only: a named project manager. */
   managerId: number | null;
   /** The Overview grid's pre-filter (`?show=`, issue #942); All open is the default and is left out of the address. */
-  show: MmPrefilter;
 }
 
 export const DEFAULT_FILTERS: MmFilters = {
@@ -26,7 +24,6 @@ export const DEFAULT_FILTERS: MmFilters = {
   clientId: null,
   matterId: null,
   managerId: null,
-  show: 'open',
 };
 
 export const ROLE_LABELS: Record<MmRole, string> = {
@@ -50,7 +47,6 @@ export function parseFilters(q: ParamMap, canAll: boolean): MmFilters {
     clientId: positive(q.get('clientId')),
     matterId: positive(q.get('matterId')),
     managerId: scope === 'all' ? positive(q.get('managerId')) : null,
-    show: parsePrefilter(q.get('show')),
   };
 }
 
@@ -62,7 +58,6 @@ export function filtersToParams(f: MmFilters): Params {
     clientId: f.clientId,
     matterId: f.matterId,
     managerId: f.scope === 'all' ? f.managerId : null,
-    show: f.show === 'open' ? null : f.show,
   };
 }
 

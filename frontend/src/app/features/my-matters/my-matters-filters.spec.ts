@@ -24,7 +24,6 @@ describe('My Matters filters', () => {
         clientId: '12',
         matterId: '31',
         managerId: '7',
-        show: 'overdue',
       }),
       true,
     );
@@ -34,7 +33,6 @@ describe('My Matters filters', () => {
       clientId: 12,
       matterId: 31,
       managerId: 7,
-      show: 'overdue',
     });
     expect(filtersToParams(f)).toEqual({
       scope: 'all',
@@ -42,7 +40,6 @@ describe('My Matters filters', () => {
       clientId: 12,
       matterId: 31,
       managerId: 7,
-      show: 'overdue',
     });
   });
 
@@ -53,17 +50,7 @@ describe('My Matters filters', () => {
       clientId: null,
       matterId: null,
       managerId: null,
-      show: null,
     });
-  });
-
-  it('knows the six pre-filters of the grid and takes an unknown one for All open (#942)', () => {
-    for (const key of ['open', 'overdue', 'atRisk', 'unassigned', 'onHold', 'dueSoon'])
-      expect(parseFilters(map({ show: key }), true).show).toBe(key);
-    expect(parseFilters(map({ show: 'everything' }), true).show).toBe('open');
-    expect(parseFilters(map({}), true).show).toBe('open');
-    // The pre-filter is not a filter of the filter bar: it does not count for "Clear filters".
-    expect(activeFilterCount({ ...DEFAULT_FILTERS, show: 'overdue' })).toBe(0);
   });
 
   it('ignores scope=all and managerId without Matter.AssignManagers', () => {

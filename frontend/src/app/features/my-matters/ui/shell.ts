@@ -28,6 +28,7 @@ import { MM_TABS, MmScopeStore, MmTab, TAB_LABELS } from './mm-scope';
 import { MmMetricsTab } from './metrics-tab';
 import { MmNewMenu } from './new-menu';
 import { MmOverview } from './overview';
+import { MmWorkflowBar } from './workflow-bar';
 import { MmScopeBar } from './scope-bar';
 import { MmTreePanel, MmTreeRail } from './tree-panel';
 
@@ -50,6 +51,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmNewMenu,
     MmOverview,
     MmScopeBar,
+    MmWorkflowBar,
     MmTreePanel,
     MmTreeRail,
     Tabs,
@@ -62,8 +64,9 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     }
     .hdr {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--mf-s3);
+      gap: var(--mf-s2) var(--mf-s3);
       min-height: 30px;
       flex: none;
     }
@@ -180,6 +183,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
       <div class="hdr">
         <span class="chip-i"><i class="pi pi-briefcase" aria-hidden="true"></i></span>
         <h1>My Matters</h1>
+        <mf-mm-workflow-bar [filters]="scope.filters()" [scopeName]="scopeName()" />
       </div>
 
       <mf-mm-scope-bar
@@ -369,6 +373,12 @@ export class MyMattersPage {
     }),
   );
   protected readonly resetKey = computed(() => `${this.scope.clientId()}|${this.scope.matterId()}`);
+  protected readonly scopeName = computed(() => {
+    const t = this.tree.data();
+    const c = t?.clients.find((x) => x.clientId === this.scope.clientId());
+    const m = c?.matters.find((x) => x.matterId === this.scope.matterId());
+    return m?.name ?? c?.name ?? 'All your matters';
+  });
   protected readonly railLabel = computed(() => {
     const t = this.tree.data();
     const c = t?.clients.find((x) => x.clientId === this.scope.clientId());
