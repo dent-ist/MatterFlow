@@ -156,4 +156,21 @@ describe('Dropdown (UI-19)', () => {
     await flush();
     expect(panel()!.textContent).toContain('No match');
   });
+
+  it('QA: "No match" keeps the listbox valid (it holds an option) and cannot be chosen; the scrolling list can take focus (axe)', async () => {
+    const { host, btn, flush, panel } = await setup();
+    btn('d3').click();
+    await flush();
+    const before = host.big();
+    const input = panel()!.querySelector('input')!;
+    input.value = 'zzz';
+    input.dispatchEvent(new Event('input'));
+    await flush();
+    const none = panel()!.querySelector<HTMLElement>('li[role=option][aria-disabled=true]');
+    expect(none?.textContent).toContain('No match');
+    none!.click();
+    await flush();
+    expect(host.big()).toBe(before);
+    expect(panel()!.querySelector('[role=listbox]')!.getAttribute('tabindex')).toBe('0');
+  });
 });

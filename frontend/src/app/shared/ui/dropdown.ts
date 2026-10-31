@@ -10,6 +10,7 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -114,7 +115,7 @@ let nextId = 0;
               [placeholder]="searchLabel()"
               autocomplete="off"
               [value]="query()"
-              (input)="query.set($any($event.target).value)"
+              (input)="onSearch($any($event.target).value)"
             />
           </div>
         }
@@ -122,6 +123,7 @@ let nextId = 0;
           class="list"
           role="listbox"
           [id]="id + '-list'"
+          tabindex="0"
           [attr.aria-label]="label()"
           [attr.aria-multiselectable]="multi() ? true : null"
         >
@@ -182,7 +184,8 @@ let nextId = 0;
             <li role="presentation" class="mute">{{ more() }} more - keep typing to narrow</li>
           }
           @if (none()) {
-            <li role="presentation" class="mute">No match</li>
+            <!-- A listbox needs at least one option; this one cannot be chosen (the key and click handlers skip it). -->
+            <li role="option" aria-disabled="true" aria-selected="false" class="mute">No match</li>
           }
         </ul>
         @if (multi()) {
@@ -407,9 +410,14 @@ let nextId = 0;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .mute {
+    .mute,
+    .list li[role='option'].mute {
       padding: var(--mf-s3);
       color: var(--mf-text-muted);
+      cursor: default;
+    }
+    .list li[role='option'].mute:hover {
+      background: transparent;
     }
     .foot {
       display: flex;
@@ -478,6 +486,12 @@ export class Dropdown {
 
   protected readonly open = signal(false);
   protected readonly query = signal('');
+  /** The text typed in the search box (a page that looks values up on the server reloads its items from it). */
+  readonly searched = output<string>();
+  protected onSearch(text: string): void {
+    this.query.set(text);
+    this.searched.emit(text);
+  }
   protected readonly pos = signal({ left: 0, top: 0, width: 280, maxHeight: 360 });
   private view: EmbeddedViewRef<unknown> | null = null;
   private typed = '';
@@ -555,6 +569,7 @@ export class Dropdown {
       width,
       maxHeight: Math.max(220, Math.min(420, vh - r.bottom - 16)),
     });
+    if (this.query() !== '') this.searched.emit('');
     this.query.set('');
     this.view = this.vcr.createEmbeddedView(this.tpl());
     this.view.detectChanges();
@@ -563,7 +578,9 @@ export class Dropdown {
     const root = this.panel();
     root?.addEventListener('keydown', (e) => this.onPanelKey(e as KeyboardEvent));
     root?.addEventListener('click', (e) => {
-      const li = (e.target as HTMLElement).closest<HTMLElement>('li[role=option]');
+      const li = (e.target as HTMLElement).closest<HTMLElement>(
+        'li[role=option]:not([aria-disabled=true])',
+      );
       if (li) this.pick(li.dataset['value'] ?? '');
     });
     this.doc.addEventListener('mousedown', this.outside, true);
@@ -573,7 +590,7 @@ export class Dropdown {
       (
         panel?.querySelector<HTMLElement>('input') ??
         panel?.querySelector<HTMLElement>('li.on') ??
-        panel?.querySelector<HTMLElement>('li[role=option]')
+        panel?.querySelector<HTMLElement>('li[role=option]:not([aria-disabled=true])')
       )?.focus();
     });
   }
@@ -628,7 +645,9 @@ export class Dropdown {
   private onPanelKey(e: KeyboardEvent): void {
     const panel = this.panel();
     if (!panel) return;
-    const opts = Array.from(panel.querySelectorAll<HTMLElement>('li[role=option]'));
+    const opts = Array.from(
+      panel.querySelectorAll<HTMLElement>('li[role=option]:not([aria-disabled=true])'),
+    );
     const inInput = (e.target as HTMLElement).tagName === 'INPUT';
     const at = opts.indexOf(this.doc.activeElement as HTMLElement);
     const go = (i: number): void => {

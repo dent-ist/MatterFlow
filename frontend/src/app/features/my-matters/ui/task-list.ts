@@ -242,6 +242,7 @@ export function statusCodes(status: StatusFilter): string[] {
                 [search]="true"
                 searchLabel="Search people"
                 [limit]="60"
+                (searched)="searchPeople($event)"
                 placeholder="Anyone"
                 [panelWidth]="280"
               />
@@ -768,6 +769,7 @@ export function statusCodes(status: StatusFilter): string[] {
       .lnk {
         display: inline-flex;
         align-items: center;
+        gap: 0.4em;
         min-height: 44px;
       }
       .fbtn {
@@ -990,8 +992,22 @@ export class MmTaskList {
   }
   private loadPeople(): void {
     if (this.people().length > 0) return;
-    void firstValueFrom(this.usersApi.lookupUsers(undefined, 200))
-      .then((r) => this.people.set(r.map((u) => ({ id: u.userId, name: u.displayName }))))
+    this.fetchPeople(undefined);
+  }
+  private peopleTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The Assignee list asks the server for the typed text (the lookup answers at most 50 people), so a firm with more people can still find everybody. */
+  protected searchPeople(text: string): void {
+    clearTimeout(this.peopleTimer);
+    this.peopleTimer = setTimeout(() => this.fetchPeople(text.trim() || undefined), 250);
+  }
+  private fetchPeople(text: string | undefined): void {
+    void firstValueFrom(this.usersApi.lookupUsers(text, 50))
+      .then((r) => {
+        const chosen = this.people().find((u) => u.id === this.grid().assignee);
+        const next = r.map((u) => ({ id: u.userId, name: u.displayName }));
+        if (chosen && !next.some((u) => u.id === chosen.id)) next.unshift(chosen);
+        this.people.set(next);
+      })
       .catch(() => undefined);
   }
   protected clearFilters(): void {
@@ -1040,6 +1056,8 @@ export class MmTaskList {
   );
 
   constructor() {
+    // The Priority filter and its chip read the shared priority list; a page opened by address would otherwise show an empty list.
+    void this.lookups.ensureLoaded();
     if (this.filterOpen()) this.loadPeople();
     effect(() => {
       const pages = Math.max(1, Math.ceil(this.total() / GRID_PAGE_SIZE));
