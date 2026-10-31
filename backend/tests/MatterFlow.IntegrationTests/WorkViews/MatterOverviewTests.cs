@@ -71,11 +71,7 @@ public sealed class MatterOverviewTests(SqlServerFixture sql) : MyMattersTestBas
             (await TotalAsync(A, "task-queue", h.GetProperty("query").GetString()!)).ShouldBe(h.GetProperty("count").GetInt32(), "hold reason " + h.GetProperty("name").GetString());
         }
 
-        // The same flag and reasons as the health table of My Matters.
-        var row = (await Mine($"health?pageSize=100")).GetProperty("items").EnumerateArray().Single(i => i.GetProperty("matterId").GetInt32() == M1);
-        row.GetProperty("flag").GetString().ShouldBe("RED");
-        row.GetProperty("flagReasons").EnumerateArray().Select(r => r.GetString()).ShouldBe(reasons.Select(r => r.GetProperty("code").GetString()));
-        row.GetProperty("open").GetInt32().ShouldBe(counts.GetProperty("open").GetInt32());
+        // (The My Matters health table this once matched was removed with the Matters section, WP-OV1; the flag and reasons are checked above.)
 
         // Deadlines: open, not overdue, with a date: only m1-soon. The overdue one and the ASAP one are not deadlines to come.
         var deadlines = o.GetProperty("deadlines");
