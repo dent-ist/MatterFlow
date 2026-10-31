@@ -331,7 +331,7 @@ const PAGE_SIZE = 25;
         display: none;
       }
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .tt,
       .tt tbody {
         display: block;

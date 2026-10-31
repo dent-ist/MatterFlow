@@ -20,6 +20,7 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { LoadGroup, panelLoader } from '../panel-loader';
 import { MmActivityTab } from './activity-tab';
 import { MmApi } from './mm-api';
+import { InterimMmApi } from './mm-api-interim';
 import { MmAssetsTab } from './assets-tab';
 import { MmCalendarTab } from './calendar-tab';
 import { MmLayout } from './mm-layout';
@@ -53,7 +54,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmTreeRail,
     Tabs,
   ],
-  providers: [MmScopeStore, MmLayout, LoadGroup],
+  providers: [MmScopeStore, MmLayout, LoadGroup, { provide: MmApi, useExisting: InterimMmApi }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -168,7 +169,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
         min-height: 0;
       }
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .dock {
         display: none;
       }
@@ -336,11 +337,12 @@ export class MyMattersPage {
   protected readonly announce = signal('');
 
   /** The tree depends on the scope (mine / all, role, manager) only, never on the chosen client or matter. */
+  private readonly treeScope = computed(() => {
+    const f = this.scope.filters();
+    return `${f.scope}|${f.role}|${f.managerId}`;
+  });
   protected readonly tree = panelLoader(
-    () => {
-      const f = this.scope.filters();
-      return [f.scope, f.role, f.managerId, this.refresh()];
-    },
+    () => [this.treeScope(), this.refresh()],
     () => this.api.tree(this.scope.filters()),
   );
   /** The unread count on the Activity tab. */
@@ -379,12 +381,11 @@ export class MyMattersPage {
   constructor() {
     // The matters of the tree decide whether there is anything to browse (none or one: no tree).
     effect(() => {
-      const n = this.tree.data()?.matterCount ?? 0;
-      untracked(() => {
-        this.layout.browsable.set(n > 1);
-        this.layout.reconcile();
-      });
+      const n = this.tree.data()?.matterCount;
+      if (n === undefined) return;
+      untracked(() => this.layout.setBrowsable(n > 1));
     });
+    const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       const el = this.work()?.nativeElement;
       const measure = (): void =>
@@ -393,10 +394,10 @@ export class MyMattersPage {
       if (el && typeof ResizeObserver !== 'undefined') {
         const ro = new ResizeObserver(measure);
         ro.observe(el);
-        inject(DestroyRef).onDestroy(() => ro.disconnect());
+        destroyRef.onDestroy(() => ro.disconnect());
       }
       window.addEventListener('resize', measure);
-      inject(DestroyRef).onDestroy(() => window.removeEventListener('resize', measure));
+      destroyRef.onDestroy(() => window.removeEventListener('resize', measure));
     });
     effect(() => {
       const tab = this.scope.tab();
@@ -407,6 +408,14 @@ export class MyMattersPage {
       this.createContext.matterId.set(null);
     });
     effect(() => this.createContext.matterId.set(this.scope.matterId()));
+    // The asset side panel needs room: below the width budget the docked tree goes to its rail (they take turns, like the tree and the side panel).
+    effect(() => {
+      const open = this.scope.tab() === 'assets' && this.scope.assetId() !== null;
+      untracked(() => {
+        if (open && this.layout.treeWide() && this.layout.workWidth() - 280 - 12 - 372 - 12 < 560)
+          this.layout.collapseTree();
+      });
+    });
     // A polite message when the choice changes: what the page now shows.
     let first = true;
     effect(() => {

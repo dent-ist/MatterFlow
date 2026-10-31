@@ -175,7 +175,7 @@ interface Item {
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       :host {
         display: block;
       }

@@ -9,8 +9,9 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
-import { Clock } from '../../../core/time/clock';
-import { formatDateOnly } from '../../../core/time/time';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { todayText } from '../calendar-month';
+import { formatMonthDay, parseDateOnly } from '../../../core/time/time';
 import { EventIcon } from '../../../shared/ui/event-type';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { SidePanel, SideSection } from '../../../shared/ui/side-panel';
@@ -214,20 +215,34 @@ const UPCOMING_DAYS = 14;
     .ov {
       display: flex;
       gap: var(--mf-s3);
-      align-items: stretch;
-      height: 100%;
+      align-items: flex-start;
       min-height: 0;
+    }
+    .ov.stack {
+      flex-direction: column;
+      align-items: stretch;
     }
     .lcol {
       flex: 1 1 0;
       min-width: 0;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
     }
-    .lcol > mf-mm-task-list {
-      flex: 1 1 0;
-      min-height: 0;
+    .ov.stack .lcol {
+      flex: none;
+    }
+    @media (min-width: 768px) and (min-height: 561px) {
+      .ov {
+        align-items: stretch;
+        height: 100%;
+      }
+      .lcol {
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .lcol > mf-mm-task-list {
+        flex: 1 1 0;
+        min-height: 0;
+      }
     }
     .side {
       flex: none;
@@ -400,7 +415,7 @@ const UPCOMING_DAYS = 14;
       flex-direction: column;
       gap: var(--mf-s4);
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .ov {
         flex-direction: column;
         height: auto;
@@ -423,6 +438,7 @@ export class MmOverview {
   private readonly api = inject(MmApi);
   private readonly router = inject(Router);
   private readonly clock = inject(Clock);
+  private readonly zone = inject(USER_TIME_ZONE);
 
   readonly filters = input.required<MmFilters>();
   readonly status = input<StatusFilter>('open');
@@ -495,9 +511,13 @@ export class MmOverview {
     return agoShort(i.occurredAtUtc, this.clock.now());
   }
   protected when(e: MatterEvent): string {
-    const today = this.clock.now().toISOString().slice(0, 10);
-    const tomorrow = new Date(this.clock.now().getTime() + 86_400_000).toISOString().slice(0, 10);
-    return e.date === today ? 'Today' : e.date === tomorrow ? 'Tomorrow' : formatDateOnly(e.date);
+    const today = todayText(this.clock, this.zone);
+    const next = new Date(`${today}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    if (e.date === today) return 'Today';
+    if (e.date === next.toISOString().slice(0, 10)) return 'Tomorrow';
+    const d = parseDateOnly(e.date);
+    return d ? formatMonthDay(d) : e.date;
   }
   protected taskHref(id: number): string {
     return this.router.serializeUrl(this.router.createUrlTree(['/tasks', id]));

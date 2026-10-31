@@ -142,7 +142,7 @@ import { MmTreePanel } from './tree-panel';
       margin-left: auto;
       flex: none;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       :host {
         flex-direction: column;
         align-items: stretch;

@@ -92,34 +92,50 @@ const HEADS = [
               }
             </select>
           </label>
-          <label
-            >Created from
-            <input
-              type="date"
-              [value]="createdFrom()"
-              (change)="createdFrom.set($any($event.target).value)"
-          /></label>
-          <label
-            >to
-            <input
-              type="date"
-              [value]="createdTo()"
-              (change)="createdTo.set($any($event.target).value)"
-          /></label>
-          <label
-            >Updated from
-            <input
-              type="date"
-              [value]="updatedFrom()"
-              (change)="updatedFrom.set($any($event.target).value)"
-          /></label>
-          <label
-            >to
-            <input
-              type="date"
-              [value]="updatedTo()"
-              (change)="updatedTo.set($any($event.target).value)"
-          /></label>
+          <button
+            type="button"
+            class="lnk dt"
+            data-dates
+            [attr.aria-expanded]="dates()"
+            (click)="dates.set(!dates())"
+          >
+            <i class="pi pi-calendar" aria-hidden="true"></i> Dates
+            <i
+              class="pi"
+              [class]="dates() ? 'pi-angle-up' : 'pi-angle-down'"
+              aria-hidden="true"
+            ></i>
+          </button>
+          @if (dates()) {
+            <label
+              >Created from
+              <input
+                type="date"
+                [value]="createdFrom()"
+                (change)="createdFrom.set($any($event.target).value)"
+            /></label>
+            <label
+              >to
+              <input
+                type="date"
+                [value]="createdTo()"
+                (change)="createdTo.set($any($event.target).value)"
+            /></label>
+            <label
+              >Updated from
+              <input
+                type="date"
+                [value]="updatedFrom()"
+                (change)="updatedFrom.set($any($event.target).value)"
+            /></label>
+            <label
+              >to
+              <input
+                type="date"
+                [value]="updatedTo()"
+                (change)="updatedTo.set($any($event.target).value)"
+            /></label>
+          }
           @if (filtered()) {
             <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
               Clear filters
@@ -397,6 +413,12 @@ const HEADS = [
       cursor: pointer;
       text-decoration: none;
     }
+    .dt {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-height: 32px;
+    }
     .lnk:hover {
       text-decoration: underline;
     }
@@ -500,12 +522,45 @@ const HEADS = [
       --a-bg: var(--mf-st-cancel-bg);
       --a-fg: var(--mf-st-cancel-fg);
     }
+    .tt {
+      table-layout: fixed;
+    }
+    th.c-cl,
+    th.c-ma {
+      width: 22%;
+    }
+    th.c-ty {
+      width: 28%;
+    }
+    th.c-cr,
+    th.c-up {
+      width: 112px;
+    }
+    th.c-st {
+      width: 170px;
+    }
     .c-cl,
     .c-ma {
-      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+    .c-cl,
+    .c-cr {
+      display: none;
+    }
+    @container gc (min-width: 760px) {
+      .c-cr {
+        display: table-cell;
+      }
+    }
+    @container gc (min-width: 900px) {
+      .c-cl {
+        display: table-cell;
+      }
+    }
+    .flt input[type='date'] {
+      width: 9.5rem;
     }
     .side {
       flex: 0 0 360px;
@@ -596,15 +651,13 @@ const HEADS = [
       clip-path: inset(50%);
       white-space: nowrap;
     }
-    @media (max-width: 1100px) {
-      .c-cr {
-        display: none;
-      }
-    }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .as {
         flex-direction: column;
         height: auto;
+      }
+      mf-grid-frame {
+        flex: none;
       }
       .side {
         flex: none;
@@ -632,8 +685,12 @@ const HEADS = [
         max-width: none;
         white-space: normal;
       }
-      .c-cr {
+      .c-cr,
+      .c-cl {
         display: block;
+      }
+      .tt {
+        table-layout: auto;
       }
       .open {
         min-height: 44px;
@@ -656,6 +713,7 @@ export class MmAssetsTab {
   protected readonly statusMap = ASSET_STATUS;
   protected readonly statusKeys = Object.keys(ASSET_STATUS) as AssetStatusCode[];
 
+  protected readonly dates = signal(false);
   protected readonly q = signal('');
   protected readonly type = signal('');
   protected readonly status = signal('');

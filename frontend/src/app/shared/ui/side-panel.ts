@@ -87,6 +87,7 @@ export interface SideSection {
   styles: `
     :host {
       display: block;
+      position: relative;
       min-width: 0;
       min-height: 0;
     }
@@ -100,10 +101,12 @@ export interface SideSection {
       height: 100%;
       min-height: 0;
     }
+    /* The toggle sits in the first card's heading row (the cards keep their right edge free for it). */
     .hd {
-      display: flex;
-      justify-content: flex-end;
-      flex: none;
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      z-index: 2;
     }
     .body {
       display: flex;

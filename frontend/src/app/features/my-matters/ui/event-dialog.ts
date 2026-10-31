@@ -195,6 +195,9 @@ interface Errors {
       margin: 0;
       min-width: 0;
     }
+    legend {
+      margin-bottom: var(--mf-s2);
+    }
     label,
     legend {
       font-weight: 600;

@@ -8,8 +8,8 @@ export const RAIL_W = 48;
 export const GAP = 12;
 /** The docked tree is not used below this window width; the same tree opens as a panel from Browse. */
 export const DOCK_MIN = 1100;
-/** Up to this width the page scrolls as a whole and the side sections stack under the list (phone and small tablet). */
-export const STACK_MAX = 768;
+/** Up to this width (below 768, the fixed-page threshold) the page scrolls as a whole and the side sections stack under the list (phone and small tablet). */
+export const STACK_MAX = 767;
 
 const KEY = 'mf-mm-ui';
 
@@ -37,7 +37,7 @@ export class MmLayout {
   /** The window width and the width of the whole work area (tree dock + content), set by the page. */
   readonly windowWidth = signal(typeof window === 'undefined' ? 1366 : window.innerWidth);
   readonly workWidth = signal(1000);
-  /** The person has no matter or one only: there is nothing to browse, so the tree is not drawn. */
+  /** The person has no matter or one only: there is nothing to browse, so the tree is not drawn. Starts true (the tree is held back until the matters are known). */
   readonly browsable = signal(true);
 
   readonly treeOpen = signal(true);
@@ -88,6 +88,14 @@ export class MmLayout {
       this.sideOpen.set(true);
       this.sideAuto = false;
     }
+  }
+
+  /** The matters are known: with one matter (or none) the tree is not drawn; with more it opens again unless the person put it on its rail. */
+  setBrowsable(browsable: boolean): void {
+    const changed = this.browsable() !== browsable;
+    this.browsable.set(browsable);
+    if (changed && browsable && this.treePref !== 'rail') this.treeOpen.set(true);
+    this.reconcile();
   }
 
   setWidths(windowWidth: number, workWidth: number): void {

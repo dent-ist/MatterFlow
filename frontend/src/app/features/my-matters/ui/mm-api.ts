@@ -1,4 +1,4 @@
-import { Injectable, forwardRef } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { MmFilters } from '../my-matters-filters';
 import {
@@ -46,7 +46,6 @@ export interface FeedQuery {
  *
  * This is the interface plus the typed stand-in the page runs on until the endpoints exist (flagged in `progress.md`); `GeneratedMmApi` (mm-api-generated.ts) replaces it.
  */
-@Injectable({ providedIn: 'root', useExisting: forwardRef(() => EmptyMmApi) })
 export abstract class MmApi {
   abstract tree(f: MmFilters, opts?: { q?: string; activeOnly?: boolean }): Observable<MatterTree>;
   abstract eventTypes(): Observable<MatterEventType[]>;

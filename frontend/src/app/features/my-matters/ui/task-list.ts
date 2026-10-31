@@ -323,6 +323,11 @@ export function statusShowParams(
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
+    @container gc (max-width: 800px) {
+      .strow-l {
+        display: none;
+      }
+    }
     .msg {
       margin: var(--mf-s5) var(--mf-s4);
       color: var(--mf-text-muted);
@@ -472,7 +477,7 @@ export function statusShowParams(
         display: table-column;
       }
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .tt,
       .tt tbody {
         display: block;

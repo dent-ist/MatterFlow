@@ -633,7 +633,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       margin: var(--mf-s3) var(--mf-s4);
       color: var(--mf-text-muted);
     }
-    @media (max-width: 768px) {
+    @media (max-width: 767.98px) {
       .cal {
         height: auto;
       }
