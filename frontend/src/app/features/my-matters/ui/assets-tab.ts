@@ -760,7 +760,16 @@ export class MmAssetsTab {
 
   constructor() {
     void firstValueFrom(this.typesApi.listAssetTypes(undefined, undefined, undefined, 1, 100))
-      .then((r) => this.types.set(r.items.map((t) => ({ id: t.assetTypeId, name: t.name }))))
+      .then((r) =>
+        this.types.set(
+          r.items.map((t) => ({
+            id: t.assetTypeId,
+            name: t.name,
+            iconKey: t.iconKey,
+            colourKey: t.colourKey,
+          })),
+        ),
+      )
       .catch(() => undefined);
     // A side panel that was opened moves focus to its title; closing returns to the row.
     let last: number | null = null;

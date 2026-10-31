@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { convertToParamMap } from '@angular/router';
+import { from } from 'rxjs';
 import { MyMattersClient, TaskQueueClient } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
@@ -467,7 +468,10 @@ export class MmMetricsWork {
   );
   protected readonly ageLoad = panelLoader(
     () => [this.filters(), this.today()],
-    async () => {
+    () => from(this.ageCounts()),
+  );
+  private async ageCounts(): Promise<number[]> {
+    {
       const a = commonArgs(this.filters());
       const today = this.today();
       const counts = await Promise.all(
@@ -490,8 +494,8 @@ export class MmMetricsWork {
         }),
       );
       return counts;
-    },
-  );
+    }
+  }
 
   protected readonly mix = computed(() => {
     const c = this.loads.data()?.byStatus;
@@ -507,7 +511,7 @@ export class MmMetricsWork {
     (this.typesLoad.data()?.types ?? []).filter((t) => t.open > 0 || t.onHold > 0),
   );
   protected readonly ageing = computed(() => {
-    const counts = this.ageLoad.data() ?? [];
+    const counts: number[] = this.ageLoad.data() ?? [];
     const max = Math.max(1, ...counts);
     const today = this.today();
     return AGE_BUCKETS.map((b, i) => ({

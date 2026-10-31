@@ -35,8 +35,9 @@ export class GeneratedMmApi extends MmApi {
   private readonly item = inject(MatterEventItemClient);
   private readonly typesApi = inject(MatterEventTypesClient);
 
+  /** The tree is of the whole scope: the chosen client and matter never narrow it (a link with a matter must still show the tree around it). */
   tree(f: MmFilters, opts: { q?: string; activeOnly?: boolean } = {}): Observable<MatterTree> {
-    const a = commonArgs(f);
+    const a = commonArgs({ ...f, clientId: null, matterId: null });
     return this.my
       .getMyMattersTree(
         undefined,
@@ -44,12 +45,12 @@ export class GeneratedMmApi extends MmApi {
         opts.activeOnly || undefined,
         a.scope,
         a.role,
-        a.clientId,
+        undefined,
         undefined,
         undefined,
         a.managerId,
         undefined,
-        a.matterId,
+        undefined,
       )
       .pipe(map((r) => r as unknown as MatterTree));
   }

@@ -476,7 +476,7 @@ test.describe('Reduced motion and focus after a change', () => {
       '/my-matters',
       '/my-matters?view=calendar',
       '/my-matters?tab=workload', // the removed Workload tab: an old link opens Overview
-      '/my-matters?tab=breakdown',
+      '/my-matters?tab=metrics',
       '/my-matters?tab=activity',
       '/matters',
       '/tasks',
@@ -507,7 +507,7 @@ test.describe('Reduced motion and focus after a change', () => {
       '/tasks',
       '/assets',
       '/my-matters',
-      '/my-matters?tab=breakdown',
+      '/my-matters?tab=metrics',
       `/matters/${fx.m.primary.matterId}`,
     ]) {
       await page.goto(url);

@@ -1,4 +1,3 @@
-import { mmWorld } from '../support/my-matters-fixtures';
 import { expect, test } from '../support/fixtures';
 
 /**
@@ -57,47 +56,12 @@ test.describe('Export (#879)', () => {
     expect(JSON.stringify(found)).not.toContain('HYPERLINK');
   });
 
-  test('Export of an empty list is unavailable with a reason, and the Breakdown exports what the table shows', async ({
-    page,
-    seed,
-    personas,
-    asUser,
-    admin,
-  }) => {
+  test('Export of an empty list is unavailable with a reason', async ({ page }) => {
     await page.goto('/tasks?matter=99999999');
     await page.locator('[data-export-menu] [data-overflow]').click();
     await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
-
-    const w = await mmWorld(seed, personas, 'ex');
-    const a = await w.matter('Alpha');
-    await w.task(a, { dueDate: '2000-01-01' });
-    await w.task(a);
-    const pm = await asUser(w.pm.username);
-    await pm.goto('/my-matters?tab=metrics');
-    await expect(pm.locator('table[data-bd-table="matrix"]')).toBeVisible();
-    // Export is inside the tab's Options menu (issue #911).
-    await pm.locator('[data-panel=breakdown] [data-options-trigger]').click();
-    const download = pm.waitForEvent('download');
-    await pm.locator('[data-panel=breakdown] [data-export=csv]').click();
-    const file = await download;
-    const text = (await (await import('node:fs/promises')).readFile((await file.path())!))
-      .toString('utf8')
-      .replace(/^\uFEFF/, '');
-    const lines = text.split('\r\n').filter(Boolean);
-    expect(lines[0]).toMatch(/^Matter,Matter name,Client,/);
-    expect(lines).toHaveLength(2); // header and the one matter: a single matter has no "All matters" row (issue #911)
-    expect(lines[1]).toContain(a.matterRef);
-    await expect(pm.locator('[data-panel=breakdown] [data-export-status]')).toContainText(
-      'Downloaded 1 row.',
-    );
-    // The browser-side export is audited too (surface, count; no data).
-    await expect
-      .poll(async () =>
-        JSON.stringify(await admin.get('/api/v1/audit/search?eventType=EXPORT_RUN&pageSize=50')),
-      )
-      .toMatch(/Exported 1 rows? of my-matters\.breakdown/);
   });
 });

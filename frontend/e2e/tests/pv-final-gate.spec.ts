@@ -24,7 +24,7 @@ const TABS = [
   {
     tab: 'metrics',
     title: 'My Matters: Metrics - MatterFlow',
-    ready: '[data-bd-table], [data-bd-cards]',
+    ready: 'mf-mm-metrics-work .card',
   },
   { tab: 'activity', title: 'My Matters: Activity - MatterFlow', ready: 'mf-mm-activity-tab' },
 ] as const;
@@ -131,28 +131,31 @@ test.describe('PM v2 final gate', () => {
     await page.goto('/my-matters');
     await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
 
-    // The Status chips and the Show filter of the grid are plain controls: Tab reaches the chip, Space chooses it, the pressed state follows.
-    const chip = page.locator('mf-mm-task-list [data-key="new"]');
-    await chip.focus();
-    await expect(chip).toBeFocused();
-    await page.keyboard.press('Space');
-    await expect(chip).toHaveAttribute('aria-pressed', 'true');
-    // Choosing the chosen chip again keeps it (a Status is always chosen); All open brings the default back.
-    await page.locator('mf-mm-task-list [data-key="open"]').focus();
-    await page.keyboard.press('Space');
-    await expect(chip).toHaveAttribute('aria-pressed', 'false');
-
-    // A Breakdown cell is a real link: Tab reaches it, Enter follows it to exactly the tasks it counts.
-    await page.goto('/my-matters?tab=metrics');
-    const cell = page.locator('table[data-bd-table="matrix"] a[data-bd-cell]').first();
-    await expect(cell).toBeVisible();
-    await cell.focus();
-    await expect(cell).toBeFocused();
+    // The Filter button is a plain disclosure: Tab reaches it, Enter opens the column filters.
+    const filter = page.locator('[data-filter-toggle]');
+    await filter.focus();
+    await expect(filter).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/tasks\?/);
-    await expect(page.locator('tbody tr[data-task]').first()).toBeVisible();
+    await expect(filter).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Enter');
+    await expect(filter).toHaveAttribute('aria-expanded', 'false');
+
+    // A Metrics number is a button: Tab reaches it, Enter opens the Overview with exactly the filter it counts.
+    await page.goto('/my-matters?tab=metrics');
+    const num = page
+      .locator(
+        'mf-mm-metrics-work [data-drill^="show-"]:not([disabled]), mf-mm-metrics-work [data-drill^="status-"]:not([disabled])',
+      )
+      .first();
+    await expect(num).toBeVisible();
+    await num.focus();
+    await expect(num).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/my-matters\?.*(show|status)=/);
+    await expect(page.locator('mf-mm-task-list')).toBeVisible();
 
     // The Task Queue's Views and Export menus: same rule.
+    await page.goto('/tasks');
     const views = page.locator('[data-views-trigger]');
     await views.focus();
     await page.keyboard.press('Enter');
@@ -195,8 +198,8 @@ test.describe('PM v2 final gate', () => {
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/my-matters?tab=metrics');
-    await expect(page.locator('table[data-bd-table="matrix"]')).toBeVisible();
-    expect(await animations(), 'Breakdown').toBe(0);
+    await expect(page.locator('mf-mm-metrics-work .card').first()).toBeVisible();
+    expect(await animations(), 'Metrics work view').toBe(0);
     await page.goto('/my-matters?tab=metrics&mview=data');
     await expect(page.locator('[data-panel="data"] [data-loading]')).toHaveCount(0);
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);

@@ -463,8 +463,6 @@ export function statusCodes(status: StatusFilter): string[] {
     .urg[aria-pressed='true'] {
       color: var(--mf-text);
       font-weight: 700;
-      text-decoration: underline;
-      text-underline-offset: 3px;
     }
     .fbtn {
       display: inline-flex;
@@ -527,8 +525,6 @@ export function statusCodes(status: StatusFilter): string[] {
       line-height: 24px;
     }
     .ax {
-      display: grid;
-      place-items: center;
       width: 24px;
       height: 24px;
       padding: 0;
@@ -553,30 +549,18 @@ export function statusCodes(status: StatusFilter): string[] {
     .fr .srch .pi {
       position: absolute;
       left: var(--mf-s3);
-      top: 50%;
-      transform: translateY(-50%);
+      top: 9px;
       color: var(--mf-text-muted);
-    }
-    .fr .srch input {
-      box-sizing: border-box;
-      width: 100%;
-      height: var(--mf-ctl-h-sm);
-      padding: 0 var(--mf-s3) 0 32px;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      font-size: var(--mf-fs-sm);
     }
     .rng {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s2);
-      color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .rng input {
+    .rng input,
+    .fr .srch input {
+      box-sizing: border-box;
       height: var(--mf-ctl-h-sm);
       padding: 0 var(--mf-s2);
       border: 1px solid var(--mf-border-strong);
@@ -584,6 +568,11 @@ export function statusCodes(status: StatusFilter): string[] {
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
+      font-size: var(--mf-fs-sm);
+    }
+    .fr .srch input {
+      width: 100%;
+      padding-left: 32px;
     }
     .msg {
       margin: var(--mf-s5) var(--mf-s4);
@@ -629,10 +618,6 @@ export function statusCodes(status: StatusFilter): string[] {
       min-width: 0;
       flex: 1 1 auto;
     }
-    .cell > mf-priority-pill,
-    .ppl {
-      flex: none;
-    }
     .av {
       display: grid;
       place-items: center;
@@ -656,7 +641,6 @@ export function statusCodes(status: StatusFilter): string[] {
       font-family: var(--mf-font-mono);
       font-size: var(--mf-fs-xs);
       color: var(--mf-text-muted);
-      margin-right: var(--mf-s1);
     }
     .mt {
       display: block;
@@ -699,7 +683,6 @@ export function statusCodes(status: StatusFilter): string[] {
     .due.soon,
     .due.today {
       color: var(--mf-sem-risk-fg);
-      font-weight: 600;
     }
     .rel {
       font-size: var(--mf-fs-xs);

@@ -273,7 +273,7 @@ let nextId = 0;
     }
     .dd-panel {
       position: fixed;
-      z-index: 1100;
+      z-index: 3000;
       display: flex;
       flex-direction: column;
       overflow: hidden;

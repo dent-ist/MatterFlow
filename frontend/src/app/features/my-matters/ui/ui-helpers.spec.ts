@@ -1,7 +1,9 @@
 import { MyMattersTaskItem } from '../../../api/generated/api-client';
 import { gridDays, taskShown } from './calendar-tab';
 import { MatterTree } from './mm-models';
-import { statusCodes } from './task-list';
+import { defaultAssetTypeIcon } from '../../../shared/ui/asset-type-chip';
+import { daysBefore } from './metrics-work';
+import { assigneeParams, dueParams, statusCodes } from './task-list';
 import { treeNodes } from './tree-panel';
 
 describe('task grid filters (UI-13)', () => {
@@ -132,5 +134,56 @@ describe('tree nodes (UI-12)', () => {
 
   it('no data, no nodes', () => {
     expect(treeNodes(null, false)).toEqual([]);
+  });
+});
+
+describe('grid column filters and Metrics helpers (UI-21)', () => {
+  const g = {
+    q: '',
+    priorities: [],
+    assignee: null,
+    due: null,
+    from: null,
+    to: null,
+    types: [],
+    createdFrom: null,
+    createdTo: null,
+  };
+
+  it('the Due presets become date ranges from today', () => {
+    expect(dueParams({ ...g, due: 'overdue' }, '2026-11-10')).toEqual({ dueTo: '2026-11-09' });
+    expect(dueParams({ ...g, due: 'today' }, '2026-11-10')).toEqual({
+      dueFrom: '2026-11-10',
+      dueTo: '2026-11-10',
+    });
+    expect(dueParams({ ...g, due: 'week' }, '2026-11-28')).toEqual({
+      dueFrom: '2026-11-28',
+      dueTo: '2026-12-05',
+    });
+    expect(dueParams({ ...g, due: 'month' }, '2026-02-10')).toEqual({
+      dueFrom: '2026-02-01',
+      dueTo: '2026-02-28',
+    });
+    expect(dueParams({ ...g, due: 'range', from: '2026-01-01', to: null }, '2026-02-10')).toEqual({
+      dueFrom: '2026-01-01',
+    });
+    expect(dueParams(g, '2026-02-10')).toEqual({});
+  });
+
+  it('the Assignee filter asks for unassigned tasks or one person', () => {
+    expect(assigneeParams({ ...g, assignee: 'none' })).toEqual({ unassigned: 'true' });
+    expect(assigneeParams({ ...g, assignee: 7 })).toEqual({ assignee: ['7'] });
+    expect(assigneeParams(g)).toEqual({});
+  });
+
+  it('the ageing buckets count back from today', () => {
+    expect(daysBefore('2026-11-10', 7)).toBe('2026-11-03');
+    expect(daysBefore('2026-03-01', 1)).toBe('2026-02-28');
+  });
+
+  it('an asset type without an icon gets a stable default by its name or id', () => {
+    expect(defaultAssetTypeIcon('Custodian mailbox', 4)).toBe('mail-down');
+    expect(defaultAssetTypeIcon('Weird thing', 3)).toBe(defaultAssetTypeIcon('Other thing', 3));
+    expect(defaultAssetTypeIcon(null, null)).toBe('database');
   });
 });

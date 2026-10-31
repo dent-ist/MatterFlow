@@ -24,7 +24,7 @@ async function pageOverflow(page: Page): Promise<{ page: number; main: number }>
 }
 
 test.describe('My Matters: the page', () => {
-  test('title, dropdown row, five tabs, Status chips with counts, default All open and the urgency order', async ({
+  test('title, dropdown row, five tabs, Filter button, default All open and the urgency order', async ({
     seed,
     personas,
     asUser,
@@ -47,11 +47,10 @@ test.describe('My Matters: the page', () => {
       /Metrics/,
       /Activity/,
     ]);
-    // Default: All open, urgency order (no heading marked), the overdue task first.
-    await expect(page.locator('mf-mm-task-list [data-key="open"]')).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    // Default: All open (no column filter), urgency order (no heading marked), the overdue task first; there is no row of status buttons, a Filter button instead.
+    await expect(page.locator('mf-mm-task-list mf-filter-chips')).toHaveCount(0);
+    await expect(page.locator('[data-filter-toggle]')).toBeVisible();
+    await expect(page.locator('[data-filter-count]')).toHaveCount(0);
     const links = page.locator('mf-mm-task-list a[data-task-link]');
     await expect(links.first()).toContainText('Overdue one');
     await expect(
@@ -59,12 +58,13 @@ test.describe('My Matters: the page', () => {
         'mf-mm-task-list th[aria-sort="ascending"], mf-mm-task-list th[aria-sort="descending"]',
       ),
     ).toHaveCount(0);
-    // The count of the chip equals the grid.
-    const chip = await page.locator('mf-mm-task-list [data-key="open"] .n').innerText();
-    await expect(page.locator('mf-mm-task-list .tot')).toHaveText(chip.trim());
+    // The count of the Show dropdown equals the grid.
+    const label = await page.locator('#mm-show').innerText();
+    const n = /\((\d+)\)/.exec(label)?.[1] ?? '';
+    await expect(page.locator('mf-mm-task-list .tot')).toHaveText(n);
   });
 
-  test('Status chip and Show filter combine, and the counts equal what the grid shows after the click', async ({
+  test('column filters (Status dropdown, text) and the Show filter combine, and the counts equal what the grid shows', async ({
     seed,
     personas,
     asUser,
@@ -82,15 +82,21 @@ test.describe('My Matters: the page', () => {
     const label = await page.locator('#mm-show').innerText();
     const n = Number(/\((\d+)\)/.exec(label)?.[1]);
     await expect(page.locator('mf-mm-task-list a[data-task-link]')).toHaveCount(n);
-    await page.locator('mf-mm-task-list [data-key="new"]').click();
+    // The Filter button opens the column filters; Status is a dropdown with counts and several choices; the filters combine with Show and show as chips.
+    await page.locator('[data-filter-toggle]').click();
+    await page.locator('#mm-f-status').click();
+    await page.locator('[role=option][data-value="new"]').click();
+    await page.locator('[data-dd-done]').click();
     await expect(page).toHaveURL(/status=new/);
     await expect(page).toHaveURL(/show=overdue/);
-    // Changing the matter resets both.
-    await page
-      .locator('[data-clear-scope], [data-tree-clear]')
-      .first()
-      .click()
-      .catch(() => undefined);
+    await expect(page.locator('[data-filter-count]')).toHaveText(/1/);
+    await expect(page.locator('[data-active-filters]')).toContainText('Status: New');
+    await page.locator('[data-clear-filters]').click();
+    await expect(page).not.toHaveURL(/status=/);
+    // The task text search narrows by the title.
+    await page.locator('[data-filter-q]').fill('Later');
+    await expect(page).toHaveURL(/q=Later/);
+    await expect(page.locator('mf-mm-task-list a[data-task-link]')).toHaveCount(0); // Later is not overdue: Show and the text combine
   });
 
   test('Client and Matter stay in step, and the tree follows them and collapses to its rail', async ({
@@ -310,6 +316,72 @@ test.describe('My Matters: review round 2 (UI-20)', () => {
     const dialog = page.getByRole('dialog', { name: 'New calendar item' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel('Date')).not.toHaveValue('');
+  });
+});
+
+test.describe('My Matters: review round 3 (UI-21)', () => {
+  test('a client row of the tree is always selectable, even with one of its matters chosen', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui15');
+    const a = await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto(`/my-matters?matterId=${a.matterId}`);
+    await expect(page.locator('#mm-matter')).toContainText(a.name);
+    // The tree is on its rail after a choice by address too: open it, pin, then click the client row.
+    await page.locator('mf-mm-tree-panel, mf-mm-tree-rail').first().waitFor();
+    const tree = page.getByRole('tree', { name: 'Clients and matters' });
+    if (!(await tree.count())) await page.locator('[data-tree-expand-rail]').click();
+    await expect(page.locator('[role=treeitem][aria-selected=true]')).toHaveCount(1);
+    const client = tree
+      .getByRole('treeitem')
+      .filter({ hasNot: page.locator('[aria-level="2"]') })
+      .first();
+    await tree.locator('[role=treeitem][aria-level="1"]').first().click();
+    await expect(page).toHaveURL(/clientId=\d+/);
+    await expect(page).not.toHaveURL(/matterId=/);
+    void client;
+    await expect(page.locator('#mm-matter')).toContainText('All matters');
+  });
+
+  test('the calendar item dialog: Client before Matter, the type tiles are a 4 x 2 radio group with arrow keys', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui16');
+    const a = await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    const page = await asUser(w.pm.username);
+    await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
+    await page.locator('[data-add-event]').click();
+    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    await expect(dialog).toBeVisible();
+    const order = await dialog.locator('mf-dropdown button').evaluateAll((b) => b.map((x) => x.id));
+    expect(order.slice(0, 2)).toEqual(['ev-client', 'ev-matter']);
+    await expect(dialog.locator('#ev-matter')).toContainText(a.name);
+    // Client first: choosing the other client drops the matter; the matter list is then that client's; choosing a matter sets its client.
+    await dialog.locator('#ev-client').click();
+    await page.locator('[role=option]').filter({ hasText: 'Other' }).first().click();
+    await expect(dialog.locator('#ev-matter')).toContainText('Choose a matter');
+    await dialog.locator('#ev-matter').click();
+    await page.getByRole('combobox', { name: 'Search matters', exact: true }).fill('Beta');
+    await page.locator('[role=option]').filter({ hasText: 'Beta' }).first().click();
+    await expect(dialog.locator('#ev-client')).toContainText('Other');
+    const tiles = dialog.locator('.tg input[type=radio]');
+    await expect(tiles).toHaveCount(8);
+    await tiles.first().focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(tiles.nth(1)).toBeChecked();
+    expect(
+      await dialog
+        .locator('.tg')
+        .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length),
+    ).toBe(4);
   });
 });
 
