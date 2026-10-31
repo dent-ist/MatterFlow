@@ -164,4 +164,49 @@ test.describe('My Matters QA: calendar item permissions', () => {
     });
     expect(okApi.status()).toBe(201);
   });
+
+  test('a person who manages matters but cannot edit matters, on All matters, who tries to add an item to a matter they do not manage, is told no (not silently ignored)', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'qa5');
+    const mine = await w.matter('Mine');
+    const notMine = await w.matter('NotMine', w.other, null);
+    const lead = await personas.create({
+      label: 'qa5-lead',
+      permissions: [
+        'Task.View',
+        'Matter.View',
+        'Matter.BeManager',
+        'Matter.AssignManagers',
+        'Client.View',
+      ],
+    });
+    await seed.admin.put(`/api/v1/matters/${mine.matterId}/managers`, {
+      primaryManagerId: lead.userId,
+      secondaryManagerId: null,
+      rowVersion: (await seed.admin.get(`/api/v1/matters/${mine.matterId}`))['rowVersion'],
+    });
+    const page = await asUser(lead.username);
+    await page.goto(
+      `/my-matters?scope=all&tab=calendar&month=${inDays(2).slice(0, 7)}&matterId=${notMine.matterId}`,
+    );
+    await settle(page);
+    const add = page.locator('[data-add-event]');
+    if ((await add.getAttribute('aria-disabled')) === 'true') return; // the page already says no
+    await add.click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Court hearing').check({ force: true });
+    await dialog.getByLabel('Title').fill('Should be refused');
+    await dialog.getByLabel('Date').fill(inDays(2));
+    await dialog.getByRole('button', { name: 'Add item' }).click();
+    // Either the dialog stays with a message in words, or a toast says it was refused; the item never appears.
+    await expect(
+      page
+        .getByRole('alert')
+        .filter({ hasText: /manage|permission|not allowed|refused/i })
+        .first(),
+    ).toBeVisible();
+  });
 });
