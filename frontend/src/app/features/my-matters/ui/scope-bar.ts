@@ -139,6 +139,9 @@ import { MmTreePanel } from './tree-panel';
       height: min(520px, 70dvh);
     }
     .new {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
       margin-left: auto;
       flex: none;
     }

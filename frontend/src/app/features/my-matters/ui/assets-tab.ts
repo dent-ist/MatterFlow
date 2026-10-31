@@ -255,7 +255,7 @@ const HEADS = [
               <dd>{{ d.createdAtUtc | mfDate }} by {{ d.createdByName }}</dd>
               <dt>Updated</dt>
               <dd>{{ d.updatedAtUtc ? (d.updatedAtUtc | mfDate) : 'Never' }}</dd>
-              @if (d.sizeValue !== null) {
+              @if (d.sizeValue) {
                 <dt>Size</dt>
                 <dd>{{ d.sizeValue }} {{ d.sizeUnit }}</dd>
               }

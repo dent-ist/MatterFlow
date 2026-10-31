@@ -1,33 +1,14 @@
 import { MyMattersTaskItem } from '../../../api/generated/api-client';
 import { gridDays, taskShown } from './calendar-tab';
 import { MatterTree } from './mm-models';
-import { statusShowParams } from './task-list';
+import { statusCodes } from './task-list';
 import { treeNodes } from './tree-panel';
 
 describe('task grid filters (UI-13)', () => {
-  it('All open and Everything ask for the three open statuses and nothing else', () => {
-    expect(statusShowParams('open', 'everything', 1)).toEqual({
-      status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-    });
-  });
-
-  it('Overdue, At risk and Due in 7 days never include On Hold', () => {
-    const p = statusShowParams('open', 'overdue', 1);
-    expect(p['status']).toEqual(['NEW', 'IN_PROGRESS']);
-    expect(p['overdue']).toBe('true');
-    expect(statusShowParams('hold', 'overdue', 1)['status']).toEqual([]);
-    expect(statusShowParams('open', 'risk', 1)['atRisk']).toBe('true');
-    expect(statusShowParams('open', 'due7', 1)['dueWithin']).toBe('7');
-  });
-
-  it('Critical and Unassigned apply to every status and combine with the status chip', () => {
-    const c = statusShowParams('completed', 'critical', 7);
-    expect(c['status']).toEqual(['COMPLETED']);
-    expect(c['priority']).toEqual(['7']);
-    expect(statusShowParams('hold', 'unassigned', 1)).toEqual({
-      status: ['ON_HOLD'],
-      unassigned: 'true',
-    });
+  it('each Status chip asks for its statuses; All open is the three open ones', () => {
+    expect(statusCodes('open')).toEqual(['NEW', 'IN_PROGRESS', 'ON_HOLD']);
+    expect(statusCodes('hold')).toEqual(['ON_HOLD']);
+    expect(statusCodes('completed')).toEqual(['COMPLETED']);
   });
 });
 

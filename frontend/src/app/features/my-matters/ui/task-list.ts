@@ -10,7 +10,6 @@ import {
 } from '@angular/core';
 import { RouterLink, convertToParamMap } from '@angular/router';
 import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
-import { LookupStore } from '../../../core/lookups/lookup-store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { describeDueCell } from '../../../core/time/time';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
@@ -19,6 +18,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { PriorityPill } from '../../../shared/ui/priority-pill';
 import { StatusChip } from '../../../shared/ui/status-chip';
 import { parseQueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
+import { MyMattersFocus } from '../focus';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
@@ -28,43 +28,11 @@ export const GRID_PAGE_SIZE = 25;
 const DEFAULT_SORT = 'attention';
 const DESC_FIRST = new Set(['created', 'updated', 'completed', 'closed']);
 
-/** The query parameters of the task queue for the Status chips and the Show filter (the Show rules of contract 4.1). */
-export function statusShowParams(
-  status: StatusFilter,
-  show: ShowFilter,
-  criticalPriorityId: number | null,
-): Record<string, string | string[]> {
-  const codes = STATUS_FILTERS.find((s) => s.key === status)?.codes ?? [
-    'NEW',
-    'IN_PROGRESS',
-    'ON_HOLD',
+/** The statuses the Status chip asks for (the Show rules, with their own status limits, are applied by the server through `show`). */
+export function statusCodes(status: StatusFilter): string[] {
+  return [
+    ...(STATUS_FILTERS.find((s) => s.key === status)?.codes ?? ['NEW', 'IN_PROGRESS', 'ON_HOLD']),
   ];
-  // Overdue, At risk and Due in 7 days only ever apply to New and In Progress tasks (an On Hold task is never overdue).
-  const activeOnly = ['NEW', 'IN_PROGRESS'];
-  const params: Record<string, string | string[]> = { status: [...codes] };
-  switch (show) {
-    case 'overdue':
-      params['overdue'] = 'true';
-      params['status'] = codes.filter((c) => activeOnly.includes(c));
-      break;
-    case 'risk':
-      params['atRisk'] = 'true';
-      params['status'] = codes.filter((c) => activeOnly.includes(c));
-      break;
-    case 'due7':
-      params['dueWithin'] = '7';
-      params['status'] = codes.filter((c) => activeOnly.includes(c));
-      break;
-    case 'unassigned':
-      params['unassigned'] = 'true';
-      break;
-    case 'critical':
-      if (criticalPriorityId !== null) params['priority'] = [String(criticalPriorityId)];
-      break;
-    default:
-      break;
-  }
-  return params;
 }
 
 /**
@@ -500,8 +468,8 @@ export class MmTaskList {
 
   protected readonly pageSize = GRID_PAGE_SIZE;
   private readonly queue = inject(TaskQueueClient);
+  private readonly focus = inject(MyMattersFocus);
   private readonly api = inject(MmApi);
-  private readonly lookups = inject(LookupStore);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
 
@@ -517,11 +485,6 @@ export class MmTaskList {
   protected readonly sort = computed(() => this.chosen()?.field ?? DEFAULT_SORT);
   protected readonly dir = computed(() => this.chosen()?.dir ?? 'asc');
 
-  private readonly criticalId = computed(() => {
-    const ps = this.lookups.priorities();
-    return (ps.find((p) => p.label.toLowerCase() === 'critical') ?? ps[0])?.id ?? null;
-  });
-
   private readonly baseParams = computed(() => {
     const a = commonArgs(this.filters());
     return {
@@ -530,7 +493,8 @@ export class MmTaskList {
       ...(a.role === undefined ? {} : { role: a.role }),
       ...(a.clientId === undefined ? {} : { client: String(a.clientId) }),
       ...(a.matterId === undefined ? {} : { matter: String(a.matterId) }),
-      ...statusShowParams(this.status(), this.show(), this.criticalId()),
+      status: statusCodes(this.status()),
+      ...(this.focus.types().length > 0 ? { type: this.focus.types().map(String) } : {}),
     } as Record<string, string | string[]>;
   });
 
@@ -555,6 +519,7 @@ export class MmTaskList {
           page: this.page(),
           pageSize: GRID_PAGE_SIZE,
         }),
+        this.show() === 'everything' ? undefined : this.show(),
       );
     },
   );

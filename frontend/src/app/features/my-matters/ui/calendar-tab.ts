@@ -15,6 +15,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatDateOnly } from '../../../core/time/time';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
 import { MmFilters, commonArgs } from '../my-matters-filters';
+import { MyMattersFocus } from '../focus';
 import { monthOf, monthTitle, shiftMonth, todayText } from '../calendar-month';
 import { panelLoader } from '../panel-loader';
 import { MmEventDialog } from './event-dialog';
@@ -672,6 +673,7 @@ export class MmCalendarTab {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly api = inject(MmApi);
   private readonly my = inject(MyMattersClient);
+  private readonly focus = inject(MyMattersFocus);
   private readonly auth = inject(AuthStore);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
@@ -726,13 +728,14 @@ export class MmCalendarTab {
     },
   );
   protected readonly tasks = panelLoader(
-    () => [this.filters(), this.shown()],
+    () => [this.filters(), this.shown(), this.focus.types()],
     () => {
       const a = commonArgs(this.filters());
+      const types = this.focus.types();
       return this.my.getMyMattersCalendar(
         this.shown(),
         undefined,
-        undefined,
+        types.length > 0 ? types : undefined,
         a.scope,
         a.role,
         a.clientId,

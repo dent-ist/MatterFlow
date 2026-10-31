@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ViewStateService } from '../../core/views/view-state.service';
+import { focusLabel } from './focus-control';
 import { MyMattersFocus, focusFromState } from './focus';
 
 describe('Focus (PV-07)', () => {
@@ -7,6 +8,15 @@ describe('Focus (PV-07)', () => {
     expect(focusFromState(null)).toEqual([]);
     expect(focusFromState({ types: 'x' })).toEqual([]);
     expect(focusFromState({ types: [3, 'a', -1, 3, 2.5, 5] })).toEqual([3, 5]);
+  });
+
+  it('names the chosen types in the chip, a type nobody knows by its number', () => {
+    const options = [
+      { id: 1, name: 'Intake', iconKey: 'x', colourKey: undefined, active: true },
+      { id: 2, name: 'Production', iconKey: 'x', colourKey: undefined, active: true },
+    ];
+    expect(focusLabel([1, 2], options)).toBe('Focus: Intake, Production');
+    expect(focusLabel([9], options)).toBe('Focus: Task type 9');
   });
 
   describe('the store', () => {

@@ -21,7 +21,7 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { LoadGroup, panelLoader } from '../panel-loader';
 import { MmActivityTab } from './activity-tab';
 import { MmApi } from './mm-api';
-import { InterimMmApi } from './mm-api-interim';
+import { GeneratedMmApi } from './mm-api-generated';
 import { MmAssetsTab } from './assets-tab';
 import { MmCalendarTab } from './calendar-tab';
 import { MmLayout } from './mm-layout';
@@ -30,6 +30,10 @@ import { MmMetricsTab } from './metrics-tab';
 import { MmNewMenu } from './new-menu';
 import { MmOverview } from './overview';
 import { MmWorkflowBar } from './workflow-bar';
+import { OptionsMenu } from '../../../shared/ui/options-menu';
+import { ScopeSwitch } from '../../../shared/scope/scope-switch';
+import { FocusChip, FocusControl } from '../focus-control';
+import { MyMattersFocus } from '../focus';
 import { MmScopeBar } from './scope-bar';
 import { MmTreePanel, MmTreeRail } from './tree-panel';
 
@@ -53,12 +57,16 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     MmOverview,
     MmScopeBar,
     MmWorkflowBar,
+    FocusChip,
+    FocusControl,
+    OptionsMenu,
+    ScopeSwitch,
     MmTreePanel,
     MmTreeRail,
     RouterLink,
     Tabs,
   ],
-  providers: [MmScopeStore, MmLayout, LoadGroup, { provide: MmApi, useExisting: InterimMmApi }],
+  providers: [MmScopeStore, MmLayout, LoadGroup, { provide: MmApi, useExisting: GeneratedMmApi }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -197,6 +205,26 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
         (pickedMatter)="pickMatter($event)"
         (clear)="clear()"
       >
+        <mf-options-menu
+          label="My Matters"
+          [wide]="true"
+          [active]="optionsActive()"
+          (opened)="focusList.reset()"
+          data-mm-options
+        >
+          @if (scope.canAll()) {
+            <div data-options-pick>
+              <mf-scope-switch
+                [scope]="scope.filters().scope"
+                [canAll]="scope.canAll()"
+                allLabel="All matters"
+                description="Mine: the matters you manage as primary or secondary project manager. All matters: every active matter, whoever manages it."
+                (scopeChange)="setScope($event)"
+              />
+            </div>
+          }
+          <mf-mm-focus #focusList />
+        </mf-options-menu>
         <mf-mm-new-menu
           [tab]="scope.tab()"
           [matterId]="scope.matterId()"
@@ -205,6 +233,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
           (created)="refresh.update((n) => n + 1)"
         />
       </mf-mm-scope-bar>
+      <mf-mm-focus-chip />
       <div class="sr" role="status" aria-live="polite" data-live>{{ announce() }}</div>
       <div class="sr" role="status" aria-live="polite">{{ layout.announcement() }}</div>
 
@@ -340,6 +369,10 @@ export class MyMattersPage {
   private readonly injector = inject(Injector);
   private readonly work = viewChild<ElementRef<HTMLElement>>('work');
 
+  protected readonly focus = inject(MyMattersFocus);
+  protected readonly optionsActive = computed(
+    () => (this.focus.types().length > 0 ? 1 : 0) + (this.scope.filters().scope === 'all' ? 1 : 0),
+  );
   protected readonly refresh = signal(0);
   protected readonly announce = signal('');
 
@@ -392,6 +425,7 @@ export class MyMattersPage {
   });
 
   constructor() {
+    this.focus.ensure();
     // The matters of the tree decide whether there is anything to browse (none or one: no tree).
     effect(() => {
       const n = this.tree.data()?.matterCount;
@@ -459,6 +493,10 @@ export class MyMattersPage {
   protected pickMatter(e: { matterId: number | null; clientId: number | null }): void {
     this.scope.setMatter(e.matterId, e.clientId);
     if (e.matterId !== null) this.layout.chosen();
+  }
+
+  protected setScope(scope: 'mine' | 'all'): void {
+    this.scope.go({ scope: scope === 'all' ? 'all' : null, managerId: null, page: null });
   }
 
   protected clear(): void {

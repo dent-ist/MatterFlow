@@ -193,8 +193,8 @@ export interface AssetDetail extends AssetRow {
   description: string | null;
   externalReference: string | null;
   createdByName: string;
-  sizeValue: number | null;
-  sizeUnit: string | null;
+  sizeValue?: number | null;
+  sizeUnit?: string | null;
   linkedTasks: LinkedTask[];
 }
 
