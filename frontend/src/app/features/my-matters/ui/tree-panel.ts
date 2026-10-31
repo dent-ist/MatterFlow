@@ -155,9 +155,9 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       height: 100%;
       min-height: 0;
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
       overflow: hidden;
     }
     .hd {
@@ -180,7 +180,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       height: 32px;
       padding: 0;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       cursor: pointer;
@@ -213,7 +213,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       min-height: 36px;
       padding: 0 var(--mf-s3) 0 34px;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -269,7 +269,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: var(--mf-active, var(--mf-success));
+      background: var(--mf-active);
       margin-right: 4px;
     }
     .legend .d.q {
@@ -286,7 +286,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       white-space: nowrap;
     }
     :host(.pop) .card {
-      box-shadow: var(--mf-shadow-2);
+      box-shadow: var(--mf-shadow-pop);
     }
   `,
 })
@@ -401,9 +401,9 @@ export class MmTreePanel {
       height: 100%;
       padding: var(--mf-s2) 0 var(--mf-s3);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
     }
     .ib {
       display: grid;
@@ -412,7 +412,7 @@ export class MmTreePanel {
       height: 36px;
       padding: 0;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       cursor: pointer;

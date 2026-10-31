@@ -50,16 +50,16 @@ const PILLS: Readonly<Record<PillKind, { icon: string; label: string }>> = {
       --p-fg: var(--mf-pr-high-fg);
     }
     .pill[data-kind='hold'] {
-      --p-bg: var(--mf-st-hold-bg);
-      --p-fg: var(--mf-st-hold-fg);
+      --p-bg: var(--mf-status-hold-bg);
+      --p-fg: var(--mf-status-hold-fg);
     }
     .pill[data-kind='risk'] {
-      --p-bg: var(--mf-warning-bg);
-      --p-fg: var(--mf-due-soon);
+      --p-bg: var(--mf-sem-risk-bg);
+      --p-fg: var(--mf-sem-risk-fg);
     }
     .pill[data-kind='overdue'] {
-      --p-bg: var(--mf-danger-bg);
-      --p-fg: var(--mf-due-overdue);
+      --p-bg: var(--mf-sem-overdue-bg);
+      --p-fg: var(--mf-sem-overdue-fg);
     }
   `,
 })

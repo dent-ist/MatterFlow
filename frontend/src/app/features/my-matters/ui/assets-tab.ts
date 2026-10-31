@@ -373,7 +373,7 @@ const HEADS = [
       min-height: 36px;
       padding: 0 var(--mf-s3) 0 34px;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -399,7 +399,7 @@ const HEADS = [
       min-height: 32px;
       padding: 0 var(--mf-s2);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -507,20 +507,20 @@ const HEADS = [
       color: var(--a-fg);
     }
     .ast[data-status='ACTIVE'] {
-      --a-bg: var(--mf-success-bg);
-      --a-fg: var(--mf-success);
+      --a-bg: var(--mf-sem-healthy-bg);
+      --a-fg: var(--mf-sem-healthy-fg);
     }
     .ast[data-status='INACTIVE'] {
       --a-bg: var(--mf-surface-alt);
       --a-fg: var(--mf-text-muted);
     }
     .ast[data-status='PENDING_DISPOSITION'] {
-      --a-bg: var(--mf-warning-bg);
-      --a-fg: var(--mf-warning);
+      --a-bg: var(--mf-sem-risk-bg);
+      --a-fg: var(--mf-sem-risk-fg);
     }
     .ast[data-status='DISPOSED'] {
-      --a-bg: var(--mf-st-cancel-bg);
-      --a-fg: var(--mf-st-cancel-fg);
+      --a-bg: var(--mf-status-cancel-bg);
+      --a-fg: var(--mf-status-cancel-fg);
     }
     .tt {
       table-layout: fixed;
@@ -570,9 +570,9 @@ const HEADS = [
       overflow: auto;
       padding: var(--mf-s3) var(--mf-s4);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
     }
     .sh {
       display: flex;
@@ -632,7 +632,7 @@ const HEADS = [
     .cm {
       margin: var(--mf-s1) 0 0;
       padding: var(--mf-s2) var(--mf-s3);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface-alt);
       font-size: var(--mf-fs-sm);
     }
@@ -640,7 +640,7 @@ const HEADS = [
       display: block;
     }
     .od {
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
       font-weight: 700;
     }
     .sr {

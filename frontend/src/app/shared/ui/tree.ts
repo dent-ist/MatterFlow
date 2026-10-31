@@ -127,7 +127,7 @@ export function filterTree(nodes: readonly TreeNode[], text: string): TreeNode[]
       gap: var(--mf-s2);
       min-height: 32px;
       padding: 2px var(--mf-s2) 2px calc(var(--mf-s2) + var(--lvl, 0) * var(--mf-s5));
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       color: var(--mf-text);
       cursor: pointer;
       font-size: var(--mf-fs-sm);
@@ -155,7 +155,7 @@ export function filterTree(nodes: readonly TreeNode[], text: string): TreeNode[]
       height: 9px;
       flex: none;
       border-radius: 50%;
-      background: var(--mf-active, var(--mf-success));
+      background: var(--mf-active);
     }
     .dot.quiet {
       background: transparent;
@@ -179,7 +179,7 @@ export function filterTree(nodes: readonly TreeNode[], text: string): TreeNode[]
       align-items: center;
       gap: 2px;
       flex: none;
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }

@@ -253,9 +253,9 @@ const UPCOMING_DAYS = 14;
       flex-direction: column;
       min-height: 0;
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
       overflow: hidden;
     }
     .ev {
@@ -365,29 +365,29 @@ const UPCOMING_DAYS = 14;
       place-items: center;
       width: 28px;
       height: 28px;
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--k-bg);
       color: var(--k-fg);
     }
     .ki[data-tone='info'] {
-      --k-bg: var(--mf-info-bg);
-      --k-fg: var(--mf-info);
+      --k-bg: var(--mf-sem-info-bg);
+      --k-fg: var(--mf-sem-info-fg);
     }
     .ki[data-tone='accent'] {
-      --k-bg: var(--mf-st-progress-bg);
-      --k-fg: var(--mf-st-progress-fg);
+      --k-bg: var(--mf-status-progress-bg);
+      --k-fg: var(--mf-status-progress-fg);
     }
     .ki[data-tone='neutral'] {
       --k-bg: var(--mf-surface-alt);
       --k-fg: var(--mf-text-muted);
     }
     .ki[data-tone='danger'] {
-      --k-bg: var(--mf-danger-bg);
+      --k-bg: var(--mf-sem-overdue-bg);
       --k-fg: var(--mf-danger);
     }
     .ki[data-tone='warning'] {
-      --k-bg: var(--mf-warning-bg);
-      --k-fg: var(--mf-warning);
+      --k-bg: var(--mf-sem-risk-bg);
+      --k-fg: var(--mf-sem-risk-fg);
     }
     .cf {
       flex: none;

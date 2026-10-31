@@ -72,13 +72,13 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
       place-items: center;
       width: 28px;
       height: 28px;
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
       color: var(--mf-surface);
     }
     h1 {
       margin: 0;
-      font-size: var(--mf-fs-h1-compact, 19px);
+      font-size: var(--mf-fs-title);
       font-weight: 600;
       line-height: 1.2;
     }
@@ -107,15 +107,15 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
       align-items: flex-start;
       padding: var(--mf-s5);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
     }
     .banner {
       margin-top: var(--mf-s3);
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-danger);
-      border-radius: var(--mf-radius-lg, 8px);
-      background: var(--mf-danger-bg);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-sem-overdue-bg);
     }
     .sr {
       position: absolute;

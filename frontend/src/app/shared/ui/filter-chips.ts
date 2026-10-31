@@ -86,7 +86,7 @@ export interface FilterChip {
     .chip[aria-pressed='true'] {
       background: var(--mf-primary);
       border-color: var(--mf-primary);
-      color: var(--mf-primary-contrast, var(--mf-surface));
+      color: var(--mf-primary-contrast);
     }
     .chip[aria-pressed='true'] .n {
       color: inherit;

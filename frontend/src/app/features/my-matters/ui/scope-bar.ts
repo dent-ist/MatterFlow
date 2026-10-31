@@ -111,7 +111,7 @@ import { MmTreePanel } from './tree-panel';
       min-height: 36px;
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;

@@ -70,9 +70,9 @@ import { MetricsView } from './mm-scope';
       height: 100%;
       min-height: 300px;
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
       overflow: hidden;
     }
     .hd {
@@ -92,7 +92,7 @@ import { MetricsView } from './mm-scope';
     .seg {
       display: inline-flex;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       overflow: hidden;
     }
     .seg button {
@@ -110,7 +110,7 @@ import { MetricsView } from './mm-scope';
     }
     .seg button[aria-pressed='true'] {
       background: var(--mf-primary);
-      color: var(--mf-primary-contrast, var(--mf-surface));
+      color: var(--mf-primary-contrast);
     }
     .body {
       flex: 1 1 0;

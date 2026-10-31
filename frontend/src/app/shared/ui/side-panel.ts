@@ -124,9 +124,9 @@ export interface SideSection {
       height: 100%;
       padding: var(--mf-s2) 0;
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
       box-sizing: border-box;
     }
     .tgl,
@@ -138,7 +138,7 @@ export interface SideSection {
       height: 36px;
       padding: 0;
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       cursor: pointer;

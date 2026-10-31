@@ -211,7 +211,7 @@ const PAGE_SIZE = 25;
       min-height: 32px;
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -296,24 +296,24 @@ const PAGE_SIZE = 25;
       color: var(--k-fg);
     }
     .kind[data-tone='info'] {
-      --k-bg: var(--mf-info-bg);
-      --k-fg: var(--mf-info);
+      --k-bg: var(--mf-sem-info-bg);
+      --k-fg: var(--mf-sem-info-fg);
     }
     .kind[data-tone='accent'] {
-      --k-bg: var(--mf-st-progress-bg);
-      --k-fg: var(--mf-st-progress-fg);
+      --k-bg: var(--mf-status-progress-bg);
+      --k-fg: var(--mf-status-progress-fg);
     }
     .kind[data-tone='neutral'] {
       --k-bg: var(--mf-surface-alt);
       --k-fg: var(--mf-text-muted);
     }
     .kind[data-tone='danger'] {
-      --k-bg: var(--mf-danger-bg);
+      --k-bg: var(--mf-sem-overdue-bg);
       --k-fg: var(--mf-danger);
     }
     .kind[data-tone='warning'] {
-      --k-bg: var(--mf-warning-bg);
-      --k-fg: var(--mf-warning);
+      --k-bg: var(--mf-sem-risk-bg);
+      --k-fg: var(--mf-sem-risk-fg);
     }
     .sr {
       position: absolute;

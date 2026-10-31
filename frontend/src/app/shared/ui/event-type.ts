@@ -106,7 +106,7 @@ export function eventType(id: string | null | undefined): EventTypeDef {
       min-width: 0;
       color: var(--e-fg);
       background: var(--e-bg);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       padding: var(--mf-s1);
     }
     .e.chip {
@@ -128,35 +128,35 @@ export function eventType(id: string | null | undefined): EventTypeDef {
       white-space: nowrap;
     }
     .e[data-type='court'] {
-      --e-fg: var(--mf-event-court);
+      --e-fg: var(--mf-event-court-fg);
       --e-bg: var(--mf-event-court-bg);
     }
     .e[data-type='trial'] {
-      --e-fg: var(--mf-event-trial);
+      --e-fg: var(--mf-event-trial-fg);
       --e-bg: var(--mf-event-trial-bg);
     }
     .e[data-type='deposition'] {
-      --e-fg: var(--mf-event-deposition);
+      --e-fg: var(--mf-event-deposition-fg);
       --e-bg: var(--mf-event-deposition-bg);
     }
     .e[data-type='production'] {
-      --e-fg: var(--mf-event-production);
+      --e-fg: var(--mf-event-production-fg);
       --e-bg: var(--mf-event-production-bg);
     }
     .e[data-type='filing'] {
-      --e-fg: var(--mf-event-filing);
+      --e-fg: var(--mf-event-filing-fg);
       --e-bg: var(--mf-event-filing-bg);
     }
     .e[data-type='mediation'] {
-      --e-fg: var(--mf-event-mediation);
+      --e-fg: var(--mf-event-mediation-fg);
       --e-bg: var(--mf-event-mediation-bg);
     }
     .e[data-type='meeting'] {
-      --e-fg: var(--mf-event-meeting);
+      --e-fg: var(--mf-event-meeting-fg);
       --e-bg: var(--mf-event-meeting-bg);
     }
     .e[data-type='other'] {
-      --e-fg: var(--mf-event-other);
+      --e-fg: var(--mf-event-other-fg);
       --e-bg: var(--mf-event-other-bg);
     }
   `,

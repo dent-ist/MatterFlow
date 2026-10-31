@@ -284,7 +284,7 @@ export function statusShowParams(
       min-height: 32px;
       padding: 0 var(--mf-s2);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -431,12 +431,12 @@ export function statusShowParams(
       line-height: 1.25;
     }
     .due.overdue {
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
       font-weight: 700;
     }
     .due.soon,
     .due.today {
-      color: var(--mf-due-soon);
+      color: var(--mf-sem-risk-fg);
       font-weight: 600;
     }
     .rel {

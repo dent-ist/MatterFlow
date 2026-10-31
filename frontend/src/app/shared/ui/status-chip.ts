@@ -82,25 +82,25 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
       font-size: var(--mf-fs-xs);
     }
     .chip[data-tone='new'] {
-      --st-bg: var(--mf-st-new-bg);
-      --st-fg: var(--mf-st-new-fg);
-      --st-line: var(--mf-st-new-line, var(--mf-border-strong));
+      --st-bg: var(--mf-status-new-bg);
+      --st-fg: var(--mf-status-new-fg);
+      --st-line: var(--mf-status-new-line, var(--mf-border-strong));
     }
     .chip[data-tone='progress'] {
-      --st-bg: var(--mf-st-progress-bg);
-      --st-fg: var(--mf-st-progress-fg);
+      --st-bg: var(--mf-status-progress-bg);
+      --st-fg: var(--mf-status-progress-fg);
     }
     .chip[data-tone='hold'] {
-      --st-bg: var(--mf-st-hold-bg);
-      --st-fg: var(--mf-st-hold-fg);
+      --st-bg: var(--mf-status-hold-bg);
+      --st-fg: var(--mf-status-hold-fg);
     }
     .chip[data-tone='done'] {
-      --st-bg: var(--mf-st-done-bg);
-      --st-fg: var(--mf-st-done-fg);
+      --st-bg: var(--mf-status-done-bg);
+      --st-fg: var(--mf-status-done-fg);
     }
     .chip[data-tone='cancel'] {
-      --st-bg: var(--mf-st-cancel-bg);
-      --st-fg: var(--mf-st-cancel-fg);
+      --st-bg: var(--mf-status-cancel-bg);
+      --st-fg: var(--mf-status-cancel-fg);
     }
     .bar {
       display: inline-flex;
@@ -112,10 +112,10 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
       width: 6px;
       height: 11px;
       border-radius: 2px;
-      background: var(--mf-st-progress-bg);
+      background: var(--mf-status-progress-bg);
     }
     .bar i.on {
-      background: var(--mf-st-progress-fg);
+      background: var(--mf-status-progress-fg);
     }
     .step {
       color: var(--mf-text-muted);

@@ -340,9 +340,9 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       height: 100%;
       min-height: var(--mf-cal-min, 360px);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-1);
+      box-shadow: var(--mf-shadow-card);
       overflow: hidden;
     }
     .bar {
@@ -374,7 +374,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       min-height: 36px;
       padding: 0 var(--mf-s3);
       border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
       color: var(--mf-text);
       font: inherit;
@@ -389,7 +389,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
     .b.primary {
       background: var(--mf-primary);
       border-color: var(--mf-primary);
-      color: var(--mf-primary-contrast, var(--mf-surface));
+      color: var(--mf-primary-contrast);
     }
     .b.primary[aria-disabled='true'] {
       background: var(--mf-surface-alt);
@@ -409,9 +409,9 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       min-width: 220px;
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2);
+      box-shadow: var(--mf-shadow-pop);
     }
     .chk {
       display: flex;
@@ -434,7 +434,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
       font-weight: 700;
     }
     .grid-wrap {
@@ -542,7 +542,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       color: var(--mf-text-muted);
     }
     .chip.od {
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
       font-weight: 700;
     }
     .more {
@@ -560,9 +560,9 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       overflow: auto;
       padding: var(--mf-s3) var(--mf-s4);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2);
+      box-shadow: var(--mf-shadow-pop);
     }
     .dph {
       display: flex;
@@ -615,7 +615,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       font-weight: 400;
     }
     .od {
-      color: var(--mf-due-overdue);
+      color: var(--mf-sem-overdue-fg);
     }
     .lnk {
       color: var(--mf-link);

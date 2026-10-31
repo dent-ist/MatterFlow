@@ -104,9 +104,9 @@ interface Item {
       min-height: 36px;
       padding: 0 var(--mf-s4);
       border: 1px solid var(--mf-primary);
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
-      color: var(--mf-primary-contrast, var(--mf-surface));
+      color: var(--mf-primary-contrast);
       font: inherit;
       font-weight: 600;
       cursor: pointer;
@@ -124,9 +124,9 @@ interface Item {
       padding: var(--mf-s2);
       list-style: none;
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-xl, 12px);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2);
+      box-shadow: var(--mf-shadow-pop);
     }
     .mi {
       display: flex;
@@ -136,7 +136,7 @@ interface Item {
       box-sizing: border-box;
       padding: var(--mf-s2) var(--mf-s3);
       border: 0;
-      border-radius: var(--mf-radius-lg, 8px);
+      border-radius: var(--mf-radius-lg);
       background: none;
       color: var(--mf-text);
       font: inherit;
