@@ -135,7 +135,7 @@ export function statusCodes(status: StatusFilter): string[] {
           <tbody>
             @for (t of rows(); track t.taskId) {
               <tr [attr.data-task]="t.taskId">
-                <td class="td-t" data-col="title">
+                <td class="td-t" data-cell="title">
                   <a class="lnk" [routerLink]="['/tasks', t.taskId]" data-task-link>
                     <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
                   </a>
@@ -148,7 +148,7 @@ export function statusCodes(status: StatusFilter): string[] {
                     }
                   </span>
                 </td>
-                <td class="c-st" data-col="status">
+                <td class="c-st" data-cell="status">
                   <mf-status-chip
                     [code]="t.status"
                     [stepNumber]="step(t)"
@@ -157,17 +157,17 @@ export function statusCodes(status: StatusFilter): string[] {
                     [detail]="statusDetail(t)"
                   />
                 </td>
-                <td class="c-prio" data-col="priority">
+                <td class="c-prio" data-cell="priority">
                   @if (pill(t); as p) {
                     <mf-priority-pill [kind]="p" [label]="t.priority.label" />
                   } @else {
                     {{ t.priority.label }}
                   }
                 </td>
-                <td class="c-asg" data-col="assignee">
+                <td class="c-asg" data-cell="assignee">
                   {{ t.assignedUser?.displayName ?? t.assignedPod?.name ?? 'Unassigned' }}
                 </td>
-                <td class="c-due" data-col="due">
+                <td class="c-due" data-cell="due">
                   @let d = due(t);
                   <span [class]="'due ' + d.tone" [attr.title]="d.tooltip">
                     @if (d.tone === 'overdue') {
@@ -311,6 +311,9 @@ export function statusCodes(status: StatusFilter): string[] {
     }
     .lnk:hover {
       text-decoration: underline;
+    }
+    .tt {
+      table-layout: fixed;
     }
     .tt td {
       height: 44px;

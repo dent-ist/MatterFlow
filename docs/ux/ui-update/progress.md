@@ -40,6 +40,18 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 2 (My Matters frontend)
 
+### 2026-10-31 second hand-back: generated client, Options menu, real-stack run (refs #961 to #969)
+
+**Changed:** (1) `ui/mm-api-generated.ts` (`GeneratedMmApi`) replaces the interim API and `EmptyMmApi`; the only cast from generated `undefined` to the page models is there; the Show filter now uses the server `show` parameter (`statusShowParams()` is gone). (2) A small Options menu in the title row holds the My matters / All matters switch (only for `Matter.AssignManagers`; `?scope=all` still works) and the Focus checklist (search over 10 types, "Focus: N task types" chip); Focus applies to the grid, the calendar tasks and Breakdown. (3) Real-stack fixes: the grid did not reload when Show changed; Escape did not close the + New menu while focus was on its button; the Browse panel overflowed at 768 px and did not close on Escape; the Metrics scroll region repeated a landmark name; the task table now uses a fixed layout (a long matter name pushed Status and Due off screen); the page bottom gap is 16 px (was 24); Metrics no longer scrolls the page (screen-reader text escaped the frame). (4) Stale specs fixed: `sh-nav-brand` (Pod Work before Tasks, row pitch), `pm5-access`, `pv-final-gate`; new Focus and scope-switch tests in `mm-ui-update.spec.ts`.
+
+**Run on a real stack (fresh SQL container, published API, own ports 5391 and 5392):** `mm-ui-update`, `pm5-access`, `pv-final-gate`, `px6-matrix`, `pv-export`, `pv-task-types-on-hold`, `px3-scope`, `sh-nav-brand`, `sh-landing`, `px3-menu`: 74 passed in the last run; `sensitive-leak-scan` with the sensitive switch on: 9 passed. Demo data (`seed:demo --aged --seed 7`, 200 tasks, 12 matters, 60 assets) seeded for the checks and screenshots (`docs/ux/ui-update/after/`, real stack, admin with `?scope=all`).
+
+**Checked on real data (API, admin, scope all):** the Show counts equal the grid totals (overdue 93, due7 67, critical 6, unassigned 347, risk 0); On Hold is never in Overdue, At risk or Due in 7 days (Unassigned has 11 On Hold, as intended); every Status count equals its grid total; a Status chip combined with a Show filter gives the same count in the counts endpoint and the grid (79 = 79); the feed counts and unread work and `markMyMattersActivitySeen({})` moves the marker (unread 162 to 0). Fit to window on real data: document and `main` do not scroll on Overview, Calendar, Assets, Metrics and Activity at 1366x768, 1920x1080 and 768x1024; every frame ends 16 px above the window bottom. Phone (375) scrolls as a page.
+
+**Cheap checks:** lint (eslint and theme checks), prettier, `ngc`, `tsc` for specs and e2e, unit tests of `shared/ui/building-blocks`, `features/my-matters/**` and `initial-bundle` (127 pass), production build: initial bundle 652.7 kB, no style budget warning from the new files.
+
+**Not done / decisions:** Breakdown numbers still open the Task Queue (the Breakdown links are task-queue query strings with a task type, which the Overview has no chip for; not cheap). Events by role were exercised for the Primary PM only here (create, edit, delete in `mm-ui-update`); the non-manager 403 is covered by Agent 1's backend tests. The calendar day cap, the events of a sensitive matter and the asset detail are covered by the leak scan and the API tests, not by a dedicated e2e. Coverage lost earlier and still not restored: the Overview links into the Task Queue and the old row actions.
+
 ### 2026-10-31 hand-back: UI-10 to UI-18 built, API swap pending (refs #961 to #969)
 
 **Built (all on `ui-update`, frontend only; the backend and the navigation are Agent 1's):**

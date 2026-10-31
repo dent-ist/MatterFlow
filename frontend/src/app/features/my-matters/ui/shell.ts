@@ -152,7 +152,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
         height: 100%;
       }
       mf-fixed-page {
-        padding-bottom: var(--mf-s4);
+        padding-bottom: var(--mf-s2);
       }
       .work {
         display: flex;

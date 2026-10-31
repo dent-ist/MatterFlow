@@ -113,6 +113,7 @@ import { MetricsView } from './mm-scope';
       color: var(--mf-primary-contrast);
     }
     .body {
+      position: relative;
       flex: 1 1 0;
       min-height: 0;
       overflow: auto;

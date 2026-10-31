@@ -334,7 +334,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     await page.goto(`/my-matters?scope=all&clientId=${w.world.client.clientId}`);
     const row = page.locator('mf-mm-task-list tr[data-task]', { hasText: 'Orphan overdue' });
     await expect(row).toBeVisible();
-    await expect(row.locator('td[data-col=due]')).toContainText(/overdue/i);
+    await expect(row.locator('td[data-cell=due]')).toContainText(/overdue/i);
     await expect(row).not.toContainText(/manager/i);
     await shot(page, 'pm5-no-manager');
   });
