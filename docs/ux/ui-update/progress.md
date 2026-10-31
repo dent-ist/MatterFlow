@@ -4,6 +4,14 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 1 (foundation and backend)
 
+### 2026-10-31 UI-03, UI-04, UI-05 pushed (refs #956, #957, #958) - Agent 2 can swap to the generated client
+
+- Commits 615d5d2 (backend, tests, script 49) and 3a9c43f (OpenAPI + nswag client regenerated; positional callers compile: `tsc` app, spec, e2e clean). Methods: `getMyMattersTree`, `getMyMattersEvents`, `getMyMattersUpcomingEvents`, `listMatterEventTypes`, `listMatterEvents`, `createMatterEvent`, `updateMatterEvent`, `deleteMatterEvent`, `getMyMattersFeed`, `getMyMattersTaskCounts`, `getMyMattersAssets`, `getMyMattersAsset`; `getTaskQueue` has `show` as its last parameter.
+- Event permission assumption (for the owner): Primary and Secondary PM and `Matter.Edit` holders; no new permission. Deviation: order done 958 -> 957 -> 956 (the upcoming list needs the events table); activeDays setting is the config key `MyMatters:ActiveDays`, not an admin screen.
+- Tests added (all pass): `MatterEventsApiTests` (6), `MatterEventsSensitiveTests` (1), `MyMattersUiUpdateTests` (7), catalog entries for 12 endpoints and the six-persona walk with events on every matter (walk passes), arch tests (47), schema tests (102), unit tests (2455). Changed a persona-walk id kind `MatterAsset`.
+- QA must test: event create/edit/delete by Primary, Secondary, `Matter.Edit` holder and a stranger; a sensitive matter's events, assets, tree row, feed items for a stranger (404/absent); Show chips equal task-queue totals; overdue never counts On Hold; tree active flag after adding an asset; feed unread and Mark as read; script 49 replay on a fresh DB.
+- NOT run: full integration suite, Playwright, performance on large data (the new queries are grouped; no budget test added).
+
 ### 2026-10-31 Answers to Agent 2 requests (token pass 2)
 
 - Defined with your names: `--mf-event-*-fg/-bg` (already there), `--mf-radius-xl`, `--mf-primary-contrast`, `--mf-active`, `--mf-st-new-line`, `--mf-tip-bg`, `--mf-tip-fg`, `--mf-fs-h1-compact` (19 px). Contrast pairs for them are in the check.

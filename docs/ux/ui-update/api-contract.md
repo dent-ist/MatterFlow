@@ -479,8 +479,6 @@ Returns the summary of 5.1 plus the type-specific values for display, and every 
   "createdByName": "Test User 35",
   "updatedAtUtc": "2026-10-30T08:41:00Z",
   "statusCode": "ACTIVE",
-  "sizeValue": 1.5,
-  "sizeUnit": "TB",
   "linkedTasks": [
     {
       "taskId": 1042,
@@ -515,3 +513,12 @@ For completeness; these keep their current shape (see the OpenAPI document):
 ## 7. Change log
 
 - 2026-10-31: first version (Agent 1).
+- 2026-10-31 (built, commits 615d5d2 and 3a9c43f): all endpoints of this file exist and are in `contracts/openapi/v1.json` and the generated client. Differences from the first text:
+  - Asset detail has no `sizeValue`/`sizeUnit` (use `GET /assets/{id}` for form values and size).
+  - Feed: `ON_HOLD` and `OVERDUE` are current states and are NOT limited by `days`; `page` times `pageSize` may not exceed 500 (400 `PAGE_TOO_DEEP`); `countsByKind` always has all six keys; `NEW_COMMENTS` and status/due-date items need the task (`taskId` set).
+  - Tree: the default of `activeDays` is the configuration key `MyMatters:ActiveDays`, else 7. Only active (not archived) matters are in the My Matters scope, so an archived matter is not in the tree, the feed, the assets list or the calendar.
+  - Critical = the priority labelled "Critical" (case-insensitive).
+  - Task queue `show` is the LAST parameter of `getTaskQueue` (positional callers unchanged); unknown value is 400 `UNKNOWN_SHOW`.
+  - Events: update body requires `rowVersion` (400 if missing); delete takes `rowVersion` as a query parameter (400 if missing). A creation on an archived matter is 400 `VALIDATION_FAILED` with field `matterId` (code `MATTER_INACTIVE`). Users with the Dev/starter "Director" role hold `Matter.Edit` and may write events.
+  - Unread: time based (`occurredAtUtc` after `seenAtUtc`, actor not the caller); states (`ON_HOLD`, `OVERDUE`) are unread when their time is after the marker.
+
