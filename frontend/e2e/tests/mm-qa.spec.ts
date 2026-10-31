@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { inDays, mmWorld } from '../support/my-matters-fixtures';
 import { expect, test } from '../support/fixtures';
+import { ADMIN_USER } from '../support/api';
 
 /**
  * QA of the UI update (epic #953): regression tests for the bugs the exploratory pass found. Each test names the bug it guards.
@@ -208,5 +209,96 @@ test.describe('My Matters QA: calendar item permissions', () => {
         .filter({ hasText: /manage|permission|not allowed|refused/i })
         .first(),
     ).toBeVisible();
+  });
+});
+
+test.describe('My Matters QA: states and focus', () => {
+  test('when the tree request fails the panel says so and Retry brings it back', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'qa6');
+    await w.matter('Alpha');
+    await w.matterInOtherClient('Beta');
+    const page = await asUser(w.pm.username);
+    await page.route('**/api/v1/my-matters/tree*', (r) =>
+      r.fulfill({ status: 500, contentType: 'application/problem+json', body: '{"status":500}' }),
+    );
+    await page.goto('/my-matters');
+    await expect(page.locator('[data-tree-error]')).toBeVisible();
+    await expect(page.getByText('No clients or matters in this view.')).toHaveCount(0);
+    await page.unroute('**/api/v1/my-matters/tree*');
+    await page.locator('[data-tree-retry]').click();
+    await expect(page.getByRole('treeitem').first()).toBeVisible();
+  });
+
+  test('an On Hold task past its date is shown in the plain tone, not as overdue', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'qa7');
+    const a = await w.matter('Alpha');
+    const held = await w.task(a, { title: 'Held and late', dueDate: '2000-01-01' });
+    await seed.admin.post(`/api/v1/tasks/${held['taskId']}/status`, {
+      status: 'ON_HOLD',
+      comment: 'Waiting for the client',
+      rowVersion: held['rowVersion'],
+    });
+    await w.task(a, { title: 'Open and late', dueDate: '2000-01-02' });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    const row = (t: string) => page.locator('mf-mm-task-list tbody tr', { hasText: t });
+    await expect(row('Open and late').locator('[data-cell=due]')).toContainText('overdue');
+    await expect(row('Held and late').locator('[data-cell=due]')).not.toContainText('overdue');
+    await expect(row('Held and late').locator('[data-cell=due] .overdue')).toHaveCount(0);
+  });
+
+  test('focus comes back: the calendar item dialog (Add Event and + New) and the asset panel', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'qa8');
+    const a = await w.matter('Alpha');
+    await seed.asset({ matterId: a.matterId }, 'Focus asset');
+    const page = await asUser(w.pm.username);
+    await page.goto(`/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}`);
+    await settle(page);
+    await page.locator('[data-add-event]').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('[data-add-event]')).toBeFocused();
+    await page.locator('#mm-new-btn').click();
+    await page.getByRole('menuitem', { name: /New calendar item/ }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#mm-new-btn')).toBeFocused();
+    await page.goto('/my-matters?tab=assets');
+    await settle(page);
+    const open = page.locator('[data-open]').first();
+    await open.click();
+    await expect(page.locator('[data-asset-panel]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-asset-panel]')).toHaveCount(0);
+    await expect(open).toBeFocused();
+  });
+
+  test('an administrator on All matters can open the side panel of an asset on a matter they do not manage', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'qa9');
+    const a = await w.matter('Alpha');
+    await seed.asset({ matterId: a.matterId }, 'Admin can open me');
+    const page = await asUser(ADMIN_USER);
+    await page.goto(`/my-matters?scope=all&tab=assets&matterId=${a.matterId}`);
+    await settle(page);
+    await page.locator('[data-open]').first().click();
+    await expect(page.locator('[data-asset-panel]')).toContainText('Admin can open me');
+    await expect(page.locator('[data-asset-panel] [role=alert]')).toHaveCount(0);
   });
 });
