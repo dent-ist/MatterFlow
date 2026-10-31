@@ -256,7 +256,7 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
       await expect(page.locator(id)).toBeFocused();
     }
     // The activity kind is ONE dropdown with counts, not a row of chips.
-    await expect(page.locator('mf-mm-overview mf-filter-chips')).toHaveCount(0);
+    await expect(page.locator('[data-section=activity] mf-filter-chips')).toHaveCount(0);
     // The pin: a different icon and aria-pressed, and the words Unpin / Pin.
     const pin = page.locator('[data-tree-pin]');
     await expect(pin).toHaveAttribute('aria-pressed', 'false');

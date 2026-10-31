@@ -121,7 +121,7 @@ test.describe('My Matters: keyboard', () => {
     await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     // Typing in a filter is typing, not a shortcut.
     await page.locator('#mm-client').click();
-    await page.getByRole('combobox', { name: 'Search clients' }).fill('mg');
+    await page.getByRole('combobox', { name: 'Search clients', exact: true }).fill('mg');
     await expect(page).toHaveURL(/\/my-matters$/);
     await page.keyboard.press('Escape');
     await page.locator('main h1').evaluate((h) => {
@@ -158,12 +158,12 @@ test.describe('My Matters: axe with the menus open', () => {
       await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
       await page.locator('main h1').scrollIntoViewIfNeeded();
       await page.locator('#mm-client').click();
-      await page.getByRole('combobox', { name: 'Search clients' }).fill('E2E');
+      await page.getByRole('combobox', { name: 'Search clients', exact: true }).fill('E2E');
       await expect(page.getByRole('listbox', { name: 'Client' })).toBeVisible();
       expect(await axeViolations(page), `client list at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
       await page.locator('#mm-matter').click();
-      await page.getByRole('combobox', { name: 'Search matters' }).fill('Axe');
+      await page.getByRole('combobox', { name: 'Search matters', exact: true }).fill('Axe');
       await expect(page.getByRole('listbox', { name: 'Matter' })).toBeVisible();
       expect(await axeViolations(page), `matter list at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
