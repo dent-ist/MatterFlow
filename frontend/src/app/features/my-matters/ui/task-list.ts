@@ -911,11 +911,21 @@ export class MmTaskList {
     this.lookups.priorities().map((p) => ({ value: String(p.id), label: p.label })),
   );
   protected readonly prioValues = computed(() => this.grid().priorities.map(String));
-  protected readonly assigneeItems = computed<DropdownItem[]>(() => [
-    { value: '', label: 'Anyone' },
-    { value: 'none', label: 'Unassigned', icon: 'pi-user-minus', tone: 'neutral' as const },
-    ...this.people().map((u) => ({ value: String(u.id), label: u.name })),
-  ]);
+  protected readonly assigneeItems = computed<DropdownItem[]>(() => {
+    const people = this.people().map((u) => ({ value: String(u.id), label: u.name }));
+    const chosen = this.grid().assignee;
+    // A link may carry a person the first 50 of the lookup do not list: keep the choice visible on the button.
+    const extra =
+      typeof chosen === 'number' && !people.some((p) => p.value === String(chosen))
+        ? [{ value: String(chosen), label: 'Selected person' }]
+        : [];
+    return [
+      { value: '', label: 'Anyone' },
+      { value: 'none', label: 'Unassigned', icon: 'pi-user-minus', tone: 'neutral' as const },
+      ...extra,
+      ...people,
+    ];
+  });
   protected readonly assigneeValue = computed(() =>
     this.grid().assignee === null ? '' : String(this.grid().assignee),
   );
@@ -1131,7 +1141,11 @@ export class MmTaskList {
   }
 
   protected due(t: TaskQueueRow) {
-    return describeDueCell(t, this.clock.now(), this.zone, t.status);
+    const cell = describeDueCell(t, this.clock.now(), this.zone, t.status);
+    // On Hold is never overdue on this page (the owner's rule, as in the Overdue chip and its count): the date shows in the plain tone, with no "d overdue" line.
+    return t.status === 'ON_HOLD' && cell.overdue
+      ? { ...cell, tone: 'none' as const, overdue: false, line2: '', daysUntil: undefined }
+      : cell;
   }
 
   /** The hover and focus text of the status chip (hold age and reason, close date, cancel reason). */
