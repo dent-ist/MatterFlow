@@ -4,6 +4,10 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 1 (foundation and backend)
 
+### 2026-10-31 UI-07 (#960) theme adoption guide
+
+- Section 7 of `docs/ux/theme-guide.md`: page checklist, shared components with snippets copied from the My Matters code, ordered page list with estimates (62 h in total), a before/after example. Docs only.
+
 ### 2026-10-31 UI-06 (#959) navigation
 
 - The panel already had the navy look (MM-43/MM-58). Done now: Pod Work before Tasks (supersedes #952), panel width, row height, icon size (`--mf-nav-icon` 19 px), pill radius, rail width and child indent read tokens. The Task Queue keeps its label "Task Queue" ("Tasks" only for the compact menu, as before) to keep existing tests and links; owner may want it renamed. Specs of the layout folder pass (116), initial bundle 652.7 kB.
