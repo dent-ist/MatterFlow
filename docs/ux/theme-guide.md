@@ -107,7 +107,9 @@ To make every overdue indicator (chips, counts, the Overdue feed items, the tree
 | muted text on the page | `--mf-text-muted` #4B5563 | `--mf-bg` #F5F6F8 | 7.0:1 | 4.5:1 |
 | muted text on a card | `--mf-text-muted` #4B5563 | `--mf-surface` #FFFFFF | 7.6:1 | 4.5:1 |
 | link and primary on a card | `--mf-primary` #1F4E9C | `--mf-surface` #FFFFFF | 8.0:1 | 4.5:1 |
-| white text on primary | `--mf-white` #FFFFFF | `--mf-primary` #1F4E9C | 8.0:1 | 4.5:1 |
+| white text on primary | `--mf-primary-contrast` #FFFFFF | `--mf-primary` #1F4E9C | 8.0:1 | 4.5:1 |
+| tooltip text | `--mf-tip-fg` #FFFFFF | `--mf-tip-bg` #1B1F27 | 16.5:1 | 4.5:1 |
+| active-matter dot on a card | `--mf-active` #0F766E | `--mf-surface` #FFFFFF | 5.5:1 | 3:1 |
 | focus ring on the page | `--mf-focus` #B45309 | `--mf-bg` #F5F6F8 | 4.6:1 | 3:1 |
 | focus ring on a card | `--mf-focus` #B45309 | `--mf-surface` #FFFFFF | 5.0:1 | 3:1 |
 | input border on a card | `--mf-border-strong` #6B7280 | `--mf-surface` #FFFFFF | 4.8:1 | 3:1 |

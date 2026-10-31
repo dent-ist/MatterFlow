@@ -4,6 +4,11 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 1 (foundation and backend)
 
+### 2026-10-31 Answers to Agent 2 requests (token pass 2)
+
+- Defined with your names: `--mf-event-*-fg/-bg` (already there), `--mf-radius-xl`, `--mf-primary-contrast`, `--mf-active`, `--mf-st-new-line`, `--mf-tip-bg`, `--mf-tip-fg`, `--mf-fs-h1-compact` (19 px). Contrast pairs for them are in the check.
+- `markMyMattersActivitySeen({})` moves the same `seenAtUtc` marker the new feed uses (confirmed by design in the contract, section 3; I will cover it with a test in UI-03).
+
 ### 2026-10-31 UI-01 (#954) design tokens - Agent 2 can start UI-10
 
 - Tokens are in `docs/ux/tokens.css` (single source, loaded by `angular.json`); guide `docs/ux/theme-guide.md`. New layers: palette `--mf-p-*`, semantic `--mf-sem-{overdue,risk,info,healthy,person,critical,neutral}-{fg,bg,solid,line}`, task status `--mf-status-{new,progress,hold,done,cancel}-{fg,bg,line}`, event types `--mf-event-{court,trial,deposition,production,filing,mediation,meeting,other}-{fg,bg}`, nav geometry `--mf-nav-w/-rail-w/-item-h/-icon`, radius `--mf-radius-md/-xl/-pill`, `--mf-fs-title` (19 px), density `--mf-ctl-h`, `--mf-ctl-h-sm`, `--mf-chip-h`, `--mf-gutter`, shadows `--mf-shadow-card/-pop`.

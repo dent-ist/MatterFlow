@@ -203,6 +203,12 @@
   --mf-toast-error-bg: #FDECEA;    --mf-toast-error-border: #F4B6AE;    --mf-toast-error-fg: #7F1710;    --mf-toast-error-hover: #FADBD7;
   --mf-toast-detail: #1B1F27;
   --mf-white: #FFFFFF;
+  --mf-primary-contrast: var(--mf-white);          /* text on --mf-primary (7.9:1) */
+  --mf-active: var(--mf-p-teal-solid);             /* the "active matter" dot of the tree */
+  --mf-st-new-line: var(--mf-status-new-line);     /* outline of the New status chip (alias requested by UI-10) */
+  --mf-tip-bg: #1B1F27;                            /* tooltip: dark panel, white text 16.0:1 */
+  --mf-tip-fg: #FFFFFF;
+  --mf-fs-h1-compact: var(--mf-fs-title);          /* fixed-page title, 19 px */
   --mf-btn-secondary-border: #6B7280;
 }
 /* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
