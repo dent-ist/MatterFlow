@@ -298,4 +298,47 @@ public sealed class MyMattersUiUpdateTests(SqlServerFixture sql) : MyMattersTest
         foreach (var url in new[] { "assets?sort=comment", "assets?dir=up", "assets?status=GONE", "assets?pageSize=101", "assets?x=1" })
             (await A.GetAsync("/api/v1/my-matters/" + url)).StatusCode.ShouldBe(HttpStatusCode.BadRequest, url);
     }
+
+    // ---- icon and colour of types (UI-22, #973)
+
+    [Fact]
+    public async Task Asset_types_carry_an_icon_and_a_colour_that_the_asset_lists_the_detail_and_the_feed_return()
+    {
+        var bad = await H.Admin.PostAsJsonAsync("/api/v1/asset-types", new { name = "Bad icon", iconKey = "not-an-icon" });
+        bad.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await H.Admin.PostAsJsonAsync("/api/v1/asset-types", new { name = "Bad colour", colourKey = "mauve" })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        var plain = await OkAsync(await H.Admin.PostAsJsonAsync("/api/v1/asset-types", new { name = "Plain type" }), HttpStatusCode.Created);
+        plain.GetProperty("iconKey").ValueKind.ShouldBe(JsonValueKind.Null); // no backfill and no default: the client derives one from the id
+        plain.GetProperty("colourKey").ValueKind.ShouldBe(JsonValueKind.Null);
+
+        var made = await OkAsync(await H.Admin.PostAsJsonAsync("/api/v1/asset-types", new { name = "Laptops", iconKey = "database", colourKey = "teal" }), HttpStatusCode.Created);
+        made.GetProperty("iconKey").GetString().ShouldBe("database");
+        var typeId = made.GetProperty("assetTypeId").GetInt32();
+        var asset = (await OkAsync(await H.Admin.PostAsJsonAsync("/api/v1/assets", new { matterId = M1, assetTypeId = typeId, displayName = "Looked asset" }), HttpStatusCode.Created)).GetProperty("assetId").GetInt32();
+
+        var general = await OkAsync(await H.Admin.GetAsync($"/api/v1/assets/{asset}"));
+        (general.GetProperty("assetTypeIconKey").GetString(), general.GetProperty("assetTypeColourKey").GetString()).ShouldBe(("database", "teal"));
+        var generalList = await OkAsync(await H.Admin.GetAsync($"/api/v1/assets?matterId={M1}"));
+        generalList.GetProperty("items")[0].GetProperty("assetTypeColourKey").GetString().ShouldBe("teal");
+
+        var row = (await Mine("assets")).GetProperty("items").EnumerateArray().Single(i => i.GetProperty("assetId").GetInt32() == asset);
+        (row.GetProperty("assetTypeIconKey").GetString(), row.GetProperty("assetTypeColourKey").GetString()).ShouldBe(("database", "teal"));
+        (await Mine($"assets/{asset}")).GetProperty("assetTypeIconKey").GetString().ShouldBe("database");
+
+        // The update changes and clears them (and audits through the entity).
+        var changed = await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/asset-types/{typeId}", new { name = "Laptops", sortOrder = 10, isActive = true, iconKey = "folder", colourKey = (string?)null, rowVersion = made.GetProperty("rowVersion").GetString() }));
+        changed.GetProperty("iconKey").GetString().ShouldBe("folder");
+        changed.GetProperty("colourKey").ValueKind.ShouldBe(JsonValueKind.Null);
+
+        // The feed: asset items carry the asset type, task items the task type.
+        var feed = await Mine("feed?kind=NEW_ASSETS&kind=OVERDUE");
+        var assetItem = feed.GetProperty("items").EnumerateArray().Single(i => i.GetProperty("kind").GetString() == "NEW_ASSETS");
+        assetItem.GetProperty("typeId").GetInt32().ShouldBe(typeId);
+        assetItem.GetProperty("typeName").GetString().ShouldBe("Laptops");
+        assetItem.GetProperty("typeIconKey").GetString().ShouldBe("folder");
+        var taskItem = feed.GetProperty("items").EnumerateArray().First(i => i.GetProperty("kind").GetString() == "OVERDUE");
+        taskItem.GetProperty("typeName").GetString().ShouldBe("Data Processing");
+        taskItem.GetProperty("typeIconKey").GetString().ShouldNotBeNullOrEmpty();
+    }
 }

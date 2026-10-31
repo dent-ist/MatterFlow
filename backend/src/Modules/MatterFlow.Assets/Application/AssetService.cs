@@ -134,7 +134,7 @@ public sealed class AssetService(
         {
             ordered = from r in ordered
                       join m in matters.SortKeys() on r.Asset.MatterId equals m.MatterId
-                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = m.MatterRef, Linked = r.Linked, Open = r.Open };
+                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIconKey = r.AssetTypeIconKey, AssetTypeColourKey = r.AssetTypeColourKey, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = m.MatterRef, Linked = r.Linked, Open = r.Open };
         }
 
         var countsJoined = order.Any(f => f.Field == "linkedTaskCount") && CanCountTasks;
@@ -143,7 +143,7 @@ public sealed class AssetService(
             ordered = from r in ordered
                       join g in LinkReader!.Grouped() on r.Asset.Id equals g.AssetId into joined
                       from g in joined.DefaultIfEmpty()
-                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = r.MatterRef, Linked = (int?)g.Linked ?? 0, Open = (int?)g.Open ?? 0 };
+                      select new AssetRow { Asset = r.Asset, AssetTypeName = r.AssetTypeName, AssetTypeIconKey = r.AssetTypeIconKey, AssetTypeColourKey = r.AssetTypeColourKey, AssetTypeIsActive = r.AssetTypeIsActive, MatterRef = r.MatterRef, Linked = (int?)g.Linked ?? 0, Open = (int?)g.Open ?? 0 };
         }
 
         if (order.Any(f => f.Field == "size"))
@@ -158,6 +158,8 @@ public sealed class AssetService(
                       {
                           Asset = r.Asset,
                           AssetTypeName = r.AssetTypeName,
+                          AssetTypeIconKey = r.AssetTypeIconKey,
+                          AssetTypeColourKey = r.AssetTypeColourKey,
                           AssetTypeIsActive = r.AssetTypeIsActive,
                           MatterRef = r.MatterRef,
                           Linked = r.Linked,
@@ -212,7 +214,9 @@ public sealed class AssetService(
                 sizes.GetValueOrDefault(row.Asset.Id)?.Bytes,
                 row.Asset.DispositionCode,
                 row.Asset.DispositionChangedAtUtc is { } changed ? AssetSupport.Utc(changed) : null,
-                counts is null ? null : row.Asset.DispositionCode != AssetDisposition.Active && (counts.GetValueOrDefault(row.Asset.Id)?.Open ?? 0) > 0));
+                counts is null ? null : row.Asset.DispositionCode != AssetDisposition.Active && (counts.GetValueOrDefault(row.Asset.Id)?.Open ?? 0) > 0,
+                row.AssetTypeIconKey,
+                row.AssetTypeColourKey));
         }
 
         return AssetSupport.Page(list, total, page);
@@ -674,7 +678,9 @@ public sealed class AssetService(
             row.Asset.DispositionChangedAtUtc is { } changedAt ? AssetSupport.Utc(changedAt) : null,
             changedBy,
             row.Asset.DispositionNote,
-            CanCountTasks ? row.Asset.DispositionCode != AssetDisposition.Active && (counts?.Open ?? 0) > 0 : null);
+            CanCountTasks ? row.Asset.DispositionCode != AssetDisposition.Active && (counts?.Open ?? 0) > 0 : null,
+            row.AssetTypeIconKey,
+            row.AssetTypeColourKey);
     }
 
     /// <summary>The size of an asset: the value of its type's designated size field, its unit and the bytes for the size family.</summary>
@@ -858,7 +864,7 @@ public sealed class AssetService(
     private IQueryable<AssetRow> Rows() =>
         from a in access.Visible(db.Set<Asset>().AsNoTracking())
         join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
-        select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive, MatterRef = string.Empty, Linked = 0, Open = 0 };
+        select new AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIconKey = t.IconKey, AssetTypeColourKey = t.ColourKey, AssetTypeIsActive = t.IsActive, MatterRef = string.Empty, Linked = 0, Open = 0 };
 
     private sealed record FormPlan(FormVersionRef Version, FormSubmissionResult Validated);
 
@@ -867,6 +873,10 @@ public sealed class AssetService(
         public Asset Asset { get; init; } = null!;
 
         public string AssetTypeName { get; init; } = string.Empty;
+
+        public string? AssetTypeIconKey { get; init; }
+
+        public string? AssetTypeColourKey { get; init; }
 
         public bool AssetTypeIsActive { get; init; }
 

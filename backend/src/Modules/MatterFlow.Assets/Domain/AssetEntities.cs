@@ -16,6 +16,12 @@ public class AssetType : AuditedEntity<int>
 
     public int SortOrder { get; set; }
 
+    /// <summary>Key of the type's icon in the shared icon library (<c>contracts/task-type-icons.json</c>); null = the client derives a default from the id.</summary>
+    public string? IconKey { get; set; }
+
+    /// <summary>Name of the type's colour in the shared palette (<c>contracts/task-type-colours.json</c>); null = the client derives a default from the id.</summary>
+    public string? ColourKey { get; set; }
+
     /// <summary>False hides the type from new Assets; existing Assets keep it.</summary>
     public bool IsActive { get; set; } = true;
 

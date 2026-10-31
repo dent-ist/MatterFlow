@@ -14891,6 +14891,18 @@
               "null",
               "boolean"
             ]
+          },
+          "assetTypeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -15423,6 +15435,18 @@
               "null",
               "boolean"
             ]
+          },
+          "assetTypeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -15632,6 +15656,18 @@
             ]
           },
           "sizeUnit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "iconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "colourKey": {
             "type": [
               "null",
               "string"
@@ -17567,6 +17603,22 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "iconKey": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "colourKey": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -20783,6 +20835,18 @@
             "items": {
               "$ref": "#/components/schemas/MyMattersLinkedTask"
             }
+          },
+          "assetTypeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -20857,6 +20921,18 @@
           "openLinkedTaskCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "assetTypeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "assetTypeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -21422,6 +21498,31 @@
               "string"
             ],
             "format": "date"
+          },
+          "typeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "typeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "typeIconKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "typeColourKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -28414,6 +28515,22 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "iconKey": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "colourKey": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "rowVersion": {
             "type": "string"

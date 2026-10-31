@@ -465,6 +465,7 @@ public static class FeedKinds
 /// <param name="DaysOverdue">Whole days past the due date (kind <c>OVERDUE</c>).</param>
 /// <param name="OldDueDate">The due date before (kind <c>DUE_DATE_UPDATED</c>); null = it was ASAP.</param>
 /// <param name="NewDueDate">The due date now; null = it became ASAP.</param>
+/// <param name="TypeId">The task type of a task item, or the asset type of an asset item (UI-22, #973); with <c>TypeName</c>, <c>TypeIconKey</c> (closed icon library) and <c>TypeColourKey</c> (palette name; null = derive a default from the id). Null for items without a type.</param>
 public sealed record MyMattersFeedItem(
     [property: Required] string ItemKey,
     [property: Required] string Kind,
@@ -488,7 +489,11 @@ public sealed record MyMattersFeedItem(
     int? OnHoldDays,
     int? DaysOverdue,
     DateOnly? OldDueDate,
-    DateOnly? NewDueDate);
+    DateOnly? NewDueDate,
+    int? TypeId = null,
+    string? TypeName = null,
+    string? TypeIconKey = null,
+    string? TypeColourKey = null);
 
 /// <summary>
 /// The recent activity feed of the scope, newest first (UI-03, #956; docs/ux/ui-update/api-contract.md section 3).
@@ -562,7 +567,9 @@ public sealed record MyMattersAssetRow(
     DateTime? UpdatedAtUtc,
     [property: Required] string StatusCode,
     [property: Required] int LinkedTaskCount,
-    [property: Required] int OpenLinkedTaskCount);
+    [property: Required] int OpenLinkedTaskCount,
+    string? AssetTypeIconKey = null,
+    string? AssetTypeColourKey = null);
 
 /// <summary>The latest ordinary comment of a task: author, time and a plain-text excerpt (never a hold or cancel reason comment).</summary>
 public sealed record MyMattersLatestComment(
@@ -600,4 +607,6 @@ public sealed record MyMattersAssetDetail(
     string? CreatedByName,
     DateTime? UpdatedAtUtc,
     [property: Required] string StatusCode,
-    [property: Required] IReadOnlyList<MyMattersLinkedTask> LinkedTasks);
+    [property: Required] IReadOnlyList<MyMattersLinkedTask> LinkedTasks,
+    string? AssetTypeIconKey = null,
+    string? AssetTypeColourKey = null);

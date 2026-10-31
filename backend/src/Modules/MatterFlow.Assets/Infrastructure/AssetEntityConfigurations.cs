@@ -15,6 +15,8 @@ internal sealed class AssetTypeConfiguration : IEntityTypeConfiguration<AssetTyp
         b.HasIndex(x => new { x.SortOrder, x.Name }).HasDatabaseName("IX_AssetType_Sort");
         b.Property(x => x.SizeFieldKey).HasMaxLength(64).IsUnicode(false);
         b.Property(x => x.SizeUnit).HasMaxLength(10).IsUnicode(false);
+        b.Property(x => x.IconKey).HasMaxLength(50).IsUnicode(false);
+        b.Property(x => x.ColourKey).HasMaxLength(20).IsUnicode(false);
     }
 }
 

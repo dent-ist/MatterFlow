@@ -164,13 +164,16 @@ public sealed class MyMattersFeedService(MyMattersScopeResolver scopes, MyMatter
                     t.Title,
                     t.DueDate,
                     t.StatusChangedAtUtc,
+                    t.TaskTypeId,
                     Reason = t.OnHoldReasonId == null ? null : db.Set<OnHoldReason>().Where(r => r.Id == t.OnHoldReasonId).Select(r => r.Name).FirstOrDefault(),
                 }).ToDictionaryAsync(t => t.Id, ct);
         var assets = assetIds.Count == 0
             ? []
             : await (from a in db.Set<Asset>().AsNoTracking().Where(a => assetIds.Contains(a.Id))
                      join t in db.Set<AssetType>().AsNoTracking() on a.AssetTypeId equals t.Id
-                     select new { a.Id, a.DisplayName, TypeName = t.Name }).ToDictionaryAsync(a => a.Id, ct);
+                     select new { a.Id, a.DisplayName, TypeId = t.Id, TypeName = t.Name, t.IconKey, t.ColourKey }).ToDictionaryAsync(a => a.Id, ct);
+        var taskTypeIds = tasks.Values.Select(t => t.TaskTypeId).Distinct().ToList();
+        var taskTypes = taskTypeIds.Count == 0 ? [] : await db.Set<TaskType>().AsNoTracking().Where(t => taskTypeIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => new { t.Name, t.IconKey, t.ColourKey }, ct);
         var users = userIds.Count == 0 ? [] : await db.Set<AppUser>().AsNoTracking().Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName, ct);
 
         static DateOnly? ParseDate(string? text) =>
@@ -206,7 +209,11 @@ public sealed class MyMattersFeedService(MyMattersScopeResolver scopes, MyMatter
                 kind == FeedKinds.OnHold && task is not null ? Math.Max(0, (int)(clock.NowUtc - DateTime.SpecifyKind(task.StatusChangedAtUtc, DateTimeKind.Utc)).TotalDays) : null,
                 kind == FeedKinds.Overdue && task?.DueDate is { } due ? Math.Max(1, clock.Today.DayNumber - due.DayNumber) : null,
                 kind == FeedKinds.DueDateUpdated ? ParseDate(r.Old) : null,
-                kind == FeedKinds.DueDateUpdated ? ParseDate(r.New) : null);
+                kind == FeedKinds.DueDateUpdated ? ParseDate(r.New) : null,
+                asset?.TypeId ?? task?.TaskTypeId,
+                asset?.TypeName ?? (task is not null && taskTypes.TryGetValue(task.TaskTypeId, out var tt) ? tt.Name : null),
+                asset?.IconKey ?? (task is not null && taskTypes.TryGetValue(task.TaskTypeId, out var ti) ? ti.IconKey : null),
+                asset?.ColourKey ?? (task is not null && taskTypes.TryGetValue(task.TaskTypeId, out var tc) ? tc.ColourKey : null));
         }).ToList();
     }
 }

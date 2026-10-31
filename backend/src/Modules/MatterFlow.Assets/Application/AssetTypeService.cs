@@ -1,4 +1,5 @@
 using MatterFlow.Assets.Domain;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.SharedKernel.Identity;
@@ -80,9 +81,13 @@ public sealed class AssetTypeService(
         if (existing is not null)
             return DuplicateName(name, existing);
 
+        var look = CheckLook(request.IconKey, request.ColourKey);
+        if (look.IsFailure)
+            return look.Error!;
+
         var sortOrder = request.SortOrder
             ?? (await db.Set<AssetType>().MaxAsync(t => (int?)t.SortOrder, ct) ?? 0) + 10;
-        var type = new AssetType { Name = name, Description = AssetSupport.Clean(request.Description), SortOrder = sortOrder };
+        var type = new AssetType { Name = name, Description = AssetSupport.Clean(request.Description), SortOrder = sortOrder, IconKey = Blank(request.IconKey), ColourKey = Blank(request.ColourKey) };
         db.Set<AssetType>().Add(type);
 
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -125,7 +130,13 @@ public sealed class AssetTypeService(
                 return DuplicateName(name, existing);
         }
 
+        var look = CheckLook(request.IconKey, request.ColourKey);
+        if (look.IsFailure)
+            return look.Error!;
+
         type.Name = name;
+        type.IconKey = Blank(request.IconKey);
+        type.ColourKey = Blank(request.ColourKey);
         type.Description = AssetSupport.Clean(request.Description);
         type.SortOrder = request.SortOrder;
         type.IsActive = request.IsActive;
@@ -235,7 +246,20 @@ public sealed class AssetTypeService(
             AssetSupport.Utc(form?.PublishedAtUtc),
             form?.DraftVersionNo,
             type.SizeFieldKey,
-            type.SizeUnit);
+            type.SizeUnit,
+            type.IconKey,
+            type.ColourKey);
+
+    private static string? Blank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static Result CheckLook(string? icon, string? colour)
+    {
+        if (Blank(icon) is { } i && !TaskTypeIcons.IsValid(i))
+            return Error.Validation("iconKey", "UNKNOWN_ICON", "Choose an icon from the list.");
+        if (Blank(colour) is { } c && !TaskTypeColours.IsValid(c))
+            return Error.Validation("colourKey", "UNKNOWN_COLOUR", "Choose a colour from the palette.");
+        return Result.Success();
+    }
 
     private async Task<int?> FindIdByNameAsync(string name, int? exceptId, CancellationToken ct) =>
         await db.Set<AssetType>().AsNoTracking()

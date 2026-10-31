@@ -4,6 +4,10 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 1 (foundation and backend)
 
+### 2026-10-31 UI-22 (#973) backend pushed - Agent 2 can use the type fields now
+
+- Script 50: `AssetType.IconKey`/`ColourKey` (nullable, no backfill: derive from the id when null). Fields: feed items `typeId/typeName/typeIconKey/typeColourKey`; `getMyMattersAssets` rows and `getMyMattersAsset` `assetTypeIconKey/assetTypeColourKey`; `getAssets`/`getAsset` the same names; asset type responses `iconKey/colourKey`. OpenAPI and client regenerated. The admin page pickers follow in a second push.
+
 ### 2026-10-31 UI-07 (#960) theme adoption guide
 
 - Section 7 of `docs/ux/theme-guide.md`: page checklist, shared components with snippets copied from the My Matters code, ordered page list with estimates (62 h in total), a before/after example. Docs only.

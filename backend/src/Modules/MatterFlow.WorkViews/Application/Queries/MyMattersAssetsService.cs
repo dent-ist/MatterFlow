@@ -42,6 +42,10 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
 
         public required string AssetTypeName { get; init; }
 
+        public string? IconKey { get; init; }
+
+        public string? ColourKey { get; init; }
+
         public required DateTime CreatedAtUtc { get; init; }
 
         public DateTime? ModifiedAtUtc { get; init; }
@@ -129,7 +133,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
         var page = await ordered.ThenBy(r => r.AssetId).Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToListAsync(ct);
         var items = page.Select(r => new MyMattersAssetRow(
             r.AssetId, r.Name, r.ClientId, r.ClientName, r.MatterId, r.MatterRef, r.MatterName, r.AssetTypeId, r.AssetTypeName,
-            DateTime.SpecifyKind(r.CreatedAtUtc, DateTimeKind.Utc), r.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, r.StatusCode, r.Linked, r.OpenLinked)).ToList();
+            DateTime.SpecifyKind(r.CreatedAtUtc, DateTimeKind.Utc), r.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, r.StatusCode, r.Linked, r.OpenLinked, r.IconKey, r.ColourKey)).ToList();
         return new PagedResult<MyMattersAssetRow>(items, total, query.Page, query.PageSize);
     }
 
@@ -200,7 +204,7 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
         return new MyMattersAssetDetail(
             row.AssetId, row.Name, row.ClientId, row.ClientName, row.MatterId, row.MatterRef, row.MatterName, row.AssetTypeId, row.AssetTypeName,
             asset.Description, string.IsNullOrEmpty(row.ExternalReference) ? null : row.ExternalReference,
-            DateTime.SpecifyKind(row.CreatedAtUtc, DateTimeKind.Utc), createdBy, row.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, row.StatusCode, tasks);
+            DateTime.SpecifyKind(row.CreatedAtUtc, DateTimeKind.Utc), createdBy, row.ModifiedAtUtc is { } m ? DateTime.SpecifyKind(m, DateTimeKind.Utc) : null, row.StatusCode, tasks, row.IconKey, row.ColourKey);
     }
 
     private IQueryable<Row> Rows(MyMattersScope scope)
@@ -222,6 +226,8 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
                    MatterName = m.Name,
                    AssetTypeId = t.Id,
                    AssetTypeName = t.Name,
+                   IconKey = t.IconKey,
+                   ColourKey = t.ColourKey,
                    CreatedAtUtc = a.CreatedAtUtc,
                    ModifiedAtUtc = a.ModifiedAtUtc,
                    StatusCode = a.DispositionCode,

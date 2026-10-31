@@ -19434,6 +19434,8 @@ export interface AssetListItem {
     dispositionCode: string;
     dispositionChangedAtUtc?: string | undefined;
     inactiveLinked?: boolean | undefined;
+    assetTypeIconKey?: string | undefined;
+    assetTypeColourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -19565,6 +19567,8 @@ export interface AssetResponse {
     dispositionChangedByName?: string | undefined;
     dispositionNote?: string | undefined;
     inactiveLinked?: boolean | undefined;
+    assetTypeIconKey?: string | undefined;
+    assetTypeColourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -19613,6 +19617,8 @@ export interface AssetTypeResponse {
     draftVersionNo?: number | undefined;
     sizeFieldKey?: string | undefined;
     sizeUnit?: string | undefined;
+    iconKey?: string | undefined;
+    colourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -20168,6 +20174,8 @@ export interface CreateAssetTypeRequest {
     name: string;
     description?: string | undefined;
     sortOrder?: number | undefined;
+    iconKey?: string | undefined;
+    colourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -21051,6 +21059,8 @@ export interface MyMattersAssetDetail {
     updatedAtUtc: string | undefined;
     statusCode: string;
     linkedTasks: MyMattersLinkedTask[];
+    assetTypeIconKey?: string | undefined;
+    assetTypeColourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -21070,6 +21080,8 @@ export interface MyMattersAssetRow {
     statusCode: string;
     linkedTaskCount: number;
     openLinkedTaskCount: number;
+    assetTypeIconKey?: string | undefined;
+    assetTypeColourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -21205,6 +21217,10 @@ export interface MyMattersFeedItem {
     daysOverdue: number | undefined;
     oldDueDate: string | undefined;
     newDueDate: string | undefined;
+    typeId?: number | undefined;
+    typeName?: string | undefined;
+    typeIconKey?: string | undefined;
+    typeColourKey?: string | undefined;
 
     [key: string]: any;
 }
@@ -23135,6 +23151,8 @@ export interface UpdateAssetTypeRequest {
     description?: string | undefined;
     sortOrder?: number;
     isActive?: boolean;
+    iconKey?: string | undefined;
+    colourKey?: string | undefined;
     rowVersion: string;
 
     [key: string]: any;

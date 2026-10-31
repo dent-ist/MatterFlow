@@ -37,7 +37,9 @@ public sealed record AssetTypeResponse(
     DateTime? PublishedAtUtc = null,
     int? DraftVersionNo = null,
     string? SizeFieldKey = null,
-    string? SizeUnit = null);
+    string? SizeUnit = null,
+    string? IconKey = null,
+    string? ColourKey = null);
 
 /// <summary>Creates an Asset Type (and its empty field form).</summary>
 public sealed class CreateAssetTypeRequest
@@ -52,6 +54,14 @@ public sealed class CreateAssetTypeRequest
 
     /// <summary>Position; default is the end of the list.</summary>
     public int? SortOrder { get; init; }
+
+    /// <summary>An icon key of the shared library (<c>contracts/task-type-icons.json</c>); omitted = none (the client derives a default). 400 <c>UNKNOWN_ICON</c> otherwise.</summary>
+    [StringLength(50)]
+    public string? IconKey { get; init; }
+
+    /// <summary>A palette name (<c>contracts/task-type-colours.json</c>); omitted = none. 400 <c>UNKNOWN_COLOUR</c> otherwise.</summary>
+    [StringLength(20)]
+    public string? ColourKey { get; init; }
 }
 
 /// <summary>Updates an Asset Type.</summary>
@@ -66,6 +76,14 @@ public sealed class UpdateAssetTypeRequest
     public int SortOrder { get; init; }
 
     public bool IsActive { get; init; } = true;
+
+    /// <summary>The icon key; null clears it (the client derives a default). 400 <c>UNKNOWN_ICON</c> when not in the library.</summary>
+    [StringLength(50)]
+    public string? IconKey { get; init; }
+
+    /// <summary>The colour name; null clears it. 400 <c>UNKNOWN_COLOUR</c> when not in the palette.</summary>
+    [StringLength(20)]
+    public string? ColourKey { get; init; }
 
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]
@@ -216,7 +234,9 @@ public sealed record AssetListItem(
     long? SizeBytes = null,
     [property: Required] string DispositionCode = "ACTIVE",
     DateTime? DispositionChangedAtUtc = null,
-    bool? InactiveLinked = null);
+    bool? InactiveLinked = null,
+    string? AssetTypeIconKey = null,
+    string? AssetTypeColourKey = null);
 
 /// <summary>An Asset with its type-specific values.</summary>
 /// <param name="AssetId">Internal id.</param>
@@ -277,7 +297,9 @@ public sealed record AssetResponse(
     DateTime? DispositionChangedAtUtc = null,
     string? DispositionChangedByName = null,
     string? DispositionNote = null,
-    bool? InactiveLinked = null);
+    bool? InactiveLinked = null,
+    string? AssetTypeIconKey = null,
+    string? AssetTypeColourKey = null);
 
 /// <summary>Sets or clears the default size field of an Asset Type.</summary>
 public sealed class SetAssetTypeSizeFieldRequest
