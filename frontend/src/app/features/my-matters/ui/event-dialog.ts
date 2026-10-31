@@ -16,6 +16,7 @@ import { Dialog } from 'primeng/dialog';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { MmApi } from './mm-api';
 import { MatterEvent, MatterTree } from './mm-models';
 
@@ -36,7 +37,7 @@ interface Errors {
  */
 @Component({
   selector: 'mf-mm-event-dialog',
-  imports: [Button, Dialog, DialogFocus, EventIcon, FormsModule],
+  imports: [Button, Dialog, DialogFocus, Dropdown, EventIcon, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p-dialog
@@ -53,21 +54,35 @@ interface Errors {
     >
       <form class="f" (ngSubmit)="save()" novalidate id="mm-event-form">
         <div class="fld">
-          <label for="ev-matter">Matter</label>
-          <select
-            id="ev-matter"
-            [ngModel]="matter()"
-            name="matter"
-            (ngModelChange)="matter.set($event)"
-            [attr.aria-invalid]="errors().matter ? true : null"
-            [attr.aria-describedby]="errors().matter ? 'ev-matter-e' : null"
+          <span class="lbl" id="ev-client-l">Client</span>
+          <mf-dropdown
+            buttonId="ev-client"
+            label="Client"
+            icon="pi-building"
+            [items]="clientItems()"
+            [value]="client() === null ? '' : '' + client()"
+            (valueChange)="pickClient($event)"
+            [search]="true"
+            searchLabel="Search clients"
+            [limit]="60"
             [disabled]="!!event()"
-          >
-            <option [ngValue]="null">Choose a matter</option>
-            @for (m of matterList(); track m.id) {
-              <option [ngValue]="m.id">{{ m.name }}{{ m.sens ? ' (sensitive)' : '' }}</option>
-            }
-          </select>
+          />
+        </div>
+        <div class="fld">
+          <span class="lbl" id="ev-matter-l">Matter</span>
+          <mf-dropdown
+            buttonId="ev-matter"
+            label="Matter"
+            icon="pi-briefcase"
+            [items]="matterItems()"
+            [value]="matter() === null ? '' : '' + matter()"
+            (valueChange)="pickMatter($event)"
+            [search]="true"
+            searchLabel="Search matters"
+            [limit]="60"
+            [panelWidth]="420"
+            [disabled]="!!event()"
+          />
           @if (errors().matter) {
             <p class="err" id="ev-matter-e" role="alert">{{ errors().matter }}</p>
           }
@@ -85,7 +100,7 @@ interface Errors {
                   [checked]="type() === t.code"
                   (change)="type.set(t.code)"
                 />
-                <mf-event-icon [type]="t.code" /> <span>{{ t.name }}</span>
+                <mf-event-icon [type]="t.code" [large]="true" /> <span>{{ t.name }}</span>
               </label>
             }
           </div>
@@ -128,7 +143,9 @@ interface Errors {
             }
           </div>
           <div class="fld">
-            <label for="ev-time">Time (optional)</label>
+            <label for="ev-time" title="Leave blank for an all-day item."
+              >Time <span class="opt">(optional)</span></label
+            >
             <input
               id="ev-time"
               name="time"
@@ -136,9 +153,8 @@ interface Errors {
               [ngModel]="time()"
               (ngModelChange)="time.set($event)"
               [attr.aria-invalid]="errors().time ? true : null"
-              [attr.aria-describedby]="errors().time ? 'ev-time-e' : 'ev-time-h'"
+              [attr.aria-describedby]="errors().time ? 'ev-time-e' : null"
             />
-            <p class="hint" id="ev-time-h">Leave blank for an all-day item.</p>
             @if (errors().time) {
               <p class="err" id="ev-time-e" role="alert">{{ errors().time }}</p>
             }
@@ -146,7 +162,7 @@ interface Errors {
         </div>
 
         <div class="fld">
-          <label for="ev-note">Note (optional)</label>
+          <label for="ev-note">Note <span class="opt">(optional)</span></label>
           <textarea
             id="ev-note"
             name="note"
@@ -230,23 +246,35 @@ interface Errors {
     }
     .tg {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: var(--mf-s2);
     }
     .ty {
+      position: relative;
       display: flex;
+      flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       gap: var(--mf-s2);
-      min-height: 40px;
-      padding: 0 var(--mf-s3);
+      min-height: 84px;
+      padding: var(--mf-s3) var(--mf-s2);
+      box-sizing: border-box;
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius-lg);
-      font-weight: 500;
+      background: var(--mf-surface);
+      font-size: var(--mf-fs-xs);
+      font-weight: 600;
+      line-height: 1.2;
+      text-align: center;
       cursor: pointer;
     }
+    .ty:hover {
+      background: var(--mf-surface-alt);
+    }
     .ty.on {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
+      border: 2px solid var(--mf-primary);
+      padding: calc(var(--mf-s3) - 1px) calc(var(--mf-s2) - 1px);
+      background: var(--mf-sem-info-bg);
       font-weight: 700;
     }
     .ty:focus-within {
@@ -257,6 +285,17 @@ interface Errors {
       position: absolute;
       opacity: 0;
       pointer-events: none;
+    }
+    .lbl,
+    .opt {
+      font-size: var(--mf-fs-sm);
+    }
+    .opt {
+      color: var(--mf-text-muted);
+      font-weight: 400;
+    }
+    .row {
+      align-items: end;
     }
     .err {
       margin: 0;
@@ -278,12 +317,14 @@ interface Errors {
       font-size: var(--mf-fs-sm);
     }
     @media (max-width: 640px) {
-      .row,
       .tg {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .row {
         grid-template-columns: 1fr;
       }
       .ty {
-        min-height: 44px;
+        min-height: 88px;
       }
     }
   `,
@@ -313,16 +354,52 @@ export class MmEventDialog {
   protected readonly errors = signal<Errors>({});
   private busy = false;
 
+  protected readonly client = signal<number | null>(null);
+  protected readonly clientItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Choose a client' },
+    ...(this.tree()?.clients ?? []).map((c) => ({ value: String(c.clientId), label: c.name })),
+  ]);
   protected readonly matterList = computed(() => {
-    const cid = this.clientId();
+    const cid = this.client();
     return (this.tree()?.clients ?? [])
-      .filter(
-        (c) => !cid || c.clientId === cid || c.matters.some((m) => m.matterId === this.matterId()),
-      )
+      .filter((c) => !cid || c.clientId === cid)
       .flatMap((c) =>
-        c.matters.map((m) => ({ id: m.matterId, name: m.name, sens: m.isSensitive })),
+        c.matters.map((m) => ({
+          id: m.matterId,
+          name: m.name,
+          sens: m.isSensitive,
+          ref: m.matterRef,
+          client: c.name,
+        })),
       );
   });
+  protected readonly matterItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Choose a matter' },
+    ...this.matterList().map((m) => ({
+      value: String(m.id),
+      label: m.name,
+      sub: this.client() ? m.ref : `${m.client} · ${m.ref}`,
+      lock: m.sens,
+    })),
+  ]);
+
+  /** Client then Matter: a new client drops a matter that is not its own; a matter sets its client. */
+  protected pickClient(v: string): void {
+    const id = v ? Number(v) : null;
+    this.client.set(id);
+    const owns = this.tree()
+      ?.clients.find((c) => c.clientId === id)
+      ?.matters.some((m) => m.matterId === this.matter());
+    if (!owns) this.matter.set(null);
+  }
+  protected pickMatter(v: string): void {
+    const id = v ? Number(v) : null;
+    this.matter.set(id);
+    if (id !== null) {
+      const c = this.tree()?.clients.find((x) => x.matters.some((m) => m.matterId === id));
+      if (c) this.client.set(c.clientId);
+    }
+  }
   protected readonly sensitive = computed(
     () => this.matterList().find((m) => m.id === this.matter())?.sens ?? false,
   );
@@ -333,7 +410,13 @@ export class MmEventDialog {
       untracked(() => {
         const e = this.event();
         this.errors.set({});
-        this.matter.set(e?.matterId ?? this.matterId());
+        const mid = e?.matterId ?? this.matterId();
+        this.matter.set(mid);
+        this.client.set(
+          e?.clientId ??
+            this.tree()?.clients.find((c) => c.matters.some((m) => m.matterId === mid))?.clientId ??
+            this.clientId(),
+        );
         this.type.set(e?.typeCode ?? null);
         this.title.set(e?.title ?? '');
         this.date.set(e?.date ?? this.startDate() ?? '');

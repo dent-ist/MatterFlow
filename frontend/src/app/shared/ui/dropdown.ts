@@ -14,6 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { TaskTypeChip } from './task-type-chip';
 
 export interface DropdownItem {
   value: string;
@@ -29,6 +30,13 @@ export interface DropdownItem {
   /** A PrimeIcons class drawn in a small tinted square before the label (the activity kinds), in the colour of `tone`. */
   icon?: string;
   tone?: 'info' | 'accent' | 'neutral' | 'danger' | 'warning';
+  /** A type chip (24 px) before the label: the asset types. `kind` is the first words of its accessible name. */
+  typeChip?: {
+    iconKey?: string | null;
+    colourKey?: string | null;
+    id?: number | null;
+    kind?: string;
+  };
   /** A group heading (not choosable). */
   heading?: boolean;
 }
@@ -44,6 +52,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dropdown',
+  imports: [TaskTypeChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button
@@ -60,7 +69,16 @@ let nextId = 0;
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
     >
-      @if (chosen()?.icon; as ci) {
+      @if (chosen()?.typeChip; as tc) {
+        <mf-task-type-chip
+          size="sm"
+          [decorative]="true"
+          [iconKey]="tc.iconKey"
+          [colourKey]="tc.colourKey"
+          [typeId]="tc.id"
+          [name]="chosen()!.label"
+        />
+      } @else if (chosen()?.icon; as ci) {
         <span class="ki" [attr.data-tone]="chosen()?.tone" aria-hidden="true"
           ><i class="pi" [class]="ci"></i
         ></span>
@@ -131,6 +149,16 @@ let nextId = 0;
                       <i class="pi pi-check"></i>
                     }
                   </span>
+                }
+                @if (it.typeChip; as tc) {
+                  <mf-task-type-chip
+                    size="sm"
+                    [decorative]="true"
+                    [iconKey]="tc.iconKey"
+                    [colourKey]="tc.colourKey"
+                    [typeId]="tc.id"
+                    [name]="it.label"
+                  />
                 }
                 @if (it.icon) {
                   <span class="ki" [attr.data-tone]="it.tone" aria-hidden="true"

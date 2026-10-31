@@ -5,6 +5,39 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { MmFilters, filtersToParams, parseFilters } from '../my-matters-filters';
 import { STATUS_FILTERS, SHOW_FILTERS, ShowFilter, StatusFilter } from './mm-models';
 
+/** The due presets of the Due column filter; `range` uses `from` and `to`. */
+export const DUE_PRESETS = ['overdue', 'today', 'week', 'month', 'range'] as const;
+export type DuePreset = (typeof DUE_PRESETS)[number];
+
+export interface GridFilters {
+  q: string;
+  priorities: number[];
+  /** `none` = Unassigned, a user id, or null (anyone). */
+  assignee: 'none' | number | null;
+  due: DuePreset | null;
+  from: string | null;
+  to: string | null;
+  /** Task types (`?ttype=`) and a creation range (`?cfrom=&cto=`), set by a drill-down from Metrics; shown as filter chips. */
+  types: number[];
+  createdFrom: string | null;
+  createdTo: string | null;
+}
+
+/** The address keys the column filters use (everything the grid adds to the address). */
+export const GRID_KEYS = [
+  'status',
+  'show',
+  'q',
+  'prio',
+  'asg',
+  'due',
+  'dfrom',
+  'dto',
+  'ttype',
+  'cfrom',
+  'cto',
+] as const;
+
 export const MM_TABS = ['overview', 'calendar', 'assets', 'metrics', 'activity'] as const;
 export type MmTab = (typeof MM_TABS)[number];
 export const TAB_LABELS: Record<MmTab, string> = {
@@ -37,6 +70,9 @@ export class MmScopeStore {
     initialValue: this.route.snapshot.queryParamMap,
   });
 
+  /** Changes whenever the grid's filters do (the page remembers them). */
+  readonly filtersKey = computed(() => JSON.stringify([this.statuses(), this.grid()]));
+
   readonly canAll = computed(() => this.auth.has('Matter.AssignManagers'));
   readonly filters = computed<MmFilters>(() => parseFilters(this.params(), this.canAll()), {
     equal: (a, b) => JSON.stringify(a) === JSON.stringify(b),
@@ -48,9 +84,34 @@ export class MmScopeStore {
     const t = this.params().get('tab') as MmTab | null;
     return t && MM_TABS.includes(t) ? t : 'overview';
   });
-  readonly status = computed<StatusFilter>(() => {
-    const s = this.params().get('status');
-    return STATUS_FILTERS.find((x) => x.key === s)?.key ?? 'open';
+  /** The Status filter of the grid: one or more of the five statuses, or `open` (New, In Progress and On Hold; the default). `?status=new,hold`. */
+  readonly statuses = computed<StatusFilter[]>(() => {
+    const raw = (this.params().get('status') ?? '').split(',');
+    const keys = STATUS_FILTERS.map((x) => x.key).filter((k) => raw.includes(k));
+    return keys.length === 0 || keys.includes('open') ? ['open'] : keys;
+  });
+  /** The column filters of the grid (`?q=&prio=&asg=&due=&dfrom=&dto=`). */
+  readonly grid = computed<GridFilters>(() => {
+    const p = this.params();
+    const ids = (v: string | null): number[] =>
+      (v ?? '')
+        .split(',')
+        .filter((x) => /^[1-9]\d*$/.test(x))
+        .map(Number);
+    const due = p.get('due');
+    const date = (v: string | null): string | null =>
+      v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    return {
+      q: (p.get('q') ?? '').trim(),
+      priorities: ids(p.get('prio')),
+      assignee: p.get('asg') === 'none' ? 'none' : (ids(p.get('asg'))[0] ?? null),
+      due: DUE_PRESETS.includes(due as DuePreset) ? (due as DuePreset) : null,
+      from: date(p.get('dfrom')),
+      to: date(p.get('dto')),
+      types: ids(p.get('ttype')),
+      createdFrom: date(p.get('cfrom')),
+      createdTo: date(p.get('cto')),
+    };
   });
   readonly show = computed<ShowFilter>(() => {
     const s = this.params().get('show');
@@ -93,7 +154,22 @@ export class MmScopeStore {
   }
 
   private reset(): Params {
-    return { status: null, show: null, page: null, asset: null, kind: null };
+    return {
+      status: null,
+      show: null,
+      q: null,
+      prio: null,
+      asg: null,
+      due: null,
+      dfrom: null,
+      dto: null,
+      ttype: null,
+      cfrom: null,
+      cto: null,
+      page: null,
+      asset: null,
+      kind: null,
+    };
   }
 
   /** A client was picked: a matter of another client is dropped. `matterClient` is the client of the current matter, when known. */

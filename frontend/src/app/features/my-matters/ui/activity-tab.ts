@@ -12,6 +12,8 @@ import { Clock } from '../../../core/time/clock';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { GridFrame } from '../../../shared/ui/grid-frame';
+import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Pager } from '../../../shared/ui/pager';
 import { MmFilters } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
@@ -28,7 +30,7 @@ const PAGE_SIZE = 25;
  */
 @Component({
   selector: 'mf-mm-activity-tab',
-  imports: [FilterChips, GridFrame, MfDatePipe, Pager],
+  imports: [AssetTypeChip, TaskTypeChip, FilterChips, GridFrame, MfDatePipe, Pager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -110,32 +112,61 @@ const PAGE_SIZE = 25;
                   {{ ago(i) }}<span class="m">{{ i.occurredAtUtc | mfDate: 'date' }}</span>
                 </td>
                 <td class="c-k">
-                  <span class="kind" [attr.data-tone]="look(i.kind).tone"
-                    ><i class="pi" [class]="look(i.kind).icon" aria-hidden="true"></i
-                    >{{ look(i.kind).label }}</span
-                  >
-                  <span class="m">{{ what(i) }}</span>
+                  <div class="kw">
+                    <span class="ki" [attr.data-tone]="look(i.kind).tone" aria-hidden="true"
+                      ><i class="pi" [class]="look(i.kind).icon"></i
+                    ></span>
+                    <span class="kt">
+                      <span class="kind" [attr.data-tone]="look(i.kind).tone">{{
+                        look(i.kind).label
+                      }}</span>
+                      <span class="m">{{ what(i) }}</span>
+                    </span>
+                  </div>
                 </td>
                 <td class="c-t">
-                  @if (i.taskId !== null) {
-                    <a
-                      class="lnk"
-                      [href]="taskHref(i.taskId)"
-                      target="_blank"
-                      rel="noopener"
-                      [attr.data-feed]="i.itemKey"
-                      >{{ title(i) }}<span class="sr"> (opens in a new tab)</span></a
-                    >
-                  } @else {
-                    <button
-                      type="button"
-                      class="lnk"
-                      [attr.data-feed]="i.itemKey"
-                      (click)="assetOpened.emit(i.assetId!)"
-                    >
-                      {{ title(i) }}
-                    </button>
-                  }
+                  <div class="kw">
+                    @if (i.typeName) {
+                      @if (i.taskId !== null) {
+                        <mf-task-type-chip
+                          size="sm"
+                          [iconKey]="i.typeIconKey"
+                          [colourKey]="i.typeColourKey"
+                          [typeId]="i.typeId"
+                          [name]="i.typeName"
+                        />
+                      } @else {
+                        <mf-asset-type-chip
+                          size="sm"
+                          [iconKey]="i.typeIconKey"
+                          [colourKey]="i.typeColourKey"
+                          [typeId]="i.typeId"
+                          [name]="i.typeName"
+                        />
+                      }
+                    }
+                    <span class="kt">
+                      @if (i.taskId !== null) {
+                        <a
+                          class="lnk"
+                          [href]="taskHref(i.taskId)"
+                          target="_blank"
+                          rel="noopener"
+                          [attr.data-feed]="i.itemKey"
+                          >{{ title(i) }}<span class="sr"> (opens in a new tab)</span></a
+                        >
+                      } @else {
+                        <button
+                          type="button"
+                          class="lnk"
+                          [attr.data-feed]="i.itemKey"
+                          (click)="assetOpened.emit(i.assetId!)"
+                        >
+                          {{ title(i) }}
+                        </button>
+                      }
+                    </span>
+                  </div>
                 </td>
                 <td class="c-who">{{ i.actorName ?? 'System' }}</td>
                 <td class="c-m">
@@ -262,6 +293,47 @@ const PAGE_SIZE = 25;
       margin-right: var(--mf-s1);
       border-radius: 50%;
       background: var(--mf-primary);
+    }
+    .kw {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .kt {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .ki {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--mf-radius-lg);
+      background: var(--k-bg);
+      color: var(--k-fg);
+    }
+    .ki[data-tone='info'] {
+      --k-bg: var(--mf-sem-info-bg);
+      --k-fg: var(--mf-sem-info-fg);
+    }
+    .ki[data-tone='accent'] {
+      --k-bg: var(--mf-status-progress-bg);
+      --k-fg: var(--mf-status-progress-fg);
+    }
+    .ki[data-tone='neutral'] {
+      --k-bg: var(--mf-surface-alt);
+      --k-fg: var(--mf-text-muted);
+    }
+    .ki[data-tone='danger'] {
+      --k-bg: var(--mf-sem-overdue-bg);
+      --k-fg: var(--mf-sem-overdue-fg);
+    }
+    .ki[data-tone='warning'] {
+      --k-bg: var(--mf-sem-risk-bg);
+      --k-fg: var(--mf-sem-risk-fg);
     }
     .kind {
       display: inline-flex;

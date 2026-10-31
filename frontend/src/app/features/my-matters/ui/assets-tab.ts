@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetTypesClient } from '../../../api/generated/api-client';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
+import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
@@ -48,7 +49,7 @@ const HEADS = [
  */
 @Component({
   selector: 'mf-mm-assets-tab',
-  imports: [Dropdown, GridFrame, MfDatePipe, Pager, RouterLink, StatusChip],
+  imports: [AssetTypeChip, Dropdown, GridFrame, MfDatePipe, Pager, RouterLink, StatusChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -180,16 +181,24 @@ const HEADS = [
                   <td class="c-cl">{{ a.clientName }}</td>
                   <td class="c-ma">{{ a.matterRef }} {{ a.matterName }}</td>
                   <td class="c-ty">
-                    <button
-                      type="button"
-                      class="open"
-                      [attr.data-open]="a.assetId"
-                      [attr.aria-pressed]="a.assetId === assetId()"
-                      (click)="assetChange.emit(a.assetId)"
-                    >
-                      <b>{{ a.name }}</b
-                      ><span class="m">{{ a.assetTypeName }}</span>
-                    </button>
+                    <div class="tycell">
+                      <mf-asset-type-chip
+                        [iconKey]="a.assetTypeIconKey"
+                        [colourKey]="a.assetTypeColourKey"
+                        [typeId]="a.assetTypeId"
+                        [name]="a.assetTypeName"
+                      />
+                      <button
+                        type="button"
+                        class="open"
+                        [attr.data-open]="a.assetId"
+                        [attr.aria-pressed]="a.assetId === assetId()"
+                        (click)="assetChange.emit(a.assetId)"
+                      >
+                        <b>{{ a.name }}</b
+                        ><span class="m">{{ a.assetTypeName }}</span>
+                      </button>
+                    </div>
                   </td>
                   <td class="c-cr">{{ a.createdAtUtc | mfDate: 'date' }}</td>
                   <td class="c-up">
@@ -433,6 +442,12 @@ const HEADS = [
     }
     tr.sel td {
       background: var(--mf-selected-bg);
+    }
+    .tycell {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s3);
+      min-width: 0;
     }
     .open {
       display: flex;
@@ -683,10 +698,16 @@ export class MmAssetsTab {
   protected readonly updatedTo = signal('');
   protected readonly sort = signal('updated');
   protected readonly dir = signal<'asc' | 'desc'>('desc');
-  protected readonly types = signal<{ id: number; name: string }[]>([]);
+  protected readonly types = signal<
+    { id: number; name: string; iconKey?: string; colourKey?: string }[]
+  >([]);
   protected readonly typeItems = computed<DropdownItem[]>(() => [
     { value: '', label: 'All types' },
-    ...this.types().map((t) => ({ value: String(t.id), label: t.name })),
+    ...this.types().map((t) => ({
+      value: String(t.id),
+      label: t.name,
+      typeChip: { id: t.id, iconKey: t.iconKey, colourKey: t.colourKey, kind: 'Asset type' },
+    })),
   ]);
   protected readonly statusItems: DropdownItem[] = [
     { value: '', label: 'All statuses' },

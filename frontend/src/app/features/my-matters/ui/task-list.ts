@@ -9,12 +9,19 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink, convertToParamMap } from '@angular/router';
-import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
+import { firstValueFrom } from 'rxjs';
+import {
+  TaskQueueClient,
+  TaskQueueRow,
+  UsersLookupClient,
+} from '../../../api/generated/api-client';
+import { LookupStore } from '../../../core/lookups/lookup-store';
+import { todayText } from '../calendar-month';
+import { GridFilters } from './mm-scope';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { DueCell, describeDueCell } from '../../../core/time/time';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
-import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
 import { PriorityPill } from '../../../shared/ui/priority-pill';
@@ -26,7 +33,51 @@ import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
 import { SHOW_FILTERS, STATUS_FILTERS, ShowFilter, StatusFilter, TaskCounts } from './mm-models';
 
-export const GRID_PAGE_SIZE = 25;
+const OPEN_KEY = 'mf-mm-grid-filter-open';
+function rememberedOpen(): boolean {
+  try {
+    return localStorage.getItem(OPEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** The queue parameters of the Assignee column filter. */
+export function assigneeParams(g: GridFilters): Record<string, string | string[]> {
+  if (g.assignee === 'none') return { unassigned: 'true' };
+  return typeof g.assignee === 'number' ? { assignee: [String(g.assignee)] } : {};
+}
+
+/** The queue parameters of the Due column filter, from today's date (the viewer's zone). */
+export function dueParams(g: GridFilters, today: string): Record<string, string> {
+  const day = (offset: number): string => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + offset);
+    return d.toISOString().slice(0, 10);
+  };
+  switch (g.due) {
+    case 'overdue':
+      return { dueTo: day(-1) };
+    case 'today':
+      return { dueFrom: today, dueTo: today };
+    case 'week':
+      return { dueFrom: today, dueTo: day(7) };
+    case 'month': {
+      const [y, m] = today.split('-').map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      return {
+        dueFrom: `${today.slice(0, 7)}-01`,
+        dueTo: `${today.slice(0, 7)}-${String(last).padStart(2, '0')}`,
+      };
+    }
+    case 'range':
+      return { ...(g.from ? { dueFrom: g.from } : {}), ...(g.to ? { dueTo: g.to } : {}) };
+    default:
+      return {};
+  }
+}
+
+const GRID_PAGE_SIZE = 25;
 const DEFAULT_SORT = 'attention';
 /** The icons of the Status chips (the mockup's: layers for All open, then the status icons). */
 const STATUS_ICONS: Record<StatusFilter, string> = {
@@ -54,16 +105,7 @@ export function statusCodes(status: StatusFilter): string[] {
  */
 @Component({
   selector: 'mf-mm-task-list',
-  imports: [
-    Dropdown,
-    FilterChips,
-    GridFrame,
-    Pager,
-    PriorityPill,
-    RouterLink,
-    StatusChip,
-    TaskTypeChip,
-  ],
+  imports: [Dropdown, GridFrame, Pager, PriorityPill, RouterLink, StatusChip, TaskTypeChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -76,6 +118,23 @@ export function statusCodes(status: StatusFilter): string[] {
           }
         </h2>
         <div class="tools">
+          <button
+            type="button"
+            class="fbtn"
+            data-filter-toggle
+            aria-controls="mm-col-filters"
+            [attr.aria-expanded]="filterOpen()"
+            [class.on]="activeCount() > 0"
+            (click)="toggleFilters()"
+          >
+            <i class="pi pi-filter" aria-hidden="true"></i>
+            <span>Filter</span>
+            @if (activeCount() > 0) {
+              <span class="bdg" data-filter-count
+                >{{ activeCount() }}<span class="sr"> active</span></span
+              >
+            }
+          </button>
           <mf-dropdown
             class="show"
             buttonId="mm-show"
@@ -84,7 +143,7 @@ export function statusCodes(status: StatusFilter): string[] {
             size="sm"
             [items]="showOptions()"
             [value]="show()"
-            (valueChange)="showChange.emit($any($event))"
+            (valueChange)="paramsChange.emit({ show: $event === 'everything' ? null : $event })"
             [countOnButton]="true"
             neutralValue="everything"
             [panelWidth]="260"
@@ -103,15 +162,123 @@ export function statusCodes(status: StatusFilter): string[] {
           }
         </div>
       </div>
-      <div frameStatus class="strow">
-        <span class="strow-l" id="mm-status-l">Status</span>
-        <mf-filter-chips
-          label="Status"
-          [chips]="statusChips()"
-          [value]="status()"
-          (valueChange)="statusChange.emit($any($event))"
-        />
-      </div>
+      @if (filterOpen() || activeChips().length > 0) {
+        <div frameStatus class="fstack">
+          @if (activeChips().length > 0) {
+            <div class="achips" data-active-filters>
+              @for (c of activeChips(); track c.key) {
+                <span class="achip"
+                  >{{ c.label }}
+                  <button
+                    type="button"
+                    class="ax"
+                    [attr.data-remove]="c.key"
+                    [attr.aria-label]="'Remove filter: ' + c.label"
+                    (click)="paramsChange.emit(c.clear)"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </span>
+              }
+              <button type="button" class="lnk" data-clear-filters (click)="clearFilters()">
+                Clear filters
+              </button>
+            </div>
+          }
+          @if (filterOpen()) {
+            <div class="fr" id="mm-col-filters" role="group" aria-label="Column filters">
+              <label class="srch">
+                <span class="sr">Search tasks</span>
+                <i class="pi pi-search" aria-hidden="true"></i>
+                <input
+                  type="search"
+                  data-filter-q
+                  placeholder="Search tasks"
+                  autocomplete="off"
+                  [value]="grid().q"
+                  (input)="setQ($any($event.target).value)"
+                />
+              </label>
+              <mf-dropdown
+                buttonId="mm-f-status"
+                label="Status"
+                prefix="Status:"
+                size="sm"
+                [multi]="true"
+                [items]="statusItems()"
+                [values]="statuses()"
+                (valuesChange)="setStatuses($any($event))"
+                placeholder="All open"
+                [panelWidth]="240"
+              />
+              <mf-dropdown
+                buttonId="mm-f-priority"
+                label="Priority"
+                prefix="Priority:"
+                size="sm"
+                [multi]="true"
+                [items]="priorityItems()"
+                [values]="prioValues()"
+                (valuesChange)="
+                  paramsChange.emit({ prio: $any($event).length ? $any($event).join(',') : null })
+                "
+                placeholder="Any"
+                [panelWidth]="220"
+              />
+              <mf-dropdown
+                buttonId="mm-f-assignee"
+                label="Assignee"
+                prefix="Assignee:"
+                size="sm"
+                [items]="assigneeItems()"
+                [value]="assigneeValue()"
+                (valueChange)="paramsChange.emit({ asg: $event || null })"
+                [search]="true"
+                searchLabel="Search people"
+                [limit]="60"
+                placeholder="Anyone"
+                [panelWidth]="280"
+              />
+              <mf-dropdown
+                buttonId="mm-f-due"
+                label="Due"
+                prefix="Due:"
+                size="sm"
+                [items]="dueItems"
+                [value]="grid().due ?? ''"
+                (valueChange)="
+                  paramsChange.emit({
+                    due: $event || null,
+                    ...($event === 'range' ? {} : { dfrom: null, dto: null }),
+                  })
+                "
+                [panelWidth]="220"
+              />
+              @if (grid().due === 'range') {
+                <span class="rng">
+                  <label
+                    ><span class="sr">Due from</span
+                    ><input
+                      type="date"
+                      data-due-from
+                      [value]="grid().from ?? ''"
+                      (change)="paramsChange.emit({ dfrom: $any($event.target).value || null })"
+                  /></label>
+                  <span aria-hidden="true">to</span>
+                  <label
+                    ><span class="sr">Due to</span
+                    ><input
+                      type="date"
+                      data-due-to
+                      [value]="grid().to ?? ''"
+                      (change)="paramsChange.emit({ dto: $any($event.target).value || null })"
+                  /></label>
+                </span>
+              }
+            </div>
+          }
+        </div>
+      }
 
       @if (loader.state() === 'error') {
         <p class="msg" role="alert">
@@ -299,25 +466,124 @@ export function statusCodes(status: StatusFilter): string[] {
       text-decoration: underline;
       text-underline-offset: 3px;
     }
-    .strow {
-      display: flex;
+    .fbtn {
+      display: inline-flex;
       align-items: center;
-      gap: var(--mf-s3);
+      gap: var(--mf-s2);
+      height: var(--mf-ctl-h-sm);
+      padding: 0 var(--mf-s3);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+      cursor: pointer;
+    }
+    .fbtn[aria-expanded='true'] {
+      border-color: var(--mf-primary);
+      box-shadow: 0 0 0 3px var(--mf-sem-info-bg);
+    }
+    .fbtn.on {
+      background: var(--mf-sem-info-bg);
+      border-color: var(--mf-sem-info-line);
+    }
+    .bdg {
+      min-width: 18px;
+      padding: 0 5px;
+      box-sizing: border-box;
+      border-radius: 9px;
+      background: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 18px;
+      text-align: center;
+    }
+    .fstack {
+      display: grid;
+      gap: var(--mf-s2);
       padding: var(--mf-s2) var(--mf-s4) var(--mf-s3);
       border-bottom: 1px solid var(--mf-border);
+      background: var(--mf-surface-alt);
     }
-    .strow-l {
-      flex: none;
+    .achips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2);
+    }
+    .achip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      padding: 0 var(--mf-s1) 0 var(--mf-s3);
+      border: 1px solid var(--mf-sem-info-line);
+      border-radius: 999px;
+      background: var(--mf-sem-info-bg);
+      color: var(--mf-sem-info-fg);
+      font-size: var(--mf-fs-sm);
+      font-weight: 600;
+      line-height: 24px;
+    }
+    .ax {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: inherit;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .fr {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--mf-s2) var(--mf-s3);
+    }
+    .fr .srch {
+      position: relative;
+      flex: 1 1 200px;
+      min-width: 160px;
+    }
+    .fr .srch .pi {
+      position: absolute;
+      left: var(--mf-s3);
+      top: 50%;
+      transform: translateY(-50%);
       color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
     }
-    @container gc (max-width: 800px) {
-      .strow-l {
-        display: none;
-      }
+    .fr .srch input {
+      box-sizing: border-box;
+      width: 100%;
+      height: var(--mf-ctl-h-sm);
+      padding: 0 var(--mf-s3) 0 32px;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
+      font-size: var(--mf-fs-sm);
+    }
+    .rng {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .rng input {
+      height: var(--mf-ctl-h-sm);
+      padding: 0 var(--mf-s2);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      font: inherit;
     }
     .msg {
       margin: var(--mf-s5) var(--mf-s4);
@@ -515,23 +781,38 @@ export function statusCodes(status: StatusFilter): string[] {
         align-items: center;
         min-height: 44px;
       }
-      .strow {
-        flex-direction: column;
-        align-items: flex-start;
+      .fbtn {
+        height: 44px;
+      }
+      .ax {
+        width: 32px;
+        height: 32px;
       }
     }
   `,
 })
 export class MmTaskList {
   readonly filters = input.required<MmFilters>();
-  readonly status = input<StatusFilter>('open');
+  /** The Status filter: one or more of the five statuses, or `open` (the default). */
+  readonly statuses = input<readonly StatusFilter[]>(['open']);
+  readonly grid = input<GridFilters>({
+    q: '',
+    priorities: [],
+    assignee: null,
+    due: null,
+    from: null,
+    to: null,
+    types: [],
+    createdFrom: null,
+    createdTo: null,
+  });
   readonly show = input<ShowFilter>('everything');
   /** The matter name goes under the title where several matters are in play. */
   readonly showMatter = input(true);
   /** Changes with the client / matter: the frame scrolls back to the top. */
   readonly resetKey = input<unknown>(undefined);
-  readonly statusChange = output<StatusFilter>();
-  readonly showChange = output<ShowFilter>();
+  /** A change of the grid's filters as address parameters (null removes one); the page writes them to the address. */
+  readonly paramsChange = output<Record<string, string | null>>();
 
   protected readonly pageSize = GRID_PAGE_SIZE;
   private readonly queue = inject(TaskQueueClient);
@@ -560,7 +841,14 @@ export class MmTaskList {
       ...(a.role === undefined ? {} : { role: a.role }),
       ...(a.clientId === undefined ? {} : { client: String(a.clientId) }),
       ...(a.matterId === undefined ? {} : { matter: String(a.matterId) }),
-      status: statusCodes(this.status()),
+      status: this.statuses().flatMap((k) => statusCodes(k)),
+      ...(this.grid().q ? { q: this.grid().q } : {}),
+      ...(this.grid().priorities.length ? { priority: this.grid().priorities.map(String) } : {}),
+      ...assigneeParams(this.grid()),
+      ...dueParams(this.grid(), this.today()),
+      ...(this.grid().types.length ? { type: this.grid().types.map(String) } : {}),
+      ...(this.grid().createdFrom ? { createdFrom: this.grid().createdFrom! } : {}),
+      ...(this.grid().createdTo ? { createdTo: this.grid().createdTo! } : {}),
       ...(this.focus.types().length > 0 ? { type: this.focus.types().map(String) } : {}),
     } as Record<string, string | string[]>;
   });
@@ -594,12 +882,12 @@ export class MmTaskList {
   protected readonly total = computed(() => this.loader.data()?.total ?? 0);
 
   protected readonly countsLoader = panelLoader(
-    () => [this.filters(), this.status(), this.show()],
-    () => this.api.taskCounts(this.filters(), this.status(), this.show()),
+    () => [this.filters(), this.statuses(), this.show()],
+    () => this.api.taskCounts(this.filters(), this.statuses(), this.show()),
   );
   protected readonly counts = computed<TaskCounts | null>(() => this.countsLoader.data());
 
-  protected readonly statusChips = computed<FilterChip[]>(() => {
+  protected readonly statusItems = computed<DropdownItem[]>(() => {
     const c = this.counts()?.byStatus;
     const n: Record<StatusFilter, number | null> = {
       open: c?.allOpen ?? null,
@@ -610,12 +898,140 @@ export class MmTaskList {
       cancelled: c?.cancelled ?? null,
     };
     return STATUS_FILTERS.map((s) => ({
-      key: s.key,
+      value: s.key,
       label: s.label,
       count: n[s.key],
       icon: STATUS_ICONS[s.key],
+      tone: 'neutral' as const,
     }));
   });
+  protected readonly dueItems: DropdownItem[] = [
+    { value: '', label: 'Any date' },
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: 'Next 7 days' },
+    { value: 'month', label: 'This month' },
+    { value: 'range', label: 'Custom range' },
+  ];
+  private readonly lookups = inject(LookupStore);
+  private readonly usersApi = inject(UsersLookupClient);
+  private readonly people = signal<{ id: number; name: string }[]>([]);
+  protected readonly priorityItems = computed<DropdownItem[]>(() =>
+    this.lookups.priorities().map((p) => ({ value: String(p.id), label: p.label })),
+  );
+  protected readonly prioValues = computed(() => this.grid().priorities.map(String));
+  protected readonly assigneeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Anyone' },
+    { value: 'none', label: 'Unassigned', icon: 'pi-user-minus', tone: 'neutral' as const },
+    ...this.people().map((u) => ({ value: String(u.id), label: u.name })),
+  ]);
+  protected readonly assigneeValue = computed(() =>
+    this.grid().assignee === null ? '' : String(this.grid().assignee),
+  );
+  private readonly today = computed(() => todayText(this.clock, this.zone));
+
+  /** The column filters in force (Status other than All open counts as one); the Show filter is not one of them. */
+  protected readonly activeCount = computed(() => {
+    const g = this.grid();
+    return (
+      (this.statuses().includes('open') ? 0 : 1) +
+      (g.q ? 1 : 0) +
+      (g.priorities.length ? 1 : 0) +
+      (g.assignee !== null ? 1 : 0) +
+      (g.due ? 1 : 0) +
+      (g.types.length ? 1 : 0) +
+      (g.createdFrom || g.createdTo ? 1 : 0)
+    );
+  });
+  protected readonly activeChips = computed(() => {
+    const g = this.grid();
+    const out: { key: string; label: string; clear: Record<string, string | null> }[] = [];
+    if (!this.statuses().includes('open'))
+      out.push({
+        key: 'status',
+        label: `Status: ${this.statuses()
+          .map((k) => STATUS_FILTERS.find((x) => x.key === k)?.label ?? k)
+          .join(', ')}`,
+        clear: { status: null },
+      });
+    if (g.q) out.push({ key: 'q', label: `Task: ${g.q}`, clear: { q: null } });
+    if (g.priorities.length)
+      out.push({
+        key: 'prio',
+        label: `Priority: ${g.priorities.map((id) => this.lookups.priorities().find((p) => p.id === id)?.label ?? id).join(', ')}`,
+        clear: { prio: null },
+      });
+    if (g.assignee !== null)
+      out.push({
+        key: 'asg',
+        label: `Assignee: ${g.assignee === 'none' ? 'Unassigned' : (this.people().find((u) => u.id === g.assignee)?.name ?? 'Selected person')}`,
+        clear: { asg: null },
+      });
+    if (g.due)
+      out.push({
+        key: 'due',
+        label: `Due: ${this.dueItems.find((d) => d.value === g.due)?.label ?? g.due}${g.due === 'range' && (g.from || g.to) ? ` ${g.from ?? ''} to ${g.to ?? ''}` : ''}`,
+        clear: { due: null, dfrom: null, dto: null },
+      });
+    if (g.types.length)
+      out.push({
+        key: 'ttype',
+        label: `Task type: ${g.types.length === 1 ? 'one chosen' : g.types.length + ' chosen'}`,
+        clear: { ttype: null },
+      });
+    if (g.createdFrom || g.createdTo)
+      out.push({
+        key: 'created',
+        label: `Created: ${g.createdFrom ?? 'earlier'} to ${g.createdTo ?? 'today'}`,
+        clear: { cfrom: null, cto: null },
+      });
+    return out;
+  });
+  protected readonly filterOpen = signal(rememberedOpen());
+
+  protected toggleFilters(): void {
+    const next = !this.filterOpen();
+    this.filterOpen.set(next);
+    try {
+      localStorage.setItem(OPEN_KEY, next ? '1' : '0');
+    } catch {
+      // Not remembering is fine.
+    }
+    if (next) this.loadPeople();
+  }
+  private loadPeople(): void {
+    if (this.people().length > 0) return;
+    void firstValueFrom(this.usersApi.lookupUsers(undefined, 200))
+      .then((r) => this.people.set(r.map((u) => ({ id: u.userId, name: u.displayName }))))
+      .catch(() => undefined);
+  }
+  protected clearFilters(): void {
+    this.paramsChange.emit({
+      status: null,
+      q: null,
+      prio: null,
+      asg: null,
+      due: null,
+      dfrom: null,
+      dto: null,
+      ttype: null,
+      cfrom: null,
+      cto: null,
+    });
+  }
+  private qTimer: ReturnType<typeof setTimeout> | undefined;
+  protected setQ(v: string): void {
+    clearTimeout(this.qTimer);
+    this.qTimer = setTimeout(() => this.paramsChange.emit({ q: v.trim() || null }), 300);
+  }
+  /** The Status choice: ticking All open resets it, ticking a status leaves All open, ticking nothing is All open again. */
+  protected setStatuses(next: readonly string[]): void {
+    const had = this.statuses().includes('open');
+    let keys = next.filter((k) => k !== 'open');
+    if (next.includes('open') && !had) keys = [];
+    this.paramsChange.emit({ status: keys.length ? keys.join(',') : null });
+  }
+
   protected readonly showOptions = computed<DropdownItem[]>(() => {
     const c = this.counts()?.byShow;
     const n: Record<ShowFilter, number | null> = {
@@ -629,12 +1045,13 @@ export class MmTaskList {
     return SHOW_FILTERS.map((s) => ({ value: s.key, label: s.label, count: n[s.key] }));
   });
   protected readonly emptyText = computed(() =>
-    this.show() === 'everything' && this.status() === 'open'
+    this.show() === 'everything' && this.activeCount() === 0
       ? 'No open tasks.'
       : 'No tasks match these filters.',
   );
 
   constructor() {
+    if (this.filterOpen()) this.loadPeople();
     effect(() => {
       const pages = Math.max(1, Math.ceil(this.total() / GRID_PAGE_SIZE));
       if (this.loader.state() === 'ready' && this.page() > pages) this.goPage(pages);

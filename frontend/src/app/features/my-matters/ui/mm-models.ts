@@ -114,6 +114,11 @@ export interface FeedItem {
   daysOverdue: number | null;
   oldDueDate: string | null;
   newDueDate: string | null;
+  /** The task type of a task item or the asset type of an asset item (UI-22); a missing colour means a default derived from `typeId`. */
+  typeId?: number | null;
+  typeName?: string | null;
+  typeIconKey?: string | null;
+  typeColourKey?: string | null;
 }
 
 export interface Feed {
@@ -158,6 +163,9 @@ export interface AssetRow {
   matterName: string;
   assetTypeId: number;
   assetTypeName: string;
+  /** From the asset type (UI-22); missing means a stable default is derived from the type. */
+  assetTypeIconKey?: string | null;
+  assetTypeColourKey?: string | null;
   createdAtUtc: string;
   updatedAtUtc: string | null;
   statusCode: AssetStatusCode;

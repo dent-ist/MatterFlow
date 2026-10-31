@@ -189,6 +189,8 @@ export class MmScopeBar {
   /** The docked tree is shown: Browse is not needed. */
   readonly docked = input(false);
   readonly pickedClient = output<number | null>();
+  /** A client row of the Browse tree: always selects the client and clears the matter. */
+  readonly pickedClientNode = output<number>();
   readonly pickedMatter = output<{ matterId: number | null; clientId: number | null }>();
   readonly clear = output<void>();
 
@@ -251,7 +253,7 @@ export class MmScopeBar {
 
   protected chosenClient(id: number): void {
     this.closeBrowse(true);
-    this.pickedClient.emit(id);
+    this.pickedClientNode.emit(id);
   }
 
   protected chosenMatter(e: { matterId: number; clientId: number }): void {

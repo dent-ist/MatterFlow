@@ -138,12 +138,15 @@ export class GeneratedMmApi extends MmApi {
   markSeen(): Observable<void> {
     return this.my.markMyMattersActivitySeen({}).pipe(map(() => undefined));
   }
-  taskCounts(f: MmFilters, status: StatusFilter, show: ShowFilter): Observable<TaskCounts> {
+  taskCounts(
+    f: MmFilters,
+    statuses: readonly StatusFilter[],
+    show: ShowFilter,
+  ): Observable<TaskCounts> {
     const a = commonArgs(f);
-    const codes =
-      status === 'open'
-        ? undefined
-        : [...(STATUS_FILTERS.find((s) => s.key === status)?.codes ?? [])];
+    const codes = statuses.includes('open')
+      ? undefined
+      : statuses.flatMap((k) => [...(STATUS_FILTERS.find((s) => s.key === k)?.codes ?? [])]);
     return this.my
       .getMyMattersTaskCounts(
         codes,

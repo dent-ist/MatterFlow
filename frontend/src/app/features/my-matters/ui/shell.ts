@@ -25,7 +25,7 @@ import { GeneratedMmApi } from './mm-api-generated';
 import { MmAssetsTab } from './assets-tab';
 import { MmCalendarTab } from './calendar-tab';
 import { MmLayout } from './mm-layout';
-import { MM_TABS, MmScopeStore, MmTab, TAB_LABELS } from './mm-scope';
+import { GRID_KEYS, MM_TABS, MmScopeStore, MmTab, TAB_LABELS } from './mm-scope';
 import { MmMetricsTab } from './metrics-tab';
 import { MmNewMenu } from './new-menu';
 import { MmOverview } from './overview';
@@ -202,6 +202,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
         [matterId]="scope.matterId()"
         [docked]="layout.docked()"
         (pickedClient)="pickClient($event)"
+        (pickedClientNode)="pickClientNode($event)"
         (pickedMatter)="pickMatter($event)"
         (clear)="clear()"
       >
@@ -265,7 +266,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
                   [pinned]="layout.treePin()"
                   (pin)="layout.setPin($event)"
                   (collapse)="collapseTree()"
-                  (chooseClient)="pickClient($event)"
+                  (chooseClient)="pickClientNode($event)"
                   (chooseMatter)="pickMatter($event)"
                 />
               } @else {
@@ -319,6 +320,7 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
                     [filters]="scope.filters()"
                     [view]="scope.metricsView()"
                     (viewChange)="scope.go({ mview: $event === 'data' ? 'data' : null }, true)"
+                    (drill)="drillTo($event)"
                   />
                 }
                 @case ('activity') {
@@ -335,16 +337,12 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
                 @default {
                   <mf-mm-overview
                     [filters]="scope.filters()"
-                    [status]="scope.status()"
+                    [statuses]="scope.statuses()"
+                    [grid]="scope.grid()"
                     [show]="scope.show()"
                     [showMatter]="!scope.matterId()"
                     [resetKey]="resetKey()"
-                    (statusChange)="
-                      scope.go({ status: $event === 'open' ? null : $event, page: null })
-                    "
-                    (showChange)="
-                      scope.go({ show: $event === 'everything' ? null : $event, page: null })
-                    "
+                    (paramsChange)="scope.go({ ...$event, page: null })"
                     (assetOpened)="openAsset($event)"
                     (viewCalendar)="viewCalendar($event)"
                     (viewActivity)="scope.go({ tab: 'activity', kind: $event, page: null })"
@@ -426,6 +424,7 @@ export class MyMattersPage {
 
   constructor() {
     this.focus.ensure();
+    this.restoreGridFilters();
     // The matters of the tree decide whether there is anything to browse (none or one: no tree).
     effect(() => {
       const n = this.tree.data()?.matterCount;
@@ -481,6 +480,12 @@ export class MyMattersPage {
     });
   }
 
+  /** A client row of the tree (or of Browse) was chosen: the client is the scope and the matter is cleared, even when the chosen matter belongs to it. */
+  protected pickClientNode(id: number): void {
+    this.scope.setClient(id, null);
+    this.layout.chosen();
+  }
+
   protected pickClient(id: number | null): void {
     const t = this.tree.data();
     const matterClient =
@@ -493,6 +498,60 @@ export class MyMattersPage {
   protected pickMatter(e: { matterId: number | null; clientId: number | null }): void {
     this.scope.setMatter(e.matterId, e.clientId);
     if (e.matterId !== null) this.layout.chosen();
+  }
+
+  /** The grid's column filters are remembered per browser (the address stays the source of truth): a visit with none in the address starts from the last ones. */
+  private restoreGridFilters(): void {
+    const key = 'mf-mm-grid-params';
+    try {
+      const q = new URLSearchParams(location.search);
+      if (!GRID_KEYS.some((k) => q.has(k))) {
+        const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as Record<
+          string,
+          string
+        > | null;
+        if (saved && Object.keys(saved).length > 0) this.scope.go({ ...saved }, true);
+      }
+    } catch {
+      // Storage may be blocked; the grid then starts unfiltered.
+    }
+    effect(() => {
+      const f = this.scope.filtersKey();
+      untracked(() => {
+        try {
+          const q = new URLSearchParams(location.search);
+          const out: Record<string, string> = {};
+          for (const k of ['status', 'q', 'prio', 'asg', 'due', 'dfrom', 'dto'] as const) {
+            const v = q.get(k);
+            if (v) out[k] = v;
+          }
+          void f;
+          localStorage.setItem(key, JSON.stringify(out));
+        } catch {
+          // Not remembering is fine.
+        }
+      });
+    });
+  }
+
+  /** A number of the Metrics tab: the Overview, with the filters that number counts (the chosen client and matter stay). */
+  protected drillTo(p: Record<string, string>): void {
+    this.scope.go({
+      tab: null,
+      status: null,
+      show: null,
+      q: null,
+      prio: null,
+      asg: null,
+      due: null,
+      dfrom: null,
+      dto: null,
+      ttype: null,
+      cfrom: null,
+      cto: null,
+      page: null,
+      ...p,
+    });
   }
 
   protected setScope(scope: 'mine' | 'all'): void {

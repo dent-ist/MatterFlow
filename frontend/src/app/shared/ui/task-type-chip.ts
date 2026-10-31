@@ -18,11 +18,12 @@ import { TASK_TYPE_COLOURS, isTaskTypeColour } from '../task-type/task-type-colo
       class="chip"
       [style.background]="'var(--mf-tt-' + colour() + ')'"
       [attr.role]="decorative() ? null : 'img'"
-      [attr.aria-label]="decorative() ? null : 'Task type: ' + name()"
+      [class.sm]="size() === 'sm'"
+      [attr.aria-label]="decorative() ? null : kindLabel() + ': ' + name()"
       [attr.aria-hidden]="decorative() ? true : null"
       [attr.title]="decorative() || !name() ? null : name()"
     >
-      <mf-task-type-icon [iconKey]="iconKey()" size="md" />
+      <mf-task-type-icon [iconKey]="iconKey()" [size]="size() === 'sm' ? 'sm' : 'md'" />
     </span>
   `,
   styles: `
@@ -38,6 +39,11 @@ import { TASK_TYPE_COLOURS, isTaskTypeColour } from '../task-type/task-type-colo
       height: 32px;
       border-radius: var(--mf-radius-lg);
       color: var(--mf-white);
+    }
+    .chip.sm {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--mf-radius-md);
     }
     @media (forced-colors: active) {
       .chip {
@@ -55,6 +61,10 @@ export class TaskTypeChip {
   readonly typeId = input<number | null | undefined>(undefined);
   readonly name = input('');
   readonly decorative = input(false);
+  /** What kind of thing the chip names ("Task type", "Asset type"); the first words of its accessible name. */
+  readonly kindLabel = input('Task type');
+  /** 32 px (default) or 24 px (a list entry). */
+  readonly size = input<'md' | 'sm'>('md');
 
   protected readonly colour = computed(() => {
     const k = this.colourKey();

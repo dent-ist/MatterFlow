@@ -83,8 +83,14 @@ export function eventType(id: string | null | undefined): EventTypeDef {
   selector: 'mf-event-icon',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="e" [attr.data-type]="def().colourKey" [class.chip]="chip()">
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+    <span class="e" [attr.data-type]="def().colourKey" [class.chip]="chip()" [class.lg]="large()">
+      <svg
+        viewBox="0 0 24 24"
+        [attr.width]="large() ? 24 : 16"
+        [attr.height]="large() ? 24 : 16"
+        aria-hidden="true"
+        focusable="false"
+      >
         @for (p of def().paths; track p) {
           <path [attr.d]="p" />
         }
@@ -108,6 +114,10 @@ export function eventType(id: string | null | undefined): EventTypeDef {
       background: var(--e-bg);
       border-radius: var(--mf-radius-lg);
       padding: var(--mf-s1);
+    }
+    .e.lg {
+      padding: var(--mf-s2);
+      border-radius: var(--mf-radius-xl);
     }
     .e.chip {
       padding: 2px var(--mf-s2) 2px var(--mf-s1);
@@ -164,5 +174,7 @@ export function eventType(id: string | null | undefined): EventTypeDef {
 export class EventIcon {
   readonly type = input.required<string | null | undefined>();
   readonly chip = input(false);
+  /** A 40 px chip with a 24 px glyph (the type tiles of the calendar item dialog). */
+  readonly large = input(false);
   protected readonly def = computed(() => eventType(this.type()));
 }

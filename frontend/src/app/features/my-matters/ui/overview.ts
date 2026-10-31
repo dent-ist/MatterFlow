@@ -21,6 +21,7 @@ import { agoShort, feedTitle, feedWhat, KIND_LOOK } from './feed-format';
 import { MmApi } from './mm-api';
 import { MmLayout } from './mm-layout';
 import { FEED_KINDS, FeedItem, FeedKind, MatterEvent, ShowFilter, StatusFilter } from './mm-models';
+import { GridFilters } from './mm-scope';
 import { MmTaskList } from './task-list';
 
 const PREVIEW_ITEMS = 6;
@@ -42,12 +43,12 @@ const UPCOMING_DAYS = 14;
       <div class="lcol">
         <mf-mm-task-list
           [filters]="filters()"
-          [status]="status()"
+          [statuses]="statuses()"
+          [grid]="grid()"
           [show]="show()"
           [showMatter]="showMatter()"
           [resetKey]="resetKey()"
-          (statusChange)="statusChange.emit($event)"
-          (showChange)="showChange.emit($event)"
+          (paramsChange)="paramsChange.emit($event)"
         />
       </div>
       @if (layout.stacked()) {
@@ -448,12 +449,22 @@ export class MmOverview {
   private readonly zone = inject(USER_TIME_ZONE);
 
   readonly filters = input.required<MmFilters>();
-  readonly status = input<StatusFilter>('open');
+  readonly statuses = input<readonly StatusFilter[]>(['open']);
+  readonly grid = input<GridFilters>({
+    q: '',
+    priorities: [],
+    assignee: null,
+    due: null,
+    from: null,
+    to: null,
+    types: [],
+    createdFrom: null,
+    createdTo: null,
+  });
   readonly show = input<ShowFilter>('everything');
   readonly showMatter = input(true);
   readonly resetKey = input<unknown>(undefined);
-  readonly statusChange = output<StatusFilter>();
-  readonly showChange = output<ShowFilter>();
+  readonly paramsChange = output<Record<string, string | null>>();
   /** An asset item was chosen: the page opens the Assets tab with it. */
   readonly assetOpened = output<number>();
   /** The calendar is wanted (null: the current month; a yyyy-MM-dd: the month of that event). */

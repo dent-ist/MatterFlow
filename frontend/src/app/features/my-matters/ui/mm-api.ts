@@ -53,7 +53,11 @@ export abstract class MmApi {
   abstract deleteEvent(eventId: number, rowVersion: string): Observable<void>;
   abstract feed(f: MmFilters, q: FeedQuery): Observable<Feed>;
   abstract markSeen(): Observable<void>;
-  abstract taskCounts(f: MmFilters, status: StatusFilter, show: ShowFilter): Observable<TaskCounts>;
+  abstract taskCounts(
+    f: MmFilters,
+    statuses: readonly StatusFilter[],
+    show: ShowFilter,
+  ): Observable<TaskCounts>;
   abstract assets(f: MmFilters, q: AssetQuery): Observable<AssetPage>;
   abstract asset(assetId: number): Observable<AssetDetail>;
 }

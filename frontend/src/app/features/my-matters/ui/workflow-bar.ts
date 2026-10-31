@@ -122,7 +122,7 @@ export class MmWorkflowBar {
 
   private readonly loader = panelLoader(
     () => this.filters(),
-    () => this.api.taskCounts(this.filters(), 'open', 'everything'),
+    () => this.api.taskCounts(this.filters(), ['open'], 'everything'),
   );
   protected readonly data = computed(() => {
     const c = this.loader.data()?.byStatus;

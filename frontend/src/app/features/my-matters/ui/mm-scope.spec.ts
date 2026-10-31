@@ -35,7 +35,7 @@ describe('MmScopeStore (UI-11)', () => {
     expect(store.clientId()).toBe(3);
     expect(store.matterId()).toBe(9);
     expect(store.tab()).toBe('calendar');
-    expect(store.status()).toBe('hold');
+    expect(store.statuses()).toEqual(['hold']);
     expect(store.show()).toBe('overdue');
     expect(store.month()).toBe('2026-11');
     expect(store.metricsView()).toBe('data');
@@ -44,7 +44,7 @@ describe('MmScopeStore (UI-11)', () => {
   it('falls back to the defaults for missing or unknown values', () => {
     const { store } = setup({ tab: 'nope', status: 'x', show: 'y', month: '2026-13' });
     expect(store.tab()).toBe('overview');
-    expect(store.status()).toBe('open');
+    expect(store.statuses()).toEqual(['open']);
     expect(store.show()).toBe('everything');
     expect(store.month()).toBeNull();
     expect(store.calShows()).toEqual(['events', 'critical']);

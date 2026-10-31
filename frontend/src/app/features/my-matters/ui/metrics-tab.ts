@@ -2,18 +2,18 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { MmFilters } from '../my-matters-filters';
-import { BreakdownTab } from '../tabs/breakdown-tab';
+import { MmMetricsWork } from './metrics-work';
 import { DataTab } from '../tabs/data-tab';
 import { MetricsView } from './mm-scope';
 
 /**
- * The Metrics tab (`mf-mm-metrics-tab`, epic #953 UI-17): one tab with a small toggle, Breakdown (matters by task type, a number opens those tasks) and Data (group by, the
+ * The Metrics tab (`mf-mm-metrics-tab`, epic #953 UI-17 and UI-21): one tab with a small toggle, Breakdown (matters by task type, a number opens those tasks) and Data (group by, the
  * volume tiles, Table, Bar and Pie). The two views are the existing, tested Breakdown and Data components, so nothing from them is lost; they follow the client and matter chosen
  * at the top. Data is for people who may see assets (`Asset.View`). The view is in the address (`?mview=data`). The body scrolls inside its frame.
  */
 @Component({
   selector: 'mf-mm-metrics-tab',
-  imports: [BreakdownTab, DataTab, ScrollRegion],
+  imports: [MmMetricsWork, DataTab, ScrollRegion],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -24,11 +24,11 @@ import { MetricsView } from './mm-scope';
           <div class="seg" role="group" aria-label="Metrics view">
             <button
               type="button"
-              data-view="breakdown"
+              data-view="work"
               [attr.aria-pressed]="view() === 'breakdown'"
               (click)="viewChange.emit('breakdown')"
             >
-              Breakdown
+              Work
             </button>
             <button
               type="button"
@@ -36,7 +36,7 @@ import { MetricsView } from './mm-scope';
               [attr.aria-pressed]="view() === 'data'"
               (click)="viewChange.emit('data')"
             >
-              Data
+              Assets
             </button>
           </div>
         }
@@ -50,9 +50,9 @@ import { MetricsView } from './mm-scope';
           }
         } @else {
           @defer (on immediate) {
-            <mf-mm-breakdown-tab [filters]="filters()" />
+            <mf-mm-metrics-work [filters]="filters()" (drill)="drill.emit($event)" />
           } @placeholder {
-            <p class="msg" role="status">Loading breakdown</p>
+            <p class="msg" role="status">Loading metrics</p>
           }
         }
       </div>
@@ -140,6 +140,8 @@ export class MmMetricsTab {
   readonly filters = input.required<MmFilters>();
   readonly view = input<MetricsView>('breakdown');
   readonly viewChange = output<MetricsView>();
+  /** A number was chosen: the Overview opens with these filters. */
+  readonly drill = output<Record<string, string>>();
   protected readonly canData = computed(() => this.auth.has('Asset.View'));
   protected readonly canAll = computed(() => this.auth.has('Matter.AssignManagers'));
 }
