@@ -16,7 +16,7 @@ import { MmTreePanel } from './tree-panel';
 /**
  * The row under the title (`mf-mm-scope-bar`, epic #953 UI-11): the Client and Matter dropdowns, Browse (the tree as a panel where it is not docked), Clear, and the slot at the
  * right for "+ New". The two dropdowns are searchable comboboxes over the same tree data as the tree: picking a matter sets its client; the Matter list narrows to the chosen
- * client; picking a client that does not own the chosen matter drops the matter. With one matter (or none) the dropdowns are disabled and say so.
+ * client; picking a client that does not own the chosen matter drops the matter. With one matter (or none) the tree and Browse are not offered (nothing to browse).
  */
 @Component({
   selector: 'mf-mm-scope-bar',
