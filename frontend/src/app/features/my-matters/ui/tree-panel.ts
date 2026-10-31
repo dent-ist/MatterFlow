@@ -127,7 +127,12 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
         </div>
       </div>
       <div class="body" tabindex="-1">
-        @if (nodes().length === 0) {
+        @if (failed()) {
+          <p class="none" role="alert" data-tree-error>
+            Couldn't load the clients and matters.
+            <button type="button" class="lnk" data-tree-retry (click)="retry.emit()">Retry</button>
+          </p>
+        } @else if (nodes().length === 0) {
           <p class="none" role="status">
             {{ q() || activeOnly() ? 'Nothing matches.' : 'No clients or matters in this view.' }}
           </p>
@@ -311,6 +316,9 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
 })
 export class MmTreePanel {
   readonly tree = input<MatterTree | null>(null);
+  /** The matters could not be loaded: say so (with Retry) instead of "No clients or matters". */
+  readonly failed = input(false);
+  readonly retry = output<void>();
   readonly clientId = input<number | null>(null);
   readonly matterId = input<number | null>(null);
   readonly pinned = input(false);

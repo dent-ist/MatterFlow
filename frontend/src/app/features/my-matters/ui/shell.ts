@@ -261,6 +261,8 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
               @if (layout.treeOpen()) {
                 <mf-mm-tree-panel
                   [tree]="tree.data()"
+                  [failed]="tree.state() === 'error'"
+                  (retry)="refresh.update((n) => n + 1)"
                   [clientId]="scope.clientId()"
                   [matterId]="scope.matterId()"
                   [pinned]="layout.treePin()"
