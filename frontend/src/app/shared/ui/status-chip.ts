@@ -31,9 +31,9 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
         class="chip"
         [attr.data-status]="code()"
         [attr.data-tone]="style().tone"
-        [attr.tabindex]="detail() ? 0 : null"
-        [attr.aria-label]="detail() ? style().label + '. ' + detail() : null"
-        [mfTip]="detail()"
+        [attr.tabindex]="detail() || step() ? 0 : null"
+        [attr.aria-label]="name()"
+        [mfTip]="tipText()"
       >
         @if (code() === 'NEW') {
           <span class="newic" aria-hidden="true"></span>
@@ -50,7 +50,6 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
             }
           </span>
         }
-        <span class="step">step {{ s.n }} of {{ s.total }}</span>
       }
     </span>
   `,
@@ -133,12 +132,6 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
     .bar i.on {
       background: var(--mf-status-progress-fg);
     }
-    .step {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
   `,
 })
 export class StatusChip {
@@ -155,6 +148,19 @@ export class StatusChip {
   protected readonly style = computed<ChipStyle>(
     () => STATUS_CHIPS[this.code()] ?? { ...STATUS_CHIPS['CANCELLED'], label: this.code() },
   );
+  /** The hover and focus text: the detail, else "Step 4 of 5" for an In Progress task. */
+  protected readonly tipText = computed(() => {
+    const s = this.step();
+    return this.detail() ?? (s ? `Step ${s.n} of ${s.total}` : null);
+  });
+  /** The accessible name keeps every word: "In Progress, step 4 of 5" (and the detail, when there is one). */
+  protected readonly name = computed(() => {
+    const s = this.step();
+    const detail = this.detail();
+    if (!s && !detail) return null;
+    const base = s ? `${this.style().label}, step ${s.n} of ${s.total}` : this.style().label;
+    return detail && !detail.startsWith('Step ') ? `${base}. ${detail}` : base;
+  });
   protected readonly step = computed(() => {
     const n = this.stepNumber();
     const total = this.stepTotal();

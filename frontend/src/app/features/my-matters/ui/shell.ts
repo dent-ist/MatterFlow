@@ -83,15 +83,15 @@ import { MmTreePanel, MmTreeRail } from './tree-panel';
     .chip-i {
       display: grid;
       place-items: center;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: var(--mf-radius-lg);
       background: var(--mf-primary);
       color: var(--mf-surface);
     }
     h1 {
       margin: 0;
-      font-size: var(--mf-fs-title);
+      font-size: var(--mf-fs-title-lg);
       font-weight: 600;
       line-height: 1.2;
     }

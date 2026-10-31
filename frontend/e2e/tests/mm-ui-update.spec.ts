@@ -234,7 +234,7 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
     await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
     // The icons of the first row: task type chip, status chip icon, assignee cell (Unassigned has its icon), the overdue warning.
     const row = page.locator('mf-mm-task-list tr[data-task]').first();
-    await expect(row.locator('mf-task-type-badge')).toHaveCount(1);
+    await expect(row.locator('mf-task-type-chip [role=img]')).toHaveCount(1);
     await expect(row.locator('mf-status-chip .newic, mf-status-chip .pi')).not.toHaveCount(0);
     await expect(row.locator('[data-cell=assignee] .pi-user-minus')).toHaveCount(1);
     await expect(row.locator('[data-cell=due] .pi-exclamation-triangle')).toHaveCount(1);
@@ -265,6 +265,51 @@ test.describe('My Matters: one dropdown style, pin and icons (UI-19)', () => {
     await expect(pin).toHaveAttribute('aria-pressed', 'true');
     expect(await pin.locator('svg').getAttribute('class')).not.toBe(before);
     await expect(pin).toHaveAttribute('aria-label', /Unpin/);
+  });
+});
+
+test.describe('My Matters: review round 2 (UI-20)', () => {
+  test('title size, coloured 32 px task type chip, two-line Due, step hint, activity icons and the + on a calendar day', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui14');
+    const a = await w.matter('Alpha');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Round two task' });
+    const page = await asUser(w.pm.username);
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto('/my-matters');
+    const row = page.locator('mf-mm-task-list tr[data-task]').first();
+    await expect(row).toBeVisible();
+    const h1 = await page
+      .getByRole('heading', { name: 'My Matters', level: 1 })
+      .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+    expect(h1).toBeGreaterThanOrEqual(21.5);
+    const chip = row.locator('mf-task-type-chip [role=img]');
+    const box = await chip.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(31);
+    await expect(chip).toHaveAttribute('aria-label', /^Task type: /);
+    const bg = await chip.evaluate((e) => getComputedStyle(e).backgroundColor);
+    expect(bg).not.toBe('rgba(0, 0, 0, 0)');
+    // Due: icon and date on line 1, the overdue note on line 2.
+    const due = row.locator('[data-cell=due]');
+    await expect(due.locator('.l1 .pi-exclamation-triangle')).toHaveCount(1);
+    await expect(due.locator('.rel')).toContainText(/\d+ d overdue/);
+    // The activity kind dropdown: options carry the icons of the items.
+    await page.locator('#mm-feed-kind').click();
+    await expect(page.locator('[role=listbox] [role=option] .ki')).toHaveCount(7);
+    await page.keyboard.press('Escape');
+    // Calendar: the + of a day opens the dialog with the date.
+    await page.goto('/my-matters?tab=calendar&matterId=' + a.matterId);
+    const day = page.locator('[data-add-day]').first();
+    await expect(day).toHaveAttribute('aria-label', /^Add event on /);
+    await day.focus();
+    await expect(day).toBeVisible();
+    await day.click();
+    const dialog = page.getByRole('dialog', { name: 'New calendar item' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel('Date')).not.toHaveValue('');
   });
 });
 

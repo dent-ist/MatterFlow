@@ -13,6 +13,7 @@ import { MyMattersClient, MyMattersTaskItem } from '../../../api/generated/api-c
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { formatDateOnly } from '../../../core/time/time';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
 import { MmFilters, commonArgs } from '../my-matters-filters';
@@ -83,7 +84,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
  */
 @Component({
   selector: 'mf-mm-calendar-tab',
-  imports: [Dropdown, EventIcon, MmEventDialog, RouterLink],
+  imports: [Dropdown, EventIcon, MmEventDialog, RouterLink, TaskTypeChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'mf-fill',
@@ -227,6 +228,18 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
                       }
                     </span>
                   </button>
+                  @if (canManage()) {
+                    <button
+                      type="button"
+                      class="add"
+                      [attr.data-add-day]="c.date"
+                      [attr.tabindex]="c.date === tabStop() ? 0 : -1"
+                      [attr.aria-label]="'Add event on ' + longDate(c.date)"
+                      (click)="addOn(c.date)"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                    </button>
+                  }
                 </div>
               }
             </div>
@@ -286,6 +299,12 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
             <ul class="dl">
               @for (t of d.tasks; track t.taskId) {
                 <li>
+                  <mf-task-type-chip
+                    [iconKey]="t.taskTypeIconKey"
+                    [colourKey]="t.taskTypeColourKey"
+                    [typeId]="t.taskTypeId"
+                    [name]="t.taskTypeName"
+                  />
                   @if (isOver(t)) {
                     <i class="pi pi-exclamation-circle od" aria-label="Overdue" role="img"></i>
                   }
@@ -310,6 +329,7 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
         [matterId]="filters().matterId"
         [clientId]="filters().clientId"
         [event]="editing()"
+        [startDate]="addDate()"
         (saved)="changed.emit()"
         (deleted)="changed.emit()"
       />
@@ -438,6 +458,39 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       border-right: 1px solid var(--mf-border);
       border-bottom: 1px solid var(--mf-border);
     }
+    .cell {
+      position: relative;
+    }
+    /* The "+" of a day: shown on hover and on keyboard focus of the cell; always there, subdued, where there is no hover (touch). */
+    .add {
+      position: absolute;
+      top: var(--mf-s1);
+      right: var(--mf-s1);
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: 50%;
+      background: var(--mf-surface);
+      color: var(--mf-primary);
+      font-size: var(--mf-fs-xs);
+      cursor: pointer;
+      opacity: 0;
+    }
+    .cell:hover .add,
+    .cell:focus-within .add,
+    .add:focus-visible {
+      opacity: 1;
+    }
+    @media (hover: none) {
+      .add {
+        opacity: 0.7;
+        width: 32px;
+        height: 32px;
+      }
+    }
     .cell.out {
       background: var(--mf-surface-alt);
     }
@@ -465,9 +518,6 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       outline: 2px solid var(--mf-focus);
       outline-offset: -2px;
     }
-    .cell.out .num {
-      color: var(--mf-text-muted);
-    }
     .num {
       font-weight: 700;
       font-size: var(--mf-fs-sm);
@@ -482,9 +532,8 @@ export function taskShown(t: MyMattersTaskItem, shows: readonly CalShow[], today
       color: var(--mf-surface);
     }
     .tdy {
-      font-size: var(--mf-fs-xs);
       color: var(--mf-primary);
-      font-weight: 700;
+      font-size: var(--mf-fs-xs);
     }
     .chips {
       display: flex;
@@ -669,6 +718,7 @@ export class MmCalendarTab {
     tasks: MyMattersTaskItem[];
   } | null>(null);
   protected readonly dialog = signal(false);
+  protected readonly addDate = signal<string | null>(null);
   protected readonly editing = signal<MatterEvent | null>(null);
   protected readonly active = signal<string | null>(null);
   private lastDayButton: HTMLElement | null = null;
@@ -786,7 +836,14 @@ export class MmCalendarTab {
     if (restore) queueMicrotask(() => this.lastDayButton?.focus());
   }
 
+  protected addOn(date: string): void {
+    this.addDate.set(date);
+    this.editing.set(null);
+    this.dialog.set(true);
+  }
+
   protected add(): void {
+    this.addDate.set(null);
     this.editing.set(null);
     this.dialog.set(true);
   }

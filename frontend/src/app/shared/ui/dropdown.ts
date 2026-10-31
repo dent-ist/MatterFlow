@@ -26,6 +26,9 @@ export interface DropdownItem {
   dot?: 'active' | 'quiet' | null;
   /** The matter is sensitive: a lock and the word for screen readers. */
   lock?: boolean;
+  /** A PrimeIcons class drawn in a small tinted square before the label (the activity kinds), in the colour of `tone`. */
+  icon?: string;
+  tone?: 'info' | 'accent' | 'neutral' | 'danger' | 'warning';
   /** A group heading (not choosable). */
   heading?: boolean;
 }
@@ -57,7 +60,11 @@ let nextId = 0;
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
     >
-      @if (icon()) {
+      @if (chosen()?.icon; as ci) {
+        <span class="ki" [attr.data-tone]="chosen()?.tone" aria-hidden="true"
+          ><i class="pi" [class]="ci"></i
+        ></span>
+      } @else if (icon()) {
         <i class="pi ico" [class]="icon()" aria-hidden="true"></i>
       }
       @if (prefix()) {
@@ -124,6 +131,11 @@ let nextId = 0;
                       <i class="pi pi-check"></i>
                     }
                   </span>
+                }
+                @if (it.icon) {
+                  <span class="ki" [attr.data-tone]="it.tone" aria-hidden="true"
+                    ><i class="pi" [class]="it.icon"></i
+                  ></span>
                 }
                 @if (it.dot) {
                   <span class="dot" [class.quiet]="it.dot === 'quiet'" aria-hidden="true"></span>
@@ -346,6 +358,42 @@ let nextId = 0;
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
     }
+    .ki {
+      display: grid;
+      flex: none;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--mf-radius-lg);
+      background: var(--k-bg);
+      color: var(--k-fg);
+      font-size: var(--mf-fs-sm);
+    }
+    .ki[data-tone='info'] {
+      --k-bg: var(--mf-sem-info-bg);
+      --k-fg: var(--mf-sem-info-fg);
+    }
+    .ki[data-tone='accent'] {
+      --k-bg: var(--mf-status-progress-bg);
+      --k-fg: var(--mf-status-progress-fg);
+    }
+    .ki[data-tone='neutral'] {
+      --k-bg: var(--mf-surface-alt);
+      --k-fg: var(--mf-text-muted);
+    }
+    .ki[data-tone='danger'] {
+      --k-bg: var(--mf-sem-overdue-bg);
+      --k-fg: var(--mf-sem-overdue-fg);
+    }
+    .ki[data-tone='warning'] {
+      --k-bg: var(--mf-sem-risk-bg);
+      --k-fg: var(--mf-sem-risk-fg);
+    }
+    .btn .ki {
+      width: 20px;
+      height: 20px;
+      font-size: var(--mf-fs-xs);
+    }
     .gh {
       padding: var(--mf-s2) var(--mf-s3) var(--mf-s1);
       color: var(--mf-text-muted);
@@ -430,7 +478,7 @@ export class Dropdown {
   private typed = '';
   private typedAt = 0;
 
-  private readonly chosen = computed(
+  protected readonly chosen = computed(
     () => this.items().find((i) => !i.heading && i.value === this.value()) ?? null,
   );
   protected readonly text = computed(() => {

@@ -47,6 +47,9 @@ for (const s of ['new', 'progress', 'hold', 'done', 'cancel']) {
 for (const e of ['court', 'trial', 'deposition', 'production', 'filing', 'mediation', 'meeting', 'other']) {
   pairs.push([`event ${e} icon and text on its tint`, `--mf-event-${e}-fg`, `--mf-event-${e}-bg`, text]);
 }
+for (const k of ['slate', 'blue', 'teal', 'green', 'amber', 'orange', 'red', 'rose', 'violet', 'indigo']) {
+  pairs.push([`task type ${k} glyph (white) on its chip`, '--mf-white', `--mf-tt-${k}`, graphic]);
+}
 pairs.push(
   ['nav text on the panel', '--mf-nav-text', '--mf-nav-bg', text],
   ['nav muted text and ADMINISTRATION heading on the panel', '--mf-nav-heading', '--mf-nav-bg', text],

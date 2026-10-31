@@ -11,9 +11,9 @@ import {
 import { RouterLink, convertToParamMap } from '@angular/router';
 import { TaskQueueClient, TaskQueueRow } from '../../../api/generated/api-client';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
-import { describeDueCell } from '../../../core/time/time';
+import { DueCell, describeDueCell } from '../../../core/time/time';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
-import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { FilterChip, FilterChips } from '../../../shared/ui/filter-chips';
 import { GridFrame } from '../../../shared/ui/grid-frame';
 import { Pager } from '../../../shared/ui/pager';
@@ -62,7 +62,7 @@ export function statusCodes(status: StatusFilter): string[] {
     PriorityPill,
     RouterLink,
     StatusChip,
-    TaskTypeBadge,
+    TaskTypeChip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -156,10 +156,10 @@ export function statusCodes(status: StatusFilter): string[] {
               <tr [attr.data-task]="t.taskId">
                 <td class="td-t" data-cell="title">
                   <div class="cell">
-                    <mf-task-type-badge
-                      [decorative]="true"
+                    <mf-task-type-chip
                       [iconKey]="t.taskTypeIconKey"
                       [colourKey]="t.taskTypeColourKey"
+                      [typeId]="t.taskTypeId"
                       [name]="t.taskTypeName"
                     />
                     <span class="tcell">
@@ -211,14 +211,16 @@ export function statusCodes(status: StatusFilter): string[] {
                 <td class="c-due" data-cell="due">
                   @let d = due(t);
                   <span [class]="'due ' + d.tone" [attr.title]="d.tooltip">
-                    @if (d.tone === 'overdue') {
-                      <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-                    } @else if (d.tone === 'today' || d.tone === 'soon') {
-                      <i class="pi pi-clock" aria-hidden="true"></i>
-                    }
-                    {{ d.line1 }}
-                    @if (d.line2) {
-                      <span class="rel">{{ d.line2 }}</span>
+                    <span class="l1">
+                      @if (d.tone === 'overdue') {
+                        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+                      } @else if (d.tone === 'today' || d.tone === 'soon') {
+                        <i class="pi pi-clock" aria-hidden="true"></i>
+                      }
+                      {{ d.line1 }}
+                    </span>
+                    @if (dueNote(t, d); as note) {
+                      <span class="rel">{{ note }}</span>
                     }
                   </span>
                 </td>
@@ -417,6 +419,12 @@ export function statusCodes(status: StatusFilter): string[] {
       display: inline-flex;
       flex-direction: column;
       line-height: 1.25;
+    }
+    .due .l1 {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      white-space: nowrap;
     }
     .due.overdue {
       color: var(--mf-sem-overdue-fg);
@@ -669,6 +677,17 @@ export class MmTaskList {
     return tone === 'critical' ? 'critical' : tone === 'high' ? 'high' : null;
   }
 
+  /** Line 2 of the Due cell: "10 d overdue", "Due today", "Due in 2 d" (nothing for a later date or a closed task). */
+  protected dueNote(t: TaskQueueRow, d: DueCell): string {
+    if (t.status === 'COMPLETED' || t.status === 'CANCELLED') return '';
+    const n = d.daysUntil;
+    if (n === undefined) return d.tone === 'asap' ? '' : d.line2;
+    if (n < 0) return `${-n} d overdue`;
+    if (d.overdue) return d.line2;
+    if (n === 0) return 'Due today';
+    return n <= 7 ? `Due in ${n} d` : '';
+  }
+
   protected due(t: TaskQueueRow) {
     return describeDueCell(t, this.clock.now(), this.zone, t.status);
   }
@@ -683,6 +702,13 @@ export class MmTaskList {
     if (t.status === 'ON_HOLD') {
       const why = t.onHoldReasonName ?? t.holdReason;
       return `On hold for ${days} ${days === 1 ? 'day' : 'days'}${why ? ` because ${why}` : ''}`;
+    }
+    if (t.status === 'IN_PROGRESS') {
+      const n = this.step(t);
+      const total = t.workflow?.stepsTotal ?? 0;
+      return n && total > 0
+        ? `Step ${n} of ${total}${t.workflow.currentStepName ? `: ${t.workflow.currentStepName}` : ''}`
+        : null;
     }
     if (t.status === 'COMPLETED' || t.status === 'CANCELLED') {
       const when = (t.closedAtUtc ?? t.statusChangedAtUtc).slice(0, 10);

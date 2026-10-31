@@ -482,8 +482,14 @@ export class MmOverview {
     const c = this.feed.data()?.countsByKind;
     const total = c ? Object.values(c).reduce((a, b) => a + b, 0) : null;
     return [
-      { value: 'ALL', label: 'All', count: total },
-      ...FEED_KINDS.map((k) => ({ value: k.kind, label: k.label, count: c ? c[k.kind] : null })),
+      { value: 'ALL', label: 'All', count: total, icon: 'pi-list', tone: 'neutral' as const },
+      ...FEED_KINDS.map((k) => ({
+        value: k.kind,
+        label: k.label,
+        count: c ? c[k.kind] : null,
+        icon: KIND_LOOK[k.kind].icon,
+        tone: KIND_LOOK[k.kind].tone,
+      })),
     ];
   });
   protected readonly sections = computed<SideSection[]>(() => [

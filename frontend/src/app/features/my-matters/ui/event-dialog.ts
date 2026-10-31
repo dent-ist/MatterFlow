@@ -298,6 +298,8 @@ export class MmEventDialog {
   readonly clientId = input<number | null>(null);
   /** An existing item to edit (and delete). */
   readonly event = input<MatterEvent | null>(null);
+  /** A date to start the new item on (the "+" of a calendar day). */
+  readonly startDate = input<string | null>(null);
   readonly saved = output<MatterEvent>();
   readonly deleted = output<void>();
 
@@ -334,7 +336,7 @@ export class MmEventDialog {
         this.matter.set(e?.matterId ?? this.matterId());
         this.type.set(e?.typeCode ?? null);
         this.title.set(e?.title ?? '');
-        this.date.set(e?.date ?? '');
+        this.date.set(e?.date ?? this.startDate() ?? '');
         this.time.set(e?.time ?? '');
         this.note.set(e?.note ?? '');
       });

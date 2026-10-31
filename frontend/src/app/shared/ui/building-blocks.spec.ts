@@ -88,7 +88,12 @@ describe('shared building blocks (UI-10)', () => {
   it('the status chip writes the word, an icon and "step n of m" for In Progress only', async () => {
     const { el } = await setup();
     expect(el.querySelector('#s1')!.textContent).toContain('In Progress');
-    expect(el.querySelector('#s1')!.textContent).toContain('step 3 of 5');
+    // The text "step 3 of 5" is not drawn any more: the bar is decorative, the words are the name and the tooltip.
+    expect(el.querySelector('#s1')!.textContent).not.toContain('step');
+    expect(el.querySelector('#s1 .chip')!.getAttribute('aria-label')).toBe(
+      'In Progress, step 3 of 5',
+    );
+    expect(el.querySelector<HTMLElement>('#s1 .chip')!.tabIndex).toBe(0);
     expect(el.querySelectorAll('#s1 .bar i.on').length).toBe(3);
     expect(el.querySelector('#s3')!.textContent).not.toContain('step');
   });
