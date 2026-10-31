@@ -61,7 +61,7 @@
 }
 
 .mf-nav {
-  width: 220px;
+  width: var(--mf-nav-w);
   flex: none;
   padding: var(--mf-s3);
   border-right: 1px solid var(--mf-nav-border);
@@ -96,11 +96,15 @@
     display: flex;
     align-items: center;
     gap: var(--mf-s3);
-    min-height: var(--mf-row-h);
+    min-height: var(--mf-nav-item-h);
     padding: 0 var(--mf-s4);
-    border-radius: 999px;
+    border-radius: var(--mf-nav-item-radius);
     color: var(--mf-nav-text);
     text-decoration: none;
+
+    .pi {
+      font-size: var(--mf-nav-icon);
+    }
 
     &:hover {
       background: var(--mf-nav-hover-bg);
@@ -116,7 +120,7 @@
 
   /* Projects and Assets under Matters (MM-59, #951): indented, same row height and icon size. */
   .mf-nav-child > a {
-    padding-left: calc(var(--mf-s4) + var(--mf-s5));
+    padding-left: var(--mf-nav-indent);
   }
 
   hr {
@@ -161,7 +165,7 @@
 
 @media (max-width: 1099px) {
   .mf-nav {
-    width: 56px;
+    width: var(--mf-nav-rail-w);
     padding: var(--mf-s2);
   }
 
@@ -328,7 +332,7 @@
   }
 
   .mf-nav .mf-nav-child > a {
-    padding-left: calc(var(--mf-s4) + var(--mf-s5));
+    padding-left: var(--mf-nav-indent);
   }
 
   .mf-nav-group + .mf-nav-group {

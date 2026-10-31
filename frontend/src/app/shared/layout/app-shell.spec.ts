@@ -160,8 +160,8 @@ describe('AppShell header search', () => {
       'Matters',
       'Projects',
       'Assets',
-      'Task Queue',
       'Pod Work',
+      'Task Queue',
     ]);
     const children = Array.from(groups[0].querySelectorAll('li.mf-nav-child')).map((li) =>
       li.textContent!.trim(),
@@ -235,8 +235,8 @@ describe('AppShell header search', () => {
       expect(navLabels(await create(['Task.View', 'Pod.View', 'Client.View']))).toEqual([
         'My Work',
         'Clients',
-        'Task Queue',
         'Pod Work',
+        'Task Queue',
       ]);
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({

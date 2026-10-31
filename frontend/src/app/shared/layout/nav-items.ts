@@ -25,7 +25,7 @@ export interface NavItem {
 
 /**
  * Left navigation (UX 2.1; MM-59 #951): ONE order for everybody, Dashboard, My Matters, My Work, Clients, Matters (with Projects and Assets
- * indented under it), Tasks, Pod Work. Items are hidden, never disabled, without the matching View permission; each keeps its own rule, so a
+ * indented under it), Pod Work, Tasks (the Task Queue; UI update epic #953 moved Pod Work before it, superseding #952). Items are hidden, never disabled, without the matching View permission; each keeps its own rule, so a
  * person who may open Projects but not Matters still sees Projects at its place.
  */
 export const NAV_ITEMS: NavItem[] = [
@@ -78,13 +78,6 @@ export const NAV_ITEMS: NavItem[] = [
     child: true,
   },
   {
-    label: 'Task Queue',
-    icon: 'pi pi-list-check',
-    path: '/tasks',
-    permissions: ['Task.View'],
-    compactLabel: 'Tasks',
-  },
-  {
     label: 'Pod Work',
     icon: 'pi pi-users',
     path: '/pods/work',
@@ -92,6 +85,13 @@ export const NAV_ITEMS: NavItem[] = [
     permissions: ['Pod.View'],
     permissionsAll: ['Pod.View', 'Task.View'],
     hideWhenCompact: true,
+  },
+  {
+    label: 'Task Queue',
+    icon: 'pi pi-list-check',
+    path: '/tasks',
+    permissions: ['Task.View'],
+    compactLabel: 'Tasks',
   },
 ];
 

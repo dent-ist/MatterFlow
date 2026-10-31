@@ -4,6 +4,10 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ## Agent 1 (foundation and backend)
 
+### 2026-10-31 UI-06 (#959) navigation
+
+- The panel already had the navy look (MM-43/MM-58). Done now: Pod Work before Tasks (supersedes #952), panel width, row height, icon size (`--mf-nav-icon` 19 px), pill radius, rail width and child indent read tokens. The Task Queue keeps its label "Task Queue" ("Tasks" only for the compact menu, as before) to keep existing tests and links; owner may want it renamed. Specs of the layout folder pass (116), initial bundle 652.7 kB.
+
 ### 2026-10-31 UI-03, UI-04, UI-05 pushed (refs #956, #957, #958) - Agent 2 can swap to the generated client
 
 - Commits 615d5d2 (backend, tests, script 49) and 3a9c43f (OpenAPI + nswag client regenerated; positional callers compile: `tsc` app, spec, e2e clean). Methods: `getMyMattersTree`, `getMyMattersEvents`, `getMyMattersUpcomingEvents`, `listMatterEventTypes`, `listMatterEvents`, `createMatterEvent`, `updateMatterEvent`, `deleteMatterEvent`, `getMyMattersFeed`, `getMyMattersTaskCounts`, `getMyMattersAssets`, `getMyMattersAsset`; `getTaskQueue` has `show` as its last parameter.
