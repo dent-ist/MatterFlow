@@ -37,6 +37,13 @@ import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/u
 import { TextField } from '../../../shared/ui/text-field';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { focusStatusAfterAction } from '../after-action';
+import { FormsModule } from '@angular/forms';
+import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
+import {
+  TASK_TYPE_COLOURS,
+  TASK_TYPE_COLOUR_DEFAULT_LABEL,
+} from '../../../shared/task-type/task-type-colours';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ADMIN_LIST, ListReturn } from '../list-return';
 import { dialogCopy } from '../shared/dialog-copy';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
@@ -76,12 +83,20 @@ export function suggestUnit(key: string): string {
 interface Model {
   name: string;
   description: string;
+  /** '' = none: the lists derive a stable default from the id. */
+  iconKey: string;
+  colourKey: string;
 }
 
-const EMPTY: Model = { name: '', description: '' };
+const EMPTY: Model = { name: '', description: '', iconKey: '', colourKey: '' };
 
 const modelKey = (m: Model): string =>
-  JSON.stringify({ name: m.name.trim(), description: m.description.trim() });
+  JSON.stringify({
+    name: m.name.trim(),
+    description: m.description.trim(),
+    iconKey: m.iconKey,
+    colourKey: m.colourKey,
+  });
 
 /**
  * Admin: the Asset Type record page (UX S17, #635, #636, #638). `/admin/asset-types/new` is the same page with a plain header. A record header
@@ -104,6 +119,9 @@ const modelKey = (m: Model): string =>
     RouterLink,
     Tabs,
     TextField,
+    TaskTypeIconPicker,
+    TaskTypeChip,
+    FormsModule,
   ],
   templateUrl: './asset-type-record-page.html',
   styleUrl: './asset-type-record-page.scss',
@@ -141,6 +159,8 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   protected readonly announcement = signal('');
   protected readonly activityOpen = signal(false);
   protected readonly deactivateOpen = signal(false);
+  protected readonly colours = TASK_TYPE_COLOURS;
+  protected readonly defaultColourLabel = TASK_TYPE_COLOUR_DEFAULT_LABEL;
 
   /** Size (epic #851): the NUMBER fields of the published form, the chosen default size field and unit, and the state of the two actions. */
   protected readonly numberFields = signal<{ key: string; label: string }[]>([]);
@@ -388,7 +408,12 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
   }
 
   private modelOf(t: AssetTypeResponse): Model {
-    return { name: t.name, description: t.description ?? '' };
+    return {
+      name: t.name,
+      description: t.description ?? '',
+      iconKey: t.iconKey ?? '',
+      colourKey: t.colourKey ?? '',
+    };
   }
 
   private apply(m: Model): void {
@@ -477,7 +502,14 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
       const current = this.assetType();
       const description = m.description.trim() || undefined;
       if (!current) {
-        const created = await firstValueFrom(this.api.createAssetType({ name, description }));
+        const created = await firstValueFrom(
+          this.api.createAssetType({
+            name,
+            description,
+            iconKey: m.iconKey || undefined,
+            colourKey: m.colourKey || undefined,
+          }),
+        );
         this.apply(this.modelOf(created));
         this.notify.success(`Asset type ${created.name} created`);
         // Lands on the Fields tab (the next thing to set up); the address is replaced so Back returns to where New was opened.
@@ -492,6 +524,8 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
         this.api.updateAssetType(current.assetTypeId, {
           name,
           description,
+          iconKey: m.iconKey || undefined,
+          colourKey: m.colourKey || undefined,
           sortOrder: current.sortOrder,
           isActive: current.isActive,
           rowVersion: current.rowVersion,
@@ -540,6 +574,8 @@ export class AssetTypeRecordPage implements HasUnsavedChanges {
         this.api.updateAssetType(current.assetTypeId, {
           name: s.name.trim(),
           description: s.description.trim() || undefined,
+          iconKey: s.iconKey || undefined,
+          colourKey: s.colourKey || undefined,
           sortOrder: current.sortOrder,
           isActive: active,
           rowVersion: current.rowVersion,

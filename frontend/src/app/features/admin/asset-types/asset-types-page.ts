@@ -25,6 +25,7 @@ import { ActionMenu } from '../../../shared/ui/action-menu';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/ui/admin-card-spec';
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
@@ -87,6 +88,7 @@ const LOAD_PAGE_SIZE = 100;
     RouterLink,
     RowLink,
     ScrollArea,
+    TaskTypeChip,
     WorkStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -175,6 +177,14 @@ const LOAD_PAGE_SIZE = 100;
               @for (t of rows(); track t.assetTypeId) {
                 <tr [attr.data-row]="t.name" [class.inactive]="!t.isActive">
                   <td class="mf-cell-name">
+                    <mf-task-type-chip
+                      class="at-chip"
+                      [decorative]="true"
+                      [iconKey]="t.iconKey"
+                      [colourKey]="t.colourKey"
+                      [typeId]="t.assetTypeId"
+                      [name]="t.name"
+                    />
                     <a
                       class="mf-name"
                       [routerLink]="['/admin/asset-types', t.assetTypeId]"
@@ -255,6 +265,10 @@ const LOAD_PAGE_SIZE = 100;
     }
   `,
   styles: `
+    .at-chip {
+      margin-right: var(--mf-s2);
+      vertical-align: middle;
+    }
     .at-failure {
       display: flex;
       gap: var(--mf-s2);

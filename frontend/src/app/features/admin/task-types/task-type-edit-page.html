@@ -160,11 +160,11 @@
                       <option [value]="c.key">{{ c.label }}</option>
                     }
                   </select>
-                  <mf-task-type-badge
+                  <mf-task-type-chip
                     class="tt__preview"
-                    variant="wide"
                     [iconKey]="model().iconKey"
                     [colourKey]="model().colourKey"
+                    [typeId]="taskType()?.id"
                     [name]="model().name.trim() || 'Task type name'"
                     data-preview
                   />

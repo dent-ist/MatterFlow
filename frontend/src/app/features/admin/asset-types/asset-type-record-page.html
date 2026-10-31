@@ -98,6 +98,62 @@
               [value]="model().description"
               (valueChange)="patch({ description: $event })"
             />
+            <div class="field">
+              <label id="at-icon-label" for="at-icon">Icon</label>
+              <mf-task-type-icon-picker
+                inputId="at-icon"
+                labelId="at-icon-label"
+                [value]="model().iconKey"
+                (valueChange)="patch({ iconKey: $event })"
+                [invalid]="!!fieldErrors()['iconKey']"
+                describedBy="at-icon-help"
+              />
+              <p id="at-icon-help" class="muted hint">
+                Optional. The same icons as task types. Without one, lists show a default icon.
+                @if (model().iconKey) {
+                  <button type="button" class="mf-linkbtn" (click)="patch({ iconKey: '' })">
+                    Clear the icon
+                  </button>
+                }
+              </p>
+              @if (fieldErrors()['iconKey']) {
+                <p class="error" role="alert" data-icon-error>{{ fieldErrors()['iconKey'] }}</p>
+              }
+            </div>
+            <div class="field">
+              <label for="at-colour">Colour</label>
+              <div class="at__colour">
+                <select
+                  id="at-colour"
+                  class="text"
+                  name="colourKey"
+                  [ngModel]="model().colourKey"
+                  (ngModelChange)="patch({ colourKey: $event })"
+                  [attr.aria-invalid]="fieldErrors()['colourKey'] ? 'true' : null"
+                  aria-describedby="at-colour-help"
+                  data-colour-select
+                >
+                  <option value="">{{ defaultColourLabel }}</option>
+                  @for (c of colours; track c.key) {
+                    <option [value]="c.key">{{ c.label }}</option>
+                  }
+                </select>
+                <mf-task-type-chip
+                  [iconKey]="model().iconKey"
+                  [colourKey]="model().colourKey"
+                  [typeId]="assetType()?.assetTypeId"
+                  [name]="model().name.trim() || 'Asset type name'"
+                  data-preview
+                />
+              </div>
+              <p id="at-colour-help" class="muted hint">
+                One of ten named colours, shown behind a white icon in lists. The preview shows how
+                the type looks. Without a colour one is picked from the type's number.
+              </p>
+              @if (fieldErrors()['colourKey']) {
+                <p class="error" role="alert" data-colour-error>{{ fieldErrors()['colourKey'] }}</p>
+              }
+            </div>
           </form>
         }
         @case ('fields') {

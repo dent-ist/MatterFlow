@@ -39,8 +39,8 @@ import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { WorkStrip } from '../../../shared/work-queue/work-strip';
 import { DEFAULT_TASK_TYPE_ICON, TaskTypeIcon } from '../../../shared/icons/task-type-icon';
+import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
 import { TaskTypeIconPicker } from '../../../shared/icons/task-type-icon-picker';
-import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 import {
   TASK_TYPE_COLOURS,
   TASK_TYPE_COLOUR_DEFAULT_LABEL,
@@ -137,7 +137,7 @@ const workflowsKey = (m: Model): string =>
     Tabs,
     TaskTypeIcon,
     TaskTypeIconPicker,
-    TaskTypeBadge,
+    TaskTypeChip,
     TaskTypeStatusNote,
     TaskTypeWorkflowsTab,
     WorkStrip,

@@ -6,7 +6,7 @@ Each agent edits only its own section. Newest entry first inside a section. Form
 
 ### 2026-10-31 UI-22 (#973) backend pushed - Agent 2 can use the type fields now
 
-- Script 50: `AssetType.IconKey`/`ColourKey` (nullable, no backfill: derive from the id when null). Fields: feed items `typeId/typeName/typeIconKey/typeColourKey`; `getMyMattersAssets` rows and `getMyMattersAsset` `assetTypeIconKey/assetTypeColourKey`; `getAssets`/`getAsset` the same names; asset type responses `iconKey/colourKey`. OpenAPI and client regenerated. The admin page pickers follow in a second push.
+- Script 50: `AssetType.IconKey`/`ColourKey` (nullable, no backfill: derive from the id when null). Fields: feed items `typeId/typeName/typeIconKey/typeColourKey`; `getMyMattersAssets` rows and `getMyMattersAsset` `assetTypeIconKey/assetTypeColourKey`; `getAssets`/`getAsset` the same names; asset type responses `iconKey/colourKey`. OpenAPI and client regenerated. Admin pages done in the second push: Asset Types create/edit has the icon picker, colour select and the solid chip preview (`mf-task-type-chip`); the list shows the chip before the name; the Task Types edit preview is the same solid chip. Checks: admin specs (170 pass), tsc app/spec/e2e, eslint, prettier, theme checks.
 
 ### 2026-10-31 UI-07 (#960) theme adoption guide
 

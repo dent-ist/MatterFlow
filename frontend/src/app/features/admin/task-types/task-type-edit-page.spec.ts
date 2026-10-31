@@ -508,10 +508,11 @@ describe('TaskTypeEditPage', () => {
       expect(options).toHaveLength(11);
       expect(options[0]).toBe('Neutral (default)');
       expect(options).toContain('Teal');
-      expect(q('[data-preview]').getAttribute('data-colour')).toBeNull();
+      // The preview is the solid chip with a white glyph (UI-22): with no colour it takes one of the ten from the type's id.
+      expect(q('[data-preview]').getAttribute('data-colour')).toBeTruthy();
       await pickColour('teal');
       expect(q('[data-preview]').getAttribute('data-colour')).toBe('teal');
-      expect(q('[data-preview] [data-type-name]').textContent).toContain('Data Processing');
+      expect(q('[data-preview] .chip').getAttribute('title')).toContain('Data Processing');
     });
 
     it('saves a colour and a target, shows them again and can clear them', async () => {

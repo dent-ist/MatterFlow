@@ -173,6 +173,21 @@ describe('AssetTypeRecordPage', () => {
       expect(el().querySelector('[data-footer]')).toBeNull();
     });
 
+    it('has a colour choice with a live solid chip preview and saves the colour (UI-22)', async () => {
+      const select = q<HTMLSelectElement>('[data-colour-select]');
+      expect(select.options).toHaveLength(11);
+      expect(q('[data-preview]').getAttribute('data-colour')).toBeTruthy();
+      select.value = 'rose';
+      select.dispatchEvent(new Event('change'));
+      await settle(fixture);
+      expect(q('[data-preview]').getAttribute('data-colour')).toBe('rose');
+      await save();
+      expect(api.updateAssetType).toHaveBeenCalledWith(
+        4,
+        expect.objectContaining({ colourKey: 'rose' }),
+      );
+    });
+
     it('shows a duplicate name as a field error with the summary at the top and focus on Name', async () => {
       api.updateAssetType.mockReturnValue(
         apiError(409, {
