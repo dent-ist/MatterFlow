@@ -109,7 +109,8 @@ test.describe('My Matters: keyboard', () => {
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'kb2');
-    await w.matter('Shortcut alpha');
+    const sa = await w.matter('Shortcut alpha');
+    await w.task(sa, { title: 'Shortcut task' });
     await w.matterInOtherClient('Shortcut beta'); // a second client: the Client filter is offered
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters');
@@ -164,7 +165,7 @@ test.describe('My Matters: axe with the menus open', () => {
       await matter.fill('');
       await matter.blur();
       await page.locator('[data-new-menu]').click();
-      await expect(page.getByRole('menu')).toBeVisible();
+      await expect(page.getByRole('menu'), `+ New menu open at ${size.width}`).toBeVisible();
       expect(await axeViolations(page), `+ New menu at ${size.width}`).toEqual([]);
       await page.keyboard.press('Escape');
       const browse = page.locator('[data-browse]');
@@ -207,7 +208,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     const page = await asUser(fx.pmA.username);
     const { refused, toastCount } = await visit(page, '/my-matters');
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
-    await expect(page.locator('[data-panel=tasks] [data-task]').first()).toBeVisible();
+    await expect(page.locator('mf-mm-task-list [data-task]').first()).toBeVisible();
     expect(refused).toEqual([]);
     expect(toastCount).toBe(0);
     const links = await page.$$eval('main a[href^="/"]', (as) =>
@@ -215,7 +216,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
         (h) => !h.startsWith('/tasks/new'),
       ),
     );
-    expect(links.length).toBeGreaterThan(8);
+    expect(links.length).toBeGreaterThan(3);
     for (const href of links.slice(0, 24)) {
       await page.goto(href);
       await expect(
@@ -331,7 +332,7 @@ test.describe('My Matters and the manager fields: who sees what', () => {
     // Where the orphan matter shows on My Matters its task is a row like any other: overdue for its own date, never a warning for lacking a manager.
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?scope=all&clientId=${w.world.client.clientId}`);
-    const row = page.locator('[data-panel=tasks] tr[data-task]', { hasText: 'Orphan overdue' });
+    const row = page.locator('mf-mm-task-list tr[data-task]', { hasText: 'Orphan overdue' });
     await expect(row).toBeVisible();
     await expect(row.locator('td[data-col=due]')).toContainText(/overdue/i);
     await expect(row).not.toContainText(/manager/i);

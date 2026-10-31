@@ -41,7 +41,7 @@ import { MetricsView } from './mm-scope';
           </div>
         }
       </div>
-      <div class="body" mfScrollRegion="Metrics">
+      <div class="body" mfScrollRegion="Metrics details">
         @if (view() === 'data' && canData()) {
           @defer (on immediate) {
             <mf-mm-data-tab [filters]="filters()" [canAll]="canAll()" />

@@ -83,9 +83,10 @@ import { MmTreePanel } from './tree-panel';
     </div>
     <div class="new"><ng-content /></div>
   `,
-  host: { '(document:mousedown)': 'outside($event)' },
+  host: { '(document:mousedown)': 'outside($event)', '(keydown.escape)': 'escape()' },
   styles: `
     :host {
+      position: relative;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
@@ -127,7 +128,6 @@ import { MmTreePanel } from './tree-panel';
       text-decoration: underline;
     }
     .browse {
-      position: relative;
       flex: none;
     }
     .pop {
@@ -248,6 +248,10 @@ export class MmScopeBar {
     this.browsing.set(false);
     if (restore)
       queueMicrotask(() => this.host.querySelector<HTMLElement>('[data-browse]')?.focus());
+  }
+
+  protected escape(): void {
+    if (this.browsing()) this.closeBrowse(true);
   }
 
   protected outside(e: MouseEvent): void {

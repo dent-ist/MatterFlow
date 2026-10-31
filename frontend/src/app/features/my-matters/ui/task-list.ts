@@ -135,7 +135,7 @@ export function statusCodes(status: StatusFilter): string[] {
           <tbody>
             @for (t of rows(); track t.taskId) {
               <tr [attr.data-task]="t.taskId">
-                <td class="td-t">
+                <td class="td-t" data-col="title">
                   <a class="lnk" [routerLink]="['/tasks', t.taskId]" data-task-link>
                     <span class="ref">{{ t.taskNumber }}</span> {{ t.title }}
                   </a>
@@ -148,7 +148,7 @@ export function statusCodes(status: StatusFilter): string[] {
                     }
                   </span>
                 </td>
-                <td class="c-st">
+                <td class="c-st" data-col="status">
                   <mf-status-chip
                     [code]="t.status"
                     [stepNumber]="step(t)"
@@ -157,17 +157,17 @@ export function statusCodes(status: StatusFilter): string[] {
                     [detail]="statusDetail(t)"
                   />
                 </td>
-                <td class="c-prio">
+                <td class="c-prio" data-col="priority">
                   @if (pill(t); as p) {
                     <mf-priority-pill [kind]="p" [label]="t.priority.label" />
                   } @else {
                     {{ t.priority.label }}
                   }
                 </td>
-                <td class="c-asg">
+                <td class="c-asg" data-col="assignee">
                   {{ t.assignedUser?.displayName ?? t.assignedPod?.name ?? 'Unassigned' }}
                 </td>
-                <td class="c-due">
+                <td class="c-due" data-col="due">
                   @let d = due(t);
                   <span [class]="'due ' + d.tone" [attr.title]="d.tooltip">
                     @if (d.tone === 'overdue') {
@@ -500,14 +500,14 @@ export class MmTaskList {
 
   private readonly pageAt = signal<{ key: string; page: number }>({ key: '', page: 1 });
   private readonly key = computed(() =>
-    JSON.stringify([this.baseParams(), this.sort(), this.dir()]),
+    JSON.stringify([this.baseParams(), this.show(), this.sort(), this.dir()]),
   );
   protected readonly page = computed(() =>
     this.pageAt().key === this.key() ? this.pageAt().page : 1,
   );
 
   protected readonly loader = panelLoader(
-    () => [this.baseParams(), this.sort(), this.dir(), this.page()],
+    () => [this.baseParams(), this.show(), this.sort(), this.dir(), this.page()],
     () => {
       const base = parseQueueState(convertToParamMap(this.baseParams()));
       return this.queue.getTaskQueue(

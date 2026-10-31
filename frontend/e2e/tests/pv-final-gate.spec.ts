@@ -137,6 +137,8 @@ test.describe('PM v2 final gate', () => {
     await expect(chip).toBeFocused();
     await page.keyboard.press('Space');
     await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    // Choosing the chosen chip again keeps it (a Status is always chosen); All open brings the default back.
+    await page.locator('mf-mm-task-list [data-key="open"]').focus();
     await page.keyboard.press('Space');
     await expect(chip).toHaveAttribute('aria-pressed', 'false');
 

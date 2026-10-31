@@ -40,8 +40,13 @@ test.describe('My Matters: the page', () => {
     await expect(page.locator('#mm-client')).toBeVisible();
     await expect(page.locator('#mm-matter')).toBeVisible();
     await expect(page.locator('[data-new-menu]')).toBeVisible();
-    await expect(page.getByRole('tab')).toHaveText(/Overview|Calendar|Assets|Metrics|Activity/);
-    expect(await page.getByRole('tab').count()).toBe(5);
+    await expect(page.getByRole('tab')).toHaveText([
+      /Overview/,
+      /Calendar/,
+      /Assets/,
+      /Metrics/,
+      /Activity/,
+    ]);
     // Default: All open, urgency order (no heading marked), the overdue task first.
     await expect(page.locator('mf-mm-task-list [data-key="open"]')).toHaveAttribute(
       'aria-pressed',
@@ -212,6 +217,55 @@ test.describe('My Matters: the page', () => {
   });
 });
 
+test.describe('My Matters: the Options menu (scope switch and Focus)', () => {
+  test('Focus: pick task types once, the grid and the chip follow, it stays after a reload and Clear removes it', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui11');
+    const second = await seed.taskType({ workflows: [w.world.workflow] });
+    const a = await w.matter('Alpha');
+    await w.task(a, { dueDate: '2000-01-01', title: 'Type one A' });
+    await w.task(a, { dueDate: '2000-01-02', title: 'Type one B' });
+    await w.task(a, { dueDate: '2000-01-03', taskTypeId: second.id, title: 'Type two' });
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters');
+    const rows = page.locator('mf-mm-task-list a[data-task-link]');
+    await expect(rows).toHaveCount(3);
+    await page.locator('[data-mm-options] [data-options-trigger]').click();
+    await page.locator(`[data-focus-option="${second.id}"]`).check();
+    await page.locator('[data-focus-save]').click();
+    await expect(rows).toHaveCount(1);
+    await expect(page.locator('[data-focus-chip]').first()).toContainText(second.name);
+    await page.reload();
+    await expect(rows).toHaveCount(1);
+    await page.locator('[data-focus-chip] button').click();
+    await expect(rows).toHaveCount(3);
+  });
+
+  test('the My matters / All matters switch is offered only to people who hold Matter.AssignManagers, and ?scope=all keeps working for them', async ({
+    seed,
+    personas,
+    asUser,
+  }) => {
+    const w = await mmWorld(seed, personas, 'ui12');
+    await w.matter('Alpha');
+    const page = await asUser(w.pm.username);
+    await page.goto('/my-matters?scope=all');
+    await page.locator('[data-mm-options] [data-options-trigger]').click();
+    const sw = page.locator('[data-scope-switch]');
+    if ((await sw.count()) === 0) {
+      // No Matter.AssignManagers: no switch, and the address cannot force it.
+      await expect(page).not.toHaveURL(/scope=all/);
+      return;
+    }
+    await expect(page).toHaveURL(/scope=all/);
+    await sw.getByRole('button').first().click();
+    await expect(page).not.toHaveURL(/scope=all/);
+  });
+});
+
 test.describe('My Matters: calendar events, assets and activity (need the UI-03 and UI-05 endpoints)', () => {
   test('a calendar item added from + New appears in the month and in Upcoming events, and can be edited and deleted by its manager', async ({
     seed,
@@ -222,7 +276,9 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     const a = await w.matter('Alpha');
     await w.task(a, { title: 'Alpha task' });
     const page = await asUser(w.pm.username);
-    await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
+    await page.goto(
+      `/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}&matterId=${a.matterId}`,
+    );
     await page.locator('[data-add-event]').click();
     const dialog = page.getByRole('dialog', { name: 'New calendar item' });
     await expect(dialog).toBeVisible();
@@ -241,7 +297,9 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     await page.goto(`/my-matters?matterId=${a.matterId}`);
     await expect(page.locator('[data-section="events"]')).toContainText('Motion hearing');
     // A person who is not a manager of the matter and cannot edit matters does not see the item at all unless they can see the matter.
-    await page.goto(`/my-matters?tab=calendar&matterId=${a.matterId}`);
+    await page.goto(
+      `/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}&matterId=${a.matterId}`,
+    );
     await page.locator(`[data-day="${inDays(2)}"]`).click();
     await page.locator('[data-edit]').first().click();
     await page.getByRole('button', { name: 'Delete' }).click();
@@ -257,12 +315,15 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     asUser,
   }) => {
     const w = await mmWorld(seed, personas, 'ui9');
-    await w.matter('Alpha');
+    const m = await w.matter('Alpha');
+    await seed.asset({ matterId: m.matterId }, 'Panel asset');
     const page = await asUser(w.pm.username);
     await page.goto('/my-matters?tab=assets');
     await expect(page.getByRole('columnheader', { name: /Comment/ })).toHaveCount(0);
     for (const h of ['Client', 'Matter', 'Asset type', 'Created', 'Updated', 'Status'])
       await expect(page.getByRole('columnheader', { name: new RegExp(h) }).first()).toBeVisible();
+    await page.locator('[data-open]').first().click();
+    await expect(page.locator('[data-asset-panel]')).toContainText('Linked tasks');
   });
 
   test('an activity item opens the task in a NEW tab', async ({
@@ -279,7 +340,7 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
     const item = page.locator('mf-mm-activity-tab a[data-feed]').first();
     await expect(item).toBeVisible();
     await expect(item).toHaveAttribute('target', '_blank');
-    const [popup] = await Promise.all([context.waitForEvent('page'), item.click()]);
+    const [popup] = await Promise.all([page.context().waitForEvent('page'), item.click()]);
     await expect(popup).toHaveURL(/\/tasks\/\d+/);
   });
 });

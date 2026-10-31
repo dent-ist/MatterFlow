@@ -273,7 +273,7 @@ export class MmNewMenu {
 
   protected toggle(): void {
     this.open.update((o) => !o);
-    if (this.open()) queueMicrotask(() => this.focusItem(0));
+    if (this.open()) setTimeout(() => this.focusItem(0), 0);
   }
 
   protected outside(e: MouseEvent): void {
@@ -294,7 +294,7 @@ export class MmNewMenu {
   }
 
   protected onKey(e: KeyboardEvent): void {
-    if (!this.open() || !(e.target as HTMLElement).closest('[role=menu]')) return;
+    if (!this.open()) return;
     const els = Array.from(this.host.querySelectorAll<HTMLElement>('[role=menuitem]'));
     const i = els.indexOf(document.activeElement as HTMLElement);
     const move = (to: number): void => {

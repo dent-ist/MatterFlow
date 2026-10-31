@@ -36,8 +36,8 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
         /^Matters$/,
         /Projects/,
         /^Assets$/,
-        /Task Queue/,
         /Pod Work/,
+        /Task Queue/,
       ]);
       await expect(nav(page).getByRole('button', { name: 'More' })).toHaveCount(0);
       // Projects and Assets are children of Matters: indented in the panel and the phone Menu, a small gap instead in the 56 px rail.
@@ -55,7 +55,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
         expect(
           (await y('Projects')) - (await y('Matters')),
           'gap above the children',
-        ).toBeGreaterThan(44);
+        ).toBeGreaterThanOrEqual(40); // the UI update menu rows are 36 px with a gap (tokens, UI-06)
       } else {
         expect(await left('Projects'), 'Projects is indented').toBeGreaterThan(
           (await left('Matters')) + 16,
@@ -119,7 +119,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toHaveCount(0);
   });
 
-  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Task Queue), and Enter on "Asset types" opens it', async ({
+  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Pod Work), and Enter on "Asset types" opens it', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -132,7 +132,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
     await page.keyboard.press('Tab');
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(nav(page).getByRole('link', { name: 'Task Queue', exact: true })).toBeFocused();
+    await expect(nav(page).getByRole('link', { name: 'Pod Work', exact: true })).toBeFocused();
     await nav(page).getByRole('link', { name: 'Asset types', exact: true }).focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/admin\/asset-types/);
