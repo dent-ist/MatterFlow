@@ -17,6 +17,8 @@ import { TabBox, pageLeft, revealLeft, scrollCues } from './tab-scroll';
 export interface MfTab {
   key: string;
   label: string;
+  /** A PrimeIcons class (`pi-list`) drawn before the label; decorative (the label names the tab). */
+  icon?: string;
   /** Count shown in parentheses; omitted while unknown (a string such as `--` while it loads). */
   count?: number | string | null;
   /** A small badge after the label (the number of things waiting in the tab); not drawn for 0. Say it in `name` as well, a badge alone is not read as part of the name. */
@@ -71,6 +73,9 @@ export interface MfTab {
             (click)="choose(t.key)"
             (keydown)="onKey($event)"
           >
+            @if (t.icon) {
+              <i class="pi tab__icon" [class]="t.icon" aria-hidden="true"></i>
+            }
             {{ t.label }}
             @if (t.count !== undefined && t.count !== null) {
               <span class="count">({{ t.count }})</span>
