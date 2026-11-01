@@ -58,10 +58,10 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
       </div>
     }
     <ng-template #body let-link="link">
-      @if (icon(); as i) {
-        <mf-tile-chip [icon]="i" [tone]="chipTone()" [muted]="!link" />
-      }
       <span class="label">
+        @if (icon(); as i) {
+          <mf-tile-chip [icon]="i" [tone]="chipTone()" [muted]="!link" />
+        }
         <span class="label-text">{{ label() }}</span>
         @if (link) {
           <i class="pi pi-angle-right go-icon" aria-hidden="true"></i>
@@ -107,15 +107,12 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
     }
     .tile {
       position: relative;
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      column-gap: var(--mf-s3);
-      align-content: center;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
       height: 100%;
-      min-height: 76px;
       box-sizing: border-box;
-      padding: var(--mf-s2) var(--mf-s3);
+      padding: var(--mf-s3);
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-lg);
@@ -123,14 +120,8 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
       text-decoration: none;
       transition: border-color 120ms;
     }
-    .tile > * {
-      grid-column: 2;
-    }
-    .tile > mf-tile-chip {
-      grid-column: 1;
-      grid-row: 1 / span 6;
-      align-self: center;
-      --chip: 32px;
+    .label mf-tile-chip {
+      --chip: 24px;
     }
     a.tile:hover {
       border-color: var(--mf-primary);
@@ -178,11 +169,7 @@ const CHIP_TONES: Readonly<Record<TileTone, ChipTone>> = {
         line-height: 1.2;
       }
       .tile {
-        column-gap: var(--mf-s2);
         padding-right: var(--mf-s2);
-      }
-      .tile > mf-tile-chip {
-        --chip: 28px;
       }
     }
     .value {
