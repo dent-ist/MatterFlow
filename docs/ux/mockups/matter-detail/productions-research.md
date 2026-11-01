@@ -53,18 +53,17 @@ A matter can have more than one spec: a general ESI protocol, a smaller one for 
 7. Receipt acknowledged. Deficiency letters or clawback requests handled.
 8. Volume closed. Report kept with the matter (what was produced, when, how, by whom).
 
-Suggested statuses in the mockup: Draft, In QC, Ready to deliver, Delivered, Acknowledged; for incoming: Received; and a flag-style status Clawback requested. The status set is a proposal for the owner to adjust.
+Note (round 3): the mockup does **not** model this lifecycle. The owner asked for a simple managed list for now, with no status workflow, no QC items and no Bates overlap check. A status field can be added later without changing the rest.
 
 ## 5. What the mockup models, and what it leaves out
 
-Modelled: volume, name, direction, producing party type and name, recipient, spec link, Bates prefix/digits/first/last with a live preview, document/page/native counts, redaction and withheld counts, privilege log reference, custodians, date range, QC checklist, delivery method and dates, receipt, clawback note, comments, history, and a Specs list with duplicate and retire.
+Modelled (round 3, deliberately simple): name, volume, direction (produced by us or received), party (produced by, produced to), spec (a link to a production spec of the matter, none for received productions), Bates begin and Bates end, number of documents, number of pages, a delivered or due date, notes, **comments** and **history** (history lists who changed what, field by field). The Specs list (create, edit, duplicate, retire or delete, "used by") holds the agreed format: images, colour, text, natives, load file, metadata fields, redaction and privilege rule, de-duplication, dates and time, numbering, encryption.
 
-Left out on purpose (for later): linking produced documents from the review database (the production set itself stays in the review platform), automatic Bates overlap detection across all volumes, deficiency-letter tracking, cover-letter generation, per-document clawback lists, and spec versioning screens (the data model section of the README proposes how).
+Left out on purpose, and easy to add later if the firm asks: a status workflow (Draft, In QC, Delivered, Acknowledged, clawback), a QC checklist, Bates overlap detection across volumes, privilege log tracking, custodians and date-range fields, delivery method and receipt tracking, linking produced documents from the review database, cover-letter generation, deficiency letters, and spec versioning screens.
 
 ## 6. Questions for the owner or a litigation-support lead
 
 1. Is MatterFlow only the tracker (as assumed), or should it ever generate Bates ranges for the review platform?
-2. Should Bates ranges be checked for overlap across volumes of the same matter (recommended, cheap)?
-3. Which statuses does the firm already use for productions?
-4. Does the firm need to keep a privilege log inside MatterFlow, or only reference the one in the review platform?
-5. Are specs shared across matters of the same client (a client "template")? The mockup keeps specs per matter, as requested, with Duplicate to copy one in.
+2. Does the firm later want a status (and which values), QC steps, or a Bates overlap check? They are left out for now.
+3. Does the firm need to keep a privilege log inside MatterFlow, or only reference the one in the review platform?
+4. Are specs shared across matters of the same client (a client "template")? The mockup keeps specs per matter, as requested, with Duplicate to copy one in.

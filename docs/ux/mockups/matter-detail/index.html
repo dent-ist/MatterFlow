@@ -1462,6 +1462,43 @@ table.rt.tk td{height:54px}
 table.rt.tk td,table.rt.tk th{padding-left:8px;padding-right:8px}
 table.rt.tk td.selc,table.rt.tk th:first-child{padding-left:12px;padding-right:0}
 
+/* round 3: Summary scrolls inside its panes, never the page */
+.sum{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+.sum>div{display:flex;flex-direction:column;gap:12px;min-height:0}
+.sum .card{min-height:0;display:flex;flex-direction:column;flex:none}
+.sum .card.flex1{flex:1 1 0}
+.sum .card>.card-h,.sum .card>.cfoot,.sum .card>.atiles,.sum .card>.kv{flex:none}
+.sum .scrollin{overflow:auto;min-height:0;flex:1 1 auto}
+.sum .scrollin:focus-visible{outline-offset:-3px}
+.sum .sidecard .kv{padding:2px 16px 8px}
+.sum .scrollin .kv{padding:2px 16px 8px}
+.atiles{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;padding:10px 14px 12px}
+.atile{padding:8px 10px;gap:8px}
+.atile .n{font-size:20px}
+.atile .l{font-size:12px}
+.atile .tt{width:26px;height:26px;border-radius:6px}
+.dl2 .dr.prom{padding:12px 0}
+.dl2 .dr.prom dt{font-weight:700;color:var(--text)}
+.cmn{font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:.01em}
+.cmref{color:var(--text)}
+.mh .meta b.cmref{font-size:14px}
+@media (max-width:1280px){.atiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.sum{display:block;overflow:auto;grid-template-rows:none}.sum>div{margin-bottom:12px}.sum .scrollin{overflow:visible}.sum .card.flex1{flex:none}}
+@media (max-width:767px),(max-height:560px){.sum{overflow:visible}.sum>div{display:block}.sum .card{margin-bottom:12px}}
+
+.ed2.rv{cursor:default}
+.ed2.rv:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ed2[contenteditable=false] .ntitle:empty::before{content:none}
+.ed2[contenteditable=false] .ntitle:empty::after{font-style:italic}
+.lockchip{display:inline-flex;align-items:center;gap:6px;background:var(--amber-bg);color:var(--amber);border-radius:999px;padding:2px 10px 2px 8px;font-weight:700;font-size:12.5px}
+.btn[aria-disabled=true]{opacity:.7;cursor:not-allowed;background:var(--slate-bg);border-color:#CBD2DC;color:var(--slate)}
+.btn.primary[aria-disabled=true]{background:var(--slate-bg);color:var(--slate)}
+.ntop{min-height:48px}
+
+.dl2 .dr.prom{grid-column:1/-1;background:var(--blue-bg);border:1px solid var(--blue-line);border-radius:8px;padding:10px 14px;margin:8px 0 4px}
+.dl2 .dr.prom dt{color:var(--blue)}
+@media (min-width:768px) and (max-height:700px){.crumb{display:none}main{padding-top:10px}.sum .card-h{padding:8px 16px}.mh h1{font-size:20px}}
+
 .mockpanel[hidden]{display:none}
 .clickrow{cursor:pointer}.clickrow:hover td{background:#F4F7FC}.grp-r td{background:#F3F5F9}
 .chatin{display:flex;gap:8px;margin-top:auto}
@@ -1637,34 +1674,31 @@ const avatar=n=>n?'<span class="mini-av" aria-hidden="true">'+initials(n)+'</spa
 const PEOPLE=['Dana Whitfield','Marcus Lee','Priya Nair','Tom Okafor','Sofia Reyes','Test User 19'];
 
 /* ====================== mock data ====================== */
-const S={tab:'summary',ai:'onprem',canEdit:true,warn:false,pv:'prods',st:'open',tsel:{},tq:'',tproj:'',tprio:'',tasg:'',tdue:'',tstatus:'open',
+const S={tab:'summary',ai:'onprem',canEdit:true,mm:true,nedit:false,draft:null,warn:false,pv:'prods',st:'open',tsel:{},tq:'',tproj:'',tprio:'',tasg:'',tdue:'',tstatus:'open',
   aq:'',atype:'',adisp:'',pq:'',pdir:'all',pstat:'',prodSel:null,month:[2026,10],shows:{ev:true,crit:true,high:false,over:true},
   note:'n1',nw:340,npanel:null,nq:'',ntag:'',kind:'all',archOpen:false,menu:false,mock:false,dirty:false};
-const M={client:'Northwind Logistics',clientNo:'C-1042',ref:'M-2026-0147',name:'Harbor Freight Subpoena Response',active:true,sensitive:true,
+const M={client:'Northwind Logistics',clientNo:'01042',ref:'01042-00147',matterNumber:'00147',name:'Harbor Freight Subpoena Response',active:true,sensitive:true,
   pm1:'Dana Whitfield',pm2:'Marcus Lee',ai:'onprem',created:'2026-03-12T09:20:00',changed:'2026-10-28T16:05:00',
-  caseNo:'3:26-cv-01482-JSC',court:'N.D. Cal., San Francisco Division',practice:'Antitrust',partner:'Elena Marsh',oppCounsel:'Rowan & Pike LLP',
-  oppParty:'Harbor Freight Inc.',hold:'2026-04-02',cutoff:'2026-12-18',volume:'2.4 TB (about 1.9 M documents)',billing:'NWL-ANT-0147'};
+  billing:'NWL-ANT-0147',hold:'2026-04-02',cutoff:'2026-12-18',volume:'2.4 TB (about 1.9 M documents)'};
 const AIV={no:'No',onprem:'On-prem AI only',company:'Company-approved AI services'};
 const AIH={no:'AI is not allowed on this matter.',onprem:'AI runs only on servers inside the firm. The system picks the tool.',company:'Approved company AI services may be used. The system picks the tool.'};
+/* Only fields the app already has (client, matter name, CM number, matter number, status, sensitivity, project managers, created, last changed),
+   the tenant's custom fields as equal rows (the four below are SAMPLES: the real ones come from the matter's form version),
+   plus the one new field "AI allowed". */
 const FIELDS=[
- {k:'client',l:'Client',ro:1,icon:'i-building'},
- {k:'ref',l:'Matter number',ro:1,mono:1},
- {k:'name',l:'Matter name',t:'text',wide:1},
+ {k:'cm',l:'CM number',ro:1,prom:1},
+ {k:'client',l:'Client',ro:1},
+ {k:'matterNumber',l:'Matter number',ro:1,mono:1},
+ {k:'name',l:'Matter name',t:'text'},
  {k:'status',l:'Status',t:'status'},
  {k:'sensitive',l:'Sensitive',t:'bool',help:'Restricted access: invisible to people without access.'},
  {k:'pm1',l:'Primary project manager',t:'person'},
  {k:'pm2',l:'Secondary project manager',t:'person',opt:1},
- {k:'ai',l:'AI allowed',t:'ai',icon:'i-flame',help:'Decides which AI tools may touch this matter. Changing it needs Matter.Edit.'},
- {k:'caseNo',l:'Case number',t:'text'},
- {k:'court',l:'Court or forum',t:'text'},
- {k:'practice',l:'Practice area',t:'select',opts:['Antitrust','Commercial litigation','Employment','Regulatory','IP']},
- {k:'partner',l:'Responsible partner',t:'text'},
- {k:'oppParty',l:'Opposing party',t:'text'},
- {k:'oppCounsel',l:'Opposing counsel',t:'text'},
+ {k:'ai',l:'AI allowed',t:'ai',help:'Decides which AI tools may touch this matter. Changing it needs Matter.Edit.'},
+ {k:'billing',l:'Billing code',t:'text'},
  {k:'hold',l:'Legal hold issued',t:'date'},
  {k:'cutoff',l:'Discovery cutoff',t:'date'},
  {k:'volume',l:'Data volume estimate',t:'text'},
- {k:'billing',l:'Billing code',t:'text'},
  {k:'created',l:'Created',ro:1,date:1},
  {k:'changed',l:'Last changed',ro:1,date:1}
 ];
@@ -1719,22 +1753,20 @@ const SPECS=[
  {id:'S3',name:'Financial data: native Excel + load file',status:'Draft',fmt:'Native',load:'DAT',text:'None',natives:'All files, with slip sheet',red:'Not allowed (produce the whole file or withhold)',dedup:'None',dates:'ISO 8601, UTC',fields:14,upd:at(-4,9),src:'Proposed to opposing counsel, 10/28',enc:'AES-256, hard drive',color:'n/a',numb:'Bates on slip sheet'}
 ];
 const PRODS=[
- {id:'PRD-001',name:'Initial production, volume 1',dir:'out',by:'Our company',byName:'Northwind Logistics',to:'Harbor Freight Inc. (opposing party)',spec:'S1',vol:'VOL001',pre:'NWL',b:1,e:48210,dig:8,docs:6120,pages:48210,nat:214,red:312,wh:188,plog:'PL-001, served 09/21',status:'Acknowledged',del:at(-41,16),meth:'Secure FTP',ack:'09/22 by Rowan & Pike LLP',claw:'None',cust:'Whitfield, Okafor, Reyes',range:'01/01/2025 to 06/30/2026',qc:[1,1,1,1,1],due:at(-41,17),
-  cm:[['Dana Whitfield',at(-42,10),'QC passed. Hold the password until the call.'],['Tom Okafor',at(-41,16),'Delivered by SFTP. Receipt requested.']],
-  hist:[['Created',at(-60,9),'Dana Whitfield'],['Spec set to ESI protocol standard',at(-58,11),'Dana Whitfield'],['Status Draft to In QC',at(-45,15),'Tom Okafor'],['Status In QC to Ready to deliver',at(-42,10),'Dana Whitfield'],['Delivered by Secure FTP',at(-41,16),'Tom Okafor'],['Acknowledged by opposing counsel',at(-40,9),'Dana Whitfield']]},
- {id:'PRD-002',name:'Production, volume 2',dir:'out',by:'Our company',byName:'Northwind Logistics',to:'Harbor Freight Inc. (opposing party)',spec:'S1',vol:'VOL002',pre:'NWL',b:48211,e:91880,dig:8,docs:5340,pages:43670,nat:97,red:244,wh:121,plog:'PL-002, draft',status:'In QC',del:null,meth:'Secure FTP',ack:'',claw:'None',cust:'Whitfield, Lee, Nair',range:'07/01/2026 to 09/30/2026',qc:[1,1,0,0,0],due:at(15,17),
-  cm:[['Marcus Lee',at(-2,11),'Privilege screen finished; 121 withheld, logged in PL-002.']],
-  hist:[['Created',at(-30,9),'Dana Whitfield'],['Status Draft to In QC',at(-3,15),'Tom Okafor']]},
- {id:'PRD-003',name:'Opposing party production, volume 1',dir:'in',by:'Opposing party',byName:'Harbor Freight Inc.',to:'Our company',spec:'',vol:'HFI-VOL001',pre:'HFI',b:1,e:120344,dig:6,docs:15210,pages:120344,nat:0,red:0,wh:0,plog:'Received: HFI privilege log, 10/12',status:'Received',del:at(-18,10),meth:'Hard drive by courier',ack:'Receipt confirmed 10/14 by Priya Nair',claw:'None',cust:'Opposing custodians (4)',range:'Unknown',qc:[1,1,0,0,0],due:null,
-  cm:[['Priya Nair',at(-17,9),'Loaded into review database. Gaps at HFI000412-000420 (see QC).']],
-  hist:[['Received (courier)',at(-18,10),'Priya Nair'],['Loaded into review database',at(-17,9),'Tom Okafor']]},
- {id:'PRD-004',name:'Atlas Cloud subpoena response',dir:'in',by:'Other company',byName:'Atlas Cloud Services LLC',to:'Our company',spec:'',vol:'ATL-001',pre:'ATL',b:1,e:8200,dig:6,docs:1100,pages:8200,nat:40,red:0,wh:0,plog:'None',status:'Clawback requested',del:at(-9,14),meth:'Secure download link',ack:'Receipt confirmed 10/23',claw:'Requested 10/27 by Atlas counsel; documents quarantined',cust:'Atlas records custodian',range:'2024',qc:[1,1,1,0,0],due:null,
-  cm:[['Dana Whitfield',at(-5,10),'Atlas asked for return of ATL000912-000940 under the 502(d) order.']],
-  hist:[['Received (download link)',at(-9,14),'Priya Nair'],['Clawback requested by Atlas counsel',at(-5,10),'Dana Whitfield']]},
- {id:'PRD-005',name:'Supplemental production, financial data',dir:'out',by:'Our company',byName:'Northwind Logistics',to:'Harbor Freight Inc. (opposing party)',spec:'S3',vol:'VOL003',pre:'NWL',b:91881,e:91950,dig:8,docs:70,pages:70,nat:70,red:0,wh:0,plog:'None',status:'Draft',del:null,meth:'Encrypted hard drive',ack:'',claw:'None',cust:'Finance',range:'2023 to 2025',qc:[0,0,0,0,0],due:at(30,17),cm:[],hist:[['Created',at(-4,9),'Tom Okafor']]}
+ {id:'PRD-001',name:'Initial production',vol:'VOL001',dir:'out',by:'Northwind Logistics',to:'Harbor Freight Inc.',spec:'S1',begin:'NWL00000001',end:'NWL00048210',docs:6120,pages:48210,date:at(-41,16),kind:'Delivered',notes:'Sent by secure FTP; the password went by phone.',
+  cm:[['Dana Whitfield',at(-42,10),'Spec S1 applies. Hold the password until the call.'],['Tom Okafor',at(-41,16),'Delivered. Receipt requested.']],
+  hist:[['Created the production',at(-60,9),'Dana Whitfield'],['Changed Bates end from "NWL00040000" to "NWL00048210"',at(-45,15),'Tom Okafor'],['Changed Delivered or due date from "Due 09/21" to "Delivered 09/21 04:00 PM"',at(-41,16),'Tom Okafor']]},
+ {id:'PRD-002',name:'Production, volume 2',vol:'VOL002',dir:'out',by:'Northwind Logistics',to:'Harbor Freight Inc.',spec:'S1',begin:'NWL00048211',end:'NWL00091880',docs:5340,pages:43670,date:at(15,17),kind:'Due',notes:'Privilege screen finished; 121 documents withheld.',
+  cm:[['Marcus Lee',at(-2,11),'Privilege screen finished.']],
+  hist:[['Created the production',at(-30,9),'Dana Whitfield'],['Changed Documents from "5,100" to "5,340"',at(-3,15),'Tom Okafor']]},
+ {id:'PRD-003',name:'Opposing party production, volume 1',vol:'HFI-VOL001',dir:'in',by:'Harbor Freight Inc.',to:'Northwind Logistics',spec:'',begin:'HFI000001',end:'HFI120344',docs:15210,pages:120344,date:at(-18,10),kind:'Delivered',notes:'Received on a hard drive by courier. Gaps at HFI000412 to HFI000420.',
+  cm:[['Priya Nair',at(-17,9),'Loaded into the review database.']],
+  hist:[['Created the production',at(-18,10),'Priya Nair']]},
+ {id:'PRD-004',name:'Atlas Cloud subpoena response',vol:'ATL-001',dir:'in',by:'Atlas Cloud Services LLC',to:'Northwind Logistics',spec:'',begin:'ATL000001',end:'ATL008200',docs:1100,pages:8200,date:at(-9,14),kind:'Delivered',notes:'Download link, third-party subpoena response.',
+  cm:[['Dana Whitfield',at(-5,10),'Atlas counsel asked about ATL000912 to ATL000940. See the 502(d) order.']],
+  hist:[['Created the production',at(-9,14),'Priya Nair'],['Added a comment',at(-5,10),'Dana Whitfield']]},
+ {id:'PRD-005',name:'Supplemental production, financial data',vol:'VOL003',dir:'out',by:'Northwind Logistics',to:'Harbor Freight Inc.',spec:'S3',begin:'NWL00091881',end:'NWL00091950',docs:70,pages:70,date:at(30,17),kind:'Due',notes:'',cm:[],hist:[['Created the production',at(-4,9),'Tom Okafor']]}
 ];
-const PST={'Draft':{cls:'slate',icon:'i-edit'},'In QC':{cls:'amber',icon:'i-eye'},'Ready to deliver':{cls:'blue',icon:'i-check'},'Delivered':{cls:'blue',icon:'i-arrow'},'Acknowledged':{cls:'teal',icon:'i-checkc'},'Received':{cls:'teal',icon:'i-download'},'Clawback requested':{cls:'red',icon:'i-warn'}};
-const QCITEMS=['Bates numbers continuous, no duplicates','Load file validates (counts match images and text)','Image and text counts match the report','Privilege and confidentiality screen done','Sample review of 100 records'];
 const EVENTS=[
  {id:'e1',d:'2026-11-05',time:'10:00 AM',ty:'client',t:'Case team call'},{id:'e2',d:'2026-11-09',time:'09:30 AM',ty:'hearing',t:'Motion to compel hearing'},
  {id:'e3',d:'2026-11-12',time:'01:00 PM',ty:'depo',t:'Deposition: D. Whitfield'},{id:'e4',d:'2026-11-16',time:'',ty:'prod',t:'Production vol. 2 due'},
@@ -1743,20 +1775,20 @@ const EVENTS=[
 const ET={hearing:{n:'Hearing',ic:'e-hearing',c:'et-hearing'},trial:{n:'Trial',ic:'e-trial',c:'et-trial'},depo:{n:'Deposition',ic:'e-depo',c:'et-depo'},prod:{n:'Production',ic:'e-prod',c:'et-prod'},filing:{n:'Filing',ic:'e-filing',c:'et-filing'},med:{n:'Mediation',ic:'e-med',c:'et-med'},client:{n:'Client call',ic:'e-client',c:'et-client'},other:{n:'Other',ic:'e-other',c:'et-other'}};
 const KINDS=[{id:'task',t:'Tasks',icon:'i-checksq',cls:'blue'},{id:'asset',t:'Assets',icon:'i-box',cls:'teal'},{id:'proj',t:'Projects',icon:'i-folder',cls:'violet'},{id:'prod',t:'Productions',icon:'e-prod',cls:'orange'},{id:'note',t:'Notes',icon:'i-edit',cls:'amber'},{id:'matter',t:'Matter',icon:'i-brief',cls:'slate'}];
 const ACTS=[
- ['prod','Tom Okafor','moved production PRD-002 to In QC','PRD-002',-3,15],['task','Marcus Lee','completed the privilege screen on','T-3106',-1,16],
- ['note','Priya Nair','edited the note','Custodian interviews',-1,11],['matter','Dana Whitfield','changed Discovery cutoff to 12/18 on the matter','',-4,9],
+ ['prod','Tom Okafor','changed Documents on the production','PRD-002',-3,15],['task','Marcus Lee','completed the privilege screen on','T-3106',-1,16],
+ ['note','Priya Nair','edited the note','Custodian interviews',-1,11],['matter','Dana Whitfield','changed Discovery cutoff on the matter','',-4,9],
  ['asset','System','set Third-party hosting backup to Pending disposition','A-214',-30,2],['proj','Dana Whitfield','linked 3 tasks to the project','Productions',-5,14],
- ['task','Priya Nair','completed','T-3113',-14,17],['prod','Dana Whitfield','logged a clawback request on','PRD-004',-5,10],
+ ['task','Priya Nair','completed','T-3113',-14,17],['prod','Dana Whitfield','added a comment on the production','PRD-004',-5,10],
  ['asset','Tom Okafor','added the asset','Slack workspace export',-5,10],['task','Sofia Reyes','started','T-3104',-6,9],
  ['note','Dana Whitfield','created the note','Meet-and-confer prep',-8,15],['matter','System','set AI allowed to On-prem AI only','',-12,9],
  ['proj','Tom Okafor','created the project','Productions',-60,9],['task','Marcus Lee','put on hold','T-3111',-10,13],
- ['prod','Priya Nair','recorded receipt of','PRD-003',-18,10],['asset','Priya Nair','changed the size of','A-207',-22,16]
+ ['prod','Priya Nair','created the production','PRD-003',-18,10],['asset','Priya Nair','changed the size of','A-207',-22,16]
 ].map(a=>({k:a[0],who:a[1],txt:a[2],obj:a[3],at:at(a[4],a[5]),unread:a[4]>-2}));
 const NOTES=[
  {id:'n1',title:'Meet-and-confer prep: ESI protocol',tags:['Strategy','Productions'],by:'Dana Whitfield',at:at(-1,15),body:'<p>Goals for the Thursday call with <span class="chipx person" contenteditable="false">@Rowan &amp; Pike</span>:</p><ul><li>Agree custodians: Whitfield, Okafor, Reyes, Lee, Nair</li><li>Date range 01/01/2025 to 06/30/2026</li><li>TIFF + DAT with the standard spec (see <span class="chipx proj" contenteditable="false">Productions</span>)</li></ul><p>Open point: Slack as a data source. Linked <span class="chipx asset" contenteditable="false">#Slack workspace export</span>.</p><table><thead><tr><th>Custodian</th><th>Role</th><th>Mailbox status</th></tr></thead><tbody><tr><td>Dana Whitfield</td><td>General counsel</td><td>Collected 10/12</td></tr><tr><td>Tom Okafor</td><td>Finance lead</td><td>Collected 10/12</td></tr><tr><td>Sofia Reyes</td><td>Operations</td><td>Interview pending</td></tr></tbody></table><p>Next step: confirm the list on Thursday.</p>'},
  {id:'n2',title:'Custodian interviews, summary',tags:['Custodians'],by:'Priya Nair',at:at(-1,11),body:'<p>Interviews finished with 5 of 6 custodians. Sofia Reyes still to do (travel).</p><p>Key finding: personal phone used for some deal chats.</p>'},
  {id:'n3',title:'Privilege protocol',tags:['Strategy'],by:'Marcus Lee',at:at(-8,14),body:'<p>Two-step: first-level flags, partner confirms. 502(d) order entered 08/14.</p>'},
- {id:'n4',title:'Hold reminders',tags:['Hold'],by:'Dana Whitfield',at:at(-20,9),body:'<p>Quarterly reminder to all custodians. Next: <b>11/10</b>.</p>'},
+ {id:'n4',locked:'Marcus Lee',lockAt:at(0,13,40),title:'Hold reminders',tags:['Hold'],by:'Dana Whitfield',at:at(-20,9),body:'<p>Quarterly reminder to all custodians. Next: <b>11/10</b>.</p>'},
  {id:'n5',title:'',tags:[],by:'Tom Okafor',at:at(-30,16),body:'<p>(no title yet, kept as a draft)</p>'}
 ];
 const TAGS={Strategy:'violet',Productions:'amber',Custodians:'teal',Hold:'blue',Meeting:'slate'};
@@ -1848,9 +1880,9 @@ function aiOffMsg(){toast("AI can't be used on this matter. Ask a user with Matt
 /* ====================== header + tabs ====================== */
 function health(){const n=TASKS.filter(isOver).length;return n?'<button type="button" class="ind red" data-act="gotasks-over" title="Open the Tasks tab on the overdue tasks">'+ic('i-warn','sm')+n+' overdue tasks</button>':''}
 function headerHTML(){
-  return '<nav class="crumb" aria-label="Breadcrumb"><a href="#" data-act="inert">Matters</a>'+ic('i-right','xs')+'<span class="ref" title="Matter number">'+esc(M.ref)+'</span><button type="button" class="copy" data-act="copy" aria-label="Copy matter number">'+ic('i-clip','xs')+'</button></nav>'
+  return '<nav class="crumb" aria-label="Breadcrumb"><a href="#" data-act="inert">Matters</a>'+ic('i-right','xs')+'<a href="#" data-act="inert">'+esc(M.client)+'</a></nav>'
   +'<div class="mh"><span class="chip-i">'+ic('i-brief')+'</span><div class="tx"><h1>'+esc(M.client)+'<span class="gt" aria-hidden="true">&gt;</span><span class="sr"> greater than </span>'+esc(M.name)+'</h1>'
-  +'<div class="meta"><span>'+esc(M.caseNo)+' &middot; '+esc(M.court)+'</span>'
+  +'<div class="meta"><span title="Client and matter number">CM <b class="ref cmref">'+esc(M.ref)+'</b></span><button type="button" class="copy" data-act="copy" aria-label="Copy CM number">'+ic('i-clip','xs')+'</button>'
   +'<span class="pill '+(M.active?'teal':'hold')+'">'+ic(M.active?'i-check':'i-pause','xs')+(M.active?'Active':'Inactive')+'</span>'
   +(M.sensitive?'<span class="role sens">'+ic('i-lock')+'Sensitive</span>':'')
   +'<span class="ai-chip '+(M.ai==='no'?'off':'on')+'" title="AI allowed: '+AIV[M.ai]+'">'+ic('i-flame','xs')+'AI: '+AIV[M.ai]+'</span></div></div>'
@@ -1859,7 +1891,7 @@ function headerHTML(){
 }
 let MENUOPEN=false;
 function menuHTML(){
-  if(S.menu==='new')return '<div class="menu2" role="menu"><h3>Create in this matter</h3>'+[['newtask','i-checksq','Task'],['newproj','i-folder','Project'],['newasset','i-box','Asset'],['newprod','e-prod','Production'],['newspec','i-sliders','Production spec'],['newnote','i-edit','Note'],['newevent','i-cal','Calendar event']].map(m=>'<button type="button" role="menuitem" data-act="'+m[0]+'">'+ic(m[1],'sm')+m[2]+'</button>').join('')+'</div>';
+  if(S.menu==='new')return '<div class="menu2" role="menu"><h3>Create in this matter</h3>'+[['newtask','i-checksq','Task'],['newproj','i-folder','Project'],['newasset','i-box','Asset'],['newprod','e-prod','Production'],['newspec','i-sliders','Production spec'],['newnote','i-edit','Note']].concat(S.mm?[['newevent','i-cal','Calendar event']]:[]).map(m=>'<button type="button" role="menuitem" data-act="'+m[0]+'">'+ic(m[1],'sm')+m[2]+'</button>').join('')+'</div>';
   return '<div class="menu2" role="menu"><button type="button" role="menuitem" data-act="editall">'+ic('i-edit','sm')+'Edit matter details</button><button type="button" role="menuitem" data-act="bulk">'+ic('i-checksq','sm')+'Bulk re-assign / re-prioritise</button><button type="button" role="menuitem" data-act="addcomment">'+ic('i-bell','sm')+'Add comment to a task</button><button type="button" role="menuitem" data-act="gotab" data-v="tasks">'+ic('i-list','sm')+"Open the matter's tasks</button><hr><button type=\"button\" role=\"menuitem\" data-act=\"toggleactive\">"+ic('i-pause','sm')+(M.active?'Set inactive':'Set active')+'</button></div>';
 }
 function closeMenu(){S.menu=false;MENUOPEN=false;renderHeader()}
@@ -1872,30 +1904,31 @@ function renderHeader(){$('#hdr').innerHTML=headerHTML()}
 
 /* ====================== SUMMARY ====================== */
 function fieldView(f){
-  let v=M[f.k],h;
+  let v=f.k==='cm'?M.ref:M[f.k],h;
   if(f.k==='client')h='<a class="lnk" href="#" data-act="inert"><span class="ref">'+esc(M.clientNo)+'</span> '+esc(M.client)+'</a>';
   else if(f.k==='status')h='<span class="pill '+(M.active?'teal':'hold')+'">'+ic(M.active?'i-check':'i-pause','xs')+(M.active?'Active':'Inactive')+'</span>';
   else if(f.k==='sensitive')h=M.sensitive?'<span class="role sens">'+ic('i-lock')+'Sensitive</span> <span class="note">Restricted access</span>':'No';
   else if(f.k==='ai')h='<span class="ai-chip '+(M.ai==='no'?'off':'on')+'">'+ic('i-flame','xs')+esc(AIV[M.ai])+'</span>';
   else if(f.date)h=fmt(v,true);
   else if(f.t==='date')h=v?fmt(v):'';
+  else if(f.k==='cm')h='<span class="cmn">'+esc(M.ref)+'</span>';
   else if(f.mono)h='<span class="ref" style="font-size:14px">'+esc(v)+'</span>';
   else h=esc(v);
   const empty=!v&&f.k!=='status';
-  return '<div class="dr"><dt>'+esc(f.l)+'</dt><dd'+(empty?' class="none"':'')+'>'+(empty?'Not set':h)+'</dd></div>';
+  return '<div class="dr'+(f.prom?' prom':'')+'"><dt>'+esc(f.l)+'</dt><dd'+(empty?' class="none"':'')+'>'+(empty?'Not set':h)+'</dd></div>';
 }
 function summaryHTML(){
   const counts={};ASSETS.forEach(a=>counts[a.type]=(counts[a.type]||0)+1);
-  const nextEv=EVENTS.filter(e=>parseD(e.d)>=TODAY).slice(0,4);
-  const recent=ACTS.slice().sort((a,b)=>b.at-a.at).slice(0,4);
+  const nextEv=EVENTS.filter(e=>parseD(e.d)>=TODAY);
+  const recent=ACTS.slice().sort((a,b)=>b.at-a.at);
   return '<div class="sum"><div>'
   +'<section class="card" aria-label="Assets by type"><div class="card-h"><h2>Assets by type</h2><span class="sub">'+ASSETS.length+' assets</span><div class="r"><button type="button" class="link" data-act="gotab" data-v="assets">Open Assets</button></div></div><div class="atiles">'
   +ATYPES.map(a=>'<button type="button" class="atile" data-act="goassets" data-v="'+a.id+'" aria-label="'+(counts[a.id]||0)+' '+a.id+' assets, open the Assets tab"><span class="tt" style="background:'+a.col+'">'+ic(a.ic)+'</span><div><div class="n">'+(counts[a.id]||0)+'</div><div class="l">'+a.id+(counts[a.id]===1?'':'s')+'</div></div></button>').join('')+'</div></section>'
-  +'<section class="card" aria-label="Matter details"><div class="card-h"><h2>Matter details</h2><div class="r">'+(S.canEdit?'<button type="button" class="btn" data-act="editall">'+ic('i-edit','sm')+'Edit</button>':'<span class="note">'+ic('i-lock','xs')+' Read only: you need Matter.Edit</span>')+'</div></div><dl class="dl2">'+FIELDS.map(fieldView).join('')+'</dl></section></div>'
+  +'<section class="card flex1" aria-label="Matter details"><div class="card-h"><h2>Matter details</h2><div class="r">'+(S.canEdit?'<button type="button" class="btn" data-act="editall">'+ic('i-edit','sm')+'Edit</button>':'<span class="note">'+ic('i-lock','xs')+' Read only: you need Matter.Edit</span>')+'</div></div><div class="scrollin" tabindex="0" role="region" aria-label="Matter details list"><dl class="dl2">'+FIELDS.map(fieldView).join('')+'</dl></div></section></div>'
   +'<div>'
   +'<section class="card sidecard" aria-label="People"><div class="card-h"><h3>Project managers</h3><div class="r">'+(S.canEdit?'<button type="button" class="link" data-act="editall">Change</button>':'')+'</div></div><ul class="kv"><li>'+avatar(M.pm1)+'<div class="tx"><b>'+esc(M.pm1)+'</b><small>Primary</small></div></li><li>'+avatar(M.pm2)+'<div class="tx"><b>'+esc(M.pm2)+'</b><small>Secondary</small></div></li></ul></section>'
-  +'<section class="card sidecard" aria-label="Next on the calendar"><div class="card-h"><h3>Next on the calendar</h3><div class="r"><button type="button" class="btn sm" data-act="newevent">'+ic('i-plus','xs')+'Add event</button></div></div><ul class="kv">'+nextEv.map(e=>{const t=ET[e.ty];return '<li><span class="etd '+t.c+'">'+ic(t.ic)+'</span><div class="tx"><b>'+esc(e.t)+'</b><small>'+t.n+'</small></div><span class="when">'+fmt(e.d)+(e.time?' '+e.time:'')+'</span></li>'}).join('')+'</ul><div class="cfoot"><button type="button" class="link" data-act="mmcal">'+ic('i-ext','xs')+' Open in My Matters calendar</button></div></section>'
-  +'<section class="card sidecard" aria-label="Recent activity"><div class="card-h"><h3>Recent activity</h3><div class="r"><button type="button" class="link" data-act="gotab" data-v="acts">All activities</button></div></div><ul class="kv">'+recent.map(a=>{const k=KINDS.find(x=>x.id===a.k);return '<li><span class="kd '+k.cls+'">'+ic(k.icon,'sm')+'</span><div class="tx"><b>'+esc(a.who)+'</b><small>'+esc(a.txt)+' '+esc(a.obj)+'</small></div><span class="when">'+fmt(a.at,true)+'</span></li>'}).join('')+'</ul></section>'
+  +(S.mm?'<section class="card sidecard flex1" aria-label="Next on the calendar"><div class="card-h"><h3>Next on the calendar</h3><div class="r"><button type="button" class="btn sm" data-act="newevent">'+ic('i-plus','xs')+'Add event</button></div></div><div class="scrollin" tabindex="0" role="region" aria-label="Upcoming events"><ul class="kv">'+nextEv.map(e=>{const t=ET[e.ty];return '<li><span class="etd '+t.c+'">'+ic(t.ic)+'</span><div class="tx"><b>'+esc(e.t)+'</b><small>'+t.n+'</small></div><span class="when">'+fmt(e.d)+(e.time?' '+e.time:'')+'</span></li>'}).join('')+'</ul></div><div class="cfoot"><button type="button" class="link" data-act="mmcal">'+ic('i-ext','xs')+' Open in My Matters calendar</button></div></section>':'')
+  +'<section class="card sidecard flex1" aria-label="Recent activity"><div class="card-h"><h3>Recent activity</h3><div class="r"><button type="button" class="link" data-act="gotab" data-v="acts">All activities</button></div></div><div class="scrollin" tabindex="0" role="region" aria-label="Recent activity list"><ul class="kv">'+recent.map(a=>{const k=KINDS.find(x=>x.id===a.k);return '<li><span class="kd '+k.cls+'">'+ic(k.icon,'sm')+'</span><div class="tx"><b>'+esc(a.who)+'</b><small>'+esc(a.txt)+' '+esc(a.obj)+'</small></div><span class="when">'+fmt(a.at,true)+'</span></li>'}).join('')+'</ul></div></section>'
   +'</div></div>';
 }
 function inputFor(f,idp){
@@ -2055,54 +2088,54 @@ function assetForm(id){
 }
 
 /* ====================== PRODUCTIONS ====================== */
-const bates=(p,n)=>p.pre+String(n).padStart(p.dig,'0');
 const specOf=id=>SPECS.find(s=>s.id===id);
 const usedBy=id=>PRODS.filter(p=>p.spec===id).length;
-const pstat=s=>{const x=PST[s];return '<span class="ps '+x.cls+'">'+ic(x.icon,'xs')+s+'</span>'};
 const dirChip=p=>p.dir==='out'?'<span class="dirc out">'+ic('i-up','sm')+'Produced by us</span>':'<span class="dirc in">'+ic('i-download','sm')+'Received</span>';
 function prodsHTML(){
-  const head=ALT?'':'<div class="seg2" role="group" aria-label="Productions view"><button type="button" data-act="pv" data-v="prods" aria-pressed="'+(S.pv==='prods')+'">'+ic('e-prod','sm')+'Productions <span class="c">'+PRODS.length+'</span></button><button type="button" data-act="pv" data-v="specs" aria-pressed="'+(S.pv==='specs')+'">'+ic('i-sliders','sm')+'Specs <span class="c">'+SPECS.length+'</span></button></div>';
-  if(!ALT&&S.pv==='specs')return specsHTML(head);
-  const list=PRODS.filter(p=>(S.pdir==='all'||p.dir===S.pdir)&&(!S.pstat||p.status===S.pstat)&&(!S.pq||(p.name+p.id+p.vol+p.byName+bates(p,p.b)).toLowerCase().includes(S.pq.toLowerCase())));
+  const head='<div class="seg2" role="group" aria-label="Productions view"><button type="button" data-act="pv" data-v="prods" aria-pressed="'+(S.pv==='prods')+'">'+ic('e-prod','sm')+'Productions <span class="c">'+PRODS.length+'</span></button><button type="button" data-act="pv" data-v="specs" aria-pressed="'+(S.pv==='specs')+'">'+ic('i-sliders','sm')+'Specs <span class="c">'+SPECS.length+'</span></button></div>';
+  if(S.pv==='specs')return specsHTML(head);
+  const list=PRODS.filter(p=>(S.pdir==='all'||p.dir===S.pdir)&&(!S.pq||(p.name+p.id+p.vol+p.by+p.to+p.begin+p.end).toLowerCase().includes(S.pq.toLowerCase())));
   const dn={all:'All',out:'Produced by us',in:'Received'}[S.pdir];
   return '<section class="card gridcard grow" aria-label="Productions"><div class="card-h hd2"><h2>Productions</h2>'+head+'<span class="tcnt" role="status">'+list.length+' of '+PRODS.length+'</span><div class="r"><button type="button" class="btn primary sm" data-act="newprod">'+ic('i-plus','sm')+'New production</button></div></div>'
-  +'<div class="toolrow"><div class="findbox"><label class="sr" for="pq">Search productions</label>'+ic('i-search','sm')+'<input id="pq" type="search" placeholder="Name, volume or Bates" value="'+esc(S.pq)+'" autocomplete="off"></div>'+ddBtn('pdir','i-arrow','<span class="pre">Direction:</span> '+dn,S.pdir!=='all')+ddBtn('pstat','i-checksq','<span class="pre">Status:</span> '+(S.pstat||'All'),!!S.pstat)+'<span class="sp"></span>'+(S.pq||S.pstat||S.pdir!=='all'?'<button type="button" class="link" data-act="preset">Reset</button>':'')+'</div>'
-  +'<div class="gscroll"><table class="rt tk" style="min-width:1000px"><caption class="sr">Productions of this matter</caption><colgroup><col><col style="width:216px"><col style="width:130px"><col style="width:76px"><col style="width:136px"><col style="width:176px"><col style="width:150px"></colgroup><thead><tr><th>Production</th><th>Direction and party</th><th>Bates range</th><th>Docs</th><th>Spec</th><th>Status</th><th>Delivered / due</th></tr></thead><tbody>'
-  +list.map(p=>{const sp=specOf(p.spec);const d=p.del||p.due;return '<tr class="clickrow" tabindex="0" data-act="prodopen" data-id="'+p.id+'"><td><div class="cell"><span class="tt" style="background:var(--orange-solid)">'+ic('e-prod')+'</span><span class="tcell"><button type="button" class="lnk" data-act="prodopen" data-id="'+p.id+'">'+esc(p.name)+'</button><span class="m2 always"><span class="ref">'+p.id+'</span> &middot; '+p.vol+'</span></span></div></td>'
-   +'<td data-l="Direction and party"><div class="cell"><span class="dirI '+p.dir+'" title="'+(p.dir==='out'?'Produced by us':'Received')+'">'+ic(p.dir==='out'?'i-up':'i-download','sm')+'</span><span class="tcell"><b class="pn">'+esc(p.dir==='out'?p.to.replace(/ \(.*\)/,''):p.byName)+'</b><span class="m2 always">'+(p.dir==='out'?'Produced by us':'Received')+'</span></span></div></td>'
-   +'<td data-l="Bates"><div class="bates">'+bates(p,p.b)+'<small>to '+bates(p,p.e)+'</small></div></td><td data-l="Docs">'+p.docs.toLocaleString('en-US')+'<div class="note">'+p.pages.toLocaleString('en-US')+' pp</div></td>'
-   +'<td data-l="Spec">'+(sp?'<button type="button" class="pj on" data-act="'+(ALT?'gospec':'specopenp')+'" data-id="'+sp.id+'">'+ic('i-sliders','xs')+'<span>'+esc(sp.name.split(':')[0].replace('ESI protocol standard','ESI standard'))+'</span></button>':'<span class="note">None (received)</span>')+'</td><td data-l="Status">'+pstat(p.status)+'</td><td data-l="'+(p.del?'Delivered':'Due')+'">'+(d?'<span class="due2"><b>'+fmt(d)+'</b><small>'+(p.del?'Delivered':'Due')+' '+fmt(d,true).slice(6)+'</small></span>':'<span class="note">n/a</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'productions')+'</section>';
+  +'<div class="toolrow"><div class="findbox"><label class="sr" for="pq">Search productions</label>'+ic('i-search','sm')+'<input id="pq" type="search" placeholder="Search productions" value="'+esc(S.pq)+'" autocomplete="off"></div>'+ddBtn('pdir','i-arrow','<span class="pre">Direction:</span> '+dn,S.pdir!=='all')+'<span class="sp"></span>'+(S.pq||S.pdir!=='all'?'<button type="button" class="link" data-act="preset">Reset</button>':'')+'</div>'
+  +'<div class="gscroll"><table class="rt tk" style="min-width:1000px"><caption class="sr">Productions of this matter</caption><colgroup><col><col style="width:240px"><col style="width:156px"><col style="width:92px"><col style="width:150px"><col style="width:150px"></colgroup><thead><tr><th>Production</th><th>Direction and party</th><th>Bates range</th><th>Docs</th><th>Spec</th><th>Delivered / due</th></tr></thead><tbody>'
+  +list.map(p=>{const sp=specOf(p.spec);return '<tr class="clickrow" tabindex="0" data-act="prodopen" data-id="'+p.id+'"><td><div class="cell"><span class="tt" style="background:var(--orange-solid)">'+ic('e-prod')+'</span><span class="tcell"><button type="button" class="lnk" data-act="prodopen" data-id="'+p.id+'">'+esc(p.name)+'</button><span class="m2 always"><span class="ref">'+p.id+'</span> &middot; '+p.vol+'</span></span></div></td>'
+   +'<td data-l="Direction and party"><div class="cell"><span class="dirI '+p.dir+'" title="'+(p.dir==='out'?'Produced by us':'Received')+'">'+ic(p.dir==='out'?'i-up':'i-download','sm')+'</span><span class="tcell"><b class="pn">'+esc(p.dir==='out'?p.to:p.by)+'</b><span class="m2 always">'+(p.dir==='out'?'Produced by us':'Received')+'</span></span></div></td>'
+   +'<td data-l="Bates"><div class="bates">'+esc(p.begin)+'<small>to '+esc(p.end)+'</small></div></td><td data-l="Docs">'+p.docs.toLocaleString('en-US')+'<div class="note">'+p.pages.toLocaleString('en-US')+' pp</div></td>'
+   +'<td data-l="Spec">'+(sp?'<button type="button" class="pj on" data-act="specopenp" data-id="'+sp.id+'">'+ic('i-sliders','xs')+'<span>'+esc(sp.name.split(':')[0].replace('ESI protocol standard','ESI standard'))+'</span></button>':'<span class="note">None (received)</span>')+'</td><td data-l="'+dateLabel(p)+'"><span class="due2"><b>'+fmt(p.date)+'</b><small>'+dateLabel(p)+' '+fmt(p.date,true).slice(6)+'</small></span></td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'productions')+'</section>';
 }
+const dateLabel=p=>p.kind==='Due'?'Due':p.dir==='in'?'Received':'Delivered';
 function prodPanel(id,tab){
   tab=tab||'d';const p=PRODS.find(x=>x.id===id),sp=specOf(p.spec);
   const tabs='<div class="tabs" role="tablist" aria-label="Production sections">'+[['d','Details'],['c','Comments ('+p.cm.length+')'],['h','History ('+p.hist.length+')']].map(t=>'<button type="button" role="tab" data-act="ptab" data-id="'+id+'" data-v="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+t[1]+'</button>').join('')+'</div>';
   let body;
-  if(tab==='d')body='<dl><dt>Direction</dt><dd>'+dirChip(p)+'</dd><dt>Produced by</dt><dd>'+esc(p.byName)+' <small>('+p.by+')</small></dd><dt>Produced to</dt><dd>'+esc(p.to)+'</dd><dt>Status</dt><dd>'+pstat(p.status)+'</dd><dt>Volume</dt><dd>'+p.vol+'</dd></dl>'
-   +'<h3 class="sec">Bates and volume</h3><dl><dt>Prefix</dt><dd><span class="bates">'+p.pre+'</span> <small>'+p.dig+' digits</small></dd><dt>Range</dt><dd><span class="bates">'+bates(p,p.b)+' to '+bates(p,p.e)+'</span></dd><dt>Documents</dt><dd>'+p.docs.toLocaleString('en-US')+' <small>('+p.pages.toLocaleString('en-US')+' pages, '+p.nat+' natives)</small></dd><dt>Redacted</dt><dd>'+p.red+'</dd><dt>Withheld</dt><dd>'+p.wh+' <small>logged in '+esc(p.plog)+'</small></dd><dt>Custodians</dt><dd>'+esc(p.cust)+'</dd><dt>Date range</dt><dd>'+esc(p.range)+'</dd></dl>'
-   +'<h3 class="sec">Production spec</h3>'+(sp?'<dl><dt>Spec</dt><dd><button type="button" class="lnk" data-act="'+(ALT?'gospec':'specopenp')+'" data-id="'+sp.id+'">'+esc(sp.name)+'</button></dd><dt>Images</dt><dd>'+sp.fmt+'</dd><dt>Load file</dt><dd>'+sp.load+'</dd><dt>Text</dt><dd>'+sp.text+'</dd><dt>Natives</dt><dd>'+sp.natives+'</dd><dt>De-dup</dt><dd>'+sp.dedup+'</dd><dt>Dates</dt><dd>'+sp.dates+'</dd></dl>':'<div class="note">Received productions follow the other side\'s format. Record it in the notes if it matters.</div>')
-   +'<h3 class="sec">Quality control</h3><ul class="qc">'+QCITEMS.map((q,i)=>'<li class="'+(p.qc[i]?'ok':'no')+'">'+ic(p.qc[i]?'i-checkc':'i-clock','sm')+q+'</li>').join('')+'</ul>'
-   +'<h3 class="sec">Delivery, receipt and clawback</h3><dl><dt>Method</dt><dd>'+esc(p.meth)+'</dd><dt>'+(p.dir==='out'?'Delivered':'Received')+'</dt><dd>'+(p.del?fmt(p.del,true):'Not yet')+'</dd>'+(p.due?'<dt>Due</dt><dd>'+fmt(p.due,true)+'</dd>':'')+'<dt>Receipt</dt><dd>'+(p.ack?esc(p.ack):'<span class="note">None yet</span>')+'</dd><dt>Clawback</dt><dd>'+esc(p.claw)+'</dd></dl>';
+  if(tab==='d')body='<dl><dt>Direction</dt><dd>'+dirChip(p)+'</dd><dt>Produced by</dt><dd>'+esc(p.by)+'</dd><dt>Produced to</dt><dd>'+esc(p.to)+'</dd><dt>Volume</dt><dd>'+esc(p.vol)+'</dd><dt>Spec</dt><dd>'+(sp?'<button type="button" class="lnk" data-act="specopenp" data-id="'+sp.id+'">'+esc(sp.name)+'</button>':'<span class="note">None (received)</span>')+'</dd><dt>Bates begin</dt><dd><span class="bates">'+esc(p.begin)+'</span></dd><dt>Bates end</dt><dd><span class="bates">'+esc(p.end)+'</span></dd><dt>Documents</dt><dd>'+p.docs.toLocaleString('en-US')+'</dd><dt>Pages</dt><dd>'+p.pages.toLocaleString('en-US')+'</dd><dt>'+dateLabel(p)+'</dt><dd>'+fmt(p.date,true)+'</dd><dt>Notes</dt><dd style="font-weight:400">'+(p.notes?esc(p.notes):'<span class="note">None</span>')+'</dd></dl>';
   else if(tab==='c')body=(p.cm.length?p.cm.map(c=>'<div class="cmt">'+avatar(c[0])+'<div><b>'+esc(c[0])+'</b> <small>'+fmt(c[1],true)+'</small><p>'+esc(c[2])+'</p></div></div>').join(''):'<div class="note">No comments yet.</div>')+'<div class="cmtbox"><label class="sr" for="pc-t">Add a comment</label><textarea id="pc-t" placeholder="Add a comment"></textarea><button type="button" class="btn primary" data-act="pcomment" data-id="'+id+'">Post</button></div>';
-  else body='<ul class="evl2">'+p.hist.slice().reverse().map(h=>'<li'+(/clawback/i.test(h[0])?' class="warn"':'')+'>'+esc(h[0])+'<small>'+fmt(h[1],true)+' by '+esc(h[2])+'</small></li>').join('')+'</ul><div class="note">Every change to a production is written here and to the audit log.</div>';
-  openPanel({title:p.name,sub:'<span class="ref">'+p.id+'</span> &middot; '+p.vol,wide:true,tabs,body,footer:'<button type="button" class="btn" data-act="inert">'+ic('i-download','sm')+'Export report</button><span class="sp1"></span><button type="button" class="btn primary" data-act="prodedit" data-id="'+id+'">'+ic('i-edit','sm')+'Edit</button>'});
+  else body='<ul class="evl2">'+p.hist.slice().reverse().map(h=>'<li>'+esc(h[0])+'<small>'+fmt(h[1],true)+' by '+esc(h[2])+'</small></li>').join('')+'</ul><div class="note">History lists who changed what. It is the same record the audit log keeps.</div>';
+  openPanel({title:p.name,sub:'<span class="ref">'+p.id+'</span> &middot; '+esc(p.vol),wide:true,tabs,body,footer:'<span class="sp1"></span><button type="button" class="btn primary" data-act="prodedit" data-id="'+id+'">'+ic('i-edit','sm')+'Edit</button>'});
 }
+const PFIELDS=[['name','Name'],['vol','Volume'],['dir','Direction'],['by','Produced by'],['to','Produced to'],['spec','Spec'],['begin','Bates begin'],['end','Bates end'],['docs','Documents'],['pages','Pages'],['when','Delivered or due date'],['notes','Notes']];
 function prodForm(id){
-  const p=id?PRODS.find(x=>x.id===id):{name:'',dir:'out',by:'Our company',byName:M.client,to:'Harbor Freight Inc. (opposing party)',spec:'S1',vol:'VOL00'+(PRODS.length),pre:'NWL',b:91951,e:'',dig:8,docs:'',pages:'',meth:'Secure FTP',cust:'',range:'',due:null,plog:'',claw:'None'};
-  const opts=(arr,v)=>arr.map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('');
-  openPanel({title:id?'Edit production':'New production',sub:id?p.id:'It is created as a Draft. Status, QC and delivery are updated later.',wide:true,save:id?'Save':'Create production',
-   body:'<h3 class="sec">Basics</h3><div class="fld"><label for="pf-n">Name</label><input type="text" id="pf-n" value="'+esc(p.name)+'" placeholder="e.g. Production, volume 3"></div><div class="row2s"><div class="fld"><label for="pf-v">Volume</label><input type="text" id="pf-v" value="'+esc(p.vol)+'"></div><div class="fld"><label>Direction</label><div class="rad2"><label><input type="radio" name="pf-dir" value="out"'+(p.dir==='out'?' checked':'')+'>Produced by us</label><label><input type="radio" name="pf-dir" value="in"'+(p.dir==='in'?' checked':'')+'>Received</label></div></div></div>'
-   +'<h3 class="sec">Parties</h3><div class="row2s"><div class="fld"><label for="pf-by">Produced by (type)</label><select id="pf-by">'+opts(['Our company','Opposing party','Other company','Client'],p.by)+'</select></div><div class="fld"><label for="pf-bn">Produced by (name)</label><input type="text" id="pf-bn" value="'+esc(p.byName)+'"></div></div><div class="fld"><label for="pf-to">Produced to</label><input type="text" id="pf-to" value="'+esc(p.to)+'"></div>'
-   +'<h3 class="sec">Production spec</h3><div class="fld"><label for="pf-sp">Spec</label><select id="pf-sp"><option value="">(none, for received productions)</option>'+SPECS.filter(s=>s.status!=='Retired').map(s=>'<option value="'+s.id+'"'+(s.id===p.spec?' selected':'')+'>'+esc(s.name)+(s.status==='Draft'?' (draft)':'')+'</option>').join('')+'</select><div class="help">Not in the list? '+(ALT?'<button type="button" class="link" data-act="newspec">Create a spec</button> in the Specs tab.':'<button type="button" class="link" data-act="newspec">Create a new spec</button> here; you come back to this form.')+'</div></div>'
-   +'<h3 class="sec">Bates numbering</h3><div class="row2s"><div class="fld"><label for="pf-pre">Prefix</label><input type="text" id="pf-pre" value="'+esc(p.pre)+'"></div><div class="fld"><label for="pf-dg">Digits</label><input type="text" id="pf-dg" value="'+p.dig+'"></div></div><div class="row2s"><div class="fld"><label for="pf-b">First number</label><input type="text" id="pf-b" value="'+p.b+'"><div class="help">Suggested: next free number after the last volume.</div></div><div class="fld"><label for="pf-e">Last number</label><input type="text" id="pf-e" value="'+p.e+'"></div></div><div class="preview" id="pf-pv" aria-live="polite"></div>'
-   +'<h3 class="sec">Volume</h3><div class="row2s"><div class="fld"><label for="pf-dc">Documents</label><input type="text" id="pf-dc" value="'+p.docs+'"></div><div class="fld"><label for="pf-pg">Pages</label><input type="text" id="pf-pg" value="'+p.pages+'"></div></div><div class="fld"><label for="pf-cu">Custodians</label><input type="text" id="pf-cu" value="'+esc(p.cust)+'" placeholder="Comma separated"></div><div class="fld"><label for="pf-rg">Date range</label><input type="text" id="pf-rg" value="'+esc(p.range)+'"></div>'
-   +'<h3 class="sec">Delivery</h3><div class="row2s"><div class="fld"><label for="pf-m">Method</label><select id="pf-m">'+opts(['Secure FTP','Secure download link','Encrypted hard drive','Hard drive by courier','Review platform share'],p.meth)+'</select></div><div class="fld"><label for="pf-du">Due date</label><input type="date" id="pf-du" value="'+(p.due?iso(p.due):'')+'"></div></div><div class="fld"><label for="pf-pl">Privilege log</label><input type="text" id="pf-pl" value="'+esc(p.plog)+'" placeholder="Reference or status"></div>',
-   after:el=>{const upd=()=>{const g=i=>$('#'+i,el).value;const pr={pre:g('pf-pre'),dig:+g('pf-dg')||6};const b=+g('pf-b')||0,e=+g('pf-e')||0;$('#pf-pv').textContent='Bates: '+bates(pr,b)+' to '+(e?bates(pr,e):'...')+(e>=b&&e?'  ('+(e-b+1).toLocaleString('en-US')+' numbers)':'')};$$('input',el).forEach(i=>i.addEventListener('input',upd));upd()},
+  const p=id?PRODS.find(x=>x.id===id):{name:'',dir:'out',by:M.client,to:'Harbor Freight Inc.',spec:'S1',vol:'VOL00'+(PRODS.length),begin:'',end:'',docs:'',pages:'',date:at(14,17),kind:'Due',notes:''};
+  openPanel({title:id?'Edit production':'New production',sub:id?p.id:'A simple record: no status workflow for now.',wide:true,save:id?'Save':'Create production',
+   body:'<div class="fld"><label for="pf-n">Name</label><input type="text" id="pf-n" value="'+esc(p.name)+'" placeholder="e.g. Production, volume 3"></div><div class="row2s"><div class="fld"><label for="pf-v">Volume</label><input type="text" id="pf-v" value="'+esc(p.vol)+'"></div><div class="fld"><label>Direction</label><div class="rad2"><label><input type="radio" name="pf-dir" value="out"'+(p.dir==='out'?' checked':'')+'>Produced by us</label><label><input type="radio" name="pf-dir" value="in"'+(p.dir==='in'?' checked':'')+'>Received</label></div></div></div>'
+   +'<div class="row2s"><div class="fld"><label for="pf-by">Produced by</label><input type="text" id="pf-by" value="'+esc(p.by)+'"></div><div class="fld"><label for="pf-to">Produced to</label><input type="text" id="pf-to" value="'+esc(p.to)+'"></div></div>'
+   +'<div class="fld"><label for="pf-sp">Spec</label><select id="pf-sp"><option value="">(none, for received productions)</option>'+SPECS.filter(x=>x.status!=='Retired').map(x=>'<option value="'+x.id+'"'+(x.id===p.spec?' selected':'')+'>'+esc(x.name)+(x.status==='Draft'?' (draft)':'')+'</option>').join('')+'</select><div class="help">Not in the list? <button type="button" class="link" data-act="newspec">Create a new spec</button>.</div></div>'
+   +'<div class="row2s"><div class="fld"><label for="pf-b">Bates begin</label><input type="text" id="pf-b" value="'+esc(p.begin)+'" placeholder="e.g. NWL00091951"></div><div class="fld"><label for="pf-e">Bates end</label><input type="text" id="pf-e" value="'+esc(p.end)+'"></div></div>'
+   +'<div class="row2s"><div class="fld"><label for="pf-dc">Documents</label><input type="text" id="pf-dc" value="'+p.docs+'"></div><div class="fld"><label for="pf-pg">Pages</label><input type="text" id="pf-pg" value="'+p.pages+'"></div></div>'
+   +'<div class="row2s"><div class="fld"><label for="pf-k">Date is</label><select id="pf-k"><option'+(p.kind==='Due'?' selected':'')+'>Due</option><option'+(p.kind==='Delivered'?' selected':'')+'>Delivered</option></select></div><div class="fld"><label for="pf-d">Date</label><input type="date" id="pf-d" value="'+iso(p.date)+'"></div></div>'
+   +'<div class="fld"><label for="pf-nt">Notes <span class="opt">(optional)</span></label><textarea id="pf-nt" style="height:84px">'+esc(p.notes)+'</textarea></div>',
    onSave:el=>{const n=$('#pf-n').value.trim();if(!n){$('#pf-n').setAttribute('aria-invalid','true');$('#pf-n').focus();return false}
-    const v={name:n,vol:$('#pf-v').value,dir:$('[name=pf-dir]:checked').value,by:$('#pf-by').value,byName:$('#pf-bn').value,to:$('#pf-to').value,spec:$('#pf-sp').value,pre:$('#pf-pre').value,dig:+$('#pf-dg').value||6,b:+$('#pf-b').value||0,e:+$('#pf-e').value||0,docs:+$('#pf-dc').value||0,pages:+$('#pf-pg').value||0,cust:$('#pf-cu').value,range:$('#pf-rg').value,meth:$('#pf-m').value,due:$('#pf-du').value?new Date($('#pf-du').value+'T17:00:00'):null,plog:$('#pf-pl').value};
-    if(id)Object.assign(p,v);else PRODS.unshift(Object.assign({id:'PRD-00'+(PRODS.length+1),nat:0,red:0,wh:0,status:'Draft',del:null,ack:'',claw:'None',qc:[0,0,0,0,0],cm:[],hist:[['Created',now,'Test User 19']]},v));
-    toast(id?'Production saved. History updated.':'Production created as Draft.');rerender()}});
+    const num=x=>+String(x).replace(/[^\d]/g,'')||0;
+    const v={name:n,vol:$('#pf-v').value,dir:$('[name=pf-dir]:checked').value,by:$('#pf-by').value,to:$('#pf-to').value,spec:$('#pf-sp').value,begin:$('#pf-b').value,end:$('#pf-e').value,docs:num($('#pf-dc').value),pages:num($('#pf-pg').value),kind:$('#pf-k').value,date:new Date($('#pf-d').value+'T17:00:00'),notes:$('#pf-nt').value};
+    if(id){const lab={name:'Name',vol:'Volume',dir:'Direction',by:'Produced by',to:'Produced to',spec:'Spec',begin:'Bates begin',end:'Bates end',docs:'Documents',pages:'Pages',kind:'Date kind',notes:'Notes'};
+      Object.keys(lab).forEach(k=>{if(String(p[k])!==String(v[k])){const f=x=>k==='spec'?(x?specOf(x).name:'none'):x;p.hist.push(['Changed '+lab[k]+' from "'+f(p[k])+'" to "'+f(v[k])+'"',now,'Test User 19'])}});
+      if(iso(p.date)!==iso(v.date))p.hist.push(['Changed Delivered or due date from "'+fmt(p.date)+'" to "'+fmt(v.date)+'"',now,'Test User 19']);
+      Object.assign(p,v)}
+    else PRODS.unshift(Object.assign({id:'PRD-00'+(PRODS.length+1),cm:[],hist:[['Created the production',now,'Test User 19']]},v));
+    ACTS.unshift({k:'prod',who:'Test User 19',txt:(id?'changed the production':'created the production'),obj:id||'new production',at:now,unread:true});
+    toast(id?'Production saved. History records what changed.':'Production created.');rerender()}});
 }
-
 /* ====================== PRODUCTION SPECS ====================== */
 const SPSTAT={Approved:'teal',Draft:'slate',Retired:'amber'};
 function specsHTML(head){
@@ -2120,7 +2153,7 @@ function specPanel(id){
   openPanel({title:s.name,sub:'<span class="ps '+SPSTAT[s.status]+'">'+s.status+'</span> &middot; used by '+plural(usedBy(id),'production'),wide:true,
    footer:'<button type="button" class="btn" data-act="specdup" data-id="'+id+'">'+ic('i-layers','sm')+'Duplicate</button><span class="sp1"></span><button type="button" class="btn primary" data-act="specedit" data-id="'+id+'">'+ic('i-edit','sm')+'Edit</button>',
    body:'<dl><dt>Source</dt><dd>'+esc(s.src)+'</dd><dt>Images</dt><dd>'+esc(s.fmt)+'</dd><dt>Colour</dt><dd>'+esc(s.color)+'</dd><dt>Text</dt><dd>'+esc(s.text)+'</dd><dt>Natives</dt><dd>'+esc(s.natives)+'</dd><dt>Load file</dt><dd>'+esc(s.load)+'</dd><dt>Metadata</dt><dd>'+s.fields+' fields</dd><dt>Redactions</dt><dd>'+esc(s.red)+'</dd><dt>De-duplication</dt><dd>'+esc(s.dedup)+'</dd><dt>Dates and time</dt><dd>'+esc(s.dates)+'</dd><dt>Numbering</dt><dd>'+esc(s.numb)+'</dd><dt>Encryption</dt><dd>'+esc(s.enc)+'</dd></dl>'
-   +'<h3 class="sec">Used by</h3>'+(usedBy(id)?'<ul class="tlist">'+PRODS.filter(p=>p.spec===id).map(p=>'<li><div class="tx"><b>'+esc(p.name)+'</b><span class="note">'+p.id+' &middot; '+bates(p,p.b)+' to '+bates(p,p.e)+'</span></div>'+pstat(p.status)+'</li>').join('')+'</ul>':'<div class="note">No production uses this spec yet.</div>')+'<h3 class="sec">History</h3><ul class="evl2"><li>Last edited<small>'+fmt(s.upd,true)+' by Dana Whitfield</small></li><li>Created<small>'+fmt(addDays(s.upd,-14),true)+' by Dana Whitfield</small></li></ul>'});
+   +'<h3 class="sec">Used by</h3>'+(usedBy(id)?'<ul class="tlist">'+PRODS.filter(p=>p.spec===id).map(p=>'<li><div class="tx"><b>'+esc(p.name)+'</b><span class="note">'+p.id+' &middot; '+esc(p.begin)+' to '+esc(p.end)+'</span></div></li>').join('')+'</ul>':'<div class="note">No production uses this spec yet.</div>')+'<h3 class="sec">History</h3><ul class="evl2"><li>Last edited<small>'+fmt(s.upd,true)+' by Dana Whitfield</small></li><li>Created<small>'+fmt(addDays(s.upd,-14),true)+' by Dana Whitfield</small></li></ul>'});
 }
 function specForm(id,dupOf){
   const base=id?specOf(id):dupOf?specOf(dupOf):{name:'',status:'Draft',src:'',fmt:'TIFF (Group IV, 300 dpi)',load:'DAT + OPT',text:'Extracted text, OCR when none',natives:'Spreadsheets, audio, video',red:'Burned-in REDACTED',dedup:'Global, SHA-1',dates:'MM/DD/YYYY, 24-hour, UTC',fields:13,enc:'AES-256, password sent separately',color:'Black and white',numb:'Bates, 8 digits'};
@@ -2153,38 +2186,56 @@ function toolbarHTML(){
    +'<div class="etb2" id="tb2" role="toolbar" aria-label="Table tools" hidden><span class="lb">Table</span><button type="button" data-t="rowadd">+ Row</button><button type="button" data-t="rowdel">&minus; Row</button><button type="button" data-t="coladd">+ Col</button><button type="button" data-t="coldel">&minus; Col</button><button type="button" data-t="hdr" aria-pressed="true">Header row</button><button type="button" data-t="tbldel">Delete table</button></div>';
 }
 function tagChip(t,x){return '<span class="tagc '+(TAGS[t]||'slate')+'"><i></i>'+esc(t)+(x?'<button type="button" class="x" data-act="rmtag" data-t="'+esc(t)+'" aria-label="Remove tag '+esc(t)+'">'+ic('i-x','xs')+'</button>':'')+'</span>'}
+const curNote=()=>NOTES.find(n=>n.id===S.note)||NOTES[0];
 function notesHTML(){
-  const cur=NOTES.find(n=>n.id===S.note)||NOTES[0];
+  const cur=curNote(),ed=S.nedit&&S.draft&&S.draft.id===cur.id,vm=ed?S.draft:cur;
   const list=NOTES.filter(n=>(!S.nq||(n.title+' '+stripHtml(n.body)).toLowerCase().includes(S.nq.toLowerCase()))&&(!S.ntag||n.tags.includes(S.ntag))).sort((a,b)=>b.at-a.at);
-  const off=S.ai==='no';
-  const rail='<div class="nrail" role="toolbar" aria-label="Note side panels" aria-orientation="vertical"><button type="button" class="ibtn" data-act="rail" data-v="tags" aria-pressed="'+(S.npanel==='tags')+'" aria-label="Tags" title="Tags">'+ic('i-tag')+(cur.tags.length?'<span class="bdg">'+cur.tags.length+'</span>':'')+'</button><button type="button" class="ibtn" data-act="rail" data-v="info" aria-pressed="'+(S.npanel==='info')+'" aria-label="Details and history" title="Details and history">'+ic('i-info')+'</button><button type="button" class="ibtn" data-act="rail" data-v="ai" aria-pressed="'+(S.npanel==='ai')+'" aria-disabled="'+off+'" aria-label="AI assistant" title="'+(off?"AI can't be used on this matter":'AI assistant (coming soon)')+'" style="'+(off?'opacity:.55':'color:var(--violet)')+'">'+ic('i-flame')+'</button></div>';
+  const off=S.ai==='no',locked=!!cur.locked;
+  const rail='<div class="nrail" role="toolbar" aria-label="Note side panels" aria-orientation="vertical"><button type="button" class="ibtn" data-act="rail" data-v="tags" aria-pressed="'+(S.npanel==='tags')+'" aria-label="Tags" title="Tags">'+ic('i-tag')+(vm.tags.length?'<span class="bdg">'+vm.tags.length+'</span>':'')+'</button><button type="button" class="ibtn" data-act="rail" data-v="info" aria-pressed="'+(S.npanel==='info')+'" aria-label="Details and history" title="Details and history">'+ic('i-info')+'</button><button type="button" class="ibtn" data-act="rail" data-v="ai" aria-pressed="'+(S.npanel==='ai')+'" aria-disabled="'+off+'" aria-label="AI assistant" title="'+(off?"AI can't be used on this matter":'AI assistant (coming soon)')+'" style="'+(off?'opacity:.55':'color:var(--violet)')+'">'+ic('i-flame')+'</button></div>';
   let panel='';
-  if(S.npanel==='tags')panel='<aside class="npanel" aria-label="Tags"><header><h3>Tags</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close tags panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="ctxbar">'+(cur.tags.length?cur.tags.map(t=>tagChip(t,true)).join(''):'<span class="note">No tags on this note.</span>')+'</div><h3 style="margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Add a tag</h3><div class="ctxbar">'+Object.keys(TAGS).filter(t=>!cur.tags.includes(t)).map(t=>'<button type="button" class="tagc '+TAGS[t]+'" data-act="addtag" data-t="'+t+'" style="border:1px dashed currentColor">'+ic('i-plus','xs')+esc(t)+'</button>').join('')+'</div><div class="note">Tags are managed under Admin > Labels > Notes tags. They also show under the title.</div></div></aside>';
+  if(S.npanel==='tags')panel='<aside class="npanel" aria-label="Tags"><header><h3>Tags</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close tags panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="ctxbar">'+(vm.tags.length?vm.tags.map(t=>tagChip(t,ed)).join(''):'<span class="note">No tags on this note.</span>')+'</div>'+(ed?'<h3 style="margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Add a tag</h3><div class="ctxbar">'+Object.keys(TAGS).filter(t=>!vm.tags.includes(t)).map(t=>'<button type="button" class="tagc '+TAGS[t]+'" data-act="addtag" data-t="'+t+'" style="border:1px dashed currentColor">'+ic('i-plus','xs')+esc(t)+'</button>').join('')+'</div>':'<div class="note">Press Edit to change the tags.</div>')+'<div class="note">Tags are managed under Admin > Labels > Notes tags. They also show under the title.</div></div></aside>';
   if(S.npanel==='info')panel='<aside class="npanel" aria-label="Details and history"><header><h3>Details</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close details panel">'+ic('i-x','sm')+'</button></header><div class="pb"><dl style="margin:0;display:grid;grid-template-columns:90px 1fr;font-size:13.5px"><dt class="note" style="padding:5px 0">Updated</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+fmt(cur.at,true)+'</dd><dt class="note" style="padding:5px 0">Updated by</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+esc(cur.by)+'</dd></dl><h3 style="margin:4px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">History</h3><ul class="evl2">'+(cur.hist||[['Last saved',cur.at,cur.by]]).slice().reverse().map(h=>'<li'+(/warning/i.test(h[0])?' class="warn"':'')+'>'+esc(h[0])+'<small>'+fmt(h[1],true)+' by '+esc(h[2])+'</small></li>').join('')+'</ul></div></aside>';
   if(S.npanel==='ai')panel='<aside class="npanel" aria-label="AI assistant"><header><h3>AI assistant</h3><span class="pill-soon">coming soon</span><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close AI panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="aibox">'+ic('i-flame','lg')+'<b>AI assistant is coming soon</b><p>Write and improve notes, and find notes by meaning. Nothing to use yet in this release.</p></div><div class="note">Allowed on this matter: <b>'+AIV[S.ai]+'</b>. The system will pick the tool by itself.</div><div class="chatin"><input type="text" placeholder="Ask about this matter\'s notes" disabled aria-label="Ask the AI (not available yet)"><button type="button" class="btn" disabled>Send</button></div></div></aside>';
-  const tagrow='<div class="ntags" contenteditable="false">'+cur.tags.map(t=>tagChip(t)).join('')+'<button type="button" class="tagadd" data-act="rail" data-v="tags">'+ic('i-plus','xs')+(cur.tags.length?'Tags':'Add a tag')+'</button></div>';
+  const tagrow='<div class="ntags" contenteditable="false">'+vm.tags.map(t=>tagChip(t)).join('')+(ed?'<button type="button" class="tagadd" data-act="rail" data-v="tags">'+ic('i-plus','xs')+(vm.tags.length?'Tags':'Add a tag')+'</button>':'')+'</div>';
+  const top=ed?'<div class="ntop"><button type="button" class="btn sm" data-act="ncancel">Cancel</button><span class="note" id="savedat">Editing'+(cur.isNew?' a new note':'')+'</span><span class="sp"></span>'+aiBtn('sm','Write with AI')+'<button type="button" class="btn primary sm" data-act="nsave">Save</button></div>'
+   :'<div class="ntop"><span class="note" id="savedat">'+(locked?'<span class="lockchip">'+ic('i-lock','xs')+'Locked by '+esc(cur.locked)+' since '+fmt(cur.lockAt,true)+'</span>':'Updated '+fmt(cur.at,true)+' by '+esc(cur.by))+'</span><span class="sp"></span><button type="button" class="btn primary sm" data-act="nedit" aria-disabled="'+locked+'" title="'+(locked?'Locked by '+esc(cur.locked)+'. You can read it; you can edit it when it is unlocked.':'Edit this note')+'">'+ic(locked?'i-lock':'i-edit','sm')+'Edit</button></div>';
   return '<section class="card grow" aria-label="Notes" style="display:flex;flex-direction:column;overflow:hidden"><div class="nwrap" id="nwrap">'
   +'<div class="nlistc" id="nlistc" style="flex-basis:'+S.nw+'px"><div class="card-h hd2" style="padding:10px 14px"><h2>Notes</h2><span class="tcnt">'+list.length+'</span><div class="r">'+aiBtn('sm','Find')+'<button type="button" class="btn primary sm" data-act="nnew">'+ic('i-plus','sm')+'New</button></div></div><div class="toolrow" style="padding:8px 14px"><div class="findbox" style="flex:1;width:auto;min-width:100px"><label class="sr" for="nq">Search notes</label>'+ic('i-search','sm')+'<input id="nq" type="search" placeholder="Search notes" value="'+esc(S.nq)+'" autocomplete="off"></div>'+ddBtn('ntag','i-tag',S.ntag||'All tags',!!S.ntag)+'</div><div class="nsc">'
-   +(list.length?list.map(n=>'<button type="button" class="nitem" data-act="noteopen" data-id="'+n.id+'" aria-current="'+(n.id===cur.id)+'"><div class="t">'+(n.title?'':ic('i-edit','sm'))+'<span'+(n.title?'':' style="color:var(--muted);font-style:italic"')+'>'+esc(noteTitle(n))+'</span></div><div class="pv">'+esc(stripHtml(n.body))+'</div><div class="mt">'+n.tags.map(t=>tagChip(t)).join('')+'<span>'+fmt(n.at,true)+' &middot; '+esc(n.by)+'</span></div></button>').join(''):'<div class="empty">'+ic('i-info')+'<span>No note matches.</span></div>')+'</div></div>'
+   +(list.length?list.map(n=>'<button type="button" class="nitem" data-act="noteopen" data-id="'+n.id+'" aria-current="'+(n.id===cur.id)+'"><div class="t">'+(n.locked?ic('i-lock','sm'):n.title?'':ic('i-edit','sm'))+'<span'+(n.title?'':' style="color:var(--muted);font-style:italic"')+'>'+esc(noteTitle(n))+'</span></div><div class="pv">'+esc(stripHtml(n.body))+'</div><div class="mt">'+n.tags.map(t=>tagChip(t)).join('')+'<span>'+fmt(n.at,true)+' &middot; '+esc(n.by)+'</span></div></button>').join(''):'<div class="empty">'+ic('i-info')+'<span>No note matches.</span></div>')+'</div></div>'
   +'<div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize the note list. Use the left and right arrow keys." aria-valuemin="'+NW_MIN+'" aria-valuemax="'+NW_MAX+'" aria-valuenow="'+S.nw+'"><span class="grip" aria-hidden="true"></span></div>'
-  +'<div class="nedit"><div class="ntop"><span class="note" id="savedat">Saved '+fmt(cur.at,true)+'</span><span class="sp"></span>'+aiBtn('sm','Write with AI')+'<button type="button" class="btn primary sm" data-act="nsave">Save</button></div>'+toolbarHTML()
-   +'<div class="nedsc"><div class="ed2" id="ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note: the first line is the title" spellcheck="true"><h1 class="ntitle" id="ntitle">'+esc(cur.title)+'</h1>'+tagrow+cur.body+'</div></div>'
-   +'<div class="slashhint"><span>Type <kbd>/</kbd> for commands (asset, assets, mention, project, matter, note), <kbd>@</kbd> for people, <kbd>#</kbd> for assets.</span><span class="sp"></span><span class="note">'+(off?'AI policy check is off: AI not allowed.':'AI policy check on save: <span class="pill-soon">coming soon</span>')+'</span></div></div>'
+  +'<div class="nedit">'+top+(ed?toolbarHTML():'')
+   +'<div class="nedsc"><div class="ed2'+(ed?'':' rv')+'" id="ed"'+(ed?' contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note: the first line is the title" spellcheck="true"':' tabindex="0" aria-label="Note, read only"')+'><h1 class="ntitle" id="ntitle">'+esc(vm.title)+'</h1>'+tagrow+vm.body+'</div></div>'
+   +(ed?'<div class="slashhint"><span>Type <kbd>/</kbd> for commands (asset, mention, project, matter, note), <kbd>@</kbd> for people, <kbd>#</kbd> for assets.</span><span class="sp"></span><span class="note">'+(off?'AI policy check is off: AI not allowed.':'AI policy check on save: <span class="pill-soon">coming soon</span>')+'</span></div>':'')+'</div>'
   +rail+panel+'</div></section>';
 }
 function captureEditor(){
-  const ed=$('#ed');if(!ed)return;const n=NOTES.find(x=>x.id===S.note);if(!n)return;
+  if(!S.nedit||!S.draft)return;const ed=$('#ed');if(!ed||ed.getAttribute('contenteditable')!=='true')return;
   let t=$('.ntitle',ed);if(!t){t=document.createElement('h1');t.className='ntitle';t.id='ntitle';ed.prepend(t)}
-  n.title=t.textContent.trim();const c=ed.cloneNode(true);$('.ntitle',c).remove();$$('.ntags',c).forEach(x=>x.remove());n.body=c.innerHTML;
+  const c=ed.cloneNode(true);$('.ntitle',c).remove();$$('.ntags',c).forEach(x=>x.remove());
+  S.draft.title=t.textContent.trim();S.draft.body=c.innerHTML;
 }
+const snapOf=()=>JSON.stringify([S.draft.title,S.draft.body,S.draft.tags]);
+function isDirty(){captureEditor();return !!S.draft&&snapOf()!==S.draft.snap}
+function guardEdit(go){
+  if(!S.nedit){go();return}
+  if(isDirty())confirmDlg({icon:'i-warn',title:'Discard your changes?',body:'<p>The note has changes that are not saved. If you leave now they are lost.</p>',yes:'Discard changes',no:'Keep editing',danger:true,onYes:()=>{dropDraft();go()}});
+  else{dropDraft();go()}
+}
+function dropDraft(){const n=NOTES.find(x=>x.id===(S.draft&&S.draft.id));if(n&&n.isNew)NOTES.splice(NOTES.indexOf(n),1);if(n&&n.isNew&&S.note===n.id)S.note=NOTES[0].id;S.nedit=false;S.draft=null}
+function caretEnd(){const ed=$('#ed');if(!ed)return;ed.focus();const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);const s2=getSelection();s2.removeAllRanges();s2.addRange(r);LRANGE=r}
+function startEdit(){
+  const n=curNote();if(n.locked){toast('This note is locked by '+n.locked+'. You can edit it when it is unlocked.');return}
+  S.nedit=true;S.draft={id:n.id,title:n.title,body:n.body,tags:n.tags.slice(),snap:''};renderPanel();captureEditor();S.draft.snap=snapOf();caretEnd();
+}
+function cancelEdit(){guardEdit(()=>{renderPanel()})}
 function doSave(afterWarn){
-  captureEditor();const n=NOTES.find(x=>x.id===S.note);n.at=now;n.by='Test User 19';n.hist=n.hist||[['Created',n.at,n.by]];
+  captureEditor();const n=curNote(),d=S.draft;n.title=d.title;n.body=d.body;n.tags=d.tags;delete n.isNew;n.at=now;n.by='Test User 19';n.hist=n.hist||[['Created',n.at,n.by]];
   n.hist.push([afterWarn?'Saved after an AI warning (user chose Save anyway)':'Saved',now,'Test User 19']);
-  ACTS.unshift({k:'note',who:'Test User 19',txt:(afterWarn?'saved after an AI warning: ':'saved the note ')+'',obj:noteTitle(n),at:now,unread:true});
-  toast(afterWarn?'Note saved. The AI warning and your choice are recorded in History.':'Note saved.');renderPanel();
+  ACTS.unshift({k:'note',who:'Test User 19',txt:(afterWarn?'saved after an AI warning: ':'saved the note '),obj:noteTitle(n),at:now,unread:true});
+  S.nedit=false;S.draft=null;toast(afterWarn?'Note saved. The AI warning and your choice are recorded in History.':'Note saved.');renderPanel();
 }
 function saveNote(){
-  captureEditor();
+  if(!S.nedit)return;captureEditor();
   if(S.ai!=='no'&&S.warn){
     confirmDlg({icon:'i-warn',title:'The AI check found possible conflicts',yes:'Save anyway',no:'Edit',
      body:'<p>Before saving, the AI compared this note with company policy and this matter\'s specs. It found <b>2 possible conflicts</b>:</p><ul class="reasons"><li><b>Company policy 7.1:</b> settlement figures must not be written in free-text notes.</li><li><b>ESI protocol section 3 (spec: ESI protocol standard):</b> the note names a custodian, Sofia Reyes, who is not on the agreed custodian list.</li></ul><p class="note" style="margin-top:10px">If you save anyway, the warning and your choice are recorded in the note History and the audit log. The check is coming soon: this is a preview.</p>',
@@ -2193,7 +2244,7 @@ function saveNote(){
 }
 /* slash menu, @ and # */
 let SLM=null,LASTR=null;
-const CMDS=[{c:'asset',d:'Link one asset (same as #)',ic:'i-box'},{c:'assets',d:'Insert a list of several assets',ic:'i-db'},{c:'mention',d:'Mention a person (same as @)',ic:'i-users'},{c:'project',d:'Link a project of this matter',ic:'i-folder'},{c:'matter',d:'Link a matter',ic:'i-brief'},{c:'note',d:'Embed a note of this matter, shown inline in a frame',ic:'i-edit'}];
+const CMDS=[{c:'asset',d:'Link one asset (same as #)',ic:'i-box'},{c:'mention',d:'Mention a person (same as @)',ic:'i-users'},{c:'project',d:'Link a project of this matter',ic:'i-folder'},{c:'matter',d:'Link a matter',ic:'i-brief'},{c:'note',d:'Embed a note of this matter, shown inline in a frame',ic:'i-edit'}];
 function entities(kind){
   if(kind==='person')return PEOPLE.map(p=>({t:p,s:'Person',h:'<span class="chipx person" contenteditable="false">@'+esc(p)+'</span>&nbsp;'}));
   if(kind==='asset'||kind==='assets')return ASSETS.map(a=>({t:a.name,s:a.type+' &middot; '+a.ext,h:'<span class="chipx asset" contenteditable="false">#'+esc(a.name)+'</span>&nbsp;'}));
@@ -2222,7 +2273,7 @@ function slmOpen(o){
 }
 function slmClose(refocus){if(!SLM)return;SLM.el.remove();SLM=null;if(refocus){const e=$('#ed');e&&e.focus()}}
 function edDetect(){
-  const ed=$('#ed');if(!ed)return;const sel=getSelection();
+  const ed=$('#ed');if(!ed||!S.nedit)return;const sel=getSelection();
   if(SLM&&SLM.mode==='ent'&&SLM.search)return;
   if(!sel.rangeCount||!ed.contains(sel.anchorNode)||sel.anchorNode.nodeType!==3||sel.anchorNode.parentElement.closest('.ntitle,.lnote,.chipx,.ntags')){slmClose();return}
   const n=sel.anchorNode,txt=n.textContent.slice(0,sel.anchorOffset),m=/(^|\s)([\/@#])([\w-]*)$/.exec(txt);
@@ -2260,8 +2311,7 @@ function slashDemo(){
   const ed=$('#ed');ed.focus();let p=$$('p',ed).pop();if(!p){p=document.createElement('p');ed.appendChild(p)}
   const t=document.createTextNode(' /');p.appendChild(t);const r=document.createRange();r.setStart(t,2);r.collapse(true);getSelection().removeAllRanges();getSelection().addRange(r);edDetect();
 }
-function newNote(){captureEditor();const id='n'+(NOTES.length+1);NOTES.unshift({id,title:'',tags:[],by:'Test User 19',at:now,body:'<p><br></p>'});S.note=id;renderPanel();const t=$('#ntitle');t&&t.focus()}
-
+function newNote(){guardEdit(()=>{const id='n'+(NOTES.length+1);NOTES.unshift({id,title:'',tags:[],by:'Test User 19',at:now,body:'<p><br></p>',isNew:true});S.note=id;S.nedit=true;S.draft={id,title:'',body:'<p><br></p>',tags:[],snap:''};S.tab='notes';rerender();captureEditor();S.draft.snap=snapOf();const t=$('#ntitle');t&&t.focus()})}
 /* ====================== ACTIVITIES ====================== */
 function actsHTML(){
   const unread=ACTS.filter(a=>a.unread).length,list=ACTS.filter(a=>S.kind==='all'||a.k===S.kind).slice().sort((a,b)=>b.at-a.at);
@@ -2285,7 +2335,6 @@ function ddDef(id,btn){
    kind:{items:()=>[{v:'all',t:'All',n:ACTS.length}].concat(KINDS.map(k=>({v:k.id,t:k.t,n:ACTS.filter(a=>a.k===k.id).length}))),sel:()=>[S.kind],pick:v=>{S.kind=v;rerenderKeep()}},
    tstyle:{items:()=>STYLES.map(x=>({v:x[0],t:x[1]})),sel:()=>[S.style||'p'],w:200,pick:v=>{restoreRange();S.style=v;document.execCommand('formatBlock',false,v);$('#stylv').textContent=STYLES.find(x=>x[0]===v)[1]}},
    adisp:{items:()=>[{v:'',t:'All'}].concat(Object.keys(DISP).map(v=>({v,t:v}))),sel:()=>[S.adisp],pick:v=>{S.adisp=v;rerenderKeep()}},
-   pstat:{items:()=>[{v:'',t:'All statuses'}].concat(Object.keys(PST).map(v=>({v,t:v,n:PRODS.filter(p=>p.status===v).length}))),sel:()=>[S.pstat],pick:v=>{S.pstat=v;rerenderKeep()}},
    ntag:{items:()=>[{v:'',t:'All tags'}].concat(Object.keys(TAGS).map(v=>({v,t:v}))),sel:()=>[S.ntag],pick:v=>{S.ntag=v;rerenderKeep()}},
    shows:{multi:true,w:300,items:()=>[{v:'ev',t:'Calendar events',s:'Hearings, depositions, production dates'},{v:'crit',t:'Critical tasks',s:'Priority Critical'},{v:'high',t:'High priority tasks',s:'Priority High'},{v:'over',t:'Overdue tasks',s:'Past due and open'}],sel:()=>Object.keys(S.shows).filter(k=>S.shows[k]),pick:v=>{S.shows[v]=!S.shows[v];$('#tabpanel').innerHTML=calHTML()}}
   };
@@ -2305,13 +2354,14 @@ function rerenderKeep(id){const a=document.activeElement&&document.activeElement
 function setTab(t){captureEditor();slmClose();S.tab=t;closePanel(true);rerender();{const a=$('[role=tab][aria-selected=true]');a&&a.scrollIntoView({inline:'nearest',block:'nearest'})}try{history.replaceState(null,'','#tab='+t)}catch(e){}}
 function mockBtn(){return '<button type="button" class="mockbtn" id="mockbtn" aria-expanded="'+S.mock+'" aria-controls="mockpanel">'+ic('i-sliders','sm')+'Mockup</button>'}
 function mockHTML(){
-  return '<div class="mockpanel" id="mockpanel" role="dialog" aria-label="Mockup settings"'+(S.mock?'':' hidden')+'><h2>Mockup settings</h2><fieldset><legend>AI allowed (Matter field)</legend>'+Object.keys(AIV).map(k=>'<label><input type="radio" name="mai" value="'+k+'"'+(S.ai===k?' checked':'')+'><span>'+AIV[k]+'<small>'+AIH[k]+'</small></span></label>').join('')+'</fieldset><fieldset><legend>Viewer</legend><label><input type="checkbox" id="mEdit"'+(S.canEdit?' checked':'')+'><span>Has Matter.Edit<small>Off hides the Edit button on Summary.</small></span></label></fieldset><fieldset><legend>Notes</legend><label><input type="checkbox" id="mWarn"'+(S.warn?' checked':'')+'><span>Preview AI warning on save<small>Shows the confirmation dialog when you press Save in a note (needs AI allowed).</small></span></label></fieldset>'+'<fieldset><legend>Tools</legend><button type="button" class="btn sm" data-act="slashdemo">Open the slash menu in the note</button></fieldset>'+(ALT?'':'<p class="note">Alternative layout for Specs: <a href="alt-specs-own-tab.html">alt-specs-own-tab.html</a></p>')+'</div>';
+  return '<div class="mockpanel" id="mockpanel" role="dialog" aria-label="Mockup settings"'+(S.mock?'':' hidden')+'><h2>Mockup settings</h2><fieldset><legend>AI allowed (Matter field)</legend>'+Object.keys(AIV).map(k=>'<label><input type="radio" name="mai" value="'+k+'"'+(S.ai===k?' checked':'')+'><span>'+AIV[k]+'<small>'+AIH[k]+'</small></span></label>').join('')+'</fieldset><fieldset><legend>Viewer</legend><label><input type="checkbox" id="mEdit"'+(S.canEdit?' checked':'')+'><span>Has Matter.Edit<small>Off hides the Edit button on Summary.</small></span></label></fieldset><fieldset><legend>Viewer</legend><label><input type="checkbox" id="mMM"'+(S.mm?' checked':'')+'><span>Can open My Matters (project manager)<small>Off hides the calendar panel and the link on Summary, and Calendar event in the New menu.</small></span></label></fieldset><fieldset><legend>Notes</legend><label><input type="checkbox" id="mWarn"'+(S.warn?' checked':'')+'><span>Preview AI warning on save<small>Shows the confirmation dialog when you press Save in a note (needs AI allowed).</small></span></label></fieldset>'+'<fieldset><legend>Tools</legend><button type="button" class="btn sm" data-act="slashdemo">Open the slash menu in the note</button></fieldset>'+''+'</div>';
 }
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.name==='mai'){S.ai=M.ai=t.value;rerender();toast('AI allowed: '+AIV[S.ai])}
   else if(t.id==='mEdit'){S.canEdit=t.checked;rerender()}
   else if(t.id==='mWarn'){S.warn=t.checked}
+  else if(t.id==='mMM'){S.mm=t.checked;rerender()}
   else if(t.dataset&&t.dataset.sel){S.tsel[t.dataset.sel]=t.checked;renderPanel()}
 });
 document.addEventListener('input',e=>{
@@ -2396,7 +2446,7 @@ document.addEventListener('click',e=>{
    case 'assetedit':assetForm(id);break;
    case 'pv':S.pv=v;renderPanel();break;
    case 'pdir':S.pdir=v;renderPanel();break;
-   case 'preset':S.pq=S.pstat='';S.pdir='all';renderPanel();break;
+   case 'preset':S.pq='';S.pdir='all';renderPanel();break;
    case 'prodopen':prodPanel(id);break;
    case 'ptab':prodPanel(id,v);break;
    case 'prodedit':prodForm(id);break;
@@ -2407,14 +2457,16 @@ document.addEventListener('click',e=>{
    case 'specdup':specForm(null,id);break;
    case 'specdel':{const s=specOf(id),u=usedBy(id);confirmDlg({icon:'i-trash',title:u?'Retire this spec?':'Delete this spec?',body:u?'<p>'+esc(s.name)+' is used by '+plural(u,'production')+'. A used spec cannot be deleted. It will be set to Retired and stays on those productions.</p>':'<p>'+esc(s.name)+' is not used by any production. It will be deleted.</p>',yes:u?'Retire spec':'Delete spec',danger:true,onYes:()=>{if(u)s.status='Retired';else SPECS.splice(SPECS.indexOf(s),1);toast(u?'Spec retired.':'Spec deleted.');rerender()}});break}
    case 'sstat':S.sstat=v;renderPanel();break;
-   case 'noteopen':captureEditor();S.note=id;S.tab='notes';rerender();break;
+   case 'noteopen':guardEdit(()=>{S.note=id;S.tab='notes';rerender()});break;
+   case 'nedit':startEdit();break;
+   case 'ncancel':cancelEdit();break;
    case 'nnew':newNote();break;
    case 'rail':if(v==='ai'&&S.ai==='no'){aiOffMsg();break}captureEditor();S.npanel=S.npanel===v?null:(v||null);renderPanel();break;
    case 'ai':if(S.ai==='no'){aiOffMsg();break}if(S.tab==='notes'){captureEditor();S.npanel='ai';renderPanel()}else openPanel({title:'AI assistant',footer:'<button type="button" class="btn" data-act="spclose">Close</button>',body:'<div class="aibox">'+ic('i-flame','lg')+'<b>AI assistant is coming soon</b><p>Allowed on this matter: '+AIV[S.ai]+'.</p></div>'});break;
-   case 'addtag':{const n=NOTES.find(x=>x.id===S.note);captureEditor();n.tags.push(b.dataset.t);renderPanel();break}
-   case 'rmtag':{const n=NOTES.find(x=>x.id===S.note);captureEditor();n.tags=n.tags.filter(x=>x!==b.dataset.t);renderPanel();break}
+   case 'addtag':{captureEditor();S.draft.tags.push(b.dataset.t);renderPanel();break}
+   case 'rmtag':{captureEditor();S.draft.tags=S.draft.tags.filter(x=>x!==b.dataset.t);renderPanel();break}
    case 'nsave':saveNote();break;
-   case 'slashdemo':S.mock=false;$('#mockpanel').hidden=true;if(S.tab!=='notes')setTab('notes');slashDemo();break;
+   case 'slashdemo':S.mock=false;$('#mockpanel').hidden=true;if(S.tab!=='notes')setTab('notes');if(!S.nedit)startEdit();if(S.nedit)slashDemo();break;
    case 'mmcal':toast('Opens My Matters > Calendar with Northwind Logistics > Harbor Freight preselected (mockup). Needs access to My Matters, issue #976.');break;
    case 'fmt':editorCmd(v);break;
    case 'tblpick':tblInsert(+b.dataset.r,+b.dataset.c);break;
