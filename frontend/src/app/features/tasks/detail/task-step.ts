@@ -301,8 +301,9 @@ export function valuesPatch(
       padding-block: var(--mf-s3);
     }
     .step--current {
+      /* The current step has a full thin ring in the brand colour (no thick coloured edge). */
       border-color: var(--mf-primary);
-      box-shadow: inset 3px 0 0 var(--mf-primary);
+      box-shadow: 0 0 0 1px var(--mf-primary);
     }
     /* The header: the toggle (number, title) at the left, the step actions at the top right; the status line sits under the title. */
     .step__row {
@@ -354,7 +355,6 @@ export function valuesPatch(
     .step[data-step-status='COMPLETED'] {
       border-color: var(--mf-success);
       background: color-mix(in srgb, var(--mf-success-bg) 45%, var(--mf-surface));
-      box-shadow: inset 3px 0 0 var(--mf-success);
     }
     .step[data-step-status='SKIPPED'] {
       border-style: dashed;

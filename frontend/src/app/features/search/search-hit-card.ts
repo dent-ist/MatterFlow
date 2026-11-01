@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { SearchHit } from '../../api/generated/api-client';
 import { SuggestionLines, suggestionLines } from '../../shared/search/search-meta';
-import { ActiveBadge, Badge, SensitiveBadge } from '../../shared/ui/badge';
+import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
+import { StatusChip } from '../../shared/ui/status-chip';
 import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
-import { dispositionOf } from '../assets/disposition/asset-disposition';
 import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { RecordCard } from '../../shared/ui/record-card-list';
 import { StatusBadge } from '../../shared/ui/status-badge';
@@ -42,7 +42,7 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
  */
 @Component({
   selector: 'mf-search-hit-card',
-  imports: [RecordCard, ActiveBadge, Badge, SensitiveBadge, StatusBadge, TaskTypeBadge],
+  imports: [RecordCard, ActiveBadge, StatusChip, SensitiveBadge, StatusBadge, TaskTypeBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // The record card is the grid item of the list's `<li>`; this wrapper adds no box.
   host: { style: 'display: contents' },
@@ -97,12 +97,7 @@ export function hitCardLines(hit: SearchHit): SuggestionLines {
         <mf-status-badge mfCardBadges [code]="status" />
       }
       @if (hit().disposition; as code) {
-        <mf-badge
-          mfCardBadges
-          [tone]="dispositionOf(code).tone"
-          [icon]="dispositionOf(code).icon"
-          >{{ dispositionOf(code).label }}</mf-badge
-        >
+        <mf-status-chip mfCardBadges kind="disposition" [code]="code" />
       } @else if (!hit().status) {
         <mf-active-badge mfCardBadges [active]="hit().isActive" />
       }
@@ -155,7 +150,6 @@ export class SearchHitCard {
 
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
-  protected readonly dispositionOf = dispositionOf;
 
   protected readonly lines = computed(() => hitCardLines(this.hit()));
   /** The due fact of a task ("Due Oct 27") or the size of an asset ("412 GB"), after the context (PM v2, #885). */

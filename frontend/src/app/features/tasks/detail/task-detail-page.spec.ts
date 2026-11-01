@@ -141,7 +141,7 @@ describe('TaskDetailPage header', () => {
     expect(q(el, '[data-task-header] [data-ref]')!.textContent).toBe('TSK-1042');
     expect(q(el, '[data-task-header] [data-name]')!.textContent).toBe('Process Smith custodians');
     expect(q(el, 'mf-status-badge')!.textContent).toContain('In Progress');
-    expect(q(el, 'mf-priority-badge')!.textContent).toContain('Critical');
+    expect(q(el, 'mf-priority-flag')!.textContent).toContain('Critical');
     expect(q(el, '[data-task-type]')!.textContent).toContain('Data Processing');
     expect(q(el, '[data-title-icon] svg')!.getAttribute('aria-hidden')).toBe('true');
     expect(q(el, '[data-title-icon]')!.getAttribute('title')).toBe('Data Processing');

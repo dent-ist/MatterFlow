@@ -163,7 +163,9 @@ describe('TaskCardList', () => {
       DEFAULT,
     );
     expect(el().querySelector('[data-col="due"]')).toBeNull();
-    expect(el().querySelector('[data-col="priority"] .badge')!.classList).toContain('muted');
+    // Closed work shows its priority as plain muted words, never a pill.
+    expect(el().querySelector('[data-col="priority"] .plain')).not.toBeNull();
+    expect(el().querySelector('[data-col="priority"] mf-priority-pill')).toBeNull();
   });
 
   it('line 4 is the assignee with initials, and the task number', async () => {

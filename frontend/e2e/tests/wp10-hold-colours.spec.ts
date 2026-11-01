@@ -183,7 +183,7 @@ test.describe('WP10 hold reason and colours', () => {
     await shot(page, 'hold-pod-work-1366x768');
   });
 
-  test('#162: the stripe means overdue on My Work and on the Swimlane card, whatever the priority', async ({
+  test('#162: an overdue row or card is marked by its class and its words, whatever the priority', async ({
     seed,
     asUser,
     admin,
@@ -230,11 +230,10 @@ test.describe('WP10 hold reason and colours', () => {
       }
       const card = board.locator('mf-swimlane-card', { hasText: `HighOver ${tag}` });
       const calm = board.locator('mf-swimlane-card', { hasText: `HighCalm ${tag}` });
-      await expect(card.locator('article > .bar')).toHaveClass(/bar--overdue/);
-      expect(await css(card.locator('article > .bar'), 'background-color')).toBe(
-        'rgb(180, 35, 24)',
-      );
-      await expect(calm.locator('article > .bar')).not.toHaveClass(/bar--overdue/);
+      // No coloured edge any more (theme rule): an overdue card has the red border and the word Overdue.
+      await expect(card.locator('article')).toHaveClass(/card--overdue/);
+      expect(await css(card.locator('article'), 'border-top-color')).toBe('rgb(180, 35, 24)');
+      await expect(calm.locator('article')).not.toHaveClass(/card--overdue/);
       await expect(card).toContainText('Overdue');
       if (density === 'compact') {
         await expect(card.locator('[data-level-glyph] .lvl-bar')).not.toHaveCount(0);

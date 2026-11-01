@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { LookupStore } from '../../core/lookups/lookup-store';
 import { PriorityPill } from './priority-pill';
 
 /**
@@ -39,6 +40,11 @@ export class PriorityFlag {
   readonly color = input<string | null | undefined>(null);
   /** Closed work: plain text, no pill. */
   readonly muted = input(false);
+
+  constructor() {
+    // Like the badge it replaces: a priority on screen means the shared lookups (the menus, renames and the Filter lists) are loaded.
+    void inject(LookupStore).ensureLoaded();
+  }
 
   protected readonly pill = computed<'critical' | 'high' | null>(() => {
     if (this.muted()) return null;

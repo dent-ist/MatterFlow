@@ -105,7 +105,7 @@ const HEADINGS: Record<string, string> = {
     .np {
       padding: var(--mf-s4) var(--mf-s5);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
     }
     .np__title {

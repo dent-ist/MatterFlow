@@ -63,10 +63,10 @@ describe('NotificationsPage', () => {
   it('restores filter, page and size from the address', async () => {
     const { harness } = await open('/notifications?filter=unread&page=2&pageSize=50');
     expect(client['listNotifications']).toHaveBeenCalledWith('unread', 2, 50);
-    const unread = root(harness).querySelector('[data-filter=unread]')!;
+    const unread = root(harness).querySelector('[data-key=unread]')!;
     expect(unread.getAttribute('aria-pressed')).toBe('true');
     expect(unread.textContent).toContain('Unread (3)');
-    expect(root(harness).querySelector('[data-filter=all]')!.getAttribute('aria-pressed')).toBe(
+    expect(root(harness).querySelector('[data-key=all]')!.getAttribute('aria-pressed')).toBe(
       'false',
     );
   });
@@ -84,7 +84,7 @@ describe('NotificationsPage', () => {
 
   it('puts the filter in the address and goes back to page 1', async () => {
     const { harness } = await open('/notifications?page=3');
-    root(harness).querySelector<HTMLButtonElement>('[data-filter=unread]')!.click();
+    root(harness).querySelector<HTMLButtonElement>('[data-key=unread]')!.click();
     await harness.fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe('/notifications?filter=unread');
     expect(client['listNotifications']).toHaveBeenLastCalledWith('unread', 1, 25);
@@ -106,7 +106,7 @@ describe('NotificationsPage', () => {
   it('shows one inline error with Retry', async () => {
     const { harness } = await open('/notifications');
     client['listNotifications'].mockReturnValue(throwError(() => new Error('x')));
-    root(harness).querySelector<HTMLButtonElement>('[data-filter=unread]')!.click();
+    root(harness).querySelector<HTMLButtonElement>('[data-key=unread]')!.click();
     await harness.fixture.whenStable();
     harness.detectChanges();
     expect(root(harness).querySelector('[data-page-error]')).not.toBeNull();

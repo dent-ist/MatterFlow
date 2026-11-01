@@ -360,7 +360,7 @@ describe('DashSwimlaneTab', () => {
     await open();
     const card = lane('IN_PROGRESS').querySelector('mf-swimlane-card')!;
     expect(text(card.querySelector('[data-field="priority"]'))).toContain('Critical');
-    expect(card.querySelector('[data-field="priority"] .bars')).not.toBeNull();
+    expect(card.querySelector('[data-field="priority"] mf-priority-pill')).not.toBeNull();
     expect(card.querySelector('.bar')!.getAttribute('aria-hidden')).toBe('true');
     expect(card.querySelector('[data-card-ref]')!.getAttribute('href')).toBe(
       '/tasks/3?from=dashboard',

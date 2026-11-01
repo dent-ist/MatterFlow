@@ -286,8 +286,8 @@ test.describe('Notifications page', () => {
     await page.goto('/notifications');
     await expect(page.getByRole('heading', { name: 'Notifications', level: 1 })).toBeVisible();
     await expect(page.locator('[data-notification-item]')).toHaveCount(25);
-    await expect(page.locator('[data-filter=unread]')).toHaveText('Unread (27)');
-    await expect(page.locator('[data-filter=all]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-key=unread]')).toHaveText('Unread (27)');
+    await expect(page.locator('[data-key=all]')).toHaveAttribute('aria-pressed', 'true');
     await shot(page, 'page-desktop');
 
     await page.getByRole('button', { name: 'Next', exact: true }).click();
@@ -296,7 +296,7 @@ test.describe('Notifications page', () => {
     await expect(page.locator('[data-result-count]')).toContainText('27 notifications, page 2');
 
     await page.goto('/notifications?filter=unread&page=1');
-    await expect(page.locator('[data-filter=unread]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-key=unread]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('[data-mark-all-read]').first().click();
     await expect(page.locator('[data-page-empty]')).toContainText('No unread notifications.');
     await page.locator('[data-show-all]').click();

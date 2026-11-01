@@ -494,8 +494,8 @@ const timeOf = (c: TaskCommentResponse): number => Date.parse(c.createdAtUtc) ||
     .tc__tag {
       padding: 0 var(--mf-s2);
       border-radius: var(--mf-radius);
-      background: var(--mf-st-hold-bg);
-      color: var(--mf-text);
+      background: var(--mf-sem-neutral-bg);
+      color: var(--mf-sem-neutral-fg);
       font-size: var(--mf-fs-xs);
     }
     .tc__body {

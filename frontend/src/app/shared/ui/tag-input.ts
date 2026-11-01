@@ -237,7 +237,9 @@ export function hasControlCharacters(text: string): boolean {
       background: var(--mf-surface-alt);
     }
     .ti__option--active {
-      box-shadow: inset 3px 0 0 var(--mf-primary);
+      background: var(--mf-selected-bg);
+      outline: 1px solid var(--mf-primary);
+      outline-offset: -1px;
     }
     .ti__help,
     .ti__error {

@@ -15,6 +15,9 @@ import { retryWhenBackOnline } from '../../core/http/connectivity';
 import { QuietRequests } from '../../core/http/interceptors';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { badgeText } from '../../shared/layout/notification-bell';
+import { FilterChip, FilterChips } from '../../shared/ui/filter-chips';
+import { FixedPage } from '../../shared/ui/fixed-page';
+import { GridFrame } from '../../shared/ui/grid-frame';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Pager } from '../../shared/ui/pager';
 import { NotificationStore } from './notification-store';
@@ -39,220 +42,211 @@ type Filter = 'all' | 'unread';
  */
 @Component({
   selector: 'mf-notifications-page',
-  imports: [PageHeader, Pager, RouterLink],
+  imports: [PageHeader, Pager, RouterLink, FixedPage, FilterChips, GridFrame],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-page-header
-      heading="Notifications"
-      description="Your recent notifications. Read ones are removed after about 90 days."
-    >
-      @if (store.unreadCount() > 0) {
-        <button mfActions type="button" class="mf-btn" data-mark-all-read (click)="markAll()">
-          Mark all as read
-        </button>
-      }
-    </mf-page-header>
-
-    <div class="npg__bar" role="group" aria-label="Show">
-      <button
-        type="button"
-        class="mf-btn npg__toggle"
-        data-filter="all"
-        [attr.aria-pressed]="filter() === 'all'"
-        (click)="setFilter('all')"
+    <mf-fixed-page>
+      <mf-page-header
+        heading="Notifications"
+        description="Your recent notifications. Read ones are removed after about 90 days."
       >
-        All
-      </button>
-      <button
-        type="button"
-        class="mf-btn npg__toggle"
-        data-filter="unread"
-        title="Unread notifications. The overdue notices of one day count once."
-        [attr.aria-pressed]="filter() === 'unread'"
-        (click)="setFilter('unread')"
-      >
-        Unread ({{ unreadLabel() }})
-      </button>
-    </div>
-
-    <div
-      class="mf-sr-only"
-      role="status"
-      aria-live="polite"
-      data-result-count
-      [textContent]="announcement()"
-    ></div>
-
-    <div class="npg__body" [attr.aria-busy]="state() === 'loading' ? 'true' : null">
-      @switch (state()) {
-        @case ('error') {
-          <p class="npg__note" role="alert" data-page-error>
-            Couldn't load notifications.
-            <button type="button" class="mf-btn mf-btn--text" data-page-retry (click)="load()">
-              Retry
-            </button>
-          </p>
+        @if (store.unreadCount() > 0) {
+          <button mfActions type="button" class="mf-btn" data-mark-all-read (click)="markAll()">
+            Mark all as read
+          </button>
         }
-        @case ('ready') {
-          @if (items().length === 0) {
-            <p class="npg__note" data-page-empty>
-              {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications yet.' }}
-              @if (filter() === 'unread') {
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--text"
-                  data-show-all
-                  (click)="setFilter('all')"
-                >
-                  Show all
-                </button>
-              }
+      </mf-page-header>
+
+      <div class="npg__bar">
+        <mf-filter-chips
+          label="Show"
+          [chips]="filterChips()"
+          [value]="filter()"
+          (valueChange)="setFilter($any($event))"
+        />
+      </div>
+
+      <div
+        class="mf-sr-only"
+        role="status"
+        aria-live="polite"
+        data-result-count
+        [textContent]="announcement()"
+      ></div>
+
+      <mf-grid-frame
+        class="npg__frame"
+        scrollLabel="Notifications"
+        [resetKey]="filter() + page() + pageSize()"
+        [attr.aria-busy]="state() === 'loading' ? 'true' : null"
+      >
+        @switch (state()) {
+          @case ('error') {
+            <p class="npg__note" role="alert" data-page-error>
+              <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+              Couldn't load notifications.
+              <button type="button" class="mf-btn mf-btn--text" data-page-retry (click)="load()">
+                Retry
+              </button>
             </p>
-          } @else {
-            <ul class="npg__list" data-page-list>
-              @for (entry of entries(); track entry.kind === 'group' ? entry.key : entry.item.id) {
-                @if (entry.kind === 'group') {
-                  <li data-notification-group-item>
-                    <div class="npg__group">
+          }
+          @case ('ready') {
+            @if (items().length === 0) {
+              <p class="npg__note" data-page-empty>
+                <i class="pi pi-bell" aria-hidden="true"></i>
+                {{ filter() === 'unread' ? 'No unread notifications.' : 'No notifications yet.' }}
+                @if (filter() === 'unread') {
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text"
+                    data-show-all
+                    (click)="setFilter('all')"
+                  >
+                    Show all
+                  </button>
+                }
+              </p>
+            } @else {
+              <ul class="npg__list" data-page-list>
+                @for (
+                  entry of entries();
+                  track entry.kind === 'group' ? entry.key : entry.item.id
+                ) {
+                  @if (entry.kind === 'group') {
+                    <li data-notification-group-item>
+                      <div class="npg__group">
+                        <a
+                          class="npg__row"
+                          data-notification-group
+                          [class.npg__row--unread]="entry.unread > 0"
+                          [routerLink]="groupTarget(entry).commands"
+                          [queryParams]="groupTarget(entry).queryParams"
+                          [title]="summary(entry)"
+                          (click)="openGroup(entry)"
+                        >
+                          <span class="npg__dot" aria-hidden="true"></span>
+                          <span class="npg__message">
+                            @if (entry.unread > 0) {
+                              <span class="mf-sr-only">Unread: </span>
+                            }
+                            {{ summary(entry) }}
+                            <span class="npg__count">({{ entry.items.length }} notices)</span></span
+                          >
+                          <time
+                            class="npg__time"
+                            [attr.datetime]="entry.newestUtc"
+                            [title]="absolute(entry.newestUtc)"
+                            >{{ relative(entry.newestUtc) }}</time
+                          >
+                        </a>
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text npg__toggle-group"
+                          data-group-toggle
+                          [attr.aria-expanded]="isOpen(entry.key)"
+                          [attr.aria-controls]="'npg-group-' + entry.key"
+                          (click)="toggleGroup(entry.key)"
+                        >
+                          {{ isOpen(entry.key) ? 'Hide' : 'Show' }} the {{ entry.items.length }}
+                          notices
+                        </button>
+                      </div>
+                      @if (isOpen(entry.key)) {
+                        <ul class="npg__sub" [id]="'npg-group-' + entry.key" data-group-items>
+                          @for (item of entry.items; track item.id) {
+                            <li>
+                              <a
+                                class="npg__row"
+                                data-notification-item
+                                [class.npg__row--unread]="!item.isRead"
+                                [routerLink]="link(item)"
+                                [title]="item.message"
+                                (click)="open(item)"
+                              >
+                                <span class="npg__dot" aria-hidden="true"></span>
+                                <span class="npg__message">
+                                  @if (!item.isRead) {
+                                    <span class="mf-sr-only">Unread: </span>
+                                  }
+                                  {{ item.message }}</span
+                                >
+                                <time
+                                  class="npg__time"
+                                  [attr.datetime]="item.createdUtc"
+                                  [title]="absolute(item.createdUtc)"
+                                  >{{ relative(item.createdUtc) }}</time
+                                >
+                              </a>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </li>
+                  } @else {
+                    @let item = entry.item;
+                    <li>
                       <a
                         class="npg__row"
-                        data-notification-group
-                        [class.npg__row--unread]="entry.unread > 0"
-                        [routerLink]="groupTarget(entry).commands"
-                        [queryParams]="groupTarget(entry).queryParams"
-                        [title]="summary(entry)"
-                        (click)="openGroup(entry)"
+                        data-notification-item
+                        [class.npg__row--unread]="!item.isRead"
+                        [routerLink]="link(item)"
+                        [title]="item.message"
+                        (click)="open(item)"
                       >
                         <span class="npg__dot" aria-hidden="true"></span>
                         <span class="npg__message">
-                          @if (entry.unread > 0) {
+                          @if (!item.isRead) {
                             <span class="mf-sr-only">Unread: </span>
                           }
-                          {{ summary(entry) }}
-                          <span class="npg__count">({{ entry.items.length }} notices)</span></span
+                          {{ item.message }}</span
                         >
                         <time
                           class="npg__time"
-                          [attr.datetime]="entry.newestUtc"
-                          [title]="absolute(entry.newestUtc)"
-                          >{{ relative(entry.newestUtc) }}</time
+                          [attr.datetime]="item.createdUtc"
+                          [title]="absolute(item.createdUtc)"
+                          >{{ relative(item.createdUtc) }}</time
                         >
                       </a>
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--text npg__toggle-group"
-                        data-group-toggle
-                        [attr.aria-expanded]="isOpen(entry.key)"
-                        [attr.aria-controls]="'npg-group-' + entry.key"
-                        (click)="toggleGroup(entry.key)"
-                      >
-                        {{ isOpen(entry.key) ? 'Hide' : 'Show' }} the {{ entry.items.length }}
-                        notices
-                      </button>
-                    </div>
-                    @if (isOpen(entry.key)) {
-                      <ul class="npg__sub" [id]="'npg-group-' + entry.key" data-group-items>
-                        @for (item of entry.items; track item.id) {
-                          <li>
-                            <a
-                              class="npg__row"
-                              data-notification-item
-                              [class.npg__row--unread]="!item.isRead"
-                              [routerLink]="link(item)"
-                              [title]="item.message"
-                              (click)="open(item)"
-                            >
-                              <span class="npg__dot" aria-hidden="true"></span>
-                              <span class="npg__message">
-                                @if (!item.isRead) {
-                                  <span class="mf-sr-only">Unread: </span>
-                                }
-                                {{ item.message }}</span
-                              >
-                              <time
-                                class="npg__time"
-                                [attr.datetime]="item.createdUtc"
-                                [title]="absolute(item.createdUtc)"
-                                >{{ relative(item.createdUtc) }}</time
-                              >
-                            </a>
-                          </li>
-                        }
-                      </ul>
-                    }
-                  </li>
-                } @else {
-                  @let item = entry.item;
-                  <li>
-                    <a
-                      class="npg__row"
-                      data-notification-item
-                      [class.npg__row--unread]="!item.isRead"
-                      [routerLink]="link(item)"
-                      [title]="item.message"
-                      (click)="open(item)"
-                    >
-                      <span class="npg__dot" aria-hidden="true"></span>
-                      <span class="npg__message">
-                        @if (!item.isRead) {
-                          <span class="mf-sr-only">Unread: </span>
-                        }
-                        {{ item.message }}</span
-                      >
-                      <time
-                        class="npg__time"
-                        [attr.datetime]="item.createdUtc"
-                        [title]="absolute(item.createdUtc)"
-                        >{{ relative(item.createdUtc) }}</time
-                      >
-                    </a>
-                  </li>
+                    </li>
+                  }
                 }
-              }
-            </ul>
+              </ul>
+            }
+          }
+          @default {
+            <p class="npg__note npg__muted" data-page-loading>
+              <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Loading notifications...
+            </p>
           }
         }
-        @default {
-          <p class="npg__note npg__muted" data-page-loading>Loading notifications...</p>
+        @if (state() === 'ready' && total() > 0) {
+          <mf-pager
+            frameFoot
+            [page]="page()"
+            [pageSize]="pageSize()"
+            [total]="total()"
+            [pageSizes]="sizes"
+            [edges]="false"
+            (pageChange)="setPage($event)"
+            (pageSizeChange)="setPageSize($event)"
+          />
         }
-      }
-    </div>
-
-    @if (state() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="page()"
-        [pageSize]="pageSize()"
-        [total]="total()"
-        [pageSizes]="sizes"
-        [edges]="false"
-        (pageChange)="setPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    }
+      </mf-grid-frame>
+    </mf-fixed-page>
   `,
   styles: `
     :host {
-      display: block;
+      display: contents;
     }
     .npg__bar {
       display: flex;
       gap: var(--mf-s2);
       margin-bottom: var(--mf-s3);
     }
-    .npg__toggle[aria-pressed='true'] {
-      border-color: var(--mf-primary);
-      background: var(--mf-selected-bg);
-      font-weight: 700;
-    }
-    .npg__body {
-      min-height: 8rem;
-    }
     .npg__list {
       margin: 0;
       padding: 0;
       list-style: none;
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
       background: var(--mf-surface);
     }
     .npg__list li + li {
@@ -327,7 +321,7 @@ type Filter = 'all' | 'unread';
       align-items: center;
       gap: var(--mf-s2);
       margin: 0;
-      padding: var(--mf-s4) 0;
+      padding: var(--mf-s4);
     }
     .npg__muted {
       color: var(--mf-text-muted);
@@ -378,6 +372,11 @@ export class NotificationsPage {
     return (PAGE_SIZES as readonly number[]).includes(n) ? n : PAGE_SIZES[0];
   });
 
+  /** The All / Unread toggle as the shared chips; the Unread chip keeps its "(n)" in the word (a capped count such as 99+ is text). */
+  protected readonly filterChips = computed<readonly FilterChip[]>(() => [
+    { key: 'all', label: 'All' },
+    { key: 'unread', label: `Unread (${this.unreadLabel()})` },
+  ]);
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly items = signal<readonly NotificationItem[]>([]);
   protected readonly total = signal(0);

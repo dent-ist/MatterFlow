@@ -218,6 +218,18 @@ interface Section {
     .res-section {
       margin-bottom: var(--mf-s5);
     }
+    /* Every result grid sits in the card of the theme (white, thin border, rounded, one soft shadow), like mf-grid-frame. */
+    .res-section mf-search-grid,
+    .mf-table-wrap {
+      display: block;
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-xl);
+      background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-card);
+    }
+    .res-section mf-search-grid {
+      overflow: hidden;
+    }
     .res-heading {
       margin: 0 0 var(--mf-s2);
       font-size: var(--mf-fs-h3);

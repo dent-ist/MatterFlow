@@ -3,9 +3,8 @@ import { RouterLink } from '@angular/router';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import type { SearchHit } from '../../api/generated/api-client';
 import { highlightParts, SearchType } from '../../shared/search/search-meta';
-import { ActiveBadge, Badge, SensitiveBadge } from '../../shared/ui/badge';
+import { ActiveBadge, SensitiveBadge } from '../../shared/ui/badge';
 import { TaskTypeBadge } from '../../shared/task-type/task-type-badge';
-import { dispositionOf } from '../assets/disposition/asset-disposition';
 import { hitDueText, hitIsOverdue, hitSizeText } from './search-facts';
 import { LoadState } from '../../shared/ui/data-table';
 import { GridBody } from '../../shared/ui/grid-body';
@@ -13,6 +12,7 @@ import { MatterRef } from '../../shared/ui/matter-ref';
 import { RecordCardDef, RecordCardList, phoneCards } from '../../shared/ui/record-card-list';
 import { RowLink } from '../../shared/ui/row-nav';
 import { StatusBadge } from '../../shared/ui/status-badge';
+import { StatusChip } from '../../shared/ui/status-chip';
 import { TaskOriginLinks } from '../../shared/work-queue/task-origin';
 import { SearchHitCard, hitRowKey } from './search-hit-card';
 
@@ -108,7 +108,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
     SearchHitCard,
     SensitiveBadge,
     StatusBadge,
-    Badge,
+    StatusChip,
     TaskTypeBadge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -320,11 +320,7 @@ export const SEARCH_COLUMNS: Record<SearchType | 'mixed', readonly Column[]> = {
                     @case ('disposition') {
                       <td [attr.data-cell]="col.kind">
                         @if (hit.disposition; as code) {
-                          <mf-badge
-                            [tone]="dispositionOf(code).tone"
-                            [icon]="dispositionOf(code).icon"
-                            >{{ dispositionOf(code).label }}</mf-badge
-                          >
+                          <mf-status-chip kind="disposition" [code]="code" />
                         } @else {
                           <mf-active-badge [active]="hit.isActive" />
                         }
@@ -371,7 +367,6 @@ export class SearchGrid {
   protected readonly bones = computed(() => this.columns().map((c) => c.bone));
 
   protected readonly rowKey = hitRowKey;
-  protected readonly dispositionOf = dispositionOf;
   protected readonly isOverdue = hitIsOverdue;
   protected readonly sizeText = hitSizeText;
   private readonly clock = inject(Clock);

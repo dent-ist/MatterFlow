@@ -6,7 +6,7 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { levelBars } from '../../../shared/ui/priority-badge';
 import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
@@ -75,9 +75,6 @@ export function initials(name: string): string {
           [class.bar--overdue]="c.isOverdue && !closed()"
           aria-hidden="true"
           data-level-glyph
-          [style.background]="overdueBar() ? null : colors().bg"
-          [style.box-shadow]="overdueBar() ? null : 'inset 0 0 0 1px ' + colors().fg"
-          [style.color]="overdueBar() ? null : colors().fg"
         >
           @for (on of bars(); track $index) {
             <span class="lvl-bar" [class.on]="on"></span>
@@ -140,13 +137,7 @@ export function initials(name: string): string {
         [attr.data-card]="c.taskId"
         [attr.data-task]="c.ref"
       >
-        <span
-          class="bar"
-          [class.bar--overdue]="c.isOverdue && !closed()"
-          aria-hidden="true"
-          [style.background]="overdueBar() ? null : colors().bg"
-          [style.box-shadow]="overdueBar() ? null : 'inset 0 0 0 1px ' + colors().fg"
-        ></span>
+        <span class="bar" [class.bar--overdue]="c.isOverdue && !closed()" aria-hidden="true"></span>
         <div class="body">
           <h4 class="title">
             <button
@@ -292,21 +283,18 @@ export function initials(name: string): string {
     .card--closed .where {
       color: var(--mf-text-muted);
     }
+    /* No coloured edge on the card (theme rule). The comfortable card says the priority with the pill and an overdue card has the red border and the
+       word Overdue; the compact card keeps only the small level glyph (three bars) in the muted ink, red while the task is overdue. The element stays as the
+       hook of the specs (class bar, bar--overdue). */
     .bar {
       flex: none;
-      width: 0.5rem;
-      border-radius: calc(var(--mf-radius-lg) - 1px) 0 0 calc(var(--mf-radius-lg) - 1px);
+      color: var(--mf-text-muted);
     }
-    /* The leading bar means overdue everywhere (M9): red, with the level glyph (compact) and the priority badge (comfortable) saying the priority. */
+    .card:not(.card--line) .bar {
+      display: none;
+    }
     .bar--overdue {
-      background: var(--mf-due-overdue);
-      color: #fff;
-    }
-    @media (forced-colors: active) {
-      .bar--overdue {
-        background: CanvasText;
-        forced-color-adjust: none;
-      }
+      color: var(--mf-sem-overdue-fg);
     }
     .body {
       flex: 1;
@@ -634,8 +622,6 @@ export class SwimlaneCardView {
   protected readonly closed = computed(() =>
     ['COMPLETED', 'CANCELLED'].includes(this.card().status),
   );
-  protected readonly overdueBar = computed(() => this.card().isOverdue && !this.closed());
-  protected readonly colors = computed(() => priorityColors(this.card().priority.color));
   protected readonly percent = computed(() => {
     const c = this.card();
     return c.stepsTotal > 0 ? Math.round((c.stepsResolved / c.stepsTotal) * 100) : 0;

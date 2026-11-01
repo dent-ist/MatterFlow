@@ -129,7 +129,7 @@
   padding: var(--mf-s3);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-lg);
+  border-radius: var(--mf-radius-xl);
 }
 
 .ct__tile {
@@ -205,7 +205,7 @@
   font: inherit;
   background: var(--mf-surface);
   border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius-lg);
+  border-radius: var(--mf-radius-xl);
   box-shadow: var(--mf-shadow-1);
   cursor: pointer;
 }
@@ -249,7 +249,7 @@
   padding: var(--mf-s2) var(--mf-s3);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-lg);
+  border-radius: var(--mf-radius-xl);
 }
 
 .ct__chip-text {

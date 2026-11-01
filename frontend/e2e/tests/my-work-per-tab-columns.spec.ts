@@ -369,11 +369,10 @@ test.describe('My Work per-tab columns', () => {
     await page.getByLabel('Due', { exact: true }).check();
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     const row = page.locator('[data-task]').first();
-    await expect(row.locator('td[data-col="priority"] .badge')).toHaveClass(/muted/);
-    const bg = await row
-      .locator('td[data-col="priority"] .badge')
-      .evaluate((n) => getComputedStyle(n).backgroundColor);
-    expect(bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent').toBe(true);
+    // Closed work shows its priority as plain muted words (no pill), so a closed Critical task does not draw the eye.
+    const flag = row.locator('td[data-col="priority"] mf-priority-flag');
+    await expect(flag.locator('.plain')).toBeVisible();
+    await expect(flag.locator('mf-priority-pill')).toHaveCount(0);
     await expect(row.locator('td[data-col="due"] .pi-bolt')).toHaveCount(0);
     await expect(row.locator('td[data-col="due"] .dc-l1')).toHaveText('-');
     await shot(page, 'c2-closed-with-priority-1366x768');

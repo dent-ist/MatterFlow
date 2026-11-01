@@ -6,8 +6,8 @@
       local,
     linear-gradient(to left, var(--mf-surface) 30%, transparent) right center / 24px 100% no-repeat
       local,
-    radial-gradient(farthest-side at 0 50%, var(--mf-shade-mid), transparent) left center / 10px 100%
-      no-repeat scroll,
+    radial-gradient(farthest-side at 0 50%, var(--mf-shade-mid), transparent) left center / 10px
+      100% no-repeat scroll,
     radial-gradient(farthest-side at 100% 50%, var(--mf-shade-mid), transparent) right center / 10px
       100% no-repeat scroll,
     var(--mf-surface);

@@ -17,7 +17,7 @@ import {
 } from '../../../api/generated/api-client';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { DueEdit } from './task-due-edit';
 import { TaskDetailStore } from './task-detail.store';
@@ -74,7 +74,7 @@ function whenNoDialog(then: () => void): void {
  */
 @Component({
   selector: 'mf-task-facts',
-  imports: [RowEdit, StatusBadge, PriorityBadge, DueCell, DueEdit],
+  imports: [RowEdit, StatusBadge, PriorityFlag, DueCell, DueEdit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.task(); as t) {
@@ -107,10 +107,10 @@ function whenNoDialog(then: () => void): void {
                 (taskChange)="saved($event)"
               />
             } @else {
-              <mf-priority-badge
-                [priorityId]="t.priority.priorityId"
+              <mf-priority-flag
                 [label]="t.priority.label"
                 [color]="t.priority.color"
+                [muted]="t.status === 'COMPLETED' || t.status === 'CANCELLED'"
               />
             }
           </span>

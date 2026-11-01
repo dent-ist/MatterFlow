@@ -300,10 +300,13 @@ describe('TaskTable', () => {
     expect(due[1].querySelector('.dc--overdue, .pi-exclamation-circle')).toBeNull();
     expect(due[1].textContent).not.toContain('Overdue');
     expect(due[2].querySelector('.pi-bolt')).not.toBeNull();
-    const badges = Array.from(el().querySelectorAll('tbody td[data-col="priority"] .badge'));
-    expect(badges[0].classList).toContain('muted');
-    expect(badges[1].classList).toContain('muted');
-    expect(badges[2].classList).not.toContain('muted');
+    const flags = Array.from(
+      el().querySelectorAll('tbody td[data-col="priority"] mf-priority-flag'),
+    );
+    expect(flags[0].querySelector('.plain')).not.toBeNull(); // closed: plain muted words
+    expect(flags[1].querySelector('.plain')).not.toBeNull();
+    expect(flags[2].querySelector('.plain')).toBeNull(); // open Critical: the pill
+    expect(flags[2].querySelector('mf-priority-pill')).not.toBeNull();
   });
 
   it('shows Age as "12 d" with the created time, and how long a closed task took (B3)', async () => {
@@ -442,7 +445,7 @@ describe('TaskTable', () => {
 
   it('shows priority and status badges with their labels', async () => {
     await create([aRow()], ['priority', 'status']);
-    expect(cell('priority').querySelector('mf-priority-badge')?.textContent).toContain('Critical');
+    expect(cell('priority').querySelector('mf-priority-flag')?.textContent).toContain('Critical');
     expect(cell('status').querySelector('[data-status="IN_PROGRESS"]')?.textContent).toContain(
       'In Progress',
     );
