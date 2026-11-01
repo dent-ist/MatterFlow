@@ -199,7 +199,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
-    const wrap = page.locator('.mf-table-wrap .mf-scroll').first();
+    const wrap = page.locator('mf-grid-frame .mf-scroll').first();
     expect(await wrap.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
     await expect(page.getByRole('columnheader', { name: 'External reference' })).toHaveCount(0);
     await shot(page, 'as3-768');

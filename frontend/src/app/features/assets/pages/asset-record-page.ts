@@ -21,7 +21,8 @@ import { AssetResponse, AssetsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
-import { Badge } from '../../../shared/ui/badge';
+import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { StatusChip } from '../../../shared/ui/status-chip';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { EntityActivity } from '../../../shared/ui/entity-activity';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
@@ -61,7 +62,8 @@ type Tab = 'details' | 'tasks' | 'history';
     RecordState,
     RecordSkeleton,
     Tabs,
-    Badge,
+    AssetTypeChip,
+    StatusChip,
     MatterRef,
     ConfirmDialog,
     AssetDispositionDialog,
@@ -77,6 +79,12 @@ type Tab = 'details' | 'tasks' | 'history';
     [data-matter] ::ng-deep a.mf-ref {
       margin-block: -5px;
       padding-block: 5px;
+    }
+    .ar-type {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      font-weight: var(--mf-fw-semibold);
     }
   `,
   template: `
@@ -98,16 +106,24 @@ type Tab = 'details' | 'tasks' | 'history';
               [actions]="headerActions()"
             >
               <span mfBadges>
-                <mf-badge tone="info" data-type-badge>{{ a.assetTypeName }}</mf-badge>
+                <span class="ar-type" data-type-badge
+                  ><mf-asset-type-chip
+                    size="sm"
+                    [decorative]="true"
+                    [iconKey]="a.assetTypeIconKey"
+                    [colourKey]="a.assetTypeColourKey"
+                    [typeId]="a.assetTypeId"
+                    [name]="a.assetTypeName"
+                  />{{ a.assetTypeName }}</span
+                >
                 @if (
                   a.dispositionCode === 'PENDING_DISPOSITION' || a.dispositionCode === 'DISPOSED'
                 ) {
-                  <mf-badge
-                    [tone]="disposition().tone"
-                    [icon]="disposition().icon"
+                  <mf-status-chip
+                    kind="disposition"
+                    [code]="disposition().code"
                     data-disposition-badge
-                    >{{ disposition().label }}</mf-badge
-                  >
+                  />
                 }
               </span>
               <span mfContext data-matter

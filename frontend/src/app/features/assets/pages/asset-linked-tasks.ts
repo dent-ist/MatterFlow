@@ -65,6 +65,13 @@ function dueKey(t: AssetTaskLink): number | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
+    /* The grid sits in the card of the theme; overflow clip (not hidden) keeps the heading row sticky in the tab's scroll region. */
+    .lt-card {
+      overflow: clip;
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
+    }
     .lt-summary {
       margin: 0 0 var(--mf-s2);
       color: var(--mf-text-muted);
@@ -147,8 +154,8 @@ function dueKey(t: AssetTaskLink): number | null {
               {{ totals().total }} linked - {{ totals().open }} open -
               <span [class.lt-over]="totals().overdue > 0">{{ totals().overdue }} overdue</span>
             </p>
-            <div class="mf-scroll">
-              <table class="mf-grid" data-linked-table>
+            <div class="mf-scroll lt-card">
+              <table class="mf-grid tt" data-linked-table>
                 <caption class="mf-sr-only">
                   Tasks linked to this asset
                 </caption>

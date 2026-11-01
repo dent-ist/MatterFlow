@@ -47,22 +47,40 @@
  */
 table.mf-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--mf-surface);
 }
 
 .mf-grid th,
 .mf-grid td {
   padding: var(--mf-s2) var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
   text-align: left;
   vertical-align: middle;
 }
 
+/* The heading row of the theme (TH-06): the same small muted capitals as the grid frame, wherever the grid sits. */
 .mf-grid th {
   background: var(--mf-surface-alt);
-  font-weight: 600;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-weight: var(--mf-fw-bold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   white-space: nowrap;
+}
+
+.mf-grid tbody tr:hover > td {
+  background: var(--mf-surface-alt);
+}
+
+/* The capitals of the heading row are wider than the old words: below 900 px the cells give up a little side padding so the grid still fits (no sideways scroll at 640 to 899 px). */
+@media (max-width: 899.98px) {
+  .mf-grid th,
+  .mf-grid td {
+    padding-inline: var(--mf-s2);
+  }
 }
 
 .mf-grid td {
@@ -333,4 +351,40 @@ table.mf-grid {
 .mf-table-wrap table a.wl-draft:focus-visible {
   outline: 2px solid var(--mf-focus);
   outline-offset: 1px;
+}
+
+/*
+ * The list card of the theme (TH-09, #991): the table wrap of an admin list is the frame (the same card as `mf-grid-frame` of the record lists: a thin
+ * border, the xl radius, the card shadow), and the pager under it is its foot. The wrap stays the one scroll box, so the sticky action cell and the
+ * column rules above keep working; a page that draws its own card around the list (Users, Roles) styles that card itself.
+ */
+.mf-fill > .mf-table-wrap {
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-xl);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-card);
+}
+
+.mf-fill > .mf-table-wrap:has(+ mf-pager) {
+  border-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: none;
+}
+
+html .mf-fill > .mf-table-wrap + mf-pager {
+  margin-top: 0;
+  border: 1px solid var(--mf-border);
+  border-top-color: var(--mf-border-soft);
+  border-radius: 0 0 var(--mf-radius-xl) var(--mf-radius-xl);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-card);
+}
+
+/* A phone-width table lets the Name column be a little narrower (two lines at most) so the grid fits without sideways scroll. */
+@media (max-width: 767.98px) {
+  html .mf-grid th.mf-cell-name,
+  html .mf-grid td.mf-cell-name {
+    min-width: 11rem;
+  }
 }

@@ -353,9 +353,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(row.querySelectorAll('mf-matter-ref mf-copy-button')).toHaveLength(0);
       expect(row.querySelector('.as-sub')).toBeNull();
       expect(row.querySelector('td[data-matter]')?.getAttribute('title')).toBe('Merger Review');
-      expect(row.querySelector('[data-status] mf-badge')).toBeNull();
+      expect(row.querySelector('[data-status] mf-status-chip')).toBeNull();
       expect(row.querySelector('[data-status]')?.textContent).toContain('Active');
-      expect(rowOf(10)!.querySelector('[data-status] mf-badge')?.textContent).toContain('Inactive');
+      expect(rowOf(10)!.querySelector('[data-status] mf-status-chip')?.textContent).toContain(
+        'Inactive',
+      );
       expect(el().querySelector('table.mf-grid')).not.toBeNull();
     });
 
@@ -394,10 +396,10 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         assets.listAssets.mockReturnValue(rows());
         await setInputs({ sort: 'assetType' });
 
-        expect(rowOf(9)!.querySelector('[data-size]')?.textContent?.trim()).toBe('412 GB');
-        expect(rowOf(10)!.querySelector('[data-size]')?.textContent).toContain('No size');
-        expect(rowOf(11)!.querySelector('[data-size]')?.textContent?.trim()).toBe('26,400 Items');
-        expect(rowOf(9)!.querySelector('[data-status] mf-badge')).toBeNull();
+        expect(rowOf(9)!.querySelector('td[data-size]')?.textContent?.trim()).toBe('412 GB');
+        expect(rowOf(10)!.querySelector('td[data-size]')?.textContent).toContain('No size');
+        expect(rowOf(11)!.querySelector('td[data-size]')?.textContent?.trim()).toBe('26,400 Items');
+        expect(rowOf(9)!.querySelector('[data-status] mf-status-chip')).toBeNull();
         expect(rowOf(10)!.querySelector('[data-disposition-badge]')?.textContent).toContain(
           'Pending disposition',
         );

@@ -10,6 +10,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
@@ -21,7 +22,9 @@ import {
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { Badge } from '../../../shared/ui/badge';
+import { AssetTypeChip } from '../../../shared/ui/asset-type-chip';
+import { StatusChip } from '../../../shared/ui/status-chip';
+import { GridFrame } from '../../../shared/ui/grid-frame';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
@@ -36,7 +39,7 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { SortHeader } from '../../../shared/ui/data-table';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { ServerListPage } from '../../../shared/ui/list-query';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { matterLinkOf } from '../../../shared/ui/matter-link';
@@ -83,10 +86,12 @@ type Column = (typeof COLUMNS)[number];
   selector: 'mf-assets-list-page',
   imports: [
     FixedPage,
-    ScrollArea,
+    GridFrame,
+    NgTemplateOutlet,
     PageHeader,
     ScopeSwitch,
-    Badge,
+    StatusChip,
+    AssetTypeChip,
     Button,
     CopyButton,
     GridBody,
@@ -110,14 +115,28 @@ type Column = (typeof COLUMNS)[number];
       width: 1%;
       white-space: nowrap;
     }
-    /* A narrow window gives the Type less room, so the grid does not scroll sideways at 640 to 768 px (#502). */
-    @media (max-width: 767.98px) {
+    /* A narrow window gives the Type less room, so the grid does not scroll sideways at 640 to 900 px (#502): the type chip leaves, the name stays. */
+    @media (max-width: 899.98px) {
+      .as-tycell mf-asset-type-chip {
+        display: none;
+      }
+    }
+    @media (max-width: 899.98px) {
       td.as-type {
-        max-width: 7rem;
+        max-width: 9rem;
       }
     }
     .as-type {
-      max-width: 10rem;
+      max-width: 11rem;
+    }
+    .as-tycell {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 0;
+    }
+    .as-tyname {
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -140,8 +159,8 @@ type Column = (typeof COLUMNS)[number];
       color: var(--mf-text-muted);
     }
     td.as-refcell {
-      width: 14rem;
-      max-width: 14rem;
+      width: 11rem;
+      max-width: 11rem;
     }
     .as-zero {
       color: var(--mf-text-muted);
@@ -162,7 +181,13 @@ type Column = (typeof COLUMNS)[number];
       white-space: nowrap;
     }
     /* The Disposition filter is a select in this column: from 768 px it keeps room for "Disposed" and "Inactive" instead of being squeezed to "Act" (PM v2, #883). */
-    @media (min-width: 768px) {
+    @media (min-width: 1100px) {
+      th.as-disposition,
+      td.as-disposition {
+        min-width: 10.5rem;
+      }
+    }
+    @media (min-width: 768px) and (max-width: 1099.98px) {
       th.as-disposition,
       td.as-disposition {
         min-width: 8rem;
@@ -171,7 +196,7 @@ type Column = (typeof COLUMNS)[number];
     .as-warn {
       display: block;
       margin-top: 2px;
-      color: var(--mf-warning-fg);
+      color: var(--mf-sem-risk-fg);
       font-size: var(--mf-fs-sm);
       white-space: normal;
     }
@@ -304,14 +329,9 @@ type Column = (typeof COLUMNS)[number];
             }
           </mf-admin-card-list>
         } @else {
-          <div
-            class="mf-table-wrap"
-            mfScrollArea="Assets list"
-            [style.scroll-padding-top]="filters.rowVisible() ? '5.5rem' : null"
-            #scroll
-          >
+          <mf-grid-frame scrollLabel="Assets list" #scroll>
             <div class="mf-scroll">
-              <table class="mf-grid" id="assets-table" data-assets>
+              <table class="mf-grid tt" id="assets-table" data-assets>
                 <caption class="mf-sr-only">
                   Assets
                 </caption>
@@ -455,7 +475,18 @@ type Column = (typeof COLUMNS)[number];
                           >{{ a.displayName }}</a
                         >
                       </td>
-                      <td class="as-type" [attr.title]="a.assetTypeName">{{ a.assetTypeName }}</td>
+                      <td class="as-type" [attr.title]="a.assetTypeName">
+                        <span class="as-tycell"
+                          ><mf-asset-type-chip
+                            size="sm"
+                            [decorative]="true"
+                            [iconKey]="a.assetTypeIconKey"
+                            [colourKey]="a.assetTypeColourKey"
+                            [typeId]="a.assetTypeId"
+                            [name]="a.assetTypeName"
+                          /><span class="as-tyname">{{ a.assetTypeName }}</span></span
+                        >
+                      </td>
                       <td class="as-matter" [attr.title]="a.matterName" data-matter>
                         <mf-matter-ref
                           [value]="a.matterRef"
@@ -517,12 +548,11 @@ type Column = (typeof COLUMNS)[number];
                           <!-- Active is the ordinary state: no badge, only the words for a screen reader. -->
                           <span class="mf-sr-only">Active</span>
                         } @else {
-                          <mf-badge
-                            [tone]="dispositionOf(a.dispositionCode).tone"
-                            [icon]="dispositionOf(a.dispositionCode).icon"
+                          <mf-status-chip
+                            kind="disposition"
+                            [code]="a.dispositionCode"
                             data-disposition-badge
-                            >{{ dispositionOf(a.dispositionCode).label }}</mf-badge
-                          >
+                          />
                         }
                         @if (a.inactiveLinked) {
                           <span class="as-warn" data-inactive-linked>
@@ -536,20 +566,28 @@ type Column = (typeof COLUMNS)[number];
                 </tbody>
               </table>
             </div>
-          </div>
+            <div frameFoot>
+              <ng-container *ngTemplateOutlet="pager" />
+            </div>
+          </mf-grid-frame>
         }
-        @if (state() === 'ready' && total() > 0) {
-          <mf-pager
-            [page]="pageNumber()"
-            [pageSize]="pageSize()"
-            [pageSizes]="pageSizes"
-            [total]="total()"
-            [hidden]="hiddenCount()"
-            (showAll)="showAll()"
-            (pageChange)="goToPage($event)"
-            (pageSizeChange)="setPageSize($event)"
-          />
+        @if (phone()) {
+          <ng-container *ngTemplateOutlet="pager" />
         }
+        <ng-template #pager>
+          @if (state() === 'ready' && total() > 0) {
+            <mf-pager
+              [page]="pageNumber()"
+              [pageSize]="pageSize()"
+              [pageSizes]="pageSizes"
+              [total]="total()"
+              [hidden]="hiddenCount()"
+              (showAll)="showAll()"
+              (pageChange)="goToPage($event)"
+              (pageSizeChange)="setPageSize($event)"
+            />
+          }
+        </ng-template>
       </div>
     </mf-fixed-page>
   `,
@@ -559,7 +597,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly auth = inject(AuthStore);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   protected readonly defaultSort = 'displayName';
 
@@ -770,7 +808,10 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
 
     // The controls move into the sheet while the grid scrolls sideways.
     effect(() => {
-      const area = this.scroll()?.nativeElement;
+      this.state();
+      const area = this.scroll()?.nativeElement.querySelector(
+        '.mf-scroll-area',
+      ) as HTMLElement | null;
       if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }

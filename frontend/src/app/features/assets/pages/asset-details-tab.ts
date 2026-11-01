@@ -20,7 +20,7 @@ import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
 import { CopyButton } from '../../../shared/ui/copy-button';
-import { Badge } from '../../../shared/ui/badge';
+import { StatusChip } from '../../../shared/ui/status-chip';
 import { MatterRef } from '../../../shared/ui/matter-ref';
 import { AssetDispositionHistory } from '../disposition/asset-disposition-history';
 import { dispositionOf } from '../disposition/asset-disposition';
@@ -34,7 +34,7 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
  */
 @Component({
   selector: 'mf-asset-details-tab',
-  imports: [MatterRef, CopyButton, DynamicForm, MfDatePipe, Badge, AssetDispositionHistory],
+  imports: [MatterRef, CopyButton, DynamicForm, MfDatePipe, StatusChip, AssetDispositionHistory],
   providers: [AssetPickerContext],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -58,9 +58,7 @@ import { matterLinkOf } from '../../../shared/ui/matter-link';
           <div class="ad__f" data-disposition>
             <dt>Disposition</dt>
             <dd>
-              <mf-badge [tone]="disposition().tone" [icon]="disposition().icon">{{
-                disposition().label
-              }}</mf-badge>
+              <mf-status-chip kind="disposition" [code]="disposition().code" />
               @if (asset().dispositionChangedAtUtc) {
                 <span class="ad__muted"> since {{ asset().dispositionChangedAtUtc | mfDate }}</span>
               }

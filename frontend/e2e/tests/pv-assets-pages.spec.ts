@@ -39,7 +39,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     await expect(rows.filter({ hasText: 'Pending' }).locator('[data-status]')).toContainText(
       'Pending disposition',
     );
-    await expect(rows.filter({ hasText: `Big ${d.token}` }).locator('[data-size]')).toContainText(
+    await expect(rows.filter({ hasText: `Big ${d.token}` }).locator('td[data-size]')).toContainText(
       '10 GB',
     );
     await page.getByRole('columnheader', { name: 'Size' }).getByRole('button').click();

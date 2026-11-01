@@ -30,12 +30,11 @@ import {
 import { FilterDef, FilterOption } from '../filters/filter-def';
 import { FiltersBar } from '../filters/filters-bar';
 import { ListFilters } from '../filters/list-filters';
-import { Badge } from './badge';
-import { dispositionOf } from '../../features/assets/disposition/asset-disposition';
+import { StatusChip } from './status-chip';
 import { formatSize } from '../../features/assets/disposition/asset-size';
 import { SortHeader } from './data-table';
 import { registerTableSkip } from './row-nav';
-import { ScrollArea } from './fixed-page';
+import { GridFrame } from './grid-frame';
 import { GridBody } from './grid-body';
 import { ServerListPage } from './list-query';
 import { Pager } from './pager';
@@ -51,12 +50,12 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
 @Component({
   selector: 'mf-matter-assets',
   imports: [
-    Badge,
+    StatusChip,
     RouterLink,
     Button,
     HasPermissionDirective,
     Pager,
-    ScrollArea,
+    GridFrame,
     SortHeader,
     GridBody,
     FiltersBar,
@@ -68,9 +67,9 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
   template: `
     <mf-filters-bar [filters]="filters" controls="matter-asset-filter-row" />
 
-    <div class="mf-table-wrap" mfScrollArea="Assets list" #scroll>
+    <mf-grid-frame scrollLabel="Assets list" #scroll>
       <div class="mf-scroll">
-        <table class="pg-table">
+        <table class="pg-table tt">
           <caption class="pg-sr">
             Assets of this matter
           </caption>
@@ -172,37 +171,32 @@ const COLUMNS = ['name', 'type', 'size', 'externalReference', 'status'] as const
                   }
                 </td>
                 <td data-status>
-                  @if (a.dispositionCode === 'ACTIVE') {
-                    <mf-badge tone="success" icon="pi-check-circle" data-disposition-badge
-                      >Active</mf-badge
-                    >
-                  } @else {
-                    <mf-badge
-                      [tone]="dispositionOf(a.dispositionCode).tone"
-                      [icon]="dispositionOf(a.dispositionCode).icon"
-                      data-disposition-badge
-                      >{{ dispositionOf(a.dispositionCode).label }}</mf-badge
-                    >
-                  }
+                  <mf-status-chip
+                    kind="disposition"
+                    [code]="a.dispositionCode"
+                    data-disposition-badge
+                  />
                 </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-    </div>
-    @if (state() === 'ready' && total() > 0) {
-      <mf-pager
-        [page]="pageNumber()"
-        [pageSize]="pageSize()"
-        [pageSizes]="pageSizes"
-        [total]="total()"
-        [hidden]="hiddenCount()"
-        (showAll)="showAll()"
-        (pageChange)="goToPage($event)"
-        (pageSizeChange)="setPageSize($event)"
-      />
-    }
+      <div frameFoot>
+        @if (state() === 'ready' && total() > 0) {
+          <mf-pager
+            [page]="pageNumber()"
+            [pageSize]="pageSize()"
+            [pageSizes]="pageSizes"
+            [total]="total()"
+            [hidden]="hiddenCount()"
+            (showAll)="showAll()"
+            (pageChange)="goToPage($event)"
+            (pageSizeChange)="setPageSize($event)"
+          />
+        }
+      </div>
+    </mf-grid-frame>
   `,
 })
 export class MatterAssets extends ServerListPage<AssetListItem> {
@@ -211,7 +205,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   private readonly api = inject(AssetsClient);
   private readonly typesApi = inject(AssetTypesClient);
   private readonly injector = inject(Injector);
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   protected readonly defaultSort = 'displayName';
   protected readonly columns = COLUMNS;
@@ -254,9 +248,16 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     registerTableSkip();
     void this.loadTypes();
     // The controls move into the sheet while the grid scrolls sideways.
-    afterNextRender(() => this.filters.watchOverflow(this.scroll()?.nativeElement), {
-      injector: this.injector,
-    });
+    afterNextRender(
+      () =>
+        this.filters.watchOverflow(
+          this.scroll()?.nativeElement.querySelector('.mf-scroll-area') as
+            HTMLElement | null | undefined,
+        ),
+      {
+        injector: this.injector,
+      },
+    );
   }
 
   protected override readonly emptyOffersClear = true;
@@ -295,8 +296,6 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
       ? this.list('notactive', 1, 1)
       : null;
   }
-
-  protected dispositionOf = dispositionOf;
 
   /** "412 GB", "26,400 Items" or an empty string when the asset has no size. */
   protected sizeText(a: AssetListItem): string {

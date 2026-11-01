@@ -70,7 +70,7 @@ test.describe('Assets final verification (#517)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody tr[data-asset-id]').first()).toBeVisible();
-    const grid = (await page.locator('.mf-table-wrap').first().boundingBox())!;
+    const grid = (await page.locator('mf-grid-frame').first().boundingBox())!;
     measure('grid height at 1366x768 (review: 277 px with a selection)', Math.round(grid.height));
     expect(grid.height).toBeGreaterThan(400);
     await expect(page.locator('#asset-panel, [data-asset-panel]')).toHaveCount(0);
