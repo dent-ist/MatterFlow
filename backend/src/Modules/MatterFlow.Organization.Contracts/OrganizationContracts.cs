@@ -98,6 +98,22 @@ public sealed class NoTasksMatterTaskGuard : IMatterTaskGuard
     public Task<int> CountOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
 
+/// <summary>
+/// Which AI tools may be used on a Matter's content (epic #1001, MD-02). A Matter field with the default <see cref="No"/>; changes are audited.
+/// Stored as a tiny integer (0, 1, 2) in <c>Matter.AiAllowed</c>; the API shows the name.
+/// </summary>
+public enum MatterAiAllowed : byte
+{
+    /// <summary>No AI tool may be used on this Matter (the default).</summary>
+    No = 0,
+
+    /// <summary>Only AI that runs on the firm's own servers.</summary>
+    OnPremOnly = 1,
+
+    /// <summary>AI services the company has approved.</summary>
+    CompanyApproved = 2,
+}
+
 /// <summary>Which record the Task counts are grouped by.</summary>
 public enum TaskCountScope
 {

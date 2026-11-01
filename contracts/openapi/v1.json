@@ -17717,6 +17717,9 @@
           "isSensitive": {
             "type": "boolean"
           },
+          "aiAllowed": {
+            "$ref": "#/components/schemas/MatterAiAllowed"
+          },
           "primaryManagerId": {
             "maximum": 2147483647,
             "minimum": 1,
@@ -19474,6 +19477,14 @@
           }
         }
       },
+      "MatterAiAllowed": {
+        "enum": [
+          "No",
+          "OnPremOnly",
+          "CompanyApproved"
+        ],
+        "default": "No"
+      },
       "MatterEventList": {
         "required": [
           "from",
@@ -20298,7 +20309,8 @@
           "droppedFields",
           "rowVersion",
           "createdAtUtc",
-          "modifiedAtUtc"
+          "modifiedAtUtc",
+          "aiAllowed"
         ],
         "type": "object",
         "properties": {
@@ -20425,6 +20437,9 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "aiAllowed": {
+            "$ref": "#/components/schemas/MatterAiAllowed"
           }
         }
       },
@@ -28624,6 +28639,16 @@
           },
           "isSensitive": {
             "type": "boolean"
+          },
+          "aiAllowed": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterAiAllowed"
+              }
+            ]
           },
           "confirmLossOfAccess": {
             "type": "boolean"

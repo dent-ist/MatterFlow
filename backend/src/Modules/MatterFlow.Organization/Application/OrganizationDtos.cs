@@ -1,3 +1,4 @@
+using MatterFlow.Organization.Contracts;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -107,6 +108,7 @@ public sealed class ChangeNumberRequest
 /// <param name="ModifiedAtUtc">When the Matter was last changed (UTC), if ever.</param>
 /// <param name="OnHoldTaskCount">Open Tasks that are On Hold (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
 /// <param name="AtRiskTaskCount">Open Tasks that are At risk by the rule of the Task Queue (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
+/// <param name="AiAllowed">Which AI tools may be used on this Matter: <c>No</c> (default), <c>OnPremOnly</c> or <c>CompanyApproved</c>.</param>
 public sealed record MatterResponse(
     [property: Required] int MatterId,
     [property: Required] int ClientId,
@@ -131,7 +133,8 @@ public sealed record MatterResponse(
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc,
     int? OnHoldTaskCount = null,
-    int? AtRiskTaskCount = null);
+    int? AtRiskTaskCount = null,
+    [property: Required] MatterAiAllowed AiAllowed = MatterAiAllowed.No);
 
 /// <summary>A matter's project manager as lists and headers show them.</summary>
 /// <param name="UserId">User id.</param>
@@ -176,6 +179,9 @@ public sealed class CreateMatterRequest
     /// <summary>Mark the matter sensitive: a warning banner, and with sensitive-matter access control on, visible only to its managers and holders of <c>Matter.ViewSensitive</c> (and people assigned a task on it). Without <c>Matter.ViewSensitive</c> a manager must be named (400 <c>SENSITIVE_NEEDS_MANAGER</c>).</summary>
     public bool IsSensitive { get; init; }
 
+    /// <summary>Which AI tools may be used on the matter; default <c>No</c>.</summary>
+    public MatterAiAllowed AiAllowed { get; init; } = MatterAiAllowed.No;
+
     /// <summary>Optional Primary project manager. Accepted only with <c>Matter.AssignManagers</c> (403 otherwise); an active user holding <c>Matter.BeManager</c>.</summary>
     [Range(1, int.MaxValue)]
     public int? PrimaryManagerId { get; init; }
@@ -195,6 +201,9 @@ public sealed class UpdateMatterRequest
     public string Name { get; init; } = string.Empty;
 
     public bool IsSensitive { get; init; }
+
+    /// <summary>Which AI tools may be used on the matter. Omitted means unchanged. A change is audited.</summary>
+    public MatterAiAllowed? AiAllowed { get; init; }
 
     /// <summary>
     /// True to go ahead when marking the matter sensitive would end the caller's own access to it (the caller is neither a manager of it afterwards nor holds

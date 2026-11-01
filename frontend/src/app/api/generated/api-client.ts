@@ -20209,6 +20209,7 @@ export interface CreateMatterRequest {
     matterNumber: string;
     name: string;
     isSensitive?: boolean;
+    aiAllowed?: MatterAiAllowed;
     primaryManagerId?: number | undefined;
     secondaryManagerId?: number | undefined;
     formValues?: any | undefined;
@@ -20719,6 +20720,12 @@ export interface MarkAllReadResponse {
     [key: string]: any;
 }
 
+export enum MatterAiAllowed {
+    No = "No",
+    OnPremOnly = "OnPremOnly",
+    CompanyApproved = "CompanyApproved",
+}
+
 export interface MatterEventList {
     from: string;
     to: string;
@@ -20964,6 +20971,7 @@ export interface MatterResponse {
     modifiedAtUtc: string | undefined;
     onHoldTaskCount?: number | undefined;
     atRiskTaskCount?: number | undefined;
+    aiAllowed: MatterAiAllowed;
 
     [key: string]: any;
 }
@@ -23181,6 +23189,7 @@ export interface UpdateMatterEventRequest {
 export interface UpdateMatterRequest {
     name: string;
     isSensitive?: boolean;
+    aiAllowed?: MatterAiAllowed | undefined;
     confirmLossOfAccess?: boolean;
     rowVersion: string;
     formValues?: any | undefined;

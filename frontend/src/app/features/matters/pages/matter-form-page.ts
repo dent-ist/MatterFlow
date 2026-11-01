@@ -19,7 +19,9 @@ import {
   ClientsClient,
   MatterResponse,
   MattersClient,
+  MatterAiAllowed,
 } from '../../../api/generated/api-client';
+import { AI_OPTIONS } from '../ui/matter-ai';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
@@ -184,6 +186,24 @@ function clientOption(c: ClientResponse): PickerOption {
           </span>
         </label>
 
+        <div class="pg-field">
+          <label class="mf-label" for="matter-ai">AI allowed</label>
+          <select
+            id="matter-ai"
+            class="mf-control"
+            data-ai-allowed
+            (change)="aiAllowed.set($any($event.target).value)"
+          >
+            @for (o of aiOptions; track o.value) {
+              <option [value]="o.value" [selected]="aiAllowed() === o.value">{{ o.label }}</option>
+            }
+          </select>
+          <span class="pg-reason" style="display: block"
+            >Which AI tools may be used on this matter's content. Notes check this setting before AI
+            is offered.</span
+          >
+        </div>
+
         <mf-custom-fields-editor
           [versionId]="customVersionId()"
           [values]="customValues()"
@@ -259,6 +279,8 @@ export class MatterFormPage implements HasUnsavedChanges {
   protected readonly number = signal('');
   protected readonly name = signal('');
   protected readonly isSensitive = signal(false);
+  protected readonly aiAllowed = signal<MatterAiAllowed>(MatterAiAllowed.No);
+  protected readonly aiOptions = AI_OPTIONS;
   protected readonly busy = signal(false);
   private readonly customEditor = viewChild(CustomFieldsEditor);
   protected readonly customVersionId = signal<number | null>(null);
@@ -332,7 +354,10 @@ export class MatterFormPage implements HasUnsavedChanges {
     if (this.isEdit()) {
       return (
         !!o &&
-        (this.name() !== o.name || this.isSensitive() !== o.isSensitive || this.customTouched())
+        (this.name() !== o.name ||
+          this.isSensitive() !== o.isSensitive ||
+          this.aiAllowed() !== (o.aiAllowed ?? MatterAiAllowed.No) ||
+          this.customTouched())
       );
     }
     return this.number().trim() !== '' || this.name().trim() !== '' || this.customTouched();
@@ -376,6 +401,7 @@ export class MatterFormPage implements HasUnsavedChanges {
       this.applyCustom(matter);
       this.name.set(matter.name);
       this.isSensitive.set(matter.isSensitive);
+      this.aiAllowed.set(matter.aiAllowed ?? MatterAiAllowed.No);
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -421,6 +447,7 @@ export class MatterFormPage implements HasUnsavedChanges {
             this.api.updateMatter(Number(this.matterId()), {
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
+              aiAllowed: this.aiAllowed(),
               confirmLossOfAccess: confirmLoss || undefined,
               formValues: custom?.values,
               rowVersion: this.original()!.rowVersion,
@@ -432,6 +459,7 @@ export class MatterFormPage implements HasUnsavedChanges {
               matterNumber: this.number().trim(),
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
+              aiAllowed: this.aiAllowed(),
               formValues: custom?.values,
             }),
           );

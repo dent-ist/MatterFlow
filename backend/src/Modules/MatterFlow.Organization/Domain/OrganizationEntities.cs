@@ -1,3 +1,4 @@
+using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Audit;
 using MatterFlow.SharedKernel.Entities;
 using MatterFlow.SharedKernel.ValueObjects;
@@ -64,6 +65,9 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     /// <summary>Optional Secondary project manager, with the same rights as the Primary. Allowed without a Primary; never the same person as the Primary.</summary>
     [AuditExplicit]
     public int? SecondaryManagerId { get; set; }
+
+    /// <summary>Which AI tools may be used on this Matter's content (MD-02, #1003): No (default), On-prem only or Company-approved. Changes are audited as a field change.</summary>
+    public MatterAiAllowed AiAllowed { get; set; }
 
     [AuditJsonFields("custom")]
     public string? CustomFieldsJson { get; set; }

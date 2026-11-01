@@ -310,6 +310,7 @@ public sealed class MatterService(
             MatterNumber = number.Value,
             Name = request.Name.Trim(),
             IsSensitive = request.IsSensitive,
+            AiAllowed = request.AiAllowed,
         };
         db.Set<Matter>().Add(matter);
         var newManagers = wantsManagers ? NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId) : [];
@@ -421,6 +422,8 @@ public sealed class MatterService(
         if (matter.IsSensitive != request.IsSensitive)
             AuditSensitivity(matter, matter.IsSensitive, request.IsSensitive);
         matter.IsSensitive = request.IsSensitive;
+        if (request.AiAllowed is { } aiAllowed)
+            matter.AiAllowed = aiAllowed;
         if (updatedManagers.Count > 0)
             await NotifyManagersSetAsync(matter, updatedManagers, ct); // event 7, in the same save
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
@@ -657,7 +660,8 @@ public sealed class MatterService(
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc),
         states?.OnHold,
-        states?.AtRisk);
+        states?.AtRisk,
+        r.Matter.AiAllowed);
 
     private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
         userId is { } id ? people.GetValueOrDefault(id) : null;

@@ -10,6 +10,7 @@ import {
   PagedResultOfMatterResponse,
   PagedResultOfProjectResponse,
   ProjectResponse,
+  MatterAiAllowed,
 } from '../../api/generated/api-client';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
 import { ApiError, ProblemDetails } from '../../core/http/api-error';
@@ -59,6 +60,7 @@ export function aMatter(overrides: Partial<MatterResponse> = {}): MatterResponse
     rowVersion: 'BBBB',
     createdAtUtc: '2026-10-01T12:00:00Z',
     modifiedAtUtc: undefined,
+    aiAllowed: MatterAiAllowed.No,
     ...overrides,
   };
 }
