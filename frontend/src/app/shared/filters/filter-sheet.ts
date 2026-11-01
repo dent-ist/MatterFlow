@@ -98,7 +98,7 @@ const FOCUSABLE =
       position: fixed;
       inset: 0;
       z-index: 1190;
-      background: rgb(0 0 0 / 40%);
+      background: var(--mf-scrim);
     }
     .fs {
       position: fixed;
@@ -112,7 +112,7 @@ const FOCUSABLE =
       border-radius: var(--mf-radius-lg) var(--mf-radius-lg) 0 0;
       background: var(--mf-surface);
       color: var(--mf-text);
-      box-shadow: 0 -6px 24px rgb(0 0 0 / 25%);
+      box-shadow: var(--mf-shadow-sheet);
     }
     .fs-head {
       display: flex;

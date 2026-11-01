@@ -20,7 +20,8 @@ import { ErrorReference } from '../ui/error-reference';
 import { LoadState } from '../ui/data-table';
 import { MatterRef } from '../ui/matter-ref';
 import { loudPriority, loudStatus } from './quiet-badges';
-import { PriorityBadge } from '../ui/priority-badge';
+import { PriorityFlag } from '../ui/priority-flag';
+import { PriorityPill } from '../ui/priority-pill';
 import { StatusBadge } from '../ui/status-badge';
 import { TaskTypeBadge } from '../task-type/task-type-badge';
 import { DueCell } from './due-cell';
@@ -62,7 +63,8 @@ export function initialsOf(name: string): string {
     ErrorReference,
     HoldNote,
     MatterRef,
-    PriorityBadge,
+    PriorityFlag,
+    PriorityPill,
     RowEdit,
     StatusBadge,
     TaskTypeBadge,
@@ -215,8 +217,7 @@ export function initialsOf(name: string): string {
                         } @else if (quiet() && !loudPriority(row.priority)) {
                           <span class="tc-plain" data-plain-priority>{{ row.priority.label }}</span>
                         } @else {
-                          <mf-priority-badge
-                            [priorityId]="row.priority.priorityId"
+                          <mf-priority-flag
                             [label]="row.priority.label"
                             [color]="row.priority.color"
                             [muted]="closed(row)"
@@ -244,9 +245,7 @@ export function initialsOf(name: string): string {
                       } @else if (quiet() && loudStatus(row) === null) {
                         <span class="tc-plain" data-plain-status>{{ row.statusLabel }}</span>
                       } @else if (quiet() && loudStatus(row) === 'risk') {
-                        <span class="wt-risk-pill" data-at-risk-pill
-                          ><i class="pi pi-clock" aria-hidden="true"></i>At risk</span
-                        >
+                        <mf-priority-pill kind="risk" data-at-risk-pill />
                       } @else {
                         <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                       }

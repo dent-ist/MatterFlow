@@ -260,8 +260,8 @@ const GROUPS: readonly { label: string; keys: readonly string[] }[] = [
       background:
         linear-gradient(var(--mf-surface) 30%, transparent) top / 100% 1.5rem no-repeat local,
         linear-gradient(transparent, var(--mf-surface) 70%) bottom / 100% 1.5rem no-repeat local,
-        linear-gradient(rgb(0 0 0 / 0.18), transparent) top / 100% 0.5rem no-repeat scroll,
-        linear-gradient(transparent, rgb(0 0 0 / 0.18)) bottom / 100% 0.5rem no-repeat scroll;
+        linear-gradient(var(--mf-shade-soft), transparent) top / 100% 0.5rem no-repeat scroll,
+        linear-gradient(transparent, var(--mf-shade-soft)) bottom / 100% 0.5rem no-repeat scroll;
     }
     .cc-foot {
       display: flex;

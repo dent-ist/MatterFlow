@@ -62,7 +62,7 @@ function reasonOf(error: unknown): string {
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2, 0 4px 14px rgb(0 0 0 / 0.18));
+      box-shadow: var(--mf-shadow-pop);
     }
     .vm__hint {
       margin: 0 0 var(--mf-s2);

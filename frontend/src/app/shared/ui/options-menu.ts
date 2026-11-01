@@ -61,7 +61,7 @@ import {
       padding: 0 var(--mf-s1);
       border-radius: 999px;
       background: var(--mf-primary);
-      color: var(--mf-on-primary, #fff);
+      color: var(--mf-primary-contrast);
       font-size: var(--mf-fs-xs);
       font-weight: 700;
     }
@@ -80,7 +80,7 @@ import {
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-2, 0 4px 14px rgb(0 0 0 / 0.18));
+      box-shadow: var(--mf-shadow-pop);
     }
     /* A menu that opens under a control at the left of a bar (the Data Area's selection bar) grows to the right, so it never leaves the screen. */
     .om--start .om__panel {

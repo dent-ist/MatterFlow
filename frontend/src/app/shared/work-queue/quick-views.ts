@@ -246,14 +246,21 @@ const STRIP_GAP = 4;
       color: var(--mf-text-muted);
       font-weight: 400;
     }
-    .qv-view[aria-pressed='true'] .qv-n:not(.qv-n--zero),
+    .qv-view[aria-pressed='true'] .qv-n,
     .qv-item[aria-pressed='true'] .qv-n:not(.qv-n--zero) {
       color: inherit;
     }
+    /* The chosen view is the filled chip of mf-filter-chips (primary fill, white text) with a tick, so it is not colour alone. */
     .qv-view[aria-pressed='true'] {
-      background: var(--mf-selected-bg);
+      background: var(--mf-primary);
       border-color: var(--mf-primary);
-      color: var(--mf-primary);
+      color: var(--mf-primary-contrast);
+      font-weight: 600;
+    }
+    .qv-view[aria-pressed='true']:not(.qv-more)::before {
+      content: '\\2713';
+      margin-right: 3px;
+      font-size: 0.8em;
     }
     .qv-chevron {
       margin-left: 4px;

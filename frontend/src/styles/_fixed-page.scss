@@ -131,13 +131,13 @@
   .mf-scroll-area[data-scrolled] thead th {
     box-shadow:
       inset 0 -1px 0 var(--mf-border),
-      0 4px 6px -3px rgb(0 0 0 / 28%);
+      var(--mf-shadow-sticky);
   }
 
   .mf-scroll-area[data-scrolled] thead .mf-filter-row td {
     box-shadow:
       inset 0 -1px 0 var(--mf-border),
-      0 4px 6px -3px rgb(0 0 0 / 28%);
+      var(--mf-shadow-sticky);
   }
 
   /* The pager is the pinned bottom bar of the page. */
@@ -149,7 +149,7 @@
     padding: 0 var(--mf-s3);
     background: var(--mf-surface);
     border-top: 1px solid var(--mf-border);
-    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+    box-shadow: var(--mf-shadow-bar);
   }
 }
 
@@ -323,7 +323,7 @@
   padding: var(--mf-s3) var(--mf-card-pad, 0px);
   background: var(--mf-surface);
   border-top: 1px solid var(--mf-border);
-  box-shadow: 0 -4px 6px -4px rgb(0 0 0 / 16%);
+  box-shadow: 0 -4px 6px -4px var(--mf-shade-soft);
 }
 
 /* Record pages: the main column of mf-detail-layout is a flex column and its section / tab area fills it; the section heading is compact. */

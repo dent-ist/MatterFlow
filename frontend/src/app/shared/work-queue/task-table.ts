@@ -37,7 +37,8 @@ import { MfDatePipe } from '../pipes/mf-date.pipe';
 import { MatterCell, MatterNameCell } from './matter-cell';
 import { ProjectCell } from './project-cell';
 import { loudPriority, loudStatus } from './quiet-badges';
-import { PriorityBadge } from '../ui/priority-badge';
+import { PriorityFlag } from '../ui/priority-flag';
+import { PriorityPill } from '../ui/priority-pill';
 import { CopyPart } from '../ui/copy-parts';
 import { StatusBadge } from '../ui/status-badge';
 import { BucketCounts, RowGroup, groupRows } from './due-groups';
@@ -93,7 +94,8 @@ const LONG_PRESS_MS = 500;
     ProjectCell,
     DueCell,
     MfDatePipe,
-    PriorityBadge,
+    PriorityFlag,
+    PriorityPill,
     RowEdit,
     ScrollArea,
     StatusBadge,
@@ -380,8 +382,7 @@ const LONG_PRESS_MS = 500;
                         } @else if (quiet() && !loudPriority(row.priority)) {
                           <span class="wt-plain" data-plain-priority>{{ row.priority.label }}</span>
                         } @else {
-                          <mf-priority-badge
-                            [priorityId]="row.priority.priorityId"
+                          <mf-priority-flag
                             [label]="row.priority.label"
                             [color]="row.priority.color"
                             [muted]="closed(row)"
@@ -445,9 +446,7 @@ const LONG_PRESS_MS = 500;
                           } @else if (quiet() && loudStatus(row) === null) {
                             <span class="wt-plain" data-plain-status>{{ row.statusLabel }}</span>
                           } @else if (quiet() && loudStatus(row) === 'risk') {
-                            <span class="wt-risk-pill" data-at-risk-pill
-                              ><i class="pi pi-clock" aria-hidden="true"></i>At risk</span
-                            >
+                            <mf-priority-pill kind="risk" data-at-risk-pill />
                           } @else {
                             <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                           }

@@ -96,12 +96,6 @@ td.mf-col-actions {
   z-index: 4;
 }
 
-.wt--scroll .wt-row--overdue td[data-col='ref'] {
-  box-shadow:
-    inset 4px 0 0 var(--mf-due-overdue),
-    1px 0 0 var(--mf-border);
-}
-
 /* Drag handle on a header edge (#204; logic in shared/work-queue/column-resize.ts). 24 px wide hit area (WCAG 2.5.8) straddling the border,
    a 1 px divider at rest, 2 px on hover, 3 px accent while dragging. Decorative: aria-hidden, no tab stop, in the header only (the
    keyboard alternative is the Columns panel, #206). Global because the table's own style budget is full. */
@@ -176,8 +170,8 @@ body.wt-resizing {
   z-index: 1001;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--mf-text, #111);
-  color: var(--mf-surface, #fff);
+  background: var(--mf-tip-bg);
+  color: var(--mf-tip-fg);
   font-size: var(--mf-fs-sm);
   white-space: nowrap;
   pointer-events: none;

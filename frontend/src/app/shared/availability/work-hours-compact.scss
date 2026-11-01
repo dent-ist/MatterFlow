@@ -36,7 +36,7 @@
   &[aria-pressed='true'] {
     border-color: var(--mf-primary);
     background: var(--mf-primary);
-    color: #fff;
+    color: var(--mf-primary-contrast);
   }
 }
 

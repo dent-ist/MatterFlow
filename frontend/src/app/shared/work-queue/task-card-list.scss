@@ -11,9 +11,7 @@
   background: var(--mf-surface);
 }
 
-.tc--overdue {
-  box-shadow: inset 4px 0 0 var(--mf-due-overdue);
-}
+/* An overdue card (class tc--overdue) has no coloured edge: its Due line says "Overdue" in words, with an icon. */
 
 .tc--leaving {
   color: var(--mf-text-muted);
@@ -341,12 +339,6 @@
 @keyframes tc-pulse {
   50% {
     opacity: 0.3;
-  }
-}
-
-@media (forced-colors: active) {
-  .tc--overdue {
-    border-inline-start: 4px solid CanvasText;
   }
 }
 

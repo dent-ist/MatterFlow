@@ -133,11 +133,12 @@ export interface WorkStripItem {
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      min-height: 28px;
-      padding: 0 var(--mf-s2);
-      border: 0;
-      border-radius: var(--mf-radius, 4px);
-      background: none;
+      min-height: 32px;
+      padding: 0 var(--mf-s3);
+      /* A count chip of the theme (like mf-filter-chips): a pill with a thin border; the words and the number are always there. */
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-pill);
+      background: var(--mf-surface);
       color: inherit;
       font: inherit;
     }
@@ -179,13 +180,17 @@ export interface WorkStripItem {
     }
     .alert,
     .alert .n {
-      color: var(--mf-danger);
+      color: var(--mf-sem-overdue-fg);
+    }
+    .alert {
+      border-color: var(--mf-sem-overdue-line);
+      background: var(--mf-sem-overdue-bg);
     }
     /* Somebody is waiting (Pending access): the warning colours while the count is above zero; the pressed segment keeps its fill. */
     button.item.tinted:not(.on) {
-      border-color: var(--mf-warning);
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
+      border-color: var(--mf-sem-risk-line);
+      background: var(--mf-sem-risk-bg);
+      color: var(--mf-sem-risk-fg);
     }
     button.item.tinted:not(.on) .n {
       color: inherit;

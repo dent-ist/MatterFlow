@@ -1,3 +1,12 @@
+:host {
+  /* The grid card of mf-grid-frame (white, thin border, rounded, one soft shadow); the table scrolls inside it and the pager is its pinned foot. */
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-xl);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-card);
+  overflow: hidden;
+}
+
 .wl-sr,
 .wl-note {
   position: absolute;
@@ -80,7 +89,7 @@
     padding-inline: var(--mf-s3);
     background: var(--mf-surface);
     border-top: 1px solid var(--mf-border);
-    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+    box-shadow: var(--mf-shadow-bar);
   }
 
   .wl-footrow .wl-pager {

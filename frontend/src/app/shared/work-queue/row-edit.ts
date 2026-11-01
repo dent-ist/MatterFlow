@@ -23,7 +23,7 @@ import { LookupStore } from '../../core/lookups/lookup-store';
 import { NotificationService } from '../../core/notify/notification.service';
 import { UndoService } from '../../core/notify/undo.service';
 import { ACTION_LABELS } from '../../features/tasks/detail/task-detail.store';
-import { PriorityBadge } from '../ui/priority-badge';
+import { PriorityFlag } from '../ui/priority-flag';
 import { StatusBadge } from '../ui/status-badge';
 import {
   InlineField,
@@ -84,7 +84,7 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
  */
 @Component({
   selector: 'mf-row-edit',
-  imports: [InlineMenu, InlineStatusFlow, PriorityBadge, StatusBadge],
+  imports: [InlineMenu, InlineStatusFlow, PriorityFlag, StatusBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.re-with-link]': 'showLink()' },
   styles: `
@@ -138,10 +138,10 @@ const DIALOG_ACTIONS: readonly string[] = ['HOLD', 'CANCEL', 'COMPLETE', 'REOPEN
           <mf-status-badge [code]="r.status" [label]="r.statusLabel" />
         }
         @case ('priority') {
-          <mf-priority-badge
-            [priorityId]="r.priority.priorityId"
+          <mf-priority-flag
             [label]="r.priority.label"
             [color]="r.priority.color"
+            [muted]="r.status === 'COMPLETED' || r.status === 'CANCELLED'"
           />
         }
         @case ('assignee') {
