@@ -101,7 +101,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(page.locator('#asset-filter-row')).toHaveCount(0);
     await page.getByRole('button', { name: /^Filters/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog').getByRole('combobox', { name: /Sort by/ })).toBeVisible();
+    await expect(page.getByRole('dialog').getByRole('button', { name: /^Sort by/ })).toBeVisible();
     expect(await axeViolations(page), 'sheet open at 375').toEqual([]);
     await shot(page, 'as3-filter-sheet');
   });

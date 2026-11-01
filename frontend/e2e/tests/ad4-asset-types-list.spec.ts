@@ -185,7 +185,7 @@ test.describe('Asset Types list (#634, #637)', () => {
 
     // The strip's chip puts the filter in the address and the row of the others goes.
     await page.goto(`/admin/asset-types?name=${s.token}`);
-    const strip = page.locator('mf-work-strip');
+    const strip = page.locator('[data-strip]');
     await expect(strip).toContainText('Active');
     await strip.getByRole('button', { name: /^No published fields/ }).click();
     await expect(page).toHaveURL(/fields=none/);
