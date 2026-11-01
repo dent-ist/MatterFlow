@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +23,8 @@ import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { FixedPage } from '../../../shared/ui/fixed-page';
+import { GridFrame } from '../../../shared/ui/grid-frame';
 import { CopyPart } from '../../../shared/ui/copy-parts';
 import { GridBody } from '../../../shared/ui/grid-body';
 import { isActiveParam, parseStatus } from '../../../shared/ui/list-helpers';
@@ -67,7 +69,8 @@ const BONES: Record<string, string> = {
   selector: 'mf-projects-list-page',
   imports: [
     FixedPage,
-    ScrollArea,
+    GridFrame,
+    NgTemplateOutlet,
     PageHeader,
     ScopeSwitch,
     ActiveBadge,
@@ -206,9 +209,9 @@ const BONES: Record<string, string> = {
             </ng-template>
           </mf-record-card-list>
         } @else {
-          <div class="mf-table-wrap" mfScrollArea="Projects list" #scroll>
+          <mf-grid-frame scrollLabel="Projects list" #scroll>
             <div class="mf-scroll">
-              <table class="pg-table">
+              <table class="pg-table tt">
                 <caption class="pg-sr">
                   Projects
                 </caption>
@@ -343,21 +346,29 @@ const BONES: Record<string, string> = {
                 </tbody>
               </table>
             </div>
-          </div>
+            <div frameFoot>
+              <ng-container *ngTemplateOutlet="pager" />
+            </div>
+          </mf-grid-frame>
         }
-        @if (state() === 'ready' && total() > 0) {
-          <mf-pager
-            [page]="pageNumber()"
-            [pageSize]="pageSize()"
-            [pageSizes]="pageSizes"
-            [total]="total()"
-            [hidden]="hiddenCount()"
-            hiddenLabel="archived"
-            (showAll)="showAll()"
-            (pageChange)="goToPage($event)"
-            (pageSizeChange)="setPageSize($event)"
-          />
+        @if (phone()) {
+          <ng-container *ngTemplateOutlet="pager" />
         }
+        <ng-template #pager>
+          @if (state() === 'ready' && total() > 0) {
+            <mf-pager
+              [page]="pageNumber()"
+              [pageSize]="pageSize()"
+              [pageSizes]="pageSizes"
+              [total]="total()"
+              [hidden]="hiddenCount()"
+              hiddenLabel="archived"
+              (showAll)="showAll()"
+              (pageChange)="goToPage($event)"
+              (pageSizeChange)="setPageSize($event)"
+            />
+          }
+        </ng-template>
       </div>
     </mf-fixed-page>
   `,
@@ -366,7 +377,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   protected override readonly emptyOffersClear = true;
   private readonly api = inject(ProjectsClient);
   protected readonly auth = inject(AuthStore);
-  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+  private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
 
@@ -468,7 +479,10 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
     restoreRowFocus('projects', () => this.state() === 'ready');
     // The controls move into the sheet while the grid scrolls sideways (the grid is not there while the phone shows cards).
     effect(() => {
-      const area = this.scroll()?.nativeElement;
+      this.state();
+      const area = this.scroll()?.nativeElement.querySelector(
+        '.mf-scroll-area',
+      ) as HTMLElement | null;
       if (area) untracked(() => this.filters.watchOverflow(area));
     });
   }
