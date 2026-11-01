@@ -109,32 +109,32 @@ export const MfPreset = definePreset(AuraLite, {
     borderRadius: { none: '0', xs: '2px', sm: '4px', md: '4px', lg: '8px', xl: '8px' },
     // Danger buttons and text follow the theme danger token (--mf-danger #B42318, 6.5:1 on white) instead of Aura's #ef4444 (3.8:1).
     red: {
-      50: '#FDECEA',
-      100: '#FADBD7',
-      200: '#F4B6AE',
-      300: '#EC8B80',
-      400: '#D9534A',
+      50: '#FDECEA', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      100: '#FADBD7', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      200: '#F4B6AE', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      300: '#EC8B80', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      400: '#D9534A', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
       500: 'var(--mf-danger)',
-      600: '#9A1D14',
-      700: '#7F1710',
-      800: '#64120D',
-      900: '#4A0E0A',
-      950: '#300906',
+      600: '#9A1D14', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      700: '#7F1710', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      800: '#64120D', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      900: '#4A0E0A', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      950: '#300906', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
     },
   },
   semantic: {
     primary: {
-      50: '#EEF3FB',
-      100: '#E3ECFA',
-      200: '#C5D6F2',
-      300: '#9DB9E6',
-      400: '#6C92D3',
-      500: '#3E6DB9',
+      50: '#EEF3FB', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      100: '#E3ECFA', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      200: '#C5D6F2', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      300: '#9DB9E6', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      400: '#6C92D3', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      500: '#3E6DB9', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
       600: 'var(--mf-primary)',
       700: 'var(--mf-primary-hover)',
-      800: '#112D5C',
-      900: '#0C2144',
-      950: '#081630',
+      800: '#112D5C', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      900: '#0C2144', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
+      950: '#081630', // theme-colour-ok: PrimeNG palette scale built from --mf-danger / --mf-primary (the preset needs literal shades)
     },
     focusRing: {
       width: 'var(--mf-focus-width)',

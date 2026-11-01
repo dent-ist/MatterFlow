@@ -40,8 +40,8 @@
 
   html,
   body {
-    background: #fff !important;
-    color: #000;
+    background: var(--mf-white) !important;
+    color: var(--mf-black);
   }
 
   /* Colour that carries meaning (the red bar, the pills, the Due colours) stays; the words next to it say the same in grey. */

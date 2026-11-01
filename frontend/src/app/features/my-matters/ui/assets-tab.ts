@@ -233,6 +233,7 @@ const HEADS = [
           class="side"
           aria-label="Asset details"
           data-asset-panel
+          tabindex="-1"
           (keydown.escape)="assetChange.emit(null)"
         >
           <div class="sh">

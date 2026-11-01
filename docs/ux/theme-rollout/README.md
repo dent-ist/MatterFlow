@@ -4,7 +4,7 @@ Owner decision, 2026-11-01: the new My Matters, the new navigation and the share
 
 ## 1. Goal
 
-Every page uses tokens only and the shared components, with the My Matters look (dark navy navigation, coloured chips, shared dropdown, fixed-page grids). At the end there is no `--mf-st-*` token and the colour ledger (`frontend/scripts/theme-colours-baseline.json`, 37 files at the start) is empty, so lint fails on any colour literal.
+Every page uses tokens only and the shared components, with the My Matters look (dark navy navigation, coloured chips, shared dropdown, fixed-page grids). At the end there is no `old-st-*` token and the colour ledger (`frontend/scripts/theme-colours-baseline.json`, 37 files at the start) is empty, so lint fails on any colour literal.
 
 ## 2. Branch rules
 
@@ -50,7 +50,7 @@ With TH-15 the total would be 96.0 h.
 1. Dashboard: the CURRENT structure is converted in this rollout (tiles, chart palette, chips, fixed layout). The redesign of `docs/ux/mockups/dashboard-mockup-v2.html` (A compact or Recommended) is TH-15 and waits for the owner's answers to the six questions in `docs/ux/mockups/README.md`.
 2. The Notes feature is a separate epic.
 3. Task Types / Asset Types / Labels pickers keep working (they already use the solid chip).
-4. `--mf-st-*` tokens and the 37-file ledger reach zero (TH-13).
+4. `old-st-*` tokens and the 37-file ledger reach zero (TH-13).
 5. Task Queue label ("Tasks" vs "Task Queue") follows #978 if the owner has decided; otherwise unchanged.
 6. #976, #977, #980 are out of scope unless a page conversion touches them.
 

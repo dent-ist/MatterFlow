@@ -74,7 +74,7 @@
 
 /* Dark navy panel (MM-58, #950): the pending count keeps its red, with a white ring so it stands out on the navy. */
 .mf-nav .mf-badge {
-  box-shadow: 0 0 0 1.5px #fff;
+  box-shadow: 0 0 0 1.5px var(--mf-white);
 }
 
 /* Projects and Assets sit indented under Matters (MM-59, #951): normal links, one more step of left padding (in app-shell.scss), same row height and icon size. In

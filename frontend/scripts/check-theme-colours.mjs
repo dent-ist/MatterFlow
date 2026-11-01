@@ -3,9 +3,7 @@
  * Theme colour check (UI-01, #954): new code must not hard-code colours; it uses the design tokens (docs/ux/tokens.css, docs/ux/theme-guide.md).
  *
  * Scans src/ and projects/ (ts, html, scss, css; specs and generated files are skipped) for hex colours (#RRGGBB, #RRGGBBAA, and #RGB in
- * stylesheets) and rgb()/rgba()/hsl()/hsla() literals outside comments. Existing files are listed in scripts/theme-colours-baseline.json with
- * their current count: such a file may use fewer literals (the ledger shrinks as pages convert) but never more, and a file that is not in the
- * ledger may have none. Run `node scripts/check-theme-colours.mjs --update` ONLY when a page was converted (counts went down) to rewrite the ledger.
+ * stylesheets) and rgb()/rgba()/hsl()/hsla() literals outside comments. The ledger scripts/theme-colours-baseline.json is EMPTY since TH-13 (#995): no file may have a literal. Run `node scripts/check-theme-colours.mjs --update` ONLY when a page was converted (counts went down) to rewrite the ledger.
  * A line with `theme-colour-ok: <reason>` is not counted (data colours that cannot be a token, for example a user-picked palette).
  */
 import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
@@ -34,9 +32,14 @@ export function countColours(file, text) {
   const style = file.endsWith('.scss') || file.endsWith('.css');
   let n = 0;
   let inBlock = false;
+  let prevOk = false;
   for (const raw of text.split('\n')) {
     let line = raw;
-    if (line.includes('theme-colour-ok')) continue;
+    // A marker on its own comment line (HTML comment or `//`) also covers the line right after it (prettier moves a trailing comment onto its own line).
+    const marked = line.includes('theme-colour-ok');
+    const ok = marked || prevOk;
+    prevOk = marked && /^\s*(<!--|\/\/)/.test(line);
+    if (ok) continue;
     if (inBlock) {
       if (!line.includes('*/')) continue;
       line = line.slice(line.indexOf('*/') + 2);

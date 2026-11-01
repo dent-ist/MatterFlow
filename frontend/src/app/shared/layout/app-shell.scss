@@ -72,10 +72,10 @@
   background:
     linear-gradient(var(--mf-nav-bg) 30%, transparent) center top / 100% 24px no-repeat local,
     linear-gradient(transparent, var(--mf-nav-bg) 70%) center bottom / 100% 24px no-repeat local,
-    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 22%), transparent) center top / 100% 8px
+    radial-gradient(farthest-side at 50% 0, var(--mf-shade-soft), transparent) center top / 100% 8px
       no-repeat scroll,
-    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 22%), transparent) center bottom / 100%
-      8px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, var(--mf-shade-soft), transparent) center bottom /
+      100% 8px no-repeat scroll,
     var(--mf-nav-bg);
   /* Stays in view while the page scrolls; scrolls itself when the window is shorter than the menu. */
   position: sticky;
@@ -114,7 +114,7 @@
       background: var(--mf-nav-selected-bg);
       color: var(--mf-nav-selected-fg);
       font-weight: 600;
-      box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+      box-shadow: var(--mf-shadow-1);
     }
   }
 
@@ -210,7 +210,7 @@
   text-align: center;
   font-size: var(--mf-fs-xs);
   font-weight: 600;
-  color: #fff;
+  color: var(--mf-white);
   background: var(--mf-danger);
   border-radius: 999px;
 }
@@ -295,7 +295,7 @@
     position: fixed;
     inset: 0;
     z-index: 35;
-    background: rgb(0 0 0 / 40%);
+    background: var(--mf-scrim);
     border: 0;
     padding: 0;
   }

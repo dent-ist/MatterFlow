@@ -38,16 +38,6 @@
   --mf-info: #1f4e9c;
   --mf-info-bg: #e3ecfa;
   /* Status badges (text / bg / border) */
-  --mf-st-new-fg: #374151;
-  --mf-st-new-bg: #ffffff; /* neutral outlined pill + dot: blue means ASAP only (M9) */
-  --mf-st-progress-fg: #0b5e55;
-  --mf-st-progress-bg: #ddf3ef;
-  --mf-st-hold-fg: #111827;
-  --mf-st-hold-bg: #a9b0bb; /* grey + pause icon: amber means High priority only (M9) */
-  --mf-st-done-fg: #146c2e;
-  --mf-st-done-bg: #e5f5ea;
-  --mf-st-cancel-fg: #4b5563;
-  --mf-st-cancel-bg: #eceef1;
   /* Priority badges: default set; admin may override colour but must pass 4.5:1 (validated in designer) */
   --mf-pr-critical-fg: #ffffff;
   --mf-pr-critical-bg: #b42318;
@@ -256,7 +246,7 @@
   --mf-border-mid: #c0c6d1; /* control and chip outlines that are not the only cue */
 
   /* 3a. Task status (New, In Progress, On Hold, Completed, Cancelled) as used by the new My Matters and every converted page.
-     fg / bg / line per status. The older --mf-st-* tokens above stay for pages that are not converted yet (In Progress teal there, blue here). */
+     fg / bg / line per status. (The older old-st-* tokens were retired in TH-13, #995.) */
   --mf-status-new-fg: #2b4a78;
   --mf-status-new-bg: #ffffff;
   --mf-status-new-line: #8ea2c2;
@@ -348,11 +338,11 @@
   --mf-toast-error-hover: #fadbd7;
   --mf-toast-detail: #1b1f27;
   --mf-white: #ffffff;
+  --mf-black: #000000; /* print text */
+  --mf-danger-strong: #7f1710; /* hover of a solid danger button (white text 12:1) */
+  --mf-danger-deep: #64120d; /* pressed state of a solid danger button */
   --mf-primary-contrast: var(--mf-white); /* text on --mf-primary (7.9:1) */
   --mf-active: var(--mf-p-teal-solid); /* the "active matter" dot of the tree */
-  --mf-st-new-line: var(
-    --mf-status-new-line
-  ); /* outline of the New status chip (alias requested by UI-10) */
   --mf-tip-bg: #1b1f27; /* tooltip: dark panel, white text 16.0:1 */
   --mf-tip-fg: #ffffff;
   --mf-fs-h1-compact: var(--mf-fs-title); /* fixed-page title, 19 px */

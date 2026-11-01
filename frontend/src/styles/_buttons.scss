@@ -45,7 +45,7 @@
 .mf-btn--primary {
   border-color: var(--mf-primary);
   background: var(--mf-primary);
-  color: #fff;
+  color: var(--mf-white);
 }
 
 .mf-btn--primary:hover:not(:disabled, [aria-disabled='true']) {
@@ -65,12 +65,12 @@
 /* Red fill is reserved for the confirming button inside a confirm dialog. */
 .mf-btn--danger.mf-btn--solid {
   background: var(--mf-danger);
-  color: #fff;
+  color: var(--mf-white);
 }
 
 .mf-btn--danger.mf-btn--solid:hover:not(:disabled, [aria-disabled='true']) {
-  border-color: #7f1710;
-  background: #7f1710;
+  border-color: var(--mf-danger-strong);
+  background: var(--mf-danger-strong);
 }
 
 .mf-btn--text {
@@ -128,14 +128,14 @@
 /* The red fill of a destructive confirm button (confirm dialogs and dialog footers only). */
 .p-button.p-button-danger.mf-btn--solid:not(.p-button-text, .p-button-outlined) {
   --p-button-danger-background: var(--mf-danger);
-  --p-button-danger-hover-background: #7f1710;
-  --p-button-danger-active-background: #64120d;
+  --p-button-danger-hover-background: var(--mf-danger-strong);
+  --p-button-danger-active-background: var(--mf-danger-deep);
   --p-button-danger-border-color: var(--mf-danger);
-  --p-button-danger-hover-border-color: #7f1710;
-  --p-button-danger-active-border-color: #64120d;
-  --p-button-danger-color: #fff;
-  --p-button-danger-hover-color: #fff;
-  --p-button-danger-active-color: #fff;
+  --p-button-danger-hover-border-color: var(--mf-danger-strong);
+  --p-button-danger-active-border-color: var(--mf-danger-deep);
+  --p-button-danger-color: var(--mf-white);
+  --p-button-danger-hover-color: var(--mf-white);
+  --p-button-danger-active-color: var(--mf-white);
 }
 
 /*
