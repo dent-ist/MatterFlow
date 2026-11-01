@@ -37,7 +37,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     await expect(rows).toHaveCount(2);
     await expect(page.locator('thead th', { hasText: 'Size' })).toBeVisible();
     await expect(page.locator('thead th', { hasText: 'Disposition' })).toBeVisible();
-    await expect(rows.filter({ hasText: 'Pending' }).locator('[data-status]')).toContainText(
+    await expect(rows.filter({ hasText: 'Pending' }).locator('td[data-status]')).toContainText(
       'Pending disposition',
     );
     await expect(rows.filter({ hasText: `Big ${d.token}` }).locator('td[data-size]')).toContainText(

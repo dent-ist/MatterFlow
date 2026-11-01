@@ -160,28 +160,22 @@ test.describe('#429 status segments', () => {
     await expect.poll(async () => Number(await text())).toBe(before - 1);
   });
 
-  test('keyboard: one Tab stop for the toolbar, arrows move between the segments, Enter presses', async ({
+  test('keyboard: the status chips are buttons in one labelled group; Tab moves between them and Enter presses', async ({
     page,
   }) => {
     await page.goto(`/admin/users?status=all&account=e2e-${TAG}`);
-    const bar = page.getByRole('toolbar', { name: 'Users by status' });
+    const bar = page.getByRole('group', { name: 'Users by status' });
     await expect(bar).toBeVisible();
-    expect(await bar.locator('button[tabindex="0"]').count()).toBe(1);
-    expect(await bar.locator('button[tabindex="-1"]').count()).toBe(3);
+    expect(await bar.locator('button').count()).toBe(4);
 
-    await pressed(page).focus();
-    await page.keyboard.press('ArrowLeft');
+    await segment(page, 'pending').focus();
+    await page.keyboard.press('Tab');
+    await expect(segment(page, 'active')).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(segment(page, 'inactive')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/status=inactive/);
     await expect(pressed(page)).toHaveAttribute('data-strip-item', 'inactive');
-    await page.keyboard.press('Home');
-    await expect(segment(page, 'pending')).toBeFocused();
-    await page.keyboard.press('End');
-    await expect(segment(page, 'all')).toBeFocused();
-    // Tab leaves the toolbar after one stop, to the next control of the page.
-    await page.keyboard.press('Tab');
-    await expect(bar.locator('button:focus')).toHaveCount(0);
   });
 
   test('a person with User.View only sees the same segments; a Task.View-only person gets no list', async ({

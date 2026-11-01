@@ -187,12 +187,18 @@ export interface FilterOption {
       display: block;
       min-width: 0;
     }
+    /* The cell is sized by the column, never by the words of the choices: the control takes the room it is given and shortens its text. */
     .cf__select {
       display: block;
-      min-width: 0;
+      width: 0;
+      min-width: 100%;
+      --mf-ctl-h-sm: 32px;
     }
     /* The filter row is quiet: regular weight, like the other filter buttons of the row. */
     .cf__select ::ng-deep .btn {
+      padding-inline: var(--mf-s2);
+    }
+    .cf__select ::ng-deep .val {
       font-weight: 400;
     }
   `,

@@ -9,6 +9,10 @@ export interface FilterChip {
   icon?: string;
   /** Tooltip: what the number counts. */
   hint?: string;
+  /** Tinted (the risk colours) while the count is above zero and the chip is not chosen: somebody is waiting (Users: Pending access). */
+  tinted?: boolean;
+  /** Red text while the count is above zero (an alert count such as Overdue). */
+  alert?: boolean;
   /** A plain count with no filter behind it: drawn as text, not as a button. */
   inert?: boolean;
   /** A chip that cannot give anything is disabled when it has a zero count and is not the chosen one. */
@@ -49,6 +53,8 @@ export interface FilterChip {
           <button
             type="button"
             class="chip"
+            [class.tinted]="c.tinted && (c.count ?? 0) > 0"
+            [class.alert]="c.alert && (c.count ?? 0) > 0"
             [attr.aria-pressed]="c.key === value()"
             [attr.data-key]="c.key"
             [attr.data-strip-item]="strip() ? c.key : null"
@@ -101,6 +107,14 @@ export interface FilterChip {
     }
     .chip:hover {
       background: var(--mf-surface-alt);
+    }
+    .chip.tinted[aria-pressed='false'] {
+      border-color: var(--mf-sem-risk-line);
+      background: var(--mf-sem-risk-bg);
+      color: var(--mf-sem-risk-fg);
+    }
+    .chip.alert .n {
+      color: var(--mf-sem-overdue-fg);
     }
     .chip--inert {
       border-style: dashed;

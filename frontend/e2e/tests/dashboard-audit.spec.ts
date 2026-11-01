@@ -395,10 +395,10 @@ test.describe('Dashboard actions and click-through', () => {
     ).toBeVisible();
 
     await page.reload();
-    await expect(labelledDropdown(page, 'Period')).toHaveValue('7d');
+    await expect(labelledDropdown(page, 'Period')).toHaveAttribute('data-value', '7d');
     // Without the parameter the remembered choice applies, and the address stays clean.
     await page.goto('/dashboard');
-    await expect(labelledDropdown(page, 'Period')).toHaveValue('7d');
+    await expect(labelledDropdown(page, 'Period')).toHaveAttribute('data-value', '7d');
     await expect(page).toHaveURL(/\/dashboard$/);
   });
 

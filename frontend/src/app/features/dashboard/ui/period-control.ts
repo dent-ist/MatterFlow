@@ -50,6 +50,7 @@ let nextId = 0;
           [value]="period().key"
           [panelWidth]="220"
           [neutralValue]="null"
+          [describedBy]="describedBy()"
           (valueChange)="onSelect($event)"
         />
         @if (period().key === 'custom') {

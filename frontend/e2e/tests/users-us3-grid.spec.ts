@@ -455,7 +455,7 @@ test.describe('#433 one action per row', () => {
   test('#437 the rows per page are 25, 50 or 100 and live in the address', async ({ page }) => {
     await openList(page, 1366, 768);
     const size = labelledDropdown(page, 'Rows per page');
-    await expect(size).toHaveValue('25');
+    await expect(size).toHaveAttribute('data-value', '25');
     await size.selectOption('50');
     await expect(page).toHaveURL(/size=50/);
     await page.reload();

@@ -117,7 +117,7 @@ test.describe('Column filters re-review', () => {
     // Workflows: one labelled Versions select (it was two selects that both read "Any").
     await page.goto('/admin/workflows');
     await expect(filterDropdown(page, 'Versions')).toBeVisible();
-    await expect(page.locator('tr[data-filter-row] select')).toHaveCount(2); // Versions and Status
+    await expect(page.locator('tr[data-filter-row] mf-dropdown')).toHaveCount(2); // Versions and Status
     // Audit: the Object id box says what it is before an object type is chosen.
     await page.goto('/admin/audit'); // the row is open from the start (AD7, #646)
     const objectId = page.getByRole('textbox', { name: 'Filter by Object id' });

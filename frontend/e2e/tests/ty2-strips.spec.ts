@@ -296,7 +296,7 @@ test.describe('health strips (#367, #368)', () => {
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/workflows?name=${token}`);
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
-    const strip = page.getByRole('list', { name: 'Workflows summary' });
+    const strip = page.getByRole('group', { name: 'Workflows summary' });
     await expect(strip).toBeVisible();
     await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     expect(await chipCount(page, 'published')).toBe(summary.published);
@@ -354,7 +354,7 @@ test.describe('health strips (#367, #368)', () => {
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
-    await expect(page.getByRole('list', { name: 'Steps summary' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Steps summary' })).toBeVisible();
     await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     expect(await chipCount(page, 'active')).toBe(summary.active);
     expect(await chipCount(page, 'notUsed')).toBe(summary.notUsed);
@@ -416,9 +416,9 @@ test.describe('health strips (#367, #368)', () => {
     const wfRole = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow only');
     const wf = await asUser((await seed.user([wfRole.name], 'ty2s-wf')).username);
     await wf.goto('/admin/workflows');
-    await expect(wf.getByRole('list', { name: 'Workflows summary' })).toBeVisible();
+    await expect(wf.getByRole('group', { name: 'Workflows summary' })).toBeVisible();
     await wf.goto('/admin/steps');
-    await expect(wf.getByRole('list', { name: 'Steps summary' })).toBeVisible();
+    await expect(wf.getByRole('group', { name: 'Steps summary' })).toBeVisible();
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const tt = await asUser((await seed.user([typeRole.name], 'ty2s-tt')).username);
     await tt.goto('/admin/task-types');

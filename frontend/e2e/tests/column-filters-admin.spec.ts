@@ -411,10 +411,7 @@ test.describe('Column filters on the administration lists', () => {
       // When: a preset in the viewer's zone writes absolute dates.
       await page.getByRole('button', { name: /^Filter by When/ }).click();
       // The quick view chip of the page is also called Today: the preset is the other one.
-      await page
-        .getByRole('button', { name: 'Today', exact: true })
-        .and(page.locator(':not([data-view])'))
-        .click();
+      await page.getByLabel('Presets').getByRole('button', { name: 'Today', exact: true }).click();
       await expect(page).toHaveURL(/from=\d{4}-\d{2}-\d{2}/);
       await expect(page).toHaveURL(/to=\d{4}-\d{2}-\d{2}/);
       await page.keyboard.press('Escape');

@@ -66,6 +66,7 @@ let nextId = 0;
       aria-haspopup="listbox"
       [attr.aria-expanded]="open()"
       [attr.data-value]="multi() ? null : value()"
+      [attr.aria-describedby]="describedBy() || null"
       [attr.aria-label]="label() + ': ' + (text() || '')"
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
@@ -485,6 +486,8 @@ export class Dropdown {
   readonly neutralValue = input<string | null>('');
   readonly size = input<'md' | 'sm'>('md');
   readonly disabled = input(false);
+  /** The id of a note that describes the control (read after its name). */
+  readonly describedBy = input<string | null>(null);
 
   protected readonly open = signal(false);
   protected readonly query = signal('');

@@ -27,11 +27,17 @@ import { Dropdown, DropdownItem } from '../ui/dropdown';
       display: block;
       min-width: 0;
     }
+    /* The cell is sized by the column, never by the words of the choices: the control takes the room it is given and shortens its text. */
     .ts {
       display: block;
-      min-width: 0;
+      width: 0;
+      min-width: 100%;
+      --mf-ctl-h-sm: 32px;
     }
     .ts ::ng-deep .btn {
+      padding-inline: var(--mf-s2);
+    }
+    .ts ::ng-deep .val {
       font-weight: 400;
     }
   `,

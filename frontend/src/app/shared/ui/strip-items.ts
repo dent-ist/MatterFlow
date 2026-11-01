@@ -9,6 +9,8 @@ export function stripChips(items: readonly WorkStripItem[]): FilterChip[] {
     count: i.count,
     ...(i.hint ? { hint: i.hint } : {}),
     ...(i.inert ? { inert: true } : {}),
+    ...(i.tinted ? { tinted: true } : {}),
+    ...(i.alert ? { alert: true } : {}),
   }));
 }
 

@@ -344,7 +344,7 @@ test.describe('Technician Summary (S9)', () => {
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1, name: 'Unassigned work' })).toBeVisible();
     await expect(page.getByRole('tablist')).toHaveCount(0);
-    await expect(labelledDropdown(page, 'Scope')).toHaveValue('mine');
+    await expect(labelledDropdown(page, 'Scope')).toHaveAttribute('data-value', 'mine');
     await expect(page.locator('[data-own-work]')).toContainText('You have 2 open, 1 overdue.');
     await expect(page.getByRole('link', { name: 'Open My Work' })).toHaveAttribute(
       'href',
@@ -416,7 +416,7 @@ test.describe('Technician Summary (S9)', () => {
       /Nothing is unassigned in Quiet pod/,
     );
     await queue(page).getByRole('button', { name: 'Show all pods' }).click();
-    await expect(labelledDropdown(page, 'Scope')).toHaveValue('all');
+    await expect(labelledDropdown(page, 'Scope')).toHaveAttribute('data-value', 'all');
     await expect(queue(page).locator('li').first()).toBeVisible();
   });
 
@@ -446,7 +446,7 @@ test.describe('Technician Summary (S9)', () => {
     const loner = await seed.user([(await seed.role(TECH_RIGHTS, 'E2E loner')).name], 'dashloner');
     const page = await asUser(loner.username);
     await page.goto('/dashboard');
-    await expect(labelledDropdown(page, 'Scope')).toHaveValue('all');
+    await expect(labelledDropdown(page, 'Scope')).toHaveAttribute('data-value', 'all');
     await expect(page.locator('[data-no-pod-note]')).toHaveText(
       'You are not in a pod yet. Showing all pods.',
     );

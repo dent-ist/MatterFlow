@@ -510,7 +510,7 @@ test.describe('WP8 list chrome', () => {
       await page.goto(`/matters?name=${w.token}`);
       await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
       const sensitive = select(page, 'Sensitive');
-      await expect(sensitive).toHaveValue('');
+      await expect(sensitive).toHaveAttribute('data-value', '');
       // Up to 1499 px the two stack in the Status cell (PM v2, #881: side by side they took the room of Name and Client): under Status, same column.
       const [stackedStatus, stackedSensitive] = [
         await select(page, 'Status').boundingBox(),

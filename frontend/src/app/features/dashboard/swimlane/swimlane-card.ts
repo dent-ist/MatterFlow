@@ -328,6 +328,10 @@ export function initials(name: string): string {
       color: var(--mf-text-muted);
     }
     .ref {
+      display: inline-block;
+      /* A 24 px target without a taller line (WCAG 2.2 2.5.8): padding that the negative margin takes back. */
+      padding-block: 4px;
+      margin-block: -4px;
       white-space: nowrap;
       position: relative;
       color: var(--mf-link);
