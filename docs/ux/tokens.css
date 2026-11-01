@@ -390,3 +390,43 @@
   --mf-tt-violet: #6d4bc2;
   --mf-tt-indigo: #4f46e5;
 }
+
+/* Chart colours (theme rollout TH-01, #983): the hand-built SVG charts and the heat map read these tokens, never a hex value. Values are the proven
+   ones of the former chart-palette.ts / stacked-bar.ts / coverage-model.ts (Okabe-Ito based series, 3:1 on the card and the weekend shade, colour-blind
+   distance checked by trend-palette.spec.ts); each series also keeps its own dash pattern, marker shape and hatch so colour is never the only signal. */
+:root {
+  --mf-chart-1: #0072b2;
+  --mf-chart-2: #c2410c;
+  --mf-chart-3: #00795a;
+  --mf-chart-4: #b0306f;
+  --mf-chart-5: #8a6a00;
+  --mf-chart-6: #6b3fa0;
+  --mf-chart-7: #2f8fbf;
+  --mf-chart-8: #6b7280;
+  /* Age bands (one blue hue, light to dark: older is darker) with the text colour that sits on each fill (4.5:1 or better). */
+  --mf-ramp-1-bg: #dce8f8;
+  --mf-ramp-2-bg: #b5cdf0;
+  --mf-ramp-3-bg: #84a8e0;
+  --mf-ramp-4-bg: #3b6ab4;
+  --mf-ramp-5-bg: #25498a;
+  --mf-ramp-6-bg: #16356b;
+  --mf-ramp-1-fg: #102a54;
+  --mf-ramp-2-fg: #102a54;
+  --mf-ramp-3-fg: #102a54;
+  --mf-ramp-4-fg: #ffffff;
+  --mf-ramp-5-fg: #ffffff;
+  --mf-ramp-6-fg: #ffffff;
+  /* Heat map of completed tasks (Users, coverage): four blue steps with their text colour. */
+  --mf-heat-1-bg: #e8f0fb;
+  --mf-heat-2-bg: #bbd2f3;
+  --mf-heat-3-bg: #7faae6;
+  --mf-heat-4-bg: #1f4e9c;
+  --mf-heat-1-fg: #1b1f27;
+  --mf-heat-2-fg: #1b1f27;
+  --mf-heat-3-fg: #1b1f27;
+  --mf-heat-4-fg: #ffffff;
+  /* Hatch lines drawn over a series fill (white, 60 %): the pattern layer of the charts. */
+  --mf-chart-hatch: rgba(255, 255, 255, 0.6);
+  /* A tab or bar that floats over content (swimlane toolbar, sticky column edge). */
+  --mf-shadow-edge: 2px 0 4px -2px rgba(0, 0, 0, 0.25);
+}

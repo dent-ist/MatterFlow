@@ -16,7 +16,7 @@ import { UndoService } from '../../../core/notify/undo.service';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { DueCell } from '../../../shared/work-queue/due-cell';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
@@ -60,7 +60,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
     RouterLink,
     RowLink,
     MatterRef,
-    PriorityBadge,
+    PriorityFlag,
     RowEdit,
     TaskTypeIcon,
     DueCell,
@@ -202,9 +202,8 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
                         [attr.title]="row.matterName"
                       />
                     </span>
-                    <mf-priority-badge
+                    <mf-priority-flag
                       class="prio"
-                      [priorityId]="row.priority.priorityId"
                       [label]="row.priority.label"
                       [color]="row.priority.color"
                     />

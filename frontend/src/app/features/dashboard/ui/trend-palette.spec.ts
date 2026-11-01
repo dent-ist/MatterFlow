@@ -1,5 +1,6 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
 import { LineStyle, TYPE_STYLES, isHollow, markerPath } from '../../../shared/charts/chart-palette';
+import { tokenHex } from '../../../testing/token-colours.spec-util';
 import { ALL_STYLE, MEASURE_STYLES, MEASURES } from './trend-model';
 
 /**
@@ -74,8 +75,8 @@ describe('trend line palette', () => {
 
   it('every line colour reaches 3:1 on the card and on the weekend shade', () => {
     for (const s of everyStyle) {
-      expect(contrastRatio(s.color, CARD), s.color).toBeGreaterThanOrEqual(3);
-      expect(contrastRatio(s.color, WEEKEND), s.color).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(tokenHex(s.color), CARD), s.color).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(tokenHex(s.color), WEEKEND), s.color).toBeGreaterThanOrEqual(3);
     }
   });
 
@@ -96,11 +97,14 @@ describe('trend line palette', () => {
       for (let i = 0; i < set.length; i++) {
         for (let j = i + 1; j < set.length; j++) {
           expect(
-            distance(set[i].color, set[j].color),
+            distance(tokenHex(set[i].color), tokenHex(set[j].color)),
             `${set[i].color} / ${set[j].color}`,
           ).toBeGreaterThanOrEqual(15);
           for (const m of [PROTAN, DEUTAN]) {
-            const d = distance(simulate(set[i].color, m), simulate(set[j].color, m));
+            const d = distance(
+              simulate(tokenHex(set[i].color), m),
+              simulate(tokenHex(set[j].color), m),
+            );
             // Pairs that collapse under a colour-vision deficiency are still told apart by their dash and marker (asserted above).
             expect(d, `${set[i].color} / ${set[j].color} (simulated)`).toBeGreaterThanOrEqual(3);
           }
@@ -109,14 +113,20 @@ describe('trend line palette', () => {
     }
   });
 
-  it('the measure colours are the dashboard tokens', () => {
-    expect(MEASURE_STYLES.created.color).toBe('#1F4E9C'); // --mf-primary
-    expect(MEASURE_STYLES.completed.color).toBe('#0B5E55'); // --mf-st-progress-fg
-    expect(MEASURE_STYLES.overdue.color).toBe('#B42318'); // --mf-danger
-    expect(MEASURE_STYLES.onTime.color).toBe('#146C2E'); // --mf-success
-    expect(MEASURE_STYLES.late.color).toBe('#8A4B00'); // --mf-warning
-    // Open (#120) has no token of its own yet: a deep violet that no other dashboard colour uses (documented in docs/ux/dashboard-trends-types/README.md).
-    expect(MEASURE_STYLES.open.color).toBe('#5B2A86');
+  it('no line holds a colour literal: every colour is a design token that resolves', () => {
+    for (const s of everyStyle) {
+      expect(s.color, s.color).toMatch(/^var\(--mf-[a-z0-9-]+\)$/);
+      expect(tokenHex(s.color)).toMatch(/^#[0-9A-F]{6}$/);
+    }
+  });
+
+  it('the measure colours are semantic tokens (info, healthy, overdue, success, risk, person)', () => {
+    expect(MEASURE_STYLES.created.color).toBe('var(--mf-sem-info-solid)');
+    expect(MEASURE_STYLES.completed.color).toBe('var(--mf-sem-healthy-fg)');
+    expect(MEASURE_STYLES.overdue.color).toBe('var(--mf-sem-overdue-fg)');
+    expect(MEASURE_STYLES.onTime.color).toBe('var(--mf-success)');
+    expect(MEASURE_STYLES.late.color).toBe('var(--mf-sem-risk-fg)');
+    expect(MEASURE_STYLES.open.color).toBe('var(--mf-sem-person-fg)');
   });
 
   it('draws every marker shape as a path of its own', () => {

@@ -18,10 +18,10 @@ export const isScale = (v: unknown): v is Scale => v === 'relative' || v === 'ab
  * only cue; every pair reaches 4.5:1 (checked in the spec). Step 0 (no completions) is a blank cell on a light neutral background: no hatch and no dashed edge (C2, #135).
  */
 export const STEP_COLORS: Record<Exclude<Step, 0>, { bg: string; fg: string }> = {
-  1: { bg: '#E8F0FB', fg: '#1B1F27' },
-  2: { bg: '#BBD2F3', fg: '#1B1F27' },
-  3: { bg: '#7FAAE6', fg: '#1B1F27' },
-  4: { bg: '#1F4E9C', fg: '#FFFFFF' },
+  1: { bg: 'var(--mf-heat-1-bg)', fg: 'var(--mf-heat-1-fg)' },
+  2: { bg: 'var(--mf-heat-2-bg)', fg: 'var(--mf-heat-2-fg)' },
+  3: { bg: 'var(--mf-heat-3-bg)', fg: 'var(--mf-heat-3-fg)' },
+  4: { bg: 'var(--mf-heat-4-bg)', fg: 'var(--mf-heat-4-fg)' },
 };
 
 export const STEP_LABELS: Record<Step, string> = {

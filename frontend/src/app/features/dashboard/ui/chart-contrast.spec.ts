@@ -1,51 +1,32 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
 import { LOW_STROKE, NORMAL_STROKE, overdueShare, strokeFor } from './breakdown-overdue';
+import { tokenHex } from '../../../testing/token-colours.spec-util';
 import { AGE_RAMP } from './stacked-bar';
 
 /**
- * The dashboard's chart colours come from the design tokens (docs/ux/tokens.css, copied here; keep in step). They must stay readable
+ * The dashboard's chart colours come from the design tokens (docs/ux/tokens.css, read here through tokenHex). They must stay readable
  * (WCAG 1.4.3 text 4.5:1, 1.4.11 graphics 3:1).
  */
-const t: Record<string, string> = {
-  'mf-surface': '#FFFFFF',
-  'mf-surface-alt': '#EEF0F4',
-  'mf-text-muted': '#4B5563',
-  'mf-primary': '#1F4E9C',
-  'mf-danger': '#B42318',
-  'mf-danger-bg': '#FDECEA',
-  'mf-warning': '#8A4B00',
-  'mf-warning-bg': '#FFF4DB',
-  'mf-success': '#146C2E',
-  'mf-info': '#1F4E9C',
-  'mf-info-bg': '#E3ECFA',
-  'mf-st-progress-fg': '#0B5E55',
-  'mf-st-new-fg': '#374151',
-  'mf-st-new-bg': '#FFFFFF',
-  'mf-st-hold-fg': '#111827',
-  'mf-st-hold-bg': '#A9B0BB',
-  'mf-border-strong': '#6B7280',
-  'mf-pr-critical-fg': '#FFFFFF',
-  'mf-pr-critical-bg': '#B42318',
-  'mf-pr-high-fg': '#5C2E00',
-  'mf-pr-high-bg': '#FFD9A8',
-  'mf-pr-normal-fg': '#1B1F27',
-  'mf-pr-normal-bg': '#E3E7EE',
-  'mf-pr-low-fg': '#3B4350',
-  'mf-pr-low-bg': '#F1F3F6',
-};
+const t: Record<string, string> = new Proxy(
+  {},
+  { get: (_target, name) => tokenHex(`var(--${String(name)})`) },
+);
 
 describe('dashboard chart colours', () => {
   it('age bands are one blue hue from light to dark, each text readable on its fill and each fill or its edge visible on the card', () => {
-    const lightness = (hex: string) => contrastRatio(hex, '#FFFFFF');
+    const lightness = (hex: string) => contrastRatio(tokenHex(hex), '#FFFFFF');
     // Darker with age: contrast with white rises from band to band.
     for (let i = 1; i < AGE_RAMP.length; i++) {
       expect(lightness(AGE_RAMP[i].bg), `band ${i}`).toBeGreaterThan(lightness(AGE_RAMP[i - 1].bg));
     }
     for (const [i, band] of AGE_RAMP.entries()) {
-      expect(contrastRatio(band.fg, band.bg), `text ${i}`).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrastRatio(tokenHex(band.fg), tokenHex(band.bg)),
+        `text ${i}`,
+      ).toBeGreaterThanOrEqual(4.5);
       // The segment edge is the brand blue (1px), the fill is what is left when it is dark enough on its own.
       const stands = Math.max(
-        contrastRatio(band.bg, t['mf-surface']),
+        contrastRatio(tokenHex(band.bg), t['mf-surface']),
         contrastRatio(t['mf-primary'], t['mf-surface']),
       );
       expect(stands, `edge ${i}`).toBeGreaterThanOrEqual(3);
@@ -53,7 +34,7 @@ describe('dashboard chart colours', () => {
   });
 
   it('trend lines and markers are visible on the card', () => {
-    for (const name of ['mf-primary', 'mf-st-progress-fg']) {
+    for (const name of ['mf-primary', 'mf-sem-healthy-fg']) {
       expect(contrastRatio(t[name], t['mf-surface']), name).toBeGreaterThanOrEqual(3);
     }
   });
@@ -126,18 +107,23 @@ describe('dashboard chart colours', () => {
   });
 
   describe('one colour language (M9)', () => {
-    it('the New and On Hold pills read at 4.5:1, and On Hold is clearly darker than the amber High pill in greyscale', () => {
-      expect(contrastRatio(t['mf-st-new-fg'], t['mf-st-new-bg'])).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(t['mf-st-hold-fg'], t['mf-st-hold-bg'])).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio(t['mf-st-hold-bg'], t['mf-pr-high-bg'])).toBeGreaterThanOrEqual(1.3);
+    it('the New and On Hold chips read at 4.5:1', () => {
+      expect(contrastRatio(t['mf-status-new-fg'], t['mf-status-new-bg'])).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      expect(contrastRatio(t['mf-status-hold-fg'], t['mf-status-hold-bg'])).toBeGreaterThanOrEqual(
+        4.5,
+      );
     });
 
     it('the status colours of the charts (New, In Progress, On Hold) are 3:1 on the card and apart from each other', () => {
-      const colors = ['mf-st-new-fg', 'mf-st-progress-fg', 'mf-border-strong'];
+      const colors = ['mf-sem-neutral-solid', 'mf-status-progress-fg', 'mf-border-strong'];
       for (const name of colors) {
         expect(contrastRatio(t[name], t['mf-surface']), name).toBeGreaterThanOrEqual(3);
       }
-      expect(contrastRatio(t['mf-st-new-fg'], t['mf-border-strong'])).toBeGreaterThanOrEqual(1.5);
+      expect(
+        contrastRatio(t['mf-sem-neutral-solid'], t['mf-border-strong']),
+      ).toBeGreaterThanOrEqual(1.5);
     });
 
     it('the white level glyph on the red overdue bar is readable', () => {

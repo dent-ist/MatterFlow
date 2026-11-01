@@ -28,7 +28,7 @@ import { DueCell } from '../../../shared/work-queue/due-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
@@ -54,7 +54,7 @@ export const PEEK_COMMENTS = 3;
     RouterLink,
     RowEdit,
     StatusBadge,
-    PriorityBadge,
+    PriorityFlag,
     MfDatePipe,
     DueCell,
     CopyButton,
@@ -132,11 +132,7 @@ export const PEEK_COMMENTS = 3;
                       (taskChange)="task.set($event)"
                     />
                   } @else {
-                    <mf-priority-badge
-                      [priorityId]="c.priority.priorityId"
-                      [label]="c.priority.label"
-                      [color]="c.priority.color"
-                    />
+                    <mf-priority-flag [label]="c.priority.label" [color]="c.priority.color" />
                   }
                 </dd>
               </div>

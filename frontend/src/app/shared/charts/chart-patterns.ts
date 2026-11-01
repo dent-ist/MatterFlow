@@ -39,7 +39,7 @@ export const HATCHES: readonly HatchDef[] = [
   { n: 7, w: 12, h: 12, rotate: 45, rects: [{ x: 0, y: 0, w: 12, h: 5 }], circles: [] },
 ];
 
-const WHITE = 'rgba(255, 255, 255, 0.6)';
+const WHITE = 'var(--mf-chart-hatch)';
 
 /** The same hatches as CSS backgrounds: add the class `pat-<slot>` to a box that has the series colour as its background colour. */
 export const PATTERN_CSS = `

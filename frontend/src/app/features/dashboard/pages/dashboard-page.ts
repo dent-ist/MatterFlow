@@ -264,7 +264,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 <mf-stat-tile
                                   label="Unassigned"
                                   icon="pi-user-minus"
-                                  tone="strong"
+                                  tone="person"
                                   emphasis="attention"
                                   linkText="View unassigned tasks"
                                   [value]="d.unassigned.count"
@@ -274,7 +274,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 <mf-stat-tile
                                   label="On hold"
                                   icon="pi-pause-circle"
-                                  tone="warning"
+                                  tone="neutral"
                                   emphasis="attention"
                                   linkText="View tasks on hold"
                                   [value]="d.onHold.count"
@@ -318,6 +318,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 <mf-stat-tile
                                   label="Due soon"
                                   icon="pi-clock"
+                                  tone="warning"
                                   emphasis="quiet"
                                   linkText="View tasks due soon"
                                   [value]="d.dueSoon.count"
@@ -328,6 +329,7 @@ const EMPTY_LIST: ListData = { state: 'loading', rows: [], total: 0 };
                                 <mf-stat-tile
                                   label="Completed"
                                   icon="pi-check-circle"
+                                  tone="info"
                                   emphasis="quiet"
                                   linkText="View completed tasks"
                                   [value]="d.completed.count"

@@ -127,21 +127,21 @@ export const FLOWS_TITLE = 'Created and completed';
 export const BACKLOG_TITLE = 'Backlog at end of day';
 
 /**
- * Line styles of the default chart (measures), in the dashboard's own tokens: Created is the brand blue, solid, round markers; Completed
+ * Line styles of the default chart (measures), in semantic tokens (info, healthy, overdue, person, success, risk): Created is the brand blue, solid, round markers; Completed
  * teal, long dashes, square markers; Overdue red, dotted, up triangles; Open deep violet, extra long dashes, down triangles; On time green,
  * dash-dot, diamonds; Completed late amber, dash-dot-dot, crosses. Keep in step with docs/ux/tokens.css (checked by trend-palette.spec.ts).
  */
 export const MEASURE_STYLES: Record<Measure, LineStyle> = {
-  created: { color: '#1F4E9C', dash: '', marker: 'circle' },
-  completed: { color: '#0B5E55', dash: '7 4', marker: 'square' },
-  overdue: { color: '#B42318', dash: '2 4', marker: 'triangle' },
-  open: { color: '#5B2A86', dash: '14 4', marker: 'triangleDown' },
-  onTime: { color: '#146C2E', dash: '10 3 2 3', marker: 'diamond' },
-  late: { color: '#8A4B00', dash: '9 3 2 3 2 3', marker: 'cross' },
+  created: { color: 'var(--mf-sem-info-solid)', dash: '', marker: 'circle' },
+  completed: { color: 'var(--mf-sem-healthy-fg)', dash: '7 4', marker: 'square' },
+  overdue: { color: 'var(--mf-sem-overdue-fg)', dash: '2 4', marker: 'triangle' },
+  open: { color: 'var(--mf-sem-person-fg)', dash: '14 4', marker: 'triangleDown' },
+  onTime: { color: 'var(--mf-success)', dash: '10 3 2 3', marker: 'diamond' },
+  late: { color: 'var(--mf-sem-risk-fg)', dash: '9 3 2 3 2 3', marker: 'cross' },
 };
 
 /** "All task types" when task types are compared: the darkest ink, solid, round markers. */
-export const ALL_STYLE: LineStyle = { color: '#1B1F27', dash: '', marker: 'circle' };
+export const ALL_STYLE: LineStyle = { color: 'var(--mf-text)', dash: '', marker: 'circle' };
 
 // ---- the choices
 

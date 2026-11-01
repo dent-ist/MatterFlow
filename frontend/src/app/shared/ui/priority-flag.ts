@@ -1,0 +1,48 @@
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { PriorityPill } from './priority-pill';
+
+/**
+ * The priority of a task in a list or a card (`mf-priority-flag`, theme rollout TH-01): Critical and High are the pill of `mf-priority-pill` (icon and word),
+ * Normal and Low are plain muted text, because only what needs the eye gets a colour (the My Matters rule). `color` is the priority's tone from the API
+ * (`critical`, `high`, `normal`, `low`; an admin colour in `#RRGGBB` is not drawn, it is plain text). Closed work (`muted`) is plain text too, so a closed
+ * Critical task does not draw the eye. The word is always there, for a screen reader as well.
+ */
+@Component({
+  selector: 'mf-priority-flag',
+  imports: [PriorityPill],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (pill(); as p) {
+      <mf-priority-pill [kind]="p" [label]="label()" [attr.data-priority]="label()" />
+    } @else if (label()) {
+      <span class="plain" [attr.data-priority]="label()">{{ label() }}</span>
+    }
+  `,
+  styles: `
+    :host {
+      display: inline-flex;
+      max-width: 100%;
+    }
+    .plain {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--mf-fs-xs);
+      color: var(--mf-text-muted);
+    }
+  `,
+})
+export class PriorityFlag {
+  /** The priority word ("Critical", "High", "Normal"; a renamed one is shown as it is). */
+  readonly label = input<string | null | undefined>(null);
+  /** The tone of the priority: `critical`, `high`, `normal`, `low` (anything else is plain text). */
+  readonly color = input<string | null | undefined>(null);
+  /** Closed work: plain text, no pill. */
+  readonly muted = input(false);
+
+  protected readonly pill = computed<'critical' | 'high' | null>(() => {
+    if (this.muted()) return null;
+    const tone = this.color();
+    return tone === 'critical' ? 'critical' : tone === 'high' ? 'high' : null;
+  });
+}

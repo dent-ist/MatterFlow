@@ -37,12 +37,12 @@ let nextId = 0;
  * 4.5:1 or more, and a 1px brand-blue edge keeps the pale fills visible against the white card (checked in chart-contrast.spec.ts).
  */
 export const AGE_RAMP: readonly { bg: string; fg: string }[] = [
-  { bg: '#DCE8F8', fg: '#102A54' },
-  { bg: '#B5CDF0', fg: '#102A54' },
-  { bg: '#84A8E0', fg: '#102A54' },
-  { bg: '#3B6AB4', fg: '#FFFFFF' },
-  { bg: '#25498A', fg: '#FFFFFF' },
-  { bg: '#16356B', fg: '#FFFFFF' },
+  { bg: 'var(--mf-ramp-1-bg)', fg: 'var(--mf-ramp-1-fg)' },
+  { bg: 'var(--mf-ramp-2-bg)', fg: 'var(--mf-ramp-2-fg)' },
+  { bg: 'var(--mf-ramp-3-bg)', fg: 'var(--mf-ramp-3-fg)' },
+  { bg: 'var(--mf-ramp-4-bg)', fg: 'var(--mf-ramp-4-fg)' },
+  { bg: 'var(--mf-ramp-5-bg)', fg: 'var(--mf-ramp-5-fg)' },
+  { bg: 'var(--mf-ramp-6-bg)', fg: 'var(--mf-ramp-6-fg)' },
 ];
 
 /**

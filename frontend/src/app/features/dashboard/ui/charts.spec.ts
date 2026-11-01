@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { tokenHex } from '../../../testing/token-colours.spec-util';
 import { BarItem, BarList, sharePercent } from './bar-list';
 import { AGE_RAMP, Segment, StackedBar } from './stacked-bar';
 import { StatTile } from './stat-tile';
@@ -9,10 +10,6 @@ import { StatTile } from './stat-tile';
 function rgbOf(hex: string): [number, number, number] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
 }
-function toRgb(hex: string): string {
-  return `rgb(${rgbOf(hex).join(', ')})`;
-}
-
 @Component({
   imports: [BarList, StackedBar, StatTile],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -151,12 +148,14 @@ describe('dashboard charts', () => {
       const segs = Array.from(el.querySelectorAll<HTMLElement>('mf-stacked-bar .seg'));
       const fills = segs.map((s) => s.style.background);
       // 0-2, 8-14 and 15-30 days are shown: the first, third and fourth steps of the ramp, never green, amber or red.
-      expect(fills).toEqual([AGE_RAMP[0].bg, AGE_RAMP[2].bg, AGE_RAMP[3].bg].map(toRgb));
-      expect(segs.map((s) => s.style.color)).toEqual(
-        [AGE_RAMP[0].fg, AGE_RAMP[2].fg, AGE_RAMP[3].fg].map(toRgb),
-      );
+      expect(fills).toEqual([AGE_RAMP[0].bg, AGE_RAMP[2].bg, AGE_RAMP[3].bg]);
+      expect(segs.map((s) => s.style.color)).toEqual([
+        AGE_RAMP[0].fg,
+        AGE_RAMP[2].fg,
+        AGE_RAMP[3].fg,
+      ]);
       for (const band of AGE_RAMP) {
-        const [r, g, b] = rgbOf(band.bg);
+        const [r, g, b] = rgbOf(tokenHex(band.bg));
         expect(b, band.bg).toBeGreaterThan(r); // blue-dominant
         expect(b, band.bg).toBeGreaterThanOrEqual(g);
       }

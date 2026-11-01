@@ -6,7 +6,8 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { LookupStore } from '../../../core/lookups/lookup-store';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { PriorityBadge, levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { levelBars, priorityColors } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
 import { DueCell } from '../../../shared/work-queue/due-cell';
@@ -34,7 +35,7 @@ export function initials(name: string): string {
   imports: [
     RouterLink,
     NgTemplateOutlet,
-    PriorityBadge,
+    PriorityFlag,
     StatusBadge,
     TaskTypeIcon,
     RowEdit,
@@ -187,11 +188,7 @@ export function initials(name: string): string {
               @if (editable('priority')) {
                 <mf-row-edit field="priority" [row]="r" (rowChange)="changed($event)" />
               } @else {
-                <mf-priority-badge
-                  [priorityId]="c.priority.priorityId"
-                  [label]="c.priority.label"
-                  [color]="c.priority.color"
-                />
+                <mf-priority-flag [label]="c.priority.label" [color]="c.priority.color" />
               }
             </span>
           </div>

@@ -101,13 +101,13 @@ describe('shared badges', () => {
     expect(badge.getAttribute('data-status')).toBe('ON_HOLD');
     expect(badge.textContent!.trim()).toBe('On Hold');
     expect(badge.querySelector('.pi-pause-circle')).not.toBeNull();
-    expect(badge.style.background).toContain('--mf-st-hold-bg');
+    expect(badge.getAttribute('data-tone')).toBe('hold'); // the chip reads the --mf-status-hold-* tokens
 
-    // New is a neutral outlined pill with a dot, so blue means ASAP only (M9).
+    // New is a white chip with a ring and a dot (the mockup's "not started").
     host.code.set('NEW');
     fixture.detectChanges();
     const fresh = el.querySelector<HTMLElement>('[data-status="NEW"]')!;
-    expect(fresh.querySelector('.pi-circle-fill')).not.toBeNull();
+    expect(fresh.querySelector('.newic')).not.toBeNull();
     host.code.set('ON_HOLD');
     fixture.detectChanges();
     badge = el.querySelector<HTMLElement>('[data-status]')!;

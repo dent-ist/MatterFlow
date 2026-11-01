@@ -30,7 +30,7 @@ import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { canEditField } from '../../../shared/work-queue/inline-edit';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { StatusBadge } from '../../../shared/ui/status-badge';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
@@ -88,7 +88,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
     DialogFocus,
     RouterLink,
     RowEdit,
-    PriorityBadge,
+    PriorityFlag,
     StatusBadge,
     TaskTypeIcon,
     DueCell,
@@ -247,8 +247,7 @@ const OPEN = ['NEW', 'IN_PROGRESS', 'ON_HOLD'];
                             @if (editable('priority', r)) {
                               <mf-row-edit field="priority" [row]="r" (rowChange)="onRow($event)" />
                             } @else {
-                              <mf-priority-badge
-                                [priorityId]="r.priority.priorityId"
+                              <mf-priority-flag
                                 [label]="r.priority.label"
                                 [color]="r.priority.color"
                               />

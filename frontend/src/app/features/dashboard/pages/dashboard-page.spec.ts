@@ -333,7 +333,7 @@ describe('DashboardPage', () => {
       'View ASAP tasks',
     ]);
     // An icon next to every label, so the tone is never the only signal.
-    for (const t of tiles) expect(t.querySelector('.label .pi')).not.toBeNull();
+    for (const t of tiles) expect(t.querySelector('mf-tile-chip .pi')).not.toBeNull();
     expect(tiles[1].querySelector('a')!.getAttribute('href')).toBe(
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&unassigned=true',
     );
@@ -345,12 +345,12 @@ describe('DashboardPage', () => {
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
     );
     expect(tiles[1].querySelector('[data-detail]')).toBeNull();
-    // Colour follows the pattern standard: On hold is the warning amber of its badge, Unassigned is neutral, ASAP is the quiet blue outline
+    // Colour follows the theme: Overdue is red, Unassigned (needs a person) is violet, On hold is neutral slate (no tone attribute), ASAP is the quiet blue
     // (never the red of Overdue, and a smaller number than the three attention tiles).
     expect(tiles.map((t) => t.querySelector('a')!.getAttribute('data-tone'))).toEqual([
       'danger',
-      'strong',
-      'warning',
+      'person',
+      null,
       'asap',
     ]);
     expect(tiles[3].querySelector('a')!.getAttribute('data-emphasis')).toBe('quiet');
@@ -372,7 +372,7 @@ describe('DashboardPage', () => {
     expect(tiles[2].textContent).toContain('Sep 15 to Oct 14');
     expect(tiles[3].textContent).toContain('Sep 15 to Oct 14');
     // Every tile has its own small icon next to the label.
-    for (const t of tiles) expect(t.querySelector('.label .pi')).not.toBeNull();
+    for (const t of tiles) expect(t.querySelector('mf-tile-chip .pi')).not.toBeNull();
     expect(tiles[2].querySelector('a')!.getAttribute('href')).toBe(
       '/tasks?status=COMPLETED&completedFrom=2026-09-15',
     );
@@ -920,7 +920,7 @@ describe('DashboardPage', () => {
     expect(row.querySelector('mf-row-edit [data-inline-trigger]')!.getAttribute('aria-label')).toBe(
       'Assign TSK-21',
     );
-    expect(row.querySelector('mf-priority-badge')!.textContent).toContain('Critical');
+    expect(row.querySelector('mf-priority-flag')!.textContent).toContain('Critical');
     // The creation age left the row (#213): it is the last line of the Due cell tooltip, and the cell is the grid's (inline layout).
     const due = row.querySelector('mf-due-cell[data-due]')!;
     expect(row.querySelector('[data-age]')).toBeNull();
@@ -1074,7 +1074,7 @@ describe('DashboardPage', () => {
     expect(text(overdue.querySelector('[data-order]'))).toBe(
       'Critical first, then longest overdue.',
     );
-    expect(overdue.querySelector('mf-priority-badge')).not.toBeNull();
+    expect(overdue.querySelector('mf-priority-flag')).not.toBeNull();
     expect(overdue.querySelector<HTMLAnchorElement>('[data-view-all]')!.getAttribute('href')).toBe(
       '/tasks?status=NEW&status=IN_PROGRESS&status=ON_HOLD&overdue=true&sort=priority&dir=asc',
     );

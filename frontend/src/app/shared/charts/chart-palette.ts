@@ -16,7 +16,7 @@ export type MarkerShape =
   | 'ringSquare';
 
 export interface LineStyle {
-  /** `#RRGGBB`, at least 3:1 against the card (trend-palette spec). */
+  /** A CSS colour, a `var(--mf-chart-n)` token of docs/ux/tokens.css: at least 3:1 against the card (trend-palette spec resolves it). */
   color: string;
   /** SVG stroke-dasharray; empty is a solid line. */
   dash: string;
@@ -24,18 +24,18 @@ export interface LineStyle {
 }
 
 /**
- * One slot per task type line (a type keeps its slot while it stays checked). Colours follow Okabe-Ito / Tol hues darkened to at least 3:1
- * on white and on the weekend shade; each slot also has its own dash pattern and marker shape, so no line relies on colour alone.
+ * One slot per task type line (a type keeps its slot while it stays checked). Colours are the `--mf-chart-1..8` tokens (Okabe-Ito / Tol hues darkened to at least 3:1
+ * on white and on the weekend shade); each slot also has its own dash pattern and marker shape, so no line relies on colour alone.
  */
 export const TYPE_STYLES: readonly LineStyle[] = [
-  { color: '#0072B2', dash: '8 4', marker: 'square' },
-  { color: '#C2410C', dash: '2 3', marker: 'triangle' },
-  { color: '#00795A', dash: '10 3 2 3', marker: 'diamond' },
-  { color: '#B0306F', dash: '4 4', marker: 'triangleDown' },
-  { color: '#8A6A00', dash: '14 5', marker: 'cross' },
-  { color: '#6B3FA0', dash: '1 5', marker: 'plus' },
-  { color: '#2F8FBF', dash: '9 3 2 3 2 3', marker: 'ring' },
-  { color: '#6B7280', dash: '3 2 6 2', marker: 'ringSquare' },
+  { color: 'var(--mf-chart-1)', dash: '8 4', marker: 'square' },
+  { color: 'var(--mf-chart-2)', dash: '2 3', marker: 'triangle' },
+  { color: 'var(--mf-chart-3)', dash: '10 3 2 3', marker: 'diamond' },
+  { color: 'var(--mf-chart-4)', dash: '4 4', marker: 'triangleDown' },
+  { color: 'var(--mf-chart-5)', dash: '14 5', marker: 'cross' },
+  { color: 'var(--mf-chart-6)', dash: '1 5', marker: 'plus' },
+  { color: 'var(--mf-chart-7)', dash: '9 3 2 3 2 3', marker: 'ring' },
+  { color: 'var(--mf-chart-8)', dash: '3 2 6 2', marker: 'ringSquare' },
 ];
 
 /** The SVG path of a marker centred at (x, y) with half-size r. */

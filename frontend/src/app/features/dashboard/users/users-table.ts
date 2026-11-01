@@ -329,7 +329,7 @@ import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
     /* A shadow on the sticky column appears only where the table scrolls sideways. */
     @media (max-width: 899px) {
       .person {
-        box-shadow: 2px 0 4px -2px rgb(0 0 0 / 0.25);
+        box-shadow: var(--mf-shadow-edge);
       }
     }
     .stack {

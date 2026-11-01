@@ -1,71 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { LookupStore } from '../../core/lookups/lookup-store';
-
-interface StatusStyle {
-  tone: string;
-  icon: string;
-}
-
-/** Fixed per-code look (UX 4.4); only the label text is configurable. */
-const STATUS_STYLES: Readonly<Record<string, StatusStyle>> = {
-  NEW: { tone: 'new', icon: 'pi-circle-fill' },
-  IN_PROGRESS: { tone: 'progress', icon: 'pi-play-circle' },
-  ON_HOLD: { tone: 'hold', icon: 'pi-pause-circle' },
-  COMPLETED: { tone: 'done', icon: 'pi-check-circle' },
-  CANCELLED: { tone: 'cancel', icon: 'pi-times-circle' },
-};
+import { StatusChip } from './status-chip';
 
 /**
- * Lifecycle status badge (UX 4.4, `mf-status-badge`): the configurable label plus an icon, with the internal code kept in
- * `data-status`. The label follows the shared lookups; `label` overrides it for previews.
+ * Lifecycle status badge (`mf-status-badge`): the configurable label plus an icon, with the internal code kept in `data-status`. It is the shared
+ * status chip (`mf-status-chip`, theme rollout TH-02) behind the selector and inputs every page already uses, so all pages show one look from the
+ * `--mf-status-*` tokens. The label follows the shared lookups; `label` overrides it for previews. For a task with a workflow step or a hover text
+ * use `mf-status-chip` itself.
  */
 @Component({
   selector: 'mf-status-badge',
+  imports: [StatusChip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (text(); as t) {
-      <span
-        class="badge"
-        [style.background]="'var(--mf-st-' + style().tone + '-bg)'"
-        [style.color]="'var(--mf-st-' + style().tone + '-fg)'"
-        [attr.data-status]="code()"
-      >
-        <i class="pi" [class]="style().icon" aria-hidden="true"></i>
-        <span class="txt">{{ t }}</span>
-      </span>
+      <mf-status-chip [code]="code()" [label]="t" />
     }
   `,
   styles: `
     :host {
       display: inline-flex;
       max-width: 100%;
-    }
-    .badge {
-      display: inline-flex;
-      min-width: 0;
-      max-width: 100%;
-      align-items: center;
-      gap: var(--mf-s1);
-      padding: 2px var(--mf-s2);
-      border-radius: var(--mf-radius);
-      border: 1px solid currentColor;
-      font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      line-height: 1.5;
-      white-space: nowrap;
-    }
-    /* A long label ends in an ellipsis inside a narrow cell or card instead of spilling out of the badge (admin lists, #622). */
-    .txt {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .pi {
-      flex: none;
-      font-size: var(--mf-fs-xs);
-    }
-    .pi-circle-fill {
-      font-size: 0.5rem;
     }
   `,
 })
@@ -82,7 +37,4 @@ export class StatusBadge {
   }
 
   protected readonly text = computed(() => this.label() ?? this.store.statusLabel(this.code()));
-  protected readonly style = computed<StatusStyle>(
-    () => STATUS_STYLES[this.code()] ?? STATUS_STYLES['CANCELLED'],
-  );
 }

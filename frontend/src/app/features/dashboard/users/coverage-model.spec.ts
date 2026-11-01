@@ -1,4 +1,5 @@
 import { contrastRatio } from '../../../shared/ui/color-contrast';
+import { tokenHex } from '../../../testing/token-colours.spec-util';
 import {
   STEP_COLORS,
   absoluteStep,
@@ -42,11 +43,11 @@ describe('coverage model', () => {
       const steps = [1, 2, 3, 4] as const;
       for (const s of steps) {
         expect(
-          contrastRatio(STEP_COLORS[s].fg, STEP_COLORS[s].bg),
+          contrastRatio(tokenHex(STEP_COLORS[s].fg), tokenHex(STEP_COLORS[s].bg)),
           `step ${s}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
-      const light = steps.map((s) => contrastRatio(STEP_COLORS[s].bg, '#FFFFFF'));
+      const light = steps.map((s) => contrastRatio(tokenHex(STEP_COLORS[s].bg), '#FFFFFF'));
       expect(light).toEqual([...light].sort((a, b) => a - b));
     });
   });

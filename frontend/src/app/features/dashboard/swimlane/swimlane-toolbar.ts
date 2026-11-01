@@ -365,7 +365,7 @@ export interface Option {
       background: var(--mf-surface);
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-2, 0 6px 20px rgb(0 0 0 / 0.18));
+      box-shadow: var(--mf-shadow-pop);
     }
     .mh {
       padding: var(--mf-s1) var(--mf-s2) 0;

@@ -32,7 +32,7 @@ import { TaskTypeIcon } from '../../../shared/icons/task-type-icon';
 import { DialogFocus } from '../../../shared/ui/dialog-focus';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { MatterRef } from '../../../shared/ui/matter-ref';
-import { PriorityBadge } from '../../../shared/ui/priority-badge';
+import { PriorityFlag } from '../../../shared/ui/priority-flag';
 import { SearchBox } from '../../../shared/ui/search-box';
 import { emptyState, taskQueueArgs } from '../../../shared/work-queue/queue-filters';
 import { DueCell } from '../../../shared/work-queue/due-cell';
@@ -94,7 +94,7 @@ export function assignHint(
     Dialog,
     DialogFocus,
     RouterLink,
-    PriorityBadge,
+    PriorityFlag,
     MatterRef,
     ErrorReference,
     SearchBox,
@@ -148,11 +148,7 @@ export function assignHint(
                       <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                     </div>
                     <div class="meta">
-                      <mf-priority-badge
-                        [priorityId]="r.priority.priorityId"
-                        [label]="r.priority.label"
-                        [color]="r.priority.color"
-                      />
+                      <mf-priority-flag [label]="r.priority.label" [color]="r.priority.color" />
                       <span>{{ r.clientName }}</span>
                     </div>
                   </li>
@@ -324,11 +320,7 @@ export function assignHint(
                           <span class="title" [attr.title]="r.title">{{ r.title }}</span>
                         </div>
                         <div class="meta">
-                          <mf-priority-badge
-                            [priorityId]="r.priority.priorityId"
-                            [label]="r.priority.label"
-                            [color]="r.priority.color"
-                          />
+                          <mf-priority-flag [label]="r.priority.label" [color]="r.priority.color" />
                           <span class="client" data-client>{{ r.clientName }}</span>
                           <mf-matter-ref [value]="r.matterRef" [copy]="false" />
                           @if (r.dueDate || r.dueAtUtc) {

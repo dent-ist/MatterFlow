@@ -26,9 +26,9 @@ export interface PieSlice {
 export function toneColor(tone: string | null | undefined): string | null {
   switch (tone) {
     case 'NEW':
-      return 'var(--mf-st-new-fg)';
+      return 'var(--mf-sem-neutral-solid)';
     case 'IN_PROGRESS':
-      return 'var(--mf-st-progress-fg)';
+      return 'var(--mf-status-progress-fg)';
     case 'ON_HOLD':
       // Grey, like the pill (M9): the chart needs a mid grey that stays apart from New's dark slate; labels name every row.
       return 'var(--mf-border-strong)';

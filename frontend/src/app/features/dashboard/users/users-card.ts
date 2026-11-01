@@ -65,7 +65,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       [attr.data-tone]="tone()"
       [attr.data-load]="level()"
       [attr.data-availability]="u.availability.state"
-      [style.border-left-color]="st === 'ooo' ? null : b.fg"
     >
       <p class="name">
         <button
@@ -152,7 +151,6 @@ export function backOnText(outUntil: string | undefined, zone: string, now: Date
       overflow: hidden;
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
-      border-left: 4px solid var(--mf-border-strong);
       border-radius: var(--mf-radius);
     }
     .tile:hover {
