@@ -11,6 +11,7 @@
   "src/app/features/admin/task-types/task-type-form-bar.ts": 1,
   "src/app/features/admin/task-types/task-type-form-page.scss": 10,
   "src/app/features/admin/workflows/workflow-version-bar.ts": 1,
+  "src/app/features/my-matters/panels/panel-styles.ts": 3,
   "src/app/shared/layout/app-shell.scss": 5,
   "src/app/shared/task-type/task-type-colours.ts": 22,
   "src/app/shared/ui/color-contrast.ts": 2,
