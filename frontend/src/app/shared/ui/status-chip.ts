@@ -1,8 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tip } from './tip';
 
+export type StatusChipKind = 'task' | 'disposition';
+
 interface ChipStyle {
-  tone: 'new' | 'progress' | 'hold' | 'done' | 'cancel';
+  tone:
+    | 'new'
+    | 'progress'
+    | 'hold'
+    | 'done'
+    | 'cancel'
+    | 'disp-active'
+    | 'disp-inactive'
+    | 'disp-pending'
+    | 'disp-disposed';
   icon: string;
   label: string;
 }
@@ -17,9 +28,22 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
 };
 
 /**
+ * The four dispositions of an asset (kind `disposition`, TH-06 #988): the retention state of a record. Active is healthy teal with a check, Inactive neutral slate with a minus,
+ * Pending disposition amber with a clock, Disposed red with a trash can. The same chip draws the Active / Inactive state of a client, matter or project (Active and Inactive
+ * only; `label` changes the word, for example "Archived"). Colour is never the only signal: every chip has an icon and the word. Tokens: `--mf-sem-*` (healthy, neutral, risk,
+ * overdue), whose text-on-tint contrast is checked by `check-theme-contrast.mjs`.
+ */
+export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
+  ACTIVE: { tone: 'disp-active', icon: 'pi-check-circle', label: 'Active' },
+  INACTIVE: { tone: 'disp-inactive', icon: 'pi-minus-circle', label: 'Inactive' },
+  PENDING_DISPOSITION: { tone: 'disp-pending', icon: 'pi-clock', label: 'Pending disposition' },
+  DISPOSED: { tone: 'disp-disposed', icon: 'pi-trash', label: 'Disposed' },
+};
+
+/**
  * Task status chip (`mf-status-chip`, epic #953 UI-10): the status word with its icon, and for an In Progress task the workflow step ("step 3 of 5" as text, plus a segmented bar
  * where `showBar` is on). `detail` is the hover and focus text ("On hold for 6 days because Waiting for client data"); a chip with a detail is a tab stop so the keyboard reaches it.
- * It reads only the `--mf-st-*` tokens.
+ * `kind="disposition"` draws an asset disposition (or a record's Active / Inactive) in the same pill. It reads only the `--mf-status-*` and `--mf-sem-*` tokens.
  */
 @Component({
   selector: 'mf-status-chip',
@@ -35,12 +59,12 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
         [attr.aria-label]="name()"
         [mfTip]="tipText()"
       >
-        @if (code() === 'NEW') {
+        @if (kind() === 'task' && code() === 'NEW') {
           <span class="newic" aria-hidden="true"></span>
         } @else {
           <i class="pi" [class]="style().icon" aria-hidden="true"></i>
         }
-        {{ style().label }}
+        {{ text() }}
       </span>
       @if (step(); as s) {
         @if (showBar()) {
@@ -117,6 +141,26 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
       --st-bg: var(--mf-status-cancel-bg);
       --st-fg: var(--mf-status-cancel-fg);
     }
+    .chip[data-tone='disp-active'] {
+      --st-bg: var(--mf-sem-healthy-bg);
+      --st-fg: var(--mf-sem-healthy-fg);
+      --st-line: var(--mf-sem-healthy-line);
+    }
+    .chip[data-tone='disp-inactive'] {
+      --st-bg: var(--mf-sem-neutral-bg);
+      --st-fg: var(--mf-sem-neutral-fg);
+      --st-line: var(--mf-sem-neutral-line);
+    }
+    .chip[data-tone='disp-pending'] {
+      --st-bg: var(--mf-sem-risk-bg);
+      --st-fg: var(--mf-sem-risk-fg);
+      --st-line: var(--mf-sem-risk-line);
+    }
+    .chip[data-tone='disp-disposed'] {
+      --st-bg: var(--mf-sem-overdue-bg);
+      --st-fg: var(--mf-sem-overdue-fg);
+      --st-line: var(--mf-sem-overdue-line);
+    }
     .bar {
       display: inline-flex;
       gap: 2px;
@@ -135,8 +179,12 @@ export const STATUS_CHIPS: Readonly<Record<string, ChipStyle>> = {
   `,
 })
 export class StatusChip {
-  /** NEW, IN_PROGRESS, ON_HOLD, COMPLETED or CANCELLED (an unknown code is drawn as Cancelled's neutral look with its own text). */
+  /** `task` (default): NEW, IN_PROGRESS, ON_HOLD, COMPLETED or CANCELLED. `disposition`: ACTIVE, INACTIVE, PENDING_DISPOSITION or DISPOSED. */
+  readonly kind = input<StatusChipKind>('task');
+  /** The status code of the kind (an unknown code is drawn in a neutral look with its own text). */
   readonly code = input.required<string>();
+  /** Replaces the words of the chip ("Archived" for an inactive project); the accessible name follows. */
+  readonly label = input<string | null | undefined>(null);
   /** The workflow step the task is on (1-based) and the number of steps; both must be set for the "step n of m" text. Only shown while the task is In Progress. */
   readonly stepNumber = input<number | null | undefined>(null);
   readonly stepTotal = input<number | null | undefined>(null);
@@ -145,9 +193,13 @@ export class StatusChip {
   /** The hover and focus text: the hold reason with its age, the completion date, the cancel reason. */
   readonly detail = input<string | null | undefined>(null);
 
-  protected readonly style = computed<ChipStyle>(
-    () => STATUS_CHIPS[this.code()] ?? { ...STATUS_CHIPS['CANCELLED'], label: this.code() },
-  );
+  protected readonly style = computed<ChipStyle>(() => {
+    const table = this.kind() === 'disposition' ? DISPOSITION_CHIPS : STATUS_CHIPS;
+    const fallback = this.kind() === 'disposition' ? 'INACTIVE' : 'CANCELLED';
+    return table[this.code()] ?? { ...table[fallback], label: this.code() };
+  });
+  /** The words on the chip: the page's own label, else the status word. */
+  protected readonly text = computed(() => this.label() || this.style().label);
   /** The hover and focus text: the detail, else "Step 4 of 5" for an In Progress task. */
   protected readonly tipText = computed(() => {
     const s = this.step();
@@ -158,7 +210,7 @@ export class StatusChip {
     const s = this.step();
     const detail = this.detail();
     if (!s && !detail) return null;
-    const base = s ? `${this.style().label}, step ${s.n} of ${s.total}` : this.style().label;
+    const base = s ? `${this.text()}, step ${s.n} of ${s.total}` : this.text();
     return detail && !detail.startsWith('Step ') ? `${base}. ${detail}` : base;
   });
   protected readonly step = computed(() => {

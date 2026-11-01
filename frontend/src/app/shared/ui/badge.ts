@@ -15,7 +15,7 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
 }
 
 /**
- * One badge family (UXR-15, UXR-27): a tone (colour pair from the design tokens, all at least 4.5:1) plus an optional icon.
+ * One badge family (UXR-15, UXR-27; TH-05 #987): a tone (a `--mf-sem-*` tint with its text colour, all at least 4.5:1) plus an optional icon, drawn as the same pill as `mf-status-chip`.
  * Lifecycle task status and priority keep their own components (`mf-status-badge`, `mf-priority-badge`) and look the same.
  * Never rely on colour alone: the text always states the meaning.
  *
@@ -41,36 +41,44 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      padding: 2px var(--mf-s2);
-      border: 1px solid currentColor;
-      border-radius: var(--mf-radius);
+      padding: 2px var(--mf-s3) 2px var(--mf-s2);
+      border: 1px solid var(--bd-line);
+      border-radius: var(--mf-radius-pill);
+      background: var(--bd-bg);
+      color: var(--bd-fg);
       font-size: var(--mf-fs-xs);
-      font-weight: 600;
-      line-height: 1.5;
+      font-weight: var(--mf-fw-bold);
+      line-height: 18px;
       white-space: nowrap;
     }
     .pi {
       font-size: var(--mf-fs-xs);
     }
+    /* The same pill as mf-status-chip: a tint, its text colour and a hairline (--mf-sem-* tokens, contrast checked). */
     [data-tone='neutral'] {
-      background: var(--mf-st-cancel-bg);
-      color: var(--mf-st-cancel-fg);
+      --bd-bg: var(--mf-sem-neutral-bg);
+      --bd-fg: var(--mf-sem-neutral-fg);
+      --bd-line: var(--mf-sem-neutral-line);
     }
     [data-tone='info'] {
-      background: var(--mf-info-bg);
-      color: var(--mf-info);
+      --bd-bg: var(--mf-sem-info-bg);
+      --bd-fg: var(--mf-sem-info-fg);
+      --bd-line: var(--mf-sem-info-line);
     }
     [data-tone='success'] {
-      background: var(--mf-success-bg);
-      color: var(--mf-success);
+      --bd-bg: var(--mf-sem-healthy-bg);
+      --bd-fg: var(--mf-sem-healthy-fg);
+      --bd-line: var(--mf-sem-healthy-line);
     }
     [data-tone='warning'] {
-      background: var(--mf-warning-bg);
-      color: var(--mf-warning);
+      --bd-bg: var(--mf-sem-risk-bg);
+      --bd-fg: var(--mf-sem-risk-fg);
+      --bd-line: var(--mf-sem-risk-line);
     }
     [data-tone='danger'] {
-      background: var(--mf-danger-bg);
-      color: var(--mf-danger);
+      --bd-bg: var(--mf-sem-overdue-bg);
+      --bd-fg: var(--mf-sem-overdue-fg);
+      --bd-line: var(--mf-sem-overdue-line);
     }
   `,
 })
