@@ -196,7 +196,7 @@ test.describe('dashboard summary lists', () => {
             title: left('.title'),
             assign: left('.assign'),
             client: left('[data-client]'),
-            prio: left('mf-priority-badge'),
+            prio: left('mf-priority-flag'),
             when: left('.when'),
           };
         });

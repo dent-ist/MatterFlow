@@ -325,7 +325,7 @@ test.describe('Dashboard actions and click-through', () => {
         'Critical first, then longest overdue.',
       );
       await expect(overdue.locator('li').first()).toBeVisible();
-      const labels = await overdue.locator('li mf-priority-badge').allInnerTexts();
+      const labels = await overdue.locator('li mf-priority-flag').allInnerTexts();
       const ranks = labels.map((l) => RANK[l.trim()] ?? 9);
       expect(ranks.length).toBeGreaterThan(0);
       expect(ranks[0]).toBe(0);
