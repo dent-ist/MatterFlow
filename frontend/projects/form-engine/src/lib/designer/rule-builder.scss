@@ -36,7 +36,7 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem;
-  border: 1px dashed var(--mf-border-strong, #9ca3af);
+  border: 1px dashed var(--mf-border-strong);
   border-radius: var(--mf-radius, 4px);
 }
 
@@ -55,27 +55,27 @@ input[type='number'],
 input[type='date'] {
   min-height: 2.25rem;
   padding: 0.25rem 0.5rem;
-  border: 1px solid var(--mf-border-strong, #9ca3af);
-  border-radius: var(--mf-radius, 4px);
-  background: var(--mf-surface, #fff);
-  color: var(--mf-text, #111827);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-md, 6px);
+  background: var(--mf-surface);
+  color: var(--mf-text);
   font: inherit;
 }
 
 select[aria-invalid='true'] {
-  border-color: var(--mf-danger, #b91c1c);
+  border-color: var(--mf-danger);
 }
 
 select:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--mf-focus, #1d4ed8);
+  outline: 2px solid var(--mf-focus);
   outline-offset: 2px;
 }
 
 .rb__summary,
 .rb__note {
   margin: 0;
-  color: var(--mf-text-muted, #4b5563);
+  color: var(--mf-text-muted);
   font-size: 0.875rem;
 }
 
@@ -86,7 +86,7 @@ input:focus-visible {
 .rb__errors {
   margin: 0;
   padding: 0;
-  color: var(--mf-danger-text, #b91c1c);
+  color: var(--mf-danger);
   font-size: 0.875rem;
   list-style: none;
 }

@@ -179,6 +179,10 @@
      These are literals in the component styles, like the work grid's, so change docs and styles together. */
   --mf-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.12);
   --mf-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.18);
+  /* Sticky bars (TH-10, #992): the shadow under a bar pinned to the top (version and form bars, the audit head) and over one pinned to the bottom; the dimmed page behind a sheet. */
+  --mf-shadow-bar: 0 4px 6px -4px rgba(0, 0, 0, 0.16);
+  --mf-shadow-foot: 0 -3px 6px -4px rgba(0, 0, 0, 0.18);
+  --mf-scrim: rgba(0, 0, 0, 0.4);
 }
 /* ==========================================================================================================================================
    UI update (epic #953, UI-01 #954): the shared theme layer, "option A" of the owner decision: ONE set of tokens in code that every component

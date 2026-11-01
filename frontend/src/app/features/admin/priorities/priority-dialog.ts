@@ -38,6 +38,8 @@ export function priorityColorName(color: string): string {
   return PRIORITY_COLOR_TOKENS.find((t) => t.value === color)?.label ?? color;
 }
 
+const DEFAULT_CUSTOM_COLOUR = '#336699'; // theme-colour-ok: starting value of a user-picked priority colour (data colour)
+
 /**
  * New priority / Edit priority (#609): one `mf-lookup-dialog` (#564) with the name (counter, 50), the color (the five tokens plus a custom
  * color), a live badge preview and the 4.5:1 contrast check. A color change is saved with the name, never on its own. The page opens it
@@ -153,7 +155,8 @@ export class PriorityDialog {
 
   protected readonly label = signal('');
   protected readonly choice = signal<string>('normal');
-  protected readonly custom = signal('#336699');
+  /** The starting value of the custom colour field: a user-picked data colour, not a theme colour. */
+  protected readonly custom = signal(DEFAULT_CUSTOM_COLOUR);
   /** Set after a failed submit, cleared by the next one; the dialog's own messages. */
   private readonly submitted = signal(false);
   /** The name last sent to the server: its duplicate-name answer belongs to that text and goes away when the person types. */
@@ -215,7 +218,7 @@ export class PriorityDialog {
 
   protected pick(value: string): void {
     this.choice.set(value);
-    if (value === 'custom' && !isHexColor(this.custom())) this.custom.set('#336699');
+    if (value === 'custom' && !isHexColor(this.custom())) this.custom.set(DEFAULT_CUSTOM_COLOUR);
   }
 
   protected submit(): void {

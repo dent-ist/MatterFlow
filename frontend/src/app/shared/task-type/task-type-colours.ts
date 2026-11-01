@@ -13,20 +13,20 @@ export interface TaskTypeColour {
 }
 
 export const TASK_TYPE_COLOURS: readonly TaskTypeColour[] = [
-  { key: 'slate', label: 'Slate', bg: '#E3E7EE', fg: '#2F3846' },
-  { key: 'blue', label: 'Blue', bg: '#DCE8FB', fg: '#173C79' },
-  { key: 'teal', label: 'Teal', bg: '#D5F0EE', fg: '#0B4F4A' },
-  { key: 'green', label: 'Green', bg: '#DDF1E2', fg: '#14532D' },
-  { key: 'amber', label: 'Amber', bg: '#FDEBB8', fg: '#5C3B00' },
-  { key: 'orange', label: 'Orange', bg: '#FFE0CC', fg: '#6B2A00' },
-  { key: 'red', label: 'Red', bg: '#FBDAD6', fg: '#7A1B12' },
-  { key: 'rose', label: 'Rose', bg: '#FADCEA', fg: '#7A1546' },
-  { key: 'violet', label: 'Violet', bg: '#E9E0FA', fg: '#45248A' },
-  { key: 'indigo', label: 'Indigo', bg: '#DFE3FA', fg: '#2A2F85' },
+  { key: 'slate', label: 'Slate', bg: '#E3E7EE', fg: '#2F3846' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'blue', label: 'Blue', bg: '#DCE8FB', fg: '#173C79' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'teal', label: 'Teal', bg: '#D5F0EE', fg: '#0B4F4A' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'green', label: 'Green', bg: '#DDF1E2', fg: '#14532D' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'amber', label: 'Amber', bg: '#FDEBB8', fg: '#5C3B00' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'orange', label: 'Orange', bg: '#FFE0CC', fg: '#6B2A00' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'red', label: 'Red', bg: '#FBDAD6', fg: '#7A1B12' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'rose', label: 'Rose', bg: '#FADCEA', fg: '#7A1546' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'violet', label: 'Violet', bg: '#E9E0FA', fg: '#45248A' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
+  { key: 'indigo', label: 'Indigo', bg: '#DFE3FA', fg: '#2A2F85' }, // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
 ];
 
 /** The neutral default (no colour chosen): the same quiet grey as the surfaces around it. */
-export const TASK_TYPE_COLOUR_NEUTRAL = { bg: '#EEF0F4', fg: '#3B4350' } as const;
+export const TASK_TYPE_COLOUR_NEUTRAL = { bg: '#EEF0F4', fg: '#3B4350' } as const; // theme-colour-ok: named Task Type palette (data colour, contracts/task-type-colours.json)
 
 /** The label of the neutral default (no colour chosen). */
 export const TASK_TYPE_COLOUR_DEFAULT_LABEL = 'Neutral (default)';

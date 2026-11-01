@@ -4,7 +4,7 @@
 
 .ttf__muted {
   margin: 0;
-  color: var(--mf-text-muted, #4b5563);
+  color: var(--mf-text-muted);
 }
 
 .ttf-title {
@@ -27,7 +27,7 @@
 }
 
 .ttf-title__note {
-  color: var(--mf-text-muted, #4b5563);
+  color: var(--mf-text-muted);
   font-size: var(--mf-fs-md, 1rem);
   font-weight: 400;
 }
@@ -51,7 +51,7 @@
 
   textarea {
     padding: 0.375rem 0.5rem;
-    border: 1px solid var(--mf-border-strong, #9ca3af);
+    border: 1px solid var(--mf-border-strong);
     border-radius: var(--mf-radius, 4px);
     font: inherit;
   }
@@ -74,16 +74,17 @@
 
 .ttf__error {
   margin: 0 0 var(--mf-s2);
-  color: var(--mf-danger-text, #b91c1c);
+  color: var(--mf-danger);
   font-weight: 600;
 }
 
 .ttf__banner {
   margin: 0 0 var(--mf-s3);
   padding: var(--mf-s2) var(--mf-s3);
-  border: 1px solid var(--mf-info, #1d4ed8);
-  border-radius: var(--mf-radius, 4px);
-  background: var(--mf-selected-bg, #eff6ff);
+  border: 1px solid var(--mf-sem-info-line);
+  border-radius: var(--mf-radius-md);
+  background: var(--mf-sem-info-bg);
+  color: var(--mf-sem-info-fg);
 }
 
 .ttf__table {
@@ -93,12 +94,12 @@
   th,
   td {
     padding: 0.375rem 0.5rem;
-    border-bottom: 1px solid var(--mf-border, #d1d5db);
+    border-bottom: 1px solid var(--mf-border);
     text-align: left;
   }
 
   .is-current {
-    background: var(--mf-selected-bg, #eff6ff);
+    background: var(--mf-selected-bg);
   }
 }
 
@@ -106,13 +107,13 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--mf-link, #1d4ed8);
+  color: var(--mf-link);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--mf-focus, #1d4ed8);
+    outline: 2px solid var(--mf-focus);
     outline-offset: 2px;
   }
 }

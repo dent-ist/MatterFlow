@@ -114,26 +114,26 @@ const sameInstant = (a: Date | null, b: Date | null): boolean =>
       min-width: 0;
       min-height: var(--mf-row-h, 2.5rem);
       padding: 0 var(--mf-s3, 0.75rem);
-      border: 1px solid var(--mf-border-strong, #6b7280);
+      border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius, 4px);
-      background: var(--mf-surface, #fff);
-      color: var(--mf-text, #1b1f27);
+      background: var(--mf-surface);
+      color: var(--mf-text);
       font: inherit;
     }
     .di__input[aria-invalid='true'] {
-      border-color: var(--mf-danger, #b42318);
+      border-color: var(--mf-danger);
     }
     .di__button {
       flex: none;
       min-width: var(--mf-row-h, 2.5rem);
-      border: 1px solid var(--mf-border-strong, #6b7280);
+      border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius, 4px);
-      background: var(--mf-surface, #fff);
-      color: var(--mf-text, #1b1f27);
+      background: var(--mf-surface);
+      color: var(--mf-text);
       cursor: pointer;
     }
     .di__button:hover {
-      background: var(--mf-surface-alt, #eef0f4);
+      background: var(--mf-surface-alt);
     }
     .di__hint,
     .di__error {
@@ -141,10 +141,10 @@ const sameInstant = (a: Date | null, b: Date | null): boolean =>
       font-size: var(--mf-fs-sm, 0.8125rem);
     }
     .di__hint {
-      color: var(--mf-text-muted, #4b5563);
+      color: var(--mf-text-muted);
     }
     .di__error {
-      color: var(--mf-danger, #b42318);
+      color: var(--mf-danger);
     }
     .di__native {
       position: absolute;

@@ -1,8 +1,8 @@
 /** WCAG 2.1 contrast helpers for admin-chosen priority colors (UX 4.5: text must reach 4.5:1). */
 
 export const MIN_TEXT_CONTRAST = 4.5;
-export const LIGHT_TEXT = '#FFFFFF';
-export const DARK_TEXT = '#1B1F27';
+export const LIGHT_TEXT = '#FFFFFF'; // theme-colour-ok: the two text colours the contrast check chooses between for a user-picked colour (data)
+export const DARK_TEXT = '#1B1F27'; // theme-colour-ok: the two text colours the contrast check chooses between for a user-picked colour (data)
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
