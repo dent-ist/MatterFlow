@@ -6,7 +6,7 @@ import { ProjectResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ActiveBadge } from '../../../shared/ui/badge';
-import { ScrollArea } from '../../../shared/ui/fixed-page';
+import { GridFrame } from '../../../shared/ui/grid-frame';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { groupProjects } from './matter-project-groups';
@@ -26,7 +26,7 @@ import { groupProjects } from './matter-project-groups';
     Button,
     HasPermissionDirective,
     ActiveBadge,
-    ScrollArea,
+    GridFrame,
     TaskCount,
     RowLink,
   ],
@@ -96,8 +96,8 @@ import { groupProjects } from './matter-project-groups';
         />
       </div>
     } @else {
-      <div class="mf-scroll" mfScrollArea="Projects list">
-        <table class="pg-table" data-matter-projects>
+      <mf-grid-frame scrollLabel="Projects list">
+        <table class="pg-table tt" data-matter-projects>
           <caption class="pg-sr">
             Projects of
             {{
@@ -152,7 +152,7 @@ import { groupProjects } from './matter-project-groups';
             }
           </tbody>
         </table>
-      </div>
+      </mf-grid-frame>
       @if (shown() < total()) {
         <p class="pg-reason" data-projects-truncated>Showing the first {{ shown() }} projects.</p>
       }

@@ -1,17 +1,30 @@
-/* Record cards below 640 px (record-card-list.ts, WP12 #275). Global (no encapsulation) so the parts a page projects (badges, counts, the copy
+/* Record cards below 640 px (record-card-list.ts, WP12 #275; one rounded card like the grid frame, TH-05). Global (no encapsulation) so the parts a page projects (badges, counts, the copy
    button) can be sized; every rule starts with .rc. No new colours or tokens. */
 .rc-list {
   margin: 0;
   padding: 0;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-xl);
   background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-1);
+  box-shadow: var(--mf-shadow-card);
   list-style: none;
+}
+
+.rc:first-child {
+  border-top-left-radius: calc(var(--mf-radius-xl) - 1px);
+  border-top-right-radius: calc(var(--mf-radius-xl) - 1px);
+}
+
+.rc:last-child {
+  border-bottom: 0;
+  border-bottom-left-radius: calc(var(--mf-radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--mf-radius-xl) - 1px);
 }
 
 .rc {
   position: relative;
   min-height: 64px;
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
   background: var(--mf-surface);
 }
 

@@ -134,10 +134,10 @@
   height: 32px;
   margin: var(--mf-s1) 0 0;
   padding: 0 var(--mf-s3);
-  border: 1px solid var(--mf-warning);
-  border-radius: var(--mf-radius);
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
+  border: 1px solid var(--mf-sem-risk-line);
+  border-radius: var(--mf-radius-md);
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-sem-risk-fg);
   font-size: var(--mf-fs-sm);
   line-height: 1.3;
 }

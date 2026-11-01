@@ -34,7 +34,9 @@ export type LoadState = 'loading' | 'ready' | 'error' | 'forbidden';
       background: transparent;
       color: inherit;
       font: inherit;
-      font-weight: 600;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
       /* A header never changes height when the columns re-balance (skeleton rows to loaded rows: no layout shift). */
       white-space: nowrap;
       cursor: pointer;

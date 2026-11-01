@@ -51,18 +51,23 @@
 
 .pg-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-1);
+  font-size: var(--mf-fs-md);
 }
 
 .pg-table th,
 .pg-table td {
   padding: var(--mf-s2) var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
   text-align: left;
   vertical-align: middle;
   height: var(--mf-row-h);
+}
+
+.pg-table tbody tr:hover > td {
+  background: var(--mf-surface-alt);
 }
 
 /* Record lists use the Comfortable row of the work grids (decision U "Rows and lines", WP8 #269): exactly 44 px whatever the cells hold,
@@ -75,7 +80,11 @@
 
 .pg-table th {
   background: var(--mf-surface-alt);
-  font-weight: 600;
+  font-size: var(--mf-fs-xs);
+  font-weight: var(--mf-fw-bold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--mf-text-muted);
 }
 
 /* A name cell: at most two lines, the rest is cut with an ellipsis (the full text is the tooltip and stays in the DOM for assistive
@@ -141,7 +150,9 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
   cursor: pointer;
 }
 
@@ -161,27 +172,27 @@
 .pg-state {
   padding: var(--mf-s5);
   background: var(--mf-surface);
-  border: 1px dashed var(--mf-border-strong);
-  border-radius: var(--mf-radius);
+  border: 1px dashed var(--mf-border-mid);
+  border-radius: var(--mf-radius-xl);
   text-align: center;
 }
 
 .pg-alert {
   margin: 0 0 var(--mf-s3);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius);
-  border: 1px solid var(--mf-danger);
-  background: var(--mf-danger-bg);
-  color: var(--mf-danger);
+  border-radius: var(--mf-radius-md);
+  border: 1px solid var(--mf-sem-overdue-line);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
 }
 
 .pg-banner {
   margin: 0 0 var(--mf-s3);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius);
-  border: 1px solid var(--mf-warning);
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
+  border-radius: var(--mf-radius-md);
+  border: 1px solid var(--mf-sem-risk-line);
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-sem-risk-fg);
 }
 
 .pg-form {
@@ -191,8 +202,9 @@
   max-width: 720px;
   padding: var(--mf-s5);
   background: var(--mf-surface);
-  border-radius: var(--mf-radius-lg);
-  box-shadow: var(--mf-shadow-1);
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-xl);
+  box-shadow: var(--mf-shadow-card);
 }
 
 .pg-form fieldset {
@@ -217,10 +229,10 @@
 .pg-summary {
   margin: 0 0 var(--mf-s4);
   padding: var(--mf-s3) var(--mf-s4);
-  border-radius: var(--mf-radius);
-  border: 1px solid var(--mf-danger);
-  background: var(--mf-danger-bg);
-  color: var(--mf-danger);
+  border-radius: var(--mf-radius-md);
+  border: 1px solid var(--mf-sem-overdue-line);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
 }
 
 .pg-summary ul {

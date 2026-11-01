@@ -34,8 +34,9 @@ const MONTHS = 12;
     .db {
       min-width: 0;
       padding: var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
       background: var(--mf-surface);
     }
     .db__title {

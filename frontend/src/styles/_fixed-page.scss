@@ -17,6 +17,11 @@
   scroll-padding-bottom: 1rem;
 }
 
+/* With the inline filter row open, a focused row is kept below the heading row and the filter row (40 + 40 px and some air). */
+.mf-scroll-area:has(.mf-filter-row) {
+  scroll-padding-top: 5.5rem;
+}
+
 .mf-scroll-area:focus-visible {
   outline: 2px solid var(--mf-focus);
   outline-offset: -2px;
@@ -148,6 +153,15 @@
   }
 }
 
+/* The pager of a grid frame (TH-05, #987) is the frame's own foot: no second shadow, the frame draws the card. */
+@media (min-width: 768px) and (min-height: 561px) {
+  html mf-grid-frame mf-pager {
+    margin-top: 0;
+    box-shadow: none;
+    border-top: 1px solid var(--mf-border-soft);
+  }
+}
+
 /*
  * My Matters (MM-57, issue #949): the Activity table, the Breakdown table and the Calendar month scroll in their own frame, like the Task grid, with the heading row
  * sticky. The frame is as tall as its rows and no taller than what is left of the window, with room for about five rows; the pager and the legend stay under it.
@@ -220,6 +234,7 @@
   .mf-fill,
   mf-list-state,
   mf-work-list,
+  mf-grid-frame,
   .mf-scroll-area,
   .at__wrap,
   .bd__scroll,

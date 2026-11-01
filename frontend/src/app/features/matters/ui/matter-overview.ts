@@ -71,8 +71,9 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
     .mo__card {
       min-width: 0;
       padding: var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
       background: var(--mf-surface);
     }
     .mo__card--wide {
@@ -159,8 +160,10 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       display: inline-block;
       margin-left: var(--mf-s2);
       padding: 0 var(--mf-s2);
-      border: 1px solid var(--mf-text-muted);
-      border-radius: var(--mf-radius);
+      border: 1px solid var(--mf-sem-neutral-line);
+      border-radius: var(--mf-radius-pill);
+      background: var(--mf-sem-neutral-bg);
+      color: var(--mf-sem-neutral-fg);
       font-size: var(--mf-fs-sm);
       white-space: nowrap;
     }
@@ -200,8 +203,9 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       gap: var(--mf-s2);
       min-height: 10rem;
       padding: var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
     }
     .mo__sk-card--wide {
       grid-column: 1 / -1;
@@ -216,8 +220,9 @@ export function reasonWords(r: MatterOverviewReason, h: MatterOverviewHealth): s
       gap: var(--mf-s1);
       justify-items: start;
       padding: var(--mf-s3);
-      border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius);
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-xl);
+      box-shadow: var(--mf-shadow-card);
     }
     .mo__error p {
       margin: 0;

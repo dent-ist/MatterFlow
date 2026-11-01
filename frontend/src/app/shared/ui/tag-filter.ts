@@ -168,7 +168,7 @@ export type TagMatch = 'all' | 'any';
       padding: 0 var(--mf-s1);
       border-radius: 999px;
       background: var(--mf-primary);
-      color: var(--mf-on-primary, #fff);
+      color: var(--mf-primary-contrast);
       font-size: var(--mf-fs-xs);
       font-weight: 600;
       text-align: center;
