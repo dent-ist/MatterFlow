@@ -41,7 +41,7 @@ export function workflowStatusTone(status: string | null | undefined): BadgeTone
       display: inline-flex;
       align-items: center;
       gap: var(--mf-s1);
-      padding: 2px var(--mf-s3) 2px var(--mf-s2);
+      padding: 2px var(--mf-s2);
       border: 1px solid var(--bd-line);
       border-radius: var(--mf-radius-pill);
       background: var(--bd-bg);

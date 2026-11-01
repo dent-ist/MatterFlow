@@ -53,6 +53,7 @@ textarea.mf-control {
   max-width: 640px;
   padding: var(--mf-s5);
   background: var(--mf-surface);
+  border: 1px solid var(--mf-border-soft);
   border-radius: var(--mf-radius-xl);
   box-shadow: var(--mf-shadow-card);
 }

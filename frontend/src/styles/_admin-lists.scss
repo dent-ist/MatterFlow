@@ -100,6 +100,11 @@ table.mf-grid {
   max-width: 0;
 }
 
+.mf-grid a.mf-name,
+.mf-grid td.mf-cell-name a {
+  color: var(--mf-link);
+}
+
 .mf-grid .mf-name {
   display: -webkit-box;
   min-width: 0;
@@ -358,21 +363,21 @@ table.mf-grid {
  * border, the xl radius, the card shadow), and the pager under it is its foot. The wrap stays the one scroll box, so the sticky action cell and the
  * column rules above keep working; a page that draws its own card around the list (Users, Roles) styles that card itself.
  */
-.mf-fill > .mf-table-wrap {
+.mf-table-wrap.mf-scroll-area:not(.mf-list .mf-table-wrap) {
   border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius-xl);
   background: var(--mf-surface);
   box-shadow: var(--mf-shadow-card);
 }
 
-.mf-fill > .mf-table-wrap:has(+ mf-pager) {
+.mf-table-wrap.mf-scroll-area:not(.mf-list .mf-table-wrap):has(+ :is(mf-pager, .au-foot)) {
   border-bottom: 0;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   box-shadow: none;
 }
 
-html .mf-fill > .mf-table-wrap + mf-pager {
+html .mf-table-wrap.mf-scroll-area:not(.mf-list .mf-table-wrap) + mf-pager {
   margin-top: 0;
   border: 1px solid var(--mf-border);
   border-top-color: var(--mf-border-soft);

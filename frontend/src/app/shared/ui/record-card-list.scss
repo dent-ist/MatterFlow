@@ -3,22 +3,24 @@
 .rc-list {
   margin: 0;
   padding: 0;
-  border: 1px solid var(--mf-border);
   border-radius: var(--mf-radius-xl);
   background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-card);
+  /* A ring (not a border) so the cards keep the full width of the list. */
+  box-shadow:
+    0 0 0 1px var(--mf-border),
+    var(--mf-shadow-card);
   list-style: none;
 }
 
 .rc:first-child {
-  border-top-left-radius: calc(var(--mf-radius-xl) - 1px);
-  border-top-right-radius: calc(var(--mf-radius-xl) - 1px);
+  border-top-left-radius: var(--mf-radius-xl);
+  border-top-right-radius: var(--mf-radius-xl);
 }
 
 .rc:last-child {
   border-bottom: 0;
-  border-bottom-left-radius: calc(var(--mf-radius-xl) - 1px);
-  border-bottom-right-radius: calc(var(--mf-radius-xl) - 1px);
+  border-bottom-left-radius: var(--mf-radius-xl);
+  border-bottom-right-radius: var(--mf-radius-xl);
 }
 
 .rc {
