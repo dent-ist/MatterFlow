@@ -57,8 +57,9 @@ import { TitleIcon } from './page-header';
       margin: 0 auto;
       padding: var(--mf-s5) var(--mf-s5);
       border: 1px solid var(--mf-border);
-      border-radius: var(--mf-radius-lg);
+      border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-card);
     }
     .sp__title {
       margin: 0 0 var(--mf-s2);

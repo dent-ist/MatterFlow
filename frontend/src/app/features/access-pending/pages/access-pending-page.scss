@@ -4,8 +4,8 @@
   padding: var(--mf-s5);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius-lg);
-  box-shadow: var(--mf-shadow-1);
+  border-radius: var(--mf-radius-xl);
+  box-shadow: var(--mf-shadow-card);
   /* The application name is the administrator's text (up to 40 characters, no spaces needed): it wraps instead of widening the page. */
   overflow-wrap: anywhere;
 }
@@ -19,7 +19,8 @@
 
 h1 {
   margin: 0 0 var(--mf-s3);
-  font-size: var(--mf-fs-h1);
+  font-size: var(--mf-fs-h2);
+  font-weight: 700;
 
   &:focus {
     outline: none;
@@ -32,6 +33,22 @@ h2 {
 
 li {
   margin-bottom: var(--mf-s2);
+}
+
+/* A phone: the card never touches the edges and its two controls are 44 px targets. */
+@media (max-width: 639.98px) {
+  h1 {
+    font-size: var(--mf-fs-h3);
+  }
+
+  .mf-pending {
+    margin: var(--mf-s4);
+  }
+
+  .mf-pending ::ng-deep .p-button,
+  .mf-pending ::ng-deep mf-copy-button button {
+    min-height: 44px;
+  }
 }
 
 .mf-account {
