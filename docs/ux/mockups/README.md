@@ -637,3 +637,7 @@ So the typing area is **2.1 times taller** (and 6 percent narrower with the hist
 7. Should **"Copy my text"** also offer "Save as a new note" when the note was locked under you?
 8. Task and project references: may a note reference a task the author sees but a reader does not (suggested yes, rendered "Restricted task")?
 9. The earlier open questions (soft delete, version history, search, export, editor library, Ctrl+K, tag permission) are unchanged.
+
+## Matter detail page redesign (`matter-detail/`)
+
+Eight tabs (Summary, Tasks, Projects, Calendar, Assets, Productions, Notes, Activities), the side-panel standard for create and edit, Productions with Specs (recommended: sub-view; alternative: own tab), Notes with slash commands and the AI "coming soon" panel. Start with `matter-detail/README.md`; open `matter-detail/index.html` and `matter-detail/alt-specs-own-tab.html`.
