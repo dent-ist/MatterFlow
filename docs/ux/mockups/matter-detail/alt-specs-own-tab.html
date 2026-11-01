@@ -1304,7 +1304,7 @@ table.rt td{height:48px}
 .ed2{max-width:820px;margin:0 auto;outline:0;min-height:100%;line-height:1.6;font-size:15px;padding-top:26px}
 .ed2:focus-visible{outline:none}
 .ed2 .ntitle{position:relative;font-size:28px;line-height:1.25;font-weight:700;margin:0 0 10px;padding:0;letter-spacing:-.01em;outline:0}
-.ed2 .ntitle::before{content:"TITLE";position:absolute;top:-17px;left:0;font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--muted);font-family:var(--font);pointer-events:none}
+.ed2 .ntitle:empty::before{content:"TITLE";position:absolute;top:-17px;left:0;font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--muted);font-family:var(--font);pointer-events:none}
 .ed2 .ntitle:empty::after{content:"Untitled note";color:var(--faint)}
 .ed2 p{margin:0 0 10px}
 .ed2 ul{margin:0 0 10px;padding-left:22px}
@@ -1404,6 +1404,64 @@ table.rt.tk{min-width:960px}
   .chkb{width:22px;height:22px}
 }
 
+/* round 2 */
+@media (min-width:768px) and (min-height:561px){main{overflow:hidden}}
+.dl2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px;padding:4px 24px 16px;margin:0}
+.dl2 .dr{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid #EDEFF3;align-items:baseline}
+.dl2 dt{color:var(--muted);font-size:13.5px}
+.dl2 dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.dl2 dd.none{color:var(--muted);font-weight:400}
+@media (max-width:1100px){.dl2{grid-template-columns:1fr}}
+@media (max-width:700px){.dl2{padding:4px 16px 12px}.dl2 .dr{grid-template-columns:110px minmax(0,1fr)}}
+.atiles{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.cfoot{padding:4px 16px 12px}
+.cfoot .link{display:inline-flex;align-items:center;gap:6px}
+.mh{align-items:center}
+.mh .meta{margin-top:4px}
+.due2{display:inline-flex;flex-direction:column;line-height:1.25}
+.due2 b{font-weight:600;display:inline-flex;gap:5px;align-items:center}
+.due2 small{color:var(--muted);font-size:12.5px;font-weight:400}
+.due2.over b{color:var(--red);font-weight:700}.due2.soon b{color:var(--amber);font-weight:700}
+table.rt.tk td{height:54px}
+.dirI{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none}
+.dirI.out{background:var(--blue-bg);color:var(--blue)}.dirI.in{background:var(--teal-bg);color:var(--teal)}
+.pn{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+/* editor toolbar (names prefixed e- to avoid collisions) */
+.etb{display:flex;flex-wrap:wrap;gap:2px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border);background:#F7F8FA}
+.etb .sepv{width:1px;height:20px;background:var(--border-2);margin:0 4px}
+.etb .ibtn{width:30px;height:30px}
+.estyl{display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border:1px solid var(--border-2);background:#fff;border-radius:6px;min-width:128px;justify-content:space-between;font-weight:600;font-size:13px;margin-right:4px}
+.eglyph{font-weight:800;font-size:15px;line-height:1}
+.etb2{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--blue-line);background:var(--blue-bg)}
+.etb2[hidden]{display:none}
+.etb2 .lb{font-size:12px;font-weight:700;color:var(--primary);margin-right:4px}
+.etb2 button{height:28px;padding:0 8px;border:1px solid var(--blue-line);background:#fff;border-radius:6px;font-size:12.5px;font-weight:600}
+.etb2 button:hover{background:#F3F7FE}
+.etb2 button[aria-pressed=true]{background:var(--primary);color:#fff;border-color:var(--primary)}
+.ed2 table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:14px}
+.ed2 th,.ed2 td{border:1px solid var(--border-strong);padding:6px 10px;min-width:70px;text-align:left;vertical-align:top}
+.ed2 th{background:var(--alt);font-weight:700}
+.ed2 blockquote{margin:8px 0 12px;padding:4px 14px;border-left:3px solid var(--border-strong);color:var(--muted)}
+.ed2 a{color:var(--primary)}
+.ntop{padding:6px 16px}
+.ntags{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 14px;align-items:center;user-select:none}
+.tagadd{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 9px 0 6px;border-radius:999px;font-size:12px;font-weight:600;border:1px dashed var(--border-strong);background:#fff;color:var(--primary)}
+.tagadd:hover{background:var(--blue-bg)}
+.tblpop{position:fixed;z-index:140;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--pop);padding:12px 14px;width:250px}
+.tblpop[id=linkpop]{width:300px}
+.tblpop .tl{font-weight:700;font-size:13px;margin-bottom:8px}
+.tblpop .tg{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.tblpop .tg button{height:22px;border:1px solid var(--border-strong);background:#fff;border-radius:3px;padding:0}
+.tblpop .tg button.on{background:var(--blue-bg);border-color:var(--primary)}
+.splitter{flex:0 0 10px;margin:0 -5px;cursor:col-resize;position:relative;z-index:3;display:grid;place-items:center;touch-action:none}
+.splitter .grip{width:4px;height:44px;border-radius:2px;background:var(--border-strong);opacity:.55}
+.splitter:hover .grip,.splitter.drag .grip,.splitter:focus-visible .grip{background:var(--primary);opacity:1}
+.nlistc{flex:0 0 340px}
+@media (max-width:900px){.splitter{display:none}}
+
+table.rt.tk td,table.rt.tk th{padding-left:8px;padding-right:8px}
+table.rt.tk td.selc,table.rt.tk th:first-child{padding-left:12px;padding-right:0}
+
 .mockpanel[hidden]{display:none}
 .clickrow{cursor:pointer}.clickrow:hover td{background:#F4F7FC}.grp-r td{background:#F3F5F9}
 .chatin{display:flex;gap:8px;margin-top:auto}
@@ -1489,6 +1547,15 @@ table.rt.tk{min-width:960px}
 <symbol id="i-xc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
 <symbol id="t-export" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
 <symbol id="t-arch" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></symbol>
+<symbol id="i-ul" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+<symbol id="i-ol" viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11M4 5l1.5-1V9M3.5 14.5c.4-1.2 2.7-1.2 2.7.3 0 1-2.700 1.800-2.700 2.700H6.500"/></symbol>
+<symbol id="i-quote" viewBox="0 0 24 24"><path d="M7 7h4v5a4 4 0 0 1-4 4M15 7h4v5a4 4 0 0 1-4 4"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+<symbol id="i-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 21-4-4 11-11 7 7-8 8z"/><path d="M10 21h11"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+<symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+<symbol id="i-hash" viewBox="0 0 24 24"><path d="M5 9h15M4 15h15M10 4 8 20M16 4l-2 16"/></symbol>
 </defs>
 </svg>
 
@@ -1572,7 +1639,7 @@ const PEOPLE=['Dana Whitfield','Marcus Lee','Priya Nair','Tom Okafor','Sofia Rey
 /* ====================== mock data ====================== */
 const S={tab:'summary',ai:'onprem',canEdit:true,warn:false,pv:'prods',st:'open',tsel:{},tq:'',tproj:'',tprio:'',tasg:'',tdue:'',tstatus:'open',
   aq:'',atype:'',adisp:'',pq:'',pdir:'all',pstat:'',prodSel:null,month:[2026,10],shows:{ev:true,crit:true,high:false,over:true},
-  note:'n1',npanel:null,nq:'',ntag:'',kind:'all',archOpen:false,menu:false,mock:false,dirty:false};
+  note:'n1',nw:340,npanel:null,nq:'',ntag:'',kind:'all',archOpen:false,menu:false,mock:false,dirty:false};
 const M={client:'Northwind Logistics',clientNo:'C-1042',ref:'M-2026-0147',name:'Harbor Freight Subpoena Response',active:true,sensitive:true,
   pm1:'Dana Whitfield',pm2:'Marcus Lee',ai:'onprem',created:'2026-03-12T09:20:00',changed:'2026-10-28T16:05:00',
   caseNo:'3:26-cv-01482-JSC',court:'N.D. Cal., San Francisco Division',practice:'Antitrust',partner:'Elena Marsh',oppCounsel:'Rowan & Pike LLP',
@@ -1686,7 +1753,7 @@ const ACTS=[
  ['prod','Priya Nair','recorded receipt of','PRD-003',-18,10],['asset','Priya Nair','changed the size of','A-207',-22,16]
 ].map(a=>({k:a[0],who:a[1],txt:a[2],obj:a[3],at:at(a[4],a[5]),unread:a[4]>-2}));
 const NOTES=[
- {id:'n1',title:'Meet-and-confer prep: ESI protocol',tags:['Strategy','Productions'],by:'Dana Whitfield',at:at(-1,15),body:'<p>Goals for the Thursday call with <span class="chipx person" contenteditable="false">@Rowan &amp; Pike</span>:</p><ul><li>Agree custodians: Whitfield, Okafor, Reyes, Lee, Nair</li><li>Date range 01/01/2025 to 06/30/2026</li><li>TIFF + DAT with the standard spec (see <span class="chipx proj" contenteditable="false">Productions</span>)</li></ul><p>Open point: Slack as a data source. Linked <span class="chipx asset" contenteditable="false">#Slack workspace export</span>.</p>'},
+ {id:'n1',title:'Meet-and-confer prep: ESI protocol',tags:['Strategy','Productions'],by:'Dana Whitfield',at:at(-1,15),body:'<p>Goals for the Thursday call with <span class="chipx person" contenteditable="false">@Rowan &amp; Pike</span>:</p><ul><li>Agree custodians: Whitfield, Okafor, Reyes, Lee, Nair</li><li>Date range 01/01/2025 to 06/30/2026</li><li>TIFF + DAT with the standard spec (see <span class="chipx proj" contenteditable="false">Productions</span>)</li></ul><p>Open point: Slack as a data source. Linked <span class="chipx asset" contenteditable="false">#Slack workspace export</span>.</p><table><thead><tr><th>Custodian</th><th>Role</th><th>Mailbox status</th></tr></thead><tbody><tr><td>Dana Whitfield</td><td>General counsel</td><td>Collected 10/12</td></tr><tr><td>Tom Okafor</td><td>Finance lead</td><td>Collected 10/12</td></tr><tr><td>Sofia Reyes</td><td>Operations</td><td>Interview pending</td></tr></tbody></table><p>Next step: confirm the list on Thursday.</p>'},
  {id:'n2',title:'Custodian interviews, summary',tags:['Custodians'],by:'Priya Nair',at:at(-1,11),body:'<p>Interviews finished with 5 of 6 custodians. Sofia Reyes still to do (travel).</p><p>Key finding: personal phone used for some deal chats.</p>'},
  {id:'n3',title:'Privilege protocol',tags:['Strategy'],by:'Marcus Lee',at:at(-8,14),body:'<p>Two-step: first-level flags, partner confirms. 502(d) order entered 08/14.</p>'},
  {id:'n4',title:'Hold reminders',tags:['Hold'],by:'Dana Whitfield',at:at(-20,9),body:'<p>Quarterly reminder to all custodians. Next: <b>11/10</b>.</p>'},
@@ -1768,8 +1835,11 @@ function stChip(t){const s=STS[t.status];
   return '<span class="stc"><span class="st '+s.cls+'"'+(t.hold?' tabindex="0" data-tip="'+esc('On hold: '+t.hold)+'" title="'+esc('On hold: '+t.hold)+'"':'')+'>'+ic(s.icon,'xs')+t.status+(t.status==='In progress'?'<span class="sr">. Workflow step '+t.step+' of '+t.tot+'</span>':'')+'</span>'+steps+'</span>'}
 const prioPill=p=>p==='Critical'?'<span class="pill crit2">'+ic('i-flame','xs')+'Critical</span>':p==='High'?'<span class="pill high">'+ic('i-up','xs')+'High</span>':'<span class="note">'+p+'</span>';
 const typeChip=t=>{const y=TT[t.type];return '<span class="tt" style="background:'+y.col+'" title="'+y.n+'">'+ic(y.ic)+'</span>'};
-function dueCell(t){const o=isOver(t),s=isSoon(t);const days=Math.ceil((now-t.due)/864e5);
-  return '<span class="due '+(o?'over':s?'soon':'')+'" title="'+(o?days+' days overdue':'')+'">'+(o?ic('i-warn','sm'):'')+fmt(t.due,true)+'</span>'}
+function dueCell(t){const o=isOver(t),sn=isSoon(t);
+  if(!isOpen(t))return '<span class="due2"><b>'+fmt(t.due)+'</b><small>'+fmt(t.due,true).slice(6)+'</small></span>';
+  const days=Math.ceil((now-t.due)/864e5),ahead=Math.floor((t.due-now)/864e5);
+  const rel=o?days+(days===1?' day':' days')+' overdue':ahead<=0?'Today':ahead===1?'Tomorrow':'in '+ahead+' days';
+  return '<span class="due2 '+(o?'over':sn?'soon':'')+'"><b>'+(o?ic('i-warn','sm'):'')+rel+'</b><small>'+fmt(t.due,true)+'</small></span>'}
 function pager(n,label){return '<div class="pager"><span>Showing 1-'+n+' of '+n+' '+label+'</span><div class="pg"><button disabled aria-label="Previous page">'+ic('i-left','xs')+'</button><button aria-current="page">1</button><button disabled aria-label="Next page">'+ic('i-right','xs')+'</button></div></div>'}
 function aiBtn(cls,label){const off=S.ai==='no';
   return '<button type="button" class="btn aib '+(cls||'')+'" data-act="ai" aria-disabled="'+off+'" title="'+(off?"AI can't be used on this matter":'AI assistant (coming soon)')+'">'+ic('i-flame','sm')+'<span>'+(label||'AI')+'</span><span class="soon">soon</span></button>'}
@@ -1778,15 +1848,13 @@ function aiOffMsg(){toast("AI can't be used on this matter. Ask a user with Matt
 /* ====================== header + tabs ====================== */
 function health(){const n=TASKS.filter(isOver).length;return n?'<button type="button" class="ind red" data-act="gotasks-over" title="Open the Tasks tab on the overdue tasks">'+ic('i-warn','sm')+n+' overdue tasks</button>':''}
 function headerHTML(){
-  return '<nav class="crumb" aria-label="Breadcrumb"><a href="#" data-act="inert">Matters</a>'+ic('i-right','xs')+'<span>'+esc(M.ref)+'</span></nav>'
+  return '<nav class="crumb" aria-label="Breadcrumb"><a href="#" data-act="inert">Matters</a>'+ic('i-right','xs')+'<span class="ref" title="Matter number">'+esc(M.ref)+'</span><button type="button" class="copy" data-act="copy" aria-label="Copy matter number">'+ic('i-clip','xs')+'</button></nav>'
   +'<div class="mh"><span class="chip-i">'+ic('i-brief')+'</span><div class="tx"><h1>'+esc(M.client)+'<span class="gt" aria-hidden="true">&gt;</span><span class="sr"> greater than </span>'+esc(M.name)+'</h1>'
-  +'<div class="mname">'+esc(M.name)+'</div>'
-  +'<div class="meta"><span class="ref" title="Matter number">'+esc(M.ref)+'</span><button type="button" class="copy" data-act="copy" aria-label="Copy matter number">'+ic('i-clip','xs')+'</button>'
+  +'<div class="meta"><span>'+esc(M.caseNo)+' &middot; '+esc(M.court)+'</span>'
   +'<span class="pill '+(M.active?'teal':'hold')+'">'+ic(M.active?'i-check':'i-pause','xs')+(M.active?'Active':'Inactive')+'</span>'
   +(M.sensitive?'<span class="role sens">'+ic('i-lock')+'Sensitive</span>':'')
-  +'<span class="ai-chip '+(M.ai==='no'?'off':'on')+'" title="AI allowed: '+AIV[M.ai]+'">'+ic('i-flame','xs')+'AI: '+AIV[M.ai]+'</span>'+health()+'</div></div>'
-  +'<div class="acts"><button type="button" class="btn primary" data-act="newtask">'+ic('i-plus','sm')+'Create task</button>'
-  +'<button type="button" class="btn" data-act="newmenu" aria-haspopup="menu" aria-expanded="'+S.menu+'">'+ic('i-plus','sm')+'New'+ic('i-chev','xs')+'</button>'
+  +'<span class="ai-chip '+(M.ai==='no'?'off':'on')+'" title="AI allowed: '+AIV[M.ai]+'">'+ic('i-flame','xs')+'AI: '+AIV[M.ai]+'</span></div></div>'
+  +'<div class="acts"><button type="button" class="btn primary" data-act="newmenu" aria-haspopup="menu" aria-expanded="'+!!S.menu+'">'+ic('i-plus','sm')+'New'+ic('i-chev','xs')+'</button>'
   +'<button type="button" class="icobtn" data-act="more" aria-label="More actions" aria-haspopup="menu">'+ic('i-dots')+'</button>'+(S.menu?menuHTML():'')+'</div></div>';
 }
 let MENUOPEN=false;
@@ -1795,7 +1863,7 @@ function menuHTML(){
   return '<div class="menu2" role="menu"><button type="button" role="menuitem" data-act="editall">'+ic('i-edit','sm')+'Edit matter details</button><button type="button" role="menuitem" data-act="bulk">'+ic('i-checksq','sm')+'Bulk re-assign / re-prioritise</button><button type="button" role="menuitem" data-act="addcomment">'+ic('i-bell','sm')+'Add comment to a task</button><button type="button" role="menuitem" data-act="gotab" data-v="tasks">'+ic('i-list','sm')+"Open the matter's tasks</button><hr><button type=\"button\" role=\"menuitem\" data-act=\"toggleactive\">"+ic('i-pause','sm')+(M.active?'Set inactive':'Set active')+'</button></div>';
 }
 function closeMenu(){S.menu=false;MENUOPEN=false;renderHeader()}
-const TABS=[['summary','Summary','i-layers'],['tasks','Tasks','i-tasks'],['projects','Projects','i-folder'],['calendar','Calendar','i-cal'],['assets','Assets','i-box'],['prods','Productions','e-prod']].concat(ALT?[['specs','Specs','i-sliders']]:[]).concat([['notes','Notes','i-edit'],['acts','Activities','i-audit']]);
+const TABS=[['summary','Summary','i-layers'],['tasks','Tasks','i-tasks'],['projects','Projects','i-folder'],['assets','Assets','i-box'],['prods','Productions','e-prod']].concat(ALT?[['specs','Specs','i-sliders']]:[]).concat([['notes','Notes','i-edit'],['acts','Activities','i-audit']]);
 function tabsHTML(){
   const cnt={tasks:TASKS.filter(isOpen).length,projects:PROJECTS.filter(p=>p.active).length,assets:ASSETS.length,prods:PRODS.length,specs:SPECS.length,notes:NOTES.length};
   return '<div class="tabs" role="tablist" aria-label="Matter sections">'+TABS.map(t=>'<button type="button" role="tab" id="tab-'+t[0]+'" data-act="tab" data-v="'+t[0]+'" aria-selected="'+(S.tab===t[0])+'" aria-controls="tabpanel" tabindex="'+(S.tab===t[0]?0:-1)+'">'+ic(t[2],'sm')+t[1]+(cnt[t[0]]!=null?'<span class="cnt">'+cnt[t[0]]+'</span>':'')+'</button>').join('')+'</div>';
@@ -1814,25 +1882,22 @@ function fieldView(f){
   else if(f.mono)h='<span class="ref" style="font-size:14px">'+esc(v)+'</span>';
   else h=esc(v);
   const empty=!v&&f.k!=='status';
-  return '<div class="fv'+(f.wide?' wide':'')+'" data-f="'+f.k+'"><div class="l">'+(f.ro?ic('i-lock','xs'):'')+esc(f.l)+'</div><div class="v'+(empty?' none':'')+'">'+(empty?'Not set':h)+'</div>'
-   +(!f.ro&&S.canEdit?'<button type="button" class="pen" data-act="editfield" data-f="'+f.k+'" aria-label="Edit '+esc(f.l)+'" title="Edit '+esc(f.l)+'">'+ic('i-edit','sm')+'</button>':'')+'</div>';
+  return '<div class="dr"><dt>'+esc(f.l)+'</dt><dd'+(empty?' class="none"':'')+'>'+(empty?'Not set':h)+'</dd></div>';
 }
 function summaryHTML(){
   const counts={};ASSETS.forEach(a=>counts[a.type]=(counts[a.type]||0)+1);
   const nextEv=EVENTS.filter(e=>parseD(e.d)>=TODAY).slice(0,4);
-  const recent=ACTS.slice(0,4);
+  const recent=ACTS.slice().sort((a,b)=>b.at-a.at).slice(0,4);
   return '<div class="sum"><div>'
-  +'<section class="card" aria-label="Matter details"><div class="card-h"><h2>Matter details</h2><span class="sub">Pencil edits one field.</span><div class="r">'+(S.canEdit?'<button type="button" class="btn" data-act="editall">'+ic('i-edit','sm')+'Edit all</button>':'<span class="note">'+ic('i-lock','xs')+' Read only: you need Matter.Edit</span>')+'</div></div><div class="fgrid">'+FIELDS.map(fieldView).join('')+'</div></section>'
-  +'<section class="card" aria-label="Assets by type"><div class="card-h"><h2>Assets by type</h2><div class="r"><button type="button" class="link" data-act="gotab" data-v="assets">Open Assets</button></div></div><div class="atiles">'
-  +'<button type="button" class="atile tot" data-act="gotab" data-v="assets"><div><div class="n">'+ASSETS.length+'</div><div class="l">Assets in total</div></div></button>'
-  +ATYPES.map(a=>'<button type="button" class="atile" data-act="goassets" data-v="'+a.id+'" aria-label="'+(counts[a.id]||0)+' '+a.id+' assets, open the Assets tab"><span class="tt" style="background:'+a.col+'">'+ic(a.ic)+'</span><div><div class="n">'+(counts[a.id]||0)+'</div><div class="l">'+a.id+(counts[a.id]===1?'':'s')+'</div></div></button>').join('')+'</div></section></div>'
+  +'<section class="card" aria-label="Assets by type"><div class="card-h"><h2>Assets by type</h2><span class="sub">'+ASSETS.length+' assets</span><div class="r"><button type="button" class="link" data-act="gotab" data-v="assets">Open Assets</button></div></div><div class="atiles">'
+  +ATYPES.map(a=>'<button type="button" class="atile" data-act="goassets" data-v="'+a.id+'" aria-label="'+(counts[a.id]||0)+' '+a.id+' assets, open the Assets tab"><span class="tt" style="background:'+a.col+'">'+ic(a.ic)+'</span><div><div class="n">'+(counts[a.id]||0)+'</div><div class="l">'+a.id+(counts[a.id]===1?'':'s')+'</div></div></button>').join('')+'</div></section>'
+  +'<section class="card" aria-label="Matter details"><div class="card-h"><h2>Matter details</h2><div class="r">'+(S.canEdit?'<button type="button" class="btn" data-act="editall">'+ic('i-edit','sm')+'Edit</button>':'<span class="note">'+ic('i-lock','xs')+' Read only: you need Matter.Edit</span>')+'</div></div><dl class="dl2">'+FIELDS.map(fieldView).join('')+'</dl></section></div>'
   +'<div>'
-  +'<section class="card sidecard" aria-label="People"><div class="card-h"><h3>Project managers</h3><div class="r">'+(S.canEdit?'<button type="button" class="link" data-act="editfield" data-f="pm1">Change</button>':'')+'</div></div><ul class="kv"><li>'+avatar(M.pm1)+'<div class="tx"><b>'+esc(M.pm1)+'</b><small>Primary</small></div></li><li>'+avatar(M.pm2)+'<div class="tx"><b>'+esc(M.pm2)+'</b><small>Secondary</small></div></li></ul></section>'
-  +'<section class="card sidecard" aria-label="Next events"><div class="card-h"><h3>Next on the calendar</h3><div class="r"><button type="button" class="link" data-act="gotab" data-v="calendar">Calendar</button></div></div><ul class="kv">'+nextEv.map(e=>{const t=ET[e.ty];return '<li><span class="etd '+t.c+'">'+ic(t.ic)+'</span><div class="tx"><b>'+esc(e.t)+'</b><small>'+t.n+'</small></div><span class="when">'+fmt(e.d)+(e.time?' '+e.time:'')+'</span></li>'}).join('')+'</ul></section>'
+  +'<section class="card sidecard" aria-label="People"><div class="card-h"><h3>Project managers</h3><div class="r">'+(S.canEdit?'<button type="button" class="link" data-act="editall">Change</button>':'')+'</div></div><ul class="kv"><li>'+avatar(M.pm1)+'<div class="tx"><b>'+esc(M.pm1)+'</b><small>Primary</small></div></li><li>'+avatar(M.pm2)+'<div class="tx"><b>'+esc(M.pm2)+'</b><small>Secondary</small></div></li></ul></section>'
+  +'<section class="card sidecard" aria-label="Next on the calendar"><div class="card-h"><h3>Next on the calendar</h3><div class="r"><button type="button" class="btn sm" data-act="newevent">'+ic('i-plus','xs')+'Add event</button></div></div><ul class="kv">'+nextEv.map(e=>{const t=ET[e.ty];return '<li><span class="etd '+t.c+'">'+ic(t.ic)+'</span><div class="tx"><b>'+esc(e.t)+'</b><small>'+t.n+'</small></div><span class="when">'+fmt(e.d)+(e.time?' '+e.time:'')+'</span></li>'}).join('')+'</ul><div class="cfoot"><button type="button" class="link" data-act="mmcal">'+ic('i-ext','xs')+' Open in My Matters calendar</button></div></section>'
   +'<section class="card sidecard" aria-label="Recent activity"><div class="card-h"><h3>Recent activity</h3><div class="r"><button type="button" class="link" data-act="gotab" data-v="acts">All activities</button></div></div><ul class="kv">'+recent.map(a=>{const k=KINDS.find(x=>x.id===a.k);return '<li><span class="kd '+k.cls+'">'+ic(k.icon,'sm')+'</span><div class="tx"><b>'+esc(a.who)+'</b><small>'+esc(a.txt)+' '+esc(a.obj)+'</small></div><span class="when">'+fmt(a.at,true)+'</span></li>'}).join('')+'</ul></section>'
   +'</div></div>';
 }
-/* edit forms (side panel) */
 function inputFor(f,idp){
   const id=idp+f.k,v=M[f.k]==null?'':M[f.k];
   let c;
@@ -1878,21 +1943,19 @@ function taskList(){
 }
 function tasksHTML(){
   const list=taskList(),nsel=Object.keys(S.tsel).filter(k=>S.tsel[k]).length;
-  const cnt=id=>TASKS.filter(VIEWS.find(x=>x[0]===id)[2]).filter(t=>id==='hold'||id==='open'?true:true).length;
-  const chips=VIEWS.map(v=>{const n=TASKS.filter(t=>isOpen(t)||v[0]==='hold').filter(v[2]).length;const icn={open:'i-list',overdue:'i-warn',soon:'i-clock',asap:'i-flame',unas:'i-userx',hold:'i-pause'}[v[0]];
-    return '<button type="button" class="kchip '+(v[0]==='overdue'?'red':v[0]==='unas'?'violet':v[0]==='hold'?'slate':v[0]==='soon'?'amber':'blue')+'" data-act="tview" data-v="'+v[0]+'" aria-pressed="'+(S.st===v[0])+'">'+ic(icn,'xs')+v[1]+' <span>'+n+'</span></button>'}).join('');
+  const vn=VIEWS.find(x=>x[0]===S.st),vcount=v=>TASKS.filter(t=>isOpen(t)||v[0]==='hold').filter(v[2]).length;
   const dflt=S.st==='open'&&!S.tq&&!S.tproj&&!S.tprio&&!S.tasg&&S.tstatus==='open';
-  return '<section class="card gridcard grow" aria-label="Tasks"><div class="card-h hd2"><h2>Tasks</h2><span class="tcnt" role="status">'+list.length+' shown</span><div class="r"><button type="button" class="btn sm" data-act="tcols">'+ic('i-sliders','sm')+'Columns</button><button type="button" class="btn sm" data-act="bulk">'+ic('i-checksq','sm')+'Select</button><button type="button" class="btn primary sm" data-act="newtask">'+ic('i-plus','sm')+'Create task</button></div></div>'
-  +'<div class="kchips" role="group" aria-label="Task views">'+chips+'</div>'
-  +'<div class="toolrow"><div class="findbox"><label class="sr" for="tq">Title or ref</label>'+ic('i-search','sm')+'<input id="tq" type="search" placeholder="Title or ref" value="'+esc(S.tq)+'" autocomplete="off"></div>'
-  +ddBtn('tproj','i-folder','<span class="pre">Project:</span> '+esc(S.tproj==='none'?'No project':S.tproj?projName(S.tproj):'All'),!!S.tproj)
+  return '<section class="card gridcard grow" aria-label="Tasks"><div class="card-h hd2"><h2>Tasks</h2><span class="tcnt" role="status">'+list.length+' shown</span><div class="r"><button type="button" class="btn sm" data-act="tcols">'+ic('i-sliders','sm')+'Columns</button><button type="button" class="btn sm" data-act="bulk">'+ic('i-checksq','sm')+'Bulk edit</button><button type="button" class="btn primary sm" data-act="newtask">'+ic('i-plus','sm')+'Create task</button></div></div>'
+  +'<div class="toolrow"><div class="findbox" style="width:190px"><label class="sr" for="tq">Title or ref</label>'+ic('i-search','sm')+'<input id="tq" type="search" placeholder="Title or ref" value="'+esc(S.tq)+'" autocomplete="off"></div>'
+  +ddBtn('tview','i-list','<span class="pre">View:</span> '+vn[1]+' ('+vcount(vn)+')',S.st!=='open')
+  +ddBtn('tproj','i-folder','<span class="pre">Project:</span> '+esc(S.tproj==='none'?'None':S.tproj?projName(S.tproj):'All'),!!S.tproj)
   +ddBtn('tprio','i-up','<span class="pre">Priority:</span> '+(S.tprio||'All'),!!S.tprio)
   +ddBtn('tasg','i-users','<span class="pre">Assignee:</span> '+(S.tasg==='none'?'Unassigned':S.tasg||'All'),!!S.tasg)
   +ddBtn('tstatus','i-checksq','<span class="pre">Status:</span> '+({open:'Open',done:'Completed',cancel:'Cancelled',all:'All'}[S.tstatus]),S.tstatus!=='open')
-  +'<span class="sp"></span>'+(dflt?'':'<button type="button" class="link" data-act="treset">Reset filters</button>')+'</div>'
+  +'<span class="sp"></span>'+(dflt?'':'<button type="button" class="link" data-act="treset">Reset</button>')+'</div>'
   +(nsel?'<div class="selbar2" role="region" aria-label="Selected tasks">'+nsel+' selected <button type="button" class="btn sm" data-act="bulklink">'+ic('i-folder','sm')+'Link to project</button><button type="button" class="btn sm" data-act="bulk">Re-assign / re-prioritise</button><button type="button" class="btn sm" data-act="addcomment">Add comment</button><button type="button" class="link" data-act="tclear">Clear</button></div>':'')
-  +(list.length?'<div class="gscroll"><table class="rt tk"><caption class="sr">Tasks of this matter</caption><colgroup><col style="width:40px"><col style="width:72px"><col><col style="width:160px"><col style="width:96px"><col style="width:130px"><col style="width:172px"><col style="width:200px"></colgroup><thead><tr><th><span class="sr">Select</span></th><th>Ref</th><th>Task</th><th>Project</th><th>Priority</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>'
-   +list.map(t=>'<tr><td class="selc"><input class="chkb" type="checkbox" data-sel="'+t.id+'" aria-label="Select '+esc(t.id)+'"'+(S.tsel[t.id]?' checked':'')+'></td><td class="hm" data-l="Ref"><span class="ref">'+t.id+'</span></td><td class="full"><div class="cell">'+typeChip(t)+'<button type="button" class="lnk" data-act="inert">'+esc(t.title)+'</button></div></td>'
+  +(list.length?'<div class="gscroll"><table class="rt tk"><caption class="sr">Tasks of this matter</caption><colgroup><col style="width:36px"><col><col style="width:168px"><col style="width:108px"><col style="width:136px"><col style="width:160px"><col style="width:214px"></colgroup><thead><tr><th><span class="sr">Select</span></th><th>Task</th><th>Project</th><th>Priority</th><th>Assignee</th><th>Due</th><th>Status</th></tr></thead><tbody>'
+   +list.map(t=>'<tr><td class="selc"><input class="chkb" type="checkbox" data-sel="'+t.id+'" aria-label="Select '+esc(t.id)+'"'+(S.tsel[t.id]?' checked':'')+'></td><td class="full"><div class="cell">'+typeChip(t)+'<span class="tcell"><button type="button" class="lnk" data-act="inert">'+esc(t.title)+'</button><span class="m2 always"><span class="ref">'+t.id+'</span> &middot; '+TT[t.type].n+'</span></span></div></td>'
     +'<td data-l="Project"><button type="button" class="pj '+(t.proj?'on':'none')+'" data-act="rowproj" data-id="'+t.id+'" aria-label="Project of '+t.id+': '+(t.proj?esc(projName(t.proj)):'none')+'. Change">'+ic('i-folder','xs')+'<span>'+(t.proj?esc(projName(t.proj)):'No project')+'</span>'+ic('i-chev','xs')+'</button></td>'
     +'<td data-l="Priority">'+prioPill(t.prio)+'</td><td data-l="Assignee">'+(t.asg?'<div class="cell">'+avatar(t.asg)+'<span>'+esc(t.asg)+'</span></div>':'<span class="una">'+ic('i-userx','sm')+'Unassigned</span>')+'</td><td data-l="Due">'+dueCell(t)+'</td><td data-l="Status">'+stChip(t)+'</td></tr>').join('')
    +'</tbody></table></div>'+pager(list.length,'tasks'):'<div class="empty">'+ic('i-info')+'<span>No task matches these filters.</span><button type="button" data-act="treset">Reset filters</button></div>')+'</section>';
@@ -1927,13 +1990,13 @@ function newProject(){
 }
 function projectPanel(id){
   const p=PROJECTS.find(x=>x.id===id),ts=TASKS.filter(t=>t.proj===id);
-  openPanel({title:p.name,sub:p.desc,wide:true,footer:'<button type="button" class="btn" data-act="inert">'+ic('i-ext','sm')+'Open full page</button><span class="sp1"></span><button type="button" class="btn" data-act="projedit" data-id="'+id+'">'+ic('i-edit','sm')+'Edit</button><button type="button" class="btn primary" data-act="projlink" data-id="'+id+'">'+ic('i-plus','sm')+'Link tasks</button>',
-   body:'<dl><dt>Status</dt><dd><span class="pill '+(p.active?'teal':'hold')+'">'+(p.active?'Active':'Archived')+'</span></dd><dt>Tasks</dt><dd>'+ts.length+' linked, '+ts.filter(isOpen).length+' open, '+ts.filter(isOver).length+' overdue</dd></dl><h3 class="sec">Linked tasks</h3>'
-   +(ts.length?'<ul class="tlist">'+ts.map(t=>'<li>'+typeChip(t)+'<div class="tx"><b>'+esc(t.id+' '+t.title)+'</b><span class="note">'+(t.asg||'Unassigned')+' &middot; due '+fmt(t.due,true)+'</span></div>'+stChip(t)+'<button type="button" class="ibtn" data-act="unlink" data-id="'+t.id+'" aria-label="Unlink '+t.id+'" title="Unlink">'+ic('i-x','sm')+'</button></li>').join('')+'</ul>':'<div class="note">No tasks linked yet.</div>')});
+  openPanel({title:p.name,sub:p.desc,wide:true,footer:'<button type="button" class="btn" data-act="inert">'+ic('i-ext','sm')+'Open full page</button><span class="sp1"></span><button type="button" class="btn" data-act="projedit" data-id="'+id+'">'+ic('i-edit','sm')+'Edit</button><button type="button" class="btn primary" data-act="projlink" data-id="'+id+'">'+ic('i-plus','sm')+'Add task</button>',
+   body:'<dl><dt>Status</dt><dd><span class="pill '+(p.active?'teal':'hold')+'">'+(p.active?'Active':'Archived')+'</span></dd><dt>Tasks</dt><dd>'+ts.length+' linked, '+ts.filter(isOpen).length+' open, '+ts.filter(isOver).length+' overdue</dd></dl><h3 class="sec">Linked tasks ('+ts.length+')</h3>'
+   +(ts.length?'<ul class="tlist">'+ts.map(t=>'<li>'+typeChip(t)+'<div class="tx"><b>'+esc(t.id+' '+t.title)+'</b><span class="note">'+(t.asg||'Unassigned')+' &middot; due '+fmt(t.due,true)+'</span></div>'+stChip(t)+'<button type="button" class="btn sm" data-act="unlink" data-id="'+t.id+'" aria-label="Unlink '+t.id+' from the project">Unlink</button></li>').join('')+'</ul>':'<div class="note">No tasks linked yet.</div>')});
 }
 function projLinkPanel(id){
   const p=PROJECTS.find(x=>x.id===id);
-  openPanel({title:'Link tasks to '+p.name,sub:'A task belongs to at most one project. Picking a task that is in another project moves it.',save:'Link selected',
+  openPanel({title:'Add tasks to '+p.name,sub:'A task belongs to at most one project. Picking a task that is in another project moves it.',save:'Add selected',
    body:'<ul class="tlist">'+TASKS.filter(t=>isOpen(t)&&t.proj!==id).map(t=>'<li><label><input class="chkb" type="checkbox" data-lk="'+t.id+'">'+typeChip(t)+'<span class="tx"><b>'+esc(t.id+' '+t.title)+'</b>'+(t.proj?'<small>Moves from "'+esc(projName(t.proj))+'"</small>':'<span class="note">No project</span>')+'</span></label></li>').join('')+'</ul>',
    onSave:el=>{const ls=$$('[data-lk]:checked',el).map(x=>x.dataset.lk);ls.forEach(i=>TASKS.find(t=>t.id===i).proj=id);toast(ls.length+' task'+(ls.length===1?'':'s')+' linked to '+p.name+'.');rerender()}});
 }
@@ -1975,9 +2038,8 @@ function assetsHTML(){
   const counts={};ASSETS.forEach(a=>counts[a.type]=(counts[a.type]||0)+1);
   const list=ASSETS.filter(a=>(!S.atype||a.type===S.atype)&&(!S.adisp||a.disp===S.adisp)&&(!S.aq||(a.name+' '+a.ext).toLowerCase().includes(S.aq.toLowerCase())));
   return '<section class="card gridcard grow" aria-label="Assets"><div class="card-h hd2"><h2>Assets</h2><span class="tcnt" role="status">'+list.length+' of '+ASSETS.length+'</span><div class="r"><button type="button" class="btn primary sm" data-act="newasset">'+ic('i-plus','sm')+'New asset</button></div></div>'
-  +'<div class="kchips" role="group" aria-label="Filter by asset type"><button type="button" class="kchip" data-act="atype" data-v="" aria-pressed="'+(!S.atype)+'">All <span>'+ASSETS.length+'</span></button>'+ATYPES.map(a=>'<button type="button" class="kchip" data-act="atype" data-v="'+a.id+'" aria-pressed="'+(S.atype===a.id)+'">'+ic(a.ic,'xs')+a.id+' <span>'+(counts[a.id]||0)+'</span></button>').join('')+'</div>'
-  +'<div class="toolrow"><div class="findbox"><label class="sr" for="aq">Name or external reference</label>'+ic('i-search','sm')+'<input id="aq" type="search" placeholder="Name or external ref" value="'+esc(S.aq)+'" autocomplete="off"></div>'+ddBtn('adisp','i-trash','<span class="pre">Disposition:</span> '+(S.adisp||'All'),!!S.adisp)+'<span class="sp"></span>'+(S.atype||S.adisp||S.aq?'<button type="button" class="link" data-act="areset">Reset filters</button>':'')+'</div>'
-  +'<div class="gscroll"><table class="rt"><caption class="sr">Assets of this matter</caption><colgroup><col><col style="width:140px"><col style="width:120px"><col style="width:100px"><col style="width:170px"><col style="width:90px"><col style="width:130px"></colgroup><thead><tr><th>Name</th><th>Type</th><th>External ref</th><th>Size</th><th>Disposition</th><th>Tasks</th><th>Updated</th></tr></thead><tbody>'
+  +'<div class="toolrow"><div class="findbox"><label class="sr" for="aq">Name or external reference</label>'+ic('i-search','sm')+'<input id="aq" type="search" placeholder="Name or external ref" value="'+esc(S.aq)+'" autocomplete="off"></div>'+ddBtn('atype','i-box','<span class="pre">Type:</span> '+(S.atype||'All')+' ('+(S.atype?counts[S.atype]||0:ASSETS.length)+')',!!S.atype)+ddBtn('adisp','i-trash','<span class="pre">Disposition:</span> '+(S.adisp||'All'),!!S.adisp)+'<span class="sp"></span>'+(S.atype||S.adisp||S.aq?'<button type="button" class="link" data-act="areset">Reset</button>':'')+'</div>'
+  +'<div class="gscroll"><table class="rt"><caption class="sr">Assets of this matter</caption><colgroup><col><col style="width:140px"><col style="width:120px"><col style="width:100px"><col style="width:200px"><col style="width:76px"><col style="width:150px"></colgroup><thead><tr><th>Name</th><th>Type</th><th>External ref</th><th>Size</th><th>Disposition</th><th>Tasks</th><th>Updated</th></tr></thead><tbody>'
   +list.map(a=>{const ty=ATY[a.type],d=DISP[a.disp];return '<tr class="clickrow" tabindex="0" data-act="assetopen" data-id="'+a.id+'"><td><div class="cell"><span class="tt" style="background:'+ty.col+'">'+ic(ty.ic)+'</span><button type="button" class="lnk" data-act="assetopen" data-id="'+a.id+'">'+esc(a.name)+'</button></div></td><td data-l="Type">'+a.type+'</td><td data-l="External ref"><span class="ref">'+a.ext+'</span></td><td data-l="Size">'+(a.size||'<span class="note">none</span>')+'</td><td data-l="Disposition"><span class="ast '+d.cls+'">'+ic(d.icon,'xs')+a.disp+'</span></td><td data-l="Tasks">'+a.tasks+'</td><td data-l="Updated">'+fmt(a.upd,true)+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'assets')+'</section>';
 }
 function assetPanel(id){
@@ -2002,15 +2064,14 @@ function prodsHTML(){
   const head=ALT?'':'<div class="seg2" role="group" aria-label="Productions view"><button type="button" data-act="pv" data-v="prods" aria-pressed="'+(S.pv==='prods')+'">'+ic('e-prod','sm')+'Productions <span class="c">'+PRODS.length+'</span></button><button type="button" data-act="pv" data-v="specs" aria-pressed="'+(S.pv==='specs')+'">'+ic('i-sliders','sm')+'Specs <span class="c">'+SPECS.length+'</span></button></div>';
   if(!ALT&&S.pv==='specs')return specsHTML(head);
   const list=PRODS.filter(p=>(S.pdir==='all'||p.dir===S.pdir)&&(!S.pstat||p.status===S.pstat)&&(!S.pq||(p.name+p.id+p.vol+p.byName+bates(p,p.b)).toLowerCase().includes(S.pq.toLowerCase())));
-  const out=PRODS.filter(p=>p.dir==='out').length;
+  const dn={all:'All',out:'Produced by us',in:'Received'}[S.pdir];
   return '<section class="card gridcard grow" aria-label="Productions"><div class="card-h hd2"><h2>Productions</h2>'+head+'<span class="tcnt" role="status">'+list.length+' of '+PRODS.length+'</span><div class="r"><button type="button" class="btn primary sm" data-act="newprod">'+ic('i-plus','sm')+'New production</button></div></div>'
-  +'<div class="kchips" role="group" aria-label="Direction"><button type="button" class="kchip" data-act="pdir" data-v="all" aria-pressed="'+(S.pdir==='all')+'">All <span>'+PRODS.length+'</span></button><button type="button" class="kchip blue" data-act="pdir" data-v="out" aria-pressed="'+(S.pdir==='out')+'">'+ic('i-up','xs')+'Produced by us <span>'+out+'</span></button><button type="button" class="kchip teal" data-act="pdir" data-v="in" aria-pressed="'+(S.pdir==='in')+'">'+ic('i-download','xs')+'Received <span>'+(PRODS.length-out)+'</span></button></div>'
-  +'<div class="toolrow"><div class="findbox"><label class="sr" for="pq">Search productions</label>'+ic('i-search','sm')+'<input id="pq" type="search" placeholder="Name, volume or Bates" value="'+esc(S.pq)+'" autocomplete="off"></div>'+ddBtn('pstat','i-checksq','<span class="pre">Status:</span> '+(S.pstat||'All'),!!S.pstat)+'<span class="sp"></span>'+(S.pq||S.pstat||S.pdir!=='all'?'<button type="button" class="link" data-act="preset">Reset filters</button>':'')+'</div>'
-  +'<div class="gscroll"><table class="rt" style="min-width:980px"><caption class="sr">Productions of this matter</caption><colgroup><col><col style="width:184px"><col style="width:140px"><col style="width:96px"><col style="width:140px"><col style="width:172px"><col style="width:136px"></colgroup><thead><tr><th>Production</th><th>Direction and party</th><th>Bates range</th><th>Docs / pages</th><th>Spec</th><th>Status</th><th>Delivered / due</th></tr></thead><tbody>'
-  +list.map(p=>{const sp=specOf(p.spec);return '<tr class="clickrow" tabindex="0" data-act="prodopen" data-id="'+p.id+'"><td><div class="cell"><span class="tt" style="background:var(--orange-solid)">'+ic('e-prod')+'</span><span class="tcell"><button type="button" class="lnk" data-act="prodopen" data-id="'+p.id+'">'+esc(p.name)+'</button><span class="m2 always"><span class="ref">'+p.id+'</span> &middot; '+p.vol+'</span></span></div></td>'
-   +'<td data-l="Direction and party">'+dirChip(p)+'<div class="note" style="white-space:normal">'+(p.dir==='out'?'to '+esc(p.to):'from '+esc(p.byName)+' ('+p.by.toLowerCase()+')')+'</div></td>'
-   +'<td data-l="Bates"><div class="bates">'+bates(p,p.b)+'<small>to '+bates(p,p.e)+'</small></div></td><td data-l="Docs / pages">'+p.docs.toLocaleString('en-US')+'<div class="note">'+p.pages.toLocaleString('en-US')+' pp</div></td>'
-   +'<td data-l="Spec">'+(sp?'<button type="button" class="pj on" data-act="'+(ALT?'gospec':'specopenp')+'" data-id="'+sp.id+'">'+ic('i-sliders','xs')+'<span>'+esc(sp.name.split(':')[0])+'</span></button>':'<span class="note">Not applicable (received)</span>')+'</td><td data-l="Status">'+pstat(p.status)+'</td><td data-l="'+(p.del?'Delivered':'Due')+'">'+(p.del?fmt(p.del,true):p.due?fmt(p.due,true):'<span class="note">n/a</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'productions')+'</section>';
+  +'<div class="toolrow"><div class="findbox"><label class="sr" for="pq">Search productions</label>'+ic('i-search','sm')+'<input id="pq" type="search" placeholder="Name, volume or Bates" value="'+esc(S.pq)+'" autocomplete="off"></div>'+ddBtn('pdir','i-arrow','<span class="pre">Direction:</span> '+dn,S.pdir!=='all')+ddBtn('pstat','i-checksq','<span class="pre">Status:</span> '+(S.pstat||'All'),!!S.pstat)+'<span class="sp"></span>'+(S.pq||S.pstat||S.pdir!=='all'?'<button type="button" class="link" data-act="preset">Reset</button>':'')+'</div>'
+  +'<div class="gscroll"><table class="rt tk" style="min-width:1000px"><caption class="sr">Productions of this matter</caption><colgroup><col><col style="width:216px"><col style="width:130px"><col style="width:76px"><col style="width:136px"><col style="width:176px"><col style="width:150px"></colgroup><thead><tr><th>Production</th><th>Direction and party</th><th>Bates range</th><th>Docs</th><th>Spec</th><th>Status</th><th>Delivered / due</th></tr></thead><tbody>'
+  +list.map(p=>{const sp=specOf(p.spec);const d=p.del||p.due;return '<tr class="clickrow" tabindex="0" data-act="prodopen" data-id="'+p.id+'"><td><div class="cell"><span class="tt" style="background:var(--orange-solid)">'+ic('e-prod')+'</span><span class="tcell"><button type="button" class="lnk" data-act="prodopen" data-id="'+p.id+'">'+esc(p.name)+'</button><span class="m2 always"><span class="ref">'+p.id+'</span> &middot; '+p.vol+'</span></span></div></td>'
+   +'<td data-l="Direction and party"><div class="cell"><span class="dirI '+p.dir+'" title="'+(p.dir==='out'?'Produced by us':'Received')+'">'+ic(p.dir==='out'?'i-up':'i-download','sm')+'</span><span class="tcell"><b class="pn">'+esc(p.dir==='out'?p.to.replace(/ \(.*\)/,''):p.byName)+'</b><span class="m2 always">'+(p.dir==='out'?'Produced by us':'Received')+'</span></span></div></td>'
+   +'<td data-l="Bates"><div class="bates">'+bates(p,p.b)+'<small>to '+bates(p,p.e)+'</small></div></td><td data-l="Docs">'+p.docs.toLocaleString('en-US')+'<div class="note">'+p.pages.toLocaleString('en-US')+' pp</div></td>'
+   +'<td data-l="Spec">'+(sp?'<button type="button" class="pj on" data-act="'+(ALT?'gospec':'specopenp')+'" data-id="'+sp.id+'">'+ic('i-sliders','xs')+'<span>'+esc(sp.name.split(':')[0].replace('ESI protocol standard','ESI standard'))+'</span></button>':'<span class="note">None (received)</span>')+'</td><td data-l="Status">'+pstat(p.status)+'</td><td data-l="'+(p.del?'Delivered':'Due')+'">'+(d?'<span class="due2"><b>'+fmt(d)+'</b><small>'+(p.del?'Delivered':'Due')+' '+fmt(d,true).slice(6)+'</small></span>':'<span class="note">n/a</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'productions')+'</section>';
 }
 function prodPanel(id,tab){
   tab=tab||'d';const p=PRODS.find(x=>x.id===id),sp=specOf(p.spec);
@@ -2084,6 +2145,13 @@ function specForm(id,dupOf){
 /* ====================== NOTES ====================== */
 const stripHtml=h=>{const d=document.createElement('div');d.innerHTML=h.replace(/<\/(p|li|h\d)>/g,'$& ');return d.textContent.replace(/\s+/g,' ').trim()};
 const noteTitle=n=>n.title||'Untitled note';
+const TBTN=[['bold','Bold','<span class="eglyph">B</span>'],['italic','Italic','<span class="eglyph" style="font-style:italic;font-family:Georgia,serif">I</span>'],['underline','Underline','<span class="eglyph" style="text-decoration:underline">U</span>'],['sep'],['ul','Bulleted list','i-ul'],['ol','Numbered list','i-ol'],['quote','Quote','i-quote'],['sep'],['link','Link','i-link'],['table','Insert table','i-table'],['mention','Mention a person (@)','i-at'],['asset','Reference an asset (#)','i-hash'],['sep'],['clear','Clear formatting','i-eraser'],['undo','Undo','i-undo'],['redo','Redo','i-redo']];
+const STYLES=[['p','Paragraph'],['h2','Heading 2'],['h3','Heading 3'],['blockquote','Quote'],['pre','Preformatted']];
+function toolbarHTML(){
+  return '<div class="etb" id="tb" role="toolbar" aria-label="Text formatting"><button type="button" class="estyl" data-act="tstyle" aria-haspopup="listbox" aria-expanded="false" aria-label="Paragraph style"><span id="stylv">Paragraph</span>'+ic('i-chev','xs')+'</button>'
+   +TBTN.map(b=>b[0]==='sep'?'<span class="sepv" role="separator" aria-orientation="vertical"></span>':'<button type="button" class="ibtn" data-act="fmt" data-v="'+b[0]+'" aria-label="'+b[1]+'" title="'+b[1]+'">'+(b[2].startsWith('i-')?ic(b[2],'sm'):b[2])+'</button>').join('')+'</div>'
+   +'<div class="etb2" id="tb2" role="toolbar" aria-label="Table tools" hidden><span class="lb">Table</span><button type="button" data-t="rowadd">+ Row</button><button type="button" data-t="rowdel">&minus; Row</button><button type="button" data-t="coladd">+ Col</button><button type="button" data-t="coldel">&minus; Col</button><button type="button" data-t="hdr" aria-pressed="true">Header row</button><button type="button" data-t="tbldel">Delete table</button></div>';
+}
 function tagChip(t,x){return '<span class="tagc '+(TAGS[t]||'slate')+'"><i></i>'+esc(t)+(x?'<button type="button" class="x" data-act="rmtag" data-t="'+esc(t)+'" aria-label="Remove tag '+esc(t)+'">'+ic('i-x','xs')+'</button>':'')+'</span>'}
 function notesHTML(){
   const cur=NOTES.find(n=>n.id===S.note)||NOTES[0];
@@ -2091,21 +2159,23 @@ function notesHTML(){
   const off=S.ai==='no';
   const rail='<div class="nrail" role="toolbar" aria-label="Note side panels" aria-orientation="vertical"><button type="button" class="ibtn" data-act="rail" data-v="tags" aria-pressed="'+(S.npanel==='tags')+'" aria-label="Tags" title="Tags">'+ic('i-tag')+(cur.tags.length?'<span class="bdg">'+cur.tags.length+'</span>':'')+'</button><button type="button" class="ibtn" data-act="rail" data-v="info" aria-pressed="'+(S.npanel==='info')+'" aria-label="Details and history" title="Details and history">'+ic('i-info')+'</button><button type="button" class="ibtn" data-act="rail" data-v="ai" aria-pressed="'+(S.npanel==='ai')+'" aria-disabled="'+off+'" aria-label="AI assistant" title="'+(off?"AI can't be used on this matter":'AI assistant (coming soon)')+'" style="'+(off?'opacity:.55':'color:var(--violet)')+'">'+ic('i-flame')+'</button></div>';
   let panel='';
-  if(S.npanel==='tags')panel='<aside class="npanel" aria-label="Tags"><header><h3>Tags</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close tags panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="ctxbar">'+(cur.tags.length?cur.tags.map(t=>tagChip(t,true)).join(''):'<span class="note">No tags on this note.</span>')+'</div><h3 class="sec" style="margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Add a tag</h3><div class="ctxbar">'+Object.keys(TAGS).filter(t=>!cur.tags.includes(t)).map(t=>'<button type="button" class="tagc '+TAGS[t]+'" data-act="addtag" data-t="'+t+'" style="border:1px dashed currentColor">'+ic('i-plus','xs')+esc(t)+'</button>').join('')+'</div><div class="note">Tags are managed under Admin > Labels > Notes tags. The writing area keeps the full height.</div></div></aside>';
-  if(S.npanel==='info')panel='<aside class="npanel" aria-label="Details and history"><header><h3>Details</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close details panel">'+ic('i-x','sm')+'</button></header><div class="pb"><dl style="margin:0;display:grid;grid-template-columns:90px 1fr;font-size:13.5px"><dt class="note" style="padding:5px 0">Updated</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+fmt(cur.at,true)+'</dd><dt class="note" style="padding:5px 0">Updated by</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+esc(cur.by)+'</dd></dl><h3 style="margin:4px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">History</h3><ul class="evl2">'+(cur.hist||[['Last saved',cur.at,cur.by]]).map(h=>'<li'+(/warning/i.test(h[0])?' class="warn"':'')+'>'+esc(h[0])+'<small>'+fmt(h[1],true)+' by '+esc(h[2])+'</small></li>').join('')+'</ul></div></aside>';
+  if(S.npanel==='tags')panel='<aside class="npanel" aria-label="Tags"><header><h3>Tags</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close tags panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="ctxbar">'+(cur.tags.length?cur.tags.map(t=>tagChip(t,true)).join(''):'<span class="note">No tags on this note.</span>')+'</div><h3 style="margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Add a tag</h3><div class="ctxbar">'+Object.keys(TAGS).filter(t=>!cur.tags.includes(t)).map(t=>'<button type="button" class="tagc '+TAGS[t]+'" data-act="addtag" data-t="'+t+'" style="border:1px dashed currentColor">'+ic('i-plus','xs')+esc(t)+'</button>').join('')+'</div><div class="note">Tags are managed under Admin > Labels > Notes tags. They also show under the title.</div></div></aside>';
+  if(S.npanel==='info')panel='<aside class="npanel" aria-label="Details and history"><header><h3>Details</h3><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close details panel">'+ic('i-x','sm')+'</button></header><div class="pb"><dl style="margin:0;display:grid;grid-template-columns:90px 1fr;font-size:13.5px"><dt class="note" style="padding:5px 0">Updated</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+fmt(cur.at,true)+'</dd><dt class="note" style="padding:5px 0">Updated by</dt><dd style="margin:0;padding:5px 0;font-weight:600">'+esc(cur.by)+'</dd></dl><h3 style="margin:4px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">History</h3><ul class="evl2">'+(cur.hist||[['Last saved',cur.at,cur.by]]).slice().reverse().map(h=>'<li'+(/warning/i.test(h[0])?' class="warn"':'')+'>'+esc(h[0])+'<small>'+fmt(h[1],true)+' by '+esc(h[2])+'</small></li>').join('')+'</ul></div></aside>';
   if(S.npanel==='ai')panel='<aside class="npanel" aria-label="AI assistant"><header><h3>AI assistant</h3><span class="pill-soon">coming soon</span><button type="button" class="ibtn x" data-act="rail" data-v="" aria-label="Close AI panel">'+ic('i-x','sm')+'</button></header><div class="pb"><div class="aibox">'+ic('i-flame','lg')+'<b>AI assistant is coming soon</b><p>Write and improve notes, and find notes by meaning. Nothing to use yet in this release.</p></div><div class="note">Allowed on this matter: <b>'+AIV[S.ai]+'</b>. The system will pick the tool by itself.</div><div class="chatin"><input type="text" placeholder="Ask about this matter\'s notes" disabled aria-label="Ask the AI (not available yet)"><button type="button" class="btn" disabled>Send</button></div></div></aside>';
-  return '<section class="card grow" aria-label="Notes" style="display:flex;flex-direction:column;overflow:hidden"><div class="nwrap">'
-  +'<div class="nlistc"><div class="card-h hd2" style="padding:10px 14px"><h2>Notes</h2><span class="tcnt">'+list.length+'</span><div class="r">'+aiBtn('sm','Find')+'<button type="button" class="btn primary sm" data-act="nnew">'+ic('i-plus','sm')+'New</button></div></div><div class="toolrow" style="padding:8px 14px"><div class="findbox" style="flex:1;width:auto;min-width:100px"><label class="sr" for="nq">Search notes</label>'+ic('i-search','sm')+'<input id="nq" type="search" placeholder="Search notes" value="'+esc(S.nq)+'" autocomplete="off"></div>'+ddBtn('ntag','i-tag',S.ntag||'All tags',!!S.ntag)+'</div><div class="nsc">'
+  const tagrow='<div class="ntags" contenteditable="false">'+cur.tags.map(t=>tagChip(t)).join('')+'<button type="button" class="tagadd" data-act="rail" data-v="tags">'+ic('i-plus','xs')+(cur.tags.length?'Tags':'Add a tag')+'</button></div>';
+  return '<section class="card grow" aria-label="Notes" style="display:flex;flex-direction:column;overflow:hidden"><div class="nwrap" id="nwrap">'
+  +'<div class="nlistc" id="nlistc" style="flex-basis:'+S.nw+'px"><div class="card-h hd2" style="padding:10px 14px"><h2>Notes</h2><span class="tcnt">'+list.length+'</span><div class="r">'+aiBtn('sm','Find')+'<button type="button" class="btn primary sm" data-act="nnew">'+ic('i-plus','sm')+'New</button></div></div><div class="toolrow" style="padding:8px 14px"><div class="findbox" style="flex:1;width:auto;min-width:100px"><label class="sr" for="nq">Search notes</label>'+ic('i-search','sm')+'<input id="nq" type="search" placeholder="Search notes" value="'+esc(S.nq)+'" autocomplete="off"></div>'+ddBtn('ntag','i-tag',S.ntag||'All tags',!!S.ntag)+'</div><div class="nsc">'
    +(list.length?list.map(n=>'<button type="button" class="nitem" data-act="noteopen" data-id="'+n.id+'" aria-current="'+(n.id===cur.id)+'"><div class="t">'+(n.title?'':ic('i-edit','sm'))+'<span'+(n.title?'':' style="color:var(--muted);font-style:italic"')+'>'+esc(noteTitle(n))+'</span></div><div class="pv">'+esc(stripHtml(n.body))+'</div><div class="mt">'+n.tags.map(t=>tagChip(t)).join('')+'<span>'+fmt(n.at,true)+' &middot; '+esc(n.by)+'</span></div></button>').join(''):'<div class="empty">'+ic('i-info')+'<span>No note matches.</span></div>')+'</div></div>'
-  +'<div class="nedit"><div class="ntop" role="toolbar" aria-label="Formatting"><div class="tbg"><button type="button" class="ibtn" data-act="fmt" data-v="bold" aria-label="Bold" title="Bold"><b>B</b></button><button type="button" class="ibtn" data-act="fmt" data-v="italic" aria-label="Italic" title="Italic"><i>I</i></button><button type="button" class="ibtn" data-act="fmt" data-v="h2" aria-label="Heading" title="Heading"><b>H</b></button><button type="button" class="ibtn" data-act="fmt" data-v="ul" aria-label="Bulleted list" title="Bulleted list">'+ic('i-list','sm')+'</button></div><span class="sepv"></span><span class="note" id="savedat">Saved '+fmt(cur.at,true)+'</span><span class="sp"></span>'+aiBtn('sm','Write with AI')+'<button type="button" class="btn primary sm" data-act="nsave">Save</button></div>'
-   +'<div class="nedsc"><div class="ed2" id="ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note: the first line is the title" spellcheck="true"><h1 class="ntitle" id="ntitle">'+esc(cur.title)+'</h1>'+cur.body+'</div></div>'
-   +'<div class="slashhint"><span>Type <kbd>/</kbd> for commands (asset, assets, mention, project, matter, note), <kbd>@</kbd> for people, <kbd>#</kbd> for assets.</span><span class="sp"></span><button type="button" class="btn sm" data-act="slashdemo">Try the slash menu</button><span class="note">'+(off?'AI policy check is off: AI not allowed.':'AI policy check on save: <span class="pill-soon">coming soon</span>')+'</span></div></div>'
+  +'<div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Resize the note list. Use the left and right arrow keys." aria-valuemin="'+NW_MIN+'" aria-valuemax="'+NW_MAX+'" aria-valuenow="'+S.nw+'"><span class="grip" aria-hidden="true"></span></div>'
+  +'<div class="nedit"><div class="ntop"><span class="note" id="savedat">Saved '+fmt(cur.at,true)+'</span><span class="sp"></span>'+aiBtn('sm','Write with AI')+'<button type="button" class="btn primary sm" data-act="nsave">Save</button></div>'+toolbarHTML()
+   +'<div class="nedsc"><div class="ed2" id="ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Note: the first line is the title" spellcheck="true"><h1 class="ntitle" id="ntitle">'+esc(cur.title)+'</h1>'+tagrow+cur.body+'</div></div>'
+   +'<div class="slashhint"><span>Type <kbd>/</kbd> for commands (asset, assets, mention, project, matter, note), <kbd>@</kbd> for people, <kbd>#</kbd> for assets.</span><span class="sp"></span><span class="note">'+(off?'AI policy check is off: AI not allowed.':'AI policy check on save: <span class="pill-soon">coming soon</span>')+'</span></div></div>'
   +rail+panel+'</div></section>';
 }
 function captureEditor(){
   const ed=$('#ed');if(!ed)return;const n=NOTES.find(x=>x.id===S.note);if(!n)return;
   let t=$('.ntitle',ed);if(!t){t=document.createElement('h1');t.className='ntitle';t.id='ntitle';ed.prepend(t)}
-  n.title=t.textContent.trim();const c=ed.cloneNode(true);$('.ntitle',c).remove();n.body=c.innerHTML;
+  n.title=t.textContent.trim();const c=ed.cloneNode(true);$('.ntitle',c).remove();$$('.ntags',c).forEach(x=>x.remove());n.body=c.innerHTML;
 }
 function doSave(afterWarn){
   captureEditor();const n=NOTES.find(x=>x.id===S.note);n.at=now;n.by='Test User 19';n.hist=n.hist||[['Created',n.at,n.by]];
@@ -2122,7 +2192,7 @@ function saveNote(){
   }else doSave(false);
 }
 /* slash menu, @ and # */
-let SLM=null;
+let SLM=null,LASTR=null;
 const CMDS=[{c:'asset',d:'Link one asset (same as #)',ic:'i-box'},{c:'assets',d:'Insert a list of several assets',ic:'i-db'},{c:'mention',d:'Mention a person (same as @)',ic:'i-users'},{c:'project',d:'Link a project of this matter',ic:'i-folder'},{c:'matter',d:'Link a matter',ic:'i-brief'},{c:'note',d:'Embed a note of this matter, shown inline in a frame',ic:'i-edit'}];
 function entities(kind){
   if(kind==='person')return PEOPLE.map(p=>({t:p,s:'Person',h:'<span class="chipx person" contenteditable="false">@'+esc(p)+'</span>&nbsp;'}));
@@ -2154,7 +2224,7 @@ function slmClose(refocus){if(!SLM)return;SLM.el.remove();SLM=null;if(refocus){c
 function edDetect(){
   const ed=$('#ed');if(!ed)return;const sel=getSelection();
   if(SLM&&SLM.mode==='ent'&&SLM.search)return;
-  if(!sel.rangeCount||!ed.contains(sel.anchorNode)||sel.anchorNode.nodeType!==3||sel.anchorNode.parentElement.closest('.ntitle,.lnote,.chipx')){slmClose();return}
+  if(!sel.rangeCount||!ed.contains(sel.anchorNode)||sel.anchorNode.nodeType!==3||sel.anchorNode.parentElement.closest('.ntitle,.lnote,.chipx,.ntags')){slmClose();return}
   const n=sel.anchorNode,txt=n.textContent.slice(0,sel.anchorOffset),m=/(^|\s)([\/@#])([\w-]*)$/.exec(txt);
   if(!m){slmClose();return}
   const base={node:n,start:sel.anchorOffset-m[3].length-1,end:sel.anchorOffset,q:m[3]};
@@ -2194,14 +2264,13 @@ function newNote(){captureEditor();const id='n'+(NOTES.length+1);NOTES.unshift({
 
 /* ====================== ACTIVITIES ====================== */
 function actsHTML(){
-  const unread=ACTS.filter(a=>a.unread).length,list=ACTS.filter(a=>S.kind==='all'||a.k===S.kind);
-  const cnt=k=>ACTS.filter(a=>a.k===k).length;
+  const unread=ACTS.filter(a=>a.unread).length,list=ACTS.filter(a=>S.kind==='all'||a.k===S.kind).slice().sort((a,b)=>b.at-a.at);
+  const kn=S.kind==='all'?'All':KINDS.find(k=>k.id===S.kind).t,cnt=k=>ACTS.filter(a=>a.k===k).length;
   return '<section class="card gridcard grow" aria-label="Activities"><div class="since'+(unread?'':' read')+'">'+(unread?ic('i-bell','sm')+'<span><b>'+unread+' new</b> since your last visit</span><button type="button" class="btn sm" data-act="markread">Mark as read</button>':ic('i-checkc','sm')+'You are up to date.')+'</div>'
-  +'<div class="kchips" role="group" aria-label="Filter by kind"><button type="button" class="kchip" data-act="kind" data-v="all" aria-pressed="'+(S.kind==='all')+'">All <span>'+ACTS.length+'</span></button>'+KINDS.map(k=>'<button type="button" class="kchip '+(k.cls==='orange'||k.cls==='violet'?'':k.cls)+'" data-act="kind" data-v="'+k.id+'" aria-pressed="'+(S.kind===k.id)+'">'+ic(k.icon,'xs')+k.t+' <span>'+cnt(k.id)+'</span></button>').join('')+'</div>'
-  +'<div class="gscroll"><table class="rt act"><caption class="sr">Activities on this matter</caption><colgroup><col style="width:150px"><col style="width:190px"><col><col style="width:190px"></colgroup><thead><tr><th>When</th><th>Who</th><th>What</th><th>Object</th></tr></thead><tbody>'
-  +list.map(a=>{const k=KINDS.find(x=>x.id===a.k);return '<tr><td data-l="When"><span class="unread'+(a.unread?'':' n')+'" aria-hidden="true"></span>'+(a.unread?'<span class="sr">New. </span>':'')+fmt(a.at,true)+'</td><td data-l="Who"><div class="cell">'+(a.who==='System'?'<span class="mini-av sysav" aria-hidden="true">'+ic('i-clock','xs')+'</span>':avatar(a.who))+'<span>'+esc(a.who)+'</span></div></td><td class="full"><span class="kind '+k.cls+'">'+ic(k.icon,'xs')+k.t.replace(/s$/,'')+'</span> '+esc(a.txt)+'</td><td data-l="Object">'+(a.obj?'<button type="button" class="lnk" data-act="inert">'+esc(a.obj)+'</button>':'<span class="note">Matter</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'activities')+'</section>';
+  +'<div class="toolrow">'+ddBtn('kind','i-audit','<span class="pre">Kind:</span> '+kn+' ('+(S.kind==='all'?ACTS.length:cnt(S.kind))+')',S.kind!=='all')+'<span class="note">Newest first</span></div>'
+  +'<div class="gscroll"><table class="rt act"><caption class="sr">Activities on this matter, newest first</caption><colgroup><col style="width:164px"><col style="width:190px"><col></colgroup><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>'
+  +list.map(a=>{const k=KINDS.find(x=>x.id===a.k);return '<tr><td data-l="When"><span class="unread'+(a.unread?'':' n')+'" aria-hidden="true"></span>'+(a.unread?'<span class="sr">New. </span>':'')+fmt(a.at,true)+'</td><td data-l="Who"><div class="cell">'+(a.who==='System'?'<span class="mini-av sysav" aria-hidden="true">'+ic('i-clock','xs')+'</span>':avatar(a.who))+'<span>'+esc(a.who)+'</span></div></td><td class="full" style="white-space:normal"><span class="kind '+k.cls+'">'+ic(k.icon,'xs')+k.t.replace(/s$/,'')+'</span> '+esc(a.txt)+(a.obj?' <button type="button" class="lnk" style="display:inline;max-width:none" data-act="inert">'+esc(a.obj)+'</button>':'')+'</td></tr>'}).join('')+'</tbody></table></div>'+pager(list.length,'activities')+'</section>';
 }
-
 /* ====================== dropdown definitions ====================== */
 function ddDef(id,btn){
   const opt=(arr)=>arr.map(a=>({v:a[0],t:a[1],n:a[2]}));
@@ -2210,6 +2279,11 @@ function ddDef(id,btn){
    tprio:{items:()=>[{v:'',t:'All priorities'}].concat(['Critical','High','Normal','Low'].map(v=>({v,t:v}))),sel:()=>[S.tprio],pick:v=>{S.tprio=v;rerenderKeep()}},
    tasg:{items:()=>[{v:'',t:'All assignees'},{v:'none',t:'Unassigned'}].concat(PEOPLE.map(v=>({v,t:v}))),sel:()=>[S.tasg],pick:v=>{S.tasg=v;rerenderKeep()},search:true,ph:'Search people'},
    tstatus:{items:()=>opt([['open','Open (New, In Progress, On Hold)'],['done','Completed'],['cancel','Cancelled']]),sel:()=>[S.tstatus],pick:v=>{S.tstatus=v;rerenderKeep()},w:300},
+   tview:{items:()=>VIEWS.map(v=>({v:v[0],t:v[1],n:TASKS.filter(t=>isOpen(t)||v[0]==='hold').filter(v[2]).length})),sel:()=>[S.st],pick:v=>{S.st=v;rerenderKeep()},w:240},
+   atype:{items:()=>{const c={};ASSETS.forEach(a=>c[a.type]=(c[a.type]||0)+1);return [{v:'',t:'All types',n:ASSETS.length}].concat(ATYPES.map(a=>({v:a.id,t:a.id,n:c[a.id]||0})))},sel:()=>[S.atype],pick:v=>{S.atype=v;rerenderKeep()},w:240},
+   pdir:{items:()=>[{v:'all',t:'All',n:PRODS.length},{v:'out',t:'Produced by us',n:PRODS.filter(p=>p.dir==='out').length},{v:'in',t:'Received',n:PRODS.filter(p=>p.dir==='in').length}],sel:()=>[S.pdir],pick:v=>{S.pdir=v;rerenderKeep()}},
+   kind:{items:()=>[{v:'all',t:'All',n:ACTS.length}].concat(KINDS.map(k=>({v:k.id,t:k.t,n:ACTS.filter(a=>a.k===k.id).length}))),sel:()=>[S.kind],pick:v=>{S.kind=v;rerenderKeep()}},
+   tstyle:{items:()=>STYLES.map(x=>({v:x[0],t:x[1]})),sel:()=>[S.style||'p'],w:200,pick:v=>{restoreRange();S.style=v;document.execCommand('formatBlock',false,v);$('#stylv').textContent=STYLES.find(x=>x[0]===v)[1]}},
    adisp:{items:()=>[{v:'',t:'All'}].concat(Object.keys(DISP).map(v=>({v,t:v}))),sel:()=>[S.adisp],pick:v=>{S.adisp=v;rerenderKeep()}},
    pstat:{items:()=>[{v:'',t:'All statuses'}].concat(Object.keys(PST).map(v=>({v,t:v,n:PRODS.filter(p=>p.status===v).length}))),sel:()=>[S.pstat],pick:v=>{S.pstat=v;rerenderKeep()}},
    ntag:{items:()=>[{v:'',t:'All tags'}].concat(Object.keys(TAGS).map(v=>({v,t:v}))),sel:()=>[S.ntag],pick:v=>{S.ntag=v;rerenderKeep()}},
@@ -2231,7 +2305,7 @@ function rerenderKeep(id){const a=document.activeElement&&document.activeElement
 function setTab(t){captureEditor();slmClose();S.tab=t;closePanel(true);rerender();{const a=$('[role=tab][aria-selected=true]');a&&a.scrollIntoView({inline:'nearest',block:'nearest'})}try{history.replaceState(null,'','#tab='+t)}catch(e){}}
 function mockBtn(){return '<button type="button" class="mockbtn" id="mockbtn" aria-expanded="'+S.mock+'" aria-controls="mockpanel">'+ic('i-sliders','sm')+'Mockup</button>'}
 function mockHTML(){
-  return '<div class="mockpanel" id="mockpanel" role="dialog" aria-label="Mockup settings"'+(S.mock?'':' hidden')+'><h2>Mockup settings</h2><fieldset><legend>AI allowed (Matter field)</legend>'+Object.keys(AIV).map(k=>'<label><input type="radio" name="mai" value="'+k+'"'+(S.ai===k?' checked':'')+'><span>'+AIV[k]+'<small>'+AIH[k]+'</small></span></label>').join('')+'</fieldset><fieldset><legend>Viewer</legend><label><input type="checkbox" id="mEdit"'+(S.canEdit?' checked':'')+'><span>Has Matter.Edit<small>Off hides pencils and Edit all; AI setting becomes read only.</small></span></label></fieldset><fieldset><legend>Notes</legend><label><input type="checkbox" id="mWarn"'+(S.warn?' checked':'')+'><span>Preview AI warning on save<small>Shows the confirmation dialog when you press Save in a note (needs AI allowed).</small></span></label></fieldset>'+(ALT?'':'<p class="note">Alternative layout for Specs: <a href="alt-specs-own-tab.html">alt-specs-own-tab.html</a></p>')+'</div>';
+  return '<div class="mockpanel" id="mockpanel" role="dialog" aria-label="Mockup settings"'+(S.mock?'':' hidden')+'><h2>Mockup settings</h2><fieldset><legend>AI allowed (Matter field)</legend>'+Object.keys(AIV).map(k=>'<label><input type="radio" name="mai" value="'+k+'"'+(S.ai===k?' checked':'')+'><span>'+AIV[k]+'<small>'+AIH[k]+'</small></span></label>').join('')+'</fieldset><fieldset><legend>Viewer</legend><label><input type="checkbox" id="mEdit"'+(S.canEdit?' checked':'')+'><span>Has Matter.Edit<small>Off hides the Edit button on Summary.</small></span></label></fieldset><fieldset><legend>Notes</legend><label><input type="checkbox" id="mWarn"'+(S.warn?' checked':'')+'><span>Preview AI warning on save<small>Shows the confirmation dialog when you press Save in a note (needs AI allowed).</small></span></label></fieldset>'+'<fieldset><legend>Tools</legend><button type="button" class="btn sm" data-act="slashdemo">Open the slash menu in the note</button></fieldset>'+(ALT?'':'<p class="note">Alternative layout for Specs: <a href="alt-specs-own-tab.html">alt-specs-own-tab.html</a></p>')+'</div>';
 }
 document.addEventListener('change',e=>{
   const t=e.target;
@@ -2267,8 +2341,8 @@ function toggleActive(){
   }else confirmDlg({title:'Reactivate matter',body:'<p>Reactivate '+M.ref+'? New tasks can be created for it again.</p>',yes:'Set active',onYes:()=>{M.active=true;toast('Matter is active.');rerender()}});
 }
 document.addEventListener('click',e=>{
-  const dd=e.target.closest('[data-dd]');
-  if(dd){const def=ddDef(dd.dataset.dd,dd);if(def)openDD(dd,def);return}
+  const dd=e.target.closest('[data-dd],[data-act=tstyle]');
+  if(dd){saveRange();const def=ddDef(dd.dataset.dd||dd.dataset.act,dd);if(def)openDD(dd,def);return}
   if(DD){const li=e.target.closest('.dd-panel li[role=option]');if(li&&DD.panel.contains(li)){ddPick(li.dataset.v);return}if(e.target.closest('[data-dddone]')){closeDD();return}}
   if(SLM){const li=e.target.closest('.dd-panel li[data-i]');if(li&&SLM.el.contains(li)){slmChoose(+li.dataset.i);return}if(e.target.closest('[data-slmdone]')){slmInsert(Array.from(SLM.picked).map(v=>entities(SLM.kind)[v]));return}}
   const dp=$('#daypop');if(dp&&!dp.contains(e.target)&&!e.target.closest('[data-act=dayopen]'))dp.remove();
@@ -2339,9 +2413,11 @@ document.addEventListener('click',e=>{
    case 'ai':if(S.ai==='no'){aiOffMsg();break}if(S.tab==='notes'){captureEditor();S.npanel='ai';renderPanel()}else openPanel({title:'AI assistant',footer:'<button type="button" class="btn" data-act="spclose">Close</button>',body:'<div class="aibox">'+ic('i-flame','lg')+'<b>AI assistant is coming soon</b><p>Allowed on this matter: '+AIV[S.ai]+'.</p></div>'});break;
    case 'addtag':{const n=NOTES.find(x=>x.id===S.note);captureEditor();n.tags.push(b.dataset.t);renderPanel();break}
    case 'rmtag':{const n=NOTES.find(x=>x.id===S.note);captureEditor();n.tags=n.tags.filter(x=>x!==b.dataset.t);renderPanel();break}
-   case 'fmt':{const ed=$('#ed');ed.focus();if(v==='h2')document.execCommand('formatBlock',false,'h2');else if(v==='ul')document.execCommand('insertUnorderedList');else document.execCommand(v);break}
    case 'nsave':saveNote();break;
-   case 'slashdemo':slashDemo();break;
+   case 'slashdemo':S.mock=false;$('#mockpanel').hidden=true;if(S.tab!=='notes')setTab('notes');slashDemo();break;
+   case 'mmcal':toast('Opens My Matters > Calendar with Northwind Logistics > Harbor Freight preselected (mockup). Needs access to My Matters, issue #976.');break;
+   case 'fmt':editorCmd(v);break;
+   case 'tblpick':tblInsert(+b.dataset.r,+b.dataset.c);break;
    case 'kind':S.kind=v;renderPanel();break;
    case 'markread':ACTS.forEach(x=>x.unread=false);renderPanel();break;
   }
@@ -2352,6 +2428,87 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&S.mock){S.mock=false;$('#mockpanel').hidden=true;$('#mockbtn').setAttribute('aria-expanded','false')}
 });
 document.addEventListener('click',e=>{const m=e.target.closest('#mockbtn');if(m){S.mock=!S.mock;$('#mockpanel').hidden=!S.mock;m.setAttribute('aria-expanded',S.mock)}});
+
+/* ====================== editor toolbar: commands, table, link, splitter ====================== */
+const NW_MIN=220,NW_MAX=520;
+try{const w=+localStorage.getItem('mdw');if(w>=NW_MIN&&w<=NW_MAX)S.nw=w}catch(e){}
+let LRANGE=null,SPDRAG=false;
+function saveRange(){const ed=$('#ed'),sel=getSelection();if(ed&&sel.rangeCount&&ed.contains(sel.anchorNode))LRANGE=sel.getRangeAt(0).cloneRange()}
+function restoreRange(){const ed=$('#ed');if(!ed)return;ed.focus();if(LRANGE){const s2=getSelection();s2.removeAllRanges();s2.addRange(LRANGE)}}
+function bodyRange(){const ed=$('#ed');ed.focus();const n=LRANGE&&LRANGE.startContainer;const el=n&&(n.nodeType===1?n:n.parentElement);
+  if(!LRANGE||!el||!ed.contains(el)||el.closest('.ntitle,.ntags')){const r=document.createRange();r.selectNodeContents(ed);r.collapse(false);LRANGE=r}
+  const s2=getSelection();s2.removeAllRanges();s2.addRange(LRANGE)}
+function updateTb(){
+  const ed=$('#ed');if(!ed)return;const sel=getSelection(),n=sel.anchorNode,el=n&&(n.nodeType===1?n:n.parentElement),inEd=!!(el&&ed.contains(el));
+  const cell=inEd?el.closest('td,th'):null,t2=$('#tb2');
+  if(t2){t2.hidden=!cell;if(cell)$('[data-t=hdr]',t2).setAttribute('aria-pressed',String(!!$('thead',cell.closest('table'))))}
+  ['bold','italic','underline'].forEach(c=>{const b=$('#tb [data-v='+c+']');if(b)b.setAttribute('aria-pressed',String(inEd&&document.queryCommandState(c)))});
+  const blk=inEd?el.closest('h1,h2,h3,blockquote,pre,p,li'):null,tag=blk?blk.tagName.toLowerCase():'p';
+  const st=STYLES.find(x=>x[0]===tag);const v=$('#stylv');if(v)v.textContent=tag==='h1'?'Title':st?st[1]:'Paragraph';
+}
+document.addEventListener('selectionchange',()=>{saveRange();updateTb()});
+function editorCmd(v){
+  bodyRange();const ex=(c,a)=>document.execCommand(c,false,a);
+  if(v==='bold'||v==='italic'||v==='underline')ex(v);
+  else if(v==='ul')ex('insertUnorderedList');else if(v==='ol')ex('insertOrderedList');
+  else if(v==='quote')ex('formatBlock','blockquote');
+  else if(v==='clear')ex('removeFormat');
+  else if(v==='undo')ex('undo');else if(v==='redo')ex('redo');
+  else if(v==='mention'||v==='asset'){const r=getSelection().getRangeAt(0),t=r.startContainer.textContent||'',pv=t[r.startOffset-1];ex('insertText',(!pv||/\s/.test(pv)?'':' ')+(v==='mention'?'@':'#'))}
+  else if(v==='link')linkPop();
+  else if(v==='table')tblPicker();
+  updateTb();
+}
+function closeFloat(){['tblpop','linkpop'].forEach(i=>{const e=document.getElementById(i);e&&e.remove()})}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('#tblpop,#linkpop,[data-v=table],[data-v=link]'))closeFloat();if(e.target.closest('#tb [data-act],#tb2 button,#tblpop'))e.preventDefault()});
+function floatAt(el,btn,w){document.body.appendChild(el);const r=btn.getBoundingClientRect();el.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';el.style.top=(r.bottom+4)+'px'}
+function tblPicker(){
+  closeFloat();const el=document.createElement('div');el.id='tblpop';el.className='tblpop';el.setAttribute('role','dialog');el.setAttribute('aria-label','Insert table');
+  let g='';for(let r=1;r<=6;r++)for(let c=1;c<=8;c++)g+='<button type="button" data-act="tblpick" data-r="'+r+'" data-c="'+c+'" aria-label="'+r+' rows by '+c+' columns"></button>';
+  el.innerHTML='<div class="tl" id="tbllab">Pick rows by columns</div><div class="tg">'+g+'</div><label class="chk" style="padding:6px 0 0"><input type="checkbox" id="tblhdr" checked>First row is a header</label><div class="note" style="margin-top:4px">Arrow keys move in the grid, Enter inserts.</div>';
+  floatAt(el,$('#tb [data-v=table]'),250);
+  const cells=$$('.tg button',el),mark=(r,c)=>{cells.forEach(b=>b.classList.toggle('on',+b.dataset.r<=r&&+b.dataset.c<=c));$('#tbllab').textContent=r?r+' x '+c+' table':'Pick rows by columns'};
+  el.addEventListener('mouseover',e=>{const b=e.target.closest('.tg button');if(b)mark(+b.dataset.r,+b.dataset.c)});
+  el.addEventListener('focusin',e=>{const b=e.target.closest('.tg button');if(b)mark(+b.dataset.r,+b.dataset.c)});
+  el.addEventListener('keydown',e=>{const b=e.target.closest('.tg button');if(!b){if(e.key==='Escape'){closeFloat();restoreRange()}return}let r=+b.dataset.r,c=+b.dataset.c;
+    if(e.key==='ArrowRight')c=Math.min(8,c+1);else if(e.key==='ArrowLeft')c=Math.max(1,c-1);else if(e.key==='ArrowDown')r=Math.min(6,r+1);else if(e.key==='ArrowUp')r=Math.max(1,r-1);else if(e.key==='Escape'){closeFloat();restoreRange();return}else return;
+    e.preventDefault();$('.tg button[data-r="'+r+'"][data-c="'+c+'"]',el).focus()});
+  mark(3,3);$('.tg button[data-r="3"][data-c="3"]',el).focus();
+}
+function tblInsert(r,c){
+  const hdr=$('#tblhdr')?$('#tblhdr').checked:true;closeFloat();bodyRange();
+  const body=Math.max(1,hdr?r-1:r);
+  const h='<table>'+(hdr?'<thead><tr>'+'<th>Header</th>'.repeat(c)+'</tr></thead>':'')+'<tbody>'+('<tr>'+'<td><br></td>'.repeat(c)+'</tr>').repeat(body)+'</tbody></table><p><br></p>';
+  document.execCommand('insertHTML',false,h);updateTb();toast('Table inserted ('+r+' x '+c+'). Use the Table bar to add or remove rows and columns.');
+}
+function linkPop(){
+  closeFloat();const el=document.createElement('div');el.id='linkpop';el.className='tblpop';el.setAttribute('role','dialog');el.setAttribute('aria-label','Insert link');
+  el.innerHTML='<label for="lk-u" style="font-weight:600;font-size:13px">Link address</label><div style="display:flex;gap:6px;margin-top:6px"><input id="lk-u" type="text" value="https://" style="flex:1;height:34px;border:1px solid var(--border-strong);border-radius:8px;padding:0 10px"><button type="button" class="btn sm primary" id="lk-ok">Apply</button></div>';
+  floatAt(el,$('#tb [data-v=link]'),300);$('#lk-u').focus();
+  const ok=()=>{const u=$('#lk-u').value.trim();closeFloat();bodyRange();if(!u)return;if(getSelection().isCollapsed)document.execCommand('insertHTML',false,'<a href="'+esc(u)+'">'+esc(u)+'</a>&nbsp;');else document.execCommand('createLink',false,u)};
+  $('#lk-ok').onclick=ok;el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ok()}else if(e.key==='Escape'){closeFloat();restoreRange()}});
+}
+function tblOp(op){
+  const n=LRANGE&&LRANGE.startContainer,el=n&&(n.nodeType===1?n:n.parentElement),cell=el&&el.closest('td,th');if(!cell)return;
+  const tbl=cell.closest('table'),row=cell.parentElement,ci=Array.from(row.children).indexOf(cell);
+  const mk=t=>{const d=document.createElement(t);d.innerHTML=t==='th'?'Header':'<br>';return d};
+  if(op==='rowadd'){const tr=document.createElement('tr');for(let i=0;i<row.children.length;i++)tr.appendChild(mk('td'));if(row.parentNode.nodeName==='THEAD'){let tb=$('tbody',tbl);if(!tb){tb=document.createElement('tbody');tbl.appendChild(tb)}tb.insertBefore(tr,tb.firstChild)}else row.after(tr)}
+  else if(op==='rowdel'){if($$('tr',tbl).length<=1){tbl.remove()}else{const th=row.parentNode.nodeName==='THEAD';row.remove();if(th)$('thead',tbl)&&!$('thead tr',tbl)&&$('thead',tbl).remove()}}
+  else if(op==='coladd'){$$('tr',tbl).forEach(tr=>{const c2=mk(tr.parentNode.nodeName==='THEAD'?'th':'td');const ref=tr.children[ci];ref?ref.after(c2):tr.appendChild(c2)})}
+  else if(op==='coldel'){if(row.children.length<=1){tbl.remove()}else $$('tr',tbl).forEach(tr=>tr.children[ci]&&tr.children[ci].remove())}
+  else if(op==='hdr'){const th=$('thead',tbl);if(th){const tb=$('tbody',tbl)||tbl.appendChild(document.createElement('tbody'));const tr=$('tr',th);$$('th',tr).forEach(h=>{const d=mk('td');d.innerHTML=h.innerHTML;h.replaceWith(d)});tb.insertBefore(tr,tb.firstChild);th.remove()}else{const tb=$('tbody',tbl)||tbl,tr=$('tr',tb);if(tr){const nh=document.createElement('thead');$$('td',tr).forEach(d=>{const h=mk('th');h.innerHTML=d.innerHTML;d.replaceWith(h)});nh.appendChild(tr);tbl.insertBefore(nh,tbl.firstChild)}}}
+  else if(op==='tbldel'){tbl.remove()}
+  $('#ed').focus();updateTb();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('#tb2 [data-t]');if(b)tblOp(b.dataset.t)});
+/* splitter between the note list and the editor: mouse, touch and keyboard */
+function setNW(v){v=Math.max(NW_MIN,Math.min(NW_MAX,Math.round(v)));S.nw=v;const l=$('#nlistc'),sp=$('#splitter');if(l)l.style.flexBasis=v+'px';if(sp)sp.setAttribute('aria-valuenow',v);try{localStorage.setItem('mdw',v)}catch(e){}}
+document.addEventListener('pointerdown',e=>{const sp=e.target.closest('#splitter');if(!sp)return;e.preventDefault();sp.focus();try{sp.setPointerCapture(e.pointerId)}catch(x){}SPDRAG=true;sp.classList.add('drag')});
+document.addEventListener('pointermove',e=>{if(!SPDRAG)return;const w=$('#nwrap');if(!w){SPDRAG=false;return}setNW(e.clientX-w.getBoundingClientRect().left)});
+document.addEventListener('pointerup',()=>{SPDRAG=false;const sp=$('#splitter');sp&&sp.classList.remove('drag')});
+document.addEventListener('keydown',e=>{if(e.target.id!=='splitter')return;const st=e.shiftKey?48:16;
+  if(e.key==='ArrowLeft'){e.preventDefault();setNW(S.nw-st)}else if(e.key==='ArrowRight'){e.preventDefault();setNW(S.nw+st)}else if(e.key==='Home'){e.preventDefault();setNW(NW_MIN)}else if(e.key==='End'){e.preventDefault();setNW(NW_MAX)}});
+
 /* ====================== init ====================== */
 function init(){
   document.title=(ALT?'Matter detail, Specs as own tab':'Matter detail redesign')+' - mockup - LPT Hub';
