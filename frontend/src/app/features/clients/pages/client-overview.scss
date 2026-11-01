@@ -29,8 +29,10 @@
   gap: var(--mf-s2) var(--mf-s3);
   margin-bottom: var(--mf-s2);
   padding: var(--mf-s2) var(--mf-s3);
-  border: 1px solid var(--mf-danger);
-  border-radius: var(--mf-radius);
+  border: 1px solid var(--mf-sem-overdue-line);
+  border-radius: var(--mf-radius-md);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
 }
 
 .ov-skel {
@@ -59,15 +61,19 @@
 
 .ov-table {
   width: 100%;
-  border-collapse: collapse;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-xl);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: clip;
   background: var(--mf-surface);
-  box-shadow: var(--mf-shadow-1);
+  box-shadow: var(--mf-shadow-card);
 }
 
 .ov-table th,
 .ov-table td {
   padding: 2px var(--mf-s3);
-  border-bottom: 1px solid var(--mf-border);
+  border-bottom: 1px solid var(--mf-border-soft);
   text-align: left;
   vertical-align: middle;
   height: var(--mf-grid-row-h, 44px);
@@ -76,7 +82,15 @@
 
 .ov-table th {
   background: var(--mf-surface-alt);
-  font-weight: 600;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-weight: var(--mf-fw-bold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ov-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .ov-table .ov-num {
