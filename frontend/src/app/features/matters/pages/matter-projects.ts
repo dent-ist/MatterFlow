@@ -1,6 +1,14 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { ProjectResponse } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -92,7 +100,7 @@ import { groupProjects } from './matter-project-groups';
           icon="pi pi-plus"
           severity="secondary"
           data-empty-new-project
-          (onClick)="go('/projects/new?matterId=' + matterId())"
+          (onClick)="newProject.emit()"
         />
       </div>
     } @else {
@@ -210,8 +218,9 @@ export class MatterProjects {
   readonly projects = input.required<readonly ProjectResponse[]>();
   /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
   readonly total = input(0);
+  /** The empty tab's New project button: the page opens the side panel. */
+  readonly newProject = output<void>();
 
-  private readonly router = inject(Router);
   private readonly auth = inject(AuthStore);
 
   constructor() {
@@ -248,9 +257,5 @@ export class MatterProjects {
 
   protected toggleArchived(): void {
     this.chosen.set(!this.archivedOpen());
-  }
-
-  protected go(path: string): void {
-    void this.router.navigateByUrl(path);
   }
 }

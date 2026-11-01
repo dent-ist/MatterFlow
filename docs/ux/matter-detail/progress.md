@@ -29,6 +29,13 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 
 - 2026-11-01 Epic #1001 and issues #1002 to #1019 created; branch `matter-detail` created from `origin/theme-all-pages`; plan, progress table and addendum AQ written.
 
-## Agent A
+## Agent A (see the entries at the end of the file)
 
 ## Agent B
+
+- 2026-11-01 MD-01 (A): `mf-slide-panel` (shared/ui/slide-panel.ts) is on the branch: use it for every create/edit panel (inputs title, subtitle, size, primaryLabel, busy, error, dirty, canSubmit; `[(visible)]`, `(submitted)`). Example: features/projects/ui/project-panel.ts. Tab registry: features/matters/ui/matter-tabs.ts (add a tab permission there, then a `@case` in matter-detail-page.ts replacing the placeholder). Productions tab needs `Production.View` and Notes `MatterNote.View` in contracts/permissions.json (Agent B adds them; the tabs show only for holders). New menu entries for Production/Spec/Note/Event: Agent B adds them to `newItems` in matter-detail-page.ts when the feature exists.
+- 2026-11-01 MD-02 (A): script 51 `Matter.AiAllowed` (tinyint, default 0, CHECK 0..2); API enum `MatterAiAllowed` (`No`, `OnPremOnly`, `CompanyApproved`) in Organization.Contracts, on MatterResponse, CreateMatterRequest and UpdateMatterRequest (nullable = unchanged).
+
+### Questions (Agent A)
+
+- None yet.

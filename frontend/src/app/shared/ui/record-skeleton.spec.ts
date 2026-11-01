@@ -74,7 +74,15 @@ describe('mf-record-skeleton (#247, #615)', () => {
   it('draws a matter with the real tab labels and -- for the counts', async () => {
     const el = await render('matter', 'projects');
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading matter');
-    expect(labels(el)).toEqual(['Overview', 'Tasks (--)', 'Projects (--)', 'Assets (--)']);
+    expect(labels(el)).toEqual([
+      'Summary',
+      'Tasks (--)',
+      'Projects (--)',
+      'Assets (--)',
+      'Productions',
+      'Notes',
+      'Activities',
+    ]);
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');
   });
 
@@ -129,10 +137,13 @@ describe('mf-record-skeleton (#247, #615)', () => {
       { key: 'matters', label: 'Matters', count: 63 },
     ]);
     expect(recordTabs('matter', { tasks: 3, projects: 40, assets: 6 })).toEqual([
-      { key: 'details', label: 'Overview' },
-      { key: 'tasks', label: 'Tasks', count: 3 },
-      { key: 'projects', label: 'Projects', count: 40 },
-      { key: 'assets', label: 'Assets', count: 6 },
+      { key: 'summary', label: 'Summary', icon: 'pi-home' },
+      { key: 'tasks', label: 'Tasks', icon: 'pi-check-square', count: 3 },
+      { key: 'projects', label: 'Projects', icon: 'pi-folder', count: 40 },
+      { key: 'assets', label: 'Assets', icon: 'pi-database', count: 6 },
+      { key: 'productions', label: 'Productions', icon: 'pi-send' },
+      { key: 'notes', label: 'Notes', icon: 'pi-file-edit' },
+      { key: 'activities', label: 'Activities', icon: 'pi-history' },
     ]);
     expect(recordTabLabel('matter', 'tasks')).toBe('Tasks');
     expect(recordTabLabel('client', 'nonsense')).toBe('Overview');

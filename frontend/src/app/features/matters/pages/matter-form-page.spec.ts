@@ -117,6 +117,7 @@ describe('MatterFormPage', () => {
         matterNumber: '00012',
         name: 'Merger Review',
         isSensitive: true,
+        aiAllowed: 'No',
       });
       expect(navigate).toHaveBeenCalledWith(['/matters', 21]);
     });
@@ -244,8 +245,27 @@ describe('MatterFormPage', () => {
       expect(matters.updateMatter).toHaveBeenCalledWith(7, {
         name: 'Renamed',
         isSensitive: true,
+        aiAllowed: 'No',
         rowVersion: 'BBBB',
       });
+    });
+
+    it('offers the three AI allowed values, defaulting to No, and saves the chosen one (MD-02)', async () => {
+      const select = el().querySelector<HTMLSelectElement>('[data-ai-allowed]')!;
+      expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
+        'No',
+        'On-prem AI only',
+        'Company-approved AI services',
+      ]);
+      expect(select.value).toBe('No');
+      select.value = 'OnPremOnly';
+      select.dispatchEvent(new Event('change'));
+      type('#matter-name', 'Renamed');
+      await submit();
+      expect(matters.updateMatter).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ aiAllowed: 'OnPremOnly' }),
+      );
     });
 
     it('asks "You will no longer see this matter" when marking would end the editor\'s own access, then repeats the save confirmed', async () => {
@@ -279,6 +299,7 @@ describe('MatterFormPage', () => {
       expect(matters.updateMatter).toHaveBeenLastCalledWith(7, {
         name: 'Merger Review',
         isSensitive: true,
+        aiAllowed: 'No',
         confirmLossOfAccess: true,
         rowVersion: 'BBBB',
       });

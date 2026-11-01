@@ -179,6 +179,10 @@ export interface MfTab {
       right: 100%;
       background: linear-gradient(to left, var(--mf-bg), transparent);
     }
+    .tab__icon {
+      margin-right: var(--mf-s1);
+      font-size: var(--mf-fs-sm);
+    }
     .tab {
       flex: none;
       scroll-snap-align: start;

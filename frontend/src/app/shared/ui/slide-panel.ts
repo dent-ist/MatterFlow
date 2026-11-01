@@ -161,7 +161,12 @@ const WIDTHS = { default: '30rem', large: '37.5rem' } as const;
               <p class="sp__error" role="alert" data-panel-error>{{ error() }}</p>
             }
             @if (guard()) {
-              <div class="sp__guard" role="alertdialog" aria-label="Discard changes?" data-panel-guard>
+              <div
+                class="sp__guard"
+                role="alertdialog"
+                aria-label="Discard changes?"
+                data-panel-guard
+              >
                 <span>You have unsaved changes. Discard them?</span>
                 <span class="sp__guard-actions">
                   <p-button

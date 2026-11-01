@@ -23,7 +23,8 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
-import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
+import { EntityActivity } from '../../../shared/ui/entity-activity';
+import { MenuAction } from '../../../shared/ui/action-menu';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
 import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
@@ -32,12 +33,13 @@ import { MatterAssets } from '../../../shared/ui/matter-assets';
 import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scoped-tasks';
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
-import { RecordSkeleton, recordTabLabel, recordTabs } from '../../../shared/ui/record-skeleton';
+import { RecordSkeleton, recordTabLabel } from '../../../shared/ui/record-skeleton';
 import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
-import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
-import { MatterHealthStrip } from '../ui/matter-health-strip';
+import { MatterHeader } from '../ui/matter-header';
+import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matter-tabs';
+import { ProjectPanel } from '../../projects/ui/project-panel';
 import { MatterOverviewSections } from '../ui/matter-overview';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
@@ -46,7 +48,7 @@ import { MatterProjects } from './matter-projects';
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
 
-type Tab = 'details' | 'tasks' | 'projects' | 'assets';
+type Tab = MatterTabKey;
 
 /**
  * Matter detail (UX S06): reference with copy button, the inactive banners, activation with the open-task rule,
@@ -60,7 +62,9 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
   imports: [
     FixedPage,
     ScrollArea,
-    RecordHeader,
+    MatterHeader,
+    ProjectPanel,
+    EntityActivity,
     ActiveBadge,
     RecordState,
     RecordSkeleton,
@@ -69,14 +73,12 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
     HasPermissionDirective,
     ConfirmDialog,
     MatterAssets,
-    ActivityDrawer,
     SensitiveBadge,
     Tabs,
     MfDatePipe,
     CustomFieldsView,
     ScopedTasks,
     MatterProjects,
-    MatterHealthStrip,
     MatterOverviewSections,
     AddCommentDialog,
     MatterManagersDialog,
@@ -122,27 +124,8 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
         }
         @case ('ready') {
           @if (matter(); as m) {
-            <mf-record-header
-              kind="matter"
-              [parents]="[{ label: 'Matters', link: '/matters' }]"
-              [current]="m.matterRef + ' ' + m.name"
-              [ref]="m.matterRef"
-              [name]="m.name"
-              [active]="m.isActive"
-              [sensitive]="m.isSensitive"
-              [actions]="headerActions()"
-            >
-              <span mfContext data-client
-                >Client
-                @if (canLinkClient()) {
-                  <a class="pg-link" [routerLink]="['/clients', m.clientId]"
-                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
-                  >
-                } @else {
-                  <span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}
-                }
-              </span>
-            </mf-record-header>
+            <mf-matter-header [matter]="m" [newItems]="newItems()" [moreItems]="moreItems()" />
+
             @if (m.primaryManager || m.secondaryManager || canAssign()) {
               <p data-managers class="md-managers">
                 @if (m.primaryManager || m.secondaryManager) {
@@ -181,8 +164,6 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
               </p>
             }
 
-            <mf-matter-health-strip [matterId]="m.matterId" [reload]="healthReload()" />
-
             @if (!m.isActive) {
               <div class="pg-banner" role="note" data-inactive-banner>
                 This matter is inactive. New tasks can't be created and completed or cancelled tasks
@@ -209,7 +190,7 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
               [attr.aria-labelledby]="'matter-tab-' + current()"
             >
               @switch (current()) {
-                @case ('details') {
+                @case ('summary') {
                   <div class="mf-scroll-area" mfScrollArea="Matter overview" data-details-tab>
                     <div class="pg-details" data-matter-overview>
                       <h2 class="pg-sr">Overview</h2>
@@ -241,10 +222,10 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                       }
                       <mf-matter-overview
                         [matterId]="m.matterId"
-                        [reload]="healthReload()"
+                        [reload]="reloadTick()"
                         [canOpenActivity]="canSeeActivity()"
                         (openAssets)="select('assets')"
-                        (openActivity)="setActivityOpen(true)"
+                        (openActivity)="select('activities')"
                       />
                       <ng-template #detailsBody>
                         <dl class="pg-dl">
@@ -300,7 +281,21 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
                     [matterRef]="m.matterRef"
                     [projects]="projects()"
                     [total]="projectsTotal()"
+                    (newProject)="openProjectPanel()"
                   />
+                }
+                @case ('productions') {
+                  <div class="pg-state" data-placeholder="productions">
+                    Productions are coming soon.
+                  </div>
+                }
+                @case ('notes') {
+                  <div class="pg-state" data-placeholder="notes">Notes are coming soon.</div>
+                }
+                @case ('activities') {
+                  <div class="mf-scroll-area" mfScrollArea="Matter activities" data-activities-tab>
+                    <mf-entity-activity objectType="Matter" [objectId]="m.matterId" />
+                  </div>
                 }
                 @case ('assets') {
                   @if (canSeeAssets()) {
@@ -328,13 +323,12 @@ type Tab = 'details' | 'tasks' | 'projects' | 'assets';
               />
             }
 
-            @if (canSeeActivity()) {
-              <mf-activity-drawer
-                objectType="Matter"
-                [objectId]="m.matterId"
-                [name]="m.name"
-                [visible]="activityOpen()"
-                (visibleChange)="setActivityOpen($event)"
+            @if (projectPanelUsed()) {
+              <mf-project-panel
+                [matterId]="m.matterId"
+                [matterLabel]="m.matterRef + ' ' + m.name"
+                [(visible)]="projectPanelOpen"
+                (saved)="projectSaved()"
               />
             }
 
@@ -421,7 +415,9 @@ export class MatterDetailPage {
   protected readonly projects = signal<ProjectResponse[]>([]);
   /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
   protected readonly projectsTotal = signal(0);
-  protected readonly activityOpen = signal(false);
+  protected readonly projectPanelOpen = signal(false);
+  /** The project panel exists from the first use on (a closed panel is no markup on the page). */
+  protected readonly projectPanelUsed = signal(false);
   /** How many assets the matter has (the summary's `assetCount`, retired ones included); null when unknown or not for this viewer. */
   protected readonly assetCount = signal<number | null>(null);
   /**
@@ -430,23 +426,23 @@ export class MatterDetailPage {
    */
   protected readonly tabs = computed<MfTab[]>(() => {
     const m = this.matter();
-    return recordTabs('matter', {
+    const counts: Partial<Record<string, number | null>> = {
       tasks: this.auth.has('Task.View') ? (m?.openTaskCount ?? 0) : null,
       projects: m?.projectCount ?? 0,
       assets: this.assetCount(),
-    }).filter(
-      (t) =>
-        (t.key !== 'projects' || this.auth.has('Project.View')) &&
-        (t.key !== 'assets' || this.auth.has('Asset.View')),
-    );
+    };
+    return visibleMatterTabs((code) => this.auth.has(code)).map((t) => {
+      const tab: MfTab = { key: t.key, label: t.label, icon: t.icon };
+      if (t.counted) tab.count = counts[t.key];
+      return tab;
+    });
   });
-  protected readonly current = computed<Tab>(() => {
-    const t = this.tab();
-    return (t === 'tasks' || t === 'projects' || t === 'assets') &&
-      this.tabs().some((x) => x.key === t)
-      ? t
-      : 'details';
-  });
+  protected readonly current = computed<Tab>(() =>
+    matterTabFromParam(
+      this.tab(),
+      this.tabs().map((t) => t.key),
+    ),
+  );
   protected readonly projectOptions = computed(() =>
     this.projects().map((p) => ({
       value: String(p.projectId),
@@ -460,8 +456,9 @@ export class MatterDetailPage {
     // A viewer who gets none of the overview sections (no Task.View and no Asset.View) sees the details at once: there is nothing else on the tab.
     !(this.auth.has('Task.View') || this.auth.has('Asset.View')),
   );
-  protected readonly healthReload = signal(0);
   /** The quick action "Add comment" (epic #758): the dialog that posts to one of the matter's open tasks. */
+  /** Counts the changes that make the Summary's overview reload. */
+  protected readonly reloadTick = signal(0);
   protected readonly commentOpen = signal(false);
   /** The dialog exists from the first use on (a closed dialog is no markup on the page). */
   protected readonly commentUsed = signal(false);
@@ -480,36 +477,18 @@ export class MatterDetailPage {
     return !!m && m.isActive && (m.openTaskCount ?? 0) > 0;
   });
   /**
-   * The header's actions (C3, #255): Edit, Activity, the primary Create task and, in the overflow, New project, New asset and
-   * Set inactive / Set active (disabled with its reason while tasks are open).
+   * The New menu (MD-01): Task, Project and Asset with their Create permission. Production, Spec, Note and Event are added by the
+   * tabs that build them (MD-08, MD-11, MD-13); an entry for a feature that does not exist yet is not drawn.
    */
-  protected readonly headerActions = computed<RecordAction[]>(() => {
+  protected readonly newItems = computed<MenuAction[]>(() => {
     const m = this.matter();
     if (!m) return [];
-    const list: RecordAction[] = [];
-    if (this.auth.has('Matter.Edit')) {
-      list.push({
-        id: 'edit',
-        role: 'edit',
-        label: 'Edit',
-        run: () => this.go('/matters/' + m.matterId + '/edit'),
-      });
-    }
-    if (this.canSeeActivity()) {
-      list.push({
-        id: 'activity',
-        role: 'activity',
-        label: 'Activity',
-        icon: 'pi-history',
-        run: () => this.setActivityOpen(true),
-      });
-    }
+    const list: MenuAction[] = [];
     if (this.auth.has('Task.Create')) {
       list.push({
         id: 'create-task',
-        role: 'primary',
-        label: 'Create task',
-        icon: 'pi-plus',
+        label: 'Task',
+        icon: 'pi-check-square',
         disabled: !m.isActive,
         reason: "This matter is inactive. New tasks can't be created.",
         run: () => this.go('/tasks/new?matterId=' + m.matterId),
@@ -518,26 +497,40 @@ export class MatterDetailPage {
     if (this.auth.has('Project.Create')) {
       list.push({
         id: 'new-project',
-        role: 'secondary',
-        label: 'New project',
-        icon: 'pi-plus',
-        run: () => this.go('/projects/new?matterId=' + m.matterId),
+        label: 'Project',
+        icon: 'pi-folder',
+        run: () => this.openProjectPanel(),
       });
     }
     if (this.auth.has('Asset.Create')) {
       list.push({
         id: 'new-asset',
-        role: 'secondary',
-        label: 'New asset',
-        icon: 'pi-plus',
+        label: 'Asset',
+        icon: 'pi-database',
         run: () => this.go('/assets/new?matterId=' + m.matterId),
+      });
+    }
+    return list;
+  });
+
+  /** More actions (MD-01): bulk re-assign / re-prioritise, Add comment, Open the matter's tasks, Set inactive / Set active (with the open-task block). */
+  protected readonly moreItems = computed<MenuAction[]>(() => {
+    const m = this.matter();
+    if (!m) return [];
+    const list: MenuAction[] = [];
+    // Interim until MD-03 moves editing into the Summary tab's side panel.
+    if (this.auth.has('Matter.Edit')) {
+      list.push({
+        id: 'edit',
+        label: 'Edit matter',
+        icon: 'pi-pencil',
+        run: () => this.go('/matters/' + m.matterId + '/edit'),
       });
     }
     if (this.auth.has('Task.View')) {
       if (this.auth.has('Task.Assign') || this.auth.has('Task.SetPriority')) {
         list.push({
           id: 'bulk-tasks',
-          role: 'secondary',
           label: 'Bulk re-assign / re-prioritise',
           icon: 'pi-check-square',
           run: () => this.bulk(m.matterId),
@@ -546,7 +539,6 @@ export class MatterDetailPage {
       if (this.auth.has('Task.Comment')) {
         list.push({
           id: 'add-comment',
-          role: 'secondary',
           label: 'Add comment',
           icon: 'pi-comment',
           run: () => {
@@ -557,7 +549,6 @@ export class MatterDetailPage {
       }
       list.push({
         id: 'open-tasks',
-        role: 'secondary',
         label: "Open the matter's tasks",
         icon: 'pi-list',
         run: () => this.go('/tasks?matter=' + m.matterId),
@@ -566,8 +557,8 @@ export class MatterDetailPage {
     if (this.auth.has('Matter.SetActive')) {
       list.push({
         id: 'toggle-active',
-        role: 'state',
         label: m.isActive ? 'Set inactive' : 'Set active',
+        separated: true,
         disabled: this.deactivateBlocked(),
         reason: `This matter has ${m.openTaskCount} tasks that aren't Completed or Cancelled. Finish or cancel them first.`,
         run: () => this.toggleOpen.set(true),
@@ -593,11 +584,6 @@ export class MatterDetailPage {
       this.matterId();
       untracked(() => void this.load());
     });
-    effect(() => {
-      if (this.tab() === 'activity' && this.canSeeActivity()) {
-        untracked(() => this.activityOpen.set(true));
-      }
-    });
   }
 
   protected managerTarget(m: MatterResponse): ManagerTarget {
@@ -622,7 +608,7 @@ export class MatterDetailPage {
     void this.router.navigate([], {
       // The filters of the Tasks and Assets tabs, and the Assets paging and sort, belong to their tab only.
       queryParams: {
-        tab: key === 'details' ? null : key,
+        tab: key === 'summary' ? null : key,
         name: null,
         typeId: null,
         extref: null,
@@ -635,15 +621,15 @@ export class MatterDetailPage {
     });
   }
 
-  protected setActivityOpen(open: boolean): void {
-    this.activityOpen.set(open);
-    if (!open && this.tab() === 'activity') {
-      void this.router.navigate([], {
-        queryParams: { tab: null },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
-    }
+  protected openProjectPanel(): void {
+    this.projectPanelUsed.set(true);
+    this.projectPanelOpen.set(true);
+  }
+
+  /** A project was created in the panel: the list and the count come from a fresh load; the page stays where it is. */
+  protected projectSaved(): void {
+    void this.load();
+    this.reloadTick.update((n) => n + 1);
   }
 
   async load(): Promise<void> {

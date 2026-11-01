@@ -25,10 +25,13 @@ const RECORD_TABS = {
     { key: 'matters', label: 'Matters', counted: true },
   ],
   matter: [
-    { key: 'details', label: 'Overview' },
-    { key: 'tasks', label: 'Tasks', counted: true },
-    { key: 'projects', label: 'Projects', counted: true },
-    { key: 'assets', label: 'Assets', counted: true },
+    { key: 'summary', label: 'Summary', icon: 'pi-home' },
+    { key: 'tasks', label: 'Tasks', icon: 'pi-check-square', counted: true },
+    { key: 'projects', label: 'Projects', icon: 'pi-folder', counted: true },
+    { key: 'assets', label: 'Assets', icon: 'pi-database', counted: true },
+    { key: 'productions', label: 'Productions', icon: 'pi-send' },
+    { key: 'notes', label: 'Notes', icon: 'pi-file-edit' },
+    { key: 'activities', label: 'Activities', icon: 'pi-history' },
   ],
   project: [
     { key: 'tasks', label: 'Tasks', counted: true },
@@ -50,6 +53,7 @@ export function recordTabs(
 ): MfTab[] {
   return RECORD_TABS[kind].map((t) => {
     const tab: MfTab = { key: t.key, label: t.label };
+    if ('icon' in t) tab.icon = t.icon;
     if ('counted' in t) tab.count = counts[t.key] === undefined ? 0 : counts[t.key];
     return tab;
   });

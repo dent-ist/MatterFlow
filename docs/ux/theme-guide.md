@@ -265,3 +265,19 @@ One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUME
 - In templates use the `mfNum` pipe (`value | mfNum`, `| mfNum: 'date'`, `| mfNum: 'time'`); in code use `numericDate`, `numericInstant`, `numericDateAndTime`.
 - Accessible text and tooltips keep a readable full date: `readableDate` / `readableInstant` give "October 26, 2026, 4:00 PM". Relative words ("Today", "2 days ago", "Due in 2 d") stay as they are. The month title of the calendar ("October 2026") is a heading, not a date, and stays.
 - Other pages keep `mfDate` for now. The native date and time inputs of the event dialog follow the browser's locale.
+
+
+## 6. Create and edit in a side panel (epic #1001, MD-01; owner decision AQ.4)
+
+From the Matter detail redesign on, **every create and edit opens in the shared right-hand side panel** (`mf-slide-panel`, `frontend/src/app/shared/ui/slide-panel.ts`). A centred dialog (`mf-confirm-dialog`) is only for confirmations ("Set matter inactive", "Discard your changes?"). The old routed form pages stay until their screen is converted.
+
+Rules of the panel:
+
+- Header: title (and an optional quiet subtitle, for example the CM number) and a close button. Body scrolls. Footer: **Cancel on the left, the primary action on the right**.
+- Esc and a click on the scrim close it; Tab stays inside; focus goes to the first field when it opens and returns to the control that opened it.
+- Widths: 480 px (default), 600 px (`size="large"`), full width below 640 px.
+- `dirty` makes every way of closing ask "You have unsaved changes. Discard them?" (Keep editing / Discard). `busy` shows "Saving..." and ignores clicks; `error` shows a message in the footer (`role="alert"`).
+- The page owns the form and the save; it closes the panel (`visible.set(false)`) when the save worked and refreshes its data. The panel does not navigate away from the page.
+- Example: `features/projects/ui/project-panel.ts` (create and edit a project from a Matter page).
+
+Screens that should adopt the panel later (not converted in this epic): My Matters Add event dialog, Create/Edit task, Clients create/edit, Assets list create/edit, Matters list create, Users, Roles, Pods, the admin lookup forms (task types, asset types, labels, custom fields) and profile preferences.
