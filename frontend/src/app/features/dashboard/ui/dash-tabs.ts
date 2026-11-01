@@ -183,6 +183,12 @@ export const panelId = (key: string) => `mf-dash-panel-${key}`;
         flex-basis: 100%;
       }
     }
+    /* Below 768 px the shared dropdown (the Scope) is a 44 px target: the row is that tall from the start, so it does not grow by 8 px when the Scope appears. */
+    @media (max-width: 767.98px) {
+      .end {
+        min-height: 44px;
+      }
+    }
     /* The tab list is the only part of the row that may be wider than the window: it scrolls inside itself (contain: inline-size, so what is inside never
        adds to the width of the row or the document, whatever the number or the width of the tabs). */
     .strip {
