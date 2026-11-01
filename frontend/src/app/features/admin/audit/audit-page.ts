@@ -25,6 +25,7 @@ import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { presetRange, todayInZone } from '../../../shared/filters/date-presets';
 import { FilterDef, FilterOption, RangeValue } from '../../../shared/filters/filter-def';
+import { FilterChips } from '../../../shared/ui/filter-chips';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActionMenu } from '../../../shared/ui/action-menu';
@@ -100,6 +101,7 @@ const ACCESS_VALUE = ACCESS_OBJECT_TYPES.join(',');
     ActionMenu,
     AdminListShell,
     ColumnFilterRow,
+    FilterChips,
     FiltersBar,
     GridBody,
     NgTemplateOutlet,

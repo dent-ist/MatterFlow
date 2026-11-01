@@ -21,29 +21,7 @@
 }
 
 .au-views {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mf-s2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.au-chip {
-  min-height: 32px;
-  padding: 0 var(--mf-s3);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: 999px;
-  background: var(--mf-surface);
-  color: var(--mf-text);
-  font: inherit;
-  cursor: pointer;
-
-  &.on {
-    border-color: var(--mf-primary);
-    background: var(--mf-selected-bg);
-    font-weight: 600;
-  }
+  min-width: 0;
 }
 
 .au-check {
@@ -51,12 +29,6 @@
   align-items: center;
   gap: var(--mf-s2);
   margin-left: auto;
-}
-
-@media (max-width: 639px) {
-  .au-chip {
-    min-height: 44px;
-  }
 }
 
 .au-state {
@@ -267,8 +239,10 @@
     margin-top: auto;
     padding: var(--mf-s2) var(--mf-s3);
     background: var(--mf-surface);
-    border-top: 1px solid var(--mf-border);
-    box-shadow: 0 -3px 6px -4px rgb(0 0 0 / 18%);
+    border: 1px solid var(--mf-border);
+    border-top-color: var(--mf-border-soft);
+    border-radius: 0 0 var(--mf-radius-xl) var(--mf-radius-xl);
+    box-shadow: var(--mf-shadow-card);
   }
 }
 

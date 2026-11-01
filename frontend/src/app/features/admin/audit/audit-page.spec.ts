@@ -444,7 +444,8 @@ describe('AuditPage', () => {
 
   it('sets the quick views as address filters, marks the pressed one and clears it again (#654)', async () => {
     await create(['Audit.View']);
-    const view = (key: string) => el().querySelector<HTMLButtonElement>(`[data-view="${key}"]`)!;
+    const view = (key: string) =>
+      el().querySelector<HTMLButtonElement>(`[data-quick-views] [data-key="${key}"]`)!;
     expect(view('today').getAttribute('aria-pressed')).toBe('false');
 
     view('config').click();

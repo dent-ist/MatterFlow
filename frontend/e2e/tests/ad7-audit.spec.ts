@@ -301,7 +301,7 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/audit');
-    const view = (key: string) => page.locator(`[data-view="${key}"]`);
+    const view = (key: string) => page.locator(`[data-quick-views] [data-key="${key}"]`);
     await expect(view('today')).toHaveAttribute('aria-pressed', 'false');
 
     await view('config').click();

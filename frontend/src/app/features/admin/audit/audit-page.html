@@ -16,22 +16,14 @@
     <div class="au-sr" role="status" aria-live="polite" data-announce>{{ announcement() }}</div>
 
     <div class="au-bar">
-      <ul class="au-views" aria-label="Quick views" data-quick-views>
-        @for (v of views; track v.key) {
-          <li>
-            <button
-              type="button"
-              class="au-chip"
-              [class.on]="activeView() === v.key"
-              [attr.aria-pressed]="activeView() === v.key"
-              [attr.data-view]="v.key"
-              (click)="pickView(v.key)"
-            >
-              {{ v.label }}
-            </button>
-          </li>
-        }
-      </ul>
+      <mf-filter-chips
+        class="au-views"
+        label="Quick views"
+        data-quick-views
+        [chips]="views"
+        [value]="activeView()"
+        (valueChange)="pickView($any($event))"
+      />
       <label class="au-check">
         <input
           type="checkbox"
