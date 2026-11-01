@@ -38,7 +38,7 @@ import { WorkflowModeControl } from './workflow-mode-control';
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-xl);
-      box-shadow: var(--mf-shadow-bar);
+      box-shadow: var(--mf-shadow-sticky);
     }
     .wvb__state {
       display: flex;

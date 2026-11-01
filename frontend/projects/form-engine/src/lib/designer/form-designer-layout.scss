@@ -114,7 +114,7 @@
   border-radius: var(--mf-radius-lg, 8px) var(--mf-radius-lg, 8px) 0 0;
   background: var(--mf-surface);
   color: var(--mf-text);
-  box-shadow: var(--mf-shadow-pop);
+  box-shadow: var(--mf-shadow-sheet);
 
   &[open] {
     display: flex;

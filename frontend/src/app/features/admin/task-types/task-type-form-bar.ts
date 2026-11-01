@@ -35,7 +35,7 @@ import { Badge } from '../../../shared/ui/badge';
       background: var(--mf-surface);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius-xl);
-      box-shadow: var(--mf-shadow-bar);
+      box-shadow: var(--mf-shadow-sticky);
     }
     .fdb__state {
       display: flex;
