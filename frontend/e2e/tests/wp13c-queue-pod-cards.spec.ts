@@ -1,3 +1,4 @@
+import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -184,8 +185,8 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet).toBeVisible();
     // The sort control is the first thing in the sheet, 44 px, naming the default order.
-    const select = sheet.getByLabel('Sort by');
-    await expect(select).toHaveValue('');
+    const select = labelledDropdown(sheet, 'Sort by');
+    await expect(select).toHaveAttribute('data-value', '');
     await expect(select.locator('option').first()).toContainText('(default order)');
     expect((await select.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await shot(page, 'tq-filters-sheet-375x812');
@@ -195,21 +196,20 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await expect(page).toHaveURL(/sort=title/);
     await expect(page).toHaveURL(/dir=asc/);
     await expect.poll(() => cardTitles(page)).toEqual([...px.titles].sort());
-    await expect(sheet.getByLabel('Order', { exact: true })).toHaveValue('asc');
+    await expect(labelledDropdown(sheet, 'Order')).toHaveAttribute('data-value', 'asc');
     // The order is said in words, not "Ascending" (issue #898).
-    expect(
-      (await sheet.getByLabel('Order', { exact: true }).locator('option').allTextContents()).map(
-        (t) => t.trim(),
-      ),
-    ).toEqual(['A to Z', 'Z to A']);
-    await sheet.getByLabel('Order', { exact: true }).selectOption('desc');
+    expect((await labelledDropdown(sheet, 'Order').optionTexts()).map((t) => t.trim())).toEqual([
+      'A to Z',
+      'Z to A',
+    ]);
+    await labelledDropdown(sheet, 'Order').selectOption('desc');
     await expect(page).toHaveURL(/dir=desc/);
     await expect.poll(() => cardTitles(page)).toEqual([...px.titles].sort().reverse());
     await select.selectOption('due');
     await expect(page).toHaveURL(/sort=due/);
     await select.selectOption('');
     await expect(page).not.toHaveURL(/sort=/);
-    await expect(sheet.getByLabel('Order', { exact: true })).toHaveCount(0);
+    await expect(labelledDropdown(sheet, 'Order')).toHaveCount(0);
     await sheet.getByRole('button', { name: /^Show \d+ results?$/ }).click();
     await expect(sheet).toHaveCount(0);
   });
@@ -325,14 +325,14 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     const sheet = page.getByRole('dialog', { name: 'Filters' });
     await expect(sheet.getByRole('link', { name: 'Open in Task Queue' })).toBeVisible();
     await shot(page, 'my-work-filters-sheet-375x812', OUT_MW);
-    await sheet.getByLabel('Group by').selectOption('due');
+    await labelledDropdown(sheet, 'Group by').selectOption('due');
     await expect(page).toHaveURL(/group=due/);
     await expect(page.locator('li.tc-group').first()).toBeVisible();
-    await sheet.getByLabel('Sort by').selectOption('title');
+    await labelledDropdown(sheet, 'Sort by').selectOption('title');
     await expect(page).toHaveURL(/sort=title/);
     await expect(page).not.toHaveURL(/group=due/);
     await expect(page.locator('li.tc-group')).toHaveCount(0);
-    await expect(sheet.getByLabel('Group by')).toHaveValue('');
+    await expect(labelledDropdown(sheet, 'Group by')).toHaveAttribute('data-value', '');
     await axeClean(page, 'my work sheet at 375');
   });
 

@@ -8,14 +8,14 @@
   gap: var(--mf-s1);
 }
 
-.ps-field label {
+.ps-field .ps-lbl {
   font-size: var(--mf-fs-sm);
   font-weight: 600;
 }
 
-/* 44 px targets, like the other controls of the sheet. */
-.ps-field select {
-  min-height: 44px;
+/* The dropdown is 44 px high on a phone, like the other controls of the sheet. */
+.ps-field mf-dropdown {
+  display: block;
 }
 
 .ps-note {

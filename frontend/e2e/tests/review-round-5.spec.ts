@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -440,7 +441,7 @@ test.describe('review round 5 screenshots', () => {
     await techPage.locator('#av-from').blur();
     await techPage.locator('#av-until').fill('Oct 20, 2026');
     await techPage.locator('#av-until').blur();
-    await techPage.locator('#av-tz').selectOption('__other__');
+    await dropdownById(techPage, 'av-tz').selectOption('__other__');
     await techPage.locator('#av-tz-other').fill('Mars/Olympus');
     await techPage.getByRole('button', { name: 'Save changes' }).click();
     await shot(techPage, '03-profile-validation-1366');

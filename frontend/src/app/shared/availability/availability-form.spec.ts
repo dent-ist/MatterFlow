@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   MyAvailabilityClient,
@@ -112,14 +113,14 @@ describe('AvailabilityForm', () => {
     expect(q<HTMLInputElement>('#av-hours-start').value).toBe('09:00');
     expect(q<HTMLInputElement>('#av-hours-end').value).toBe('17:00');
     expect(el().querySelector('[data-hours-grid]')).toBeNull();
-    expect(q<HTMLInputElement>('#av-tz').value).toBe('America/New_York');
+    expect(ddSelect(el()).value).toBe('America/New_York');
     expect(saveButton().disabled).toBe(true);
   });
 
   it('preselects the browser time zone for a person who never chose one', async () => {
     await create({ initial: profile({ timeZoneId: undefined, effectiveTimeZoneId: 'UTC' }) });
     const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    expect(q<HTMLInputElement>('#av-tz').value).toBe(browser);
+    expect(ddSelect(el()).value).toBe(browser);
   });
 
   it('shows the dates, note and the summary sentence for Out of office', async () => {
@@ -268,7 +269,7 @@ describe('AvailabilityForm', () => {
 
   it('rejects a time zone that is not in the list', async () => {
     await create();
-    const select = q<HTMLSelectElement>('#av-tz');
+    const select = ddSelect(el());
     select.value = '__other__';
     select.dispatchEvent(new Event('change'));
     await settle(fixture);
@@ -376,7 +377,7 @@ describe('AvailabilityForm', () => {
     });
     expect(others.getUserAvailability).toHaveBeenCalledWith(9);
     expect(q('[data-preview]').textContent).toContain("Dana Director's current status");
-    expect(q<HTMLInputElement>('#av-tz').value).toBe('America/Chicago');
+    expect(ddSelect(el()).value).toBe('America/Chicago');
 
     others.saveUserAvailability.mockReturnValue(ok(profile({ userId: 9, rowVersion: 'V1' })));
     await choose('[data-status-ooo]');

@@ -1,3 +1,4 @@
+import { ddSelect, ddOptionTexts } from '../../../testing/dropdown-testing.spec-util';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -261,20 +262,15 @@ describe('PodWorkPage', () => {
 
   it('lists my Pods first, marks the primary one, then the other Pods', async () => {
     const el = await open('/pods/work?x=1');
-    const groups = Array.from(el.querySelectorAll('#pw-pod optgroup')).map((g) => ({
-      label: g.getAttribute('label'),
-      options: Array.from(g.querySelectorAll('option')).map((o) => o.textContent?.trim()),
-    }));
-    expect(groups).toEqual([
-      { label: 'Your pods', options: ['Pod A (primary)', 'Pod B'] },
-      { label: 'Other pods', options: ['Pod C'] },
-    ]);
-    expect(el.querySelector<HTMLSelectElement>('#pw-pod')!.value).toBe('5');
+    // My pods first (the primary one marked), then the other pods; the group headings are not choices.
+    expect(ddOptionTexts(el, 'Pod')).toEqual(['Pod A (primary)', 'Pod B', 'Pod C']);
+    expect(el.querySelector('.dd-panel')).toBeNull();
+    expect(ddSelect(el, 'Pod').value).toBe('5');
   });
 
   it('changing the Pod goes through the URL and is remembered', async () => {
     const el = await open('/pods/work?x=1');
-    const select = el.querySelector<HTMLSelectElement>('#pw-pod')!;
+    const select = ddSelect(el, 'Pod');
     select.value = '6';
     select.dispatchEvent(new Event('change'));
     await settle();
@@ -553,11 +549,11 @@ describe('PodWorkPage', () => {
       const h1 = el.querySelector('h1')!;
       expect(h1.textContent!.trim()).toBe('Pod Work');
       expect(h1.querySelector('.pw-title')).not.toBeNull();
-      const select = el.querySelector<HTMLSelectElement>('#pw-pod')!;
+      const select = el.querySelector('mf-dropdown.pw-pod-select')!;
       expect(select.getAttribute('title')).toBe('Pod A');
-      expect(select.classList).toContain('pw-pod-select');
-      // The label stays "Pod": the select's accessible name, and its value is the full Pod name.
-      expect(el.querySelector('label[for="pw-pod"]')!.textContent!.trim()).toBe('Pod');
+      // The label stays "Pod": the dropdown's accessible name, and its value is the full Pod name.
+      expect(ddSelect(el, 'Pod').button.getAttribute('aria-label')).toBe('Pod: Pod A (primary)');
+      expect(el.querySelector('.pw-pod-lbl')!.textContent!.trim()).toBe('Pod');
     });
   });
 

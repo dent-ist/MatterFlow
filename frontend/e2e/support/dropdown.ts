@@ -77,3 +77,11 @@ export const labelledDropdown = (scope: Page | Locator, label: string): Dropdown
 /** The inline column filter of a grid ("Status", "Availability"): its label is "Filter by <column>". */
 export const filterDropdown = (scope: Page | Locator, column: string): Dropdown =>
   labelledDropdown(scope, `Filter by ${column}`);
+
+/** The dropdown whose button has this id (`#av-tz`, `#sf-active`). */
+export const dropdownById = (scope: Page | Locator, id: string): Dropdown =>
+  asDropdown(scope.locator(`button#${id}`));
+
+/** The dropdown whose host element carries this attribute (`data-sort-select`). */
+export const dropdownByAttr = (scope: Page | Locator, attr: string): Dropdown =>
+  asDropdown(scope.locator(`[${attr}] button`));

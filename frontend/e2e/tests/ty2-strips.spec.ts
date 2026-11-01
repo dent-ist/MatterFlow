@@ -223,7 +223,7 @@ test.describe('health strips (#367, #368)', () => {
       inactive: all.length - active.length,
     };
 
-    const strip = page.getByRole('list', { name: 'Task types summary' });
+    const strip = page.getByRole('group', { name: 'Task types summary' });
     await expect(strip).toBeVisible();
     await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
     for (const key of ['active', 'notUsable', 'formDraft', 'inactive'] as const) {
@@ -422,6 +422,6 @@ test.describe('health strips (#367, #368)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const tt = await asUser((await seed.user([typeRole.name], 'ty2s-tt')).username);
     await tt.goto('/admin/task-types');
-    await expect(tt.getByRole('list', { name: 'Task types summary' })).toBeVisible();
+    await expect(tt.getByRole('group', { name: 'Task types summary' })).toBeVisible();
   });
 });

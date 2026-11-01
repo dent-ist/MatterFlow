@@ -257,7 +257,10 @@ test.describe('WP8 list chrome', () => {
               ? grid(page, list.region).locator('tbody tr').first()
               : page.locator('li[data-record-card]').first(),
           ).toBeVisible();
-          if (width >= 640) {
+          // Matters at 768 px: the card is 662 px wide beside the 56 px rail and its filter row needs about 685 px, so by design (the grid
+          // overflows sideways) the controls are in the sheet; every other list, and Matters from 800 px, shows the row.
+          const sheetByDesign = list.name === 'matters' && width < 800;
+          if (width >= 640 && !sheetByDesign) {
             await expect(page.locator('[data-filter-row]'), `${list.name} ${width}`).toBeVisible();
             await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
           } else {

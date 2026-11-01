@@ -4,12 +4,12 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-<mf-work-strip
+<mf-filter-chips
   label="Task types summary"
-  [items]="stripItems()"
-  [interactive]="true"
-  [active]="stripActive()"
-  (pick)="pickStrip($event)"
+  [strip]="true"
+  [chips]="stripChipList()"
+  [value]="stripActive()"
+  (valueChange)="pickStrip($event)"
 />
 
 <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">

@@ -1,3 +1,4 @@
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,27 +25,22 @@ const OTHER = '__other__';
  */
 @Component({
   selector: 'mf-time-zone-select',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <label class="tz__label" for="av-tz">Time zone</label>
-    <select
-      id="av-tz"
-      class="mf-control tz__select"
+    <span class="tz__label" aria-hidden="true">Time zone</span>
+    <mf-dropdown
+      buttonId="av-tz"
+      class="tz__select"
       data-tz-select
-      [attr.aria-describedby]="'av-tz-time av-tz-note'"
-      [attr.aria-invalid]="invalid() ? 'true' : null"
-      (change)="choose($any($event.target).value)"
-    >
-      @for (o of extras(); track o.id) {
-        <option [value]="o.id" [selected]="!other() && value() === o.id">{{ o.label }}</option>
-      }
-      @for (o of friendly; track o.id) {
-        <option [value]="o.id" [selected]="!other() && value() === o.id">
-          {{ o.label }} ({{ o.id }})
-        </option>
-      }
-      <option value="${OTHER}" [selected]="other()">Other zones...</option>
-    </select>
+      label="Time zone"
+      [describedBy]="'av-tz-time av-tz-note'"
+      [items]="items()"
+      [value]="other() ? '__other__' : value()"
+      [neutralValue]="null"
+      [panelWidth]="320"
+      (valueChange)="choose($event)"
+    />
     @if (other()) {
       <input
         id="av-tz-other"
@@ -94,6 +90,7 @@ const OTHER = '__other__';
       font-weight: 600;
     }
     .tz__select {
+      display: block;
       width: 100%;
     }
     .tz__help {
@@ -134,6 +131,11 @@ export class TimeZoneSelect {
     return out;
   });
 
+  protected readonly items = computed<DropdownItem[]>(() => [
+    ...this.extras().map((o) => ({ value: o.id, label: o.label })),
+    ...this.friendly.map((o) => ({ value: o.id, label: `${o.label} (${o.id})` })),
+    { value: OTHER, label: 'Other zones...' },
+  ]);
   protected readonly other = computed(() => {
     if (this.forcedOther()) return true;
     const v = this.value();

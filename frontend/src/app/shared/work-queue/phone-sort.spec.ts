@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { PhoneSort, SortChoice } from './phone-sort';
 
@@ -11,7 +12,7 @@ describe('PhoneSort', () => {
     fixture.componentInstance.sortPick.subscribe((c) => picks.push(c));
     return { fixture, el, picks };
   }
-  const change = (select: HTMLSelectElement, value: string) => {
+  const change = (select: { value: string; dispatchEvent(e: Event): boolean }, value: string) => {
     select.value = value;
     select.dispatchEvent(new Event('change'));
   };
@@ -21,7 +22,7 @@ describe('PhoneSort', () => {
       defaultLabel: 'Closed date',
       defaultOrder: 'Default order: Newest closed first',
     });
-    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(select.options[0].textContent?.trim()).toBe('Closed date (default order)');
     const labels = Array.from(select.options).map((o) => o.textContent?.trim());
     expect(labels).toContain('Due date');
@@ -32,7 +33,7 @@ describe('PhoneSort', () => {
 
   it('picking a field emits it with its natural direction (dates newest first), the Order select appears for a sort, in words (no Ascending / Descending)', () => {
     const { el, picks, fixture } = create();
-    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    const select = ddSelect(el.querySelector('[data-sort-select]')!);
     change(select, 'due');
     change(select, 'created');
     expect(picks).toEqual([
@@ -42,7 +43,7 @@ describe('PhoneSort', () => {
     fixture.componentRef.setInput('sort', 'due');
     fixture.componentRef.setInput('dir', 'asc');
     fixture.detectChanges();
-    const dir = el.querySelector<HTMLSelectElement>('[data-dir-select]')!;
+    const dir = ddSelect(el.querySelector('[data-dir-select]')!);
     expect(dir.value).toBe('asc');
     expect(Array.from(dir.options).map((o) => o.textContent?.trim())).toEqual([
       'Soonest first',
@@ -55,7 +56,7 @@ describe('PhoneSort', () => {
 
   it('picking the default order emits null', () => {
     const { el, picks } = create({ sort: 'due', dir: 'asc' });
-    change(el.querySelector<HTMLSelectElement>('[data-sort-select]')!, '');
+    change(ddSelect(el.querySelector('[data-sort-select]')!), '');
     expect(picks).toEqual([null]);
   });
 
@@ -66,8 +67,8 @@ describe('PhoneSort', () => {
     const { el, fixture } = create({ groupable: true, defaultOrder: 'Default order: Priority' });
     const groups: (string | null)[] = [];
     fixture.componentInstance.groupChange.subscribe((g) => groups.push(g));
-    change(el.querySelector<HTMLSelectElement>('[data-group-select]')!, 'due');
-    change(el.querySelector<HTMLSelectElement>('[data-group-select]')!, '');
+    change(ddSelect(el.querySelector('[data-group-select]')!), 'due');
+    change(ddSelect(el.querySelector('[data-group-select]')!), '');
     expect(groups).toEqual(['due', null]);
     fixture.componentRef.setInput('grouped', true);
     fixture.detectChanges();
@@ -82,13 +83,13 @@ describe('PhoneSort', () => {
       ],
       defaultField: 'name',
     });
-    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
       'Name',
       'Open tasks',
     ]);
     expect(select.value).toBe('name');
-    const order = () => el.querySelector<HTMLSelectElement>('[data-dir-select]')!;
+    const order = () => ddSelect(el.querySelector('[data-dir-select]')!);
     expect(order().value).toBe('asc');
     expect(Array.from(order().options).map((o) => o.textContent?.trim())).toEqual([
       'A to Z',

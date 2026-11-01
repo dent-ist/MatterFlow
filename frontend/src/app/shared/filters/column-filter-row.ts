@@ -73,8 +73,8 @@ interface Cell {
     }
     @media (min-width: 1500px) {
       .cfr-pair {
-        grid-template-columns: 6rem minmax(9.5rem, 1fr);
-        min-width: 16rem;
+        grid-template-columns: 5.5rem minmax(9.5rem, 1fr);
+        min-width: 15rem;
       }
     }
   `,

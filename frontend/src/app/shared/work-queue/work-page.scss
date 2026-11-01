@@ -9,7 +9,8 @@
   margin-top: var(--mf-s3);
 }
 
-.wp-field label {
+.wp-field label,
+.wp-field .pw-pod-lbl {
   font-weight: 600;
   font-size: var(--mf-fs-sm);
 }

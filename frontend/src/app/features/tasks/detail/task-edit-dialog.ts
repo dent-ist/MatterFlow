@@ -408,15 +408,6 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
         <ng-template #footer>
           <div class="dt__actions" data-edit-footer>
             <button
-              type="submit"
-              form="td-edit-form"
-              class="mf-btn mf-btn--primary"
-              data-save
-              [disabled]="store.busy()"
-            >
-              Save changes
-            </button>
-            <button
               type="button"
               class="mf-btn"
               data-cancel
@@ -424,6 +415,15 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
               (click)="cancelEdit()"
             >
               Cancel
+            </button>
+            <button
+              type="submit"
+              form="td-edit-form"
+              class="mf-btn mf-btn--primary"
+              data-save
+              [disabled]="store.busy()"
+            >
+              Save changes
             </button>
           </div>
         </ng-template>
@@ -550,9 +550,11 @@ const toNumber = (v: string): number | null => (v === '' ? null : Number(v));
       min-width: 0;
       overflow-wrap: anywhere;
     }
+    /* The dialog rule (S18): the secondary action on the left, the primary on the right. */
     .dt__actions {
       display: flex;
       flex-wrap: wrap;
+      justify-content: flex-end;
       gap: var(--mf-s2);
     }
     .warn {

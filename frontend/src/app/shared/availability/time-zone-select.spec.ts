@@ -1,3 +1,4 @@
+import { ddOptionTexts, ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Clock } from '../../core/time/clock';
@@ -27,8 +28,7 @@ describe('TimeZoneSelect (#540, #567)', () => {
     const el = fixture.nativeElement as HTMLElement;
     return { fixture, el, host: fixture.componentInstance };
   }
-  const labels = (el: HTMLElement) =>
-    [...el.querySelectorAll('option')].map((o) => o.textContent!.replace(/\s+/g, ' ').trim());
+  const labels = (el: HTMLElement) => ddOptionTexts(el);
 
   afterEach(() => TestBed.resetTestingModule());
 
@@ -45,20 +45,20 @@ describe('TimeZoneSelect (#540, #567)', () => {
       'Arizona (no daylight saving) (America/Phoenix)',
       'Other zones...',
     ]);
-    expect(el.querySelector<HTMLSelectElement>('#av-tz')!.value).toBe('America/New_York');
+    expect(ddSelect(el).value).toBe('America/New_York');
     expect(el.querySelector('[data-tz-other]')).toBeNull();
   });
 
   it('a saved non-US zone is an extra first option and stays selected, never overwritten', async () => {
     const { el, host } = await create('Europe/Berlin', 'Europe/Berlin');
     expect(labels(el)[0]).toBe('Europe/Berlin (saved)');
-    expect(el.querySelector<HTMLSelectElement>('#av-tz')!.value).toBe('Europe/Berlin');
+    expect(ddSelect(el).value).toBe('Europe/Berlin');
     expect(host.zone()).toBe('Europe/Berlin');
   });
 
   it('Other zones... reveals the searchable list and a typed zone is the value', async () => {
     const { fixture, el, host } = await create();
-    const select = el.querySelector<HTMLSelectElement>('#av-tz')!;
+    const select = ddSelect(el);
     select.value = '__other__';
     select.dispatchEvent(new Event('change'));
     await settle(fixture);
@@ -73,7 +73,7 @@ describe('TimeZoneSelect (#540, #567)', () => {
 
   it('choosing a friendly zone sets it and announces the local time politely', async () => {
     const { fixture, el, host } = await create();
-    const select = el.querySelector<HTMLSelectElement>('#av-tz')!;
+    const select = ddSelect(el);
     select.value = 'America/Chicago';
     select.dispatchEvent(new Event('change'));
     await settle(fixture);

@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -125,7 +126,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
     const me = await asUser(p.username);
     await me.setViewportSize({ width: 1366, height: 768 });
     await me.goto('/profile');
-    await expect(me.locator('#av-tz')).toBeVisible();
+    await expect(dropdownById(me, 'av-tz')).toBeVisible();
     const bottom = await me.evaluate(() => {
       const main = document.querySelector('main')!;
       const bar = document.querySelector('[data-actions]')!.getBoundingClientRect();
@@ -245,11 +246,9 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf6zone' });
     const me = await asUser(p.username);
     await me.goto('/profile');
-    const select = me.locator('#av-tz');
+    const select = dropdownById(me, 'av-tz');
     await expect(select).toBeVisible();
-    const options = (await select.locator('option').allTextContents()).map((t) =>
-      t.replace(/\s+/g, ' ').trim(),
-    );
+    const options = (await select.optionTexts()).map((t) => t.replace(/\s+/g, ' ').trim());
     expect(options.slice(-8)).toEqual([
       'Eastern (America/New_York)',
       'Central (America/Chicago)',
@@ -260,7 +259,7 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
       'Arizona (no daylight saving) (America/Phoenix)',
       'Other zones...',
     ]);
-    await expect(select).toHaveValue('America/New_York');
+    await expect(select).toHaveAttribute('data-value', 'America/New_York');
     await expect(me.locator('[data-tz-time]')).toContainText(
       /It is \d{1,2}:\d{2} (AM|PM) there now\./,
     );
@@ -271,17 +270,17 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
-    await expect(me.locator('#av-tz')).toHaveValue('America/Chicago');
+    await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'America/Chicago');
 
-    await me.locator('#av-tz').selectOption('__other__');
+    await dropdownById(me, 'av-tz').selectOption('__other__');
     await me.locator('#av-tz-other').fill('Asia/Tokyo');
     await expect(me.locator('[data-tz-error]')).toHaveCount(0);
     await me.getByRole('button', { name: 'Save changes' }).click();
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
     // The saved zone stays selectable as an extra first option; it is never lost behind Other zones.
-    await expect(me.locator('#av-tz')).toHaveValue('Asia/Tokyo');
-    await expect(me.locator('#av-tz option').first()).toContainText('Asia/Tokyo (saved)');
+    await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'Asia/Tokyo');
+    expect((await dropdownById(me, 'av-tz').optionTexts())[0]).toContain('Asia/Tokyo (saved)');
   });
 
   test('a non-US browser zone is an extra first option and preselected; an unknown typed zone is named in the summary', async ({
@@ -291,9 +290,9 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     const p = await personas.create({ ...PERSONAS.technician, label: 'pf6berlin' });
     const me = await asUser(p.username, { timezoneId: 'Europe/Berlin' });
     await me.goto('/profile');
-    await expect(me.locator('#av-tz')).toHaveValue('Europe/Berlin');
-    await expect(me.locator('#av-tz option').first()).toContainText('Europe/Berlin');
-    await me.locator('#av-tz').selectOption('__other__');
+    await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'Europe/Berlin');
+    expect((await dropdownById(me, 'av-tz').optionTexts())[0]).toContain('Europe/Berlin');
+    await dropdownById(me, 'av-tz').selectOption('__other__');
     await me.locator('#av-tz-other').fill('Mars/Olympus');
     await expect(me.locator('[data-tz-error]')).toContainText('is not a time zone we know');
     await me.getByRole('button', { name: 'Save changes' }).click();
@@ -313,11 +312,11 @@ test.describe('pf6-zone: the Time zone select (#540) and the local time sentence
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await me.goto('/profile');
-      await expect(me.locator('#av-tz')).toBeVisible();
+      await expect(dropdownById(me, 'av-tz')).toBeVisible();
       await noHorizontalScroll(me);
       await axeClean(me, `zone select at ${size.width}`);
       await shot(me, 'pf6-time-zone');
-      await me.locator('#av-tz').selectOption('__other__');
+      await dropdownById(me, 'av-tz').selectOption('__other__');
       await expect(me.locator('#av-tz-other')).toBeVisible();
       await noHorizontalScroll(me);
       await axeClean(me, `other zones at ${size.width}`);

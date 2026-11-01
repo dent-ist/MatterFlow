@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { AssetTypesClient, ClientsClient, MattersClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
@@ -110,13 +111,9 @@ describe('mf-search-filters (#474, #475, #476)', () => {
 
   it('applies a select change at once, with Any as the default status (not Active only)', async () => {
     const { el, changes } = await create('matter');
-    const status = el.querySelector<HTMLSelectElement>('#sf-active')!;
+    const status = ddSelect(el, 'Status');
     expect(status.value).toBe('any');
-    expect(Array.from(status.options).map((o) => o.text.trim())).toEqual([
-      'Any',
-      'Active',
-      'Inactive',
-    ]);
+    expect(status.options.map((o) => o.textContent)).toEqual(['Any', 'Active', 'Inactive']);
     status.value = 'false';
     status.dispatchEvent(new Event('change'));
     expect(changes.at(-1)).toEqual({ ...NO_FILTERS, active: 'false' });
@@ -168,11 +165,8 @@ describe('mf-search-filters (#474, #475, #476)', () => {
 
   it('loads the asset types for the Asset type filter and names the chip from them', async () => {
     const { el } = await create('asset', { ...NO_FILTERS, assetType: 7 });
-    const select = el.querySelector<HTMLSelectElement>('#sf-asset-type')!;
-    expect(Array.from(select.options).map((o) => o.text.trim())).toEqual([
-      'Any type',
-      'Production',
-    ]);
+    const select = ddSelect(el, 'Asset type');
+    expect(select.options.map((o) => o.textContent)).toEqual(['Any type', 'Production']);
     expect(select.value).toBe('7');
     expect(el.querySelector('[data-filter-chip]')!.textContent).toContain('Asset type: Production');
   });

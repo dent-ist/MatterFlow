@@ -1,3 +1,4 @@
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { SortDirection } from './queue-filters';
 import { DESC_FIRST, SORT_LABELS } from './sort-note';
@@ -47,44 +48,36 @@ export interface SortOption {
  */
 @Component({
   selector: 'mf-phone-sort',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './phone-sort.scss',
   template: `
     <div class="ps" data-phone-sort>
       <div class="ps-field">
-        <label [for]="uid + '-sort'">Sort by</label>
-        <select
-          class="mf-control"
-          [id]="uid + '-sort'"
+        <span class="ps-lbl" aria-hidden="true">Sort by</span>
+        <mf-dropdown
+          [buttonId]="uid + '-sort'"
           data-sort-select
+          label="Sort by"
+          [items]="sortItems()"
           [value]="current()"
-          (change)="pickField($any($event.target).value)"
-        >
-          @if (!defaultField()) {
-            <option value="" [selected]="!sort()">{{ defaultLabel() }} (default order)</option>
-          }
-          @for (f of fields(); track f.value) {
-            <option [value]="f.value" [selected]="f.value === current()">{{ f.label }}</option>
-          }
-        </select>
+          [neutralValue]="null"
+          [panelWidth]="260"
+          (valueChange)="pickField($event)"
+        />
       </div>
       @if (current()) {
         <div class="ps-field">
-          <label [for]="uid + '-dir'">Order</label>
-          <select
-            class="mf-control"
-            [id]="uid + '-dir'"
+          <span class="ps-lbl" aria-hidden="true">Order</span>
+          <mf-dropdown
+            [buttonId]="uid + '-dir'"
             data-dir-select
+            label="Order"
+            [items]="dirItems()"
             [value]="direction()"
-            (change)="pickDir($any($event.target).value)"
-          >
-            <option value="asc" [selected]="direction() === 'asc'">
-              {{ words('asc') }}
-            </option>
-            <option value="desc" [selected]="direction() === 'desc'">
-              {{ words('desc') }}
-            </option>
-          </select>
+            [neutralValue]="null"
+            (valueChange)="pickDir($event)"
+          />
         </div>
       } @else if (defaultOrder()) {
         <p class="ps-note" data-sort-rule>
@@ -93,17 +86,16 @@ export interface SortOption {
       }
       @if (groupable()) {
         <div class="ps-field">
-          <label [for]="uid + '-group'">Group by</label>
-          <select
-            class="mf-control"
-            [id]="uid + '-group'"
+          <span class="ps-lbl" aria-hidden="true">Group by</span>
+          <mf-dropdown
+            [buttonId]="uid + '-group'"
             data-group-select
+            label="Group by"
+            [items]="groupItems"
             [value]="grouped() ? 'due' : ''"
-            (change)="groupChange.emit($any($event.target).value === 'due' ? 'due' : null)"
-          >
-            <option value="" [selected]="!grouped()">None</option>
-            <option value="due" [selected]="grouped()">Due</option>
-          </select>
+            [neutralValue]="null"
+            (valueChange)="groupChange.emit($event === 'due' ? 'due' : null)"
+          />
         </div>
       }
     </div>
@@ -131,6 +123,20 @@ export class PhoneSort {
     () =>
       this.options() ?? PHONE_SORTS.map((value) => ({ value, label: SORT_LABELS[value] ?? value })),
   );
+  protected readonly sortItems = computed<DropdownItem[]>(() => [
+    ...(this.defaultField()
+      ? []
+      : [{ value: '', label: `${this.defaultLabel()} (default order)` }]),
+    ...this.fields().map((f) => ({ value: f.value, label: f.label })),
+  ]);
+  protected readonly dirItems = computed<DropdownItem[]>(() => [
+    { value: 'asc', label: this.words('asc') },
+    { value: 'desc', label: this.words('desc') },
+  ]);
+  protected readonly groupItems: DropdownItem[] = [
+    { value: '', label: 'None' },
+    { value: 'due', label: 'Due' },
+  ];
   /** The field the select shows: the address's, else the list's default one. */
   protected readonly current = computed(() => this.sort() || this.defaultField() || '');
   protected readonly direction = computed<SortDirection>(

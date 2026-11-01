@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -281,8 +282,8 @@ test.describe('pf3-bar: the action bar (#531)', () => {
     await me.setViewportSize({ width: 375, height: 812 });
     await me.goto('/profile');
     // Focusing the last field of the form scrolls it clear of the sticky bar (scroll margin), never under it.
-    await me.locator('#av-tz').focus();
-    await expect(me.locator('#av-tz')).toBeFocused();
+    await dropdownById(me, 'av-tz').focus();
+    await expect(dropdownById(me, 'av-tz')).toBeFocused();
     const clear = () =>
       me.evaluate(() => {
         const f = document.activeElement!.getBoundingClientRect();

@@ -1,3 +1,4 @@
+import { Dropdown, labelledDropdown } from '../support/dropdown';
 import { expect, Locator, Page } from '@playwright/test';
 
 /**
@@ -64,11 +65,11 @@ export class MyWorkPage extends WorkListPage {
 }
 
 export class PodWorkPage extends WorkListPage {
-  readonly podSelect: Locator;
+  readonly podSelect: Dropdown;
 
   constructor(page: Page) {
     super(page);
-    this.podSelect = page.getByLabel('Pod', { exact: true });
+    this.podSelect = labelledDropdown(page, 'Pod');
   }
 
   async open(): Promise<void> {
@@ -78,7 +79,7 @@ export class PodWorkPage extends WorkListPage {
 
   async choosePod(name: string): Promise<void> {
     await this.podSelect.selectOption({ label: name });
-    await expect(this.podSelect.locator('option:checked')).toContainText(name);
+    await expect(this.podSelect).toContainText(name);
   }
 
   tab(name: RegExp | string): Locator {

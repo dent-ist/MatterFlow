@@ -1,3 +1,4 @@
+import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -45,7 +46,7 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
  */
 @Component({
   selector: 'mf-search-filters',
-  imports: [EntityPicker],
+  imports: [EntityPicker, Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
@@ -153,54 +154,39 @@ import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
             @case ('assetType') {
               <div class="sf-field">
                 <label for="sf-asset-type">Asset type</label>
-                <select
-                  id="sf-asset-type"
-                  class="mf-control pg-input"
-                  [value]="values().assetType ?? ''"
-                  (change)="setAssetType($any($event.target).value)"
-                >
-                  <option value="">Any type</option>
-                  @for (t of assetTypes(); track t.assetTypeId) {
-                    <option
-                      [value]="t.assetTypeId"
-                      [selected]="t.assetTypeId === values().assetType"
-                    >
-                      {{ t.name }}
-                    </option>
-                  }
-                </select>
+                <mf-dropdown
+                  buttonId="sf-asset-type"
+                  label="Asset type"
+                  [items]="assetTypeItems()"
+                  [value]="'' + (values().assetType ?? '')"
+                  [panelWidth]="260"
+                  [search]="assetTypes().length > 12"
+                  (valueChange)="setAssetType($event)"
+                />
               </div>
             }
             @case ('active') {
               <div class="sf-field">
                 <label for="sf-active">Status</label>
-                <select
-                  id="sf-active"
-                  class="mf-control pg-input"
-                  (change)="set('active', $any($event.target).value)"
-                >
-                  @for (o of activeOptions; track o.value) {
-                    <option [value]="o.value" [selected]="o.value === values().active">
-                      {{ o.label }}
-                    </option>
-                  }
-                </select>
+                <mf-dropdown
+                  buttonId="sf-active"
+                  label="Status"
+                  [items]="activeItems"
+                  [value]="values().active"
+                  (valueChange)="set('active', $any($event))"
+                />
               </div>
             }
             @case ('sensitive') {
               <div class="sf-field">
                 <label for="sf-sensitive">Sensitive matter</label>
-                <select
-                  id="sf-sensitive"
-                  class="mf-control pg-input"
-                  (change)="set('sensitive', $any($event.target).value)"
-                >
-                  @for (o of sensitiveOptions; track o.value) {
-                    <option [value]="o.value" [selected]="o.value === values().sensitive">
-                      {{ o.label }}
-                    </option>
-                  }
-                </select>
+                <mf-dropdown
+                  buttonId="sf-sensitive"
+                  label="Sensitive"
+                  [items]="sensitiveItems"
+                  [value]="values().sensitive"
+                  (valueChange)="set('sensitive', $any($event))"
+                />
               </div>
             }
             @case ('status') {
@@ -280,6 +266,18 @@ export class SearchFilters {
 
   protected readonly activeOptions = ACTIVE_OPTIONS;
   protected readonly sensitiveOptions = SENSITIVE_OPTIONS;
+  protected readonly activeItems: DropdownItem[] = ACTIVE_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
+  protected readonly sensitiveItems: DropdownItem[] = SENSITIVE_OPTIONS.map((o) => ({
+    value: o.value,
+    label: o.label,
+  }));
+  protected readonly assetTypeItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Any type' },
+    ...this.assetTypes().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
+  ]);
   protected readonly statusCodes = STATUS_CODES;
   protected readonly statusLabels = DEFAULT_STATUS_LABELS;
   protected readonly requestorMax = REQUESTOR_MAX;

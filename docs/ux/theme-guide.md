@@ -142,7 +142,7 @@ To make every overdue indicator (chips, counts, the Overdue feed items, the tree
 
 **Status (TH-13, 2026-11-01): every page in the list of 7.3 is converted** (epic #982, TH-01 to TH-12), the old status tokens are deleted and the ledger is empty. The checklist below is for new pages. Data colours that cannot be tokens (the named Task Type palette, a user-picked priority colour, the PrimeNG palette scale in `mf-preset.ts`, the `theme-color` meta tag) carry `theme-colour-ok` with the reason.
 
-Added by UI-07 (#960). Reference pages that already follow it: the navigation panel (`app-shell`) and the new My Matters (`frontend/src/app/features/my-matters/ui/`). Shared blocks: `frontend/src/app/shared/ui/` (full table in `docs/ux/ui-update/shared-blocks.md`). Other pages are NOT restyled in this round.
+Added by UI-07 (#960). Reference pages that already follow it: the navigation panel (`app-shell`) and the new My Matters (`frontend/src/app/features/my-matters/ui/`). Shared blocks: `frontend/src/app/shared/ui/` (full table in `docs/ux/ui-update/shared-blocks.md`). 
 
 ### 7.1 Checklist for one page
 
@@ -239,6 +239,21 @@ styles: [
 ```
 
 Better still, use `<mf-status-chip code="COMPLETED" />` and delete the style.
+
+### 7.5 Lessons of the rollout and the visual sweep (TH-01 to TH-17, TH-14)
+
+Where things live now, so the next page does not repeat the discoveries:
+
+- **One dropdown.** Every choice or filter control is `mf-dropdown` (`shared/ui/dropdown.ts`): the inline column filters (`ColumnSelectFilter`, `ColumnTristateFilter`), the pager's rows per page, Dashboard Scope and Period, Pod Work's Pod, the time zone, the phone sort sheet and the Search filters. Data-entry selects inside forms (Project in the edit dialog, form-engine fields, colour pickers) stay native and take their look from `_forms.scss`. In a table cell the host takes `width: 0; min-width: 100%` so the words of the choices never widen a column; set `--mf-ctl-h-sm` on the host to match neighbouring 32 px inputs. A page that opens it near the bottom gets the list upward automatically.
+- **Chips.** Counts and status switches are `mf-filter-chips` (with `[strip]="true"` for a summary strip: it keeps `data-strip` / `data-strip-item`; items may be `inert`, `tinted` or `alert`). `mf-work-strip` remains only for read-only record strips.
+- **Status and priority.** `mf-status-badge` draws `mf-status-chip`; lists use `mf-priority-flag` (pill for Critical and High, plain words for the rest); only `mf-priority-badge` remains for the admin colour preview.
+- **Grids.** The work grid keeps its own scroll area and draws the `mf-grid-frame` card on `mf-work-list`; record and admin lists use `mf-grid-frame`. Heading rows are small bold capitals in the muted ink, so specs read header text with `textContent` (`allTextContents()`), not `innerText`. A grid that overflows sideways with its filter row open moves the controls to the sheet: keep column floors small (the Status and Sensitive pair is 15 rem from 1500 px).
+- **No coloured edges.** An overdue row or card, the current workflow step and the Swimlane and Users cards carry their state in words and a full thin ring or border, never a 3 to 8 px coloured left edge.
+- **Dialogs.** Title 16 px / 600, secondary action on the left in the DOM and on screen, primary on the right (the Edit task dialog was the last exception).
+- **Headings.** Dashboard lane and list headings are `h3` with `aria-level="2"` so the outline does not skip a level.
+- **Targets.** A text link of 16 px needs `padding-block: 4px; margin-block: -4px` to reach 24 px without a taller line (axe `target-size`).
+- **Tests.** Use `e2e/support/dropdown.ts` (`filterDropdown`, `labelledDropdown`, `dropdownById`, `dropdownByAttr`; `.selectOption`, `.optionTexts`; the chosen value is the `data-value` attribute) and `src/app/testing/dropdown-testing.spec-util.ts` (`ddSelect`, `ddChoose`). Colour specs read tokens through `tokenHex` (`token-colours.spec-util.ts`), never a copied hex.
+- **Sweep.** `docs/ux/theme-rollout/sweep.md` lists every route checked at 1366x768, 1920x1080, 768x1024 and 375x812 with axe (WCAG A/AA and best-practice), what was found and what was fixed or filed.
 
 ## 8. Date and time format of the new My Matters (UI-23, issue #974)
 

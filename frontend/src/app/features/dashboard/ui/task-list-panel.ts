@@ -71,7 +71,7 @@ export function ageInDays(createdAtUtc: string, now: Date, zone: string): number
   template: `
     <section class="card" [attr.aria-labelledby]="id" [attr.data-panel]="kind()">
       <header>
-        <h3 [id]="id" tabindex="-1" data-skip-target>{{ heading() }}</h3>
+        <h3 [id]="id" aria-level="2" tabindex="-1" data-skip-target>{{ heading() }}</h3>
         @if (state() === 'ready' && total() > 0) {
           <span class="count" data-total>{{ total() }}</span>
         }

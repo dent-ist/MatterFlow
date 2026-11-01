@@ -1,3 +1,4 @@
+import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -284,6 +285,8 @@ test('375 px: the grid is cards, so there is no Columns button (and no Column wi
   await expect(page.getByRole('button', { name: 'Columns', exact: true })).toHaveCount(0);
   await expect(page.locator('[data-widths-set]')).toHaveCount(0);
   await page.getByRole('button', { name: /^Filters/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Filters' }).getByLabel('Sort by')).toBeVisible();
+  await expect(
+    labelledDropdown(page.getByRole('dialog', { name: 'Filters' }), 'Sort by'),
+  ).toBeVisible();
   await axeClean(page, 'filters sheet 375');
 });

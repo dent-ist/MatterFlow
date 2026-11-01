@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
@@ -107,18 +108,18 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/search?q=${s.token}&type=matter&filters=open`);
     await expect(rows(page)).toHaveCount(2);
-    const status = page.locator('#sf-active');
-    await expect(status).toHaveValue('any');
-    expect((await status.locator('option').allTextContents()).map((t) => t.trim())).toEqual([
+    const status = dropdownById(page, 'sf-active');
+    await expect(status).toHaveAttribute('data-value', 'any');
+    expect((await status.optionTexts()).map((t) => t.trim())).toEqual([
       'Any',
       'Active',
       'Inactive',
     ]);
-    await page.locator('#sf-sensitive').selectOption('true');
+    await dropdownById(page, 'sf-sensitive').selectOption('true');
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText(`${s.token} sensitive`);
     await expect(page).toHaveURL(/sensitive=true/);
-    await page.locator('#sf-active').selectOption('false');
+    await dropdownById(page, 'sf-active').selectOption('false');
     await expect(rows(page)).toHaveCount(0);
   });
 
@@ -130,15 +131,16 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/search?q=${s.token}&type=asset&filters=open`);
     await expect(rows(page)).toHaveCount(1);
-    expect(await page.locator('#sf-asset-type option').count()).toBeGreaterThan(1);
-    await page.locator('#sf-active').selectOption('true');
+    const types = await dropdownById(page, 'sf-asset-type').optionTexts();
+    expect(types.length).toBeGreaterThan(1);
+    await dropdownById(page, 'sf-active').selectOption('true');
     await expect(rows(page)).toHaveCount(1);
-    await page.locator('#sf-asset-type').selectOption({ index: 1 });
+    await dropdownById(page, 'sf-asset-type').selectOption({ label: types[1] });
     await expect(page).toHaveURL(/assetType=\d+/);
 
     await page.goto(`/search?q=${s.token}&type=client&filters=open`);
     await expect(page.locator('[data-filters-panel] label')).toHaveText(['Status']);
-    await page.locator('#sf-active').selectOption('false');
+    await dropdownById(page, 'sf-active').selectOption('false');
     await expect(rows(page)).toHaveCount(0);
 
     await page.goto(`/search?q=${s.token}&type=project&matter=${s.a.matter.matterId}&filters=open`);

@@ -30,7 +30,13 @@ import { ADMIN_LIST, AdminListLeave } from '../list-return';
 import { ScrollArea } from '../../../shared/ui/fixed-page';
 import { AdminColumn, adminListState } from '../../../shared/ui/admin-list-state';
 import { GridBody } from '../../../shared/ui/grid-body';
-import { StripDef, stripActiveKey, stripItems, stripPick } from '../../../shared/ui/strip-items';
+import {
+  StripDef,
+  stripActiveKey,
+  stripChips,
+  stripItems,
+  stripPick,
+} from '../../../shared/ui/strip-items';
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
@@ -51,7 +57,8 @@ import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { DIALOG_COPY, impactLine, listNames } from '../shared/dialog-copy';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { FilterChips } from '../../../shared/ui/filter-chips';
+import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { parseStatus } from '../../../shared/ui/list-helpers';
 import { TaskTypeBadge } from '../../../shared/task-type/task-type-badge';
 
@@ -133,7 +140,7 @@ const FORM_OPTIONS = [
     RecordCardDef,
     RecordCard,
     RecordSort,
-    WorkStrip,
+    FilterChips,
     TaskCount,
   ],
   templateUrl: './task-types-page.html',
@@ -369,6 +376,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   );
 
   /** The chip that matches the address exactly (the one the list shows), or none when the filters are something else. */
+  protected readonly stripChipList = computed(() => stripChips(this.stripItems()));
   protected readonly stripActive = computed<string | null>(() =>
     stripActiveKey(this.stripDefs, (p) => {
       if (p !== 'status') return this.filters.text(p) || null;

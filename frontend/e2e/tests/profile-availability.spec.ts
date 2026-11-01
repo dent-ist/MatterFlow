@@ -7,7 +7,7 @@ import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { openEditAvailability } from '../support/users-grid';
-import { filterDropdown } from '../support/dropdown';
+import { dropdownById, filterDropdown } from '../support/dropdown';
 
 /**
  * My profile (availability and work hours, epic #68 / issue #70): setting out of office from the profile and the header, the
@@ -204,8 +204,8 @@ test.describe('My profile: availability and work hours', () => {
     const { username } = await seed.user(['Data Technician'], 'zone');
     const me = await asUser(username, { timezoneId: 'Europe/Berlin' });
     await me.goto('/profile');
-    await expect(me.locator('#av-tz')).toHaveValue('Europe/Berlin');
-    await me.locator('#av-tz').selectOption('__other__');
+    await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'Europe/Berlin');
+    await dropdownById(me, 'av-tz').selectOption('__other__');
     await me.locator('#av-tz-other').fill('Mars/Olympus');
     await expect(me.locator('[data-tz-error]')).toContainText('is not a time zone we know');
     await me.locator('#av-tz-other').fill('Asia/Tokyo');
@@ -214,7 +214,7 @@ test.describe('My profile: availability and work hours', () => {
     await expect(me.getByText('Availability saved').first()).toBeVisible();
     await me.reload();
     // A saved zone that is not a US zone stays selectable as an extra option (#540).
-    await expect(me.locator('#av-tz')).toHaveValue('Asia/Tokyo');
+    await expect(dropdownById(me, 'av-tz')).toHaveAttribute('data-value', 'Asia/Tokyo');
   });
 
   test('leaving with unsaved edits asks first; the answer keeps or drops them', async ({

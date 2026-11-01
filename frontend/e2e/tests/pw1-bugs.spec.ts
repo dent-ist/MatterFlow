@@ -1,3 +1,4 @@
+import {} from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -66,7 +67,7 @@ test.describe('Pod Work first release', () => {
         for (const pod of [fx.busy, fx.longName]) {
           await page.goto(`/pods/work?podId=${pod.podId}`);
           await expect(page.getByRole('heading', { name: 'Pod Work', level: 1 })).toBeVisible();
-          await expect(pw.podSelect.locator('option:checked')).toContainText(pod.name.slice(0, 20));
+          await expect(pw.podSelect).toContainText(pod.name.slice(0, 20));
 
           const h1 = await box(page.getByRole('heading', { name: 'Pod Work', level: 1 }));
           expect(h1.height, 'the title is one line').toBeLessThan(44);
@@ -125,10 +126,10 @@ test.describe('Pod Work first release', () => {
         .not.toBe(String(fx.busy.podId));
       const now = new URL(page.url()).searchParams.get('podId');
       await page.reload();
-      await expect(pw.podSelect).toHaveValue(now!);
+      await expect(pw.podSelect).toHaveAttribute('data-value', now!);
       // A plain visit with no address comes back to the remembered Pod.
       await page.goto('/pods/work');
-      await expect(pw.podSelect).toHaveValue(now!);
+      await expect(pw.podSelect).toHaveAttribute('data-value', now!);
     });
   });
 

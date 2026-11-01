@@ -1,3 +1,4 @@
+import {} from '../support/dropdown';
 import { PodWorkPage } from '../pages/queues.pages';
 import { axeAvailable } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -30,7 +31,7 @@ test.describe('Pod Work pod scope', () => {
         const pw = new PodWorkPage(page);
         for (const pod of [fx.busy, fx.longName]) {
           await page.goto(`/pods/work?podId=${pod.podId}`);
-          await expect(pw.podSelect.locator('option:checked')).toContainText(pod.name.slice(0, 20));
+          await expect(pw.podSelect).toContainText(pod.name.slice(0, 20));
           const line = page.locator('[data-page-description]');
           await expect(line).toContainText(pod.name.slice(0, 20));
           await expect(line).toContainText(/you are a member/);

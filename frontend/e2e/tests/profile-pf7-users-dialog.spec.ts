@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
@@ -26,7 +27,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
       await expect(dialog.locator('.av-form--page')).toHaveCount(0);
       await expect(dialog.locator('[data-preview]')).toContainText(`${name}'s current status`);
       await expect(dialog.locator('[data-actions-state]')).toHaveCount(0);
-      await expect(dialog.locator('#av-tz')).toBeVisible();
+      await expect(dropdownById(dialog, 'av-tz')).toBeVisible();
       await noHorizontalScroll(page);
       const box = await dialog.boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);
@@ -48,7 +49,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
     await dialog.getByLabel('Start time', { exact: true }).fill('08:00');
     await dialog.getByRole('button', { name: 'Saturday', exact: true }).click();
-    await dialog.locator('#av-tz').selectOption('America/Chicago');
+    await dropdownById(dialog, 'av-tz').selectOption('America/Chicago');
     await dialog.getByRole('button', { name: 'Save changes' }).click();
     await expect(dialog).toBeHidden();
     const saved = await admin.get(`/api/v1/users/${userId}/availability`);

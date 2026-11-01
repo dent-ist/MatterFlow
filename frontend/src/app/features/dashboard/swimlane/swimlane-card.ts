@@ -93,7 +93,7 @@ export function initials(name: string): string {
             data-card-ref
             >{{ c.ref }}</a
           >
-          <h4 class="title">
+          <h4 class="title" aria-level="3">
             <button
               type="button"
               class="open"
@@ -139,7 +139,7 @@ export function initials(name: string): string {
       >
         <span class="bar" [class.bar--overdue]="c.isOverdue && !closed()" aria-hidden="true"></span>
         <div class="body">
-          <h4 class="title">
+          <h4 class="title" aria-level="3">
             <button
               type="button"
               class="open"

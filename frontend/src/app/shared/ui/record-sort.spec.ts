@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { SortOption } from '../work-queue/phone-sort';
 import { RecordSort, parseSortExpression, sortExpression } from './record-sort';
@@ -38,14 +39,14 @@ describe('RecordSort', () => {
     const el = fixture.nativeElement as HTMLElement;
     return { fixture, el, picks };
   }
-  const change = (select: HTMLSelectElement, value: string) => {
+  const change = (select: { value: string; dispatchEvent(e: Event): boolean }, value: string) => {
     select.value = value;
     select.dispatchEvent(new Event('change'));
   };
 
   it('lists the options with the default one selected and no separate "Default order" entry', () => {
     const { el } = create();
-    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
       'Client number',
       'Name',
@@ -53,19 +54,19 @@ describe('RecordSort', () => {
       'Overdue',
     ]);
     expect(select.value).toBe('clientNumber');
-    expect(el.querySelector<HTMLSelectElement>('[data-dir-select]')!.value).toBe('asc');
+    expect(ddSelect(el.querySelector('[data-dir-select]')!).value).toBe('asc');
   });
 
   it('a count is picked descending, a name ascending; the default ascending clears the sort', () => {
     const { el, picks } = create('-openTasks');
-    const select = el.querySelector<HTMLSelectElement>('[data-sort-select]')!;
+    const select = ddSelect(el.querySelector('[data-sort-select]')!);
     expect(select.value).toBe('openTasks');
-    expect(el.querySelector<HTMLSelectElement>('[data-dir-select]')!.value).toBe('desc');
+    expect(ddSelect(el.querySelector('[data-dir-select]')!).value).toBe('desc');
     change(select, 'overdue');
     change(select, 'name');
     change(select, 'clientNumber');
     expect(picks).toEqual(['-overdue', 'name', null]);
-    change(el.querySelector<HTMLSelectElement>('[data-dir-select]')!, 'asc');
+    change(ddSelect(el.querySelector('[data-dir-select]')!), 'asc');
     expect(picks[picks.length - 1]).toBe('openTasks');
   });
 });

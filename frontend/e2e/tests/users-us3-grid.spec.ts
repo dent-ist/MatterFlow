@@ -473,7 +473,7 @@ test.describe('#433 one action per row', () => {
     await expect(page.locator('[data-strip-item="pending"]')).toBeVisible();
     await page.getByRole('button', { name: /^Filters/ }).click();
     const sheet = page.getByRole('dialog').last();
-    const select = sheet.getByLabel('Sort by');
+    const select = labelledDropdown(sheet, 'Sort by');
     await expect(select).toBeVisible();
     expect(await select.locator('option').allTextContents()).toEqual([
       'Waiting people first (default order)',

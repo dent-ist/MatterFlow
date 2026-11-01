@@ -1,3 +1,4 @@
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { isFinishedOnly } from '../../../shared/work-queue/closed-suggestion';
 import { ColumnsNotice } from '../../../shared/work-queue/columns-notice';
 import {
@@ -61,6 +62,7 @@ type TabKey = 'queue' | 'members' | 'all';
 @Component({
   selector: 'mf-pod-work-page',
   imports: [
+    Dropdown,
     ColumnsNotice,
     FixedPage,
     PageHeader,
@@ -93,9 +95,9 @@ type TabKey = 'queue' | 'members' | 'all';
     }
     .pw-pod-select.pw-pod-select.pw-pod-select {
       flex: 0 1 auto;
-      width: auto;
+      width: 18rem;
       min-width: 0;
-      max-width: 22rem;
+      max-width: 100%;
       text-overflow: ellipsis;
     }
     /* 640 to 899 px, Unassigned tab: the Assignee cell is the "Assign to me" link and the menu's chevron (#550). The accessible name of the
@@ -159,36 +161,19 @@ type TabKey = 'queue' | 'members' | 'all';
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
           <div mfActions class="wp-field wp-field--inline pw-pod" data-ph-selector>
-            <label for="pw-pod">Pod</label>
-            <select
-              id="pw-pod"
-              class="mf-control mf-control--compact wp-select pw-pod-select"
+            <span class="pw-pod-lbl" aria-hidden="true">Pod</span>
+            <mf-dropdown
+              buttonId="pw-pod"
+              class="pw-pod-select"
+              label="Pod"
+              placeholder="Choose a Pod"
               [attr.title]="data()?.pod?.name ?? null"
-              [value]="data()?.pod?.podId ?? ''"
-              (change)="selectPod($any($event.target).value)"
-            >
-              @if (!data()?.pod) {
-                <option value="" selected>Choose a Pod</option>
-              }
-              @if (yourPods().length > 0) {
-                <optgroup label="Your pods">
-                  @for (p of yourPods(); track p.podId) {
-                    <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
-                      {{ p.name }}{{ p.isPrimary ? ' (primary)' : '' }}
-                    </option>
-                  }
-                </optgroup>
-              }
-              @if (otherPods().length > 0) {
-                <optgroup label="Other pods">
-                  @for (p of otherPods(); track p.podId) {
-                    <option [value]="p.podId" [selected]="p.podId === data()?.pod?.podId">
-                      {{ p.name }}
-                    </option>
-                  }
-                </optgroup>
-              }
-            </select>
+              [items]="podItems()"
+              [value]="data()?.pod?.podId ? '' + data()!.pod!.podId : ''"
+              [neutralValue]="null"
+              [panelWidth]="280"
+              (valueChange)="selectPod($event)"
+            />
           </div>
         }
       </mf-page-header>
@@ -381,6 +366,23 @@ export class PodWorkPage extends QueuePageBase<PodWorkData> {
   });
 
   protected readonly pods = computed(() => this.data()?.pods ?? []);
+  protected readonly podItems = computed<DropdownItem[]>(() => [
+    ...(this.yourPods().length > 0
+      ? [
+          { value: '', label: 'Your pods', heading: true },
+          ...this.yourPods().map((p) => ({
+            value: String(p.podId),
+            label: `${p.name}${p.isPrimary ? ' (primary)' : ''}`,
+          })),
+        ]
+      : []),
+    ...(this.otherPods().length > 0
+      ? [
+          { value: '', label: 'Other pods', heading: true },
+          ...this.otherPods().map((p) => ({ value: String(p.podId), label: p.name })),
+        ]
+      : []),
+  ]);
   protected readonly yourPods = computed(() => this.pods().filter((p) => p.isMember));
   protected readonly otherPods = computed(() => this.pods().filter((p) => !p.isMember));
   protected readonly podOptions = signal<PodOption[]>([]);

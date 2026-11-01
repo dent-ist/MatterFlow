@@ -1,3 +1,4 @@
+import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -166,7 +167,7 @@ test.describe('phone cards below 640 px (#374, #375)', () => {
       await expect(dialog).toBeVisible();
       await axeClean(page, `${kind} sheet`);
       await shot(page, `p374-${kind}-sheet`);
-      await dialog.getByLabel('Sort by').selectOption({ label: 'Status' });
+      await labelledDropdown(dialog, 'Sort by').selectOption({ label: 'Status' });
       await expect(page).toHaveURL(/sort=status/);
       await page.keyboard.press('Escape');
       await expect(cards(page).nth(0)).toContainText('Active');

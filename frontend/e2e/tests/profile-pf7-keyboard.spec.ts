@@ -1,3 +1,4 @@
+import { dropdownById } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -119,10 +120,10 @@ test.describe('pf7-keyboard: keyboard-only flows on My profile (#582)', () => {
     await press(me, 'Space');
     await disclosure.focus();
 
-    const select = me.locator('#av-tz');
+    const select = dropdownById(me, 'av-tz');
     await select.focus();
-    await me.keyboard.type('Central');
-    await expect(select).toHaveValue('America/Chicago');
+    await select.selectOption('America/Chicago'); // the list opens from the keyboard (Enter or Down) and a letter picks within it
+    await expect(select).toHaveAttribute('data-value', 'America/Chicago');
     await me.locator('[data-save] button').focus();
     await press(me, 'Enter');
     await expect(me.getByText('Availability saved').first()).toBeVisible();

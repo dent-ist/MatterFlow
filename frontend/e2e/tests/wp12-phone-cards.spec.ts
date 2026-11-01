@@ -6,7 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { FIRM_ZONE, dateInZone } from '../support/time';
-import { filterDropdown } from '../support/dropdown';
+import { dropdownByAttr, filterDropdown } from '../support/dropdown';
 
 /**
  * Clients UX epic, WP12 phone cards (#275 the generic record card list, #276 Clients, #277 Matters and the client's Matters tab, #278
@@ -407,23 +407,23 @@ test.describe('WP12 phone cards', () => {
       await filters.click();
       const sheet = page.locator('[data-filter-sheet]');
       await expect(sheet).toBeVisible();
-      const select = sheet.locator('[data-sort-select]');
-      expect((await select.locator('option').allInnerTexts()).map((t) => t.trim())).toEqual([
+      const select = dropdownByAttr(sheet, 'data-sort-select');
+      expect((await select.optionTexts()).map((t) => t.trim())).toEqual([
         'Client number',
         'Name',
         'Open tasks',
         'Overdue',
       ]);
-      await expect(select).toHaveValue('clientNumber');
+      await expect(select).toHaveAttribute('data-value', 'clientNumber');
       await axeClean(page, 'clients sheet open');
       await shot(page, 'clients-sheet');
       await select.selectOption('openTasks');
       await expect(page).toHaveURL(/sort=-openTasks/);
-      await expect(sheet.locator('[data-dir-select]')).toHaveValue('desc');
-      await sheet.locator('[data-dir-select]').selectOption('asc');
+      await expect(dropdownByAttr(sheet, 'data-dir-select')).toHaveAttribute('data-value', 'desc');
+      await dropdownByAttr(sheet, 'data-dir-select').selectOption('asc');
       await expect(page).toHaveURL(/sort=openTasks(&|$)/);
-      await sheet.locator('[data-sort-select]').selectOption('openTasks');
-      await sheet.locator('[data-dir-select]').selectOption('desc');
+      await dropdownByAttr(sheet, 'data-sort-select').selectOption('openTasks');
+      await dropdownByAttr(sheet, 'data-dir-select').selectOption('desc');
       await page.keyboard.press('Escape');
       await expect(sheet).toHaveCount(0);
       await expect(filters).toBeFocused();
@@ -439,13 +439,13 @@ test.describe('WP12 phone cards', () => {
       // Name, descending, through the sheet.
       await size(page, 375);
       await filters.click();
-      await sheet.locator('[data-sort-select]').selectOption('name');
-      await sheet.locator('[data-dir-select]').selectOption('desc');
+      await dropdownByAttr(sheet, 'data-sort-select').selectOption('name');
+      await dropdownByAttr(sheet, 'data-dir-select').selectOption('desc');
       await expect(page).toHaveURL(/sort=-name/);
       await expectCardsSorted(page, (r) => r.name, 'desc');
       // Back to the default order: no sort in the address.
-      await sheet.locator('[data-sort-select]').selectOption('clientNumber');
-      await sheet.locator('[data-dir-select]').selectOption('asc');
+      await dropdownByAttr(sheet, 'data-sort-select').selectOption('clientNumber');
+      await dropdownByAttr(sheet, 'data-dir-select').selectOption('asc');
       await expect(page).not.toHaveURL(/sort=/);
     });
 
@@ -462,7 +462,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       await expect(sheet).toHaveAttribute('role', 'dialog');
       // Focus stays inside: Tab through the whole sheet comes back to its first control.
-      const first = sheet.locator('[data-sort-select]');
+      const first = dropdownByAttr(sheet, 'data-sort-select');
       await expect(first).toBeFocused();
       for (let i = 0; i < 12; i++) await page.keyboard.press('Tab');
       expect(await sheet.evaluate((el) => el.contains(document.activeElement))).toBe(true);
@@ -580,13 +580,13 @@ test.describe('WP12 phone cards', () => {
       await page.locator('[data-filters-toggle]').click();
       const sheet = page.locator('[data-filter-sheet]');
       expect(
-        (await sheet.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
+        (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
       ).toEqual(['Reference', 'Name', 'Client', 'Project manager', 'Open tasks', 'Overdue']);
       // The sheet also carries Status and Sensitive (#272).
       await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
       await expect(filterDropdown(sheet, 'Status')).toBeVisible();
       await axeClean(page, 'matters sheet open');
-      await sheet.locator('[data-sort-select]').selectOption('overdue');
+      await dropdownByAttr(sheet, 'data-sort-select').selectOption('overdue');
       await expect(page).toHaveURL(/sort=-overdue/);
       await expectCardsSorted(page, (r) => r.overdue, 'desc');
       await shot(page, 'matters-sheet');
@@ -612,7 +612,7 @@ test.describe('WP12 phone cards', () => {
       await page.locator('[data-filters-toggle]').click();
       const sheet = page.locator('[data-filter-sheet]');
       expect(
-        (await sheet.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
+        (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
       ).toEqual(['Reference', 'Name', 'Open tasks', 'Overdue']);
       await axeClean(page, 'client matters sheet open');
       await shot(page, 'client-matters-sheet');
@@ -668,10 +668,10 @@ test.describe('WP12 phone cards', () => {
       await page.locator('[data-filters-toggle]').click();
       const sheet = page.locator('[data-filter-sheet]');
       expect(
-        (await sheet.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
+        (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
       ).toEqual(['Name', 'Matter', 'Open tasks', 'Overdue']);
       await axeClean(page, 'projects sheet open');
-      await sheet.locator('[data-sort-select]').selectOption('matterRef');
+      await dropdownByAttr(sheet, 'data-sort-select').selectOption('matterRef');
       await expect(page).toHaveURL(/sort=matterRef/);
       await shot(page, 'projects-sheet');
     });
@@ -819,7 +819,7 @@ test.describe('WP12 phone cards', () => {
       // A phone sheet without Task.View has no count sorts.
       await page.locator('[data-filters-toggle]').click();
       expect(
-        (await page.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
+        (await dropdownByAttr(page, 'data-sort-select').optionTexts()).map((t) => t.trim()),
       ).toEqual(['Name', 'Matter']);
       await axeClean(page, 'no task view sheet');
 

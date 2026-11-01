@@ -56,7 +56,7 @@ let nextId = 0;
       [attr.data-lane]="m.code"
     >
       <header class="head">
-        <h3 class="name" [id]="hid">{{ m.label }}</h3>
+        <h3 class="name" aria-level="2" [id]="hid">{{ m.label }}</h3>
         <a
           class="count count--link"
           data-lane-count
