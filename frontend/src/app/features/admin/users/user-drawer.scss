@@ -184,9 +184,9 @@ fieldset {
   gap: var(--mf-s2);
   margin: var(--mf-s2) 0 0;
   padding: var(--mf-s2) var(--mf-s3);
-  border-radius: var(--mf-radius);
-  background: var(--mf-warning-bg);
-  color: var(--mf-warning);
+  border-radius: var(--mf-radius-md);
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-sem-risk-fg);
   font-size: var(--mf-fs-sm);
   font-weight: 600;
 }
@@ -202,10 +202,10 @@ fieldset {
 
 .ud-chip {
   padding: 1px var(--mf-s2);
-  border: 1px solid var(--mf-border-strong);
-  border-radius: var(--mf-radius);
-  background: var(--mf-surface);
-  color: var(--mf-text);
+  border: 1px solid var(--mf-sem-neutral-line);
+  border-radius: var(--mf-radius-pill);
+  background: var(--mf-sem-neutral-bg);
+  color: var(--mf-sem-neutral-fg);
   font-size: var(--mf-fs-sm);
   white-space: nowrap;
 }
@@ -238,9 +238,9 @@ fieldset {
 
 .mf-error {
   padding: var(--mf-s3);
-  border-radius: var(--mf-radius);
-  background: var(--mf-danger-bg);
-  color: var(--mf-danger);
+  border-radius: var(--mf-radius-md);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
 }
 
 .ud-loading {

@@ -6,7 +6,6 @@
   "projects/form-engine/src/lib/renderer/dynamic-form.scss": 5,
   "src/app/core/theme/mf-preset.ts": 19,
   "src/app/features/admin/audit/audit-page.scss": 1,
-  "src/app/features/admin/pods/pods-page.scss": 6,
   "src/app/features/admin/priorities/priority-dialog.ts": 2,
   "src/app/features/admin/task-types/task-type-form-bar.ts": 1,
   "src/app/features/admin/task-types/task-type-form-page.scss": 10,
