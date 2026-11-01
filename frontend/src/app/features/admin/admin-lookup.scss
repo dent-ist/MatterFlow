@@ -34,20 +34,29 @@
 
 .grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: var(--mf-surface);
 
   th,
   td {
     padding: var(--mf-s2) var(--mf-s3);
     text-align: left;
-    border-bottom: 1px solid var(--mf-border);
+    border-bottom: 1px solid var(--mf-border-soft);
     vertical-align: middle;
   }
 
   th {
     background: var(--mf-surface-alt);
-    font-size: var(--mf-fs-sm);
+    color: var(--mf-text-muted);
+    font-size: var(--mf-fs-xs);
+    font-weight: var(--mf-fw-bold);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:hover > td {
+    background: var(--mf-surface-alt);
   }
 
   tr.inactive td {

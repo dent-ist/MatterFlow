@@ -13,7 +13,7 @@
   padding: var(--mf-s3);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius);
+  border-radius: var(--mf-radius-xl);
 
   ul {
     margin: 0 0 var(--mf-s3);
@@ -106,8 +106,10 @@
     margin: 0;
     padding: var(--mf-s2) var(--mf-s3);
     color: var(--mf-text-muted);
-    font-size: var(--mf-fs-sm);
-    font-weight: 600;
+    font-size: var(--mf-fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     background: var(--mf-surface-alt);
     border-bottom: 1px solid var(--mf-border);
   }
@@ -204,7 +206,7 @@
   font-size: var(--mf-fs-xs);
   background: var(--mf-info-bg);
   color: var(--mf-info);
-  border-radius: var(--mf-radius);
+  border-radius: var(--mf-radius-pill);
 }
 
 .mf-editor {
@@ -214,7 +216,7 @@
   padding: var(--mf-s4);
   background: var(--mf-surface);
   border: 1px solid var(--mf-border);
-  border-radius: var(--mf-radius);
+  border-radius: var(--mf-radius-xl);
 
   fieldset {
     display: grid;
