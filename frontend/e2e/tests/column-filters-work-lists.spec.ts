@@ -4,6 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Column filters on the work lists (epic #75, Batch 3, issue #78): Task Queue, My Work, Pod Work and the Tasks grids of a Matter and a
@@ -458,7 +459,7 @@ test.describe('Column filters on the work lists', () => {
       await page.goto(`/matters/${world.matter.matterId}?tab=tasks&project=${project.projectId}`);
       await expect(tasks.locator(`[data-task="${open.taskNumber}"]`)).toBeVisible();
       await expect(tasks.locator(`[data-task="${closed.taskNumber}"]`)).toHaveCount(0);
-      await expect(page.getByRole('combobox', { name: 'Filter by Project' })).toBeVisible();
+      await expect(filterDropdown(page, 'Project')).toBeVisible();
       await text(page, 'Title or Ref').fill(`nothing-${token}`);
       await expect(tasks.locator('td[data-empty="filtered"]')).toContainText(
         'No tasks match these filters',
@@ -476,7 +477,7 @@ test.describe('Column filters on the work lists', () => {
       // The open state is remembered per screen, and this browser opened the row on the Matter's grid above.
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
       await expect(text(page, 'Title or Ref')).toBeVisible();
-      await expect(page.getByRole('combobox', { name: 'Filter by Project' })).toHaveCount(0);
+      await expect(filterDropdown(page, 'Project')).toHaveCount(0);
     });
   });
 

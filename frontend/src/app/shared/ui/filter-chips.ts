@@ -7,6 +7,10 @@ export interface FilterChip {
   count?: number | null;
   /** A PrimeIcons class drawn before the label (optional). */
   icon?: string;
+  /** Tooltip: what the number counts. */
+  hint?: string;
+  /** A plain count with no filter behind it: drawn as text, not as a button. */
+  inert?: boolean;
   /** A chip that cannot give anything is disabled when it has a zero count and is not the chosen one. */
   hidden?: boolean;
 }
@@ -20,14 +24,35 @@ export interface FilterChip {
   selector: 'mf-filter-chips',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="row" role="group" [attr.aria-label]="label()">
+    <div
+      class="row"
+      role="group"
+      [attr.aria-label]="label()"
+      [attr.data-strip]="strip() ? '' : null"
+    >
       @for (c of chips(); track c.key) {
-        @if (!c.hidden) {
+        @if (!c.hidden && c.inert) {
+          <span
+            class="chip chip--inert"
+            [attr.data-strip-item]="strip() ? c.key : null"
+            [attr.title]="c.hint ?? null"
+          >
+            <span>{{ c.label }}</span>
+            {{ ' ' }}
+            @if (c.count === null && strip()) {
+              <span class="n">--</span>
+            } @else if ((c.count ?? -1) >= 0) {
+              <span class="n">{{ c.count }}</span>
+            }
+          </span>
+        } @else if (!c.hidden) {
           <button
             type="button"
             class="chip"
             [attr.aria-pressed]="c.key === value()"
             [attr.data-key]="c.key"
+            [attr.data-strip-item]="strip() ? c.key : null"
+            [attr.title]="c.hint ?? null"
             (click)="pick(c.key)"
           >
             @if (c.icon) {
@@ -36,7 +61,10 @@ export interface FilterChip {
               <i class="pi pi-check tick" aria-hidden="true"></i>
             }
             <span>{{ c.label }}</span>
-            @if ((c.count ?? -1) >= 0) {
+            {{ ' ' }}
+            @if (c.count === null && strip()) {
+              <span class="n">--</span>
+            } @else if ((c.count ?? -1) >= 0) {
               <span class="n">{{ c.count }}</span>
             }
           </button>
@@ -74,6 +102,13 @@ export interface FilterChip {
     .chip:hover {
       background: var(--mf-surface-alt);
     }
+    .chip--inert {
+      border-style: dashed;
+      cursor: default;
+    }
+    .chip--inert:hover {
+      background: var(--mf-surface);
+    }
     .chip .n {
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-xs);
@@ -107,6 +142,8 @@ export class FilterChips {
   readonly chips = input.required<readonly FilterChip[]>();
   readonly value = input<string | null>(null);
   readonly label = input('Filter');
+  /** The row is the summary strip of a list (admin lists, Users): its chips also carry `data-strip` and `data-strip-item` (the hooks the strip always had). */
+  readonly strip = input(false);
   /** What choosing the chosen chip again returns (null = keep it chosen). */
   readonly emptyKey = input<string | null>(null);
   readonly valueChange = output<string>();

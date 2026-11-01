@@ -37,8 +37,15 @@ import { phoneCards } from '../../../shared/ui/record-card-list';
 import { RowLink, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { rowActions } from '../../../shared/ui/row-actions';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
-import { StripDef, stripActiveKey, stripItems, stripPick } from '../../../shared/ui/strip-items';
+import { FilterChips } from '../../../shared/ui/filter-chips';
+import { WorkStripItem } from '../../../shared/work-queue/work-strip';
+import {
+  StripDef,
+  stripChips,
+  stripActiveKey,
+  stripItems,
+  stripPick,
+} from '../../../shared/ui/strip-items';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { AdminTabCounts } from '../admin-tabs';
 import { AdminShellFilters } from '../task-types/shell-filters';
@@ -89,7 +96,7 @@ const LOAD_PAGE_SIZE = 100;
     RowLink,
     ScrollArea,
     TaskTypeChip,
-    WorkStrip,
+    FilterChips,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -104,12 +111,12 @@ const LOAD_PAGE_SIZE = 100;
       </p>
     }
 
-    <mf-work-strip
+    <mf-filter-chips
       label="Asset types summary"
-      [items]="strip()"
-      [interactive]="true"
-      [active]="stripActive()"
-      (pick)="pickStrip($event)"
+      [strip]="true"
+      [chips]="stripChipList()"
+      [value]="stripActive()"
+      (valueChange)="pickStrip($event)"
     />
 
     <!-- The Filters button is in the page header; this draws the sheet it opens below 640 px (and the chips of a filtered address). -->
@@ -419,6 +426,7 @@ export class AssetTypesPage extends LocalListPage<AssetTypeResponse> {
   protected readonly strip = computed<WorkStripItem[]>(() =>
     stripItems(this.state() === 'ready' ? this.all() : null, this.stripDefs),
   );
+  protected readonly stripChipList = computed(() => stripChips(this.strip()));
   protected readonly stripActive = computed<string | null>(() =>
     stripActiveKey(this.stripDefs, (p) => {
       if (p !== 'status') return this.filters.text(p) || null;

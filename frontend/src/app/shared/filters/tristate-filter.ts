@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { Dropdown, DropdownItem } from '../ui/dropdown';
 
 /**
  * Tri-state column filter: a native select with Any / Yes / No in domain wording ("Overdue only", "Not overdue"). The value is `''`
@@ -6,19 +7,20 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
  */
 @Component({
   selector: 'mf-column-tristate-filter',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <select
-      class="mf-control mf-control--compact ts"
-      [attr.aria-label]="'Filter by ' + label()"
+    <mf-dropdown
+      class="ts"
+      size="sm"
+      [label]="'Filter by ' + label()"
       [attr.data-filter]="key() || label()"
+      [items]="items()"
+      [value]="value()"
       [disabled]="disabled()"
-      (change)="valueChange.emit($any($event.target).value)"
-    >
-      <option value="" [selected]="value() === ''">{{ prefix() }}{{ anyLabel() }}</option>
-      <option value="true" [selected]="value() === 'true'">{{ prefix() }}{{ yesLabel() }}</option>
-      <option value="false" [selected]="value() === 'false'">{{ prefix() }}{{ noLabel() }}</option>
-    </select>
+      [panelWidth]="180"
+      (valueChange)="valueChange.emit($event)"
+    />
   `,
   styles: `
     :host {
@@ -26,8 +28,10 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       min-width: 0;
     }
     .ts {
-      width: 100%;
+      display: block;
       min-width: 0;
+    }
+    .ts ::ng-deep .btn {
       font-weight: 400;
     }
   `,
@@ -43,4 +47,9 @@ export class ColumnTristateFilter {
   /** Text before every choice ("Sensitive: "): for a control in the filter row that has no column header to name it. */
   readonly prefix = input('');
   readonly valueChange = output<string>();
+  protected readonly items = computed<DropdownItem[]>(() => [
+    { value: '', label: `${this.prefix()}${this.anyLabel()}` },
+    { value: 'true', label: `${this.prefix()}${this.yesLabel()}` },
+    { value: 'false', label: `${this.prefix()}${this.noLabel()}` },
+  ]);
 }

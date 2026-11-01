@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { DashScope, SCOPE_PARAM } from '../dash-scope';
 
 let nextId = 0;
@@ -12,39 +13,22 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-dash-scope',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sc" data-dash-scope>
-      <label class="sc-lbl" [for]="id">Scope</label>
-      <select
-        class="mf-control mf-control--compact"
+      <span class="sc-lbl" aria-hidden="true">Scope</span>
+      <mf-dropdown
+        size="sm"
         data-scope
-        [id]="id"
+        [buttonId]="id"
+        label="Scope"
+        [items]="items()"
         [value]="scope.scope()"
-        (change)="onSelect($any($event.target).value)"
-      >
-        @for (o of general(); track o.value) {
-          <option [value]="o.value" [selected]="o.value === scope.scope()">{{ o.label }}</option>
-        }
-        @if (mine().length > 0) {
-          <optgroup label="My pods">
-            @for (o of mine(); track o.value) {
-              <option [value]="o.value" [selected]="o.value === scope.scope()">
-                {{ o.label }}
-              </option>
-            }
-          </optgroup>
-        }
-        @if (other().length > 0) {
-          <optgroup label="Other pods">
-            @for (o of other(); track o.value) {
-              <option [value]="o.value" [selected]="o.value === scope.scope()">
-                {{ o.label }}
-              </option>
-            }
-          </optgroup>
-        }
-      </select>
+        [panelWidth]="260"
+        [neutralValue]="null"
+        (valueChange)="onSelect($event)"
+      />
     </div>
   `,
   styles: `
@@ -64,13 +48,12 @@ let nextId = 0;
       color: var(--mf-text-muted);
       white-space: nowrap;
     }
-    select {
-      min-height: 2rem;
-      max-width: 14rem;
+    mf-dropdown {
       min-width: 0;
+      max-width: 14rem;
     }
     @media (max-width: 480px) {
-      select {
+      mf-dropdown {
         max-width: 8.5rem;
       }
     }
@@ -89,6 +72,22 @@ export class ScopeControl {
   protected readonly other = computed(() =>
     this.scope.options().filter((o) => o.group === 'other'),
   );
+
+  protected readonly items = computed<DropdownItem[]>(() => [
+    ...this.general().map((o) => ({ value: o.value, label: o.label })),
+    ...(this.mine().length > 0
+      ? [
+          { value: '', label: 'My pods', heading: true },
+          ...this.mine().map((o) => ({ value: o.value, label: o.label })),
+        ]
+      : []),
+    ...(this.other().length > 0
+      ? [
+          { value: '', label: 'Other pods', heading: true },
+          ...this.other().map((o) => ({ value: o.value, label: o.label })),
+        ]
+      : []),
+  ]);
 
   /** The text for the page's live region after a change ("Scope: Review Alpha"). */
   readonly scopeChange = output<string>();

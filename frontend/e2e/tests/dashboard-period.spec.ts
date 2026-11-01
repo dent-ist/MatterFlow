@@ -6,6 +6,7 @@ import { expect, test } from '../support/fixtures';
 import { seedBoard } from '../support/board';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * One shareable period model (review 2, WP3, issue #91): the same label, list and address on Summary, Trends and Coverage; the address wins
@@ -53,8 +54,8 @@ async function shoot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: path.join(OUT, `${name}.png`) });
 }
 
-const period = (page: Page) => page.getByLabel('Period', { exact: true });
-const options = (page: Page) => period(page).locator('option');
+const period = (page: Page) => labelledDropdown(page, 'Period');
+const options = (page: Page) => ({ texts: () => period(page).optionTexts() });
 const tile = (page: Page, label: string) =>
   page.locator('[data-group="overview"] mf-stat-tile', {
     has: page.locator('.label', { hasText: label }),
@@ -83,16 +84,16 @@ test.describe('the list, the label and the scope note', () => {
     page,
   }) => {
     await openSummary(page);
-    await expect(options(page)).toHaveText(CORE);
-    await expect(period(page)).toHaveValue('30d');
+    expect(await options(page).texts()).toEqual(CORE);
+    await expect(period(page)).toHaveAttribute('data-value', '30d');
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await openTrends(page);
-    await expect(options(page)).toHaveText(CORE);
+    expect(await options(page).texts()).toEqual(CORE);
     await expect(page.getByText('Completed and created in')).toHaveCount(0);
 
     await openCoverage(page);
-    await expect(options(page)).toHaveText(COVERAGE);
+    expect(await options(page).texts()).toEqual(COVERAGE);
   });
 
   test('the scope note is on Summary only and the control is hidden on Breakdowns, Swimlane and Workload', async ({
@@ -109,15 +110,15 @@ test.describe('the list, the label and the scope note', () => {
 
     await page.goto('/dashboard?tab=breakdowns');
     await expect(page.locator('[data-grid="breakdowns"]')).toBeVisible();
-    await expect(page.locator('select[data-period]')).toHaveCount(0);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
     await page.goto('/dashboard?tab=swimlane');
     await expect(page.locator('[data-board]')).toBeVisible();
-    await expect(page.locator('select[data-period]')).toHaveCount(0);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
     await page.goto('/dashboard?tab=users');
     await expect(page.locator('[data-users-grid], [data-users-table]').first()).toBeVisible({
       timeout: 20_000,
     });
-    await expect(page.locator('select[data-period]')).toHaveCount(0);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
   });
 
   test('Swimlane has its own window, "Done in the last"', async ({ page }) => {
@@ -155,11 +156,11 @@ test.describe('the address', () => {
     );
     await openTrends(other, link);
     await recipient;
-    await expect(period(other)).toHaveValue('90d');
+    await expect(period(other)).toHaveAttribute('data-value', '90d');
     await expect(other).toHaveURL(/period=90d/);
     // The Pod Lead's own memory is not the default any more either: the link counts as their choice.
     await other.goto('/dashboard');
-    await expect(period(other)).toHaveValue('90d');
+    await expect(period(other)).toHaveAttribute('data-value', '90d');
     await other.close();
   });
 
@@ -173,7 +174,7 @@ test.describe('the address', () => {
 
     await page.getByRole('tab', { name: 'Trends' }).click();
     await expect(page.locator('[data-section="trend"]')).toBeVisible({ timeout: 20_000 });
-    await expect(period(page)).toHaveValue('90d');
+    await expect(period(page)).toHaveAttribute('data-value', '90d');
     await expect(page).toHaveURL(/(?=.*tab=trends)(?=.*period=90d)/);
     await expect(page.locator('[data-trend-period], [data-section="trend"]').first()).toContainText(
       caption!.trim(),
@@ -182,17 +183,17 @@ test.describe('the address', () => {
     await page.getByRole('tab', { name: 'Users' }).click();
     await page.locator('[data-view="coverage"]').click();
     await expect(page.locator('[data-coverage-region]')).toBeVisible({ timeout: 120_000 });
-    await expect(period(page)).toHaveValue('90d');
+    await expect(period(page)).toHaveAttribute('data-value', '90d');
     await period(page).selectOption({ label: 'Last 12 months' });
     await expect(page).toHaveURL(/period=12m/);
 
     // Back on Summary, which has no 12 month item: it reads as the default, and Coverage keeps the long window.
     await page.getByRole('tab', { name: 'Summary' }).click();
     await expect(page.locator('[data-group="overview"]')).toBeVisible();
-    await expect(period(page)).toHaveValue('30d');
+    await expect(period(page)).toHaveAttribute('data-value', '30d');
     await page.getByRole('tab', { name: 'Users' }).click();
     await expect(page.locator('[data-coverage-region]')).toBeVisible({ timeout: 120_000 });
-    await expect(period(page)).toHaveValue('12m');
+    await expect(period(page)).toHaveAttribute('data-value', '12m');
   });
 
   test('a stored "Last quarter" shows 90 days with a clean address; a bad address falls back to memory', async ({
@@ -214,7 +215,7 @@ test.describe('the address', () => {
     const read = page.waitForRequest((r) => /\/api\/v1\/dashboard\?.*period=90d/.test(r.url()));
     await page.reload();
     await read;
-    await expect(period(page)).toHaveValue('90d');
+    await expect(period(page)).toHaveAttribute('data-value', '90d');
     await expect(page).toHaveURL(/\/dashboard$/);
     expect(
       await page.evaluate((id) => localStorage.getItem(`mf.dashboard.v2.${id}`), user.userId),
@@ -223,7 +224,7 @@ test.describe('the address', () => {
     // A range the address cannot carry (reversed) is dropped and the remembered period applies.
     await page.goto('/dashboard?tab=trends&period=custom&from=2026-10-09&to=2026-10-01');
     await expect(page.locator('[data-plot]').first()).toBeVisible({ timeout: 20_000 });
-    await expect(period(page)).toHaveValue('90d');
+    await expect(period(page)).toHaveAttribute('data-value', '90d');
     await expect(page).toHaveURL(/\/dashboard\?tab=trends$/);
     await page.close();
   });
@@ -377,7 +378,7 @@ test.describe('accessibility and screens', () => {
       if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
 
       await openCoverage(page, '/dashboard?tab=users&view=coverage&period=12m');
-      await expect(period(page)).toHaveValue('12m');
+      await expect(period(page)).toHaveAttribute('data-value', '12m');
       await shoot(page, `period-coverage-${size.width}`);
       if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
       await expect

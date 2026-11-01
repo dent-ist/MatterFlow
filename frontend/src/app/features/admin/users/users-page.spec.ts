@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -210,7 +211,7 @@ describe('UsersPage', () => {
     it('offers 25, 50 and 100 rows per page and writes the choice into the address', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('all');
-      const select = q<HTMLSelectElement>('.mf-pager__size select');
+      const select = ddSelect(document.body, 'Rows per page');
       expect(Array.from(select.options).map((o) => o.value)).toEqual(['25', '50', '100']);
       select.value = '50';
       select.dispatchEvent(new Event('change'));
@@ -249,17 +250,15 @@ describe('UsersPage', () => {
     expect(pressed()).toBe('active');
     expect(TestBed.inject(Router).url).toContain('status=active');
     expect(segmentText('pending')).toBe('Pending access 0');
-    expect(segment('pending').classList).not.toContain('tinted');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
   });
 
   it('keeps the waiting count visible while another segment is pressed, tints it, and All lists everyone', async () => {
     await create('User.View');
-    expect(segment('pending').classList).toContain('on');
+    expect(segment('pending').getAttribute('aria-pressed')).toBe('true');
     await chooseStatus('active');
     expect(pressed()).toBe('active');
     expect(segmentText('pending')).toBe('Pending access 2');
-    expect(segment('pending').classList).toContain('tinted');
     expect(el().querySelector('[data-pending-cue]')).toBeNull();
 
     await chooseStatus('all');
@@ -282,30 +281,20 @@ describe('UsersPage', () => {
     expect(segmentText('all')).toContain(String(counts.pending + counts.active + counts.inactive));
   });
 
-  it('is one labelled toolbar with one Tab stop, arrows move between the segments', async () => {
+  it('is one labelled group of status chips, each a toggle button with its count', async () => {
     await create('User.View');
     const bar = q('[data-strip]');
-    expect(bar.getAttribute('role')).toBe('toolbar');
+    expect(bar.getAttribute('role')).toBe('group');
     expect(bar.getAttribute('aria-label')).toBe('Users by status');
-    const stops = () =>
-      Array.from(el().querySelectorAll<HTMLElement>('[data-strip-item]')).filter(
-        (b) => b.tabIndex === 0,
-      );
-    expect(stops().map((b) => b.dataset['stripItem'])).toEqual(['pending']);
-
-    segment('pending').focus();
-    segment('pending').dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
-    );
-    await settle();
-    expect(document.activeElement).toBe(segment('active'));
-    expect(stops().map((b) => b.dataset['stripItem'])).toEqual(['active']);
-    segment('active').dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
-    expect(document.activeElement).toBe(segment('all'));
-    segment('all').dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
-    );
-    expect(document.activeElement).toBe(segment('pending'));
+    const items = Array.from(el().querySelectorAll<HTMLElement>('[data-strip-item]'));
+    expect(items.map((b) => b.dataset['stripItem'])).toEqual([
+      'pending',
+      'active',
+      'inactive',
+      'all',
+    ]);
+    expect(items.every((b) => b.tagName === 'BUTTON')).toBe(true);
+    expect(items.filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
   });
 
   it('keeps the segment when the filters are cleared', async () => {
@@ -1005,7 +994,7 @@ describe('UsersPage', () => {
       await chooseStatus('all');
       expect(rows().length).toBeGreaterThan(2);
 
-      const select = control<HTMLSelectElement>('Availability');
+      const select = ddSelect(document.body, 'Filter by Availability');
       expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
         'Any',
         'Available',

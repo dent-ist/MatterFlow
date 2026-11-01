@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
@@ -114,7 +115,7 @@ describe('AuditPage', () => {
   }
 
   const control = <T extends HTMLElement>(name: string): T =>
-    el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+    el().querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
 
   const click = (selector: string) => el().querySelector<HTMLElement>(selector)!.click();
   const lastCall = () => api.searchAuditEvents.mock.calls.at(-1)!;
@@ -160,14 +161,14 @@ describe('AuditPage', () => {
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     expect(el().querySelector('[data-filters-toggle]')).not.toBeNull(); // the Filters button is in the page header
     // The event and object types come from the facets; the object id waits for a type.
-    const events = Array.from(control<HTMLSelectElement>('Event type').options).map((o) =>
+    const events = Array.from(ddSelect(document.body, 'Filter by Event type').options).map((o) =>
       o.textContent?.trim(),
     );
     expect(events).toEqual(['Any event', 'Field changed', 'Task created']); // the code stays the value (#650)
     expect(
-      Array.from(control<HTMLSelectElement>('Event type').options).map((o) => o.value),
+      Array.from(ddSelect(document.body, 'Filter by Event type').options).map((o) => o.value),
     ).toEqual(['', 'FIELD_CHANGED', 'TASK_CREATED']);
-    const objects = Array.from(control<HTMLSelectElement>('Object type').options).map((o) =>
+    const objects = Array.from(ddSelect(document.body, 'Filter by Object type').options).map((o) =>
       o.textContent?.trim(),
     );
     expect(objects).toEqual([
@@ -212,7 +213,7 @@ describe('AuditPage', () => {
   it('writes a changed filter to the address (and reloads when the address changes)', async () => {
     await create(['Audit.View']);
 
-    const type = control<HTMLSelectElement>('Event type');
+    const type = ddSelect(document.body, 'Filter by Event type');
     type.value = 'TASK_CREATED';
     type.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {

@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ClientsClient } from '../../../api/generated/api-client';
@@ -46,7 +47,7 @@ describe('ClientsListPage', () => {
   }
 
   const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
-    el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+    el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
 
   it('lists clients with the padded number prominently and a link to the detail page', async () => {
     const fixture = await create();
@@ -84,7 +85,7 @@ describe('ClientsListPage', () => {
     expect(control<HTMLInputElement>(el, 'Client number')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
     // Active is the default: shown, not counted, not chipped, no Clear filters.
-    expect(control<HTMLSelectElement>(el, 'Status').value).toBe('active');
+    expect(ddSelect(el, 'Filter by Status').value).toBe('active');
     expect(el.querySelector('[data-filter-count]')).toBeNull();
     expect(el.querySelector('[data-filter-chips]')).toBeNull();
     expect(el.querySelector('[data-clear-filters]')).toBeNull();
@@ -238,7 +239,7 @@ describe('ClientsListPage', () => {
       replaceUrl: true,
     });
 
-    const status = control<HTMLSelectElement>(el, 'Status');
+    const status = ddSelect(el, 'Filter by Status');
     status.value = 'inactive';
     status.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {

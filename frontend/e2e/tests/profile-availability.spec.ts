@@ -7,6 +7,7 @@ import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { openEditAvailability } from '../support/users-grid';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * My profile (availability and work hours, epic #68 / issue #70): setting out of office from the profile and the header, the
@@ -269,15 +270,13 @@ test.describe('My profile: availability and work hours', () => {
 
     // The availability filter next to the status filter.
     await page.getByRole('textbox', { name: 'Filter by Name' }).fill('');
-    await page
-      .getByRole('combobox', { name: 'Filter by Availability' })
-      .selectOption('OUT_OF_OFFICE');
+    await filterDropdown(page, 'Availability').selectOption('OUT_OF_OFFICE');
     await expect(page).toHaveURL(/availability=OUT_OF_OFFICE/);
     await expect(page.locator('tbody tr', { hasText: name })).toBeVisible();
     await expect(
       page.locator('tbody tr [data-availability-chip]:not([data-state=OUT_OF_OFFICE])'),
     ).toHaveCount(0);
-    await page.getByRole('combobox', { name: 'Filter by Availability' }).selectOption('AVAILABLE');
+    await filterDropdown(page, 'Availability').selectOption('AVAILABLE');
     await expect(page.locator('tbody tr', { hasText: name })).toHaveCount(0);
 
     // The person sees it on their own profile and in the header, with the note.
@@ -496,9 +495,7 @@ test.describe('profile screenshots', () => {
       // Batch 4 (#79): Availability is a column filter, and the filter row is closed by default.
       const filters = view.getByRole('button', { name: /^Filters/ });
       if ((await filters.getAttribute('aria-pressed')) !== 'true') await filters.click();
-      await view
-        .getByRole('combobox', { name: 'Filter by Availability' })
-        .selectOption('OUT_OF_OFFICE');
+      await filterDropdown(view, 'Availability').selectOption('OUT_OF_OFFICE');
       await shot(view, size.n, '07-users-filter-out-of-office', false);
 
       // Back to the unfiltered list (at phone width the filters are in a sheet that would cover the rows).

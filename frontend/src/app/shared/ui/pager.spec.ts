@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Pager } from './pager';
 
@@ -22,7 +23,7 @@ describe('Pager', () => {
   it('offers "Rows per page" and reports the chosen size', () => {
     const fixture = create({ pageSizes: [25, 50, 100], pageSize: 50 });
     const el: HTMLElement = fixture.nativeElement;
-    const select = el.querySelector<HTMLSelectElement>('.mf-pager__size select')!;
+    const select = ddSelect(el, 'Rows per page');
     expect(el.querySelector('.mf-pager__size')!.textContent).toContain('Rows per page');
     expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
       '25',

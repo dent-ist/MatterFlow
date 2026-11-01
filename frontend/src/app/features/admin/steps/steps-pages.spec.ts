@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { lastMain } from '../list-testing';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { TestBed } from '@angular/core/testing';
@@ -199,7 +200,7 @@ describe('StepsListPage', () => {
     ]);
     // A link with filters opens the row with the values in it and counts them (status All is a change from the default).
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector<HTMLInputElement>('[aria-label="Filter by Title"]')!.value).toBe('qc');
+    expect(el.querySelector<HTMLInputElement>('[aria-label^="Filter by Title"]')!.value).toBe('qc');
     expect(headerFilters().activeCount()).toBe(4);
   });
 
@@ -286,7 +287,7 @@ describe('StepsListPage', () => {
     expect(el.querySelector('[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('[data-filters-toggle]')).toBeNull();
     for (const column of ['Title', 'Description', 'Used in', 'Status']) {
-      expect(el.querySelector(`[aria-label="Filter by ${column}"]`)).not.toBeNull();
+      expect(el.querySelector(`[aria-label^="Filter by ${column}"]`)).not.toBeNull();
     }
     expect(el.querySelector('button[data-filter="tags"]')).not.toBeNull();
     // Match all / any waits for a tag.
@@ -855,9 +856,7 @@ describe('StepsListPage tags', () => {
       25,
     ]);
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelector<HTMLSelectElement>('[aria-label="Filter by Tag match"]')!.value).toBe(
-      'any',
-    );
+    expect(ddSelect(el, 'Filter by Tag match').value).toBe('any');
   });
 
   it('treats a tag in the address as filtering, and Clear filters resets the tags too', async () => {

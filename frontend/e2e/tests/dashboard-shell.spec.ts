@@ -1,3 +1,4 @@
+import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -253,9 +254,9 @@ test.describe('Dashboard shell: the address keeps only what differs from the def
     await expect(page.getByRole('heading', { name: 'Team workload' })).toBeAttached();
     await expect.poll(() => new URL(page.url()).search).toBe('?tab=users');
     await page.goto('/dashboard?tab=users&view=coverage&period=30d');
-    await expect(page.locator('select[data-period]')).toBeVisible();
+    await expect(labelledDropdown(page, 'Period')).toBeVisible();
     await expect.poll(() => new URL(page.url()).search).toBe('?tab=users&view=coverage');
-    await page.locator('select[data-period]').selectOption('90d');
+    await labelledDropdown(page, 'Period').selectOption('90d');
     await expect(page).toHaveURL(/\?tab=users&view=coverage&period=90d$/);
   });
 });

@@ -1,3 +1,4 @@
+import { ddChoose, ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { DashboardPrefs } from '../dashboard-prefs';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -228,6 +229,11 @@ describe('DashUsersTab', () => {
   const card = (name: string) => q(`[data-user-card][data-user="${name}"]`);
   const url = () => TestBed.inject(Router).url;
   const choose = async (selector: string, value: string) => {
+    if (selector.includes('data-period')) {
+      ddChoose(host, 'Period', value);
+      await settle();
+      return;
+    }
     const select = q<HTMLSelectElement>(selector);
     select.value = value;
     select.dispatchEvent(new Event('change'));
@@ -1550,10 +1556,8 @@ describe('DashUsersTab', () => {
 
     it('offers the shared period list plus 6 and 12 months, and writes a choice to the address', async () => {
       await coverage();
-      const select = q<HTMLSelectElement>(
-        '[data-coverage-frame] select[data-period], select[data-period]',
-      );
-      expect(Array.from(select.options).map((o) => text(o))).toEqual([
+      const select = ddSelect(host, 'Period');
+      expect(Array.from(select.options).map((o) => o.textContent)).toEqual([
         '7 days',
         '30 days',
         '90 days',
@@ -1563,8 +1567,8 @@ describe('DashUsersTab', () => {
         'Last 12 months',
         'Custom',
       ]);
-      expect(text(q('mf-period-control label'))).toBe('Period');
-      await choose('select[data-period]', '90d');
+      expect(text(q('mf-period-control .pc-lbl'))).toBe('Period');
+      await choose('mf-dropdown[data-period]', '90d');
       expect(getCoverage).toHaveBeenLastCalledWith(
         '90d',
         undefined,
@@ -1576,7 +1580,7 @@ describe('DashUsersTab', () => {
       );
       expect(url()).toContain('period=90d');
       expect(text(q('[data-coverage-frame]'))).toContain('completed from Jul 18');
-      await choose('select[data-period]', '12m');
+      await choose('mf-dropdown[data-period]', '12m');
       expect(getCoverage).toHaveBeenLastCalledWith(
         '12m',
         undefined,
@@ -1586,7 +1590,7 @@ describe('DashUsersTab', () => {
         undefined,
         'all',
       );
-      await choose('select[data-period]', 'custom');
+      await choose('mf-dropdown[data-period]', 'custom');
       expect(url()).toContain('period=custom');
       expect(url()).toContain('from=');
       expect(q('mf-period-control mf-date-input')).not.toBeNull();

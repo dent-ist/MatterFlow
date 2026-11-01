@@ -45,7 +45,9 @@ import { AdminCardList, AdminCardSpec, activeCardBadge } from '../../../shared/u
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { stripChips } from '../../../shared/ui/strip-items';
+import { FilterChips } from '../../../shared/ui/filter-chips';
+import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { TagChips } from '../../../shared/ui/tag-chips';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -98,7 +100,7 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
     TagChips,
     AdminCardList,
     RecordSort,
-    WorkStrip,
+    FilterChips,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -109,12 +111,12 @@ const CELL_CLASS: Record<(typeof COLUMNS)[number], string> = {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-work-strip
+    <mf-filter-chips
       label="Steps summary"
-      [items]="stripItems()"
-      [interactive]="true"
-      [active]="stripActive()"
-      (pick)="pickStrip($event)"
+      [strip]="true"
+      [chips]="stripChipList()"
+      [value]="stripActive()"
+      (valueChange)="pickStrip($event)"
     />
 
     <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
@@ -391,6 +393,7 @@ export class StepsListPage extends ServerListPage<StepDefinitionSummary> {
   });
 
   /** The chip that matches the address exactly, or none. */
+  protected readonly stripChipList = computed(() => stripChips(this.stripItems()));
   protected readonly stripActive = computed<string | null>(() => {
     const status = parseStatus(this.filters.text('status'));
     const used = this.filters.text('used');

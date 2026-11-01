@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   input,
@@ -9,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { Dropdown, DropdownItem } from './dropdown';
 import { SEARCH_DEBOUNCE_MS } from './search-box';
 
 /**
@@ -164,18 +166,21 @@ export interface FilterOption {
 /** A select filter: 32 px native select labelled "Filter by <column>"; the first option is the "no filter" choice. */
 @Component({
   selector: 'mf-column-select-filter',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <select
-      class="mf-control mf-control--compact cf__select"
-      [attr.aria-label]="'Filter by ' + label()"
+    <mf-dropdown
+      class="cf__select"
+      size="sm"
+      [label]="'Filter by ' + label()"
       [attr.data-filter]="key() || label()"
-      (change)="valueChange.emit($any($event.target).value)"
-    >
-      @for (o of options(); track o.value) {
-        <option [value]="o.value" [selected]="o.value === value()">{{ o.label }}</option>
-      }
-    </select>
+      [items]="items()"
+      [value]="value()"
+      [panelWidth]="200"
+      [search]="options().length > 12"
+      [searchLabel]="'Search ' + label()"
+      (valueChange)="valueChange.emit($event)"
+    />
   `,
   styles: `
     :host {
@@ -183,12 +188,12 @@ export interface FilterOption {
       min-width: 0;
     }
     .cf__select {
-      width: 100%;
+      display: block;
       min-width: 0;
+    }
+    /* The filter row is quiet: regular weight, like the other filter buttons of the row. */
+    .cf__select ::ng-deep .btn {
       font-weight: 400;
-      /* The arrow of a native select takes room of its own: tight side padding keeps the widest choice ("Out of office") whole in a
-         narrow column instead of clipping it. */
-      padding-inline: var(--mf-s1);
     }
   `,
 })
@@ -198,6 +203,9 @@ export class ColumnSelectFilter {
   readonly options = input.required<readonly FilterOption[]>();
   readonly value = input('');
   readonly valueChange = output<string>();
+  protected readonly items = computed<DropdownItem[]>(() =>
+    this.options().map((o) => ({ value: o.value, label: o.label })),
+  );
 }
 
 /**

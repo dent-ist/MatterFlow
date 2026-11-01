@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FiltersBar } from './filters-bar';
 import { FiltersTestHost, Mounted, cleanup, mountFilters } from './filters-testing';
@@ -169,8 +170,8 @@ describe('filters bar', { timeout: 20_000 }, () => {
       ).toEqual(['type', 'priority', 'due', 'sensitive']);
       m.el.querySelector<HTMLButtonElement>('[data-more-filter=sensitive]')!.click();
       await m.settle();
-      const tri = m.el.querySelector<HTMLSelectElement>('mf-filter-popover select')!;
-      expect(tri.getAttribute('aria-label')).toBe('Filter by Sensitive');
+      const tri = ddSelect(m.el.querySelector('mf-filter-popover')!);
+      expect(tri.button.getAttribute('aria-label')).toMatch(/^Filter by Sensitive:/);
       tri.value = 'true';
       tri.dispatchEvent(new Event('change'));
       await m.settle();

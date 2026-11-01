@@ -54,7 +54,9 @@ import {
 import { RecordSort } from '../../../shared/ui/record-sort';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { SortOption } from '../../../shared/work-queue/phone-sort';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { stripChips } from '../../../shared/ui/strip-items';
+import { FilterChips } from '../../../shared/ui/filter-chips';
+import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 
 /** The columns of the grid, in order; the keys the filter definitions point at. */
 const COLUMNS = [
@@ -104,7 +106,7 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
     RecordCardDef,
     RecordCard,
     RecordSort,
-    WorkStrip,
+    FilterChips,
     MfDatePipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -116,12 +118,12 @@ const BONES: Record<(typeof COLUMNS)[number], string> = {
       <p class="pg-alert" role="alert" data-failure>{{ failure() }}</p>
     }
 
-    <mf-work-strip
+    <mf-filter-chips
       label="Workflows summary"
-      [items]="stripItems()"
-      [interactive]="true"
-      [active]="stripActive()"
-      (pick)="pickStrip($event)"
+      [strip]="true"
+      [chips]="stripChipList()"
+      [value]="stripActive()"
+      (valueChange)="pickStrip($event)"
     />
 
     <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
@@ -563,6 +565,7 @@ export class WorkflowsListPage extends ServerListPage<WorkflowSummary> {
   });
 
   /** The chip that matches the address exactly, or none. */
+  protected readonly stripChipList = computed(() => stripChips(this.stripItems()));
   protected readonly stripActive = computed<string | null>(() => {
     const status = parseStatus(this.filters.text('status'));
     const versions = this.filters.text('versions');

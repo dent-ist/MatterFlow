@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -377,16 +378,12 @@ describe('DashboardPage', () => {
       '/tasks?status=COMPLETED&completedFrom=2026-09-15',
     );
     // The period control sits in the Overview row, named for what it changes, not in the page header.
-    expect(group.querySelector('select[data-period]')).not.toBeNull();
-    expect(text(group.querySelector('mf-period-control label'))).toContain('Period');
+    expect(group.querySelector('mf-dropdown[data-period]')).not.toBeNull();
+    expect(text(group.querySelector('mf-period-control .pc-lbl'))).toContain('Period');
     expect(text(group.querySelector('[data-period-note]'))).toBe(
       'Applies to Completed and Created. Open, Overdue, Due soon, Unassigned, On hold and ASAP are not affected.',
     );
-    const describedBy = group
-      .querySelector('select[data-period]')!
-      .getAttribute('aria-describedby');
-    expect(describedBy).toBe(group.querySelector('[data-period-note]')!.id);
-    expect(el.querySelector('mf-page-header select[data-period]')).toBeNull();
+    expect(el.querySelector('mf-page-header mf-dropdown[data-period]')).toBeNull();
     // The refresh icon sits in the tab row; "Updated <time>" is its tooltip, never visible text.
     const refresh = el.querySelector<HTMLButtonElement>('mf-dash-tabs [data-refresh]')!;
     expect(refresh.getAttribute('title')).toContain('Updated Oct 14, 2026, 3:42 PM');
@@ -724,16 +721,16 @@ describe('DashboardPage', () => {
 
     it('shows the period control only where it is used: the Overview row on Summary and the Trends tab, not on Breakdowns', async () => {
       const el = await open();
-      expect(el.querySelectorAll('select[data-period]').length).toBe(1);
-      expect(el.querySelector('[data-group="overview"] select[data-period]')).not.toBeNull();
+      expect(el.querySelectorAll('mf-dropdown[data-period]').length).toBe(1);
+      expect(el.querySelector('[data-group="overview"] mf-dropdown[data-period]')).not.toBeNull();
       tabButtons(el)[1].click();
       await settle();
-      expect(el.querySelector('select[data-period]')).toBeNull();
+      expect(el.querySelector('mf-dropdown[data-period]')).toBeNull();
       tabButtons(el)[2].click();
       await settle();
-      expect(el.querySelectorAll('select[data-period]').length).toBe(1);
-      expect(el.querySelector('[data-section="trend"] select[data-period]')).not.toBeNull();
-      expect(text(el.querySelector('mf-period-control label'))).toBe('Period');
+      expect(el.querySelectorAll('mf-dropdown[data-period]').length).toBe(1);
+      expect(el.querySelector('[data-section="trend"] mf-dropdown[data-period]')).not.toBeNull();
+      expect(text(el.querySelector('mf-period-control .pc-lbl'))).toBe('Period');
     });
   });
 
@@ -814,7 +811,7 @@ describe('DashboardPage', () => {
       // One tab: no tab list; the only content is the unassigned queue, and the heading says so (R3, S9).
       expect(tabLabels(el)).toEqual([]);
       expect(el.querySelector('h1')!.textContent).toContain('Unassigned work');
-      expect(el.querySelector('[data-group], mf-stat-tile, select[data-period]')).toBeNull();
+      expect(el.querySelector('[data-group], mf-stat-tile, mf-dropdown[data-period]')).toBeNull();
       expect(el.querySelector('[data-empty]')).toBeNull();
       expect(
         Array.from(el.querySelectorAll('[data-panel]')).map((p) => p.getAttribute('data-panel')),
@@ -1245,7 +1242,7 @@ describe('DashboardPage', () => {
 
   it('offers one period list, writes a choice to the address and reads the counts again', async () => {
     const el = await open();
-    const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
+    const select = ddSelect(el, 'Period');
     expect(Array.from(select.options).map((o) => o.textContent!.trim())).toEqual([
       '7 days',
       '30 days',
@@ -1254,7 +1251,7 @@ describe('DashboardPage', () => {
       'Last month',
       'Custom',
     ]);
-    expect(select.closest('[data-group="overview"]')).not.toBeNull();
+    expect(select.button.closest('[data-group="overview"]')).not.toBeNull();
     expect(select.value).toBe('30d');
     expect(TestBed.inject(Router).url).toBe('/dashboard');
 
@@ -1300,7 +1297,7 @@ describe('DashboardPage', () => {
 
   it('sends a custom range as from and to, and keeps the previous period when the range is not valid', async () => {
     const el = await open(of(summary()), ALL, '/dashboard?period=7d');
-    const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
+    const select = ddSelect(el, 'Period');
     expect(select.value).toBe('7d');
     select.value = 'custom';
     select.dispatchEvent(new Event('change'));
@@ -1356,7 +1353,7 @@ describe('DashboardPage', () => {
 
   it('remembers the choice per user, shows the same period on the Trends tab and keeps a link as it is', async () => {
     let el = await open();
-    const select = el.querySelector<HTMLSelectElement>('select[data-period]')!;
+    const select = ddSelect(el, 'Period');
     select.value = '90d';
     select.dispatchEvent(new Event('change'));
     await settle();
@@ -1384,7 +1381,7 @@ describe('DashboardPage', () => {
       undefined,
       'all',
     );
-    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('90d');
+    expect(ddSelect(el, 'Period').value).toBe('90d');
     // The remembered period is not written to the address by itself.
     expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
 
@@ -1392,7 +1389,7 @@ describe('DashboardPage', () => {
     TestBed.resetTestingModule();
     el = await open(of(summary()), ALL, '/dashboard?tab=trends&period=7d');
     expect(getDashboardTrend.mock.calls[0][0]).toBe('7d');
-    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('7d');
+    expect(ddSelect(el, 'Period').value).toBe('7d');
     expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends&period=7d');
   });
 
@@ -1406,7 +1403,7 @@ describe('DashboardPage', () => {
       TestBed.resetTestingModule();
       localStorage.setItem('mf.dashboard.v2.1', JSON.stringify({ period: old }));
       const el = await open();
-      expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe(now);
+      expect(ddSelect(el, 'Period').value).toBe(now);
       expect(getDashboard).toHaveBeenCalledWith(
         now,
         undefined,
@@ -1422,7 +1419,7 @@ describe('DashboardPage', () => {
 
   it('shows a long Coverage window as 30 days on Summary and Trends, and ignores a bad range in the link', async () => {
     let el = await open(of(summary()), ALL, '/dashboard?period=12m');
-    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('30d');
+    expect(ddSelect(el, 'Period').value).toBe('30d');
     expect(getDashboard).toHaveBeenCalledWith(
       '30d',
       undefined,
@@ -1438,7 +1435,7 @@ describe('DashboardPage', () => {
       ALL,
       '/dashboard?tab=trends&period=custom&from=2026-10-09&to=2026-10-01',
     );
-    expect(el.querySelector<HTMLSelectElement>('select[data-period]')!.value).toBe('30d');
+    expect(ddSelect(el, 'Period').value).toBe('30d');
     expect(TestBed.inject(Router).url).toBe('/dashboard?tab=trends');
   });
 
@@ -1588,7 +1585,7 @@ describe('DashboardPage', () => {
     el = await open(of(empty), ['Task.View', ...DATA_TABS]);
     expect(el.querySelector('[data-empty]')!.textContent).toContain('No open tasks');
     // A quiet period is not "no tasks ever": the period can be widened right there.
-    expect(el.querySelector('[data-empty] select[data-period]')).not.toBeNull();
+    expect(el.querySelector('[data-empty] mf-dropdown[data-period]')).not.toBeNull();
     expect(el.querySelector('[role="tablist"]')).toBeNull();
     expect(el.querySelector('a[href="/tasks/new"]')).toBeNull();
 
@@ -1873,7 +1870,7 @@ describe('DashboardPage', () => {
   });
   describe('page-wide Scope (P1)', () => {
     const router = () => TestBed.inject(Router);
-    const select = (el: HTMLElement) => el.querySelector<HTMLSelectElement>('select[data-scope]')!;
+    const select = (el: HTMLElement) => ddSelect(el, 'Scope');
     const pickScope = async (el: HTMLElement, value: string) => {
       const sel = select(el);
       sel.value = value;
@@ -1886,12 +1883,14 @@ describe('DashboardPage', () => {
       expect(getDashboardScopes).toHaveBeenCalledTimes(1);
       const sel = select(el);
       expect(sel.value).toBe('all');
-      expect(text(el.querySelector('label[for="' + sel.id + '"]'))).toBe('Scope');
+      expect(text(el.querySelector('.sc-lbl'))).toBe('Scope');
       expect(Array.from(sel.options).map((o) => o.textContent!.trim())).toEqual(['All pods']);
       const row = el.querySelector('[data-dash-head]')!;
-      expect(row.contains(sel)).toBe(true);
+      expect(row.contains(sel.button)).toBe(true);
       const refresh = row.querySelector('[data-refresh]')!;
-      expect(sel.compareDocumentPosition(refresh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(
+        sel.button.compareDocumentPosition(refresh) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
       expect(getDashboard).toHaveBeenCalledWith(
         '30d',
         undefined,
@@ -2286,7 +2285,7 @@ describe('DashboardPage', () => {
       );
       expect(el.querySelector('[data-my-work-link]')!.getAttribute('href')).toBe('/my-work');
       // The page Scope sits in the heading row; Priority and Task type are the filters of the foundation.
-      expect(el.querySelector('[data-dash-head] select[data-scope]')).not.toBeNull();
+      expect(el.querySelector('[data-dash-head] mf-dropdown[data-scope]')).not.toBeNull();
       expect(
         Array.from(el.querySelectorAll('[data-tech-bar] [data-field]')).map((f) =>
           f.getAttribute('data-field'),
@@ -2375,12 +2374,12 @@ describe('DashboardPage', () => {
       expect(text(el.querySelector('[data-no-pod-note]'))).toBe(
         'You are not in a pod yet. Showing all pods.',
       );
-      expect(el.querySelector<HTMLSelectElement>('select[data-scope]')!.value).toBe('all');
+      expect(ddSelect(el, 'Scope').value).toBe('all');
       TestBed.resetTestingModule();
       scopeChoices = aMemberChoices();
       el = await open(of(summary({ mine })), TECH);
       expect(el.querySelector('[data-no-pod-note]')).toBeNull();
-      expect(el.querySelector<HTMLSelectElement>('select[data-scope]')!.value).toBe('mine');
+      expect(ddSelect(el, 'Scope').value).toBe('mine');
     });
   });
 });

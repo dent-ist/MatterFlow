@@ -1,4 +1,16 @@
 import type { WorkStripItem } from '../work-queue/work-strip';
+import type { FilterChip } from './filter-chips';
+
+/** The items of a strip as `mf-filter-chips` (key, label, count, tooltip). */
+export function stripChips(items: readonly WorkStripItem[]): FilterChip[] {
+  return items.map((i) => ({
+    key: i.key,
+    label: i.label,
+    count: i.count,
+    ...(i.hint ? { hint: i.hint } : {}),
+    ...(i.inert ? { inert: true } : {}),
+  }));
+}
 
 /**
  * How an admin list's health strip behaves (#581):

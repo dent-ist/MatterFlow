@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
@@ -465,9 +466,7 @@ describe('TaskTypesPage', () => {
     await TestBed.inject(Router).navigateByUrl('/admin/task-types?form=published');
     await settle(fixture);
     expect(names()).toEqual(['Data Processing']);
-    expect(
-      el().querySelector<HTMLSelectElement>('[aria-label="Filter by Request form"]')!.value,
-    ).toBe('published');
+    expect(ddSelect(el(), 'Filter by Request form').value).toBe('published');
   });
 
   it('marks a type without an eligible workflow with a neutral Not usable badge, and deactivates and reactivates', async () => {

@@ -3,6 +3,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * WP-SR3 #466: the results page is a fixed-height page with counted tabs; the type, the page and the page size are in the address.
@@ -114,7 +115,7 @@ test.describe('Search results: counted tabs on a fixed page (#466)', () => {
     await expect(page).toHaveURL(/type=task/);
 
     // The page size is in the address too and a different size starts again at page 1.
-    await page.getByLabel('Rows per page').selectOption('50');
+    await labelledDropdown(page, 'Rows per page').selectOption('50');
     await expect(page).toHaveURL(/pageSize=50/);
     await expect(page.locator('[data-hit-row]')).toHaveCount(s.tasks);
   });

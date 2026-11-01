@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * Users epic #422, WP-US3: the Users grid on the record-list contract (#432) and the one action column (#433).
@@ -453,13 +454,13 @@ test.describe('#433 one action per row', () => {
 
   test('#437 the rows per page are 25, 50 or 100 and live in the address', async ({ page }) => {
     await openList(page, 1366, 768);
-    const size = page.getByLabel('Rows per page');
+    const size = labelledDropdown(page, 'Rows per page');
     await expect(size).toHaveValue('25');
     await size.selectOption('50');
     await expect(page).toHaveURL(/size=50/);
     await page.reload();
-    await expect(page.getByLabel('Rows per page')).toHaveValue('50');
-    await page.getByLabel('Rows per page').selectOption('25');
+    await expect(labelledDropdown(page, 'Rows per page')).toHaveAttribute('data-value', '50');
+    await labelledDropdown(page, 'Rows per page').selectOption('25');
     await expect(page).not.toHaveURL(/size=/);
   });
 

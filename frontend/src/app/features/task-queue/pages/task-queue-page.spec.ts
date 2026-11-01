@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
@@ -228,7 +229,7 @@ describe('TaskQueuePage', () => {
 
     it('remembers the size chosen in the footer; an explicit size in a link wins and does not overwrite it', async () => {
       let el = await open('/tasks', { total: 442 });
-      const select = el.querySelector<HTMLSelectElement>('mf-pager select')!;
+      const select = ddSelect(el, 'Rows per page');
       select.value = '100';
       select.dispatchEvent(new Event('change'));
       await settle();
@@ -701,7 +702,7 @@ describe('TaskQueuePage', () => {
     expect(query()['page']).toBe('2');
     expect(lastArgs()[ARG.page]).toBe(2);
 
-    const size = el.querySelector<HTMLSelectElement>('.mf-pager__size select')!;
+    const size = ddSelect(el, 'Rows per page');
     size.value = '25';
     size.dispatchEvent(new Event('change'));
     await settle();

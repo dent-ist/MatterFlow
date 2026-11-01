@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Regression tests of the UX re-review of the inline column filters (epic #75, docs/ux/column-filters/re-review-2026-10-20.md):
@@ -115,7 +116,7 @@ test.describe('Column filters re-review', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     // Workflows: one labelled Versions select (it was two selects that both read "Any").
     await page.goto('/admin/workflows');
-    await expect(page.getByRole('combobox', { name: 'Filter by Versions' })).toBeVisible();
+    await expect(filterDropdown(page, 'Versions')).toBeVisible();
     await expect(page.locator('tr[data-filter-row] select')).toHaveCount(2); // Versions and Status
     // Audit: the Object id box says what it is before an object type is chosen.
     await page.goto('/admin/audit'); // the row is open from the start (AD7, #646)

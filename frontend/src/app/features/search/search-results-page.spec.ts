@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { NEVER, throwError } from 'rxjs';
@@ -288,7 +289,7 @@ describe('SearchResultsPage', () => {
       queryParamsHandling: 'merge',
       replaceUrl: false,
     });
-    const size = el.querySelector<HTMLSelectElement>('select')!;
+    const size = ddSelect(el);
     size.value = '50';
     size.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {

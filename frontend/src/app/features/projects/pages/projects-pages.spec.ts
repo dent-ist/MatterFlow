@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
@@ -127,7 +128,7 @@ describe('Projects pages', () => {
     }
 
     const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
-      el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+      el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
 
     it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
       const calls = () =>
@@ -239,7 +240,7 @@ describe('Projects pages', () => {
 
       expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
       expect(control<HTMLInputElement>(el, 'Matter')).not.toBeNull();
-      const status = control<HTMLSelectElement>(el, 'Status');
+      const status = ddSelect(el, 'Filter by Status');
       expect(status.value).toBe('active');
       expect(Array.from(status.options).map((o) => o.textContent?.trim())).toEqual([
         'Active',
@@ -584,7 +585,7 @@ describe('Projects pages', () => {
       );
       expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull(); // needs Task.Create
       // A project's tasks have no Project filter (the project is the page).
-      expect(el().querySelector('mf-scoped-tasks [aria-label="Filter by Project"]')).toBeNull();
+      expect(el().querySelector('mf-scoped-tasks [aria-label^="Filter by Project"]')).toBeNull();
     });
 
     it('offers Create task in the header (once), prefilled with the matter and the project', async () => {

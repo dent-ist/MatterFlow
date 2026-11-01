@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ColumnFilterRow } from './column-filter-row';
 import { FilterDef } from './filter-def';
@@ -45,10 +46,10 @@ describe('column filter row', { timeout: 20_000 }, () => {
       ),
     ).toEqual([
       'Filter by Name',
-      'Filter by Type',
+      'Filter by Type: All types',
       'Filter by Priority, All',
       'Filter by Due, Any date',
-      'Filter by Status',
+      'Filter by Status: Active',
     ]);
   });
 
@@ -77,7 +78,7 @@ describe('column filter row', { timeout: 20_000 }, () => {
     );
     // name + type are one cell now: 5 columns - 1 = 4 cells.
     expect(cells).toHaveLength(4);
-    expect(cells[1].querySelector('select')).not.toBeNull();
+    expect(cells[1].querySelector('mf-dropdown')).not.toBeNull();
   });
 
   it('stacks several filters of one column', async () => {
@@ -108,10 +109,10 @@ describe('column filter row', { timeout: 20_000 }, () => {
         },
       ],
     });
-    expect(m.el.querySelectorAll('[aria-label="Filter by Matter"]')).toHaveLength(0);
-    expect(m.el.querySelector<HTMLInputElement>('[aria-label="Filter by Name"]')!.value).toBe('zz');
-    expect(m.el.querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!.value).toBe(
-      'inactive',
+    expect(m.el.querySelectorAll('[aria-label^="Filter by Matter"]')).toHaveLength(0);
+    expect(m.el.querySelector<HTMLInputElement>('[aria-label^="Filter by Name"]')!.value).toBe(
+      'zz',
     );
+    expect(ddSelect(m.el, 'Filter by Status').value).toBe('inactive');
   });
 });

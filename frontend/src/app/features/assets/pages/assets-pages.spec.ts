@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -218,7 +219,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     const filterRow = (): HTMLElement | null => el().querySelector('[data-filter-row]');
     const control = <T extends HTMLElement>(name: string): T =>
       el().querySelector<T>(
-        `[aria-label="Filter by ${name}"], [aria-label^="Filter by ${name},"]`,
+        `[aria-label^="Filter by ${name}"], [aria-label^="Filter by ${name},"]`,
       )!;
     const toggle = (): HTMLButtonElement =>
       el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!;
@@ -693,11 +694,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       control<HTMLButtonElement>('Type').click();
       await settle(fixture);
       expect(
-        Array.from(control<HTMLSelectElement>('Disposition').options).map((o) =>
+        Array.from(ddSelect(document.body, 'Filter by Disposition').options).map((o) =>
           o.textContent!.trim(),
         ),
       ).toEqual(['Active', 'Inactive', 'Pending', 'Disposed', 'All']);
-      expect(control<HTMLSelectElement>('Disposition').value).toBe('active');
+      expect(ddSelect(document.body, 'Filter by Disposition').value).toBe('active');
 
       toggle().click();
       await settle(fixture);
@@ -753,7 +754,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(control<HTMLInputElement>('Matter').value).toBe('343-12');
       expect(control<HTMLInputElement>('External reference').value).toBe('WS');
       expect(control<HTMLButtonElement>('Type').textContent).toContain('Document Set');
-      expect(control<HTMLSelectElement>('Disposition').value).toBe('inactive');
+      expect(ddSelect(document.body, 'Filter by Disposition').value).toBe('inactive');
       expect(el().querySelector('[data-clear-filters]')).not.toBeNull();
     });
 
@@ -837,7 +838,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         queryParamsHandling: 'merge',
       });
 
-      const status = control<HTMLSelectElement>('Disposition');
+      const status = ddSelect(document.body, 'Filter by Disposition');
       status.value = 'all';
       status.dispatchEvent(new Event('change'));
       expect(navigate).toHaveBeenLastCalledWith([], {

@@ -3,6 +3,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * WP-AD7 (AD-E): the Audit Logs page on the admin list kit. Chrome (#646), the grid and the phone cards (#647), links to the admin pages by
@@ -274,21 +275,19 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/audit');
     await expect(anyRow(page).first()).toBeVisible();
-    const events = page.getByRole('combobox', { name: 'Filter by Event type' });
-    await expect(events.locator('option', { hasText: 'Task created' })).toHaveAttribute(
-      'value',
-      'TASK_CREATED',
+    const events = filterDropdown(page, 'Event type');
+    expect(await events.optionTexts()).toContain('Task created');
+    expect(await events.optionValues()).toContain('TASK_CREATED');
+    expect((await events.optionTexts()).filter((t) => /^[A-Z]+_[A-Z_]+$/.test(t))).toEqual([]);
+    const objects = filterDropdown(page, 'Object type');
+    expect(await objects.optionTexts()).toContain('Asset type');
+    expect(await objects.optionValues()).toContain('AssetType');
+    expect((await objects.optionTexts()).filter((t) => t === 'Configuration changes')).toHaveLength(
+      1,
     );
-    await expect(events.locator('option', { hasText: /^[A-Z]+_[A-Z_]+$/ })).toHaveCount(0);
-    const objects = page.getByRole('combobox', { name: 'Filter by Object type' });
-    await expect(objects.locator('option', { hasText: 'Asset type' })).toHaveAttribute(
-      'value',
-      'AssetType',
-    );
-    await expect(objects.locator('option', { hasText: 'Configuration changes' })).toHaveCount(1);
     await events.selectOption('TASK_CREATED');
     await expect(page).toHaveURL(/eventType=TASK_CREATED/);
-    await expect(events.locator('option:checked')).toHaveText('Task created');
+    await expect(events).toContainText('Task created');
     // On a phone the filter is a chip: it says it in words too.
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/admin/audit?eventType=TASK_CREATED&objectType=AssetType');

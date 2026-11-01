@@ -6,6 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { PLAN, WorkloadSeed, crowdPlan, seedWorkload } from '../support/workload';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * Dashboard > Users tab, Workload view (WP10a, UX review 2): the "can take work" population (U4, #130), the text Workload | Coverage switch and the
@@ -177,7 +178,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     );
 
     // Scope = Pod B: strip, chips and unassigned link follow it; nobody is hidden, so there is no population line.
-    await page.getByLabel('Scope', { exact: true }).selectOption(String(wl.podB.podId));
+    await labelledDropdown(page, 'Scope').selectOption(String(wl.podB.podId));
     await expect(page.locator('[data-users-population]')).toHaveCount(0);
     const scoped = await workload(page, `&podScope=${wl.podB.podId}`);
     expect(scoped.hiddenCount).toBe(0);

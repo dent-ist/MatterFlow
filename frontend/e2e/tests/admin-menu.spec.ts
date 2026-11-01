@@ -1,4 +1,5 @@
 import { expect, test } from '../support/fixtures';
+import { filterDropdown } from '../support/dropdown';
 
 test.describe('Administration menu and tabbed admin pages', () => {
   test('the menu is one flat list in the agreed order with the agreed names', async ({ page }) => {
@@ -57,7 +58,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page.getByRole('tab', { name: 'Pods' })).toHaveAttribute('aria-selected', 'true');
     // The filter row is open by default (#450).
     const name = await page.getByRole('textbox', { name: 'Filter by Name' }).boundingBox();
-    const status = await page.getByRole('combobox', { name: 'Filter by Status' }).boundingBox();
+    const status = await filterDropdown(page, 'Status').boundingBox();
     expect(Math.abs(name!.y - status!.y)).toBeLessThan(1);
   });
 });

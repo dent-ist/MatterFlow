@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -384,9 +385,9 @@ describe('PodsPage', () => {
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     // The Filters button and Clear filters are in the page header (the Users shell), not in the list.
     expect(el().querySelector('[data-filters-toggle]')).toBeNull();
-    expect(q('[aria-label="Filter by Name"]')).not.toBeNull();
+    expect(q('[aria-label^="Filter by Name"]')).not.toBeNull();
     // Active is the default: shown in its cell, not counted.
-    expect(q<HTMLSelectElement>('[aria-label="Filter by Status"]').value).toBe('active');
+    expect(ddSelect(document.body, 'Filter by Status').value).toBe('active');
     expect(el().querySelector('[data-filter-count]')).toBeNull();
   });
 
@@ -394,14 +395,14 @@ describe('PodsPage', () => {
     await create('Pod.View', 'Pod.Manage');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
-    await type('[aria-label="Filter by Name"]', 'alp', 350);
+    await type('[aria-label^="Filter by Name"]', 'alp', 350);
     expect(navigate).toHaveBeenLastCalledWith([], {
       queryParams: { name: 'alp', page: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
 
-    const select = q<HTMLSelectElement>('[aria-label="Filter by Status"]');
+    const select = ddSelect(document.body, 'Filter by Status');
     select.value = 'inactive';
     select.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {

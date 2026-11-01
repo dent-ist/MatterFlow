@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FilterControl } from './filter-control';
 import { FilterDef } from './filter-def';
@@ -32,10 +33,12 @@ describe('filter control', { timeout: 20_000 }, () => {
     expect(cell('name').querySelector('input[type=text]')?.getAttribute('aria-label')).toBe(
       'Filter by Name',
     );
-    expect(cell('type').querySelector('select')?.getAttribute('aria-label')).toBe('Filter by Type');
-    expect(cell('sensitive').querySelector('select')?.getAttribute('aria-label')).toBe(
-      'Filter by Sensitive',
+    expect(cell('type').querySelector('mf-dropdown button')?.getAttribute('aria-label')).toMatch(
+      /^Filter by Type:/,
     );
+    expect(
+      cell('sensitive').querySelector('mf-dropdown button')?.getAttribute('aria-label'),
+    ).toMatch(/^Filter by Sensitive:/);
     // The heavy controls load lazily but are there once the page settles.
     expect(cell('priority').querySelector('button')?.getAttribute('aria-label')).toBe(
       'Filter by Priority, All',
@@ -43,24 +46,24 @@ describe('filter control', { timeout: 20_000 }, () => {
     expect(cell('due').querySelector('button')?.getAttribute('aria-label')).toBe(
       'Filter by Due, Any date',
     );
-    expect(cell('status').querySelector('select')?.getAttribute('aria-label')).toBe(
-      'Filter by Status',
+    expect(cell('status').querySelector('mf-dropdown button')?.getAttribute('aria-label')).toMatch(
+      /^Filter by Status:/,
     );
   });
 
   it('shows the URL values and the default in the controls', async () => {
     await mount('/list?name=acme&type=5&priority=2&dueFrom=2026-10-01&sensitive=true');
     expect(cell('name').querySelector<HTMLInputElement>('input')!.value).toBe('acme');
-    expect(cell('type').querySelector<HTMLSelectElement>('select')!.value).toBe('5');
-    expect(cell('status').querySelector<HTMLSelectElement>('select')!.value).toBe('active');
+    expect(ddSelect(cell('type')).value).toBe('5');
+    expect(ddSelect(cell('status')).value).toBe('active');
     expect(cell('priority').textContent).toContain('High');
     expect(cell('due').textContent).toContain('From Oct 1');
-    expect(cell('sensitive').querySelector<HTMLSelectElement>('select')!.value).toBe('true');
+    expect(ddSelect(cell('sensitive')).value).toBe('true');
   });
 
   it('writes a change to the URL: select and tri-state push, text replaces', async () => {
     await mount();
-    const select = cell('type').querySelector<HTMLSelectElement>('select')!;
+    const select = ddSelect(cell('type'));
     select.value = '4';
     select.dispatchEvent(new Event('change'));
     await m.settle();
@@ -73,7 +76,7 @@ describe('filter control', { timeout: 20_000 }, () => {
     await m.settle();
     expect(m.router.url).toContain('name=acme');
 
-    const tri = cell('sensitive').querySelector<HTMLSelectElement>('select')!;
+    const tri = ddSelect(cell('sensitive'));
     tri.value = 'false';
     tri.dispatchEvent(new Event('change'));
     await m.settle();

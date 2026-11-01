@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { CreateTaskPage } from '../pages/create-task.page';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /** Fixes of the UX / QA review round 4 (docs/ux/review-round-4.md, section "Round 4 fixes"). */
 
@@ -393,7 +394,7 @@ test.describe('Round 4: administration naming', () => {
     await page.getByRole('textbox', { name: 'Filter by Name' }).fill(name);
     await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(1);
     await expect(page.locator(`[data-row="${name}"]`)).toBeVisible();
-    await page.getByRole('combobox', { name: 'Filter by Status' }).selectOption('inactive');
+    await filterDropdown(page, 'Status').selectOption('inactive');
     await expect(page.locator('[data-types] tr[data-row]')).toHaveCount(0);
   });
 
@@ -427,7 +428,7 @@ test.describe('Round 4: administration naming', () => {
     await page.goto('/admin/audit');
     // The filter row is open from the start (Audit redesign, #650); the Filters button would close it.
     await expect(page.locator('[data-filter-row]')).toBeVisible();
-    await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
+    await filterDropdown(page, 'Object type').selectOption('Task');
     await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
     const group = page.locator('tr[data-group]').first();
     await expect(group).toBeVisible();

@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { lastMain } from '../list-testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
@@ -236,9 +237,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         25,
       ]);
       // The address opens the filter row with the tags chosen and Match any selected.
-      expect(
-        el().querySelector<HTMLSelectElement>('[aria-label="Filter by Tag match"]')?.value,
-      ).toBe('any');
+      expect(ddSelect(el(), 'Filter by Tag match')?.value).toBe('any');
     },
     SLOW,
   );

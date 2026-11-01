@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { Dropdown, DropdownItem } from './dropdown';
 
 let nextId = 0;
 
@@ -10,23 +11,25 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-pager',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="mf-pager" aria-label="Pagination">
       @if (pageSizes().length > 0) {
-        <label class="mf-pager__size" [for]="sizeId">
-          Rows per page
-          <select
-            class="mf-control mf-control--compact"
-            [id]="sizeId"
-            [value]="pageSize()"
-            (change)="pageSizeChange.emit(+$any($event.target).value)"
-          >
-            @for (n of pageSizes(); track n) {
-              <option [value]="n" [selected]="n === pageSize()">{{ n }}</option>
-            }
-          </select>
-        </label>
+        <span class="mf-pager__size">
+          <span class="mf-pager__size-lbl" aria-hidden="true">Rows per page</span>
+          <mf-dropdown
+            size="sm"
+            data-page-size
+            [buttonId]="sizeId"
+            label="Rows per page"
+            [items]="sizeItems()"
+            [value]="'' + pageSize()"
+            [panelWidth]="100"
+            [neutralValue]="null"
+            (valueChange)="pageSizeChange.emit(+$event)"
+          />
+        </span>
       }
       <span data-range>{{ range() }}</span>
       @if (hidden() > 0) {
@@ -168,6 +171,9 @@ export class Pager {
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
 
+  protected readonly sizeItems = computed<DropdownItem[]>(() =>
+    this.pageSizes().map((n) => ({ value: String(n), label: String(n) })),
+  );
   protected readonly sizeId = `mf-pager-size-${nextId++}`;
 
   protected readonly pages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));

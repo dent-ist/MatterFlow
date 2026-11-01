@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * The Assets list (docs/ux/assets-screen, filters part; the master-detail panel was replaced by the record page, docs/ux/assets-review):
@@ -58,9 +59,7 @@ test.describe('Assets list: column filters and the record page link', () => {
       expect(control.width).toBeGreaterThan(th.width - 26); // the header text's own padding
       expect(Math.round(control.height)).toBe(32);
     }
-    await expect(page.getByRole('combobox', { name: 'Filter by Disposition' })).toHaveValue(
-      'active',
-    );
+    await expect(filterDropdown(page, 'Disposition')).toHaveAttribute('data-value', 'active');
 
     // The choice is remembered per user, also after a reload.
     await filtersToggle(page).click();
@@ -130,7 +129,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await filter(page, 'Matter').fill(`Other Matter`);
     await filter(page, 'Matter').press('Enter');
     await expect(page.getByText('No assets match these filters')).toBeVisible(); // Gamma is inactive
-    await page.getByRole('combobox', { name: 'Filter by Disposition' }).selectOption('all');
+    await filterDropdown(page, 'Disposition').selectOption('all');
     await expect(names).toHaveText([`Gamma ${token}`]);
     await filter(page, 'Matter').fill(String(matter.matterRef).replace(/(^|-)0+/g, '$1')); // typed pair, unpadded
     await filter(page, 'Matter').press('Enter');
@@ -142,7 +141,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     await expect(page.getByText('No assets match these filters')).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     await expect(filter(page, 'Name')).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Filter by Disposition' })).toBeVisible();
+    await expect(filterDropdown(page, 'Disposition')).toBeVisible();
 
     await page.getByRole('main').getByRole('button', { name: 'Clear filters' }).first().click();
     await expect(page).not.toHaveURL(/name=|typeId=|matter=|status=|extref=/);

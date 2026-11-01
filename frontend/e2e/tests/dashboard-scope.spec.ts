@@ -6,6 +6,7 @@ import { Json } from '../support/api';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * Dashboard page-wide Scope (UX review 2, P1, #89): one Scope select at the right end of the tab row ("All pods", "My pods", one pod) for every
@@ -100,7 +101,7 @@ async function build(seed: Seeder): Promise<Scenario> {
   return { tag, podA, podB, podC, lead, director, loner, titles };
 }
 
-const scopeSelect = (page: Page) => page.getByLabel('Scope', { exact: true });
+const scopeSelect = (page: Page) => labelledDropdown(page, 'Scope');
 const tile = (page: Page, label: string) =>
   page.locator('mf-stat-tile', {
     has: page.locator('.label', { hasText: new RegExp(`^${label}$`) }),
@@ -132,8 +133,8 @@ test.describe('Dashboard Scope', () => {
     const page = await asUser(s.lead.username);
     await page.goto('/dashboard');
     await shown(page);
-    await expect(scopeSelect(page)).toHaveValue('mine');
-    await expect(scopeSelect(page).locator('option:checked')).toHaveText('My pods');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
+    await expect(scopeSelect(page)).toContainText('My pods');
     // The default is not written to the address.
     expect(new URL(page.url()).searchParams.has('pod')).toBe(false);
     await expect(
@@ -159,8 +160,8 @@ test.describe('Dashboard Scope', () => {
     const dir = await asUser(s.director.username);
     await dir.goto('/dashboard');
     await shown(dir);
-    await expect(scopeSelect(dir)).toHaveValue('all');
-    await expect(scopeSelect(dir).locator('option:checked')).toHaveText('All pods');
+    await expect(scopeSelect(dir)).toHaveAttribute('data-value', 'all');
+    await expect(scopeSelect(dir)).toContainText('All pods');
     expect(await tileValue(dir, 'Open')).toBeGreaterThanOrEqual(8);
   });
 
@@ -170,7 +171,7 @@ test.describe('Dashboard Scope', () => {
     const lead = await asUser(s.lead.username);
     await lead.goto('/dashboard');
     await shown(lead);
-    await expect(scopeSelect(lead).locator('option')).toHaveText([
+    expect(await scopeSelect(lead).optionTexts()).toEqual([
       'All pods',
       'My pods',
       `Scope A ${s.tag}`,
@@ -179,9 +180,7 @@ test.describe('Dashboard Scope', () => {
     const dir = await asUser(s.director.username);
     await dir.goto('/dashboard');
     await shown(dir);
-    const labels = (await scopeSelect(dir).locator('option').allTextContents()).map((l) =>
-      l.trim(),
-    );
+    const labels = (await scopeSelect(dir).optionTexts()).map((l) => l.trim());
     expect(labels[0]).toBe('All pods');
     expect(labels).toEqual(
       expect.arrayContaining([`Scope A ${s.tag}`, `Scope B ${s.tag}`, `Scope C ${s.tag}`]),
@@ -191,8 +190,8 @@ test.describe('Dashboard Scope', () => {
     const alone = await asUser(s.loner.username);
     await alone.goto('/dashboard');
     await shown(alone);
-    await expect(scopeSelect(alone)).toHaveValue('all');
-    await expect(scopeSelect(alone).locator('option')).toHaveText(['All pods']);
+    await expect(scopeSelect(alone)).toHaveAttribute('data-value', 'all');
+    expect(await scopeSelect(alone).optionTexts()).toEqual(['All pods']);
   });
 
   test('a shared link carries the scope to every tab and survives a reload; a tab change keeps it', async ({
@@ -205,10 +204,10 @@ test.describe('Dashboard Scope', () => {
     );
     await page.goto(`/dashboard?tab=trends&pod=${s.podC.podId}`);
     expect((await trend).ok()).toBe(true);
-    await expect(scopeSelect(page).locator('option:checked')).toHaveText(`Scope C ${s.tag}`);
+    await expect(scopeSelect(page)).toContainText(`Scope C ${s.tag}`);
     await expect(page).toHaveURL(new RegExp(`pod=${s.podC.podId}`));
     await page.reload();
-    await expect(scopeSelect(page)).toHaveValue(String(s.podC.podId));
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', String(s.podC.podId));
 
     await page.getByRole('tab', { name: 'Users' }).click();
     await expect(page).toHaveURL(new RegExp(`pod=${s.podC.podId}`));
@@ -224,7 +223,7 @@ test.describe('Dashboard Scope', () => {
     await expect(page.locator('mf-dash-note')).toContainText(
       'That pod is not available to you. Showing My pods.',
     );
-    await expect(scopeSelect(page)).toHaveValue('mine');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
     await expect(page).not.toHaveURL(/pod=/);
     await expect(page.getByRole('tab', { name: 'Trends', selected: true })).toBeVisible();
     await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
@@ -323,14 +322,14 @@ test.describe('Dashboard Scope', () => {
     // Remembered per user: a plain link opens on the last explicit choice.
     await page.goto('/dashboard');
     await shown(page);
-    await expect(scopeSelect(page)).toHaveValue(String(s.podB.podId));
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', String(s.podB.podId));
     // The address wins over the memory.
     await page.goto('/dashboard?pod=all');
-    await expect(scopeSelect(page)).toHaveValue('all');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'all');
     await scopeSelect(page).selectOption('mine');
     await expect(page).not.toHaveURL(/pod=/);
     await page.goto('/dashboard');
-    await expect(scopeSelect(page)).toHaveValue('mine');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
   });
 
   test('tasks with no pod only appear under All pods; the Summary says how many unassigned ones there are and links to All pods', async ({
@@ -349,7 +348,7 @@ test.describe('Dashboard Scope', () => {
     await expect(page.getByText(s.titles.n1)).toHaveCount(0);
     await hint.getByRole('link', { name: 'Show all pods' }).click();
     await expect(page).toHaveURL(/pod=all/);
-    await expect(scopeSelect(page)).toHaveValue('all');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'all');
     await expect(page.locator('[data-no-pod-hint]')).toHaveCount(0);
     expect(await tileValue(page, 'Open')).toBeGreaterThanOrEqual(6);
   });
@@ -360,7 +359,7 @@ test.describe('Dashboard Scope', () => {
     await expect(page.locator('[data-user-card]').first()).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`pod=${s.podB.podId}`));
     await expect(page).not.toHaveURL(/upod=/);
-    await expect(scopeSelect(page)).toHaveValue(String(s.podB.podId));
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', String(s.podB.podId));
     await expect(page.locator('[data-user-card]')).toHaveCount(2);
   });
 
@@ -377,7 +376,7 @@ test.describe('Dashboard Scope', () => {
     const page = await asUser(user.username);
     await page.goto('/dashboard');
     await expect(page.getByRole('tablist')).toHaveCount(0);
-    await expect(scopeSelect(page)).toHaveValue('mine');
+    await expect(scopeSelect(page)).toHaveAttribute('data-value', 'mine');
     await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });

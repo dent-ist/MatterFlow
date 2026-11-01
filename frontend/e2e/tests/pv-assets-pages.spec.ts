@@ -2,6 +2,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { pvWorld } from '../support/pv-world';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * PM v2, lane H page fixes (epic #851), Assets tab and list (#883). Screenshots: E2E_SCREENSHOTS=docs/ux/pm-v2-review/fixes/pv-assets-pages.
@@ -21,7 +22,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/assets?matterId=${d.matterA.matterId}&status=all`);
     await expect(page.locator('tbody tr[data-asset-id]')).toHaveCount(2);
-    const select = page.getByLabel('Filter by Disposition');
+    const select = filterDropdown(page, 'Disposition');
     const box = (await select.boundingBox())!;
     expect(box.width, 'the Disposition select is not squeezed').toBeGreaterThanOrEqual(100);
     await expect(page.locator('tr[data-asset-id] td[data-linked]').first()).toContainText('0 / 0');

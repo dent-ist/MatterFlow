@@ -5,6 +5,7 @@ import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Clients UX epic, WP8 list chrome (#269 rows, #270 filter row, #271 Status and the hidden count, #272 Sensitive). On the three record
@@ -28,8 +29,7 @@ const grid = (page: Page, name: string) =>
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const text = (page: Page, column: string) =>
   page.getByRole('textbox', { name: `Filter by ${column}` });
-const select = (page: Page, column: string) =>
-  page.getByRole('combobox', { name: `Filter by ${column}` });
+const select = (page: Page, column: string) => filterDropdown(page, column);
 
 async function shot(page: Page, name: string): Promise<void> {
   if (!OUT) return;
@@ -344,7 +344,7 @@ test.describe('WP8 list chrome', () => {
       await expect(page).not.toHaveURL(/status=|name=/);
       await expect(page.locator('[data-chip]')).toHaveCount(0);
       await toggle(page).click();
-      await expect(select(page, 'Status')).toHaveValue('active');
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active');
     });
 
     test('no second Clear filters in the filtered-empty state; URL state survives a reload', async ({
@@ -423,7 +423,7 @@ test.describe('WP8 list chrome', () => {
       await expect(pager.locator('[data-range]')).toHaveText('Showing 1-5 of 5');
       await page.reload();
       await expect(rows).toHaveCount(5);
-      await expect(select(page, 'Status')).toHaveValue('all');
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'all');
     });
 
     test('Status Inactive and All show no hint; the hint is not in the live region', async ({
@@ -547,7 +547,7 @@ test.describe('WP8 list chrome', () => {
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(`/matters?name=${w.token}&isSensitive=true`);
-      await expect(select(page, 'Sensitive')).toHaveValue('true');
+      await expect(select(page, 'Sensitive')).toHaveAttribute('data-value', 'true');
       await expect(grid(page, 'Matters list').locator('tbody tr')).toHaveCount(1);
       await expect(page.locator('[data-chip]')).toHaveCount(0);
       await toggle(page).click();
@@ -577,7 +577,7 @@ test.describe('WP8 list chrome', () => {
       await toggle(page).click();
       const sheet = page.getByRole('dialog', { name: 'Filters' });
       await expect(sheet).toBeVisible();
-      await expect(sheet.getByLabel('Filter by Sensitive')).toBeVisible();
+      await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
       await axeClean(page, 'matters sheet 375');
       await shot(page, 'matters-filters-sheet');
     });

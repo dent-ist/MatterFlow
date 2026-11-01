@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Column filters on the record lists (epic #75, Batch 2, issue #77): Clients, Matters, Projects, the Client's Matters grid and the
@@ -11,8 +12,7 @@ import { Seeder, uid } from '../support/seed';
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const text = (page: Page, column: string) =>
   page.getByRole('textbox', { name: `Filter by ${column}` });
-const select = (page: Page, column: string) =>
-  page.getByRole('combobox', { name: `Filter by ${column}` });
+const select = (page: Page, column: string) => filterDropdown(page, column);
 const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
@@ -35,7 +35,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(page.locator('#client-search, #client-status')).toHaveCount(0);
       await expect(text(page, 'Name')).toBeVisible();
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
-      await expect(select(page, 'Status')).toHaveValue('active');
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active');
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/); // Active is a default: no count
 
       await text(page, 'Name').fill(token);
@@ -235,9 +235,9 @@ test.describe('Column filters on the record lists', () => {
       const rows = grid(page, 'Projects list').locator('tbody tr');
       await expect(page.getByRole('searchbox')).toHaveCount(0);
       await expect(rows).toHaveCount(2);
-      await expect(select(page, 'Status').locator('option', { hasText: 'Archived' })).toHaveCount(
-        1,
-      );
+      expect(
+        (await select(page, 'Status').optionTexts()).filter((t) => t.includes('Archived')),
+      ).toHaveLength(1);
 
       await text(page, 'Matter').fill(`docket ${token}`); // matter name
       await expect(rows).toHaveCount(1);
@@ -275,7 +275,7 @@ test.describe('Column filters on the record lists', () => {
       await expect(page.locator('[data-create-matter]')).toHaveCount(0); // the header owns New matter (WP9)
       await expect(page.locator('[data-page-actions] [data-action="new-matter"]')).toBeVisible();
 
-      await expect(select(page, 'Status')).toHaveValue('active'); // open by default (WP8 #270)
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active'); // open by default (WP8 #270)
       await text(page, 'Name').fill(`beta ${token}`);
       await expect(page).toHaveURL(/name=beta/);
       await expect(rows).toHaveCount(1);

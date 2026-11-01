@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { DrillReturn } from './drill';
@@ -39,13 +40,11 @@ describe('WorkList', () => {
       '312 tasks, page 1 of 7, showing 1 to 50',
     );
 
-    const sizes = Array.from(el().querySelectorAll('.mf-pager__size option')).map((o) =>
-      o.textContent?.trim(),
-    );
+    const sizes = ddSelect(el(), 'Rows per page').options.map((o) => o.textContent);
     expect(sizes).toEqual(['25', '50', '100']);
     const emitted: number[] = [];
     fixture.componentInstance.pageSizeChange.subscribe((n) => emitted.push(n));
-    const select = el().querySelector<HTMLSelectElement>('.mf-pager__size select')!;
+    const select = ddSelect(el(), 'Rows per page');
     select.value = '100';
     select.dispatchEvent(new Event('change'));
     expect(emitted).toEqual([100]);

@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   ColumnSelectFilter,
@@ -129,8 +130,8 @@ describe('column filters', () => {
       fixture.componentInstance.valueChange.subscribe((v) => emitted.push(v));
       fixture.detectChanges();
 
-      const select = fixture.nativeElement.querySelector('select') as HTMLSelectElement;
-      expect(select.getAttribute('aria-label')).toBe('Filter by Status');
+      const select = ddSelect(fixture.nativeElement);
+      expect(select.button.getAttribute('aria-label')).toMatch(/^Filter by Status:/);
       expect(select.value).toBe('inactive');
       select.value = 'all';
       select.dispatchEvent(new Event('change'));

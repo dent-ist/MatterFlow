@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
@@ -441,7 +442,9 @@ describe('MatterDetailPage', () => {
     await settle(fixture);
     for (const name of ['Title or Ref', 'Priority', 'Assignee', 'Due', 'Status'])
       expect(grid.querySelector(`[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
-    expect(grid.querySelector('select[aria-label="Filter by Project"]')).not.toBeNull();
+    expect(
+      grid.querySelector('mf-dropdown button[aria-label^="Filter by Project"]'),
+    ).not.toBeNull();
 
     query.set({ q: 'dedup', priority: '2', project: '3', dueTo: '2026-10-31' });
     await settle(fixture);
@@ -486,10 +489,8 @@ describe('MatterDetailPage', () => {
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     for (const name of ['Name', 'External reference'])
-      expect(grid.querySelector(`input[aria-label="Filter by ${name}"]`), name).not.toBeNull();
-    expect(
-      grid.querySelector<HTMLSelectElement>('select[aria-label="Filter by Disposition"]')!.value,
-    ).toBe('active');
+      expect(grid.querySelector(`input[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
+    expect(ddSelect(grid, 'Filter by Disposition').value).toBe('active');
     expect(grid.querySelector('[aria-label^="Filter by Type"]')).not.toBeNull();
 
     // The filters come from the address (same parameter names as the Assets screen).

@@ -1,3 +1,4 @@
+import { labelledDropdown } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
@@ -343,7 +344,7 @@ test.describe('Technician Summary (S9)', () => {
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { level: 1, name: 'Unassigned work' })).toBeVisible();
     await expect(page.getByRole('tablist')).toHaveCount(0);
-    await expect(page.locator('select[data-scope]')).toHaveValue('mine');
+    await expect(labelledDropdown(page, 'Scope')).toHaveValue('mine');
     await expect(page.locator('[data-own-work]')).toContainText('You have 2 open, 1 overdue.');
     await expect(page.getByRole('link', { name: 'Open My Work' })).toHaveAttribute(
       'href',
@@ -357,7 +358,9 @@ test.describe('Technician Summary (S9)', () => {
     );
     expect(titles).not.toContain(s.titles.elsewhere);
     // No department counts: no tiles, no period control.
-    await expect(page.locator('mf-stat-tile, select[data-period], [data-group]')).toHaveCount(0);
+    await expect(page.locator('mf-stat-tile, mf-dropdown[data-period], [data-group]')).toHaveCount(
+      0,
+    );
     await shoot(page, 'technician-1366');
   });
 
@@ -413,7 +416,7 @@ test.describe('Technician Summary (S9)', () => {
       /Nothing is unassigned in Quiet pod/,
     );
     await queue(page).getByRole('button', { name: 'Show all pods' }).click();
-    await expect(page.locator('select[data-scope]')).toHaveValue('all');
+    await expect(labelledDropdown(page, 'Scope')).toHaveValue('all');
     await expect(queue(page).locator('li').first()).toBeVisible();
   });
 
@@ -443,7 +446,7 @@ test.describe('Technician Summary (S9)', () => {
     const loner = await seed.user([(await seed.role(TECH_RIGHTS, 'E2E loner')).name], 'dashloner');
     const page = await asUser(loner.username);
     await page.goto('/dashboard');
-    await expect(page.locator('select[data-scope]')).toHaveValue('all');
+    await expect(labelledDropdown(page, 'Scope')).toHaveValue('all');
     await expect(page.locator('[data-no-pod-note]')).toHaveText(
       'You are not in a pod yet. Showing all pods.',
     );

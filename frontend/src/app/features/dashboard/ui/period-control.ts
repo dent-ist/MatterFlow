@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { DateInput } from 'form-engine';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { DashboardPrefs } from '../dashboard-prefs';
 import {
   MAX_CUSTOM_DAYS,
@@ -34,25 +35,23 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-period-control',
-  imports: [DateInput],
+  imports: [DateInput, Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="pc" data-period-control>
       <div class="pc-row">
-        <label class="pc-lbl" [for]="id + '-select'">Period</label>
-        <select
-          class="mf-control mf-control--compact"
+        <span class="pc-lbl" aria-hidden="true">Period</span>
+        <mf-dropdown
+          size="sm"
           data-period
-          [id]="id + '-select'"
+          [buttonId]="id + '-select'"
+          label="Period"
+          [items]="items()"
           [value]="period().key"
-          [attr.aria-describedby]="describedBy()"
-          (change)="onSelect($any($event.target).value)"
-        >
-          @for (p of presets(); track p.key) {
-            <option [value]="p.key" [selected]="p.key === period().key">{{ p.label }}</option>
-          }
-          <option value="custom" [selected]="period().key === 'custom'">Custom</option>
-        </select>
+          [panelWidth]="220"
+          [neutralValue]="null"
+          (valueChange)="onSelect($event)"
+        />
         @if (period().key === 'custom') {
           <div class="pc-field">
             <label class="pc-lbl" [for]="id + '-from'">From</label>
@@ -138,7 +137,7 @@ let nextId = 0;
       font-size: var(--mf-fs-sm);
       color: var(--mf-text-muted);
     }
-    select {
+    mf-dropdown {
       max-width: 100%;
     }
   `,
@@ -192,6 +191,11 @@ export class PeriodControl {
       });
     });
   }
+
+  protected readonly items = computed<DropdownItem[]>(() => [
+    ...this.presets().map((p) => ({ value: p.key, label: p.label })),
+    { value: 'custom', label: 'Custom' },
+  ]);
 
   protected onSelect(value: string): void {
     if (!isPeriodKey(value)) return;

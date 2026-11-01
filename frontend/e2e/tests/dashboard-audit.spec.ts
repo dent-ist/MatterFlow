@@ -5,6 +5,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
 import { assignToMeByKeyboard } from '../support/summary-lists';
 import { TaskApi } from '../support/tasks';
+import { filterDropdown, labelledDropdown } from '../support/dropdown';
 
 test.describe('Dashboard drill-through', () => {
   test('department tiles drill into the queue with the same filter and the ASAP tile excludes dated work', async ({
@@ -382,7 +383,7 @@ test.describe('Dashboard actions and click-through', () => {
     const week = page.waitForRequest(
       (r) => /[?&]period=7d/.test(r.url()) && r.url().includes('/api/v1/dashboard'),
     );
-    await page.getByLabel('Period', { exact: true }).selectOption({ label: '7 days' });
+    await labelledDropdown(page, 'Period').selectOption({ label: '7 days' });
     await week;
     await expect(page).toHaveURL(/\/dashboard\?period=7d$/);
     // The tile captions read the resolved range ("Oct 10 to Oct 16").
@@ -394,10 +395,10 @@ test.describe('Dashboard actions and click-through', () => {
     ).toBeVisible();
 
     await page.reload();
-    await expect(page.locator('select[data-period]')).toHaveValue('7d');
+    await expect(labelledDropdown(page, 'Period')).toHaveValue('7d');
     // Without the parameter the remembered choice applies, and the address stays clean.
     await page.goto('/dashboard');
-    await expect(page.locator('select[data-period]')).toHaveValue('7d');
+    await expect(labelledDropdown(page, 'Period')).toHaveValue('7d');
     await expect(page).toHaveURL(/\/dashboard$/);
   });
 
@@ -512,12 +513,12 @@ test.describe('Dashboard actions and click-through', () => {
     });
     await page.goto('/dashboard');
     await expect(page.locator('[data-group="attention"]')).toBeVisible();
-    await expect(page.locator('select[data-period]')).toHaveCount(1);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(1);
     const tabs = page.getByRole('tablist', { name: 'Dashboard views' });
     await tabs.getByRole('tab', { name: 'Breakdowns' }).click();
-    await expect(page.locator('select[data-period]')).toHaveCount(0);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(0);
     await tabs.getByRole('tab', { name: 'Trends' }).click();
-    await expect(page.locator('select[data-period]')).toHaveCount(1);
+    await expect(labelledDropdown(page, 'Period')).toHaveCount(1);
     await tabs.getByRole('tab', { name: 'Summary' }).click();
     await expect(page.locator('[data-panel="unassigned"]')).toBeVisible();
     expect(calls).toHaveLength(1);
@@ -546,7 +547,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { name: 'Audit Logs', level: 1 })).toBeVisible();
     // The filter row is open from the start (AD7, #646).
-    await page.getByRole('combobox', { name: 'Filter by Object type' }).selectOption('Task');
+    await filterDropdown(page, 'Object type').selectOption('Task');
     await page.getByRole('textbox', { name: 'Filter by Object id' }).fill(String(task.taskId));
     // The id applies live after a pause and reloads the list, which closes an opened row: wait for that load before opening one.
     await expect(page).toHaveURL(new RegExp(`objectId=${task.taskId}(&|$)`));
@@ -572,9 +573,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     const client = await seed.client();
 
     await page.goto('/admin/audit');
-    await page
-      .getByRole('combobox', { name: 'Filter by Event type' })
-      .selectOption('CLIENT_CREATED');
+    await filterDropdown(page, 'Event type').selectOption('CLIENT_CREATED');
     await page
       .getByRole('textbox', { name: 'Filter by Summary or field' })
       .fill(client.clientNumber);
@@ -583,7 +582,7 @@ test.describe('Audit Logs browser (smoke)', () => {
     await expect(rows.first()).toContainText(`Client ${client.clientNumber} created`);
 
     await page.getByRole('button', { name: 'Clear filters' }).click();
-    await expect(page.getByRole('combobox', { name: 'Filter by Event type' })).toHaveValue('');
+    await expect(filterDropdown(page, 'Event type')).toHaveAttribute('data-value', '');
   });
 
   test('the log is read only: there is no export, edit or delete action', async ({ page }) => {

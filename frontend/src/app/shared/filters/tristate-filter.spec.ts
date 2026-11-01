@@ -1,9 +1,10 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ColumnTristateFilter } from './tristate-filter';
 
 describe('tri-state column filter', () => {
   let fixture: ComponentFixture<ColumnTristateFilter>;
-  const select = () => (fixture.nativeElement as HTMLElement).querySelector('select')!;
+  const select = () => ddSelect(fixture.nativeElement as HTMLElement);
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ColumnTristateFilter);
@@ -15,8 +16,7 @@ describe('tri-state column filter', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('is named for its column and offers Any, Yes and No in domain wording', () => {
-    expect(select().getAttribute('aria-label')).toBe('Filter by Overdue');
-    expect(select().classList).toContain('mf-control--compact');
+    expect(select().button.getAttribute('aria-label')).toMatch(/^Filter by Overdue:/);
     expect(Array.from(select().options).map((o) => [o.value, o.textContent!.trim()])).toEqual([
       ['', 'Any'],
       ['true', 'Overdue only'],
@@ -31,8 +31,9 @@ describe('tri-state column filter', () => {
     expect(select().value).toBe('false');
     const emitted: string[] = [];
     fixture.componentInstance.valueChange.subscribe((v) => emitted.push(v));
-    select().value = 'true';
-    select().dispatchEvent(new Event('change'));
+    const choice = select();
+    choice.value = 'true';
+    choice.dispatchEvent(new Event('change'));
     expect(emitted).toEqual(['true']);
   });
 });

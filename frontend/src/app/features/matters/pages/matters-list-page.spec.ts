@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
@@ -213,7 +214,7 @@ describe('MattersListPage', () => {
   });
 
   const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
-    el.querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+    el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
 
   it('has column filters instead of a search box; Sensitive is a select after Status, no Other filters; Active is shown, not counted', async () => {
     const fixture = await create();
@@ -224,16 +225,16 @@ describe('MattersListPage', () => {
     expect(control<HTMLInputElement>(el, 'Matter reference')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Client')).not.toBeNull();
-    expect(control<HTMLSelectElement>(el, 'Status').value).toBe('active');
-    const sensitive = control<HTMLSelectElement>(el, 'Sensitive');
+    expect(ddSelect(el, 'Filter by Status').value).toBe('active');
+    const sensitive = ddSelect(el, 'Filter by Sensitive');
     expect(sensitive.value).toBe('');
     expect(Array.from(sensitive.options).map((o) => o.value)).toEqual(['', 'true', 'false']);
     expect(sensitive.options[1].textContent?.trim()).toBe('Sensitive: Yes');
     // Beside Status in the same cell, after it.
-    const status = control<HTMLSelectElement>(el, 'Status');
-    expect(status.closest('td')).toBe(sensitive.closest('td'));
+    const status = ddSelect(el, 'Filter by Status');
+    expect(status.button.closest('td')).toBe(sensitive.button.closest('td'));
     expect(
-      status.compareDocumentPosition(sensitive) & Node.DOCUMENT_POSITION_FOLLOWING,
+      status.button.compareDocumentPosition(sensitive.button) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(el.querySelector('[data-more-filters]')).toBeNull();
     expect(el.querySelector('[data-filter-count]')).toBeNull();
@@ -285,7 +286,7 @@ describe('MattersListPage', () => {
     expect(control<HTMLInputElement>(el, 'Client').value).toBe('acme');
     // The row is open: the inputs show the values, the only chip is the one for the link-only client.
     expect(el.querySelector('[data-chip="isSensitive"]')).toBeNull();
-    expect(control<HTMLSelectElement>(el, 'Sensitive').value).toBe('true');
+    expect(ddSelect(el, 'Filter by Sensitive').value).toBe('true');
     el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
@@ -509,7 +510,7 @@ describe('MattersListPage', () => {
         queryParamsHandling: 'merge',
       });
 
-      const select = control<HTMLSelectElement>(el, 'Project manager');
+      const select = ddSelect(el, 'Filter by Project manager');
       expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
         'Any',
         'None',

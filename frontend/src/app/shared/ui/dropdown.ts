@@ -65,6 +65,7 @@ let nextId = 0;
       [disabled]="disabled()"
       aria-haspopup="listbox"
       [attr.aria-expanded]="open()"
+      [attr.data-value]="multi() ? null : value()"
       [attr.aria-label]="label() + ': ' + (text() || '')"
       (click)="toggle()"
       (keydown)="onButtonKey($event)"
@@ -99,7 +100,8 @@ let nextId = 0;
       <div
         class="dd-panel"
         [style.left.px]="pos().left"
-        [style.top.px]="pos().top"
+        [style.top.px]="pos().above ? null : pos().top"
+        [style.bottom.px]="pos().above ? pos().bottom : null"
         [style.width.px]="pos().width"
         [style.maxHeight.px]="pos().maxHeight"
       >
@@ -492,7 +494,14 @@ export class Dropdown {
     this.query.set(text);
     this.searched.emit(text);
   }
-  protected readonly pos = signal({ left: 0, top: 0, width: 280, maxHeight: 360 });
+  protected readonly pos = signal({
+    left: 0,
+    top: 0,
+    bottom: 0,
+    above: false,
+    width: 280,
+    maxHeight: 360,
+  });
   private view: EmbeddedViewRef<unknown> | null = null;
   private typed = '';
   private typedAt = 0;
@@ -563,11 +572,17 @@ export class Dropdown {
     const vw = this.doc.defaultView?.innerWidth ?? 1024;
     const vh = this.doc.defaultView?.innerHeight ?? 768;
     const width = Math.min(Math.max(r.width, this.panelWidth()), vw - 16);
+    // Below the button; above it when the list needs more room than is left below (a pager at the bottom of a page).
+    const below = vh - r.bottom - 16;
+    const above = r.top - 16;
+    const flip = below < 260 && above > below;
     this.pos.set({
       left: Math.max(8, Math.min(r.left, vw - width - 8)),
       top: r.bottom + 4,
+      bottom: vh - r.top + 4,
+      above: flip,
       width,
-      maxHeight: Math.max(220, Math.min(420, vh - r.bottom - 16)),
+      maxHeight: flip ? Math.min(420, above) : Math.max(220, Math.min(420, below)),
     });
     if (this.query() !== '') this.searched.emit('');
     this.query.set('');

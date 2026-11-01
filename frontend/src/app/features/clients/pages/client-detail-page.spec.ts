@@ -1,3 +1,4 @@
+import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { AuditEventsClient, ClientsClient, MattersClient } from '../../../api/generated/api-client';
@@ -201,11 +202,11 @@ describe('ClientDetailPage', () => {
     expect(el().querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
     const control = <T extends HTMLElement>(name: string): T =>
-      el().querySelector<T>(`[aria-label="Filter by ${name}"]`)!;
+      el().querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
     expect(control('Matter')).not.toBeNull();
     expect(control('Name')).not.toBeNull();
-    expect(control<HTMLSelectElement>('Status').value).toBe('active');
-    expect(control<HTMLSelectElement>('Sensitive').value).toBe('');
+    expect(ddSelect(document.body, 'Filter by Status').value).toBe('active');
+    expect(ddSelect(document.body, 'Filter by Sensitive').value).toBe('');
     expect(el().querySelector('[data-more-filters]')).toBeNull();
     expect(el().querySelector('[data-filter-count]')).toBeNull();
   });
@@ -214,7 +215,7 @@ describe('ClientDetailPage', () => {
     await create(['Client.View', 'Matter.View'], 'matters');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
-    const box = el().querySelector<HTMLInputElement>('[aria-label="Filter by Name"]')!;
+    const box = el().querySelector<HTMLInputElement>('[aria-label^="Filter by Name"]')!;
     box.value = 'merger';
     box.dispatchEvent(new Event('input'));
     box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -224,7 +225,7 @@ describe('ClientDetailPage', () => {
       replaceUrl: true,
     });
 
-    const status = el().querySelector<HTMLSelectElement>('[aria-label="Filter by Status"]')!;
+    const status = ddSelect(el(), 'Filter by Status');
     status.value = 'all';
     status.dispatchEvent(new Event('change'));
     expect(navigate).toHaveBeenLastCalledWith([], {

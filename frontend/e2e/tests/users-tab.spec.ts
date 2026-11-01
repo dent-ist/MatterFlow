@@ -4,6 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { TaskQueuePage } from '../pages/queues.pages';
+import { labelledDropdown } from '../support/dropdown';
 import {
   CoverageSeed,
   PLAN,
@@ -253,7 +254,7 @@ test.describe('Users tab: workload', () => {
 
     // The Pod is the page-wide Scope now (P1), not a filter of the tab.
     await expect(page.getByLabel('Pod', { exact: true })).toHaveCount(0);
-    await page.getByLabel('Scope', { exact: true }).selectOption({ label: `Workload B ${wl.tag}` });
+    await labelledDropdown(page, 'Scope').selectOption({ label: `Workload B ${wl.tag}` });
     await expect(page.locator('[data-user-card]')).toHaveCount(
       PLAN.filter((p) => p.pod === 'B').length,
     );
@@ -879,7 +880,7 @@ test.describe('Users tab: coverage', () => {
 
   test('the period and the orders work and are kept in the address', async ({ page }) => {
     await openMatrix(page);
-    await page.getByLabel('Period', { exact: true }).selectOption('90d');
+    await labelledDropdown(page, 'Period').selectOption('90d');
     await expect(page).toHaveURL(/period=90d/);
     await expect(cell(page, cov.people.a, cov.typeIds.production)).toHaveAttribute(
       'aria-label',
@@ -889,11 +890,11 @@ test.describe('Users tab: coverage', () => {
     await expect(page.locator('thead th[data-person]').first()).toContainText(
       cov.people.a.displayName,
     );
-    await page.getByLabel('Period', { exact: true }).selectOption('custom');
+    await labelledDropdown(page, 'Period').selectOption('custom');
     await expect(page).toHaveURL(/period=custom&from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}/);
     await page.reload();
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
-    await expect(page.getByLabel('Period', { exact: true })).toHaveValue('custom');
+    await expect(labelledDropdown(page, 'Period')).toHaveAttribute('data-value', 'custom');
   });
 
   test('a cell opens the completed tasks, with a link to the Task Queue', async ({ page }) => {

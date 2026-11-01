@@ -1,3 +1,4 @@
+import { ddSelect } from '../../testing/dropdown-testing.spec-util';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ColumnFilterRow } from './column-filter-row';
 import { FiltersBar } from './filters-bar';
@@ -98,9 +99,7 @@ describe('filter sheet', { timeout: 20_000 }, () => {
     toggle().click();
     await m.settle();
     expect(sheet()!.querySelector('[data-sheet-show]')?.textContent).toContain('Show 42 results');
-    const select = sheet()!.querySelector<HTMLSelectElement>(
-      'select[aria-label="Filter by Type"]',
-    )!;
+    const select = ddSelect(sheet()!, 'Filter by Type');
     select.value = '5';
     select.dispatchEvent(new Event('change'));
     await m.settle();
@@ -137,7 +136,7 @@ describe('filter sheet', { timeout: 20_000 }, () => {
     await mount(true, '/list?name=abc');
     toggle().click();
     await m.settle();
-    const box = sheet()!.querySelector<HTMLInputElement>('input[aria-label="Filter by Name"]')!;
+    const box = sheet()!.querySelector<HTMLInputElement>('input[aria-label^="Filter by Name"]')!;
     box.focus();
     box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await m.settle();

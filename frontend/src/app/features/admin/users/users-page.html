@@ -1,13 +1,11 @@
 <div class="mf-layout">
   <section class="mf-list">
-    <mf-work-strip
+    <mf-filter-chips
       label="Users by status"
-      [items]="segments()"
-      [interactive]="true"
-      [segments]="true"
-      [roving]="true"
-      [active]="segmentActive()"
-      (pick)="pickSegment($event)"
+      [strip]="true"
+      [chips]="segmentChips()"
+      [value]="segmentActive()"
+      (valueChange)="pickSegment($event)"
     />
     <mf-filters-bar
       [bare]="true"

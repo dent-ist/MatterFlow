@@ -57,8 +57,9 @@ import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { FilterDef } from '../../../shared/filters/filter-def';
 import { FiltersBar } from '../../../shared/filters/filters-bar';
 import { ListFilters } from '../../../shared/filters/list-filters';
-import { WorkStrip, WorkStripItem } from '../../../shared/work-queue/work-strip';
-import { StripDef, stripActiveKey, stripPick } from '../../../shared/ui/strip-items';
+import { FilterChips } from '../../../shared/ui/filter-chips';
+import { WorkStripItem } from '../../../shared/work-queue/work-strip';
+import { StripDef, stripActiveKey, stripChips, stripPick } from '../../../shared/ui/strip-items';
 import { AdminTabCounts } from '../admin-tabs';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
@@ -126,7 +127,7 @@ const AVAILABILITY_OPTIONS = [
     GridBody,
     FiltersBar,
     ColumnFilterRow,
-    WorkStrip,
+    FilterChips,
     ActionMenu,
     AdminCardList,
     SortHeader,
@@ -290,6 +291,7 @@ export class UsersPage implements OnInit {
       ...(d.key === 'pending' ? { tinted: true } : {}),
     }));
   });
+  protected readonly segmentChips = computed(() => stripChips(this.segments()));
   protected readonly segmentActive = computed(() => stripActiveKey(SEGMENT_DEFS, () => this.tab()));
   protected readonly page = computed(() =>
     parsePage(this.filters.params().get('page') ?? undefined),

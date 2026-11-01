@@ -111,7 +111,9 @@ test.describe('Dashboard permissions', () => {
     await expect(panel.locator('[data-panel="unassigned"]')).toBeVisible();
     await expect(panel.locator('[data-panel="unassigned"] li').first()).toBeVisible();
     // No tiles, no Overview period control and no Overdue or Due soon lists.
-    await expect(panel.locator('[data-group], mf-stat-tile, select[data-period]')).toHaveCount(0);
+    await expect(panel.locator('[data-group], mf-stat-tile, mf-dropdown[data-period]')).toHaveCount(
+      0,
+    );
     await expect(panel.locator('[data-panel]')).toHaveCount(1);
     // The refresh icon is in the tab row.
     await expect(

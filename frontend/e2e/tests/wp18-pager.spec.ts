@@ -5,6 +5,7 @@ import { TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { labelledDropdown } from '../support/dropdown';
 
 /**
  * Pager and microcopy (WP18: #237, #228, #229). Every list is scoped to one matter made for this file (`?matter=<id>`, 60 tasks), so the
@@ -126,25 +127,37 @@ test.describe('Pager (#237)', () => {
     const queue = new TaskQueuePage(page);
     await queue.open(`?matter=${matterId}`);
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 2');
-    await pager(page).getByLabel('Rows per page').selectOption('100');
+    await labelledDropdown(pager(page), 'Rows per page').selectOption('100');
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 1');
     expect(new URL(page.url()).searchParams.get('pageSize')).toBe('100');
 
     // A link without a size (the Dashboard): 100 applies.
     await queue.open(`?matter=${matterId}`);
-    await expect(pager(page).getByLabel('Rows per page')).toHaveValue('100');
+    await expect(labelledDropdown(pager(page), 'Rows per page')).toHaveAttribute(
+      'data-value',
+      '100',
+    );
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 1');
     // A link with pageSize=25: 25 applies, the preference stays 100.
     await queue.open(`?matter=${matterId}&pageSize=25`);
-    await expect(pager(page).getByLabel('Rows per page')).toHaveValue('25');
+    await expect(labelledDropdown(pager(page), 'Rows per page')).toHaveAttribute(
+      'data-value',
+      '25',
+    );
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 3');
     await queue.open(`?matter=${matterId}`);
-    await expect(pager(page).getByLabel('Rows per page')).toHaveValue('100');
+    await expect(labelledDropdown(pager(page), 'Rows per page')).toHaveAttribute(
+      'data-value',
+      '100',
+    );
     // Choosing 50 while 100 is remembered keeps 50 in the address.
-    await pager(page).getByLabel('Rows per page').selectOption('50');
+    await labelledDropdown(pager(page), 'Rows per page').selectOption('50');
     await expect(pager(page).locator('[data-page]')).toHaveText('Page 1 of 2');
     await queue.open(`?matter=${matterId}`);
-    await expect(pager(page).getByLabel('Rows per page')).toHaveValue('50');
+    await expect(labelledDropdown(pager(page), 'Rows per page')).toHaveAttribute(
+      'data-value',
+      '50',
+    );
   });
 
   test('My Work and Pod Work share the pager', async ({ page }) => {

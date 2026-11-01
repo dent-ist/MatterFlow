@@ -6,6 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { FIRM_ZONE, dateInZone } from '../support/time';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Clients UX epic, WP12 phone cards (#275 the generic record card list, #276 Clients, #277 Matters and the client's Matters tab, #278
@@ -582,8 +583,8 @@ test.describe('WP12 phone cards', () => {
         (await sheet.locator('[data-sort-select] option').allInnerTexts()).map((t) => t.trim()),
       ).toEqual(['Reference', 'Name', 'Client', 'Project manager', 'Open tasks', 'Overdue']);
       // The sheet also carries Status and Sensitive (#272).
-      await expect(sheet.getByLabel('Filter by Sensitive')).toBeVisible();
-      await expect(sheet.getByLabel('Filter by Status')).toBeVisible();
+      await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
+      await expect(filterDropdown(sheet, 'Status')).toBeVisible();
       await axeClean(page, 'matters sheet open');
       await sheet.locator('[data-sort-select]').selectOption('overdue');
       await expect(page).toHaveURL(/sort=-overdue/);

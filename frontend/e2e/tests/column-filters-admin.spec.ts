@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { filterDropdown } from '../support/dropdown';
 
 /**
  * Column filters on the administration lists (epic #75, Batch 4, issue #79): Users, Pods, Task Types, Workflows, Workflow Steps, Asset
@@ -11,8 +12,7 @@ import { uid } from '../support/seed';
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const text = (page: Page, column: string) =>
   page.getByRole('textbox', { name: `Filter by ${column}` });
-const select = (page: Page, column: string) =>
-  page.getByRole('combobox', { name: `Filter by ${column}` });
+const select = (page: Page, column: string) => filterDropdown(page, column);
 const multi = (page: Page, column: string) =>
   page.getByRole('button', { name: new RegExp(`^Filter by ${column},`) });
 const grid = (page: Page, name: string) =>
@@ -175,7 +175,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(page.locator('#pods-search, #pods-status')).toHaveCount(0);
       // The filter row is open by default (#450).
       await expect(text(page, 'Name')).toBeVisible();
-      await expect(select(page, 'Status')).toHaveValue('active');
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active');
 
       await text(page, 'Name').fill(token);
       await expect(page).toHaveURL(new RegExp(`name=${token}`));
@@ -256,7 +256,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(select(page, 'Versions')).toHaveCount(1);
       await expect(select(page, 'Latest published')).toHaveCount(0);
       await expect(select(page, 'Draft')).toHaveCount(0);
-      await expect(select(page, 'Versions').locator('option')).toHaveText([
+      expect(await select(page, 'Versions').optionTexts()).toEqual([
         'Any',
         'Published',
         'Draft in progress',
@@ -279,7 +279,7 @@ test.describe('Column filters on the administration lists', () => {
       await page.goto(`/admin/workflows?name=${token}&hasPublished=true&hasDraft=true`);
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(`Both ${token}`);
-      await expect(select(page, 'Versions')).toHaveValue('both');
+      await expect(select(page, 'Versions')).toHaveAttribute('data-value', 'both');
       // Closed row: the chip reads "Versions: Draft in progress".
       await page.goto(`/admin/workflows?name=${token}&hasDraft=true`);
       await toggle(page).click();
@@ -360,7 +360,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(grid(page, 'Asset types list').locator('tbody tr').first()).toBeVisible();
       await expect(page.locator('#asset-type-search, #asset-type-status')).toHaveCount(0);
       await toggle(page).click();
-      await expect(select(page, 'Status')).toHaveValue('active'); // was All before this change
+      await expect(select(page, 'Status')).toHaveAttribute('data-value', 'active'); // was All before this change
       await expect(toggle(page)).toHaveText(/^\s*Filters\s*$/);
 
       await text(page, 'Name').fill(token);
