@@ -408,8 +408,8 @@ describe('MattersListPage', () => {
   it('has a handle on every resizable column header and none on the selection and action columns (MD-21, #1025)', async () => {
     const fixture = await create(['Matter.View', 'Client.View']);
     const el: HTMLElement = fixture.nativeElement;
-    const labels = Array.from(el.querySelectorAll('thead tr:first-child th > .mf-resize')).map((h) =>
-      h.getAttribute('aria-label'),
+    const labels = Array.from(el.querySelectorAll('thead tr:first-child th > .mf-resize')).map(
+      (h) => h.getAttribute('aria-label'),
     );
     expect(labels).toContain('Resize CM Number column');
     expect(labels).toContain('Resize Name column');

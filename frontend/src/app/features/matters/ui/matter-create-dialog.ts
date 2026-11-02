@@ -55,6 +55,10 @@ function clientOption(c: ClientResponse): PickerOption {
       flex-direction: column;
       gap: var(--mf-s3);
     }
+    .mcd__form .pg-field {
+      display: grid;
+      gap: var(--mf-s1);
+    }
     .mcd__summary {
       margin-bottom: var(--mf-s3);
       padding: var(--mf-s2) var(--mf-s3);

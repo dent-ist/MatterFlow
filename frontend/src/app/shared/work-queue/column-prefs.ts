@@ -21,6 +21,8 @@ export interface ColumnDef {
   resizable?: boolean;
   /** Drops out of a narrow box when the Title would get too narrow (the order is `NARROW_DROP_ORDER`, `narrow-columns.ts`). */
   autoHide?: boolean;
+  /** Only a Matter's or Project's task grid has it: never in the column chooser, the defaults or the design tokens (MD-24). */
+  scopedOnly?: boolean;
 }
 
 export const WORK_COLUMNS: readonly ColumnDef[] = [
@@ -47,7 +49,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   },
   // MD-24 (#1028), a Matter's or Project's grid only (never in a chooser or a default set): the task type as the coloured chip of My Matters (32 px, name as the
   // tooltip and the accessible name).
-  { key: 'typeChip', label: 'Type', width: 72, minWidth: 56, maxWidth: 160 },
+  { key: 'typeChip', label: 'Type', width: 72, minWidth: 56, maxWidth: 160, scopedOnly: true },
   // The reference only (one line); the storage key stays `matter` so stored columns, widths and sorts survive the rename (#348). 144 and not
   // the 160 of the two-line cell: the reference needs about 120 px and the room goes to Matter Name (measured, see docs/ux/task-queue-review).
   {
@@ -113,7 +115,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
   { key: 'status', label: 'Status', sortField: 'status', width: 140, minWidth: 112, maxWidth: 200 },
   // MD-24 (#1028), a Matter's or Project's grid only: a thin bar of the resolved workflow steps ("2 of 5 steps" is its tooltip and accessible name).
-  { key: 'steps', label: 'Progress', width: 104, minWidth: 72, maxWidth: 240 },
+  { key: 'steps', label: 'Progress', width: 104, minWidth: 72, maxWidth: 240, scopedOnly: true },
   // PM v2 (#877): the structured reason of a hold and its age; in the chooser only, the first to drop out of a narrow box.
   {
     key: 'onHoldReason',

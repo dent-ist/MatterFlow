@@ -83,7 +83,7 @@ const PROJECT_COLUMNS = [
  */
 const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
   typeChip: 64,
-  project: 116,
+  project: 132,
   assignee: 124,
   status: 116,
   steps: 88,
