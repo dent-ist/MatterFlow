@@ -49,11 +49,13 @@ let nextId = 0;
             [hideLabel]="true"
             [hintOnFocus]="true"
             [leadingIcon]="true"
+            [compact]="true"
             [value]="filters().text(def.key)"
             (searchChange)="filters().set(def.key, $event, { replace: true })"
           />
         }
         <mf-filters-toggle
+          class="lt__filters"
           [controls]="filters().sheetMode() ? '' : controls()"
           [open]="filters().toggleOpen()"
           [count]="filters().badgeCount()"
@@ -64,10 +66,11 @@ let nextId = 0;
           <mf-more-filters class="lt__other" [filters]="filters()" />
         }
         <ng-content select="[mfView]" />
-        <span class="lt__gap" data-flex-gap></span>
-        <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
-        <ng-content select="[mfMore]" />
-        <ng-content select="[mfPrimary]" />
+        <span class="lt__tail">
+          <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
+          <ng-content select="[mfMore]" />
+          <ng-content select="[mfPrimary]" />
+        </span>
       }
     </div>
     @if (rowThree()) {
@@ -122,8 +125,12 @@ let nextId = 0;
       flex: 0 1 18rem;
       min-width: 11rem;
     }
-    .lt__gap {
-      flex: 1 1 0;
+    /* Columns, the "..." menu and the primary button of a tab: the right end of row 2 (it wraps as one piece, right aligned). */
+    .lt__tail {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      margin-left: auto;
     }
     .lt__cols {
       display: inline-flex;
@@ -149,10 +156,20 @@ let nextId = 0;
       .lt__search {
         flex: 1 1 10rem;
       }
-      .lt__gap,
       .lt__cols,
       .lt__other {
         display: none;
+      }
+      /* Search, Filters and the "..." menu stay in the first row, the views take the second (a visual order only; every control keeps its tab order). */
+      .lt__search {
+        order: -3;
+      }
+      .lt__filters {
+        order: -2;
+      }
+      .lt__tail {
+        order: -1;
+        margin-left: 0;
       }
     }
     .lt__live {

@@ -263,8 +263,8 @@ test.describe('My Work per-tab columns', () => {
     await myWork.open(`?view=createdByMe&status=&q=${tag}`);
     await expect(page.locator('[data-task]')).toHaveCount(3);
     await expect(page.locator('tr[data-filter-row] [data-filter="status"]')).toContainText('All');
-    // "All" is a chosen filter: the Filters button counts it (the q search and the status).
-    await expect(page.getByRole('button', { name: /^Filters \(2\)/ })).toBeVisible();
+    // "All" is a chosen filter: the Filters button counts it (the q search is in the Search box and not counted, LC-01).
+    await expect(page.getByRole('button', { name: /^Filters \(1\)/ })).toBeVisible();
     const finished = myWork.row(`Finished ${tag}`);
     await expect(finished.locator('td[data-col="age"]')).toHaveText('12 d');
     await expect(finished.locator('td[data-col="age"] [title]')).toHaveAttribute(

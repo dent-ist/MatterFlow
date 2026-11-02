@@ -59,8 +59,11 @@ async function queueResponse(page: Page, action: () => Promise<unknown>): Promis
   return (await response.json()) as QueueBody;
 }
 
+/** A text filter of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
 const filterInput = (page: Page, key: string) =>
-  page.locator(`tr[data-filter-row] input[data-filter="${key}"]`);
+  key === 'q'
+    ? page.getByRole('searchbox', { name: 'Search tasks', exact: true })
+    : page.locator(`tr[data-filter-row] input[data-filter="${key}"]`);
 
 /** Narrows the open view to the test's own tasks with the Title filter, and returns the titles on screen. */
 async function titlesWith(page: Page, token: string): Promise<string[]> {
@@ -250,9 +253,12 @@ test.describe('More views (WP16)', () => {
         // One line: every button of the strip and the buttons at the right share the line.
         expect(new Set(boxes.map((b) => b.top)).size, `strip on one line at ${w}`).toBe(1);
         const bar = (await page.locator('[data-grid-toolbar]').boundingBox())!;
-        expect(bar.height, `row 1 at ${w}`).toBeLessThanOrEqual(40);
+        expect(bar.height, `row 2 at ${w}`).toBeLessThanOrEqual(48);
+        // The strip follows Search, Filters and Other filters and ends before Columns (LC-01).
+        const columns = (await page.getByRole('button', { name: /^Columns/ }).boundingBox())!;
         const filters = (await page.locator('[data-filters-toggle]').boundingBox())!;
-        expect(boxes[boxes.length - 1].right).toBeLessThan(filters.x);
+        expect(boxes[0].right).toBeGreaterThan(filters.x);
+        expect(boxes[boxes.length - 1].right).toBeLessThan(columns.x);
       }
       // Every view is reachable: in the strip or in More, none is lost.
       const inMore: string[] = [];
@@ -287,7 +293,7 @@ test.describe('More views (WP16)', () => {
     }
     // Wider windows hold at least as many views in the strip as narrower ones.
     expect(widths[1920]).toBeGreaterThanOrEqual(widths[1366]);
-    expect(widths[1366]).toBeGreaterThanOrEqual(widths[768]);
+    // (768 px is not compared: the toolbar wraps there and the strip then has a whole line of its own, LC-01.)
   });
 
   test('#220: a view that was chosen from More is named in the restored notice and again on a plain link', async ({

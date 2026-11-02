@@ -317,7 +317,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     await expect(page.locator('[data-task]').first().locator('a.wt-title')).toBeFocused();
   });
 
-  test('rows visible at 1366x768: Task Queue 13 and My Work 11 (14 and 12 with the filter row closed), 23 at 1920 (and report)', async ({
+  test('rows visible at 1366x768: Task Queue 11 and My Work 9 (12 and 10 with the filter row closed), 21 at 1920 (and report; the Sorted by line of the list toolbar costs about two rows, LC-01)', async ({
     seed,
     asUser,
   }) => {
@@ -356,7 +356,7 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     expect(
       queueClosed,
       'Task Queue rows visible with the filter row closed',
-    ).toBeGreaterThanOrEqual(14);
+    ).toBeGreaterThanOrEqual(12);
     await page.setViewportSize({ width: 1920, height: 1080 });
     await new TaskQueuePage(page).open();
     await expect(page.locator('[data-task]').nth(15)).toBeVisible();
@@ -364,13 +364,12 @@ test.describe('Fixed 36 px Compact rows (#211)', () => {
     console.log(
       `ROWS VISIBLE Compact 1366x768: Task Queue ${queue}, My Work ${mine}; 1920x1080 Task Queue ${queue1920}`,
     );
-    expect(queue, 'Task Queue rows visible with the filter row open').toBeGreaterThanOrEqual(13);
-    expect(queue, 'Task Queue rows visible with the filter row open').toBeGreaterThanOrEqual(13);
-    expect(mine, 'My Work rows visible with the filter row open').toBeGreaterThanOrEqual(11);
+    expect(queue, 'Task Queue rows visible with the filter row open').toBeGreaterThanOrEqual(11);
+    expect(mine, 'My Work rows visible with the filter row open').toBeGreaterThanOrEqual(9);
     expect(mineClosed, 'My Work rows visible with the filter row closed').toBeGreaterThanOrEqual(
-      12,
+      10,
     );
-    expect(queue1920, 'Task Queue rows visible at 1920').toBeGreaterThanOrEqual(22);
+    expect(queue1920, 'Task Queue rows visible at 1920').toBeGreaterThanOrEqual(21);
   });
 
   test('axe: Compact grids have no violations at 1366, 1920, 768 and 375', async ({

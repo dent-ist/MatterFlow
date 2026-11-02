@@ -151,6 +151,8 @@ test.describe('List toolbar on the work lists and the Matter Tasks tab', () => {
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by');
     await search.fill(title);
+    // The Search box writes the address after a short pause; wait for it so the click below is the last navigation.
+    await expect(page).toHaveURL(/q=Findable/);
     await expect(page.locator('[data-task]').filter({ hasText: title })).toHaveCount(1);
 
     await page.getByRole('button', { name: 'New Task' }).click();
