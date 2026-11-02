@@ -550,30 +550,37 @@ interface RefChip {
             @if (selTemplate(); as t) {
               @if (tplEditMode()) {
                 <header class="nt__ph" data-note-head>
-                  <button
-                    type="button"
-                    class="mf-btn"
-                    data-template-cancel
-                    (click)="cancelTemplate()"
+                  <span class="nt__crumb"
+                    >Templates / <b>{{ tplName() || 'New template' }}</b></span
                   >
-                    Cancel
-                  </button>
-                  <span class="nt__crumb"><b>Edit template</b></span>
                   <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
+                  <span class="nt__pill" data-editing-label>Editing</span>
                   <span class="nt__state" [class.is-dirty]="tplDirty()" data-note-state>
                     <i aria-hidden="true"></i
                     ><span>{{ tplDirty() ? 'Unsaved changes' : 'No changes' }}</span>
                   </span>
-                  <span class="nt__grow"></span>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--primary"
-                    data-template-save
-                    [disabled]="busy()"
-                    (click)="saveTemplateEdit()"
-                  >
-                    Save
-                  </button>
+                  <span class="nt__hr">
+                    <span class="nt__vdiv" aria-hidden="true"></span>
+                    <span class="nt__cs">
+                      <button
+                        type="button"
+                        class="mf-btn"
+                        data-template-cancel
+                        (click)="cancelTemplate()"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--primary"
+                        data-template-save
+                        [disabled]="busy() || !tplDirty()"
+                        (click)="saveTemplateEdit()"
+                      >
+                        Save
+                      </button>
+                    </span>
+                  </span>
                 </header>
                 <div class="nt__pbody">
                   <div class="nt__pedit" data-template-form>
@@ -720,59 +727,65 @@ interface RefChip {
               <!-- the header: read mode and edit mode -->
               @if (editing()) {
                 <header class="nt__ph" data-note-head>
-                  <button type="button" class="mf-btn" data-note-cancel (click)="cancel()">
-                    Cancel
-                  </button>
                   <span class="nt__crumb"
-                    ><b>{{ note() ? 'Edit note' : 'New note' }}</b></span
+                    >Notes / <b>{{ note()?.title || 'New note' }}</b></span
                   >
+                  <span class="nt__pill" data-editing-label>Editing</span>
                   <span class="nt__state" [class.is-dirty]="dirty()" id="nt-state" data-note-state>
                     <i aria-hidden="true"></i
                     ><span>{{ dirty() ? 'Unsaved changes' : 'No changes' }}</span>
                   </span>
-                  <span class="nt__grow"></span>
-                  <mf-ai-button
-                    [allowed]="aiAllowed()"
-                    [showNote]="false"
-                    (pressed)="aiPanel.set(true)"
-                  />
-                  <ng-container
-                    [ngTemplateOutlet]="noteActions"
-                    [ngTemplateOutletContext]="{ $implicit: 'edit' }"
-                  />
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--primary"
-                    data-note-save
-                    [attr.aria-disabled]="saveBlocked() ? 'true' : null"
-                    [title]="
-                      saveBlocked()
-                        ? 'Locked by ' + lockedWhileEditing() + '; your changes cannot be saved'
-                        : ''
-                    "
-                    (click)="onSaveClick()"
-                  >
-                    Save
-                  </button>
-                  @if (!stacked()) {
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      data-note-wide
-                      [attr.aria-pressed]="wide()"
-                      [attr.aria-label]="
-                        wide() ? 'Show the list again' : 'Expand to the full width'
-                      "
-                      [title]="wide() ? 'Show list' : 'Full width'"
-                      (click)="wide.set(!wide())"
-                    >
-                      <i
-                        class="pi"
-                        [class]="wide() ? 'pi-window-minimize' : 'pi-window-maximize'"
-                        aria-hidden="true"
-                      ></i>
-                    </button>
-                  }
+                  <span class="nt__hr">
+                    <mf-ai-button
+                      [allowed]="aiAllowed()"
+                      [showNote]="false"
+                      (pressed)="aiPanel.set(true)"
+                    />
+                    <ng-container
+                      [ngTemplateOutlet]="noteActions"
+                      [ngTemplateOutletContext]="{ $implicit: 'edit' }"
+                    />
+                    @if (!stacked()) {
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--icon"
+                        data-note-wide
+                        [attr.aria-pressed]="wide()"
+                        [attr.aria-label]="
+                          wide() ? 'Show the list again' : 'Expand to the full width'
+                        "
+                        [title]="wide() ? 'Show list' : 'Full width'"
+                        (click)="wide.set(!wide())"
+                      >
+                        <i
+                          class="pi"
+                          [class]="wide() ? 'pi-window-minimize' : 'pi-window-maximize'"
+                          aria-hidden="true"
+                        ></i>
+                      </button>
+                    }
+                    <span class="nt__vdiv" aria-hidden="true"></span>
+                    <span class="nt__cs">
+                      <button type="button" class="mf-btn" data-note-cancel (click)="cancel()">
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--primary"
+                        data-note-save
+                        [disabled]="busy() || !canSave()"
+                        [attr.aria-disabled]="saveBlocked() ? 'true' : null"
+                        [title]="
+                          saveBlocked()
+                            ? 'Locked by ' + lockedWhileEditing() + '; your changes cannot be saved'
+                            : ''
+                        "
+                        (click)="onSaveClick()"
+                      >
+                        Save
+                      </button>
+                    </span>
+                  </span>
                 </header>
               } @else if (note(); as n) {
                 <header class="nt__ph" data-note-head>
@@ -939,7 +952,7 @@ interface RefChip {
                       </div>
                     }
                     <div
-                      class="nt__erow"
+                      class="nt__erow nt__slim"
                       role="group"
                       aria-label="Tags, optional, up to 5"
                       data-note-tag-chips
@@ -1952,6 +1965,10 @@ export class NotesTab {
       this.tplDirty() ||
       (this.editing() &&
         (this.currentHtml() !== this.startedHtml() || this.tagKey() !== this.startedTags())),
+  );
+  /** Save is on once there is something to save: any change of an open note, or some content in a new note. */
+  protected readonly canSave = computed(() =>
+    this.note() ? this.dirty() : titleOfHtml(this.currentHtml()) !== '' || this.dirty(),
   );
   protected readonly saveBlocked = computed(() => this.lockedWhileEditing() !== '');
   protected readonly draftTitle = computed(() => titleOfHtml(this.currentHtml()));

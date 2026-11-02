@@ -400,3 +400,41 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--mf-s2) var(--mf-s3);
 }
+
+// MD-37: the edit header (status next to the label; Cancel and Save together at the far right) and the slim tags line
+.nt__hr {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.nt__cs {
+  display: inline-flex;
+  flex: none;
+  gap: 8px;
+}
+
+.nt__vdiv {
+  align-self: stretch;
+  width: 1px;
+  min-height: 24px;
+  background: var(--mf-border);
+}
+
+.nt__slim {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  gap: 6px;
+
+  .nt__add {
+    height: 24px;
+    padding: 0 10px 0 6px;
+    font-size: 12.5px;
+  }
+}

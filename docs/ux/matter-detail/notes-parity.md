@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 119 lines done (D), 24 different on purpose (P), 0 open (O).**
+**Result: 116 lines done (D), 27 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -80,10 +80,10 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 
 | # | Mockup | Result |
 |---|---|---|
-| F1 | Header shows "Edit note" / "New note" and the save state "No changes" (green dot) / "Unsaved changes" (amber dot, amber text) | D |
-| F2 | Cancel LEFT, Save RIGHT in the header (owner decision 2026-11-02; the mockup r3 had them together on the right); Delete icon stays for an existing note (if permitted) | D (owner decision: Cancel left, Save right; the mockup had them together on the right) |
+| F1 | Header shows "Edit note" / "New note" and the save state "No changes" (green dot) / "Unsaved changes" (amber dot, amber text) | P: owner request 2026-11-02 (#1050): the header left has the breadcrumb, an "Editing" label and the save status next to it |
+| F2 | Cancel LEFT, Save RIGHT in the header (owner decision 2026-11-02; the mockup r3 had them together on the right); Delete icon stays for an existing note (if permitted) | P: #1050: Cancel (secondary) and Save (primary) sit side by side at the far right after a thin divider, with AI, Actions and full width before them; Save is disabled until there is a change (a new note: until it has content); Cancel with changes asks to discard |
 | F3 | New note starts in edit mode, cursor in the text; the panel goes to full width (list hidden) while editing, and "Show the list again" returns | D |
-| F4 | One compact row above the toolbar: tags (chips with x, "Add tag" dashed button, "Tags" label) | D |
+| F4 | One compact row above the toolbar: tags (chips with x, "Add tag" dashed button, "Tags" label) | P: #1050: the tags are a slim single line (small tinted chips and + Add) above the toolbar, no bordered box |
 | F5 | Title = first line of the text (owner decision), shown large (28 px bold in the matter-detail mockup, 20-24 px here), placeholder "Untitled note"; no separate title input, no "Enter a title" error | P: no separate title field (owner decision AQ.9, the title is the first line); it is drawn large while editing; no "Enter a title" error |
 | F6 | Editor box fills the frame (not a fixed 240 px box), scrolls inside; toolbar stays on top (sticky) | D |
 | F7 | Placeholder: "Write the note. @ mentions a person, # or / references an asset, project, matter or note." | P: the first line shows "Untitled note" (it is the title); the mockup text is the hint line under the box (F8) |
@@ -265,3 +265,4 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 15. **Templates are note items (owner request 2026-11-02, #1047).** The mockup's Templates view has Use, Edit, Duplicate and Delete buttons on every row and a separate template editor; built as plain rows that open in the note panel. Duplicate is dropped.
 16. **No New template button (owner request 2026-11-02, #1048).** Templates are created from a note (Save as template); the Templates view only lists, opens, edits and deletes existing ones.
 17. **List controls and grouped actions (owner request 2026-11-02, #1049).** The mockup's one-line header row and its ten header icons are replaced by two control lines in the list pane and one Actions menu; History is only on the right rail (and in Actions when the area is narrow). Tag chips are a tint of the colour with a solid dot.
+18. **Edit header and tags line (owner request 2026-11-02, #1050).** Cancel and Save together at the far right, the status next to an Editing label, Save off until there is a change, tags as a slim line.

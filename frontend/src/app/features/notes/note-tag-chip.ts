@@ -145,5 +145,7 @@ export class NoteTagChip {
   readonly removable = input(false);
   readonly inactive = input(false);
   readonly removed = output<void>();
-  protected readonly key = computed(() => (isTaskTypeColour(this.colourKey()) ? this.colourKey() : 'neutral'));
+  protected readonly key = computed(() =>
+    isTaskTypeColour(this.colourKey()) ? this.colourKey() : 'neutral',
+  );
 }

@@ -98,11 +98,19 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const cancel = await page.locator('[data-note-cancel]').boundingBox();
     const save = await page.locator('[data-note-save]').boundingBox();
     expect(cancel!.x).toBeLessThan(save!.x);
+    // Cancel and Save sit side by side, Save at the far right of the header
+    expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
+    const head = await page.locator('[data-note-head]').boundingBox();
+    expect(head!.x + head!.width - (save!.x + save!.width)).toBeLessThan(24);
+    await expect(page.locator('[data-editing-label]')).toHaveText('Editing');
     await expect(page.locator('[data-note-state]')).toContainText('No changes');
+    // Save is off until there is a change
+    await expect(page.locator('[data-note-save]')).toBeDisabled();
     await page.locator('.ProseMirror').click();
     await page.keyboard.press('Control+End');
     await page.keyboard.type(' More words.');
     await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await expect(page.locator('[data-note-save]')).toBeEnabled();
     await page.locator('[data-note-save]').click();
     await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
     await expect(page.locator('[data-note-title]')).toContainText(title);
@@ -321,6 +329,26 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(bare.colourKey).toBeTruthy();
   });
 
+  test('a new note enables Save once it has content; on a phone Cancel and Save stay together and visible', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    await expect(page.locator('[data-note-save]')).toBeDisabled();
+    const cancel = await page.locator('[data-note-cancel]').boundingBox();
+    const save = await page.locator('[data-note-save]').boundingBox();
+    expect(save!.x + save!.width).toBeLessThanOrEqual(375);
+    expect(Math.abs(save!.y - cancel!.y)).toBeLessThan(4);
+    expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('Some content');
+    await expect(page.locator('[data-note-save]')).toBeEnabled();
+    expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+  });
+
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
     page,
     seed,
@@ -458,6 +486,8 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const cancel = await page.locator('[data-template-cancel]').boundingBox();
     const save = await page.locator('[data-template-save]').boundingBox();
     expect(cancel!.x).toBeLessThan(save!.x);
+    expect(save!.x - (cancel!.x + cancel!.width)).toBeLessThan(16);
+    await expect(page.locator('[data-template-save]')).toBeDisabled();
     await page.getByLabel('Name').fill(`${name} v2`);
     await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
     await page.locator('[data-template-save]').click();
