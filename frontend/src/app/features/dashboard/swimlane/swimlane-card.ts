@@ -14,14 +14,11 @@ import { DueCell } from '../../../shared/work-queue/due-cell';
 import { RowEdit } from '../../../shared/work-queue/row-edit';
 import { Density, applyRow, cardToRow } from './swimlane-model';
 import { TaskOriginLinks } from '../../../shared/work-queue/task-origin';
+import { personInitials } from '../../../shared/ui/person-initials';
 
 /** Initials for the avatar: first letters of the first and last word. */
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  const first = parts[0][0] ?? '';
-  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '';
-  return (first + last).toUpperCase();
+  return personInitials(name);
 }
 
 /**

@@ -331,8 +331,47 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(col).toContainText('created this note');
     await expect(col).toContainText('History shows who and when only.');
     await page.locator('[data-history-rail]').click();
-    await expect(col.locator('.nt__hlist')).toBeHidden();
+    await expect(col).toHaveCount(0);
     await expect(page.locator('[data-history-rail]')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('References panel on the right next to History: one open at a time, Esc closes, nothing below the note', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const asset = await seed.asset(w.matter, `Ref asset ${uid()}`);
+    await seed.admin.post('/api/v1/notes', {
+      matterId: w.matter.matterId,
+      bodyHtml: `<h1>Refs note</h1><p>See <span data-asset-id="${asset.assetId}">${asset.displayName}</span></p>`,
+      tagIds: [],
+    });
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await expect(page.locator('[data-note-title]')).toBeVisible();
+    // nothing below the note any more
+    await expect(page.locator('.nt__pscroll [data-note-refs]')).toHaveCount(0);
+    const refs = page.locator('[data-refs-rail]');
+    await expect(refs).toContainText('1');
+    await expect(refs).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-history-rail-open]')).toHaveAttribute('data-side', 'history');
+    await refs.click();
+    const col = page.locator('[data-history-rail-open]');
+    await expect(col).toHaveAttribute('data-side', 'refs');
+    await expect(col).toContainText(asset.displayName);
+    await expect(page.locator('[data-history-rail]')).toHaveAttribute('aria-expanded', 'false');
+    expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+    await page.locator('[data-history-rail]').click();
+    await expect(col).toHaveAttribute('data-side', 'history');
+    await page.locator('[data-history-rail]').click();
+    await expect(col).toHaveCount(0);
+    await refs.click();
+    await expect(col).toHaveAttribute('data-side', 'refs');
+    await page.keyboard.press('Tab');
+    await col.getByRole('button', { name: 'Close the side panel' }).focus();
+    await page.keyboard.press('Escape');
+    await expect(col).toHaveCount(0);
   });
 
   test('templates view: list with Use, Edit, Duplicate, Delete; Use opens a new note filled in', async ({

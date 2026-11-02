@@ -169,7 +169,7 @@ describe('note list helpers', () => {
 
   it('makes initials and a stable avatar colour', () => {
     expect(initialsOf('Dana Whitfield')).toBe('DW');
-    expect(initialsOf('ke\\kekim')).toBe('KK');
+    expect(initialsOf('ke\\kekim')).toBe('KE');
     expect(avatarKey('Dana Whitfield')).toBe(avatarKey('Dana Whitfield'));
   });
 });

@@ -1,3 +1,5 @@
+import { personInitials } from '../../shared/ui/person-initials';
+
 /** Pure helpers of the Notes tab (placeholders, lock rules, history wording, the splitter), kept apart so they can be unit tested. */
 
 /** The placeholders a template can use; they are filled in when the template is used. Any other `{{name}}` is left for the person. */
@@ -204,10 +206,7 @@ export function avatarKey(name: string | null | undefined): string {
 }
 
 export function initialsOf(name: string | null | undefined): string {
-  const parts = (name ?? '').split(/[\s\\]+/).filter(Boolean);
-  return (
-    parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] ?? '?').slice(0, 2)
-  ).toUpperCase();
+  return personInitials(name);
 }
 
 export type NoteSort = 'updated' | 'oldest' | 'title' | 'created';

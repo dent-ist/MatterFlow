@@ -68,7 +68,8 @@ import {
   withoutTitleBlock,
 } from './note-ui';
 
-type PanelKind = 'none' | 'tags' | 'history' | 'templates' | 'save-template' | 'template-edit';
+type PanelKind =
+  'none' | 'tags' | 'history' | 'refs' | 'templates' | 'save-template' | 'template-edit';
 type NoteView = 'tag' | 'latest' | 'board' | 'templates';
 type TagRow = NoteTagResponse & { noteTagId: number };
 
@@ -833,6 +834,18 @@ interface RefChip {
                       <i class="pi pi-replay" aria-hidden="true"></i>
                     </button>
                   }
+                  @if (!histWide() && refChips().length) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--icon"
+                      data-note-refs-button
+                      aria-label="Referenced items"
+                      title="Referenced items"
+                      (click)="refsButton()"
+                    >
+                      <i class="pi pi-link" aria-hidden="true"></i>
+                    </button>
+                  }
                   <button
                     type="button"
                     class="mf-btn mf-btn--icon"
@@ -1090,64 +1103,24 @@ interface RefChip {
                       } @placeholder {
                         <p class="nt__byline" role="status">Loading the note...</p>
                       }
-                      @if (refChips().length) {
-                        <section class="nt__refs" aria-labelledby="nt-refh" data-note-refs>
-                          <h3 id="nt-refh">
-                            Referenced items <span class="nt__cnt">{{ refChips().length }}</span>
-                          </h3>
-                          @for (k of refKinds; track k) {
-                            @if (refsOf(k).length) {
-                              <div class="nt__refgrp">
-                                <h4>
-                                  {{ refTitles[k] }}
-                                  <span class="nt__cnt">{{ refsOf(k).length }}</span>
-                                </h4>
-                                <div class="nt__refchips">
-                                  @for (r of refsOf(k); track r.id) {
-                                    @if (r.state === 'Removed' || r.state === 'Restricted') {
-                                      <span class="nt__refchip is-gone">
-                                        <i class="pi pi-info-circle" aria-hidden="true"></i
-                                        >{{ r.state }} {{ k }}</span
-                                      >
-                                    } @else {
-                                      <button
-                                        type="button"
-                                        class="nt__refchip"
-                                        [attr.aria-label]="r.label + ', opens in a new window'"
-                                        (click)="openRef({ kind: k, id: r.id })"
-                                      >
-                                        <i class="pi" [class]="refIcons[k]" aria-hidden="true"></i
-                                        >{{ r.label }}
-                                        @if (r.stateText) {
-                                          <span class="nt__st">{{ r.stateText }}</span>
-                                        }
-                                      </button>
-                                    }
-                                  }
-                                </div>
-                              </div>
-                            }
-                          }
-                        </section>
-                      }
                     </div>
                   </div>
                 }
 
-                <!-- history: a column (a rail when collapsed) when the note area is 820 px wide -->
+                <!-- the right rail: History and References (one open at a time); a column next to it when the note area is 820 px wide -->
                 @if (note() && histWide()) {
-                  @if (histOpen()) {
+                  @if (sideOpen() !== 'none') {
                     <div
                       class="nt__split nt__split--hist"
                       role="separator"
                       aria-orientation="vertical"
-                      aria-label="Resize the history panel"
+                      aria-label="Resize the side panel"
                       tabindex="0"
                       [class.is-drag]="dragging()"
                       [attr.aria-valuenow]="histWidth()"
                       [attr.aria-valuemin]="splitMin"
                       [attr.aria-valuemax]="histMax"
-                      [attr.aria-valuetext]="'History panel ' + histWidth() + ' pixels wide'"
+                      [attr.aria-valuetext]="'Side panel ' + histWidth() + ' pixels wide'"
                       data-history-splitter
                       (pointerdown)="dragStartHist($event)"
                       (dblclick)="histReset()"
@@ -1155,56 +1128,94 @@ interface RefChip {
                     >
                       <span class="nt__grip"></span>
                     </div>
+                    <aside
+                      class="nt__phist"
+                      [style.--hw]="histWidth() + 'px'"
+                      [attr.aria-label]="sideOpen() === 'refs' ? 'Referenced items' : 'History'"
+                      data-history-rail-open
+                      [attr.data-side]="sideOpen()"
+                    >
+                      <div class="nt__hh">
+                        <h3 id="nt-hh3">
+                          {{ sideOpen() === 'refs' ? 'Referenced items' : 'History' }}
+                          <span class="nt__cnt">{{
+                            sideOpen() === 'refs' ? refChips().length : history().length
+                          }}</span>
+                        </h3>
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--icon"
+                          aria-label="Close the side panel"
+                          title="Close"
+                          (click)="closeSide()"
+                        >
+                          <i class="pi pi-angle-double-right" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                      @if (sideOpen() === 'refs') {
+                        <div
+                          class="nt__hlist nt__refs"
+                          tabindex="0"
+                          role="region"
+                          aria-labelledby="nt-hh3"
+                          data-note-refs
+                        >
+                          <ng-container [ngTemplateOutlet]="refsBody" />
+                        </div>
+                      } @else {
+                        <div
+                          class="nt__hlist"
+                          tabindex="0"
+                          role="region"
+                          aria-labelledby="nt-hh3"
+                          data-note-history-list
+                        >
+                          <ng-container [ngTemplateOutlet]="historyBody" />
+                        </div>
+                        <p class="nt__hnote">
+                          History shows who and when only. There are no versions, no comparison and
+                          no restore.
+                        </p>
+                      }
+                    </aside>
                   }
-                  <aside
-                    class="nt__phist"
-                    [class.is-min]="!histOpen()"
-                    [style.--hw]="histWidth() + 'px'"
-                    aria-label="History"
-                    data-history-rail-open
+                  <div
+                    class="nt__rail"
+                    role="toolbar"
+                    aria-orientation="vertical"
+                    aria-label="Note side panels"
+                    tabindex="-1"
+                    data-side-rail
                   >
-                    <div class="nt__hh">
-                      <h3 id="nt-hh3">
-                        History <span class="nt__cnt">{{ history().length }}</span>
-                      </h3>
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--icon"
+                      data-history-rail
+                      aria-label="History"
+                      title="History"
+                      [attr.aria-expanded]="sideOpen() === 'history'"
+                      [attr.aria-pressed]="sideOpen() === 'history'"
+                      (click)="toggleSide('history')"
+                    >
+                      <i class="pi pi-history" aria-hidden="true"></i>
+                      <span class="nt__badge">{{ history().length }}</span>
+                    </button>
+                    @if (refChips().length) {
                       <button
                         type="button"
                         class="mf-btn mf-btn--icon"
-                        data-history-rail
-                        [attr.aria-expanded]="histOpen()"
-                        [attr.aria-label]="
-                          (histOpen() ? 'Collapse' : 'Expand') + ' the history panel'
-                        "
-                        [title]="(histOpen() ? 'Collapse' : 'Expand') + ' history'"
-                        (click)="setHist(!histOpen())"
+                        data-refs-rail
+                        aria-label="Referenced items"
+                        title="Referenced items"
+                        [attr.aria-expanded]="sideOpen() === 'refs'"
+                        [attr.aria-pressed]="sideOpen() === 'refs'"
+                        (click)="toggleSide('refs')"
                       >
-                        <i
-                          class="pi"
-                          [class]="histOpen() ? 'pi-angle-double-right' : 'pi-angle-double-left'"
-                          aria-hidden="true"
-                        ></i>
+                        <i class="pi pi-link" aria-hidden="true"></i>
+                        <span class="nt__badge">{{ refChips().length }}</span>
                       </button>
-                    </div>
-                    @if (!histOpen()) {
-                      <div class="nt__hmin">
-                        <span class="nt__cnt">{{ history().length }}</span>
-                        <span class="nt__vt">History</span>
-                      </div>
                     }
-                    <div
-                      class="nt__hlist"
-                      tabindex="0"
-                      role="region"
-                      aria-labelledby="nt-hh3"
-                      data-note-history-list
-                    >
-                      <ng-container [ngTemplateOutlet]="historyBody" />
-                    </div>
-                    <p class="nt__hnote">
-                      History shows who and when only. There are no versions, no comparison and no
-                      restore.
-                    </p>
-                  </aside>
+                  </div>
                 }
               </div>
             }
@@ -1231,9 +1242,9 @@ interface RefChip {
           <span
             class="nt__av"
             aria-hidden="true"
-            [style.background]="av(n.createdByName).bg"
-            [style.color]="av(n.createdByName).fg"
-            >{{ initials(n.createdByName) }}</span
+            [style.background]="av(author(n)).bg"
+            [style.color]="av(author(n)).fg"
+            >{{ initials(author(n)) }}</span
           >
           <span>
             <span class="nt__tt">
@@ -1348,6 +1359,40 @@ interface RefChip {
       }
     </ng-template>
 
+    <ng-template #refsBody>
+      @for (k of refKinds; track k) {
+        @if (refsOf(k).length) {
+          <div class="nt__refgrp">
+            <h4>
+              {{ refTitles[k] }}
+              <span class="nt__cnt">{{ refsOf(k).length }}</span>
+            </h4>
+            <div class="nt__refchips">
+              @for (r of refsOf(k); track r.id) {
+                @if (r.state === 'Removed' || r.state === 'Restricted') {
+                  <span class="nt__refchip is-gone">
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>{{ r.state }} {{ k }}</span
+                  >
+                } @else {
+                  <button
+                    type="button"
+                    class="nt__refchip"
+                    [attr.aria-label]="r.label + ', opens in a new window'"
+                    (click)="openRef({ kind: k, id: r.id })"
+                  >
+                    <i class="pi" [class]="refIcons[k]" aria-hidden="true"></i>{{ r.label }}
+                    @if (r.stateText) {
+                      <span class="nt__st">{{ r.stateText }}</span>
+                    }
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      }
+    </ng-template>
+
     <ng-template #historyBody>
       @for (g of historyGroups(); track g.day) {
         <section>
@@ -1455,6 +1500,19 @@ interface RefChip {
       <p class="nt__hnote">
         History shows who and when only. There are no versions, no comparison and no restore.
       </p>
+    </mf-slide-panel>
+
+    <!-- References as a side panel when the note area is narrow -->
+    <mf-slide-panel
+      title="Referenced items"
+      [visible]="panel() === 'refs'"
+      (visibleChange)="!$event && panel.set('none')"
+      [showFooter]="false"
+      (submitted)="panel.set('none')"
+    >
+      <div class="nt__hlist nt__refs" data-note-refs>
+        <ng-container [ngTemplateOutlet]="refsBody" />
+      </div>
     </mf-slide-panel>
 
     <!-- New note from a template: one card per template -->
@@ -1853,7 +1911,8 @@ export class NotesTab {
   /** The note area is wide enough (820 px) for the history column; narrower, History opens in the side panel. */
   protected readonly paneWidth = signal(0);
   protected readonly histWide = computed(() => this.paneWidth() >= 820);
-  protected readonly histOpen = signal(this.readNumber(HIST_OPEN_KEY, 1) === 1);
+  /** The right-hand panel of the note area: History or References, one at a time (remembered). */
+  protected readonly sideOpen = signal<'history' | 'refs' | 'none'>(this.readSide());
   protected readonly histWidth = signal(this.readHistWidth());
 
   protected readonly moreItems: MenuAction[] = [
@@ -2150,6 +2209,11 @@ export class NotesTab {
 
   protected av(name: string | null | undefined): { bg: string; fg: string } {
     return taskTypeChipColours(avatarKey(name));
+  }
+
+  /** The author of a note for its avatar; a server that has not sent the author yet falls back to the person who last updated it. */
+  protected author(n: NoteListItem): string | undefined {
+    return n.createdByName ?? n.updatedByName;
   }
 
   protected initials(name: string | null | undefined): string {
@@ -2752,13 +2816,40 @@ export class NotesTab {
   }
 
   protected historyButton(): void {
-    if (this.histWide()) this.setHist(!this.histOpen());
+    if (this.histWide()) this.toggleSide('history');
     else void this.openHistory();
   }
 
-  protected setHist(open: boolean): void {
-    this.histOpen.set(open);
-    this.writeNumber(HIST_OPEN_KEY, open ? 1 : 0);
+  protected refsButton(): void {
+    if (this.histWide()) this.toggleSide('refs');
+    else this.panel.set('refs');
+  }
+
+  /** Clicking the icon of the open panel closes it; the other icon swaps the content. */
+  protected toggleSide(kind: 'history' | 'refs'): void {
+    this.setSide(this.sideOpen() === kind ? 'none' : kind);
+  }
+
+  protected closeSide(): void {
+    this.setSide('none');
+    setTimeout(
+      () => (document.querySelector('[data-history-rail]') as HTMLElement | null)?.focus(),
+      30,
+    );
+  }
+
+  private setSide(v: 'history' | 'refs' | 'none'): void {
+    this.sideOpen.set(v);
+    this.writeText(HIST_OPEN_KEY, v);
+  }
+
+  private readSide(): 'history' | 'refs' | 'none' {
+    try {
+      const v = localStorage.getItem(HIST_OPEN_KEY);
+      return v === 'refs' || v === 'none' ? v : 'history';
+    } catch {
+      return 'history';
+    }
   }
 
   protected dragStartHist(event: PointerEvent): void {
@@ -3033,6 +3124,11 @@ export class NotesTab {
     if (e.key === 'Escape' && this.newMenuOpen()) {
       e.preventDefault();
       this.newMenuOpen.set(false);
+      return;
+    }
+    if (e.key === 'Escape' && (e.target as HTMLElement).closest('.nt__phist')) {
+      e.preventDefault();
+      this.closeSide();
       return;
     }
     if (

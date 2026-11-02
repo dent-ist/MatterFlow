@@ -38,6 +38,7 @@ import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
 import { SHOW_FILTERS, STATUS_FILTERS, ShowFilter, StatusFilter, TaskCounts } from './mm-models';
+import { personInitials } from '../../../shared/ui/person-initials';
 
 const OPEN_KEY = 'mf-mm-grid-filter-open';
 function rememberedOpen(): boolean {
@@ -1082,8 +1083,7 @@ export class MmTaskList {
   }
 
   protected initials(name: string): string {
-    const p = name.trim().split(/\s+/);
-    return ((p[0]?.[0] ?? '') + (p.length > 1 ? (p[p.length - 1][0] ?? '') : '')).toUpperCase();
+    return personInitials(name);
   }
 
   protected step(t: TaskQueueRow): number | null {

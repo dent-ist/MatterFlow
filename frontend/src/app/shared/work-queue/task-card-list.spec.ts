@@ -12,7 +12,7 @@ describe('initialsOf', () => {
   it('takes the first letters of the first and last word', () => {
     expect(initialsOf('Tariq Malik')).toBe('TM');
     expect(initialsOf('  ana  maria  de la cruz ')).toBe('AC');
-    expect(initialsOf('Prince')).toBe('P');
+    expect(initialsOf('Prince')).toBe('PR');
     expect(initialsOf('   ')).toBe('?');
   });
 });

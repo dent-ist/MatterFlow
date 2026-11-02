@@ -1,5 +1,6 @@
 using System.Globalization;
 using MatterFlow.Audit.Contracts;
+using MatterFlow.Configuration.Contracts;
 using MatterFlow.SharedKernel.Paging;
 using MatterFlow.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
@@ -9,6 +10,18 @@ namespace MatterFlow.Notes.Application;
 
 internal static class NoteSupport
 {
+    /// <summary>
+    /// The colour a tag is drawn with: its own palette key, or, for a tag saved without one, a palette colour chosen from its id (so every tag has a colour and the same
+    /// tag always has the same one; neighbouring ids get different colours).
+    /// </summary>
+    public static string EffectiveColour(string? key, int tagId)
+    {
+        if (TaskTypeColours.IsValid(key))
+            return key!;
+        var palette = TaskTypeColours.All;
+        return palette[(int)((uint)Math.Max(tagId, 0) % (uint)palette.Count)].Key;
+    }
+
     public const string TagNameUnique = "UQ_NoteTag_Name";
     public const string FirmTemplateNameUnique = "UQ_NoteTemplate_FirmName";
     public const string MatterTemplateNameUnique = "UQ_NoteTemplate_MatterName";

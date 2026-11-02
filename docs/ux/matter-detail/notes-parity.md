@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 133 lines done (D), 10 different on purpose (P), 0 open (O).**
+**Result: 131 lines done (D), 12 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -72,7 +72,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | E8 | Banner (info) when locked: "This note is locked: it is read only for everybody (pinning still works). You can unlock it. / Only <name> or an administrator can unlock it." | D |
 | E9 | Body rendered with the prose styles (headings 1 to 3, lists, quote box, links underlined in blue, tables with bordered cells and shaded header); tables scroll sideways inside their own frame | D |
 | E10 | Links open in a new tab with `rel="noopener"` | D (links open in a new tab, noopener) |
-| E11 | "Referenced items" block at the bottom: assets, projects, matters, notes (deduplicated, grouped, with counts), chips clickable | D (assets, projects, matters and notes; the mockup also had tasks, which this product does not reference) |
+| E11 | "Referenced items" block at the bottom: assets, projects, matters, notes (deduplicated, grouped, with counts), chips clickable | P: owner request 2026-11-02 (#1035): the Referenced items list is not below the note but a second right-hand panel next to History (rail icons with count badges, one open at a time, same width/remember/Esc behaviour; a side panel under 820 px); each item keeps its icon, name, new-window link and the removed/restricted wording |
 | E12 | A note opens in READ mode with an explicit Edit button (owner decision AQ 9 and 2026-11-02) | D |
 | E13 | Opening a note from the keyboard moves focus to its title (`tabindex=-1`) | D |
 
@@ -181,7 +181,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | L2 | Header "History" + count chip + collapse button (`aria-expanded`); newest first, grouped by day (Today, Yesterday, Fri 10/23) | D |
 | L3 | Entry: avatar, "<b>Name</b> edited / created this note / changed the tags / locked this note / unlocked this note", time "MM/DD hh:mm AM/PM . relative" | D |
 | L4 | Footer note "History shows who and when only. There are no versions, no comparison and no restore." | D |
-| L5 | Collapses to a 46 px rail with the count and a vertical "History" label; own splitter (same keys as the list splitter), width remembered | D |
+| L5 | Collapses to a 46 px rail with the count and a vertical "History" label; own splitter (same keys as the list splitter), width remembered | P: owner request #1035: no collapsed 46 px rail with a vertical label any more; the rail is always there with History and References icons (count badges, aria-expanded), clicking the open one closes it; the panel has its own splitter and remembered width |
 | L6 | History refreshes after save, lock, unlock | D |
 
 ## M. Lock
@@ -257,3 +257,6 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 ## Screenshots
 
 `notes-parity/<state>-mockup-<size>.png` next to `notes-parity/<state>-app-<size>.png`, sizes `1366` (1366x768) and `375` (375x812). States: `list` (a note open, By tag), `edit`, `slash` (the menu), `templates`, `empty`, `tags` (tag picker), `locked`, `discard`, `link` (link dialog), `history`, `newmenu`, `filter`, `board`.
+
+11. **Side panels (owner request 2026-11-02, #1035).** The mockup shows Referenced items below the note and History as a column that collapses to a labelled rail; built as a right rail with History and References icons, one panel open at a time.
+12. **Tag colours and initials (2026-11-02).** Every tag is always drawn with a palette colour (a tag saved without one gets one from its id, the admin form has no neutral choice), and avatar initials come from one shared helper (`DOMAIN\\user`, addresses, single names).

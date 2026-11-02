@@ -134,5 +134,5 @@ public sealed class NoteTagService(DbContext db, IAuditWriter audit, NoteAccess 
     }
 
     private static NoteTagResponse ToResponse(NoteTag t, int visibleNotes, bool inUse) =>
-        new(t.Id, t.Name, t.ColourKey, t.IsActive, visibleNotes, inUse, NoteSupport.Encode(t.RowVersion));
+        new(t.Id, t.Name, NoteSupport.EffectiveColour(t.ColourKey, t.Id), t.IsActive, visibleNotes, inUse, NoteSupport.Encode(t.RowVersion));
 }

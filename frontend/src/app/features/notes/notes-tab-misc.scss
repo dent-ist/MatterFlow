@@ -289,3 +289,41 @@
   flex-direction: column;
   gap: var(--mf-s3);
 }
+
+// ---- the right rail of the note area: History and References icons with a count badge
+.nt__rail {
+  display: flex;
+  flex: 0 0 46px;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-left: 1px solid var(--mf-border);
+  background: var(--mf-surface);
+
+  .mf-btn {
+    position: relative;
+  }
+
+  .mf-btn[aria-pressed='true'] {
+    border-color: var(--mf-primary);
+    background: var(--mf-sem-info-bg);
+  }
+}
+
+.nt__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--mf-primary);
+  color: var(--mf-white);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+}

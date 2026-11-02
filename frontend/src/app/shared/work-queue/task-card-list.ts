@@ -30,17 +30,14 @@ import { HoldNote } from './hold-note';
 import { InlineField, canEditField } from './inline-edit';
 import { CLOSED_STATUSES } from './queue-filters';
 import { RowEdit } from './row-edit';
+import { personInitials } from '../ui/person-initials';
 
 /** Below this width (the same 640 px as the navigation rail and the pager) a work list is cards instead of a table (#192). */
 export const PHONE_CARDS_QUERY = '(max-width: 639.98px)';
 
 /** Initials for the assignee's avatar: the first letters of the first and last word of the name. */
 export function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  const first = words[0][0] ?? '';
-  const last = words.length > 1 ? (words[words.length - 1][0] ?? '') : '';
-  return (first + last).toUpperCase();
+  return personInitials(name);
 }
 
 /**

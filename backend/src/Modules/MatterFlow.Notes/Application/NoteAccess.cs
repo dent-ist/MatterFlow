@@ -55,8 +55,8 @@ public sealed class NoteAccess(IMatterVisibility visibility, IMatterDirectory ma
                           join t in db.Set<NoteTag>().AsNoTracking() on l.NoteTagId equals t.Id
                           where noteIds.Contains(l.NoteId)
                           orderby t.Name
-                          select new { l.NoteId, Tag = new NoteTagRef(t.Id, t.Name, t.ColourKey, t.IsActive) }).ToListAsync(ct);
-        return rows.GroupBy(r => r.NoteId).ToDictionary(g => g.Key, g => (IReadOnlyList<NoteTagRef>)[.. g.Select(r => r.Tag)]);
+                          select new { l.NoteId, t.Id, t.Name, t.ColourKey, t.IsActive }).ToListAsync(ct);
+        return rows.GroupBy(r => r.NoteId).ToDictionary(g => g.Key, g => (IReadOnlyList<NoteTagRef>)[.. g.Select(r => new NoteTagRef(r.Id, r.Name, NoteSupport.EffectiveColour(r.ColourKey, r.Id), r.IsActive))]);
     }
 
     public async Task<IReadOnlyDictionary<int, IReadOnlyList<NoteTagRef>>> TagsOfTemplatesAsync(IReadOnlyCollection<int> templateIds, CancellationToken ct)
@@ -68,7 +68,7 @@ public sealed class NoteAccess(IMatterVisibility visibility, IMatterDirectory ma
                           join t in db.Set<NoteTag>().AsNoTracking() on l.NoteTagId equals t.Id
                           where templateIds.Contains(l.NoteTemplateId)
                           orderby t.Name
-                          select new { l.NoteTemplateId, Tag = new NoteTagRef(t.Id, t.Name, t.ColourKey, t.IsActive) }).ToListAsync(ct);
-        return rows.GroupBy(r => r.NoteTemplateId).ToDictionary(g => g.Key, g => (IReadOnlyList<NoteTagRef>)[.. g.Select(r => r.Tag)]);
+                          select new { l.NoteTemplateId, t.Id, t.Name, t.ColourKey, t.IsActive }).ToListAsync(ct);
+        return rows.GroupBy(r => r.NoteTemplateId).ToDictionary(g => g.Key, g => (IReadOnlyList<NoteTagRef>)[.. g.Select(r => new NoteTagRef(r.Id, r.Name, NoteSupport.EffectiveColour(r.ColourKey, r.Id), r.IsActive))]);
     }
 }

@@ -163,7 +163,6 @@ export class NoteTagsPage {
   protected name = signal('');
   protected readonly colour = signal('');
   protected readonly colourItems: DropdownItem[] = [
-    { value: '', label: 'Neutral (default)' },
     ...TASK_TYPE_COLOURS.map((c) => ({ value: c.key, label: c.label })),
   ];
   /** The number of tags, for the tab name. */
@@ -178,7 +177,7 @@ export class NoteTagsPage {
   }
 
   protected colourLabel(key?: string | null): string {
-    return this.colourItems.find((c) => c.value === (key ?? ''))?.label ?? 'Neutral (default)';
+    return this.colourItems.find((c) => c.value === (key ?? ''))?.label ?? 'Blue';
   }
 
   protected async load(): Promise<void> {
@@ -195,7 +194,9 @@ export class NoteTagsPage {
   openNew(): void {
     this.editing.set(null);
     this.name.set('');
-    this.colour.set('');
+    // Every tag has a colour: the first palette colour no other tag uses (the palette order), or the first one when all are taken.
+    const used = new Set(this.tags().map((t) => t.colourKey));
+    this.colour.set((TASK_TYPE_COLOURS.find((c) => !used.has(c.key)) ?? TASK_TYPE_COLOURS[0]).key);
     this.formError.set('');
     this.panel.set(true);
   }
@@ -203,7 +204,7 @@ export class NoteTagsPage {
   protected openEdit(t: NoteTagResponse): void {
     this.editing.set(t);
     this.name.set(t.name);
-    this.colour.set(t.colourKey ?? '');
+    this.colour.set(t.colourKey ?? TASK_TYPE_COLOURS[0].key);
     this.formError.set('');
     this.panel.set(true);
   }
