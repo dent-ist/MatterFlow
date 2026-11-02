@@ -129,6 +129,9 @@ describe('Projects pages', () => {
 
     const control = <T extends HTMLElement>(el: HTMLElement, name: string): T =>
       el.querySelector<T>(`[aria-label^="Filter by ${name}"]`)!;
+    /** The toolbar's Search box: it drives the `name` filter (LC-01). */
+    const search = (el: HTMLElement): HTMLInputElement =>
+      el.querySelector<HTMLInputElement>('[data-list-search] input')!;
 
     it('My matters / All: scoped for a project manager, plain otherwise, the address wins (epic #758)', async () => {
       const calls = () =>
@@ -166,7 +169,7 @@ describe('Projects pages', () => {
         undefined,
         undefined,
         1,
-        25,
+        50,
         undefined,
       );
     });
@@ -235,10 +238,11 @@ describe('Projects pages', () => {
     it('has column filters instead of a search box: Name, Matter and Status (Active shown, Archived by name)', async () => {
       const fixture = await create(['Project.View']);
       const el: HTMLElement = fixture.nativeElement;
-      expect(el.querySelector('#project-search, #project-status, mf-search-box')).toBeNull();
+      expect(el.querySelector('#project-search, #project-status')).toBeNull();
+      expect(el.querySelector('mf-list-toolbar [data-list-search] input')).not.toBeNull();
       expect(el.querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
-      expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
+      expect(control<HTMLInputElement>(el, 'Name')).toBeNull(); // the Search box
       expect(control<HTMLInputElement>(el, 'Matter')).not.toBeNull();
       const status = ddSelect(el, 'Filter by Status');
       expect(status.value).toBe('active');
@@ -249,7 +253,7 @@ describe('Projects pages', () => {
       ]);
       expect(el.querySelector('[data-filter-count]')).toBeNull();
 
-      const name = control<HTMLInputElement>(el, 'Name');
+      const name = search(el);
       name.value = ' phase ';
       name.dispatchEvent(new Event('input'));
       name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
@@ -280,13 +284,13 @@ describe('Projects pages', () => {
         undefined,
         undefined,
         2,
-        25,
+        50,
         undefined,
       );
       expect(fixture.nativeElement.querySelector('[data-chip="matterId"]')?.textContent).toContain(
         'Matter: 00343-00012 Merger Review',
       );
-      buttonByLabel(fixture.nativeElement, 'New project')!.click();
+      buttonByLabel(fixture.nativeElement, 'New Project')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/projects/new?matterId=7');
       fixture.nativeElement.querySelector('[data-chip="matterId"] button').click();
       expect(navigate).toHaveBeenCalledWith([], {
@@ -297,7 +301,7 @@ describe('Projects pages', () => {
 
     it('hides New project without Project.Create and keeps the headers and filter row when nothing matches', async () => {
       const fixture = await create(['Project.View']);
-      expect(buttonByLabel(fixture.nativeElement, 'New project')).toBeUndefined();
+      expect(buttonByLabel(fixture.nativeElement, 'New Project')).toBeUndefined();
 
       projects.listProjects.mockReturnValue(ok(pageOfProjects()));
       query.set({ name: 'zzz' });

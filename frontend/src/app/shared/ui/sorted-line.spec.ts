@@ -29,7 +29,7 @@ describe('sorted line', () => {
     const f = TestBed.createComponent(Host);
     await f.whenStable();
     const el = f.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Sorted by Client Number, A to Z');
+    expect(el.textContent).toContain('Sorted by Client Number, lowest first');
     expect(el.querySelector('[data-reset-sort]')).toBeNull();
   });
 

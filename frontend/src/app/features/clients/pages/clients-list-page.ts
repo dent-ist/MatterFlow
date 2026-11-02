@@ -18,8 +18,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
-import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -75,8 +75,8 @@ const BONES: Record<string, string> = {
     Pager,
     SortHeader,
     GridBody,
-    FiltersBar,
-    ListFiltersButton,
+    ListToolbar,
+    SortedLine,
     ColumnFilterRow,
     TaskCount,
     RecordCardList,
@@ -89,7 +89,7 @@ const BONES: Record<string, string> = {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Clients">
+      <mf-page-header heading="Clients" [count]="state() === 'ready' ? total() : null">
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"
@@ -101,22 +101,28 @@ const BONES: Record<string, string> = {
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }
-        <mf-list-filters-button
-          mfActions
-          [filters]="filters"
-          controls="client-filter-row"
-          [clearAlso]="['q']"
-        />
         <p-button
           mfActions
           *mfHasPermission="'Client.Create'"
-          label="New client"
+          label="New Client"
           icon="pi pi-plus"
           (onClick)="go('/clients/new')"
         />
       </mf-page-header>
 
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+      <mf-list-toolbar
+        [filters]="filters"
+        controls="client-filter-row"
+        searchLabel="Search clients"
+        [clearAlso]="['q']"
+      >
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels()"
+          (resetSort)="pickSort(null)"
+        />
         <mf-record-sort
           mfSheetSort
           [options]="sortOptions()"
@@ -124,7 +130,7 @@ const BONES: Record<string, string> = {
           defaultSort="clientNumber"
           (sorted)="pickSort($event)"
         />
-      </mf-filters-bar>
+      </mf-list-toolbar>
 
       <div class="mf-fill">
         @if (phone()) {
@@ -155,7 +161,7 @@ const BONES: Record<string, string> = {
             <p-button
               mfEmptyAction
               *mfHasPermission="'Client.Create'"
-              label="New client"
+              label="New Client"
               (onClick)="go('/clients/new')"
             />
             <ng-template [mfRecordCard]="rows()" let-c>
@@ -290,7 +296,7 @@ const BONES: Record<string, string> = {
                   <p-button
                     mfEmptyAction
                     *mfHasPermission="'Client.Create'"
-                    label="New client"
+                    label="New Client"
                     (onClick)="go('/clients/new')"
                   />
                   @for (c of rows(); track c.clientId) {
@@ -403,6 +409,7 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   ]);
 
   protected readonly defaultSort = 'clientNumber';
+  protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
   /** "My matters" per client: only in the scoped view of a person who can manage matters (the API sends null otherwise). */
@@ -423,7 +430,7 @@ export class ClientsListPage extends ServerListPage<ClientResponse> {
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
     { key: 'clientNumber', label: 'Client number', column: 'clientNumber', type: 'text' },
-    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
     statusDef(),
   ]);
 

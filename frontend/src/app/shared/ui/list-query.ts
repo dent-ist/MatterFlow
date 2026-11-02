@@ -23,11 +23,13 @@ export interface ListFiltersLike {
 }
 
 export const PAGE_SIZES = [25, 50, 100] as const;
+/** Rows per page when the address says nothing (LC-05, decision AR 10): 50 on every paged list; the person can choose 25 or 100. */
+export const DEFAULT_PAGE_SIZE = 50;
 
 /** A page size from the URL, limited to the offered sizes. */
 export function parsePageSize(value: string | number | null | undefined): number {
   const n = Number(value);
-  return (PAGE_SIZES as readonly number[]).includes(n) ? n : PAGE_SIZES[0];
+  return (PAGE_SIZES as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
 }
 
 /**
@@ -94,7 +96,7 @@ export abstract class ListQueryPage {
   }
 
   protected setPageSize(size: number): void {
-    this.navigate({ size: size === PAGE_SIZES[0] ? null : size, page: null });
+    this.navigate({ size: size === DEFAULT_PAGE_SIZE ? null : size, page: null });
   }
 
   protected clear(): void {

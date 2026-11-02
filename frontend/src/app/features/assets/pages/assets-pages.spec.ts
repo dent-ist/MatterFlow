@@ -217,10 +217,13 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     let fixture: ComponentFixture<AssetsListPage>;
     const el = (): HTMLElement => fixture.nativeElement;
     const filterRow = (): HTMLElement | null => el().querySelector('[data-filter-row]');
+    // Name is the toolbar's Search box since LC-01 (the same `name` parameter); the other filters have a cell in the row.
     const control = <T extends HTMLElement>(name: string): T =>
-      el().querySelector<T>(
-        `[aria-label^="Filter by ${name}"], [aria-label^="Filter by ${name},"]`,
-      )!;
+      name === 'Name'
+        ? el().querySelector<T>('[data-list-search] input')!
+        : el().querySelector<T>(
+            `[aria-label^="Filter by ${name}"], [aria-label^="Filter by ${name},"]`,
+          )!;
     const toggle = (): HTMLButtonElement =>
       el().querySelector<HTMLButtonElement>('[data-filters-toggle]')!;
     const rowOf = (id: number): HTMLElement | null =>
@@ -284,9 +287,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       const rows = el().querySelectorAll('tbody tr');
 
       expect(rows).toHaveLength(2);
-      expect(rows[0].querySelector('td:first-child a')?.textContent?.trim()).toBe(
-        'Contract bundle',
-      );
+      expect(rows[0].querySelector('td a.mf-name')?.textContent?.trim()).toBe('Contract bundle');
       expect(rows[0].textContent).toContain('Document Set');
       expect(rows[0].querySelector('.mf-ref')?.textContent).toBe('00343-00012');
       expect(rows[0].querySelector('.mf-ref')?.closest('a')?.getAttribute('href')).toBe(
@@ -298,7 +299,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         Array.from(el().querySelectorAll('thead tr:first-child th')).map((t) =>
           t.textContent!.trim(),
         ),
-      ).toEqual(['Name', 'Type', 'Matter number', 'Size', 'External reference', 'Disposition']);
+      ).toEqual(['Type', 'Name', 'CM Number', 'Size', 'External Reference', 'Disposition']);
       expect(assets.listAssets).toHaveBeenCalledWith(
         undefined,
         undefined,
@@ -312,7 +313,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         undefined,
         undefined,
         1,
-        25,
+        50,
         undefined,
       );
       // The three standalone filter boxes are gone.
@@ -514,12 +515,12 @@ describe('Assets pages', { timeout: 20_000 }, () => {
           t.textContent!.trim(),
         ),
       ).toEqual([
-        'Name',
         'Type',
-        'Matter number',
+        'Name',
+        'CM Number',
         'Size',
-        'Linked tasks',
-        'External reference',
+        'Linked Tasks',
+        'External Reference',
         'Disposition',
       ]);
       const cell = rowOf(9)!.querySelector('td[data-linked]')!;
@@ -537,7 +538,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       );
       // The first click on a count sorts the busiest asset first.
       const header = Array.from(el().querySelectorAll('thead th')).find((t) =>
-        t.textContent?.includes('Linked tasks'),
+        t.textContent?.includes('Linked Tasks'),
       )!;
       header.querySelector('button')!.click();
       expect(navigate).toHaveBeenCalledWith([], {
@@ -546,21 +547,21 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       });
     });
 
-    it('sorts by Matter number, then Name, and keeps Name and Type sortable (A11)', async () => {
+    it('sorts by CM Number, then Name, and keeps Name and Type sortable (A11)', async () => {
       await create(['Asset.View']);
       const header = (text: string) =>
         Array.from(el().querySelectorAll<HTMLElement>('thead tr:first-child th')).find((t) =>
           t.textContent?.includes(text),
         )!;
-      header('Matter number').querySelector('button')!.click();
+      header('CM Number').querySelector('button')!.click();
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { sort: 'matter', page: null },
         queryParamsHandling: 'merge',
       });
       await setInputs({ sort: 'matter' });
-      expect(header('Matter number').getAttribute('aria-sort')).toBe('ascending');
+      expect(header('CM Number').getAttribute('aria-sort')).toBe('ascending');
       expect(header('Name').getAttribute('aria-sort')).toBe('none');
-      header('Matter number').querySelector('button')!.click();
+      header('CM Number').querySelector('button')!.click();
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { sort: '-matter', page: null },
         queryParamsHandling: 'merge',
@@ -643,10 +644,10 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       });
     });
 
-    it('leaves the Linked tasks column out without Task.View', async () => {
+    it('leaves the Linked Tasks column out without Task.View', async () => {
       await create(['Asset.View']);
       expect(el().querySelector('td[data-linked]')).toBeNull();
-      expect(el().textContent).not.toContain('Linked tasks');
+      expect(el().textContent).not.toContain('Linked Tasks');
     });
 
     it('shows the matter number as plain text, not a link, without Matter.View (BUG-1)', async () => {
@@ -662,12 +663,25 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       }
     });
 
-    it('has the Filters button in the page header; the filter row is open from the start and the button hides and shows it (A3)', async () => {
+    it('has the Filters button in the list toolbar right after Search; the filter row is open from the start and the button hides and shows it (A3, LC-01)', async () => {
       await create(['Asset.View']);
       const header = el().querySelector('mf-page-header')!;
+      const toolbar = el().querySelector('mf-list-toolbar')!;
       const table = el().querySelector('table')!;
-      expect(header.contains(toggle())).toBe(true);
-      expect(header.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(toolbar.contains(toggle())).toBe(true);
+      expect(header.contains(toggle())).toBe(false);
+      expect(
+        header.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        toolbar.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      // Search comes first, the Filters button directly after it.
+      const zones = Array.from(toolbar.querySelector('[data-list-toolbar]')!.children);
+      expect(zones[0].hasAttribute('data-list-search')).toBe(true);
+      expect(zones[1].contains(toggle())).toBe(true);
+      // The count chip is in the title row.
+      expect(header.querySelector('[data-list-count]')).not.toBeNull();
       expect(toggle().textContent).toContain('Filters');
       expect(toggle().querySelector('.pi-filter')).not.toBeNull();
       expect(toggle().getAttribute('aria-pressed')).toBe('true');
@@ -680,7 +694,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(row.querySelectorAll('td')).toHaveLength(
         el().querySelectorAll('thead tr:first-child th').length,
       );
-      for (const name of ['Name', 'Type', 'Matter', 'External reference', 'Disposition'])
+      for (const name of ['Name', 'Type', 'Matter', 'External Reference', 'Disposition'])
         expect(control(name), name).not.toBeNull();
       // Type is a multi-select: a button that says "All types", the choices are in its panel.
       expect(control<HTMLButtonElement>('Type').textContent).toContain('All types');
@@ -749,10 +763,11 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         status: 'inactive',
       });
       expect(filterRow()).not.toBeNull();
-      expect(toggle().querySelector('[data-filter-count]')?.textContent).toBe('(5)');
+      // The Search text (name) is not counted on the button: four filters (LC-01).
+      expect(toggle().querySelector('[data-filter-count]')?.textContent).toBe('(4)');
       expect(control<HTMLInputElement>('Name').value).toBe('bundle');
       expect(control<HTMLInputElement>('Matter').value).toBe('343-12');
-      expect(control<HTMLInputElement>('External reference').value).toBe('WS');
+      expect(control<HTMLInputElement>('External Reference').value).toBe('WS');
       expect(control<HTMLButtonElement>('Type').textContent).toContain('Document Set');
       expect(ddSelect(document.body, 'Filter by Disposition').value).toBe('inactive');
       expect(el().querySelector('[data-clear-filters]')).not.toBeNull();
@@ -783,13 +798,13 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         undefined,
         undefined,
         2,
-        25,
+        50,
         '-displayName',
       );
       expect(el().querySelector('[data-chip="matterId"]')?.textContent).toContain(
         'Matter: 00343-00012 Merger Review',
       );
-      buttonByLabel(el(), 'New asset')!.click();
+      buttonByLabel(el(), 'New Asset')!.click();
       expect(navigateByUrl).toHaveBeenCalledWith('/assets/new?matterId=7');
       const remove = el().querySelector<HTMLButtonElement>('[data-chip="matterId"] button')!;
       expect(remove.getAttribute('aria-label')).toBe(
@@ -818,7 +833,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         queryParamsHandling: 'merge',
         replaceUrl: true,
       });
-      typeAndEnter('External reference', 'ds-room');
+      typeAndEnter('External Reference', 'ds-room');
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { extref: 'ds-room', page: null },
         queryParamsHandling: 'merge',
@@ -855,7 +870,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
     it('clears a text filter with its x button', async () => {
       await create(['Asset.View'], { name: 'bundle' });
-      el().querySelector<HTMLButtonElement>('[aria-label="Clear Name filter"]')!.click();
+      el().querySelector<HTMLButtonElement>('[aria-label="Clear search assets"]')!.click();
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: { name: null, page: null },
         queryParamsHandling: 'merge',
@@ -869,7 +884,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(toggle().querySelector('[data-filter-count]')).toBeNull();
 
       await setInputs({ name: 'a', status: 'all' });
-      expect(toggle().querySelector('[data-filter-count]')?.textContent).toBe('(2)');
+      // The Search text is an active filter (Clear filters is offered) but not counted on the button.
+      expect(toggle().querySelector('[data-filter-count]')?.textContent).toBe('(1)');
       el().querySelector<HTMLButtonElement>('[data-clear-filters]')!.click();
       expect(navigate).toHaveBeenLastCalledWith([], {
         queryParams: {
@@ -890,7 +906,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
 
     it('hides New asset without Asset.Create', async () => {
       await create(['Asset.View']);
-      expect(buttonByLabel(el(), 'New asset')).toBeUndefined();
+      expect(buttonByLabel(el(), 'New Asset')).toBeUndefined();
     });
 
     it('keeps the headers and the filter row when nothing matches and offers Clear filters', async () => {
@@ -1170,7 +1186,7 @@ describe('Assets pages', { timeout: 20_000 }, () => {
     it('New asset: the record header, the Asset and type-fields sections, the real matter format and the way back (A10)', async () => {
       await create({}, ['Asset.View', 'Asset.Create', 'Task.View']);
 
-      expect(el().querySelector('h1')?.textContent).toContain('New asset');
+      expect(el().querySelector('h1')?.textContent).toContain('New Asset');
       expect(el().querySelector('[data-record-header] [data-back-link]')?.textContent).toContain(
         'Assets',
       );

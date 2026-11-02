@@ -531,7 +531,7 @@ describe('MatterDetailPage', () => {
     expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
   });
 
-  it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is offered once, in the header', async () => {
+  it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is in the header and "New Task" in the tab toolbar (LC-02)', async () => {
     await create(['Matter.View', 'Task.View', 'Task.Create'], aMatter({ openTaskCount: 3 }));
     await openTab('tasks');
 
@@ -555,7 +555,14 @@ describe('MatterDetailPage', () => {
     expect(args[2]).toBeUndefined();
     expect(grid.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
 
-    expect(el().querySelector('mf-scoped-tasks [data-create-task]')).toBeNull();
+    // The tab's title row has "+ New Task" (decision AR 8); it opens Create Task with the matter, like the header's New menu.
+    const newTask = el().querySelector<HTMLButtonElement>(
+      'mf-scoped-tasks [data-create-task] button',
+    )!;
+    expect(newTask.textContent).toContain('New Task');
+    newTask.click();
+    expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7');
+    navigateByUrl.mockClear();
     await pick('Create', 'create-task');
     expect(navigateByUrl).toHaveBeenCalledWith('/tasks/new?matterId=7');
   });
@@ -582,7 +589,10 @@ describe('MatterDetailPage', () => {
     const grid = el().querySelector('mf-scoped-tasks')!;
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
-    for (const name of ['Title or Ref', 'Priority', 'Assignee', 'Due', 'Status'])
+    // Title or Ref is the toolbar's Search box (LC-01): Search first, Filters right after it, no cell for it in the row.
+    expect(grid.querySelector('mf-list-toolbar [data-list-search] input')).not.toBeNull();
+    expect(grid.querySelector('[aria-label^="Filter by Title or Ref"]')).toBeNull();
+    for (const name of ['Priority', 'Assignee', 'Due', 'Status'])
       expect(grid.querySelector(`[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
     expect(
       grid.querySelector('mf-dropdown button[aria-label^="Filter by Project"]'),
@@ -617,7 +627,7 @@ describe('MatterDetailPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
       undefined,
     );
     const grid = el().querySelector('mf-matter-assets')!;
@@ -630,7 +640,7 @@ describe('MatterDetailPage', () => {
     expect(grid.querySelector('[data-filter-row]')).toBeNull(); // closed by default
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
-    for (const name of ['Name', 'External reference'])
+    for (const name of ['Name', 'External Reference'])
       expect(grid.querySelector(`input[aria-label^="Filter by ${name}"]`), name).not.toBeNull();
     expect(ddSelect(grid, 'Filter by Disposition').value).toBe('active');
     expect(grid.querySelector('[aria-label^="Filter by Type"]')).not.toBeNull();
@@ -652,7 +662,7 @@ describe('MatterDetailPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
       undefined,
     );
   });

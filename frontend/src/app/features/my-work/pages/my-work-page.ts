@@ -19,7 +19,11 @@ import {
 } from '../../../api/generated/api-client';
 import { PageTitle } from '../../../core/title/page-title';
 import { FilterOption } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine } from '../../../shared/ui/sorted-line';
+import { SORT_LABELS } from '../../../shared/work-queue/sort-note';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import {
   QUEUE_FILTER_PARAMS,
@@ -142,7 +146,10 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
     PageHeader,
     RouterLink,
     CopyParts,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
+    Button,
+    HasPermissionDirective,
     PhoneSort,
     WorkList,
     WorkStrip,
@@ -153,7 +160,16 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   styleUrl: '../../../shared/work-queue/work-page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="My Work"> </mf-page-header>
+      <mf-page-header heading="My Work" [count]="loadState() === 'ready' ? total() : null">
+        <p-button
+          mfActions
+          *mfHasPermission="'Task.Create'"
+          label="New Task"
+          icon="pi pi-plus"
+          data-new-task
+          (onClick)="go('/tasks/new')"
+        />
+      </mf-page-header>
 
       @if (columnsNotice()) {
         <mf-columns-notice
@@ -183,15 +199,17 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
       </div>
 
       <div class="mf-fill" role="tabpanel" id="mw-panel" [attr.aria-labelledby]="'mw-tab-' + tab()">
-        <mf-filters-bar
+        <mf-list-toolbar
           [filters]="filters"
           controls="work-filter-row"
-          [stacked]="true"
+          searchLabel="Search tasks"
           (showColumn)="showColumn($event)"
         >
           <mf-work-view-controls
+            mfColumns
             [sort]="state().sort"
             [dir]="state().dir"
+            [sortNote]="false"
             [defaultOrder]="defaultOrder()"
             [defaultLabel]="defaultLabel()"
             [tabHelp]="tabHelp()"
@@ -226,6 +244,17 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
               </button>
             }
           </mf-work-view-controls>
+          <mf-sorted-line
+            mfBarEnd
+            [field]="state().sort"
+            [dir]="state().dir"
+            [labels]="sortLabels"
+            [defaultText]="defaultLabel()"
+            [rule]="defaultOrder()"
+            [grouped]="grouped()"
+            (resetSort)="resetSort()"
+            (groupChange)="setGroup($event)"
+          />
           <mf-phone-sort
             mfSheetSort
             [sort]="state().sort"
@@ -248,7 +277,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
             ><i class="pi pi-list-check" aria-hidden="true"></i>
             <span class="mw-qtext">Open in Task Queue</span></a
           >
-        </mf-filters-bar>
+        </mf-list-toolbar>
         <mf-work-list
           from="my-work"
           [rows]="rows()"
@@ -309,6 +338,7 @@ const STRIP: readonly Omit<WorkStripItem, 'count'>[] = [
   `,
 })
 export class MyWorkPage extends QueuePageBase<MyWorkData> {
+  protected readonly sortLabels = SORT_LABELS;
   private readonly api = inject(MyWorkClient);
   private readonly podsApi = inject(PodsClient);
   private readonly pageTitle = inject(PageTitle);

@@ -64,7 +64,7 @@ let nextId = 0;
           <mf-more-filters class="lt__other" [filters]="filters()" />
         }
         <ng-content select="[mfView]" />
-        <span class="lt__gap"></span>
+        <span class="lt__gap" data-flex-gap></span>
         <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
         <ng-content select="[mfMore]" />
         <ng-content select="[mfPrimary]" />

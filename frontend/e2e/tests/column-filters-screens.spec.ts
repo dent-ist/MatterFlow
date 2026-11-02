@@ -43,7 +43,7 @@ test.describe('column filters screenshots', () => {
     await expect(rows.first()).toBeVisible();
     await shot(page, 'assets-filters-closed');
     await toggle.click();
-    await expect(page.getByRole('textbox', { name: 'Filter by Name' })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: 'Search assets' })).toBeVisible();
     await shot(page, 'assets-filters-open');
     await page.goto('/assets?name=Bulk%20asset&matter=Bulk&status=all');
     await expect(rows.first()).toBeVisible();
@@ -65,10 +65,7 @@ test.describe('column filters screenshots', () => {
     await toggle.click();
     await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
     await shot(page, 'assets-sheet');
-    await page
-      .getByRole('dialog', { name: 'Filters' })
-      .getByLabel('Filter by Name')
-      .fill('Bulk asset 1');
+    await page.getByRole('searchbox', { name: 'Search assets' }).fill('Bulk asset 1');
     await page.waitForTimeout(600);
     await shot(page, 'assets-sheet-filtered');
     await page.getByRole('button', { name: /^Show \d+ results?$/ }).click();

@@ -12,8 +12,11 @@ import { filterDropdown } from '../support/dropdown';
  * views are presets, tabs show the columns they decide as disabled with the reason, and the headers and the filter row stay in every state.
  */
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
+/** A text filter of the row; Title or Ref is the toolbar's Search box since LC-01. */
 const text = (page: Page, column: string) =>
-  page.getByRole('textbox', { name: `Filter by ${column}` });
+  column === 'Title or Ref'
+    ? page.getByRole('searchbox', { name: 'Search tasks', exact: true })
+    : page.getByRole('textbox', { name: `Filter by ${column}` });
 const multi = (page: Page, column: string) =>
   page.getByRole('button', { name: new RegExp(`^Filter by ${column},`) });
 const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
@@ -66,7 +69,9 @@ test.describe('Column filters on the work lists', () => {
       const queue = new TaskQueuePage(page);
       await queue.open();
       await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByRole('searchbox')).toHaveCount(0);
+      await expect(
+        page.getByRole('searchbox', { name: 'Search tasks', exact: true }),
+      ).toBeVisible();
       await expect(page.locator('#fb-q, #fb-panel')).toHaveCount(0);
       await expect(page.getByRole('group', { name: 'Filters' })).toHaveCount(0);
 
@@ -76,11 +81,11 @@ test.describe('Column filters on the work lists', () => {
       await queue.expectListed(withProject.title, plain.title, other.title);
 
       // Matter: the reference or the name, a text box under the Matter Number column.
-      await text(page, 'Matter Number').fill(world.matter.matterRef);
+      await text(page, 'CM Number').fill(world.matter.matterRef);
       await expect(page).toHaveURL(/matterText=/);
       await queue.expectListed(withProject.title, plain.title);
       await queue.expectNotListed(other.title);
-      await text(page, 'Matter Number').fill('');
+      await text(page, 'CM Number').fill('');
       await expect(page).not.toHaveURL(/matterText=/);
       await queue.expectListed(other.title);
 
@@ -159,7 +164,7 @@ test.describe('Column filters on the work lists', () => {
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
 
       // A filter on top of the view is an extra filter: the view stays pressed and the count is the extra ones (#221).
-      await text(page, 'Matter Number').fill('zzz');
+      await text(page, 'CM Number').fill('zzz');
       await expect(page).toHaveURL(/matterText=zzz/);
       await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
       await expect(toggle(page)).toHaveText(/\(1\)/);
@@ -187,7 +192,7 @@ test.describe('Column filters on the work lists', () => {
       const token = uid();
       await seed.task(await seed.world(), { title: `Restore ${token}` });
       await page.goto(`/tasks?q=${token}&priority=1`);
-      await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toHaveValue(
+      await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toHaveValue(
         token,
       );
       // The view is remembered once the list has loaded (it can be empty: the priority is just a filter to remember).
@@ -495,18 +500,20 @@ test.describe('Column filters on the work lists', () => {
 
       await toggle(page).click();
       await expect(sheet(page)).toBeVisible();
-      for (const name of ['Title or Ref', 'Matter Number', 'Client', 'Project', 'Requestor']) {
+      for (const name of ['CM Number', 'Client', 'Project', 'Requestor']) {
         await expect(sheet(page).getByRole('textbox', { name: `Filter by ${name}` })).toBeVisible();
       }
-      await sheet(page).getByRole('textbox', { name: 'Filter by Title or Ref' }).fill(token);
+      await page.getByRole('searchbox', { name: 'Search tasks', exact: true }).fill(token);
       await expect(page).toHaveURL(new RegExp(`q=${token}`));
       await expect(sheet(page).getByRole('button', { name: /^Show \d+ result/ })).toBeVisible();
       await sheet(page)
         .getByRole('button', { name: /^Show \d+ result/ })
         .click();
       await expect(sheet(page)).toHaveCount(0);
-      await expect(chips(page)).toContainText(`Title or Ref: ${token}`);
-      await expect(toggle(page)).toHaveText(/\(1\)/);
+      // The search text is shown by the Search box: no chip, and it is not counted on the Filters button.
+      await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toHaveValue(
+        token,
+      );
       await expect(page.locator('[data-task]')).toHaveCount(1);
     });
   });

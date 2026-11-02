@@ -80,7 +80,7 @@ export function queueFilterDefs(
       placeholder: 'Title or ref',
       column: 'ref',
       type: 'text',
-      span: 2,
+      search: true,
     },
     {
       key: 'status',
@@ -96,7 +96,7 @@ export function queueFilterDefs(
       ...(options.defaultStatus ? { default: options.defaultStatus, defaultOnlyBare: true } : {}),
       ...off('status'),
     },
-    { key: 'matterText', label: 'Matter Number', column: 'matter', type: 'text' },
+    { key: 'matterText', label: 'CM Number', column: 'matter', type: 'text' },
     { key: 'clientText', label: 'Client', column: 'client', type: 'text' },
     { key: 'projectText', label: 'Project', column: 'project', type: 'text' },
     {

@@ -283,19 +283,27 @@ test.describe('Notifications page', () => {
       made.push(...(await Promise.all([1, 2, 3].map((n) => assign(`Paged ${i + n} ${uid()}`)))));
     }
     const page = await asUser(tech.username);
-    await page.goto('/notifications');
+    // The default is 50 rows since LC-05; this test pages, so it asks for 25.
+    await page.goto('/notifications?pageSize=25');
     await expect(page.getByRole('heading', { name: 'Notifications', level: 1 })).toBeVisible();
     await expect(page.locator('[data-notification-item]')).toHaveCount(25);
     await expect(page.locator('[data-key=unread]')).toHaveText('Unread (27)');
     await expect(page.locator('[data-key=all]')).toHaveAttribute('aria-pressed', 'true');
     await shot(page, 'page-desktop');
 
+    // First and Last next to Previous and Next (LC-05); First is off on page 1, Last goes to the last page.
+    await expect(page.getByRole('button', { name: 'First', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Last', exact: true }).click();
+    await expect(page).toHaveURL(/page=2/);
+    await page.getByRole('button', { name: 'First', exact: true }).click();
+    await expect(page.locator('[data-notification-item]')).toHaveCount(25);
+
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page).toHaveURL(/page=2/);
     await expect(page.locator('[data-notification-item]')).toHaveCount(2);
     await expect(page.locator('[data-result-count]')).toContainText('27 notifications, page 2');
 
-    await page.goto('/notifications?filter=unread&page=1');
+    await page.goto('/notifications?filter=unread&page=1&pageSize=25');
     await expect(page.locator('[data-key=unread]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('[data-mark-all-read]').first().click();
     await expect(page.locator('[data-page-empty]')).toContainText('No unread notifications.');

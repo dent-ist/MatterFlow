@@ -138,7 +138,7 @@ test.describe('My Work and Pod Work across Pods (SCN-007)', () => {
     expect(await y(columns)).toBeGreaterThan(await y(tab));
     expect(Math.abs((await y(filters)) - (await y(columns)))).toBeLessThan(24);
     expect(await y(columns)).toBeLessThan(await y(head));
-    await expect(page.getByRole('textbox', { name: 'Filter by Title or Ref' })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toBeVisible();
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Priority');
     await expect(page.locator('[data-near-empty]')).toContainText(
       "That's everything on your plate.",

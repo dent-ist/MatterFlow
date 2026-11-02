@@ -18,8 +18,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { ARCHIVE_STATUS_OPTIONS, statusDef } from '../../../shared/filters/common-defs';
 import { FilterDef } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
-import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -82,8 +82,8 @@ const BONES: Record<string, string> = {
     TaskCount,
     SortHeader,
     GridBody,
-    FiltersBar,
-    ListFiltersButton,
+    ListToolbar,
+    SortedLine,
     ColumnFilterRow,
     RecordCardList,
     RecordCardDef,
@@ -95,7 +95,7 @@ const BONES: Record<string, string> = {
   styleUrl: '../../../shared/ui/page.scss',
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Projects">
+      <mf-page-header heading="Projects" [count]="state() === 'ready' ? total() : null">
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"
@@ -107,22 +107,28 @@ const BONES: Record<string, string> = {
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }
-        <mf-list-filters-button
-          mfActions
-          [filters]="filters"
-          controls="project-filter-row"
-          [clearAlso]="['q']"
-        />
         <p-button
           mfActions
           *mfHasPermission="'Project.Create'"
-          label="New project"
+          label="New Project"
           icon="pi pi-plus"
           (onClick)="go(newProjectUrl())"
         />
       </mf-page-header>
 
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+      <mf-list-toolbar
+        [filters]="filters"
+        controls="project-filter-row"
+        searchLabel="Search projects"
+        [clearAlso]="['q']"
+      >
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels()"
+          (resetSort)="pickSort(null)"
+        />
         <mf-record-sort
           mfSheetSort
           [options]="sortOptions()"
@@ -130,7 +136,7 @@ const BONES: Record<string, string> = {
           defaultSort="name"
           (sorted)="pickSort($event)"
         />
-      </mf-filters-bar>
+      </mf-list-toolbar>
 
       <div class="mf-fill">
         @if (phone()) {
@@ -412,6 +418,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
   );
 
   protected readonly defaultSort = 'name';
+  protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
   protected readonly showClient = computed(() => this.wide());
@@ -452,7 +459,7 @@ export class ProjectsListPage extends ServerListPage<ProjectResponse> {
 
   /** One definition per filter: the row, the sheet, the chips, the count, the URL and the API arguments all come from it. */
   private readonly defs = computed((): FilterDef[] => [
-    { key: 'name', label: 'Name', column: 'name', type: 'text' },
+    { key: 'name', label: 'Name', column: 'name', type: 'text', search: true },
     { key: 'matter', label: 'Matter', column: 'matter', type: 'text' },
     statusDef(ARCHIVE_STATUS_OPTIONS),
     // `?matterId=` (a link from a matter): no control, a removable chip.

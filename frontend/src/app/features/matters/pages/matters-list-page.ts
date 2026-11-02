@@ -29,8 +29,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 import { ColumnFilterRow } from '../../../shared/filters/column-filter-row';
 import { matterColumnDefs } from '../../../shared/filters/common-defs';
 import { FilterDef, FilterOption } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
-import { ListFiltersButton } from '../../../shared/filters/list-filters-button';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { ActiveBadge, SensitiveBadge } from '../../../shared/ui/badge';
 import { SortHeader } from '../../../shared/ui/data-table';
@@ -138,8 +138,8 @@ const BONES: Record<string, string> = {
     MatterRef,
     SortHeader,
     GridBody,
-    FiltersBar,
-    ListFiltersButton,
+    ListToolbar,
+    SortedLine,
     ColumnFilterRow,
     TaskCount,
     RecordCardList,
@@ -214,25 +214,35 @@ const BONES: Record<string, string> = {
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header heading="Matters">
+      <mf-page-header heading="Matters" [count]="state() === 'ready' ? total() : null">
         @if (scopeText()) {
           <span mfDescription class="sl-line" data-scope-line>{{ scopeText() }}</span>
         }
-        <mf-list-filters-button
-          mfActions
-          [filters]="filters"
-          controls="matter-filter-row"
-          [clearAlso]="['q']"
-        />
         <mf-scope-switch
           mfActions
           [scope]="scope.value()"
           [canAll]="scope.canAll()"
           (scopeChange)="scope.set($event)"
         />
+        <p-button
+          mfActions
+          *mfHasPermission="'Matter.Create'"
+          label="New Matter"
+          icon="pi pi-plus"
+          (onClick)="openNew()"
+        />
+      </mf-page-header>
+
+      <mf-list-toolbar
+        [filters]="filters"
+        controls="matter-filter-row"
+        searchLabel="Search matters"
+        [clearAlso]="['q']"
+        [bulkActive]="!phone() && selecting()"
+      >
         @if (!phone()) {
           <mf-grid-columns
-            mfActions
+            mfColumns
             [defs]="gridDefs()"
             [prefs]="prefs()"
             (prefsChange)="setPrefs($event)"
@@ -241,7 +251,7 @@ const BONES: Record<string, string> = {
         }
         @if (canAssign() && !phone()) {
           <button
-            mfActions
+            mfColumns
             type="button"
             class="mf-btn ml-mine"
             [attr.aria-pressed]="selecting()"
@@ -252,16 +262,42 @@ const BONES: Record<string, string> = {
             Select
           </button>
         }
-        <p-button
-          mfActions
-          *mfHasPermission="'Matter.Create'"
-          label="New matter"
-          icon="pi pi-plus"
-          (onClick)="openNew()"
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels()"
+          (resetSort)="pickSort(null)"
         />
-      </mf-page-header>
-
-      <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
+        <div
+          mfBulk
+          class="ml-selbar"
+          role="region"
+          aria-label="Selected matters"
+          data-selection-bar
+        >
+          <span data-selection-count>{{ selected().size }} selected</span>
+          <button
+            type="button"
+            class="mf-btn"
+            data-bulk-managers
+            [disabled]="selected().size === 0"
+            (click)="bulkOpen.set(true)"
+          >
+            Set project managers
+          </button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="selected.set(emptySelection)">
+            Clear selection
+          </button>
+          <button
+            type="button"
+            class="mf-btn mf-btn--text"
+            data-selection-done
+            (click)="endSelecting()"
+          >
+            Done
+          </button>
+        </div>
         <mf-record-sort
           mfSheetSort
           [options]="sortOptions()"
@@ -269,38 +305,9 @@ const BONES: Record<string, string> = {
           defaultSort="matterRef"
           (sorted)="pickSort($event)"
         />
-      </mf-filters-bar>
+      </mf-list-toolbar>
 
       <div class="mf-fill">
-        @if (!phone() && selecting()) {
-          <div class="ml-selbar" role="region" aria-label="Selected matters" data-selection-bar>
-            <span data-selection-count>{{ selected().size }} selected</span>
-            <button
-              type="button"
-              class="mf-btn"
-              data-bulk-managers
-              [disabled]="selected().size === 0"
-              (click)="bulkOpen.set(true)"
-            >
-              Set project managers
-            </button>
-            <button
-              type="button"
-              class="mf-btn mf-btn--text"
-              (click)="selected.set(emptySelection)"
-            >
-              Clear selection
-            </button>
-            <button
-              type="button"
-              class="mf-btn mf-btn--text"
-              data-selection-done
-              (click)="endSelecting()"
-            >
-              Done
-            </button>
-          </div>
-        }
         @if (phone()) {
           <mf-record-card-list
             noun="matters"
@@ -329,7 +336,7 @@ const BONES: Record<string, string> = {
             <p-button
               mfEmptyAction
               *mfHasPermission="'Matter.Create'"
-              label="New matter"
+              label="New Matter"
               (onClick)="openNew()"
             />
             <ng-template [mfRecordCard]="rows()" let-m>
@@ -585,7 +592,7 @@ const BONES: Record<string, string> = {
                   <p-button
                     mfEmptyAction
                     *mfHasPermission="'Matter.Create'"
-                    label="New matter"
+                    label="New Matter"
                     (onClick)="openNew()"
                   />
                   @for (m of rows(); track m.matterId) {
@@ -1016,6 +1023,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   ]);
 
   protected readonly defaultSort = 'matterRef';
+  protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
   protected readonly showClient = computed(() => this.wide());
@@ -1042,7 +1050,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     const [ref, name, status, sensitive] = matterColumnDefs();
     return [
       ref,
-      name,
+      { ...name, search: true },
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
       this.managerDef('primaryManager', 'Primary PM'),
       this.managerDef('secondaryManager', 'Secondary PM'),

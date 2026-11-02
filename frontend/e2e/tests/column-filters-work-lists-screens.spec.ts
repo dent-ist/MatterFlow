@@ -182,7 +182,7 @@ test.describe('column filters work lists screenshots', () => {
     await shot(page, 'work-queue-sheet');
     await page
       .getByRole('dialog', { name: 'Filters' })
-      .getByRole('textbox', { name: 'Filter by Title or Ref' })
+      .getByRole('searchbox', { name: 'Search tasks', exact: true })
       .fill(token);
     await expect(page).toHaveURL(/q=/);
     await shot(page, 'work-queue-sheet-filtered');

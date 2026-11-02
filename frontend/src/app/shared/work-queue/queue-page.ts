@@ -639,6 +639,11 @@ export abstract class QueuePageBase<TData extends QueuePageData> {
     this.navigate({ ...this.state(), group: null, sort: choice.field, dir: choice.dir, page: 1 });
   }
 
+  /** The "+ New Task" button of a work list's title row (the same Create Task page as the app bar's button). */
+  protected go(path: string): void {
+    void this.router.navigateByUrl(path);
+  }
+
   protected goToPage(page: number): void {
     this.navigate({ ...this.state(), page });
   }

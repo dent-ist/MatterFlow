@@ -204,15 +204,18 @@ describe('MyWorkPage', () => {
   it('lists my tasks with priority, workflow progress, due and status (the matter reference is in the Matter column only, #196, #198)', async () => {
     const el = await open('/my-work');
     const headers = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent?.trim());
+    // The standard task order without Assignee (My Work lists the person's own tasks), Progress last (LC-03).
     expect(headers).toEqual([
       'Ref',
+      'Type',
       'Title',
-      'Matter Number',
+      'CM Number',
       'Matter Name',
-      'Workflow progress',
+      'Project',
       'Priority',
       'Due',
       'Status',
+      'Progress',
     ]);
     const row = el.querySelector('tbody tr')!;
     // #348: the Matter Number cell shows the reference only; the matter name is its own column.
@@ -324,15 +327,18 @@ describe('MyWorkPage', () => {
     Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
       c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
     );
+  /** A filter control of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
   const control = (el: HTMLElement, key: string) =>
-    el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`)!;
+    key === 'q'
+      ? el.querySelector<HTMLElement>('[data-list-search] input')!
+      : el.querySelector<HTMLElement>(`tr[data-filter-row] [data-filter="${key}"]`)!;
 
   it('applies filters and removes them with their chips', async () => {
     const el = await open('/my-work?pod=5&status=ON_HOLD');
     expect(lastArgs()[ARG.pod]).toEqual([5]);
     expect(lastArgs()[ARG.status]).toEqual(['ON_HOLD']);
-    // The Status column is on screen, so its filter is in the row; Pod is not, so its filter is a chip.
-    expect(chips(el)).toEqual(['Pod: Pod A (hidden column)']);
+    // The Status column is on screen, so its filter is in the row (and a chip: the chips show with the row open, LC-01); Pod is not, so it is a chip only.
+    expect(chips(el)).toEqual(['Status: On Hold', 'Pod: Pod A (hidden column)']);
     expect(control(el, 'status').textContent).toContain('On Hold');
 
     el.querySelector<HTMLButtonElement>('[data-chip="pod"] .fch__x')!.click();
@@ -454,16 +460,19 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     await vi.waitFor(() => {
       harness.detectChanges();
-      expect(el.querySelector('[data-grid-toolbar] [data-sort-note]')).not.toBeNull();
+      expect(el.querySelector('[data-toolbar-row2] [data-sort-note]')).not.toBeNull();
     });
     const tabRow = el.querySelector('[data-tab-row]')!;
     expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
     expect(tabRow.querySelector('[data-filters-toggle]')).toBeNull();
-    // The bar is inside the tab panel: sort note, Columns and the Filters button together, directly above the grid.
+    // The toolbar is inside the tab panel: Search, the Filters button and Columns in row 2, the Sorted by line at the right end of row 3 (LC-01).
     const bar = el.querySelector('[role="tabpanel"] [data-grid-toolbar]')!;
-    expect(bar.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
+    expect(
+      el.querySelector('[role="tabpanel"] [data-toolbar-row2] [data-sort-note]')!.textContent,
+    ).toContain('Sorted by Priority');
     expect(bar.querySelector('.cc-button')).not.toBeNull();
     expect(bar.querySelector('[data-filters-toggle]')).not.toBeNull();
+    expect(bar.querySelector('[data-list-search] input')).not.toBeNull();
     expect(
       bar.compareDocumentPosition(el.querySelector('mf-work-list')!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -1001,12 +1010,12 @@ describe('MyWorkPage', () => {
       box.click();
       await settle();
     };
-    await choose('Workflow progress');
+    await choose('Progress');
     el.querySelector<HTMLElement>('.cc-button')!.click(); // close the panel
     await settle();
     expect(el.querySelector('th[data-col="progress"]')).toBeNull();
 
-    // Closed has its own set (Workflow progress is not in it).
+    // Closed has its own set (Progress is not in it).
     tab(el, 'Closed').click();
     await settle();
     expect(el.querySelector('th[data-col="progress"]')).toBeNull();

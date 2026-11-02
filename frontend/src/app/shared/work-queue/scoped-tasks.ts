@@ -29,7 +29,9 @@ import { SkipTarget } from '../layout/skip-target';
 import { restoreRowFocus } from '../ui/row-nav';
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { FilterDef, FilterOption } from '../filters/filter-def';
-import { FiltersBar } from '../filters/filters-bar';
+import { ListToolbar } from '../filters/list-toolbar';
+import { SortedLine } from '../ui/sorted-line';
+import { SORT_LABELS } from './sort-note';
 import { ListFilters } from '../filters/list-filters';
 import { LoadState } from '../ui/data-table';
 import { PageFooter } from '../ui/page-footer';
@@ -66,7 +68,9 @@ import { TaskTable } from './task-table';
 import { WorkWidths } from './work-widths';
 import { DUE_SOON_DAYS } from './work-vocabulary';
 
-const PAGE_SIZE = 25;
+/** The page size of a list (LC-05, decision AR 10): 50, chosen from 25 / 50 / 100. */
+const PAGE_SIZE = 50;
+const PAGE_SIZES: readonly number[] = [25, 50, 100];
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
 /**
@@ -125,7 +129,8 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     SummaryStrip,
     TaskSelectList,
     TaskTable,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
     GridColumns,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -133,10 +138,11 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
   styles: `
     .st-selbar {
       display: flex;
+      flex: 1 1 100%;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
-      margin: 0 0 var(--mf-s2);
+      margin: 0;
       padding: var(--mf-s2) var(--mf-s3);
       border: 1px solid var(--mf-border);
       border-radius: var(--mf-radius);
@@ -164,9 +170,14 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     @if (!canView()) {
       <div class="st-state" data-no-access="tasks">You don't have permission to view tasks.</div>
     } @else {
-      <mf-filters-bar [filters]="filters" [controls]="filterRowId">
+      <mf-list-toolbar
+        [filters]="filters"
+        [controls]="filterRowId"
+        searchLabel="Search tasks"
+        [bulkActive]="selecting()"
+      >
         <mf-summary-strip
-          mfBarStart
+          mfView
           [kind]="projectId() === null ? 'matter' : 'project'"
           [id]="projectId() ?? matterId()"
           [interactive]="true"
@@ -176,21 +187,9 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           (pick)="pickView($event)"
           (opened)="opened.emit($event)"
         />
-        @if (showCreate()) {
-          <p-button
-            mfBarStart
-            *mfHasPermission="'Task.Create'"
-            label="Create task"
-            icon="pi pi-plus"
-            severity="secondary"
-            data-create-task
-            [disabled]="!canCreate()"
-            (onClick)="create()"
-          />
-        }
         @if (!phone()) {
           <mf-grid-columns
-            mfBarStart
+            mfColumns
             [defs]="gridDefs()"
             [prefs]="prefs()"
             (prefsChange)="setPrefs($event)"
@@ -199,7 +198,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         }
         @if (canBulk()) {
           <button
-            mfBarStart
+            mfColumns
             type="button"
             class="mf-btn"
             data-select-mode
@@ -209,9 +208,27 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
             <i class="pi pi-check-square" aria-hidden="true"></i> Select
           </button>
         }
-      </mf-filters-bar>
-      @if (selecting()) {
-        <div class="st-selbar" role="region" aria-label="Selected tasks" data-selection-bar>
+        @if (showCreate()) {
+          <p-button
+            mfPrimary
+            *mfHasPermission="'Task.Create'"
+            label="New Task"
+            icon="pi pi-plus"
+            data-create-task
+            [disabled]="!canCreate()"
+            (onClick)="create()"
+          />
+        }
+        <mf-sorted-line
+          mfBarEnd
+          [field]="sort()"
+          [dir]="dir()"
+          [labels]="sortLabels"
+          defaultText="Priority, most urgent first"
+          [rule]="defaultOrderRule"
+          (resetSort)="resetSort()"
+        />
+        <div mfBulk class="st-selbar" role="region" aria-label="Selected tasks" data-selection-bar>
           <span data-selection-count>{{ selected().size }} selected</span>
           @if (canAssign()) {
             <button
@@ -274,7 +291,7 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
           </button>
           <span class="st-selnote" role="status" data-selection-note>{{ selectionNote() }}</span>
         </div>
-      }
+      </mf-list-toolbar>
 
       @if (selecting()) {
         <mf-task-select-list
@@ -319,9 +336,11 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
         <div mfPageFooter>
           <mf-pager
             [page]="page()"
-            [pageSize]="pageSize"
+            [pageSize]="pageSize()"
+            [pageSizes]="pageSizes"
             [total]="total()"
             (pageChange)="goTo($event)"
+            (pageSizeChange)="setPageSize($event)"
           />
         </div>
       }
@@ -343,7 +362,7 @@ export class ScopedTasks {
   readonly projectOptions = input<readonly FilterOption[]>([]);
   /** False disables Create Task (an inactive Matter takes no new Tasks). */
   readonly canCreate = input(true);
-  /** False where the page header already offers the one Create Task button (Matter detail, UXR-40). */
+  /** False where the page header already offers the one Create Task button (a Project's page, UXR-40); the Matter's Tasks tab shows "New Task" in its toolbar (decision AR 8). */
   readonly showCreate = input(true);
   /** How many projects the matter has: the Project column and filter are offered only when it is above zero (unknown shows them). */
   readonly projectCount = input<number | null>(null);
@@ -370,7 +389,11 @@ export class ScopedTasks {
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
 
-  protected readonly pageSize = PAGE_SIZE;
+  protected readonly pageSize = signal(PAGE_SIZE);
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly sortLabels = SORT_LABELS;
+  protected readonly defaultOrderRule =
+    'Default order: Priority, then ASAP first, then due date, then oldest';
   protected readonly phone = phoneCards();
 
   // --- bulk change (epic #667, #699) ---------------------------------------------------------------------------------------------
@@ -526,7 +549,7 @@ export class ScopedTasks {
         placeholder: 'Title or ref',
         column: 'ref',
         type: 'text',
-        span: 2,
+        search: true,
       },
       ...(this.withProject()
         ? ([
@@ -871,6 +894,19 @@ export class ScopedTasks {
     void this.load();
   }
 
+  protected resetSort(): void {
+    this.sort.set(null);
+    this.dir.set(null);
+    this.page.set(1);
+    void this.load();
+  }
+
+  protected setPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
+    void this.load();
+  }
+
   protected create(): void {
     const project = this.projectId();
     const query = `matterId=${this.matterId()}${project === null ? '' : `&projectId=${project}`}`;
@@ -900,7 +936,7 @@ export class ScopedTasks {
         sort: this.sort(),
         dir: this.dir(),
         page: this.page(),
-        pageSize: PAGE_SIZE,
+        pageSize: this.pageSize(),
       });
       const page = await firstValueFrom(this.api.getTaskQueue(undefined, ...request));
       if (id !== this.requestId) return;

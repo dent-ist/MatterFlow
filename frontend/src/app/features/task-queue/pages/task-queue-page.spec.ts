@@ -124,8 +124,11 @@ describe('TaskQueuePage', () => {
     Array.from(el.querySelectorAll('[data-filter-chips] [data-chip]')).map((c) =>
       c.querySelector('.fch__text')!.textContent!.replace(/\s+/g, ' ').trim(),
     );
+  /** A text filter of the row; `q` (Title or Ref) is the toolbar's Search box since LC-01. */
   const filterInput = (el: HTMLElement, key: string) =>
-    el.querySelector<HTMLInputElement>(`tr[data-filter-row] input[data-filter="${key}"]`)!;
+    key === 'q'
+      ? el.querySelector<HTMLInputElement>('[data-list-search] input')!
+      : el.querySelector<HTMLInputElement>(`tr[data-filter-row] input[data-filter="${key}"]`)!;
 
   /** Types into a column text filter and presses Enter, which applies at once. */
   async function typeFilter(el: HTMLElement, key: string, text: string) {
@@ -316,16 +319,17 @@ describe('TaskQueuePage', () => {
     expect(el.querySelectorAll('tbody tr').length).toBe(2);
     expect(el.querySelector('tbody a')!.getAttribute('href')).toBe('/tasks/1042?from=task-queue');
     expect(el.textContent).toContain('Showing 1-2 of 2');
-    // The row is open on this screen, so only filters on hidden columns would also show as chips; the default Open is never a chip.
+    // The row is open on this screen and the chips show anyway (LC-01); the default Open is never a chip.
     expect(el.querySelector('tr[data-filter-row]')).not.toBeNull();
     expect(el.querySelector('[data-filters-toggle]')!.textContent).toContain('(1)');
-    expect(chips(el)).toEqual([]);
+    expect(chips(el)).toEqual(['Priority: Critical']);
   });
 
   it('shows a filter on a hidden column as a chip, and the chip removes it', async () => {
     const el = await open('/tasks?status=NEW&clientText=Acme&creator=2');
     // Client and Creator are not in the default columns.
     expect(chips(el)).toEqual([
+      'Status: New',
       'Client: Acme (hidden column)',
       'Creator: Pat Partner (hidden column)',
     ]);
@@ -414,9 +418,10 @@ describe('TaskQueuePage', () => {
     await settle();
     expect(query()['dir']).toBe('desc');
 
-    // The sorted-by note is in the footer; "Reset sort" is at the right end of row 2.
+    // The Sorted by line and "Reset sort" are at the right end of row 3 (LC-01).
     expect(el.querySelector('[data-toolbar-row2] [data-reset-sort]')).not.toBeNull();
-    expect(el.querySelector('.mf-pager [data-sort-note]')!.textContent).toContain(
+    expect(el.querySelector('.mf-pager [data-sort-note]')).toBeNull();
+    expect(el.querySelector('[data-toolbar-row2] [data-sort-note]')!.textContent).toContain(
       'Sorted by Priority',
     );
     el.querySelector<HTMLButtonElement>('[data-reset-sort]')!.click();
@@ -633,7 +638,7 @@ describe('TaskQueuePage', () => {
     expect(el.querySelector('tr[data-filter-row] [data-filter="status"]')!.textContent).toContain(
       'All',
     );
-    expect(chips(el)).toEqual(['Creator: 1 (hidden column)']);
+    expect(chips(el)).toEqual(['Status: All', 'Creator: 1 (hidden column)']);
     expect(el.querySelector('[data-view="createdByMe"]')!.getAttribute('aria-pressed')).toBe(
       'false',
     );
@@ -786,14 +791,13 @@ describe('TaskQueuePage', () => {
     expect(el.querySelector('table')!.classList).toContain('wt--compact');
   });
 
-  it('puts one filter control under each column, Title or Ref across two', async () => {
+  it('puts one filter control under each column; Title or Ref is the Search box of the toolbar, not a cell of the row', async () => {
     const el = await open('/tasks');
     const cells = Array.from(el.querySelectorAll('tr[data-filter-row] td'));
-    expect(cells[0].getAttribute('colspan')).toBe('2');
-    expect(filterInput(el, 'q').getAttribute('aria-label')).toBe('Filter by Title or Ref');
-    expect(filterInput(el, 'matterText').getAttribute('aria-label')).toBe(
-      'Filter by Matter Number',
-    );
+    expect(cells[0].getAttribute('colspan')).toBeNull();
+    expect(el.querySelector('tr[data-filter-row] input[data-filter="q"]')).toBeNull();
+    expect(filterInput(el, 'q').getAttribute('placeholder')).toBe('Search tasks');
+    expect(filterInput(el, 'matterText').getAttribute('aria-label')).toBe('Filter by CM Number');
     for (const key of ['priority', 'assignee', 'due', 'status']) {
       expect(el.querySelector(`tr[data-filter-row] [data-filter="${key}"]`), key).not.toBeNull();
     }

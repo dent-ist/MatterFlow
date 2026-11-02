@@ -25,7 +25,11 @@ import { ColumnScope, loadLastPod, saveLastPod } from '../../../shared/work-queu
 import { ColumnWidthMap, pxToRem } from '../../../shared/work-queue/column-widths';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { FilterOption } from '../../../shared/filters/filter-def';
-import { FiltersBar } from '../../../shared/filters/filters-bar';
+import { Button } from 'primeng/button';
+import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ListToolbar } from '../../../shared/filters/list-toolbar';
+import { SortedLine } from '../../../shared/ui/sorted-line';
+import { SORT_LABELS } from '../../../shared/work-queue/sort-note';
 import { ListFilters } from '../../../shared/filters/list-filters';
 import { queueFilterDefs, withoutFilters } from '../../../shared/filters/queue-defs';
 import {
@@ -68,7 +72,10 @@ type TabKey = 'queue' | 'members' | 'all';
     PageHeader,
     PodMemberTable,
     PodPickerList,
-    FiltersBar,
+    ListToolbar,
+    SortedLine,
+    Button,
+    HasPermissionDirective,
     PhoneSort,
     RouterLink,
     WorkList,
@@ -157,7 +164,12 @@ type TabKey = 'queue' | 'members' | 'all';
   `,
   template: `
     <mf-fixed-page>
-      <mf-page-header class="pw-head" heading="Pod Work" [description]="contextLine()">
+      <mf-page-header
+        class="pw-head"
+        heading="Pod Work"
+        [description]="contextLine()"
+        [count]="loadState() === 'ready' && data()?.pod && !emptyMembers() ? total() : null"
+      >
         <span mfTitle class="pw-title">Pod Work</span>
         @if (pods().length > 0) {
           <div mfActions class="wp-field wp-field--inline pw-pod" data-ph-selector>
@@ -176,6 +188,14 @@ type TabKey = 'queue' | 'members' | 'all';
             />
           </div>
         }
+        <p-button
+          mfActions
+          *mfHasPermission="'Task.Create'"
+          label="New Task"
+          icon="pi pi-plus"
+          data-new-task
+          (onClick)="go('/tasks/new')"
+        />
       </mf-page-header>
       <span class="wp-sr" role="status" aria-live="polite" data-pod-announce>{{
         podAnnouncement()
@@ -261,15 +281,17 @@ type TabKey = 'queue' | 'members' | 'all';
           }
 
           @if (!emptyMembers()) {
-            <mf-filters-bar
+            <mf-list-toolbar
               [filters]="filters"
               controls="work-filter-row"
-              [stacked]="true"
+              searchLabel="Search tasks"
               (showColumn)="showColumn($event)"
             >
               <mf-work-view-controls
+                mfColumns
                 [sort]="state().sort"
                 [dir]="state().dir"
+                [sortNote]="false"
                 [columns]="prefs().columns"
                 [finishedOnly]="finishedOnly()"
                 [density]="prefs().density"
@@ -281,13 +303,22 @@ type TabKey = 'queue' | 'members' | 'all';
                 [widthAssignLink]="canAssign()"
                 (densityChange)="setDensity($event)"
               />
+              <mf-sorted-line
+                mfBarEnd
+                [field]="state().sort"
+                [dir]="state().dir"
+                [labels]="sortLabels"
+                defaultText="Priority, most urgent first"
+                [rule]="defaultOrderRule"
+                (resetSort)="resetSort()"
+              />
               <mf-phone-sort
                 mfSheetSort
                 [sort]="state().sort"
                 [dir]="state().dir"
                 (sortPick)="pickSort($event)"
               />
-            </mf-filters-bar>
+            </mf-list-toolbar>
             <mf-work-list
               from="pod-work"
               [rows]="rows()"
@@ -325,6 +356,9 @@ type TabKey = 'queue' | 'members' | 'all';
   `,
 })
 export class PodWorkPage extends QueuePageBase<PodWorkData> {
+  protected readonly sortLabels = SORT_LABELS;
+  protected readonly defaultOrderRule =
+    'Default order: Priority, then ASAP first, then due date, then oldest';
   private readonly api = inject(PodWorkClient);
 
   protected readonly tab = computed<TabKey>(() => {

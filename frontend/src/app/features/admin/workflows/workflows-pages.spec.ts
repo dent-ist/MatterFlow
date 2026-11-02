@@ -215,7 +215,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
     );
   });
 
@@ -317,7 +317,7 @@ describe('WorkflowsListPage', () => {
       7,
       undefined,
       1,
-      25,
+      50,
     ]);
     expect(el.querySelector('[data-filtered-by]')!.textContent).toContain(
       'Filtered by task type Data Processing: 1 workflow',
@@ -340,7 +340,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
     ]);
   });
 
@@ -371,7 +371,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
     ]);
   });
 
@@ -406,7 +406,7 @@ describe('WorkflowsListPage', () => {
       undefined,
       undefined,
       1,
-      25,
+      50,
     ]);
     // A link with filters opens the row with the values in it.
     const control = (name: string) =>

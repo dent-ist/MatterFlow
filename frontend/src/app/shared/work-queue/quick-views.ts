@@ -490,7 +490,9 @@ export class QuickViews {
     let others = 0;
     let count = 0;
     for (const child of Array.from(parent.children) as HTMLElement[]) {
-      if (child === host || child.offsetWidth === 0) continue;
+      // The toolbar's spring (`data-flex-gap`) takes whatever room is left: it is not a button that needs room.
+      if (child === host || child.offsetWidth === 0 || child.hasAttribute('data-flex-gap'))
+        continue;
       others += child.offsetWidth;
       count++;
     }

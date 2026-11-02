@@ -112,7 +112,8 @@ describe('work list definitions for the column filters', () => {
     const defs = queueFilterDefs();
     const column = (key: string) => defs.find((d) => d.key === key)?.column;
     expect(column('q')).toBe('ref');
-    expect(defs.find((d) => d.key === 'q')?.span).toBe(2);
+    // Title or Ref is the toolbar's Search box (LC-01): no cell of the filter row.
+    expect(defs.find((d) => d.key === 'q')?.search).toBe(true);
     expect(defs.find((d) => d.key === 'q')?.placeholder).toBe('Title or ref');
     expect(
       Object.fromEntries(
