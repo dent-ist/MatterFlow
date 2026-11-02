@@ -442,7 +442,7 @@ function embedNode(source: () => EmbedSource | null): Node {
       border: 1px solid var(--mf-border-strong);
       border-radius: var(--mf-radius-md);
       background: var(--mf-surface);
-      box-shadow: var(--mf-shadow-pop, 0 8px 24px rgb(0 0 0 / 18%));
+      box-shadow: var(--mf-shadow-pop);
     }
     .ne__menu li {
       display: flex;
