@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>List page anatomy (proposal)</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--mf-bg); color: var(--mf-text); font: var(--mf-fs-md)/1.4 Inter, system-ui, sans-serif; padding: var(--mf-s4); }
+  h1.doc { font-size: var(--mf-fs-h2); margin: 0 0 var(--mf-s2); }
+  .intro { max-width: 80ch; color: var(--mf-text-muted); margin: 0 0 var(--mf-s5); }
+  .zone-key { display: flex; flex-wrap: wrap; gap: var(--mf-s2); margin-bottom: var(--mf-s5); font-size: var(--mf-fs-sm); }
+  .zone-key span { background: var(--mf-surface); border: 1px solid var(--mf-border); border-radius: var(--mf-radius-pill); padding: 2px var(--mf-s3); }
+  h2.ex { font-size: var(--mf-fs-h3); margin: var(--mf-s5) 0 var(--mf-s2); }
+  .pair { display: flex; gap: var(--mf-s5); align-items: flex-start; flex-wrap: wrap; }
+  .page { background: var(--mf-bg); border: 1px dashed var(--mf-border-strong); padding: var(--mf-s4); width: 1100px; max-width: 100%; }
+  .page.phone { width: 375px; padding: var(--mf-s3); }
+  .num { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--mf-focus); color: #fff; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  /* zone 1 */
+  .row1 { display: flex; align-items: center; gap: var(--mf-s3); margin-bottom: var(--mf-s3); }
+  .row1 h1 { margin: 0; font-size: var(--mf-fs-title-lg); display: flex; align-items: center; gap: var(--mf-s2); }
+  .count { font-size: var(--mf-fs-sm); font-weight: 600; background: var(--mf-surface-alt); border: 1px solid var(--mf-border-soft); border-radius: var(--mf-radius-pill); padding: 0 var(--mf-s2); color: var(--mf-text-muted); }
+  .grow { flex: 1; }
+  /* buttons: theme rule, 32 px, 14 px, 600 */
+  .btn { height: 32px; padding: 0 var(--mf-s3); display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--mf-border-strong); border-radius: var(--mf-radius); background: var(--mf-surface); color: var(--mf-text); font: 600 var(--mf-fs-md) inherit; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--mf-primary); border-color: var(--mf-primary); color: var(--mf-primary-contrast); }
+  .btn.text { border-color: transparent; background: none; color: var(--mf-primary); font-weight: 400; padding: 0 var(--mf-s2); }
+  .btn .badge { background: var(--mf-primary); color: #fff; border-radius: var(--mf-radius-pill); padding: 0 6px; font-size: 12px; }
+  .btn.on { background: var(--mf-row-hover); border-color: var(--mf-primary); }
+  /* zone 2 */
+  .row2 { display: flex; align-items: center; gap: var(--mf-s2); margin-bottom: var(--mf-s2); flex-wrap: wrap; }
+  .search { position: relative; width: 240px; }
+  .search input { width: 100%; height: 32px; padding: 0 var(--mf-s3) 0 30px; border: 1px solid var(--mf-border-strong); border-radius: var(--mf-radius); background: var(--mf-surface); font: inherit; }
+  .search::before { content: "\2315"; position: absolute; left: 10px; top: 5px; color: var(--mf-text-muted); }
+  .dd { height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--mf-s3); border: 1px solid var(--mf-border-strong); border-radius: var(--mf-radius); background: var(--mf-surface); }
+  .dd b { font-weight: 600; } .dd::after { content: "\2304"; color: var(--mf-text-muted); margin-left: 4px; }
+  .chipsq { display: flex; gap: 6px; }
+  .qchip { height: 32px; padding: 0 var(--mf-s3); border: 1px solid var(--mf-border-mid); border-radius: var(--mf-radius-pill); background: var(--mf-surface); display: inline-flex; gap: 6px; align-items: center; }
+  .qchip.sel { background: var(--mf-primary); color: #fff; border-color: var(--mf-primary); }
+  /* zone 3 */
+  .row3 { display: flex; align-items: center; gap: var(--mf-s2); flex-wrap: wrap; margin-bottom: var(--mf-s2); font-size: var(--mf-fs-sm); min-height: 24px; }
+  .fchip { display: inline-flex; gap: 6px; align-items: center; background: var(--mf-surface); border: 1px solid var(--mf-border-mid); border-radius: var(--mf-radius-pill); padding: 2px var(--mf-s2) 2px var(--mf-s3); }
+  .muted { color: var(--mf-text-muted); }
+  /* zone 4 */
+  .card { background: var(--mf-surface); border: 1px solid var(--mf-border); border-radius: var(--mf-radius-xl); box-shadow: var(--mf-shadow-card); overflow: hidden; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--mf-fs-md); }
+  th { height: 40px; text-align: left; padding: 0 var(--mf-s3); background: var(--mf-surface-alt); border-bottom: 1px solid var(--mf-border); font-size: var(--mf-fs-xs); font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--mf-text-muted); white-space: nowrap; }
+  th.sorted { color: var(--mf-text); }
+  td { height: 44px; padding: 0 var(--mf-s3); border-bottom: 1px solid var(--mf-border-soft); white-space: nowrap; }
+  tr:hover td { background: var(--mf-row-hover); }
+  td a { color: var(--mf-primary); text-decoration: underline; }
+  .ref { font-family: ui-monospace, Consolas, monospace; }
+  .pill { display: inline-block; padding: 0 8px; border-radius: var(--mf-radius-pill); font-size: 12px; font-weight: 600; border: 1px solid var(--mf-border-mid); background: var(--mf-surface-alt); }
+  .pill.crit { background: var(--mf-danger); color: #fff; border-color: var(--mf-danger); }
+  .pill.ok { background: var(--mf-success-bg); color: var(--mf-success); border-color: transparent; }
+  .kebab { width: 32px; height: 32px; border: 1px solid var(--mf-border-strong); border-radius: var(--mf-radius); background: var(--mf-surface); }
+  /* foot */
+  .foot { display: flex; align-items: center; gap: var(--mf-s4); padding: var(--mf-s2) var(--mf-s3); border-top: 1px solid var(--mf-border); font-size: var(--mf-fs-sm); color: var(--mf-text-muted); flex-wrap: wrap; }
+  .foot .sp { flex: 1; }
+  .pg { height: 32px; padding: 0 var(--mf-s3); border: 1px solid var(--mf-border-strong); border-radius: var(--mf-radius); background: var(--mf-surface); font-weight: 600; }
+  .pg[disabled] { color: var(--mf-text-disabled); border-color: var(--mf-border); }
+  /* menu with check at right (mf-dropdown style) */
+  .menu { display: inline-block; background: var(--mf-surface); border: 1px solid var(--mf-border); border-radius: var(--mf-radius-lg); box-shadow: var(--mf-shadow-pop); padding: var(--mf-s1); width: 240px; font-size: var(--mf-fs-md); }
+  .menu div { display: flex; justify-content: space-between; align-items: center; padding: 6px var(--mf-s3); border-radius: var(--mf-radius); }
+  .menu div.sel { background: var(--mf-row-hover); font-weight: 600; } .menu div.sel::after { content: "\2713"; color: var(--mf-primary); }
+  .menu hr { border: 0; border-top: 1px solid var(--mf-border-soft); margin: var(--mf-s1) 0; }
+  .menu .arrows { color: var(--mf-text-muted); font-size: 12px; }
+  /* phone cards */
+  .cardrow { padding: var(--mf-s3); border-bottom: 1px solid var(--mf-border-soft); }
+  .cardrow .t { font-weight: 600; color: var(--mf-primary); text-decoration: underline; }
+  .cardrow .m { display: flex; gap: var(--mf-s2); flex-wrap: wrap; margin-top: 4px; font-size: var(--mf-fs-sm); color: var(--mf-text-muted); align-items: center; }
+  .callouts { margin: var(--mf-s3) 0 0; padding-left: 0; list-style: none; font-size: var(--mf-fs-sm); color: var(--mf-text-muted); max-width: 90ch; }
+  .callouts li { margin-bottom: 2px; }
+  @media (max-width: 600px) { .page { width: 100%; } .search { width: 100%; } }
+</style>
+</head>
+<body>
+<h1 class="doc">List page anatomy: proposal</h1>
+<p class="intro">One layout for every list. The zones are always in this order; a zone that does not apply is left out, never moved. Tokens come from <code>docs/ux/tokens.css</code>; buttons follow theme guide section 9 (32 px, primary filled, others outlined); the dropdown menu shows the check at the right. Not a build: static HTML to talk about.</p>
+<div class="zone-key">
+  <span><b class="num">1</b>Title + count + primary action</span>
+  <span><b class="num">2</b>Search, Filters, View, Columns, more</span>
+  <span><b class="num">3</b>Active filter chips, sorted-by line</span>
+  <span><b class="num">4</b>Grid (sort by header)</span>
+  <span><b class="num">5</b>Bulk bar (replaces zone 2)</span>
+  <span><b class="num">6</b>Pager</span>
+</div>
+
+<!-- ===== A. Task list ===== -->
+<h2 class="ex">A. Work list: Task Queue (also My Work, Pod Work, Matter Tasks)</h2>
+<div class="pair">
+<div class="page">
+  <div class="row1"><h1>Task Queue <span class="count">139</span></h1><span class="grow"></span><button class="btn primary">+ New Task</button></div>
+  <div class="row2">
+    <div class="search"><input placeholder="Search tasks" aria-label="Search tasks"></div>
+    <button class="btn on">Filters <span class="badge">2</span></button>
+    <div class="chipsq"><span class="qchip sel">All open 139</span><span class="qchip">Unassigned 48</span><span class="qchip">Overdue 24</span><span class="qchip">More</span></div>
+    <span class="grow"></span>
+    <button class="btn">Columns</button><button class="btn" aria-label="More">&hellip;</button>
+  </div>
+  <div class="row3"><span class="fchip">Status: Open <b>&times;</b></span><span class="fchip">Assignee: Test User 03 <b>&times;</b></span><button class="btn text">Clear filters</button><span class="grow"></span><span class="muted">Sorted by Priority, most urgent first</span><button class="btn text">Reset sort</button></div>
+  <div class="card">
+    <table>
+      <thead><tr><th class="sorted">Ref &#8645;</th><th>Title &#8645;</th><th>Matter Number</th><th>Matter Name</th><th>Priority &#8645;</th><th>Assignee</th><th>Due &#8645;</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="ref">TSK-64</td><td><a href="#">Incoming Production Intake - 7</a></td><td class="ref">90001-80006</td><td>Employment class action</td><td><span class="pill crit">Critical</span></td><td>Test User 42</td><td>ASAP</td><td><span class="pill">In Progress</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+        <tr><td class="ref">TSK-51</td><td><a href="#">Archive and Disposition - 11</a></td><td class="ref">90002-80002</td><td>Internal investigation</td><td><span class="pill crit">Critical</span></td><td>Unassigned</td><td>Oct 21 Overdue</td><td><span class="pill">On Hold</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+        <tr><td class="ref">TSK-10</td><td><a href="#">Export / Transfer - 2</a></td><td class="ref">90002-80002</td><td>Internal investigation</td><td><span class="pill">High</span></td><td>Test User 34</td><td>Nov 2, 3:00 PM</td><td><span class="pill">In Progress</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+      </tbody>
+    </table>
+    <div class="foot">Rows per page <span class="dd"><b>50</b></span><span>Showing 1-50 of 139</span><span class="sp"></span><span>Page 1 of 3</span><button class="pg" disabled>First</button><button class="pg" disabled>Previous</button><button class="pg">Next</button><button class="pg">Last</button></div>
+  </div>
+  <ul class="callouts">
+    <li>Standard task columns: Ref, Title, Matter Number, Matter Name, [Project], Priority, Assignee, Due, Status. Matter Tasks drops the two Matter columns by default but keeps the order.</li>
+    <li>Filters is directly right of Search everywhere; Columns is at the right end everywhere; New is the rightmost control of the title row.</li>
+  </ul>
+</div>
+<div>
+  <p class="muted" style="margin:0 0 8px">Columns menu (one menu on every list)</p>
+  <div class="menu">
+    <div class="sel">Ref <span class="arrows">locked</span></div>
+    <div class="sel">Title <span class="arrows">locked</span></div>
+    <div class="sel">Matter Number <span class="arrows">&larr; &rarr;</span></div>
+    <div class="sel">Matter Name <span class="arrows">&larr; &rarr;</span></div>
+    <div>Project</div><div class="sel">Priority <span class="arrows">&larr; &rarr;</span></div>
+    <hr><div class="sel">Comfortable rows</div><div>Compact rows</div>
+    <hr><div style="color:var(--mf-primary)">Reset to default</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== B. Asset list ===== -->
+<h2 class="ex">B. Record list: Assets (also Clients, Matters, Projects, Matter tabs, My Matters Assets)</h2>
+<div class="page">
+  <div class="row1"><h1>Assets <span class="count">42</span></h1><span class="grow"></span><button class="btn primary">+ New Asset</button></div>
+  <div class="row2">
+    <div class="search"><input placeholder="Search assets" aria-label="Search assets"></div>
+    <button class="btn">Filters</button>
+    <span class="grow"></span>
+    <button class="btn">Columns</button><button class="btn" aria-label="More">&hellip;</button>
+  </div>
+  <div class="row3"><span class="muted">Sorted by Name, A to Z</span></div>
+  <div class="card">
+    <table>
+      <thead><tr><th class="sorted">Name &#8645;</th><th>Type &#8645;</th><th>Matter Number &#8645;</th><th>Size &#8645;</th><th>Linked Tasks</th><th>External Reference</th><th>Disposition &#8645;</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><a href="#">90001-80001 - Demo Smith v. Acme</a></td><td>Relativity Workspace</td><td class="ref">90001-80001</td><td>159 GB</td><td>0 / 0</td><td>-</td><td><span class="pill ok">Active</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+        <tr><td><a href="#">Demo Harvey Vault 90001-80001</a></td><td>Harvey Vault</td><td class="ref">90001-80001</td><td>4,229 MB</td><td>2 / 3</td><td>-</td><td><span class="pill ok">Active</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+      </tbody>
+    </table>
+    <div class="foot">Rows per page <span class="dd"><b>50</b></span><span>Showing 1-42 of 42</span><span class="sp"></span><span>Page 1 of 1</span><button class="pg" disabled>First</button><button class="pg" disabled>Previous</button><button class="pg" disabled>Next</button><button class="pg" disabled>Last</button></div>
+  </div>
+  <ul class="callouts"><li>Name before Type on every asset list (the Matter tab drops Matter Number). The last column is called Disposition everywhere.</li><li>While rows are ticked, zone 5 replaces the toolbar: "3 selected   Change disposition   Link to task   Clear".</li></ul>
+</div>
+
+<!-- ===== C. Admin list ===== -->
+<h2 class="ex">C. Admin list and lookup: Task Types / Priorities</h2>
+<div class="page">
+  <div class="row1"><h1>Task Types <span class="count">15</span></h1><span class="grow"></span><button class="btn primary">+ New Task Type</button></div>
+  <div class="row2">
+    <div class="search"><input placeholder="Search task types" aria-label="Search task types"></div>
+    <button class="btn">Filters</button>
+    <div class="chipsq"><span class="qchip sel">Active 15</span><span class="qchip">Not usable 0</span><span class="qchip">Inactive 0</span></div>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th class="sorted">Name &#8645;</th><th>Default Workflow</th><th>Target (days)</th><th>Workflows</th><th>Open Tasks &#8645;</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><a href="#">Access Request</a></td><td>Quick Request +1</td><td>3</td><td>2</td><td>3</td><td><span class="pill ok">Active</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+        <tr><td><a href="#">Analytics / TAR Setup</a></td><td>Search, Analytics a...</td><td>6</td><td>1</td><td>5</td><td><span class="pill ok">Active</span></td><td><button class="kebab" aria-label="Row actions">&hellip;</button></td></tr>
+      </tbody>
+    </table>
+    <div class="foot">Rows per page <span class="dd"><b>50</b></span><span>Showing 1-15 of 15</span><span class="sp"></span><span>Page 1 of 1</span></div>
+  </div>
+  <ul class="callouts"><li>A small lookup (Priorities, Status labels, On-hold reasons, Notes tags) keeps only zone 1 and the grid, with the New button in the header and not in the tab body, and no search, Filters, Columns or pager.</li></ul>
+</div>
+
+<!-- ===== Phone ===== -->
+<h2 class="ex">Phone (375 px): the same zones, cards instead of a table</h2>
+<div class="pair">
+  <div class="page phone">
+    <div class="row1"><h1 style="font-size:var(--mf-fs-title)">Task Queue <span class="count">139</span></h1><span class="grow"></span><button class="btn primary">+ New</button></div>
+    <div class="row2"><div class="search"><input placeholder="Search tasks" aria-label="Search tasks"></div><button class="btn on">Filters <span class="badge">2</span></button><span class="dd"><b>Sort</b></span></div>
+    <div class="row3"><span class="fchip">Status: Open <b>&times;</b></span><button class="btn text">Clear filters</button></div>
+    <div class="card">
+      <div class="cardrow"><div class="t">Incoming Production Intake - 7</div><div class="m"><span>Employment class action</span><span class="ref">90001-80006</span></div><div class="m"><span class="pill crit">Critical</span><span>ASAP</span><span class="pill">In Progress</span><span>Test User 42</span></div></div>
+      <div class="cardrow"><div class="t">Archive and Disposition - 11</div><div class="m"><span>Internal investigation</span><span class="ref">90002-80002</span></div><div class="m"><span class="pill crit">Critical</span><span>Oct 21 Overdue</span><span class="pill">On Hold</span><span>Unassigned</span></div></div>
+      <div class="foot"><span>Showing 1-50 of 139</span><span class="sp"></span><button class="pg">Next</button></div>
+    </div>
+  </div>
+  <div class="page phone">
+    <div class="row1"><h1 style="font-size:var(--mf-fs-title)">Assets <span class="count">42</span></h1><span class="grow"></span><button class="btn primary">+ New</button></div>
+    <div class="row2"><div class="search"><input placeholder="Search assets" aria-label="Search assets"></div><button class="btn">Filters</button><span class="dd"><b>Sort</b></span></div>
+    <div class="card">
+      <div class="cardrow"><div class="t">90001-80001 - Demo Smith v. Acme</div><div class="m"><span>Relativity Workspace</span><span class="ref">90001-80001</span><span>159 GB</span><span class="pill ok">Active</span></div></div>
+      <div class="cardrow"><div class="t">Demo Harvey Vault 90001-80001</div><div class="m"><span>Harvey Vault</span><span class="ref">90001-80001</span><span>4,229 MB</span><span class="pill ok">Active</span></div></div>
+      <div class="foot"><span>Showing 1-42 of 42</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
