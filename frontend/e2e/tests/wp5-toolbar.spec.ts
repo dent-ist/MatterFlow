@@ -75,8 +75,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    // Row 3 is always there: it says how the list is sorted, the default order included.
-    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(1);
+    // With no chips the Sorted by line is in row 2 (before Columns): there is no row 3.
+    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(0);
     const base = await row1(page);
     expect(base.bar.height).toBeLessThanOrEqual(48);
     // Left to right on one line: Search, Filters, Other filters, the views, then Columns and the "..." menu at the right end.
@@ -99,7 +99,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-sort-note]').first()).toContainText(
       'Sorted by Priority, most urgent first (default order)',
     );
-    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toHaveCount(1);
+    await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toHaveCount(1);
     await expect(page.locator('.mf-pager [data-sort-note]')).toHaveCount(0);
     await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
     const gridTop = (await box(page.locator('thead').first())).y;
@@ -107,8 +107,8 @@ test.describe('Task Queue toolbar (WP5)', () => {
 
     // Sorted: Reset sort appears in row 3, row 2 stays, the header keeps its arrow and aria-sort.
     await page.locator('thead th[data-col="due"] button').click();
-    await expect(page.locator('[data-toolbar-row2] [data-reset-sort]')).toBeVisible();
-    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toContainText(
+    await expect(page.locator('[data-grid-toolbar] [data-reset-sort]')).toBeVisible();
+    await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toContainText(
       'Sorted by Due date',
     );
     await expect(page.locator('thead th[data-col="due"]')).toHaveAttribute(
@@ -131,7 +131,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     // Reset sort removes only itself; with no chip and no sort the line still says how the list is sorted and the grid is where it was.
     await page.locator('[data-reset-sort]').click();
     await page.locator('[data-clear-filters]').click();
-    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(1);
+    await expect(page.locator('[data-toolbar-row2]')).toHaveCount(0);
     await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
     expect(await row1(page)).toEqual(base);
     expect((await box(page.locator('thead').first())).y).toBeCloseTo(gridTop, 0);
@@ -245,7 +245,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await myWork.tab(/Active/).click();
     await expect(page.locator('[data-restored-notice]')).toHaveCount(0);
     // My Work keeps its own sorted-by note in the toolbar.
-    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toBeVisible();
+    await expect(page.locator('[data-grid-toolbar] [data-sort-note]')).toBeVisible();
   });
 
   test('axe: the toolbar in its states has no violations at four sizes', async ({ page, seed }) => {

@@ -1192,21 +1192,16 @@ describe('UsersPage', () => {
     });
   });
 
-  describe('narrow windows: the columns leave in the kit order', () => {
-    it('drops Pods below 1280 and Roles below 1100 from the filter row; their filters stay as chips and in Other filters', async () => {
+  describe('narrow windows: no column leaves (LC-09)', () => {
+    it('keeps Roles and Pods and their filters in the row at 1000 px: the frame scrolls sideways instead', async () => {
       width = 1000;
       startUrl = '/admin/users?status=all&roleId=2';
       await create('User.View');
-      expect(el().querySelector('[aria-label^="Filter by Roles"]')).toBeNull();
-      expect(el().querySelector('[data-filter-chips]')).not.toBeNull();
-      const dropped = Array.from(el().querySelectorAll('thead tr:first-child th[data-drop]')).map(
-        (th) => [th.textContent!.trim(), th.getAttribute('data-drop')],
+      expect(el().querySelector('[aria-label^="Filter by Roles"]')).not.toBeNull();
+      const heads = Array.from(el().querySelectorAll('thead tr:first-child th')).map((th) =>
+        th.textContent!.trim(),
       );
-      expect(dropped).toEqual([
-        ['Roles', '1100'],
-        ['Pods', '1280'],
-        ['Last seen', '1440'],
-      ]);
+      expect(heads).toEqual(expect.arrayContaining(['Roles', 'Pods']));
     });
   });
 

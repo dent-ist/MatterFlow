@@ -59,7 +59,6 @@ import { CopyButton } from '../../../shared/ui/copy-button';
 import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
-import { viewportAtLeast } from '../../../shared/ui/viewport';
 import { ResizableColumns } from '../../../shared/ui/resizable-columns';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
 import { MatterCreateDialog } from '../ui/matter-create-dialog';
@@ -85,16 +84,6 @@ interface MatterExtraColumnChoice {
 const EXTRA_KEYS: readonly string[] = ['onHold', 'atRisk', 'dataSize', 'pending'];
 import { assetsParams, sizeText } from '../../my-matters/data-model';
 
-/** Below this width the Client column (the least informative one) leaves the table (#266). */
-const CLIENT_COLUMN_MIN_PX = 900;
-/**
- * Below this width the Secondary PM column leaves the table (the Primary PM stays), epic #667. MD-21 (#1025): the owner wants both columns at
- * 1366 px, so the column starts at 1280 px; the columns are resizable now (shared `mfResizable`) and Name and Client keep the widest share.
- * A filter on it still works from any width (it shows as a chip).
- */
-const SECONDARY_COLUMN_MIN_PX = 1280;
-/** Below this width the Primary project manager column leaves the table as well (the Client column goes at the same width): at 768 px it pushed Status out of the grid. */
-const PRIMARY_COLUMN_MIN_PX = 900;
 /** The "None" choice of a project manager filter (the matters with nobody in that place); the API argument is `hasPrimaryManager=false`. */
 const NO_MANAGER = 'none';
 
@@ -818,9 +807,6 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   private readonly scroll = viewChild('scroll', { read: ElementRef });
 
   private readonly auth = inject(AuthStore);
-  private readonly wide = viewportAtLeast(CLIENT_COLUMN_MIN_PX);
-  private readonly wideForSecondary = viewportAtLeast(SECONDARY_COLUMN_MIN_PX);
-  private readonly wideForPrimary = viewportAtLeast(PRIMARY_COLUMN_MIN_PX);
   private readonly managersApi = inject(MatterManagersClient);
   /** The Data API client is asked for only when a Data size or Pending disposition column is shown, so it is looked up then, not at construction. */
   private readonly injector = inject(Injector);
@@ -978,8 +964,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     return assetsParams(row.query, this.dataScope, 'pending');
   }
 
-  protected readonly showPrimary = computed(() => this.wideForPrimary());
-  protected readonly showSecondary = computed(() => this.wideForSecondary());
+  protected readonly showPrimary = computed(() => true);
+  protected readonly showSecondary = computed(() => true);
   protected readonly allSelected = computed(
     () => this.rows().length > 0 && this.rows().every((m) => this.selected().has(m.matterId)),
   );
@@ -998,7 +984,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   /** The quick actions of a row (epic #758, PX-25): the menu exists for people who can see tasks (Open the matter's tasks is always among them). */
   protected readonly hasActions = computed(() => this.auth.has('Task.View'));
   /** In the table the menu is the last column from 900 px (below that the grid has no room for it); the phone cards always carry it. */
-  protected readonly tableActions = computed(() => this.hasActions() && this.wide());
+  protected readonly tableActions = computed(() => this.hasActions());
   protected readonly commentRow = signal<MatterResponse | null>(null);
   protected readonly commentOpen = signal(false);
   /** Built once per page of rows, not on every change detection. */
@@ -1026,7 +1012,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly sortLabels = computed(() => sortLabelsOf(this.sortOptions()));
   /** Counts are null without Task.View: the two columns are not rendered then. */
   protected readonly counts = computed(() => this.auth.has('Task.View'));
-  protected readonly showClient = computed(() => this.wide());
+  protected readonly showClient = computed(() => true);
   /** The client's name on a card is a link only with Client.View. */
   protected readonly clientLink = computed(() => this.auth.canLink('client'));
   /** The columns of the grid, in order; the keys the filter definitions point at. */
@@ -1307,12 +1293,13 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     const secondary = this.filters.text('secondaryManager');
     return firstValueFrom(
       this.api.listMatters(
-        undefined,
+        // Search finds the name, the client or the number (the API's `q`, decision of 2026-11-02); the URL parameter stays `name`.
+        this.filters.text('name') || undefined,
         Number.isInteger(clientId) && clientId > 0 ? clientId : undefined,
         isActive,
         sensitive === '' ? undefined : sensitive === 'true',
         this.filters.text('matterRef') || undefined,
-        this.filters.text('name') || undefined,
+        undefined,
         this.filters.text('client') || undefined,
         managerId(primary),
         managerId(secondary),

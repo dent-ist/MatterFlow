@@ -136,7 +136,6 @@ const AVAILABILITY_OPTIONS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'mf-fill',
-    '(window:resize)': 'onResize()',
   },
   templateUrl: './users-page.html',
   styleUrls: ['./users-page.scss', '../../../shared/ui/page.scss'],
@@ -184,7 +183,6 @@ export class UsersPage implements OnInit {
     { cls: 'mf-cell-actions', bone: '1.5rem' },
   ];
   /** The window width, for the columns that leave (the same rule as the grid stylesheet: the window, not the box). */
-  private readonly viewport = signal(typeof window === 'undefined' ? 1920 : window.innerWidth);
   /** The sort of the address as `name`, `-lastSeen` (empty: the queue order, waiting people first); a field the server does not know is ignored. */
   protected readonly sortExpr = computed(() => {
     const parsed = parseSortExpression(this.filters.params().get('sort'));
@@ -201,13 +199,7 @@ export class UsersPage implements OnInit {
     () => this.users().some((u) => !!u.lastLoginAtUtc) || this.sortField() === 'lastSeen',
   );
   protected readonly visibleColumns = computed<readonly string[]>(() => {
-    const width = this.viewport();
-    return COLUMNS.filter(
-      (c) =>
-        !(c === 'pods' && width < this.drop.pods) &&
-        !(c === 'roles' && width < this.drop.roles) &&
-        !(c === 'lastSeen' && (width < this.drop.lastSeen || !this.lastSeenShown())),
-    );
+    return COLUMNS.filter((c) => !(c === 'lastSeen' && !this.lastSeenShown()));
   });
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
   private readonly roleOptions = computed(() =>
@@ -576,10 +568,6 @@ export class UsersPage implements OnInit {
     if (!target) return;
     if (!target.matches('a, button, [tabindex]')) target.setAttribute('tabindex', '-1');
     target.focus();
-  }
-
-  protected onResize(): void {
-    this.viewport.set(window.innerWidth);
   }
 
   /** The drawer asked to close (X, Esc, Cancel, the mask), after its unsaved-changes question: the person leaves the address. */

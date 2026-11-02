@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { FiltersToggle } from '../ui/column-filters';
 import { SearchBox } from '../ui/search-box';
@@ -32,7 +33,15 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-list-toolbar',
-  imports: [FiltersToggle, FilterChips, FilterNotice, FilterSheet, MoreFilters, SearchBox],
+  imports: [
+    NgTemplateOutlet,
+    FiltersToggle,
+    FilterChips,
+    FilterNotice,
+    FilterSheet,
+    MoreFilters,
+    SearchBox,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="lt" data-grid-toolbar data-list-toolbar>
@@ -67,6 +76,10 @@ let nextId = 0;
         }
         <ng-content select="[mfView]" />
         <span class="lt__tail">
+          @if (!rowThree()) {
+            <!-- No chips and no notice: the Sorted by line takes row 2 (before Columns), so the list keeps its rows (decision of 2026-11-02). -->
+            <span class="lt__end"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
+          }
           <span class="lt__cols"><ng-content select="[mfColumns]" /></span>
           <ng-content select="[mfMore]" />
           <ng-content select="[mfPrimary]" />
@@ -96,9 +109,10 @@ let nextId = 0;
             </button>
           }
         }
-        <span class="lt__end"><ng-content select="[mfBarEnd]" /></span>
+        <span class="lt__end"><ng-container [ngTemplateOutlet]="sortedLine" /></span>
       </div>
     }
+    <ng-template #sortedLine><ng-content select="[mfBarEnd]" /></ng-template>
     <p class="lt__live" role="status" aria-live="polite" aria-atomic="true" data-filter-live>
       {{ filters().announcement() }}
     </p>
@@ -205,8 +219,6 @@ export class ListToolbar extends FocusFilter {
   readonly searchLabel = input('Search');
   /** Rows are selected: the `[mfBulk]` bar replaces row 2. */
   readonly bulkActive = input(false);
-  /** Row 3 is always there (it holds the Sorted by line); false for a list with no sort line. */
-  readonly sortLine = input(true);
   /** A chip on a hidden column asks for the column back (the page owns the column chooser). */
   readonly showColumn = output<string>();
 
@@ -218,6 +230,6 @@ export class ListToolbar extends FocusFilter {
   );
   protected readonly rowThree = computed(() => {
     const f = this.filters();
-    return this.sortLine() || f.restored() || f.chips().length > 0 || f.activeCount() > 0;
+    return f.restored() || f.chips().length > 0 || f.activeCount() > 0;
   });
 }

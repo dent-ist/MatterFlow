@@ -460,7 +460,7 @@ describe('MyWorkPage', () => {
     const el = await open('/my-work');
     await vi.waitFor(() => {
       harness.detectChanges();
-      expect(el.querySelector('[data-toolbar-row2] [data-sort-note]')).not.toBeNull();
+      expect(el.querySelector('[data-grid-toolbar] [data-sort-note]')).not.toBeNull();
     });
     const tabRow = el.querySelector('[data-tab-row]')!;
     expect(tabRow.querySelector('[role="tablist"]')).not.toBeNull();
@@ -468,7 +468,7 @@ describe('MyWorkPage', () => {
     // The toolbar is inside the tab panel: Search, the Filters button and Columns in row 2, the Sorted by line at the right end of row 3 (LC-01).
     const bar = el.querySelector('[role="tabpanel"] [data-grid-toolbar]')!;
     expect(
-      el.querySelector('[role="tabpanel"] [data-toolbar-row2] [data-sort-note]')!.textContent,
+      el.querySelector('[role="tabpanel"] [data-grid-toolbar] [data-sort-note]')!.textContent,
     ).toContain('Sorted by Priority');
     expect(bar.querySelector('.cc-button')).not.toBeNull();
     expect(bar.querySelector('[data-filters-toggle]')).not.toBeNull();

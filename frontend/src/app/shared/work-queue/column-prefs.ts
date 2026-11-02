@@ -19,8 +19,6 @@ export interface ColumnDef {
   fill?: boolean;
   /** False for a column the user cannot resize (the Title). */
   resizable?: boolean;
-  /** Drops out of a narrow box when the Title would get too narrow (the order is `NARROW_DROP_ORDER`, `narrow-columns.ts`). */
-  autoHide?: boolean;
   /** Only a Matter's or Project's task grid has it: never in the column chooser, the defaults or the design tokens (MD-24). */
   scopedOnly?: boolean;
 }
@@ -40,7 +38,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
   },
   // The task type as the coloured chip of My Matters with the type's name beside it (MD-29, #1033; every task list since LC-03). The storage key stays `type`, so
   // stored columns, widths and the Task type filter survive the rename (it was "Task type", a name only).
-  { key: 'type', label: 'Type', width: 112, minWidth: 96, maxWidth: 260, autoHide: true },
+  { key: 'type', label: 'Type', width: 112, minWidth: 96, maxWidth: 260 },
   // The same chip and name in a Matter's or Project's grid (own key: its stored choice is `grid-prefs`, never in a chooser or a default set, MD-24 #1028).
   { key: 'typeChip', label: 'Type', width: 150, minWidth: 96, maxWidth: 260, scopedOnly: true },
   {
@@ -60,7 +58,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     key: 'matter',
     label: 'CM Number',
     sortField: 'matter',
-    width: 144,
+    width: 142,
     minWidth: 112,
     maxWidth: 320,
   },
@@ -73,7 +71,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 160,
     minWidth: 112,
     maxWidth: 360,
-    autoHide: true,
   },
   {
     key: 'client',
@@ -82,10 +79,9 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 140,
     minWidth: 96,
     maxWidth: 280,
-    autoHide: true,
   },
-  { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
-  { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'project', label: 'Project', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'workflow', label: 'Workflow', width: 150, minWidth: 96, maxWidth: 280 },
   // The Priority trigger (badge, label, chevron) is 106 px until #202 moves the chevron inside; it may spill 2 px into the cell padding (`_tables.scss`).
   {
     key: 'priority',
@@ -95,7 +91,7 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 96,
     maxWidth: 160,
   },
-  { key: 'pod', label: 'Pod', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'pod', label: 'Pod', width: 140, minWidth: 96, maxWidth: 280 },
   {
     key: 'assignee',
     label: 'Assignee',
@@ -104,8 +100,8 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     minWidth: 112,
     maxWidth: 240,
   },
-  { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
-  { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280, autoHide: true },
+  { key: 'creator', label: 'Creator', width: 140, minWidth: 96, maxWidth: 280 },
+  { key: 'requestor', label: 'Requestor', width: 140, minWidth: 96, maxWidth: 280 },
   // Due: 120 px is the least that holds "Overdue 120d" with its icon (PM ruling on #200).
   { key: 'due', label: 'Due', sortField: 'due', width: 136, minWidth: 120, maxWidth: 200 },
   // The Closed tab shows the day a task closed IN PLACE OF Due (directly before Status).
@@ -118,7 +114,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 120,
     minWidth: 120,
     maxWidth: 320,
-    autoHide: true,
   },
   // MD-24 (#1028), a Matter's or Project's grid only: a thin bar of the resolved workflow steps ("2 of 5 steps" is its tooltip and accessible name).
   { key: 'steps', label: 'Progress', width: 104, minWidth: 72, maxWidth: 240, scopedOnly: true },
@@ -130,7 +125,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 176,
     minWidth: 120,
     maxWidth: 280,
-    autoHide: true,
   },
   {
     key: 'age',
@@ -139,7 +133,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 64,
     minWidth: 56,
     maxWidth: 100,
-    autoHide: true,
   },
   {
     key: 'created',
@@ -148,7 +141,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 104,
     minWidth: 88,
     maxWidth: 160,
-    autoHide: true,
   },
   {
     key: 'updated',
@@ -157,7 +149,6 @@ export const WORK_COLUMNS: readonly ColumnDef[] = [
     width: 120,
     minWidth: 96,
     maxWidth: 180,
-    autoHide: true,
   },
 ];
 

@@ -165,14 +165,7 @@ table.mf-grid {
   height: 9rem;
 }
 
-/* The column-drop rule: the window width, not the box width, so the same columns leave on every page of a size. */
-@each $w in (640, 768, 900, 1100, 1280, 1440) {
-  @media (max-width: #{$w - 1}px) {
-    .mf-grid [data-drop='#{$w}']:not(.mf-cell-actions) {
-      display: none;
-    }
-  }
-}
+/* No column is dropped by the window width (LC-09, owner decision 2026-11-02): a grid that is wider than its frame scrolls sideways inside the frame. `data-drop` is kept as a marker only. */
 
 /*
  * The three Administration lists (Task Types, Workflows, Workflow Steps; #355, #356) keep the rules below.

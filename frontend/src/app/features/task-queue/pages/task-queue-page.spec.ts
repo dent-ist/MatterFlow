@@ -419,11 +419,9 @@ describe('TaskQueuePage', () => {
     expect(query()['dir']).toBe('desc');
 
     // The Sorted by line and "Reset sort" are at the right end of row 3 (LC-01).
-    expect(el.querySelector('[data-toolbar-row2] [data-reset-sort]')).not.toBeNull();
+    expect(el.querySelector('[data-reset-sort]')).not.toBeNull();
     expect(el.querySelector('.mf-pager [data-sort-note]')).toBeNull();
-    expect(el.querySelector('[data-toolbar-row2] [data-sort-note]')!.textContent).toContain(
-      'Sorted by Priority',
-    );
+    expect(el.querySelector('[data-sort-note]')!.textContent).toContain('Sorted by Priority');
     el.querySelector<HTMLButtonElement>('[data-reset-sort]')!.click();
     await settle();
     expect(el.querySelector('[data-reset-sort]')).toBeNull();
