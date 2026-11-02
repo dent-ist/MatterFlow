@@ -17,6 +17,15 @@ public static partial class RichHtml
     private static readonly string[] AllowedTags =
         ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col"];
 
+    /// <summary>The Note profile adds three heading levels, the quote and the reference span (see <see cref="RefAttributes"/>).</summary>
+    private static readonly string[] NoteExtraTags = ["h1", "h2", "h3", "blockquote", "span"];
+
+    /// <summary>
+    /// The only attributes a reference span of a Note may carry, one per kind of target: <c>data-asset-id</c>, <c>data-project-id</c>, <c>data-matter-id</c>, <c>data-note-id</c>, <c>data-user-id</c> and
+    /// <c>data-embed-id</c> (a note shown inline). The value is a positive integer; a span has exactly one such attribute or it is unwrapped to its text.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RefAttributes = ["data-asset-id", "data-project-id", "data-matter-id", "data-note-id", "data-user-id", "data-embed-id"];
+
     /// <summary>Deepest nesting of tables kept; a table nested deeper than this is flattened into paragraphs.</summary>
     public const int MaxTableDepth = 3;
 
@@ -44,9 +53,9 @@ public static partial class RichHtml
     /// deep nesting or too many table cells (SEC2-01); callers that must answer with a 400 use <see cref="TrySanitize"/>. The output size is
     /// not checked here (see <see cref="RichHtmlLimits.MaxOutputChars"/>).
     /// </summary>
-    public static string Sanitize(string? html, RichHtmlLimits? limits = null)
+    public static string Sanitize(string? html, RichHtmlLimits? limits = null, RichHtmlProfile profile = RichHtmlProfile.Basic)
     {
-        var problem = TrySanitize(html, limits ?? RichHtmlLimits.Comment, out var clean);
+        var problem = TrySanitize(html, limits ?? RichHtmlLimits.Comment, out var clean, profile);
         return problem is RichHtmlProblem.None or RichHtmlProblem.TooLarge ? clean : throw new RichHtmlTooComplexException(problem);
     }
 
@@ -56,7 +65,7 @@ public static partial class RichHtml
     /// The sanitized output is always a fixpoint: sanitizing it again returns it unchanged, else the input is refused as
     /// <see cref="RichHtmlProblem.Unstable"/> (a re-parse of the output would differ from what was checked: the mXSS class of attacks).
     /// </summary>
-    public static RichHtmlProblem TrySanitize(string? html, RichHtmlLimits limits, out string clean)
+    public static RichHtmlProblem TrySanitize(string? html, RichHtmlLimits limits, out string clean, RichHtmlProfile profile = RichHtmlProfile.Basic)
     {
         clean = string.Empty;
         if (string.IsNullOrWhiteSpace(html))
@@ -79,7 +88,7 @@ public static partial class RichHtml
             {
                 try
                 {
-                    result = SanitizeToFixpoint(input, limits);
+                    result = SanitizeToFixpoint(input, limits, profile);
                 }
                 catch (Exception ex)
                 {
@@ -103,12 +112,12 @@ public static partial class RichHtml
         return clean.Length > limits.MaxOutputChars ? RichHtmlProblem.TooLarge : RichHtmlProblem.None;
     }
 
-    private static (RichHtmlProblem, string) SanitizeToFixpoint(string html, RichHtmlLimits limits)
+    private static (RichHtmlProblem, string) SanitizeToFixpoint(string html, RichHtmlLimits limits, RichHtmlProfile profile)
     {
-        var current = SanitizeCore(html);
+        var current = SanitizeCore(html, profile);
         for (var pass = 0; pass < MaxPasses; pass++)
         {
-            var next = SanitizeCore(current);
+            var next = SanitizeCore(current, profile);
             if (string.Equals(next, current, StringComparison.Ordinal))
                 return CountTableCells(current) > limits.MaxTableCells ? (RichHtmlProblem.TooManyCells, string.Empty) : (RichHtmlProblem.None, current);
             current = next;
@@ -138,8 +147,9 @@ public static partial class RichHtml
         return count;
     }
 
-    private static string SanitizeCore(string html)
+    private static string SanitizeCore(string html, RichHtmlProfile profile)
     {
+        var note = profile == RichHtmlProfile.Note;
 
         // A fresh sanitizer per call: the type is not thread-safe and the setup is cheap next to the request.
         var sanitizer = new HtmlSanitizer
@@ -153,8 +163,13 @@ public static partial class RichHtml
         sanitizer.AllowedClasses.Clear();
         sanitizer.AllowedSchemes.Clear();
         sanitizer.UriAttributes.Clear();
-        foreach (var tag in AllowedTags)
+        foreach (var tag in note ? AllowedTags.Concat(NoteExtraTags) : AllowedTags)
             sanitizer.AllowedTags.Add(tag);
+        if (note)
+        {
+            foreach (var attribute in RefAttributes)
+                sanitizer.AllowedAttributes.Add(attribute);
+        }
         sanitizer.AllowedAttributes.Add("href");
         sanitizer.AllowedAttributes.Add("colspan");
         sanitizer.AllowedAttributes.Add("rowspan");
@@ -169,7 +184,7 @@ public static partial class RichHtml
                 ApplyElementPolicy(element);
         };
 
-        var cleaned = sanitizer.Sanitize(StripDroppedElements(html));
+        var cleaned = sanitizer.Sanitize(StripDroppedElements(html, profile));
         return IsBlank(cleaned) ? string.Empty : cleaned.Trim();
     }
 
@@ -188,6 +203,7 @@ public static partial class RichHtml
                 ("a", "href") => true,
                 ("td" or "th", "colspan" or "rowspan") => true,
                 ("th", "scope") => true,
+                ("span", var name) => RefAttributes.Contains(name),
                 _ => false,
             };
             if (!keep)
@@ -325,7 +341,7 @@ public static partial class RichHtml
     }
 
     /// <summary>Removes script-like elements together with their content before the allow-list unwraps everything else.</summary>
-    private static string StripDroppedElements(string html)
+    private static string StripDroppedElements(string html, RichHtmlProfile profile)
     {
         var parser = new AngleSharp.Html.Parser.HtmlParser();
         var document = parser.ParseDocument(string.Empty);
@@ -342,7 +358,7 @@ public static partial class RichHtml
         // One read-only post-order walk that writes the result (depth is bounded by RichHtmlGuard). Moving nodes inside the DOM
         // per element was the cubic cost of SEC2-02.
         var output = new StringBuilder(html.Length + 64);
-        EmitChildren(body, output, tableDepth: 0);
+        EmitChildren(body, output, tableDepth: 0, profile);
         return output.ToString();
     }
 
@@ -351,7 +367,7 @@ public static partial class RichHtml
     /// Comments, processing instructions and the whitespace between table parts are not written. Tables nested deeper than
     /// <see cref="MaxTableDepth"/> are flattened: their rows and cells become paragraphs.
     /// </summary>
-    private static bool EmitChildren(AngleSharp.Dom.INode parent, StringBuilder output, int tableDepth)
+    private static bool EmitChildren(AngleSharp.Dom.INode parent, StringBuilder output, int tableDepth, RichHtmlProfile profile)
     {
         var hasBlock = false;
         var structural = parent is AngleSharp.Dom.IElement parentElement && TableStructure.Contains(parentElement.LocalName);
@@ -375,14 +391,20 @@ public static partial class RichHtml
             {
                 // table, sections, column groups: no wrapper of their own, their rows carry the content.
                 if (name is not "col")
-                    hasBlock |= EmitChildren(element, output, depth);
+                    hasBlock |= EmitChildren(element, output, depth, profile);
                 continue;
             }
 
-            if (flattened || BlockWrappers.Contains(name))
+            if (profile == RichHtmlProfile.Note && name == "span")
+            {
+                EmitReferenceSpan(element, output);
+                continue;
+            }
+
+            if (flattened || (profile == RichHtmlProfile.Note ? NoteBlockWrappers : BlockWrappers).Contains(name))
             {
                 var inner = new StringBuilder();
-                if (EmitChildren(element, inner, depth))
+                if (EmitChildren(element, inner, depth, profile))
                 {
                     if (flattened)
                         output.Append("<br>"); // text before the paragraphs of a flattened cell must not run into the text around it
@@ -403,7 +425,7 @@ public static partial class RichHtml
             if (outer.EndsWith(closing, StringComparison.Ordinal))
             {
                 output.Append(outer, 0, outer.Length - closing.Length);
-                EmitChildren(element, output, depth);
+                EmitChildren(element, output, depth, profile);
                 output.Append(closing);
             }
             else
@@ -417,11 +439,33 @@ public static partial class RichHtml
         return hasBlock;
     }
 
+    /// <summary>
+    /// A span of a Note survives only as a reference: exactly one of the <see cref="RefAttributes"/> with a positive integer value, its text kept as plain text (no nested markup).
+    /// Any other span is unwrapped to its content.
+    /// </summary>
+    private static void EmitReferenceSpan(AngleSharp.Dom.IElement span, StringBuilder output)
+    {
+        var present = RefAttributes.Where(a => span.HasAttribute(a)).ToList();
+        var value = present.Count == 1 ? span.GetAttribute(present[0])?.Trim() : null;
+        var valid = value is { Length: >= 1 and <= 10 } && value.All(char.IsAsciiDigit) && long.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var id) && id is >= 1 and <= int.MaxValue;
+        var text = StripBidiOverrides(WebUtility.HtmlEncode(span.TextContent.Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal)));
+        if (!valid)
+        {
+            output.Append(text);
+            return;
+        }
+
+        output.Append("<span ").Append(present[0]).Append("=\"").Append(value).Append("\">").Append(text).Append("</span>");
+    }
+
+    /// <summary>The Note profile keeps headings 1 to 3 and the quote as they are; the other wrappers become paragraphs.</summary>
+    private static readonly HashSet<string> NoteBlockWrappers = new(["div", "h4", "h5", "h6", "pre", "section", "article", "address"], StringComparer.Ordinal);
+
     private static readonly HashSet<string> BlockWrappers = new(["div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address"], StringComparer.Ordinal);
 
     private static readonly HashSet<string> BlockNames = new(["p", "ul", "ol", "li", "div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address", "table", "tr", "td", "th", "tbody", "thead", "tfoot", "caption"], StringComparer.Ordinal);
 
-    [GeneratedRegex(@"<\s*(br\s*/?|/p|/li|/tr|/caption|/table)\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"<\s*(br\s*/?|/p|/li|/tr|/caption|/table|/h[1-6]|/blockquote)\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex BreakPattern();
 
     [GeneratedRegex(@"<\s*/t[dh]\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

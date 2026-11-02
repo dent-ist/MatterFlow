@@ -25,6 +25,9 @@ public static class StarterRoles
         Permissions.Task.Complete, Permissions.Task.Cancel, Permissions.Task.Reopen,
         Permissions.Workflow.Execute, Permissions.Workflow.StepReopen,
         Permissions.Pod.View,
+        // Matter detail redesign (epic #1001): everyone works with productions, reads specs and writes notes.
+        Permissions.Production.View, Permissions.Production.Edit, Permissions.Production.Comment, Permissions.ProductionSpec.View,
+        Permissions.MatterNote.View, Permissions.MatterNote.Edit,
     ];
 
     private static readonly string[] ClientMatterEdit =
@@ -45,20 +48,23 @@ public static class StarterRoles
         Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
     ];
 
+    /// <summary>Who maintains the specs of a matter and may delete its notes: Director, Project Manager and Pod Lead.</summary>
+    private static readonly string[] MatterContentManage = [Permissions.ProductionSpec.Edit, Permissions.MatterNote.Delete];
+
     /// <summary>Technicians: open the Dashboard and the unassigned queue on its Summary tab (to pick work from), not the department-wide counts. Everything else on it is for leads and directors.</summary>
     private static readonly string[] DashboardUnassignedOnly = [Permissions.Dashboard.View, Permissions.Dashboard.ViewUnassigned];
 
     public static IReadOnlyList<StarterRole> All { get; } =
     [
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, ..AssignManagers, ..MatterContentManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage]),
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, Permissions.Asset.Dispose]),
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
-            [..Everyone, ..ClientMatterEdit, ..ProjectManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,
                 Permissions.Dashboard.ViewCoverage]),
         new("Data Technician", "Works tasks and manages projects.",

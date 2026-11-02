@@ -167,6 +167,46 @@
       "description": "Move assets to Pending disposition or Disposed"
     },
     {
+      "code": "Production.View",
+      "group": "Productions",
+      "description": "View productions"
+    },
+    {
+      "code": "Production.Edit",
+      "group": "Productions",
+      "description": "Create, edit and delete productions"
+    },
+    {
+      "code": "Production.Comment",
+      "group": "Productions",
+      "description": "Comment on productions"
+    },
+    {
+      "code": "ProductionSpec.View",
+      "group": "Productions",
+      "description": "View production specs"
+    },
+    {
+      "code": "ProductionSpec.Edit",
+      "group": "Productions",
+      "description": "Create, edit, duplicate and retire production specs"
+    },
+    {
+      "code": "MatterNote.View",
+      "group": "Notes",
+      "description": "Matter Note Read"
+    },
+    {
+      "code": "MatterNote.Edit",
+      "group": "Notes",
+      "description": "Matter Note Edit"
+    },
+    {
+      "code": "MatterNote.Delete",
+      "group": "Notes",
+      "description": "Matter Note Delete"
+    },
+    {
       "code": "Pod.View",
       "group": "Organization",
       "description": "View pods"

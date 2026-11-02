@@ -301,6 +301,8 @@ Because EF no longer generates the schema, drift is a real risk. Controls:
 | **WorkflowEngine** | StepDefinition, WorkflowDefinition/Version/VersionStep, WorkflowInstance, StepInstance, step state machine | `IWorkflowInstantiator`, `IWorkflowProgress` (completion check), `IStepCommands` |
 | **WorkManagement** | Task, TaskAsset, TaskComment(+Revision), lifecycle state machine, assignment | `ITaskLookup`, `ITaskLifecycle` (used by WorkflowEngine callbacks via contract interface `ITaskStatusGate`) |
 | **WorkViews** | Queue/My Work/Pod Work/Dashboard queries | none (leaf); `Audit.Contracts` only, to record `EXPORT_RUN` of a list export (PM v2 #879) |
+| **Productions** | ProductionSpec, Production, ProductionComment (epic #1001, scripts 52 and 53) | marker only (`ProductionsContractsMarker`); history is read from Audit by object type `Production` and `ProductionSpec` |
+| **Notes** | Note, NoteTag, NoteTagLink, NoteLink, NoteTemplate, NoteTemplateTag (epic #1001, scripts 54 and 55) | marker only (`NotesContractsMarker`); history is read from Audit by object type `Note` |
 | **Search** | Global/advanced queries | none (leaf) |
 | **Intake** | Email parsing | none (leaf) |
 
@@ -316,10 +318,12 @@ flowchart BT
   AS[Assets] --> CF & OR & ID & AU
   WF[WorkflowEngine] --> CF & ID & AU
   WM[WorkManagement] --> OR & AS & WF & CF & ID & AU
+  PR[Productions] --> OR & ID & AU
+  NT[Notes] --> CF & OR & AS & ID & AU
   WV[WorkViews - query side] -.read-only.-> WM & OR & AS & WF & CF & ID
   SE[Search - query side] -.read-only.-> WM & OR & AS & CF
   IN[Intake] --> SK
-  API[Api host] --> WM & WV & SE & IN & AS & OR & WF & CF & ID & AU
+  API[Api host] --> WM & WV & SE & IN & AS & OR & WF & CF & ID & AU & PR & NT
 ```
 
 1. A module may reference **only** `MatterFlow.SharedKernel` and **other modules' `.Contracts` projects**. Never another module's internals. Dependencies must follow the layer arrows above (no cycles). Example: WorkflowEngine needs to know Task status; it depends on `ITaskStatusGate` (declared in WorkflowEngine.Contracts, implemented by WorkManagement) instead of referencing WorkManagement (inversion).
@@ -705,6 +709,8 @@ Frontend (`features/dashboard/ui`): `dash-trends-tab.ts` (lazy through `@defer`,
 - **Contract-first parallelism:** DTO + controller skeletons returning `501` are merged first so the OpenAPI file and Angular client exist before implementations; frontend work uses MSW mocks until the backend endpoint lands.
 
 ---
+
+- **Matter detail redesign: Productions and Notes (epic #1001, addendum AQ).** Two new modules, `MatterFlow.Productions` and `MatterFlow.Notes` (scripts 52 to 55; every table denied for the report login). Every endpoint applies the sensitive-matter rule (a hidden matter is a 404) and carries a `rowVersion` on every change (409 `CONCURRENCY_CONFLICT`). **Productions** (`/production-specs`, `/productions`, `/production-comments`): a simple managed list per matter (no status, QC or Bates overlap check); a production's spec must be an active spec of the same matter (a retired spec already set may stay, 409 `SPEC_RETIRED` otherwise); specs are retired and reinstated, never deleted, and a copy is made with `POST /production-specs/{id}/duplicate`; permissions `Production.View|Edit|Comment`, `ProductionSpec.View|Edit`; counts for the tab badge at `GET /matters/{id}/productions/summary`. **Notes** (`/notes`, `/note-tags`, `/note-templates`): the body is sanitised by `RichHtml` with `RichHtmlProfile.Note` (headings 1 to 3, quote, tables, links and one reference span carrying exactly one of `data-asset-id`, `data-project-id`, `data-matter-id`, `data-note-id`, `data-user-id`, `data-embed-id`); the title is the first line and the snippet the text after it; `NoteLink` is rebuilt from the saved body and assets, projects and notes must belong to the note's matter; `POST /notes/resolve-references` answers Ok, Inactive, Restricted or Removed for the person asking; a locked note is read only for everybody (409 `NOTE_LOCKED`, also on delete), pinning still works, and only the person who locked it or an administrator unlocks (403 `NOT_LOCK_OWNER`); tags are firm-wide, picked by people (at most five per note) and kept by `StatusLabel.Manage`; templates are firm-wide (administrators) or per matter and use `{{date}}`, `{{time}}`, `{{matter}}` and `{{author}}` (filled in by the client); permissions `MatterNote.View|Edit|Delete` (Matter Note Read, Edit, Delete). **History** of productions, specs and notes is the audit trail: the entities are not `[Audited]` (that would write one event per field on create); the services write one `FIELD_CHANGED` per changed field and one semantic event per state change, always with the matter, and the history endpoints read them with `IAuditReader.ListAllForObjectAsync` (object types `Production`, `ProductionSpec`, `Note`).
 
 ## 12. Angular architecture
 

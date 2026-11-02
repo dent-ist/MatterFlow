@@ -90,6 +90,36 @@
       "reason": "Calendar items of a matter (hearings, deadlines); shown through the application's visibility rule only, not report data."
     },
     {
+      "name": "Note",
+      "access": "deny",
+      "reason": "Matter notes: rich-text work product, subject to the sensitive-matter rule; not report data."
+    },
+    {
+      "name": "NoteLink",
+      "access": "deny",
+      "reason": "What a note refers to; follows Note."
+    },
+    {
+      "name": "NoteTag",
+      "access": "deny",
+      "reason": "Notes tag list (firm-wide, administrator managed); not report data."
+    },
+    {
+      "name": "NoteTagLink",
+      "access": "deny",
+      "reason": "Which tags a note carries; follows Note."
+    },
+    {
+      "name": "NoteTemplate",
+      "access": "deny",
+      "reason": "Note templates (firm-wide or per matter); not report data."
+    },
+    {
+      "name": "NoteTemplateTag",
+      "access": "deny",
+      "reason": "Tags a note template offers; follows NoteTemplate."
+    },
+    {
       "name": "Notification",
       "access": "deny",
       "reason": "Per-person notifications (personal inbox), not report data."
@@ -123,6 +153,21 @@
       "name": "Priority",
       "access": "allow",
       "reason": "Business data that reports may read."
+    },
+    {
+      "name": "Production",
+      "access": "deny",
+      "reason": "Matter productions list: matter work product, subject to the sensitive-matter rule; not report data."
+    },
+    {
+      "name": "ProductionComment",
+      "access": "deny",
+      "reason": "Comments on productions: matter work product; not report data."
+    },
+    {
+      "name": "ProductionSpec",
+      "access": "deny",
+      "reason": "Matter production specifications: matter work product, subject to the sensitive-matter rule; not report data."
     },
     {
       "name": "Project",

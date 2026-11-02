@@ -59,6 +59,7 @@ public class AuditScopeRulesTests
         ["FormDefinitionResolver.cs"] = 1,
         ["FormAdminService.cs"] = 6,
         ["FormValueStore.cs"] = 1, // FORM_VALUES_DROPPED: field keys only (residual listed in README section 4, SM-13)
+        ["NoteTagService.cs"] = 3, // NOTE_TAG_CREATED/DELETED and the tag field changes (epic #1001): firm-wide tag names and colours, administration data without a matter
         ["PriorityService.cs"] = 1,
         ["TaskTypeService.cs"] = 1,
         ["UserResolver.cs"] = 3,

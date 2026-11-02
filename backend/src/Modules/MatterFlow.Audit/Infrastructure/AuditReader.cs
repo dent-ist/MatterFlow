@@ -53,6 +53,19 @@ internal sealed class AuditReader(DbContext db, AuditVisibility visibility) : IA
         return [.. rows.Select(ToRecord)];
     }
 
+    public async Task<AuditRecordPage> ListAllForObjectAsync(string objectType, string objectId, long? beforeId, int limit, CancellationToken cancellationToken = default)
+    {
+        var size = Math.Clamp(limit, 1, MaxLimit);
+        var query = visibility.Apply(db.Set<AuditEvent>().AsNoTracking()).Where(e => e.ObjectType == objectType && e.ObjectId == objectId);
+        if (beforeId is { } before)
+            query = query.Where(e => e.Id < before);
+
+        var rows = await query.OrderByDescending(e => e.Id).Take(size + 1).ToListAsync(cancellationToken);
+        var hasMore = rows.Count > size;
+        var items = rows.Take(size).Select(ToRecord).ToList();
+        return new AuditRecordPage(items, hasMore ? items[^1].AuditEventId : null);
+    }
+
     /// <summary>Values and summary pass the secret guard like the audit browser's (SEC2-06): a token or password never leaves through the activity feed.</summary>
     private static AuditRecord ToRecord(AuditEvent e)
     {

@@ -41,4 +41,11 @@ public interface IAuditReader
     /// </summary>
     Task<IReadOnlyList<AuditRecord>> ListForObjectAsync(string objectType, string objectId, string eventType, int limit, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<AuditRecord>>([]);
+
+    /// <summary>
+    /// The events written about one object (of every event type, field changes included), newest first: the history panel of a Production, a Production spec or a Note. <paramref name="beforeId"/> is the cursor
+    /// (only events with a smaller id are returned). Only the events the caller may see (the sensitive-matter rule of the audit trail). The default is empty, so existing implementations keep working.
+    /// </summary>
+    Task<AuditRecordPage> ListAllForObjectAsync(string objectType, string objectId, long? beforeId, int limit, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new AuditRecordPage([], null));
 }

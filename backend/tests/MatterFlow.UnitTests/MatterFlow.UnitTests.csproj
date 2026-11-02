@@ -26,6 +26,10 @@
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Search\MatterFlow.Search.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Notifications\MatterFlow.Notifications.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Notes\MatterFlow.Notes.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Notes.Contracts\MatterFlow.Notes.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Productions\MatterFlow.Productions.csproj" />
+    <ProjectReference Include="..\..\src\Modules\MatterFlow.Productions.Contracts\MatterFlow.Productions.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Reports\MatterFlow.Reports.csproj" />
     <ProjectReference Include="..\..\src\Modules\MatterFlow.Reports.Contracts\MatterFlow.Reports.Contracts.csproj" />
   </ItemGroup>

@@ -110,6 +110,16 @@ public static class RichHtmlGuard
     private static bool IsAsciiLetter(char c) => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z');
 }
 
+/// <summary>Which allow-list <see cref="RichHtml"/> applies.</summary>
+public enum RichHtmlProfile
+{
+    /// <summary>Comments, descriptions and emails: paragraphs, inline formatting, lists, links, tables.</summary>
+    Basic,
+
+    /// <summary>Matter notes: Basic plus headings 1 to 3, the quote and reference spans (@ person, # asset, project, matter, note).</summary>
+    Note,
+}
+
 /// <summary>What <see cref="RichHtmlGuard.Check"/> found.</summary>
 public enum RichHtmlProblem
 {
@@ -144,6 +154,9 @@ public sealed record RichHtmlLimits(int MaxInputChars, int MaxOutputChars, int M
 
     /// <summary>The HTML body of an email read by intake; anything over a limit falls back to the plain-text body.</summary>
     public static readonly RichHtmlLimits Email = new(1_000_000, 100_000, 20_000, 20, 200);
+
+    /// <summary>Matter notes (rich text with tables and references).</summary>
+    public static readonly RichHtmlLimits Note = new(400_000, 200_000, 20_000, 20, 1_000);
 }
 
 /// <summary>The HTML has more tags or deeper nesting than the limits allow.</summary>

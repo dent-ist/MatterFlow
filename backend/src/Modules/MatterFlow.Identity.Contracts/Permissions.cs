@@ -135,6 +135,42 @@ public static class Permissions
         public const string Dispose = "Asset.Dispose";
     }
 
+    /// <summary>Production permissions (matter detail redesign, epic #1001).</summary>
+    public static class Production
+    {
+        /// <summary>View the productions of a matter and their history.</summary>
+        public const string View = "Production.View";
+
+        /// <summary>Create, edit and delete productions.</summary>
+        public const string Edit = "Production.Edit";
+
+        /// <summary>Add comments to productions (edit and delete one's own).</summary>
+        public const string Comment = "Production.Comment";
+    }
+
+    /// <summary>Production spec permissions (the agreed format of a matter's productions).</summary>
+    public static class ProductionSpec
+    {
+        /// <summary>View production specs.</summary>
+        public const string View = "ProductionSpec.View";
+
+        /// <summary>Create, edit, duplicate and retire production specs.</summary>
+        public const string Edit = "ProductionSpec.Edit";
+    }
+
+    /// <summary>Matter note permissions (shown as Matter Note Read, Edit and Delete).</summary>
+    public static class MatterNote
+    {
+        /// <summary>Read the notes of a matter (Matter Note Read).</summary>
+        public const string View = "MatterNote.View";
+
+        /// <summary>Create and edit notes, lock and unlock, pin, use templates (Matter Note Edit).</summary>
+        public const string Edit = "MatterNote.Edit";
+
+        /// <summary>Delete notes (Matter Note Delete).</summary>
+        public const string Delete = "MatterNote.Delete";
+    }
+
     /// <summary>Pod permissions.</summary>
     public static class Pod
     {
@@ -300,6 +336,14 @@ public static class Permissions
         Asset.Edit,
         Asset.Link,
         Asset.Dispose,
+        Production.View,
+        Production.Edit,
+        Production.Comment,
+        ProductionSpec.View,
+        ProductionSpec.Edit,
+        MatterNote.View,
+        MatterNote.Edit,
+        MatterNote.Delete,
         Pod.View,
         Pod.Manage,
         Pod.ManageMembers,

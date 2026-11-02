@@ -7045,6 +7045,1415 @@ export class IntakeClient implements IIntakeClient {
     }
 }
 
+export interface INotesClient {
+    /**
+     * @param matterId (optional) 
+     * @param tagId (optional) 
+     * @param locked (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem>;
+    /**
+     * @return Created
+     */
+    createNote(body: CreateNoteRequest): Observable<NoteResponse>;
+    /**
+     * @return OK
+     */
+    getMatterNotesSummary(matterId: number): Observable<NoteSummaryResponse>;
+    /**
+     * @return OK
+     */
+    getNote(noteId: number): Observable<NoteResponse>;
+    /**
+     * @return OK
+     */
+    updateNote(noteId: number, body: UpdateNoteRequest): Observable<NoteResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNote(noteId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @return OK
+     */
+    setNotePinned(noteId: number, body: SetNotePinnedRequest): Observable<NoteResponse>;
+    /**
+     * @return OK
+     */
+    lockNote(noteId: number, body: LockNoteRequest): Observable<NoteResponse>;
+    /**
+     * @return OK
+     */
+    unlockNote(noteId: number, body: UnlockNoteRequest): Observable<NoteResponse>;
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getNoteHistory(noteId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<NoteHistoryResponse>;
+    /**
+     * @return OK
+     */
+    resolveNoteReferences(body: ResolveNoteReferencesRequest): Observable<ResolveNoteReferencesResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NotesClient implements INotesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param tagId (optional) 
+     * @param locked (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem> {
+        let url_ = this.baseUrl + "/api/v1/notes?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (tagId === null)
+            throw new globalThis.Error("The parameter 'tagId' cannot be null.");
+        else if (tagId !== undefined)
+            tagId && tagId.forEach(item => { url_ += "TagId=" + encodeURIComponent("" + item) + "&"; });
+        if (locked === null)
+            throw new globalThis.Error("The parameter 'locked' cannot be null.");
+        else if (locked !== undefined)
+            url_ += "Locked=" + encodeURIComponent("" + locked) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListNotes(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListNotes(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfNoteListItem>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfNoteListItem>;
+        }));
+    }
+
+    protected processListNotes(response: HttpResponseBase): Observable<PagedResultOfNoteListItem> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfNoteListItem;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createNote(body: CreateNoteRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processCreateNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getMatterNotesSummary(matterId: number): Observable<NoteSummaryResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/notes/summary";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMatterNotesSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMatterNotesSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteSummaryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteSummaryResponse>;
+        }));
+    }
+
+    protected processGetMatterNotesSummary(response: HttpResponseBase): Observable<NoteSummaryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteSummaryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getNote(noteId: number): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processGetNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateNote(noteId: number, body: UpdateNoteRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processUpdateNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNote(noteId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}?";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteNote(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setNotePinned(noteId: number, body: SetNotePinnedRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}/pinned";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetNotePinned(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetNotePinned(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processSetNotePinned(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    lockNote(noteId: number, body: LockNoteRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}/lock";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processLockNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processLockNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processLockNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    unlockNote(noteId: number, body: UnlockNoteRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}/unlock";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUnlockNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUnlockNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processUnlockNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getNoteHistory(noteId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<NoteHistoryResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}/history?";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        if (beforeId === null)
+            throw new globalThis.Error("The parameter 'beforeId' cannot be null.");
+        else if (beforeId !== undefined)
+            url_ += "BeforeId=" + encodeURIComponent("" + beforeId) + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "Limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNoteHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNoteHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteHistoryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteHistoryResponse>;
+        }));
+    }
+
+    protected processGetNoteHistory(response: HttpResponseBase): Observable<NoteHistoryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteHistoryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    resolveNoteReferences(body: ResolveNoteReferencesRequest): Observable<ResolveNoteReferencesResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/resolve-references";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processResolveNoteReferences(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processResolveNoteReferences(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ResolveNoteReferencesResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ResolveNoteReferencesResponse>;
+        }));
+    }
+
+    protected processResolveNoteReferences(response: HttpResponseBase): Observable<ResolveNoteReferencesResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ResolveNoteReferencesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface INoteTagsClient {
+    /**
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    listNoteTags(includeInactive?: boolean | undefined): Observable<NoteTagResponse[]>;
+    /**
+     * @return Created
+     */
+    createNoteTag(body: CreateNoteTagRequest): Observable<NoteTagResponse>;
+    /**
+     * @return OK
+     */
+    updateNoteTag(tagId: number, body: UpdateNoteTagRequest): Observable<NoteTagResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNoteTag(tagId: number, rowVersion?: string | undefined): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NoteTagsClient implements INoteTagsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param includeInactive (optional) 
+     * @return OK
+     */
+    listNoteTags(includeInactive?: boolean | undefined): Observable<NoteTagResponse[]> {
+        let url_ = this.baseUrl + "/api/v1/note-tags?";
+        if (includeInactive === null)
+            throw new globalThis.Error("The parameter 'includeInactive' cannot be null.");
+        else if (includeInactive !== undefined)
+            url_ += "includeInactive=" + encodeURIComponent("" + includeInactive) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListNoteTags(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListNoteTags(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTagResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTagResponse[]>;
+        }));
+    }
+
+    protected processListNoteTags(response: HttpResponseBase): Observable<NoteTagResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTagResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createNoteTag(body: CreateNoteTagRequest): Observable<NoteTagResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-tags";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateNoteTag(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateNoteTag(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTagResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTagResponse>;
+        }));
+    }
+
+    protected processCreateNoteTag(response: HttpResponseBase): Observable<NoteTagResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTagResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateNoteTag(tagId: number, body: UpdateNoteTagRequest): Observable<NoteTagResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-tags/{tagId}";
+        if (tagId === undefined || tagId === null)
+            throw new globalThis.Error("The parameter 'tagId' must be defined.");
+        url_ = url_.replace("{tagId}", encodeURIComponent("" + tagId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateNoteTag(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateNoteTag(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTagResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTagResponse>;
+        }));
+    }
+
+    protected processUpdateNoteTag(response: HttpResponseBase): Observable<NoteTagResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTagResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNoteTag(tagId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/note-tags/{tagId}?";
+        if (tagId === undefined || tagId === null)
+            throw new globalThis.Error("The parameter 'tagId' must be defined.");
+        url_ = url_.replace("{tagId}", encodeURIComponent("" + tagId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteNoteTag(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteNoteTag(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteNoteTag(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface INoteTemplatesClient {
+    /**
+     * @param matterId (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    listNoteTemplates(matterId?: number | undefined, q?: string | undefined): Observable<NoteTemplateResponse[]>;
+    /**
+     * @return Created
+     */
+    createNoteTemplate(body: CreateNoteTemplateRequest): Observable<NoteTemplateResponse>;
+    /**
+     * @return OK
+     */
+    getNoteTemplate(templateId: number): Observable<NoteTemplateResponse>;
+    /**
+     * @return OK
+     */
+    updateNoteTemplate(templateId: number, body: UpdateNoteTemplateRequest): Observable<NoteTemplateResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNoteTemplate(templateId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @return Created
+     */
+    duplicateNoteTemplate(templateId: number, body: DuplicateNoteTemplateRequest): Observable<NoteTemplateResponse>;
+    /**
+     * @return OK
+     */
+    useNoteTemplate(templateId: number): Observable<NoteTemplateResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NoteTemplatesClient implements INoteTemplatesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param q (optional) 
+     * @return OK
+     */
+    listNoteTemplates(matterId?: number | undefined, q?: string | undefined): Observable<NoteTemplateResponse[]> {
+        let url_ = this.baseUrl + "/api/v1/note-templates?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListNoteTemplates(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListNoteTemplates(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse[]>;
+        }));
+    }
+
+    protected processListNoteTemplates(response: HttpResponseBase): Observable<NoteTemplateResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createNoteTemplate(body: CreateNoteTemplateRequest): Observable<NoteTemplateResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-templates";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse>;
+        }));
+    }
+
+    protected processCreateNoteTemplate(response: HttpResponseBase): Observable<NoteTemplateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getNoteTemplate(templateId: number): Observable<NoteTemplateResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-templates/{templateId}";
+        if (templateId === undefined || templateId === null)
+            throw new globalThis.Error("The parameter 'templateId' must be defined.");
+        url_ = url_.replace("{templateId}", encodeURIComponent("" + templateId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse>;
+        }));
+    }
+
+    protected processGetNoteTemplate(response: HttpResponseBase): Observable<NoteTemplateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateNoteTemplate(templateId: number, body: UpdateNoteTemplateRequest): Observable<NoteTemplateResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-templates/{templateId}";
+        if (templateId === undefined || templateId === null)
+            throw new globalThis.Error("The parameter 'templateId' must be defined.");
+        url_ = url_.replace("{templateId}", encodeURIComponent("" + templateId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse>;
+        }));
+    }
+
+    protected processUpdateNoteTemplate(response: HttpResponseBase): Observable<NoteTemplateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteNoteTemplate(templateId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/note-templates/{templateId}?";
+        if (templateId === undefined || templateId === null)
+            throw new globalThis.Error("The parameter 'templateId' must be defined.");
+        url_ = url_.replace("{templateId}", encodeURIComponent("" + templateId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteNoteTemplate(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    duplicateNoteTemplate(templateId: number, body: DuplicateNoteTemplateRequest): Observable<NoteTemplateResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-templates/{templateId}/duplicate";
+        if (templateId === undefined || templateId === null)
+            throw new globalThis.Error("The parameter 'templateId' must be defined.");
+        url_ = url_.replace("{templateId}", encodeURIComponent("" + templateId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDuplicateNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDuplicateNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse>;
+        }));
+    }
+
+    protected processDuplicateNoteTemplate(response: HttpResponseBase): Observable<NoteTemplateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    useNoteTemplate(templateId: number): Observable<NoteTemplateResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-templates/{templateId}/use";
+        if (templateId === undefined || templateId === null)
+            throw new globalThis.Error("The parameter 'templateId' must be defined.");
+        url_ = url_.replace("{templateId}", encodeURIComponent("" + templateId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUseNoteTemplate(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUseNoteTemplate(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteTemplateResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteTemplateResponse>;
+        }));
+    }
+
+    protected processUseNoteTemplate(response: HttpResponseBase): Observable<NoteTemplateResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteTemplateResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface INotificationsClient {
     /**
      * @param filter (optional) 
@@ -9443,6 +10852,1272 @@ export class ProjectsClient implements IProjectsClient {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProjectResponse;
             return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IProductionSpecsClient {
+    /**
+     * @param matterId (optional) 
+     * @param status (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listProductionSpecs(matterId?: number | undefined, status?: string | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProductionSpecResponse>;
+    /**
+     * @return Created
+     */
+    createProductionSpec(body: CreateProductionSpecRequest): Observable<ProductionSpecResponse>;
+    /**
+     * @return OK
+     */
+    getProductionSpec(specId: number): Observable<ProductionSpecResponse>;
+    /**
+     * @return OK
+     */
+    updateProductionSpec(specId: number, body: UpdateProductionSpecRequest): Observable<ProductionSpecResponse>;
+    /**
+     * @return Created
+     */
+    duplicateProductionSpec(specId: number, body: DuplicateProductionSpecRequest): Observable<ProductionSpecResponse>;
+    /**
+     * @return OK
+     */
+    retireProductionSpec(specId: number, body: ChangeProductionSpecStatusRequest): Observable<ProductionSpecResponse>;
+    /**
+     * @return OK
+     */
+    unretireProductionSpec(specId: number, body: ChangeProductionSpecStatusRequest): Observable<ProductionSpecResponse>;
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getProductionSpecHistory(specId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<ProductionHistoryResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ProductionSpecsClient implements IProductionSpecsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param status (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listProductionSpecs(matterId?: number | undefined, status?: string | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (status === null)
+            throw new globalThis.Error("The parameter 'status' cannot be null.");
+        else if (status !== undefined)
+            url_ += "Status=" + encodeURIComponent("" + status) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListProductionSpecs(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListProductionSpecs(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfProductionSpecResponse>;
+        }));
+    }
+
+    protected processListProductionSpecs(response: HttpResponseBase): Observable<PagedResultOfProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfProductionSpecResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createProductionSpec(body: CreateProductionSpecRequest): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processCreateProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getProductionSpec(specId: number): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processGetProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateProductionSpec(specId: number, body: UpdateProductionSpecRequest): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processUpdateProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    duplicateProductionSpec(specId: number, body: DuplicateProductionSpecRequest): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}/duplicate";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDuplicateProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDuplicateProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processDuplicateProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    retireProductionSpec(specId: number, body: ChangeProductionSpecStatusRequest): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}/retire";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRetireProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRetireProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processRetireProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    unretireProductionSpec(specId: number, body: ChangeProductionSpecStatusRequest): Observable<ProductionSpecResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}/unretire";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUnretireProductionSpec(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUnretireProductionSpec(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSpecResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSpecResponse>;
+        }));
+    }
+
+    protected processUnretireProductionSpec(response: HttpResponseBase): Observable<ProductionSpecResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSpecResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getProductionSpecHistory(specId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<ProductionHistoryResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-specs/{specId}/history?";
+        if (specId === undefined || specId === null)
+            throw new globalThis.Error("The parameter 'specId' must be defined.");
+        url_ = url_.replace("{specId}", encodeURIComponent("" + specId));
+        if (beforeId === null)
+            throw new globalThis.Error("The parameter 'beforeId' cannot be null.");
+        else if (beforeId !== undefined)
+            url_ += "BeforeId=" + encodeURIComponent("" + beforeId) + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "Limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProductionSpecHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProductionSpecHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionHistoryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionHistoryResponse>;
+        }));
+    }
+
+    protected processGetProductionSpecHistory(response: HttpResponseBase): Observable<ProductionHistoryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionHistoryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IProductionsClient {
+    /**
+     * @param matterId (optional) 
+     * @param direction (optional) 
+     * @param productionSpecId (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listProductions(matterId?: number | undefined, direction?: string | undefined, productionSpecId?: number | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProductionResponse>;
+    /**
+     * @return Created
+     */
+    createProduction(body: CreateProductionRequest): Observable<ProductionResponse>;
+    /**
+     * @return OK
+     */
+    getMatterProductionsSummary(matterId: number): Observable<ProductionSummaryResponse>;
+    /**
+     * @return OK
+     */
+    getProduction(productionId: number): Observable<ProductionResponse>;
+    /**
+     * @return OK
+     */
+    updateProduction(productionId: number, body: UpdateProductionRequest): Observable<ProductionResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteProduction(productionId: number, rowVersion?: string | undefined): Observable<void>;
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getProductionHistory(productionId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<ProductionHistoryResponse>;
+    /**
+     * @return OK
+     */
+    listProductionComments(productionId: number): Observable<ProductionCommentResponse[]>;
+    /**
+     * @return Created
+     */
+    addProductionComment(productionId: number, body: CreateProductionCommentRequest): Observable<ProductionCommentResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ProductionsClient implements IProductionsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param matterId (optional) 
+     * @param direction (optional) 
+     * @param productionSpecId (optional) 
+     * @param q (optional) 
+     * @param page (optional) 
+     * @param pageSize (optional) 
+     * @param sort (optional) 
+     * @return OK
+     */
+    listProductions(matterId?: number | undefined, direction?: string | undefined, productionSpecId?: number | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfProductionResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions?";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "MatterId=" + encodeURIComponent("" + matterId) + "&";
+        if (direction === null)
+            throw new globalThis.Error("The parameter 'direction' cannot be null.");
+        else if (direction !== undefined)
+            url_ += "Direction=" + encodeURIComponent("" + direction) + "&";
+        if (productionSpecId === null)
+            throw new globalThis.Error("The parameter 'productionSpecId' cannot be null.");
+        else if (productionSpecId !== undefined)
+            url_ += "ProductionSpecId=" + encodeURIComponent("" + productionSpecId) + "&";
+        if (q === null)
+            throw new globalThis.Error("The parameter 'q' cannot be null.");
+        else if (q !== undefined)
+            url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (page === null)
+            throw new globalThis.Error("The parameter 'page' cannot be null.");
+        else if (page !== undefined)
+            url_ += "Page=" + encodeURIComponent("" + page) + "&";
+        if (pageSize === null)
+            throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "Sort=" + encodeURIComponent("" + sort) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListProductions(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListProductions(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<PagedResultOfProductionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<PagedResultOfProductionResponse>;
+        }));
+    }
+
+    protected processListProductions(response: HttpResponseBase): Observable<PagedResultOfProductionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PagedResultOfProductionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createProduction(body: CreateProductionRequest): Observable<ProductionResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateProduction(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateProduction(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionResponse>;
+        }));
+    }
+
+    protected processCreateProduction(response: HttpResponseBase): Observable<ProductionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getMatterProductionsSummary(matterId: number): Observable<ProductionSummaryResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/productions/summary";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMatterProductionsSummary(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMatterProductionsSummary(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionSummaryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionSummaryResponse>;
+        }));
+    }
+
+    protected processGetMatterProductionsSummary(response: HttpResponseBase): Observable<ProductionSummaryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionSummaryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getProduction(productionId: number): Observable<ProductionResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProduction(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProduction(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionResponse>;
+        }));
+    }
+
+    protected processGetProduction(response: HttpResponseBase): Observable<ProductionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateProduction(productionId: number, body: UpdateProductionRequest): Observable<ProductionResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateProduction(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateProduction(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionResponse>;
+        }));
+    }
+
+    protected processUpdateProduction(response: HttpResponseBase): Observable<ProductionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteProduction(productionId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}?";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteProduction(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteProduction(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteProduction(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param beforeId (optional) 
+     * @param limit (optional) 
+     * @return OK
+     */
+    getProductionHistory(productionId: number, beforeId?: number | undefined, limit?: number | undefined): Observable<ProductionHistoryResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}/history?";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        if (beforeId === null)
+            throw new globalThis.Error("The parameter 'beforeId' cannot be null.");
+        else if (beforeId !== undefined)
+            url_ += "BeforeId=" + encodeURIComponent("" + beforeId) + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "Limit=" + encodeURIComponent("" + limit) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetProductionHistory(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetProductionHistory(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionHistoryResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionHistoryResponse>;
+        }));
+    }
+
+    protected processGetProductionHistory(response: HttpResponseBase): Observable<ProductionHistoryResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionHistoryResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    listProductionComments(productionId: number): Observable<ProductionCommentResponse[]> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}/comments";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListProductionComments(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListProductionComments(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionCommentResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionCommentResponse[]>;
+        }));
+    }
+
+    protected processListProductionComments(response: HttpResponseBase): Observable<ProductionCommentResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionCommentResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    addProductionComment(productionId: number, body: CreateProductionCommentRequest): Observable<ProductionCommentResponse> {
+        let url_ = this.baseUrl + "/api/v1/productions/{productionId}/comments";
+        if (productionId === undefined || productionId === null)
+            throw new globalThis.Error("The parameter 'productionId' must be defined.");
+        url_ = url_.replace("{productionId}", encodeURIComponent("" + productionId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAddProductionComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAddProductionComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionCommentResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionCommentResponse>;
+        }));
+    }
+
+    protected processAddProductionComment(response: HttpResponseBase): Observable<ProductionCommentResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionCommentResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IProductionCommentsClient {
+    /**
+     * @return OK
+     */
+    updateProductionComment(commentId: number, body: UpdateProductionCommentRequest): Observable<ProductionCommentResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteProductionComment(commentId: number, rowVersion?: string | undefined): Observable<void>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ProductionCommentsClient implements IProductionCommentsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    updateProductionComment(commentId: number, body: UpdateProductionCommentRequest): Observable<ProductionCommentResponse> {
+        let url_ = this.baseUrl + "/api/v1/production-comments/{commentId}";
+        if (commentId === undefined || commentId === null)
+            throw new globalThis.Error("The parameter 'commentId' must be defined.");
+        url_ = url_.replace("{commentId}", encodeURIComponent("" + commentId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateProductionComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateProductionComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<ProductionCommentResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<ProductionCommentResponse>;
+        }));
+    }
+
+    protected processUpdateProductionComment(response: HttpResponseBase): Observable<ProductionCommentResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProductionCommentResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @return No Content
+     */
+    deleteProductionComment(commentId: number, rowVersion?: string | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/production-comments/{commentId}?";
+        if (commentId === undefined || commentId === null)
+            throw new globalThis.Error("The parameter 'commentId' must be defined.");
+        url_ = url_.replace("{commentId}", encodeURIComponent("" + commentId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteProductionComment(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteProductionComment(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteProductionComment(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -20099,6 +22774,12 @@ export interface ChangeNumberRequest {
     [key: string]: any;
 }
 
+export interface ChangeProductionSpecStatusRequest {
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface ChangeTaskAssetRoleRequest {
     assetLinkRoleId?: number | undefined;
     rowVersion: string;
@@ -20349,6 +23030,33 @@ export interface CreateMatterRequest {
     [key: string]: any;
 }
 
+export interface CreateNoteRequest {
+    matterId: number;
+    bodyHtml?: string | undefined;
+    tagIds?: number[] | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateNoteTagRequest {
+    name: string;
+    colourKey?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateNoteTemplateRequest {
+    scope: string;
+    matterId?: number | undefined;
+    name: string;
+    description?: string | undefined;
+    titleTemplate?: string | undefined;
+    bodyHtml?: string | undefined;
+    tagIds?: number[] | undefined;
+
+    [key: string]: any;
+}
+
 export interface CreateOnHoldReasonRequest {
     name: string;
     isActive?: boolean;
@@ -20367,6 +23075,51 @@ export interface CreatePriorityRequest {
     label: string;
     color: string;
     isActive?: boolean;
+
+    [key: string]: any;
+}
+
+export interface CreateProductionCommentRequest {
+    body: string;
+
+    [key: string]: any;
+}
+
+export interface CreateProductionRequest {
+    matterId: number;
+    name: string;
+    volumeNo?: string | undefined;
+    direction: string;
+    partyName?: string | undefined;
+    productionSpecId?: number | undefined;
+    batesBegin?: string | undefined;
+    batesEnd?: string | undefined;
+    docCount?: number | undefined;
+    pageCount?: number | undefined;
+    deliveredOrDueOn?: string | undefined;
+    notes?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface CreateProductionSpecRequest {
+    matterId: number;
+    name: string;
+    sourceOfAgreement?: string | undefined;
+    description?: string | undefined;
+    imageFormat?: string | undefined;
+    colourMode?: string | undefined;
+    textMode?: string | undefined;
+    nativesRule?: string | undefined;
+    loadFile?: string | undefined;
+    metadataFields?: string[] | undefined;
+    redactionRule?: string | undefined;
+    privilegeRule?: string | undefined;
+    dedupRule?: string | undefined;
+    dateTimeRule?: string | undefined;
+    numberingRule?: string | undefined;
+    deliveryRule?: string | undefined;
+    notes?: string | undefined;
 
     [key: string]: any;
 }
@@ -20690,6 +23443,20 @@ export interface DiffLineResponse {
     [key: string]: any;
 }
 
+export interface DuplicateNoteTemplateRequest {
+    matterId?: number | undefined;
+    name?: string | undefined;
+    keepFirmScope?: boolean;
+
+    [key: string]: any;
+}
+
+export interface DuplicateProductionSpecRequest {
+    name?: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface EditTaskCommentRequest {
     bodyHtml: string;
     rowVersion: string;
@@ -20836,6 +23603,12 @@ export interface JsonElement {
 export interface LinkTaskAssetRequest {
     assetId: number;
     assetLinkRoleId?: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface LockNoteRequest {
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -21649,6 +24422,140 @@ export interface NamedIdResponse {
     [key: string]: any;
 }
 
+export interface NoteHistoryEntry {
+    auditEventId: number;
+    occurredAtUtc: string;
+    actorUserId: number | undefined;
+    actorName: string | undefined;
+    eventType: string;
+    oldValue: string | undefined;
+    newValue: string | undefined;
+    summary: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface NoteHistoryResponse {
+    items: NoteHistoryEntry[];
+    nextBeforeId: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface NoteListItem {
+    noteId: number;
+    matterId: number;
+    title: string;
+    snippet: string;
+    tags: NoteTagRef[];
+    isPinned: boolean;
+    isLocked: boolean;
+    lockedByUserId: number | undefined;
+    lockedByName: string | undefined;
+    lockedAtUtc: string | undefined;
+    updatedAtUtc: string;
+    updatedByUserId: number | undefined;
+    updatedByName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface NoteReferenceQuery {
+    kind: string;
+    id: number;
+
+    [key: string]: any;
+}
+
+export interface NoteReferenceRef {
+    kind: string;
+    id: number;
+
+    [key: string]: any;
+}
+
+export interface NoteReferenceResolution {
+    kind: string;
+    id: number;
+    state: string;
+    label: string | undefined;
+    detail: string | undefined;
+    bodyHtml: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface NoteResponse {
+    noteId: number;
+    matterId: number;
+    title: string;
+    snippet: string;
+    bodyHtml: string;
+    tags: NoteTagRef[];
+    references: NoteReferenceRef[];
+    isPinned: boolean;
+    isLocked: boolean;
+    lockedByUserId: number | undefined;
+    lockedByName: string | undefined;
+    lockedAtUtc: string | undefined;
+    createdAtUtc: string;
+    createdByUserId: number | undefined;
+    createdByName: string | undefined;
+    updatedAtUtc: string;
+    updatedByUserId: number | undefined;
+    updatedByName: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface NoteSummaryResponse {
+    noteCount: number;
+    lockedCount: number;
+
+    [key: string]: any;
+}
+
+export interface NoteTagRef {
+    noteTagId: number;
+    name: string;
+    colourKey: string | undefined;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface NoteTagResponse {
+    noteTagId: number;
+    name: string;
+    colourKey: string | undefined;
+    isActive: boolean;
+    visibleNoteCount: number;
+    isInUse: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface NoteTemplateResponse {
+    noteTemplateId: number;
+    scope: string;
+    matterId: number | undefined;
+    name: string;
+    description: string | undefined;
+    titleTemplate: string | undefined;
+    bodyHtml: string;
+    tags: NoteTagRef[];
+    usedCount: number;
+    canEdit: boolean;
+    updatedAtUtc: string;
+    updatedByUserId: number | undefined;
+    updatedByName: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface NotificationItem {
     id: number;
     eventType: string;
@@ -21758,8 +24665,35 @@ export interface PagedResultOfMyMattersAssetRow {
     [key: string]: any;
 }
 
+export interface PagedResultOfNoteListItem {
+    items: NoteListItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
 export interface PagedResultOfPodSummary {
     items: PodSummary[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfProductionResponse {
+    items: ProductionResponse[];
+    total: number;
+    page: number;
+    pageSize: number;
+
+    [key: string]: any;
+}
+
+export interface PagedResultOfProductionSpecResponse {
+    items: ProductionSpecResponse[];
     total: number;
     page: number;
     pageSize: number;
@@ -22004,6 +24938,119 @@ export interface ProblemDetails {
     status?: number | undefined;
     detail?: string | undefined;
     instance?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionCommentResponse {
+    productionCommentId: number;
+    productionId: number;
+    body: string;
+    createdAtUtc: string;
+    createdByUserId: number | undefined;
+    createdByName: string | undefined;
+    modifiedAtUtc: string | undefined;
+    canEdit: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface ProductionHistoryEntry {
+    auditEventId: number;
+    occurredAtUtc: string;
+    actorUserId: number | undefined;
+    actorName: string | undefined;
+    eventType: string;
+    fieldKey: string | undefined;
+    oldValue: string | undefined;
+    newValue: string | undefined;
+    summary: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionHistoryResponse {
+    items: ProductionHistoryEntry[];
+    nextBeforeId: number | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionResponse {
+    productionId: number;
+    matterId: number;
+    name: string;
+    volumeNo: string | undefined;
+    direction: string;
+    partyName: string | undefined;
+    productionSpecId: number | undefined;
+    productionSpecName: string | undefined;
+    productionSpecStatus: string | undefined;
+    batesBegin: string | undefined;
+    batesEnd: string | undefined;
+    docCount: number | undefined;
+    pageCount: number | undefined;
+    deliveredOrDueOn: string | undefined;
+    notes: string | undefined;
+    commentCount: number;
+    rowVersion: string;
+    createdAtUtc: string;
+    createdByUserId: number | undefined;
+    createdByName: string | undefined;
+    modifiedAtUtc: string | undefined;
+    modifiedByUserId: number | undefined;
+    modifiedByName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionSpecResponse {
+    productionSpecId: number;
+    matterId: number;
+    name: string;
+    status: string;
+    sourceOfAgreement: string | undefined;
+    description: string | undefined;
+    imageFormat: string | undefined;
+    colourMode: string | undefined;
+    textMode: string | undefined;
+    nativesRule: string | undefined;
+    loadFile: string | undefined;
+    metadataFields: string[];
+    redactionRule: string | undefined;
+    privilegeRule: string | undefined;
+    dedupRule: string | undefined;
+    dateTimeRule: string | undefined;
+    numberingRule: string | undefined;
+    deliveryRule: string | undefined;
+    notes: string | undefined;
+    usedByCount: number;
+    usedBy: ProductionSpecUse[];
+    rowVersion: string;
+    createdAtUtc: string;
+    createdByUserId: number | undefined;
+    createdByName: string | undefined;
+    modifiedAtUtc: string | undefined;
+    modifiedByUserId: number | undefined;
+    modifiedByName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionSpecUse {
+    productionId: number;
+    name: string;
+    volumeNo: string | undefined;
+    batesBegin: string | undefined;
+    batesEnd: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface ProductionSummaryResponse {
+    productionCount: number;
+    specCount: number;
 
     [key: string]: any;
 }
@@ -22276,6 +25323,19 @@ export interface ReportVersionResponse {
     [key: string]: any;
 }
 
+export interface ResolveNoteReferencesRequest {
+    matterId: number;
+    references: NoteReferenceQuery[];
+
+    [key: string]: any;
+}
+
+export interface ResolveNoteReferencesResponse {
+    items: NoteReferenceResolution[];
+
+    [key: string]: any;
+}
+
 export interface ResultColumnResponse {
     name: string;
     type: string;
@@ -22511,6 +25571,13 @@ export interface SetBrandingNameRequest {
 export interface SetMatterManagersRequest {
     primaryManagerId?: number | undefined;
     secondaryManagerId?: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface SetNotePinnedRequest {
+    pinned?: boolean;
     rowVersion: string;
 
     [key: string]: any;
@@ -23265,6 +26332,12 @@ export interface TopMatterResponse {
     [key: string]: any;
 }
 
+export interface UnlockNoteRequest {
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateAssetLinkRoleRequest {
     name: string;
     isActive: boolean;
@@ -23338,6 +26411,36 @@ export interface UpdateMatterRequest {
     [key: string]: any;
 }
 
+export interface UpdateNoteRequest {
+    bodyHtml?: string | undefined;
+    tagIds?: number[] | undefined;
+    ackWarnings?: string[] | undefined;
+    ackWarningReasons?: string[] | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateNoteTagRequest {
+    name: string;
+    colourKey?: string | undefined;
+    isActive?: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateNoteTemplateRequest {
+    rowVersion: string;
+    name: string;
+    description?: string | undefined;
+    titleTemplate?: string | undefined;
+    bodyHtml?: string | undefined;
+    tagIds?: number[] | undefined;
+
+    [key: string]: any;
+}
+
 export interface UpdateNotificationPreferencesRequest {
     items: NotificationPreferenceInput[];
 
@@ -23366,6 +26469,52 @@ export interface UpdatePriorityRequest {
     color: string;
     isActive: boolean;
     rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateProductionCommentRequest {
+    body: string;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateProductionRequest {
+    rowVersion: string;
+    name: string;
+    volumeNo?: string | undefined;
+    direction: string;
+    partyName?: string | undefined;
+    productionSpecId?: number | undefined;
+    batesBegin?: string | undefined;
+    batesEnd?: string | undefined;
+    docCount?: number | undefined;
+    pageCount?: number | undefined;
+    deliveredOrDueOn?: string | undefined;
+    notes?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface UpdateProductionSpecRequest {
+    rowVersion: string;
+    name: string;
+    sourceOfAgreement?: string | undefined;
+    description?: string | undefined;
+    imageFormat?: string | undefined;
+    colourMode?: string | undefined;
+    textMode?: string | undefined;
+    nativesRule?: string | undefined;
+    loadFile?: string | undefined;
+    metadataFields?: string[] | undefined;
+    redactionRule?: string | undefined;
+    privilegeRule?: string | undefined;
+    dedupRule?: string | undefined;
+    dateTimeRule?: string | undefined;
+    numberingRule?: string | undefined;
+    deliveryRule?: string | undefined;
+    notes?: string | undefined;
 
     [key: string]: any;
 }
