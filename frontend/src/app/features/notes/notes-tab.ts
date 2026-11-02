@@ -68,8 +68,7 @@ import {
   withoutTitleBlock,
 } from './note-ui';
 
-type PanelKind =
-  'none' | 'tags' | 'history' | 'refs' | 'templates' | 'save-template' | 'template-edit';
+type PanelKind = 'none' | 'tags' | 'history' | 'refs' | 'templates' | 'save-template';
 type NoteView = 'tag' | 'latest' | 'templates';
 type TagRow = NoteTagResponse & { noteTagId: number };
 
@@ -316,12 +315,7 @@ interface RefChip {
                     used.</span
                   >
                   @if (canEdit()) {
-                    <button
-                      type="button"
-                      class="mf-btn"
-                      data-template-new
-                      (click)="editTemplate(null)"
-                    >
+                    <button type="button" class="mf-btn" data-template-new (click)="newTemplate()">
                       <i class="pi pi-plus" aria-hidden="true"></i>New Template
                     </button>
                   }
@@ -366,46 +360,6 @@ interface RefChip {
                             </span>
                           </span>
                         </button>
-                        <span class="nt__tacts">
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            data-template-use
-                            [attr.aria-disabled]="!canEdit() || null"
-                            [title]="canEdit() ? '' : useReason"
-                            (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'use', t)"
-                          >
-                            <i class="pi pi-plus" aria-hidden="true"></i>Use
-                          </button>
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            data-template-edit
-                            [attr.aria-disabled]="tplReason(t) ? 'true' : null"
-                            [title]="tplReason(t)"
-                            (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
-                          >
-                            <i class="pi pi-pencil" aria-hidden="true"></i>Edit
-                          </button>
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            [attr.aria-disabled]="!canEdit() || null"
-                            [title]="canEdit() ? '' : useReason"
-                            (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
-                          >
-                            <i class="pi pi-copy" aria-hidden="true"></i>Duplicate
-                          </button>
-                          <button
-                            type="button"
-                            class="mf-btn"
-                            [attr.aria-disabled]="tplReason(t) ? 'true' : null"
-                            [title]="tplReason(t)"
-                            (click)="onTemplateAction($event, tplReason(t), 'del', t)"
-                          >
-                            <i class="pi pi-trash" aria-hidden="true"></i>Delete
-                          </button>
-                        </span>
                       </li>
                     }
                   </ul>
@@ -532,94 +486,214 @@ interface RefChip {
         @if (showPanel()) {
           <div class="nt__panel" #pane data-note-pane role="region" aria-label="Note">
             @if (selTemplate(); as t) {
-              <header class="nt__ph">
-                <span class="nt__crumb"
-                  >Templates / <b>{{ t.name }}</b></span
-                >
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--primary"
-                  [attr.aria-disabled]="!canEdit() || null"
-                  [title]="canEdit() ? '' : useReason"
-                  (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'use', t)"
-                >
-                  <i class="pi pi-plus" aria-hidden="true"></i>Use
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn"
-                  [attr.aria-disabled]="tplReason(t) ? 'true' : null"
-                  [title]="tplReason(t)"
-                  (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
-                >
-                  <i class="pi pi-pencil" aria-hidden="true"></i>Edit
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn"
-                  [attr.aria-disabled]="!canEdit() || null"
-                  [title]="canEdit() ? '' : useReason"
-                  (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
-                >
-                  <i class="pi pi-copy" aria-hidden="true"></i>Duplicate
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn"
-                  [attr.aria-disabled]="tplReason(t) ? 'true' : null"
-                  [title]="tplReason(t)"
-                  (click)="onTemplateAction($event, tplReason(t), 'del', t)"
-                >
-                  <i class="pi pi-trash" aria-hidden="true"></i>Delete
-                </button>
-                <button
-                  type="button"
-                  class="mf-btn mf-btn--icon"
-                  aria-label="Close template"
-                  title="Close"
-                  (click)="closePanel()"
-                >
-                  <i class="pi pi-times" aria-hidden="true"></i>
-                </button>
-              </header>
-              <div class="nt__pbody">
-                <div class="nt__pmain">
-                  <div class="nt__pscroll">
-                    <h2 class="nt__ptitle" tabindex="-1" #ptitle>{{ t.name }}</h2>
-                    <p class="nt__upd">
-                      Used {{ t.usedCount }} times &middot; last changed by
-                      <b>{{ t.updatedByName ?? 'someone' }}</b> &middot;
-                      {{ t.updatedAtUtc | mfNum }}
-                    </p>
-                    <div class="nt__tags">
-                      <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
-                        {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
-                      </span>
-                      @for (g of t.tags; track g.noteTagId) {
-                        <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
-                      }
-                    </div>
-                    @if (t.description) {
-                      <p class="nt__byline">{{ t.description }}</p>
+              @if (tplEditMode()) {
+                <header class="nt__ph" data-note-head>
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    data-template-cancel
+                    (click)="cancelTemplate()"
+                  >
+                    Cancel
+                  </button>
+                  <span class="nt__crumb"
+                    ><b>{{ tplEditing() ? 'Edit template' : 'New template' }}</b></span
+                  >
+                  <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
+                  <span class="nt__state" [class.is-dirty]="tplDirty()" data-note-state>
+                    <i aria-hidden="true"></i
+                    ><span>{{ tplDirty() ? 'Unsaved changes' : 'No changes' }}</span>
+                  </span>
+                  <span class="nt__grow"></span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--primary"
+                    data-template-save
+                    [disabled]="busy()"
+                    (click)="saveTemplateEdit()"
+                  >
+                    Save
+                  </button>
+                </header>
+                <div class="nt__pbody">
+                  <div class="nt__pedit" data-template-form>
+                    @if (tplError()) {
+                      <p class="nt__banner nt__banner--warn" role="alert">
+                        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i
+                        >{{ tplError() }}
+                      </p>
                     }
+                    <div class="nt__tfields">
+                      <mf-text-field
+                        inputId="te-name"
+                        label="Name"
+                        [required]="true"
+                        [maxLength]="100"
+                        [(value)]="tplName"
+                      />
+                      <mf-text-field
+                        inputId="te-desc"
+                        label="Description"
+                        [maxLength]="160"
+                        [(value)]="tplDescription"
+                      />
+                      <mf-text-field
+                        inputId="te-title"
+                        label="Title when used"
+                        help="The first line of the new note. May use {{ '{{date}}' }}, {{ '{{matter}}' }}, {{ '{{author}}' }}, {{ '{{time}}' }}"
+                        [maxLength]="300"
+                        [(value)]="tplTitle"
+                      />
+                    </div>
+                    @if (!tplEditing()) {
+                      <fieldset class="nt__fieldset nt__erow">
+                        <legend class="nt__byline">Who can use it</legend>
+                        <label class="nt__check"
+                          ><input
+                            type="radio"
+                            name="te-scope"
+                            [checked]="!tplFirm()"
+                            (change)="tplFirm.set(false)"
+                          />
+                          <span><b>This matter</b></span></label
+                        >
+                        <label class="nt__check"
+                          ><input
+                            type="radio"
+                            name="te-scope"
+                            [disabled]="!isAdmin()"
+                            [checked]="tplFirm()"
+                            (change)="tplFirm.set(true)"
+                          />
+                          <span
+                            ><b>Firm-wide</b> {{ isAdmin() ? '' : '(administrator only)' }}</span
+                          ></label
+                        >
+                      </fieldset>
+                    }
+                    <fieldset class="nt__fieldset nt__erow">
+                      <legend class="nt__byline">Tags the template offers (up to five)</legend>
+                      @for (g of allTags(); track g.noteTagId) {
+                        <label class="nt__check">
+                          <input
+                            type="checkbox"
+                            [checked]="tplTagIds().includes(g.noteTagId)"
+                            (change)="toggleTplTag(g.noteTagId)"
+                          />
+                          <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                        </label>
+                      }
+                    </fieldset>
                     <p class="nt__banner nt__banner--slim">
                       <i class="pi pi-info-circle" aria-hidden="true"></i>
                       <span
-                        >Highlighted placeholders are replaced when the template is used. Title when
-                        used: <b>{{ t.titleTemplate || '(the first line of the text)' }}</b></span
+                        >Type placeholders such as <span class="nt__tok">{{ '{{date}}' }}</span>,
+                        <span class="nt__tok">{{ '{{matter}}' }}</span>,
+                        <span class="nt__tok">{{ '{{author}}' }}</span>; they are filled when the
+                        template is used. Other placeholders (for example
+                        <span class="nt__tok">{{ '{{custodian}}' }}</span>) stay for the person to
+                        fill in.</span
                       >
                     </p>
                     @defer (on immediate) {
                       <mf-note-editor
-                        [html]="t.bodyHtml"
-                        [contentKey]="'tpl:' + t.noteTemplateId + ':' + t.rowVersion"
-                        [editable]="false"
+                        [html]="tplHtml()"
+                        [contentKey]="tplKey()"
+                        [editable]="true"
+                        [source]="source"
+                        [embedSource]="embedSource"
                         [highlightTokens]="true"
+                        (changed)="tplHtml.set($event)"
+                        (notice)="notify.info($event)"
                       />
+                    } @placeholder {
+                      <p class="nt__byline" role="status">Loading the editor...</p>
                     }
                   </div>
                 </div>
-              </div>
+              } @else {
+                <header class="nt__ph" data-note-head>
+                  <span class="nt__crumb"
+                    >Templates / <b>{{ t.name }}</b></span
+                  >
+                  <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
+                  <button
+                    type="button"
+                    class="mf-btn"
+                    data-template-edit
+                    [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                    [title]="tplReason(t) || 'Edit this template'"
+                    (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
+                  >
+                    <i class="pi pi-pencil" aria-hidden="true"></i>Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    data-template-delete
+                    [class.mf-btn--danger]="!tplReason(t)"
+                    [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                    [attr.aria-label]="
+                      tplReason(t)
+                        ? 'Delete template, not available. ' + tplReason(t)
+                        : 'Delete template'
+                    "
+                    [title]="tplReason(t) || 'Delete template'"
+                    (click)="onTemplateAction($event, tplReason(t), 'del', t)"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--icon"
+                    aria-label="Close template"
+                    title="Close"
+                    (click)="closePanel()"
+                  >
+                    <i class="pi pi-times" aria-hidden="true"></i>
+                  </button>
+                </header>
+                <div class="nt__pbody">
+                  <div class="nt__pmain">
+                    <div class="nt__pscroll">
+                      <h2 class="nt__ptitle" tabindex="-1" #ptitle>{{ t.name }}</h2>
+                      <p class="nt__upd">
+                        Used {{ t.usedCount }} times &middot; last changed by
+                        <b>{{ t.updatedByName ?? 'someone' }}</b> &middot;
+                        {{ t.updatedAtUtc | mfNum }}
+                      </p>
+                      <div class="nt__tags">
+                        <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">
+                          {{ t.scope === 'FIRM' ? 'Firm-wide' : 'This matter' }}
+                        </span>
+                        @for (g of t.tags; track g.noteTagId) {
+                          <mf-note-tag [name]="g.name" [colourKey]="g.colourKey" />
+                        }
+                      </div>
+                      @if (t.description) {
+                        <p class="nt__byline">{{ t.description }}</p>
+                      }
+                      <p class="nt__banner nt__banner--slim">
+                        <i class="pi pi-info-circle" aria-hidden="true"></i>
+                        <span
+                          >Highlighted placeholders are replaced when the template is used (with
+                          /template or New Note, From template). Title when used:
+                          <b>{{ t.titleTemplate || '(the first line of the text)' }}</b></span
+                        >
+                      </p>
+                      @defer (on immediate) {
+                        <mf-note-editor
+                          [html]="t.bodyHtml"
+                          [contentKey]="'tpl:' + t.noteTemplateId + ':' + t.rowVersion"
+                          [editable]="false"
+                          [embedSource]="embedSource"
+                          [highlightTokens]="true"
+                        />
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
             } @else if (draft(); as d) {
               <!-- the header: read mode and edit mode -->
               @if (editing()) {
@@ -1477,107 +1551,6 @@ interface RefChip {
     </mf-form-dialog>
 
     <mf-form-dialog
-      [title]="tplEditing() ? 'Edit template' : 'New template'"
-      [primaryLabel]="tplEditing() ? 'Save template' : 'Create template'"
-      size="large"
-      [busy]="busy()"
-      [error]="tplError()"
-      [visible]="panel() === 'template-edit'"
-      (visibleChange)="!$event && panel.set('none')"
-      (submitted)="saveTemplateEdit()"
-    >
-      @if (panel() === 'template-edit') {
-        <div class="nt__panel-form" data-template-form>
-          <mf-text-field
-            inputId="te-name"
-            label="Name"
-            [required]="true"
-            [maxLength]="100"
-            [(value)]="tplName"
-          />
-          <mf-text-field
-            inputId="te-desc"
-            label="Description"
-            [maxLength]="160"
-            [(value)]="tplDescription"
-          />
-          <mf-text-field
-            inputId="te-title"
-            label="Title"
-            help="The first line of the new note. May use {{ '{{date}}' }}, {{ '{{matter}}' }}, {{ '{{author}}' }}, {{ '{{time}}' }}"
-            [maxLength]="300"
-            [(value)]="tplTitle"
-          />
-          @if (!tplEditing()) {
-            <fieldset class="nt__fieldset">
-              <legend class="nt__byline">Who can use it</legend>
-              <label class="nt__check"
-                ><input
-                  type="radio"
-                  name="te-scope"
-                  [checked]="!tplFirm()"
-                  (change)="tplFirm.set(false)"
-                />
-                <span><b>This matter</b> People who may edit notes on this matter</span></label
-              >
-              <label class="nt__check"
-                ><input
-                  type="radio"
-                  name="te-scope"
-                  [disabled]="!isAdmin()"
-                  [checked]="tplFirm()"
-                  (change)="tplFirm.set(true)"
-                />
-                <span
-                  ><b>Firm-wide</b> {{ isAdmin() ? 'Every matter' : 'Administrator only' }}</span
-                ></label
-              >
-            </fieldset>
-          }
-          <fieldset class="nt__fieldset">
-            <legend class="nt__byline">Tags the template offers (up to five)</legend>
-            @for (t of allTags(); track t.noteTagId) {
-              <label class="nt__check">
-                <input
-                  type="checkbox"
-                  [checked]="tplTagIds().includes(t.noteTagId)"
-                  (change)="toggleTplTag(t.noteTagId)"
-                />
-                <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
-              </label>
-            }
-          </fieldset>
-          <p class="nt__banner nt__banner--slim">
-            <i class="pi pi-info-circle" aria-hidden="true"></i>
-            <span
-              >Type placeholders such as <span class="nt__tok">{{ '{{date}}' }}</span>,
-              <span class="nt__tok">{{ '{{matter}}' }}</span>,
-              <span class="nt__tok">{{ '{{author}}' }}</span>; they are highlighted here and filled
-              when the template is used. Other placeholders (for example
-              <span class="nt__tok">{{ '{{custodian}}' }}</span>) stay for the person to fill
-              in.</span
-            >
-          </p>
-          <span class="nt__byline" id="te-body-label">Text</span>
-          <div class="nt__tplbody">
-            @defer (on immediate) {
-              <mf-note-editor
-                [html]="tplHtml()"
-                [contentKey]="tplKey()"
-                [editable]="true"
-                [source]="null"
-                [highlightTokens]="true"
-                (changed)="tplHtml.set($event)"
-              />
-            } @placeholder {
-              <p class="nt__byline" role="status">Loading the editor...</p>
-            }
-          </div>
-        </div>
-      }
-    </mf-form-dialog>
-
-    <mf-form-dialog
       title="Save as template"
       primaryLabel="Save template"
       [busy]="busy()"
@@ -1731,7 +1704,6 @@ export class NotesTab {
   protected readonly refIcons = REF_ICONS;
   protected readonly historyText = noteHistoryText;
   protected readonly skeleton = ['46%', '92%', '70%', '46%', '92%', '70%', '46%'];
-  protected readonly useReason = 'Using a template needs the Matter Note Edit permission';
   protected readonly views: { id: NoteView; label: string; short: string; icon: string }[] = [
     { id: 'tag', label: 'By tag', short: 'By tag', icon: 'pi-align-left' },
     { id: 'latest', label: 'Latest first', short: 'Latest', icon: 'pi-list' },
@@ -1866,6 +1838,22 @@ export class NotesTab {
   protected readonly tplKey = signal('');
   protected readonly tplToDelete = signal<NoteTemplateResponse | null>(null);
   protected readonly confirmDeleteTpl = signal(false);
+  /** The open template is being edited in the note panel (a new one has no `tplEditing`). */
+  protected readonly tplEditMode = signal(false);
+  private readonly tplStart = signal('');
+  private tplSnapshot(): string {
+    return JSON.stringify([
+      this.tplName(),
+      this.tplDescription(),
+      this.tplTitle(),
+      this.tplHtml(),
+      this.tplTagIds(),
+      this.tplFirm(),
+    ]);
+  }
+  protected readonly tplDirty = computed(
+    () => this.tplEditMode() && this.tplSnapshot() !== this.tplStart(),
+  );
   protected tplName = signal('');
   protected tplDescription = signal('');
   protected readonly tplFirm = signal(false);
@@ -1891,8 +1879,9 @@ export class NotesTab {
   });
   protected readonly dirty = computed(
     () =>
-      this.editing() &&
-      (this.currentHtml() !== this.startedHtml() || this.tagKey() !== this.startedTags()),
+      this.tplDirty() ||
+      (this.editing() &&
+        (this.currentHtml() !== this.startedHtml() || this.tagKey() !== this.startedTags())),
   );
   protected readonly saveBlocked = computed(() => this.lockedWhileEditing() !== '');
   protected readonly draftTitle = computed(() => titleOfHtml(this.currentHtml()));
@@ -2487,6 +2476,7 @@ export class NotesTab {
       this.note.set(null);
       this.draft.set(null);
       this.selTemplate.set(null);
+      this.tplEditMode.set(false);
       this.editing.set(false);
       this.wide.set(false);
     });
@@ -2498,6 +2488,7 @@ export class NotesTab {
     const go = this.pendingAfterDiscard;
     this.pendingAfterDiscard = null;
     this.editing.set(false);
+    this.tplEditMode.set(false);
     this.currentHtml.set(this.startedHtml());
     go?.();
   }
@@ -2852,6 +2843,7 @@ export class NotesTab {
       this.note.set(null);
       this.draft.set(null);
       this.editing.set(false);
+      this.tplEditMode.set(false);
       this.selTemplate.set(t);
     });
   }
@@ -2860,7 +2852,7 @@ export class NotesTab {
   protected onTemplateAction(
     ev: Event,
     reason: string,
-    what: 'use' | 'edit' | 'dup' | 'del',
+    what: 'edit' | 'del',
     t: NoteTemplateResponse,
   ): void {
     ev.stopPropagation();
@@ -2868,9 +2860,7 @@ export class NotesTab {
       this.notify.info(reason);
       return;
     }
-    if (what === 'use') this.useTemplate(t);
-    else if (what === 'edit') this.editTemplate(t);
-    else if (what === 'dup') void this.duplicateTemplate(t);
+    if (what === 'edit') this.editTemplate(t);
     else {
       this.tplToDelete.set(t);
       this.confirmDeleteTpl.set(true);
@@ -2900,7 +2890,32 @@ export class NotesTab {
     });
   }
 
-  /** Opens the template form: a new template (null) or the one to change (name, description, title, text, tags). */
+  /** A new template: the note panel opens in edit mode with empty fields. */
+  protected newTemplate(): void {
+    this.guard(() => {
+      this.note.set(null);
+      this.draft.set(null);
+      this.editing.set(false);
+      this.selTemplate.set(this.blankTemplate());
+      this.editTemplate(null);
+    });
+  }
+
+  private blankTemplate(): NoteTemplateResponse {
+    return {
+      noteTemplateId: 0,
+      scope: 'MATTER',
+      name: '',
+      bodyHtml: '',
+      tags: [],
+      usedCount: 0,
+      canEdit: true,
+      updatedAtUtc: new Date().toISOString(),
+      rowVersion: '',
+    } as unknown as NoteTemplateResponse;
+  }
+
+  /** Edit mode of the open template, in the note panel (name, description, title, text, tags). */
   protected editTemplate(t: NoteTemplateResponse | null): void {
     this.tplEditing.set(t);
     this.tplName.set(t?.name ?? '');
@@ -2911,7 +2926,21 @@ export class NotesTab {
     this.tplKey.set(`${t?.noteTemplateId ?? 'new'}:${Date.now()}`);
     this.tplFirm.set(false);
     this.tplError.set('');
-    this.panel.set('template-edit');
+    this.tplStart.set(this.tplSnapshot());
+    this.tplEditMode.set(true);
+  }
+
+  protected cancelTemplate(): void {
+    const back = () => {
+      this.tplEditMode.set(false);
+      if (!this.tplEditing()) this.selTemplate.set(null);
+    };
+    if (this.tplDirty()) {
+      this.pendingAfterDiscard = back;
+      this.confirmDiscard.set(true);
+    } else {
+      back();
+    }
   }
 
   protected toggleTplTag(id: number): void {
@@ -2954,31 +2983,15 @@ export class NotesTab {
         );
       }
       this.notify.success('Template saved');
-      this.panel.set('none');
+      this.tplEditMode.set(false);
       await this.loadTemplates();
-      if (this.view() === 'templates')
-        this.selTemplate.set(
-          this.templates().find((x) => x.noteTemplateId === saved.noteTemplateId) ?? null,
-        );
+      this.selTemplate.set(
+        this.templates().find((x) => x.noteTemplateId === saved.noteTemplateId) ?? saved,
+      );
     } catch (e) {
       this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
     } finally {
       this.busy.set(false);
-    }
-  }
-
-  protected async duplicateTemplate(t: NoteTemplateResponse): Promise<void> {
-    try {
-      await firstValueFrom(
-        this.templatesApi.duplicateNoteTemplate(t.noteTemplateId, {
-          matterId: this.matterId(),
-          keepFirmScope: false,
-        }),
-      );
-      this.notify.success('Template duplicated');
-      await this.loadTemplates();
-    } catch (e) {
-      this.notify.error(e instanceof ApiError ? e.message : 'The template could not be copied.');
     }
   }
 

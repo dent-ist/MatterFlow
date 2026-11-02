@@ -261,8 +261,8 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       await expect(menu.getByRole('menuitemradio', { name: n })).toBeVisible();
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
-    await page.keyboard.type('red words');
     await expect(page.getByRole('button', { name: 'Text colour: Red' })).toBeVisible();
+    await page.keyboard.type('red words');
     await page.locator('[data-note-save]').click();
     const span = page.locator('.ProseMirror [data-color="red"]');
     await expect(span).toHaveText('red words');
@@ -387,7 +387,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(col).toHaveCount(0);
   });
 
-  test('templates view: list with Use, Edit, Duplicate, Delete; Use opens a new note filled in', async ({
+  test('a template is a note item: a plain row, opened in the note panel, edited and deleted there', async ({
     page,
     seed,
   }) => {
@@ -406,14 +406,26 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
     const row = page.locator('[data-template-list] li', { hasText: name });
     await expect(row).toContainText('This matter');
-    await expect(row.getByRole('button', { name: 'Use', exact: true })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Duplicate', exact: true })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Delete', exact: true })).toBeVisible();
-    await row.getByRole('button', { name: 'Use', exact: true }).click();
+    await expect(row.getByRole('button')).toHaveCount(1); // no Use, Edit, Duplicate or Delete on the row
+    await row.getByRole('button').click();
+    await expect(page.locator('[data-template-badge]')).toHaveText('Template');
+    await expect(page.locator('[data-note-pane]')).toContainText('{{custodian}}');
+    await expect(page.getByRole('button', { name: 'Duplicate' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Use', exact: true })).toHaveCount(0);
+    // edit in the same panel: Cancel left, Save right, the note editor and toolbar
+    await page.locator('[data-template-edit]').click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
-    await expect(page.locator('.ProseMirror')).toContainText('{{custodian}}');
-    await expect(page.locator('.ProseMirror')).not.toContainText('{{author}}');
+    const cancel = await page.locator('[data-template-cancel]').boundingBox();
+    const save = await page.locator('[data-template-save]').boundingBox();
+    expect(cancel!.x).toBeLessThan(save!.x);
+    await page.getByLabel('Name').fill(`${name} v2`);
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+    await page.locator('[data-template-save]').click();
+    await expect(page.locator('[data-note-pane]')).toContainText(`${name} v2`);
+    // delete with the same confirmation as a note
+    await page.locator('[data-template-delete]').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete template' }).click();
+    await expect(page.locator('[data-template-list] li', { hasText: name })).toHaveCount(0);
   });
 
   test('a reader sees the Read only pill, the reader banner, no Edit and no New Note', async ({
@@ -469,10 +481,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(dlg).toContainText('Who can use it');
     await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
     await dlg.getByRole('button', { name: 'Save template' }).click();
-    await page.getByRole('button', { name: 'Templates', exact: true }).click();
-    const row = page.locator('[data-template-list] li', { hasText: source });
-    await expect(row).toContainText('This matter');
-    await row.locator('[data-template-use]').click();
+    await page.locator('[data-new-menu]').click();
+    await page.getByRole('menuitem', { name: 'From template...' }).click();
+    await page.getByRole('dialog').locator('[data-template-use]', { hasText: source }).click();
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
     await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
     await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
