@@ -2,7 +2,6 @@ import { MyMattersTaskItem } from '../../../api/generated/api-client';
 import { gridDays, taskShown } from './calendar-tab';
 import { MatterTree } from './mm-models';
 import { defaultAssetTypeIcon } from '../../../shared/ui/asset-type-chip';
-import { daysBefore } from './metrics-work';
 import { assigneeParams, dueParams, statusCodes } from './task-list';
 import { treeNodes } from './tree-panel';
 
@@ -174,11 +173,6 @@ describe('grid column filters and Metrics helpers (UI-21)', () => {
     expect(assigneeParams({ ...g, assignee: 'none' })).toEqual({ unassigned: 'true' });
     expect(assigneeParams({ ...g, assignee: 7 })).toEqual({ assignee: ['7'] });
     expect(assigneeParams(g)).toEqual({});
-  });
-
-  it('the ageing buckets count back from today', () => {
-    expect(daysBefore('2026-11-10', 7)).toBe('2026-11-03');
-    expect(daysBefore('2026-03-01', 1)).toBe('2026-02-28');
   });
 
   it('an asset type without an icon gets a stable default by its name or id', () => {

@@ -1,23 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { convertToParamMap } from '@angular/router';
-import { from } from 'rxjs';
-import { MyMattersClient, TaskQueueClient } from '../../../api/generated/api-client';
-import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
+import { MyMattersClient } from '../../../api/generated/api-client';
 import { TaskTypeChip } from '../../../shared/ui/task-type-chip';
-import { parseQueueState, queueArgs } from '../../../shared/work-queue/queue-filters';
-import { todayText } from '../calendar-month';
 import { MyMattersFocus } from '../focus';
 import { MmFilters, commonArgs } from '../my-matters-filters';
 import { panelLoader } from '../panel-loader';
 import { MmApi } from './mm-api';
-
-/** The ageing buckets of open work, by days since the task was created. */
-export const AGE_BUCKETS = [
-  { key: 'a1', label: '0 to 7 days', from: 7, to: 0 },
-  { key: 'a2', label: '8 to 14 days', from: 14, to: 8 },
-  { key: 'a3', label: '15 to 30 days', from: 30, to: 15 },
-  { key: 'a4', label: 'Over 30 days', from: null, to: 31 },
-] as const;
 
 const STATUS_BAR = [
   { key: 'new', label: 'New', status: 'new', c: 'var(--mf-status-new-line)' },
@@ -35,16 +22,9 @@ const ATTENTION = [
   { key: 'due7', label: 'Due in 7 days', tone: '' },
 ] as const;
 
-/** Days before `today` (yyyy-MM-dd) as a date text. */
-export function daysBefore(today: string, n: number): string {
-  const d = new Date(`${today}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString().slice(0, 10);
-}
-
 /**
- * Metrics, Work view (`mf-mm-metrics-work`, epic #953 UI-21): where is my work and where is it late, in four small things: the status mix, "Needs attention" counts (the Show filter's
- * numbers), a table by task type with the task type chip (open, overdue, at risk, on hold) and the ageing of open work in four buckets. No averages, nothing per person, no trend. Every
+ * Metrics, Work view (`mf-mm-metrics-work`, epic #953 UI-21): where is my work and where is it late, in three small things: the status mix, "Needs attention" counts (the Show filter's
+ * numbers) and a table by task type with the task type chip (open, overdue, at risk, on hold). No averages, nothing per person, no trend. Every
  * number is a button that opens the Overview with the matching filters (status, Show, task type or creation range, the chosen client and matter) as removable chips.
  */
 @Component({
@@ -188,28 +168,6 @@ export function daysBefore(today: string, n: number): string {
           </table>
         }
       </section>
-
-      <section class="card" aria-labelledby="mw-age">
-        <h3 id="mw-age">Age of open work</h3>
-        <p class="sub">Days since the task was created</p>
-        <ul class="age">
-          @for (b of ageing(); track b.key) {
-            <li>
-              <span class="al">{{ b.label }}</span>
-              <span class="ab"><i [style.width.%]="b.pct"></i></span>
-              <button
-                type="button"
-                class="num"
-                [attr.data-drill]="'age-' + b.key"
-                [disabled]="b.n === 0"
-                (click)="drill.emit({ cfrom: b.from, cto: b.to })"
-              >
-                {{ b.n }}
-              </button>
-            </li>
-          }
-        </ul>
-      </section>
     </div>
   `,
   styles: `
@@ -235,11 +193,6 @@ export function daysBefore(today: string, n: number): string {
       margin: 0 0 var(--mf-s3);
       font-size: var(--mf-fs-md);
       font-weight: 700;
-    }
-    .sub {
-      margin: calc(-1 * var(--mf-s2)) 0 var(--mf-s3);
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-xs);
     }
     .msg {
       margin: 0;
@@ -387,31 +340,6 @@ export function daysBefore(today: string, n: number): string {
       align-items: center;
       gap: var(--mf-s2);
     }
-    .age {
-      display: grid;
-      gap: var(--mf-s2);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .age li {
-      display: grid;
-      grid-template-columns: 110px 1fr auto;
-      align-items: center;
-      gap: var(--mf-s3);
-      font-size: var(--mf-fs-sm);
-    }
-    .ab {
-      height: 10px;
-      border-radius: 5px;
-      background: var(--mf-surface-alt);
-      overflow: hidden;
-    }
-    .ab i {
-      display: block;
-      height: 100%;
-      background: var(--mf-sem-info-solid);
-    }
     @media (max-width: 767.98px) {
       .grid {
         grid-template-columns: 1fr;
@@ -429,16 +357,11 @@ export function daysBefore(today: string, n: number): string {
 export class MmMetricsWork {
   private readonly api = inject(MmApi);
   private readonly my = inject(MyMattersClient);
-  private readonly queue = inject(TaskQueueClient);
   private readonly focus = inject(MyMattersFocus);
-  private readonly clock = inject(Clock);
-  private readonly zone = inject(USER_TIME_ZONE);
 
   readonly filters = input.required<MmFilters>();
   /** A number was chosen: the page opens the Overview with these address parameters. */
   readonly drill = output<Record<string, string>>();
-
-  private readonly today = computed(() => todayText(this.clock, this.zone));
 
   protected readonly loads = panelLoader(
     () => this.filters(),
@@ -466,37 +389,6 @@ export class MmMetricsWork {
       );
     },
   );
-  protected readonly ageLoad = panelLoader(
-    () => [this.filters(), this.today()],
-    () => from(this.ageCounts()),
-  );
-  private async ageCounts(): Promise<number[]> {
-    {
-      const a = commonArgs(this.filters());
-      const today = this.today();
-      const counts = await Promise.all(
-        AGE_BUCKETS.map((b) => {
-          const params: Record<string, string | string[]> = {
-            ...(a.scope === 'all' ? {} : { managedByMe: 'true' }),
-            ...(a.managerId === undefined ? {} : { managerId: String(a.managerId) }),
-            ...(a.role === undefined ? {} : { role: a.role }),
-            ...(a.clientId === undefined ? {} : { client: String(a.clientId) }),
-            ...(a.matterId === undefined ? {} : { matter: String(a.matterId) }),
-            status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'],
-            ...(b.from === null ? {} : { createdFrom: daysBefore(today, b.from) }),
-            createdTo: daysBefore(today, b.to),
-          };
-          const state = parseQueueState(convertToParamMap(params));
-          return this.queue
-            .getTaskQueue(undefined, ...queueArgs({ ...state, page: 1, pageSize: 1 }))
-            .toPromise()
-            .then((r) => r?.total ?? 0);
-        }),
-      );
-      return counts;
-    }
-  }
-
   protected readonly mix = computed(() => {
     const c = this.loads.data()?.byStatus;
     if (!c) return null;
@@ -510,17 +402,4 @@ export class MmMetricsWork {
   protected readonly types = computed(() =>
     (this.typesLoad.data()?.types ?? []).filter((t) => t.open > 0 || t.onHold > 0),
   );
-  protected readonly ageing = computed(() => {
-    const counts: number[] = this.ageLoad.data() ?? [];
-    const max = Math.max(1, ...counts);
-    const today = this.today();
-    return AGE_BUCKETS.map((b, i) => ({
-      key: b.key,
-      label: b.label,
-      n: counts[i] ?? 0,
-      pct: ((counts[i] ?? 0) / max) * 100,
-      from: b.from === null ? '' : daysBefore(today, b.from),
-      to: daysBefore(today, b.to),
-    }));
-  });
 }
