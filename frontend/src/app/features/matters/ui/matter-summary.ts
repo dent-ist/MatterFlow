@@ -229,7 +229,7 @@ import { aiLabel } from './matter-ai';
             </button>
           }
         </div>
-        <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details">
+        <div class="ms__scroll" tabindex="0" role="region" aria-label="Matter details, scrollable">
           <dl class="ms__dl">
             <dt class="ms__cm-row">CM number</dt>
             <dd class="ms__cm-row"><mf-matter-ref [value]="matter().matterRef" /></dd>
@@ -313,7 +313,12 @@ import { aiLabel } from './matter-ai';
                 </button>
               }
             </div>
-            <div class="ms__scroll" tabindex="0" role="region" aria-label="Recent activity">
+            <div
+              class="ms__scroll"
+              tabindex="0"
+              role="region"
+              aria-label="Recent activity, scrollable"
+            >
               @if (activity().length > 0) {
                 <ul class="ms__feed">
                   @for (e of activity(); track e.eventId) {

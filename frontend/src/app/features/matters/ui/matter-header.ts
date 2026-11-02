@@ -54,10 +54,16 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
       flex: 1 1 18rem;
       min-width: 0;
       margin: 0;
-      font-size: var(--mf-fs-title);
-      font-weight: 600;
+      /* The same size as every record header: 22 px, 18 px on a phone. */
+      font-size: var(--mf-fs-h2);
+      font-weight: 700;
       line-height: 1.25;
       overflow-wrap: anywhere;
+    }
+    @media (max-width: 639.98px) {
+      .mh__title {
+        font-size: var(--mf-fs-h3);
+      }
     }
     .mh__title .pi {
       color: var(--mf-text-muted);
