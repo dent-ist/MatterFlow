@@ -282,15 +282,17 @@ const emptySpec = (): SpecDraft => ({
           >
             Productions <span class="pt__count">{{ productionTotal() }}</span>
           </button>
-          <button
-            type="button"
-            class="mf-btn"
-            data-view="specs"
-            [attr.aria-pressed]="view() === 'specs'"
-            (click)="setView('specs')"
-          >
-            Specs <span class="pt__count">{{ specTotal() }}</span>
-          </button>
+          @if (canViewSpecs()) {
+            <button
+              type="button"
+              class="mf-btn"
+              data-view="specs"
+              [attr.aria-pressed]="view() === 'specs'"
+              (click)="setView('specs')"
+            >
+              Specs <span class="pt__count">{{ specTotal() }}</span>
+            </button>
+          }
         </div>
         @if (view() === 'productions') {
           <mf-dropdown
@@ -1120,6 +1122,7 @@ export class ProductionsTab {
 
   protected readonly canEdit = computed(() => this.auth.has('Production.Edit'));
   protected readonly canComment = computed(() => this.auth.has('Production.Comment'));
+  protected readonly canViewSpecs = computed(() => this.auth.has('ProductionSpec.View'));
   protected readonly canEditSpecs = computed(() => this.auth.has('ProductionSpec.Edit'));
   protected readonly specFormTitle = computed(() =>
     this.draftId()
