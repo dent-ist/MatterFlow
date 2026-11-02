@@ -135,7 +135,7 @@ public sealed class ProductionService(DbContext db, IAuditWriter audit, Producti
 
     public async Task<Result<ProductionResponse>> UpdateAsync(int id, UpdateProductionRequest request, CancellationToken ct)
     {
-        var production = await access.Visible(db.Set<Production>(), p => p.MatterId).SingleOrDefaultAsync(p => p.Id == id, ct);
+        var production = await access.FindTrackedAsync<Production>(p => p.MatterId, p => p.Id == id, ct);
         if (production is null)
             return ProductionSupport.NotFound("Production");
 
@@ -172,7 +172,7 @@ public sealed class ProductionService(DbContext db, IAuditWriter audit, Producti
 
     public async Task<Result> DeleteAsync(int id, string? rowVersion, CancellationToken ct)
     {
-        var production = await access.Visible(db.Set<Production>(), p => p.MatterId).SingleOrDefaultAsync(p => p.Id == id, ct);
+        var production = await access.FindTrackedAsync<Production>(p => p.MatterId, p => p.Id == id, ct);
         if (production is null)
             return ProductionSupport.NotFound("Production");
         if (string.IsNullOrWhiteSpace(rowVersion))
@@ -241,7 +241,7 @@ public sealed class ProductionService(DbContext db, IAuditWriter audit, Producti
 
     public async Task<Result<ProductionCommentResponse>> UpdateCommentAsync(int commentId, UpdateProductionCommentRequest request, CancellationToken ct)
     {
-        var comment = await access.Visible(db.Set<ProductionComment>(), c => c.MatterId).SingleOrDefaultAsync(c => c.Id == commentId, ct);
+        var comment = await access.FindTrackedAsync<ProductionComment>(c => c.MatterId, c => c.Id == commentId, ct);
         if (comment is null)
             return ProductionSupport.NotFound("Comment");
         if (!IsAuthor(comment))
@@ -275,7 +275,7 @@ public sealed class ProductionService(DbContext db, IAuditWriter audit, Producti
 
     public async Task<Result> DeleteCommentAsync(int commentId, string? rowVersion, CancellationToken ct)
     {
-        var comment = await access.Visible(db.Set<ProductionComment>(), c => c.MatterId).SingleOrDefaultAsync(c => c.Id == commentId, ct);
+        var comment = await access.FindTrackedAsync<ProductionComment>(c => c.MatterId, c => c.Id == commentId, ct);
         if (comment is null)
             return ProductionSupport.NotFound("Comment");
         if (!IsAuthor(comment))

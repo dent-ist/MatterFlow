@@ -20,6 +20,18 @@ public sealed class NoteAccess(IMatterVisibility visibility, IMatterDirectory ma
     public async Task<MatterSummary?> FindVisibleMatterAsync(int matterId, CancellationToken ct) =>
         await visibility.CanSeeMatterAsync(matterId, ct) ? await matters.FindAsync(matterId, ct) : null;
 
+
+    /// <summary>
+    /// The record to change, tracked: it must be of a matter the caller may see (otherwise null, the 404). The visibility query is read without tracking (it joins the access rows), so the
+    /// record itself is loaded again by its key; changes to an untracked record would be silently lost.
+    /// </summary>
+    public async Task<T?> FindTrackedAsync<T>(Expression<Func<T, int>> matterId, Expression<Func<T, bool>> where, CancellationToken ct)
+        where T : class
+    {
+        var visible = await Visible(db.Set<T>().AsNoTracking(), matterId).AnyAsync(where, ct);
+        return visible ? await db.Set<T>().SingleOrDefaultAsync(where, ct) : null;
+    }
+
     public Task<bool> CanSeeMatterAsync(int matterId, CancellationToken ct) => visibility.CanSeeMatterAsync(matterId, ct);
 
     /// <summary>Display names of the given users (history keeps the names of inactive users).</summary>

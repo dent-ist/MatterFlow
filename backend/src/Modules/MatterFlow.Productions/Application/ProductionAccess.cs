@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using MatterFlow.Identity.Contracts;
 using MatterFlow.Organization.Contracts;
 using MatterFlow.SharedKernel.Visibility;
+using Microsoft.EntityFrameworkCore;
 
 namespace MatterFlow.Productions.Application;
 
@@ -9,10 +10,21 @@ namespace MatterFlow.Productions.Application;
 /// The sensitive-matter rule for this module (epic #788, mode M): productions, specs and comments are those of a matter the caller may see, for reads and writes alike.
 /// A hidden matter's records do not exist for the caller (404).
 /// </summary>
-public sealed class ProductionAccess(IMatterVisibility visibility, IMatterDirectory matters, IUserDirectory users)
+public sealed class ProductionAccess(IMatterVisibility visibility, IMatterDirectory matters, IUserDirectory users, DbContext db)
 {
     /// <summary>Keeps the rows of the matters the caller may see.</summary>
     public IQueryable<T> Visible<T>(IQueryable<T> source, Expression<Func<T, int>> matterId) => visibility.WhereMatterVisible(source, matterId);
+
+    /// <summary>
+    /// The record to change, tracked: it must be of a matter the caller may see (otherwise null, the 404). The visibility query is read without tracking (it joins the access rows), so the
+    /// record itself is loaded again by its key; changes to an untracked record would be silently lost.
+    /// </summary>
+    public async Task<T?> FindTrackedAsync<T>(Expression<Func<T, int>> matterId, Expression<Func<T, bool>> where, CancellationToken ct)
+        where T : class
+    {
+        var visible = await Visible(db.Set<T>().AsNoTracking(), matterId).AnyAsync(where, ct);
+        return visible ? await db.Set<T>().SingleOrDefaultAsync(where, ct) : null;
+    }
 
     /// <summary>The matter when it exists and the caller may see it, otherwise null.</summary>
     public async Task<MatterSummary?> FindVisibleMatterAsync(int matterId, CancellationToken ct) =>

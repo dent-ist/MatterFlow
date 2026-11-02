@@ -36,6 +36,11 @@ public enum IdKind
 
     /// <summary>An asset reached through its matter only (the My Matters page): visible exactly when its matter is, not through a task assigned to the viewer.</summary>
     MatterAsset,
+
+    /// <summary>A production spec, a production or a note by id: visible exactly when its matter is (epic #1001).</summary>
+    Spec,
+    Production,
+    Note,
 }
 
 /// <summary>One classified endpoint operation. <paramref name="Calls"/> are the requests the persona walk sends (placeholders <c>{matter}</c>, <c>{task}</c>, <c>{project}</c>, <c>{asset}</c>, <c>{client}</c>, <c>{user}</c> expand to the universe ids).</summary>
@@ -50,6 +55,47 @@ public static class SensitiveAccessCatalog
 {
     public static readonly FrozenDictionary<string, AccessEntry> All = new Dictionary<string, AccessEntry>
     {
+        ["GET api/v1/production-specs"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/production-specs?matterId={matter}"]),
+        ["GET api/v1/production-specs/{specId:int}"] = new(AccessKind.Gated, IdKind.Spec, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/production-specs/{spec}"]),
+        ["GET api/v1/production-specs/{specId:int}/history"] = new(AccessKind.Gated, IdKind.Spec, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/production-specs/{spec}/history"]),
+        ["POST api/v1/production-specs"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/production-specs/{specId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/production-specs/{specId:int}/duplicate"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/production-specs/{specId:int}/retire"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/production-specs/{specId:int}/unretire"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/productions"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/productions/{productionId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["DELETE api/v1/productions/{productionId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/productions/{productionId:int}/comments"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/production-comments/{commentId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["DELETE api/v1/production-comments/{commentId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/notes"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/notes/{noteId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["DELETE api/v1/notes/{noteId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/notes/{noteId:int}/pinned"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/notes/{noteId:int}/lock"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/notes/{noteId:int}/unlock"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/notes/resolve-references"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/note-templates"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["PUT api/v1/note-templates/{templateId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/note-templates/{templateId:int}/duplicate"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["DELETE api/v1/note-templates/{templateId:int}"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["POST api/v1/note-templates/{templateId:int}/use"] = new(AccessKind.Write, IdKind.None, "write on a matter-scoped record: a hidden matter or record answers 404 and changes nothing; Productions and Notes API tests walk it (epic #1001)", []),
+        ["GET api/v1/productions"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/productions?matterId={matter}"]),
+        ["GET api/v1/matters/{matterId:int}/productions/summary"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/matters/{matter}/productions/summary"]),
+        ["GET api/v1/productions/{productionId:int}"] = new(AccessKind.Gated, IdKind.Production, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/productions/{production}"]),
+        ["GET api/v1/productions/{productionId:int}/history"] = new(AccessKind.Gated, IdKind.Production, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/productions/{production}/history"]),
+        ["GET api/v1/productions/{productionId:int}/comments"] = new(AccessKind.Gated, IdKind.Production, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/productions/{production}/comments"]),
+        ["GET api/v1/notes"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/notes?matterId={matter}"]),
+        ["GET api/v1/matters/{matterId:int}/notes/summary"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/matters/{matter}/notes/summary"]),
+        ["GET api/v1/notes/{noteId:int}"] = new(AccessKind.Gated, IdKind.Note, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/notes/{note}"]),
+        ["GET api/v1/notes/{noteId:int}/history"] = new(AccessKind.Gated, IdKind.Note, "resource by id of one matter: hidden = 404 like a missing id (epic #1001)", ["api/v1/notes/{note}/history"]),
+        ["GET api/v1/note-templates"] = new(AccessKind.Gated, IdKind.Matter, "matter-scoped list or count: a hidden matter answers 404 like a missing matter (epic #1001)", ["api/v1/note-templates?matterId={matter}"]),
+        ["GET api/v1/note-templates/{templateId:int}"] = new(AccessKind.Gated, IdKind.None, "firm-wide template: no matter data; a matter template of a hidden matter answers 404 like a missing id (epic #1001; the Notes API tests walk it)", []),
+        ["GET api/v1/note-tags"] = new(AccessKind.Aggregate, IdKind.None, "firm-wide tag names and colours; the note count covers notes of visible matters only (epic #1001)", ["api/v1/note-tags?includeInactive=true"]),
+        ["POST api/v1/note-tags"] = new(AccessKind.Neutral, IdKind.None, "firm-wide tag administration (StatusLabel.Manage): no matter data (epic #1001)", []),
+        ["PUT api/v1/note-tags/{tagId:int}"] = new(AccessKind.Neutral, IdKind.None, "firm-wide tag administration (StatusLabel.Manage): no matter data (epic #1001)", []),
+        ["DELETE api/v1/note-tags/{tagId:int}"] = new(AccessKind.Neutral, IdKind.None, "firm-wide tag administration (StatusLabel.Manage): no matter data (epic #1001)", []),
         ["ANY /health/live"] = new(AccessKind.Neutral, IdKind.None, "health, API description and ping: no matter data", []),
         ["ANY /health/ready"] = new(AccessKind.Neutral, IdKind.None, "health, API description and ping: no matter data", []),
         ["DELETE api/v1/asset-link-roles/{id:int}"] = new(AccessKind.Neutral, IdKind.None, "configuration or role definitions: no matter data", []),

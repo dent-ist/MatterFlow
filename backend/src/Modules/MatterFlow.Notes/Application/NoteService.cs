@@ -211,7 +211,7 @@ public sealed class NoteService(
 
     public async Task<Result<NoteResponse>> UpdateAsync(int id, UpdateNoteRequest request, CancellationToken ct)
     {
-        var note = await access.Visible(db.Set<Note>(), n => n.MatterId).SingleOrDefaultAsync(n => n.Id == id, ct);
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
         if (note is null)
             return NoteSupport.NotFound("Note");
 
@@ -302,7 +302,7 @@ public sealed class NoteService(
 
     public async Task<Result<NoteResponse>> SetPinnedAsync(int id, SetNotePinnedRequest request, CancellationToken ct)
     {
-        var note = await access.Visible(db.Set<Note>(), n => n.MatterId).SingleOrDefaultAsync(n => n.Id == id, ct);
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
         if (note is null)
             return NoteSupport.NotFound("Note");
 
@@ -327,7 +327,7 @@ public sealed class NoteService(
 
     public async Task<Result<NoteResponse>> LockAsync(int id, LockNoteRequest request, CancellationToken ct)
     {
-        var note = await access.Visible(db.Set<Note>(), n => n.MatterId).SingleOrDefaultAsync(n => n.Id == id, ct);
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
         if (note is null)
             return NoteSupport.NotFound("Note");
 
@@ -347,7 +347,7 @@ public sealed class NoteService(
 
     public async Task<Result<NoteResponse>> UnlockAsync(int id, UnlockNoteRequest request, CancellationToken ct)
     {
-        var note = await access.Visible(db.Set<Note>(), n => n.MatterId).SingleOrDefaultAsync(n => n.Id == id, ct);
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
         if (note is null)
             return NoteSupport.NotFound("Note");
 
@@ -372,7 +372,7 @@ public sealed class NoteService(
 
     public async Task<Result> DeleteAsync(int id, string? rowVersion, CancellationToken ct)
     {
-        var note = await access.Visible(db.Set<Note>(), n => n.MatterId).SingleOrDefaultAsync(n => n.Id == id, ct);
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
         if (note is null)
             return NoteSupport.NotFound("Note");
         if (string.IsNullOrWhiteSpace(rowVersion))

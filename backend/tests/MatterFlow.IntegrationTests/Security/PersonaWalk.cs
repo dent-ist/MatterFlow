@@ -11,7 +11,7 @@ namespace MatterFlow.IntegrationTests.Security;
 public sealed record WalkPersona(string Name, HttpClient Client, HashSet<int> Matters, HashSet<long> Tasks, HashSet<int> Projects, HashSet<int> Assets, HashSet<int> HeaderOnlyMatters);
 
 /// <summary>The records of the universe the walk addresses: matters, tasks, projects and the assets the walk adds.</summary>
-public sealed record WalkIds(int[] Matters, long[] Tasks, int[] Projects, int[] Assets, int Client, int User, int AssetType, int TaskType, Dictionary<string, int> MatterRefs);
+public sealed record WalkIds(int[] Matters, long[] Tasks, int[] Projects, int[] Assets, int Client, int User, int AssetType, int TaskType, Dictionary<string, int> MatterRefs, int[]? Specs = null, int[]? Productions = null, int[]? Notes = null);
 
 /// <summary>
 /// The systematic security suite of README 12.2: walks every classified GET endpoint as every persona against the access matrix, compares each hidden id with a missing id
@@ -61,7 +61,19 @@ public sealed class PersonaWalk
         foreach (var matter in u.AllMatters)
             refs[(await OkAsync(await u.H.Admin.GetAsync($"/api/v1/matters/{matter}"))).GetProperty("matterRef").GetString()!] = matter;
 
-        return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs);
+        // One spec, production and note per matter (same order as the matters), with the sentinel of a sensitive matter in the name.
+        var specs = new List<int>();
+        var productions = new List<int>();
+        var notes = new List<int>();
+        foreach (var matter in u.AllMatters)
+        {
+            var label = matter == u.N1 ? "Normal" : SensitiveUniverse.Sentinel(matter);
+            specs.Add((await OkAsync(await u.H.Admin.PostAsJsonAsync("/api/v1/production-specs", new { matterId = matter, name = $"{label} spec" }), HttpStatusCode.Created)).GetProperty("productionSpecId").GetInt32());
+            productions.Add((await OkAsync(await u.H.Admin.PostAsJsonAsync("/api/v1/productions", new { matterId = matter, name = $"{label} production", direction = "OUT" }), HttpStatusCode.Created)).GetProperty("productionId").GetInt32());
+            notes.Add((await OkAsync(await u.H.Admin.PostAsJsonAsync("/api/v1/notes", new { matterId = matter, bodyHtml = $"<p>{label} note</p>" }), HttpStatusCode.Created)).GetProperty("noteId").GetInt32());
+        }
+
+        return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs, [.. specs], [.. productions], [.. notes]);
     }
 
     public static PersonaWalk Create(SensitiveUniverse u, WalkIds ids) => new(u, ids);
@@ -97,6 +109,13 @@ public sealed class PersonaWalk
     [
         (_u.N1, _u.World.ProjectId), (_u.N1, _u.PN1), (_u.S1, _u.PS1), (_u.S2, _u.PS2), (_u.S3, _u.PS3),
     ];
+
+    /// <summary>The matter of a spec, production or note the walk created: the arrays have the order of the matters.</summary>
+    private int MatterOfContent(int[]? ids, int id)
+    {
+        var index = ids is null ? -1 : Array.IndexOf(ids, id);
+        return index < 0 ? -1 : _ids.Matters[index];
+    }
 
     private int MatterOfAsset(int asset) => asset == _ids.Assets[0] ? _u.N1 : asset == _ids.Assets[1] ? _u.S1 : asset == _ids.Assets[2] ? _u.S2 : _u.S3;
 
@@ -141,7 +160,7 @@ public sealed class PersonaWalk
 
     private IEnumerable<string> Expand(string template)
     {
-        string[] tokens = ["{matterref}", "{matter}", "{task}", "{project}", "{asset}", "{client}", "{user}", "{assettype}", "{tasktype}"];
+        string[] tokens = ["{matterref}", "{matter}", "{task}", "{project}", "{asset}", "{client}", "{user}", "{assettype}", "{tasktype}", "{spec}", "{production}", "{note}"];
         var found = tokens.FirstOrDefault(template.Contains);
         if (found is null)
         {
@@ -169,6 +188,9 @@ public sealed class PersonaWalk
             "{client}" => [_ids.Client],
             "{user}" => [_ids.User],
             "{assettype}" => [_ids.AssetType],
+            "{spec}" => (_ids.Specs ?? []).Select(i => (long)i),
+            "{production}" => (_ids.Productions ?? []).Select(i => (long)i),
+            "{note}" => (_ids.Notes ?? []).Select(i => (long)i),
             _ => [_ids.TaskType],
         };
         foreach (var value in values)
@@ -307,7 +329,7 @@ public sealed class PersonaWalk
             return reference is null ? null : _ids.MatterRefs[reference];
         }
 
-        var token = kind switch { IdKind.Task => "{task}", IdKind.Matter => "{matter}", IdKind.Project => "{project}", IdKind.Asset or IdKind.MatterAsset => "{asset}", _ => null };
+        var token = kind switch { IdKind.Task => "{task}", IdKind.Matter => "{matter}", IdKind.Project => "{project}", IdKind.Asset or IdKind.MatterAsset => "{asset}", IdKind.Spec => "{spec}", IdKind.Production => "{production}", IdKind.Note => "{note}", _ => null };
         if (token is null)
             return null;
 
@@ -324,6 +346,9 @@ public sealed class PersonaWalk
         IdKind.Project => persona.Projects.Contains((int)id),
         IdKind.Asset => persona.Assets.Contains((int)id),
         IdKind.MatterAsset => persona.Matters.Contains(MatterOfAsset((int)id)),
+        IdKind.Spec => persona.Matters.Contains(MatterOfContent(_ids.Specs, (int)id)),
+        IdKind.Production => persona.Matters.Contains(MatterOfContent(_ids.Productions, (int)id)),
+        IdKind.Note => persona.Matters.Contains(MatterOfContent(_ids.Notes, (int)id)),
         _ => true,
     };
 

@@ -117,7 +117,7 @@ public sealed class ProductionSpecService(DbContext db, IAuditWriter audit, Prod
 
     public async Task<Result<ProductionSpecResponse>> UpdateAsync(int id, UpdateProductionSpecRequest request, CancellationToken ct)
     {
-        var spec = await access.Visible(db.Set<ProductionSpec>(), s => s.MatterId).SingleOrDefaultAsync(s => s.Id == id, ct);
+        var spec = await access.FindTrackedAsync<ProductionSpec>(s => s.MatterId, s => s.Id == id, ct);
         if (spec is null)
             return ProductionSupport.NotFound("Production spec");
 
@@ -207,7 +207,7 @@ public sealed class ProductionSpecService(DbContext db, IAuditWriter audit, Prod
 
     private async Task<Result<ProductionSpecResponse>> ChangeStatusAsync(int id, ChangeProductionSpecStatusRequest request, string target, CancellationToken ct)
     {
-        var spec = await access.Visible(db.Set<ProductionSpec>(), s => s.MatterId).SingleOrDefaultAsync(s => s.Id == id, ct);
+        var spec = await access.FindTrackedAsync<ProductionSpec>(s => s.MatterId, s => s.Id == id, ct);
         if (spec is null)
             return ProductionSupport.NotFound("Production spec");
 
