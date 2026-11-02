@@ -410,7 +410,8 @@ describe('MatterDetailPage', () => {
       'Matter name',
       'Status',
       'Sensitive',
-      'Project managers',
+      'Primary PM',
+      'Secondary PM',
       'Created',
       'Last changed',
       'AI allowed',
@@ -439,27 +440,15 @@ describe('MatterDetailPage', () => {
     expect(assets.getAssetCountsByType).not.toHaveBeenCalled();
   });
 
-  it('shows Next events, Add event and the My Matters link only with Matter.BeManager (project managers who can open My Matters)', async () => {
+  it('has no Next events panel any more; the New menu keeps Calendar event for Matter.BeManager only and opens the pop-up (MD-23, #1027)', async () => {
     await create(['Matter.View', 'Matter.BeManager' as Permission, 'Matter.Edit']);
-    const panel = el().querySelector('[data-next-events]')!;
-    expect(panel.textContent).toContain('Status hearing');
-    expect(panel.textContent).toContain('11/03 2:30 PM');
-    expect(panel.querySelector('[data-open-calendar]')?.getAttribute('href')).toContain(
-      '/my-matters?matterId=7&tab=calendar',
-    );
-    expect(panel.querySelector('[data-add-event]')).not.toBeNull();
-    // Add event opens the side panel.
-    panel.querySelector<HTMLButtonElement>('[data-add-event]')!.click();
-    await settle(fixture);
-    expect(document.body.querySelector('.mf-slide')?.textContent).toContain('Add event');
-
-    TestBed.resetTestingModule();
-    await create(['Matter.View', 'Matter.Edit']);
     expect(el().querySelector('[data-next-events]')).toBeNull();
+    expect(el().querySelector('[data-add-event]')).toBeNull();
     expect(el().querySelector('[data-open-calendar]')).toBeNull();
+    expect(el().textContent).not.toContain('Next events');
   });
 
-  it('shows one Edit button on the Summary only with Matter.Edit; it opens the side panel without leaving the page', async () => {
+  it('shows one Edit button on the Summary only with Matter.Edit; it opens the pop-up dialog without leaving the page', async () => {
     await create(['Matter.View']);
     expect(el().querySelector('[data-edit-matter]')).toBeNull();
 
@@ -467,7 +456,7 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Matter.Edit']);
     el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
     await settle(fixture);
-    const panel = document.body.querySelector('.mf-slide')!;
+    const panel = document.body.querySelector('.mf-formdlg')!;
     expect(panel.textContent).toContain('Edit matter');
     expect(panel.querySelector('#matter-name')).not.toBeNull();
     expect(panel.querySelector('[data-ai-allowed]')).not.toBeNull();
@@ -478,7 +467,7 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Matter.Edit', 'Matter.EditNumber']);
     el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
     await settle(fixture);
-    const panel = document.body.querySelector('.mf-slide')!;
+    const panel = document.body.querySelector('.mf-formdlg')!;
     panel.querySelector<HTMLButtonElement>('[data-change-number]')!.click();
     await settle(fixture);
     const input = panel.querySelector<HTMLInputElement>('#matter-new-number')!;
@@ -493,14 +482,13 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-crumb-current]')!.textContent).toContain('00343-00099');
   });
 
-  it('shows the project managers in the details with a space before the bracket', async () => {
+  it('shows Primary PM and Secondary PM as two rows of the details (MD-23, #1027)', async () => {
     await create(
       ['Matter.View', 'Matter.AssignManagers', 'Task.View'],
       aMatter({ primaryManager: { userId: 3, displayName: 'Test User 03', isActive: true } }),
     );
-    expect(el().querySelector('[data-managers]')!.textContent!.replace(/\s+/g, ' ')).toContain(
-      'Test User 03 (primary)',
-    );
+    expect(el().querySelector('[data-primary-manager]')!.textContent).toBe('Test User 03');
+    expect(el().querySelector('[data-secondary-manager]')!.textContent).toBe('None');
   });
 
   it('shows no task counts in the header and asks for the summary once (MD-01)', async () => {
@@ -677,7 +665,7 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View', 'Matter.Edit', 'Project.Create']);
     // New > Project opens the side panel and leaves the page where it is.
     await pick('Create', 'new-project');
-    expect(document.body.querySelector('.mf-slide')?.textContent).toContain('New project');
+    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New project');
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
@@ -719,7 +707,7 @@ describe('MatterDetailPage', () => {
     await openTab('projects');
     el().querySelector<HTMLButtonElement>('[data-empty-new-project] button')!.click();
     await settle(fixture);
-    expect(document.body.querySelector('.mf-slide')?.textContent).toContain('New project');
+    expect(document.body.querySelector('.mf-formdlg')?.textContent).toContain('New project');
   });
 
   it('confirms before deactivating and saves with the row version', async () => {
@@ -1003,9 +991,7 @@ describe('MatterDetailPage', () => {
       await create(['Matter.View'], aMatter({ primaryManager: ann, secondaryManager: bob }));
       const line = el().querySelector('[data-managers]')!;
       expect(line.querySelector('[data-primary-manager]')?.textContent).toBe('Ann Lee');
-      expect(line.textContent).toContain('(primary)');
-      expect(line.textContent).toContain('Bob Roe');
-      expect(line.textContent).toContain('(secondary)');
+      expect(el().querySelector('[data-secondary-manager]')?.textContent).toBe('Bob Roe');
       expect(el().querySelector('[data-change-managers]')).toBeNull(); // no Matter.AssignManagers
 
       TestBed.resetTestingModule();
@@ -1016,9 +1002,7 @@ describe('MatterDetailPage', () => {
 
     it('offers a quiet Add project manager link only with Matter.AssignManagers', async () => {
       await create(['Matter.View', 'Matter.AssignManagers'], aMatter());
-      expect(el().querySelector('[data-add-managers]')?.textContent?.trim()).toBe(
-        'Add project manager',
-      );
+      expect(el().querySelector('[data-add-managers]')?.textContent?.trim()).toBe('Add');
       expect(el().querySelector('[data-change-managers]')).toBeNull();
     });
 

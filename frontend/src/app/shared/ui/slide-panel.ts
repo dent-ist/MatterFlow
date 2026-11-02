@@ -172,14 +172,12 @@ const WIDTHS = { default: '30rem', large: '37.5rem' } as const;
                   <p-button
                     label="Keep editing"
                     severity="secondary"
-                    size="small"
                     data-guard-keep
                     (onClick)="guard.set(false)"
                   />
                   <p-button
                     label="Discard"
                     severity="danger"
-                    size="small"
                     data-guard-discard
                     (onClick)="close()"
                   />

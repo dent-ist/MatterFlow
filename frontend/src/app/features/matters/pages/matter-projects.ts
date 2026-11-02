@@ -63,23 +63,6 @@ import { groupProjects } from './matter-project-groups';
       padding: 0 var(--mf-s2);
       border-bottom: 1px solid var(--mf-border-strong);
     }
-    .mp-group button {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 32px;
-      padding: 0 var(--mf-s2);
-      border: 0;
-      border-radius: var(--mf-radius);
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .mp-group button:hover {
-      background: var(--mf-surface);
-    }
     .mp-group .pi {
       font-size: var(--mf-fs-xs);
     }
@@ -129,6 +112,7 @@ import { groupProjects } from './matter-project-groups';
                 <th scope="colgroup" [attr.colspan]="columns()">
                   <button
                     type="button"
+                    class="mf-btn mf-btn--text"
                     data-archived-toggle
                     [attr.aria-expanded]="archivedOpen() ? 'true' : 'false'"
                     (click)="toggleArchived()"

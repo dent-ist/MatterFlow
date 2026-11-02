@@ -581,7 +581,7 @@ test.describe('WP12 phone cards', () => {
       const sheet = page.locator('[data-filter-sheet]');
       expect(
         (await dropdownByAttr(sheet, 'data-sort-select').optionTexts()).map((t) => t.trim()),
-      ).toEqual(['Reference', 'Name', 'Client', 'Project manager', 'Open tasks', 'Overdue']);
+      ).toEqual(['CM Number', 'Name', 'Client', 'Primary PM', 'Open tasks', 'Overdue']);
       // The sheet also carries Status and Sensitive (#272).
       await expect(filterDropdown(sheet, 'Sensitive')).toBeVisible();
       await expect(filterDropdown(sheet, 'Status')).toBeVisible();

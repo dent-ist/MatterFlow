@@ -170,19 +170,6 @@ const emptySpec = (): SpecDraft => ({
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
-    .pt__link {
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--mf-link, var(--mf-primary));
-      font: inherit;
-      font-weight: 600;
-      text-align: start;
-      cursor: pointer;
-    }
-    .pt__link:hover {
-      text-decoration: underline;
-    }
     .pt__muted {
       color: var(--mf-text-muted);
     }
@@ -220,7 +207,7 @@ const emptySpec = (): SpecDraft => ({
       border-bottom: 1px solid var(--mf-border);
       overflow-wrap: anywhere;
     }
-    .pt__meta .pt__link {
+    .pt__meta .mf-btn {
       margin-inline-start: var(--mf-s2);
     }
     .pt__meta {
@@ -335,26 +322,19 @@ const emptySpec = (): SpecDraft => ({
           <p-button
             label="New Production"
             icon="pi pi-plus"
-            size="small"
             data-new-production
             (onClick)="newProduction()"
           />
         }
         @if (view() === 'specs' && canEditSpecs()) {
-          <p-button
-            label="New Spec"
-            icon="pi pi-plus"
-            size="small"
-            data-new-spec
-            (onClick)="newSpec()"
-          />
+          <p-button label="New Spec" icon="pi pi-plus" data-new-spec (onClick)="newSpec()" />
         }
       </div>
 
       @if (error()) {
         <p class="pg-reason" role="alert" data-productions-error>
           {{ error() }}
-          <button type="button" class="pt__link" (click)="reload()">Try again</button>
+          <button type="button" class="mf-btn mf-btn--text" (click)="reload()">Try again</button>
         </p>
       } @else if (view() === 'productions') {
         @if (loaded() && productions().length === 0) {
@@ -383,7 +363,7 @@ const emptySpec = (): SpecDraft => ({
                     <td>
                       <button
                         type="button"
-                        class="pt__link"
+                        class="mf-btn mf-btn--text"
                         data-production-open
                         (click)="openProduction(p)"
                       >
@@ -459,7 +439,12 @@ const emptySpec = (): SpecDraft => ({
                 @for (s of specs(); track s.productionSpecId) {
                   <tr data-spec-row>
                     <td>
-                      <button type="button" class="pt__link" data-spec-open (click)="openSpec(s)">
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text"
+                        data-spec-open
+                        (click)="openSpec(s)"
+                      >
                         {{ s.name }}
                       </button>
                       @if (s.sourceOfAgreement) {
@@ -513,7 +498,6 @@ const emptySpec = (): SpecDraft => ({
             <p-button
               label="Edit"
               icon="pi pi-pencil"
-              size="small"
               data-production-edit
               (onClick)="editProduction(p)"
             />
@@ -522,7 +506,6 @@ const emptySpec = (): SpecDraft => ({
               icon="pi pi-trash"
               severity="danger"
               [outlined]="true"
-              size="small"
               data-production-delete
               (onClick)="confirmDelete.set(true)"
             />
@@ -573,15 +556,9 @@ const emptySpec = (): SpecDraft => ({
                     <p-button
                       label="Cancel"
                       severity="secondary"
-                      size="small"
                       (onClick)="editingComment.set(null)"
                     />
-                    <p-button
-                      label="Save comment"
-                      size="small"
-                      data-comment-save
-                      (onClick)="saveComment(c)"
-                    />
+                    <p-button label="Save comment" data-comment-save (onClick)="saveComment(c)" />
                   </div>
                 </div>
               } @else {
@@ -592,8 +569,10 @@ const emptySpec = (): SpecDraft => ({
                     (edited)
                   }
                   @if (c.canEdit && canComment()) {
-                    <button type="button" class="pt__link" (click)="startEdit(c)">Edit</button>
-                    <button type="button" class="pt__link" (click)="deleteComment(c)">
+                    <button type="button" class="mf-btn mf-btn--text" (click)="startEdit(c)">
+                      Edit
+                    </button>
+                    <button type="button" class="mf-btn mf-btn--text" (click)="deleteComment(c)">
                       Delete
                     </button>
                   }
@@ -614,12 +593,7 @@ const emptySpec = (): SpecDraft => ({
               [(value)]="newComment"
             />
             <div class="pt__actions">
-              <p-button
-                label="Add comment"
-                size="small"
-                data-comment-add
-                (onClick)="addComment(p)"
-              />
+              <p-button label="Add comment" data-comment-add (onClick)="addComment(p)" />
             </div>
           </div>
         }
@@ -766,19 +740,12 @@ const emptySpec = (): SpecDraft => ({
         <div class="pt__actions">
           @if (canEditSpecs()) {
             @if (s.status === 'Active') {
-              <p-button
-                label="Edit"
-                icon="pi pi-pencil"
-                size="small"
-                data-spec-edit
-                (onClick)="editSpec(s)"
-              />
+              <p-button label="Edit" icon="pi pi-pencil" data-spec-edit (onClick)="editSpec(s)" />
             }
             <p-button
               label="Duplicate"
               icon="pi pi-copy"
               severity="secondary"
-              size="small"
               data-spec-duplicate
               (onClick)="duplicateSpec(s)"
             />
@@ -788,7 +755,6 @@ const emptySpec = (): SpecDraft => ({
                 icon="pi pi-ban"
                 severity="danger"
                 [outlined]="true"
-                size="small"
                 data-spec-retire
                 (onClick)="confirmRetire.set(true)"
               />
@@ -797,7 +763,6 @@ const emptySpec = (): SpecDraft => ({
                 label="Reinstate"
                 icon="pi pi-undo"
                 severity="secondary"
-                size="small"
                 data-spec-reinstate
                 (onClick)="reinstateSpec(s)"
               />
@@ -944,15 +909,9 @@ const emptySpec = (): SpecDraft => ({
               <p-button
                 label="Minimum set"
                 severity="secondary"
-                size="small"
                 (onClick)="setFields(minimumFields)"
               />
-              <p-button
-                label="All fields"
-                severity="secondary"
-                size="small"
-                (onClick)="setFields(allFields)"
-              />
+              <p-button label="All fields" severity="secondary" (onClick)="setFields(allFields)" />
             </div>
             <div class="pt__chk">
               @for (f of allFields; track f) {
