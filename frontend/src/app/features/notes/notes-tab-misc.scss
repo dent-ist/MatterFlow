@@ -202,39 +202,6 @@
   .nt__split {
     display: none;
   }
-
-  .nt__head {
-    flex-wrap: wrap;
-    padding: 12px 16px;
-
-    .nt__search {
-      flex-basis: 100%;
-      max-width: none;
-      order: 9;
-    }
-  }
-}
-
-.nt--narrow-head .nt__head {
-  flex-wrap: wrap;
-
-  .nt__search {
-    flex-basis: 100%;
-    max-width: none;
-    order: 9;
-  }
-}
-
-.nt--tight .nt__seg button:not([aria-pressed='true']) .nt__lbl {
-  display: none;
-}
-
-.nt--tight .nt__seg button:not([aria-pressed='true']) {
-  padding: 0 10px;
-}
-
-.nt--tighter .nt__seg .nt__lbl {
-  display: none;
 }
 
 .nt--stacked .nt__row,
@@ -326,4 +293,109 @@
   font-size: 10.5px;
   font-weight: 700;
   line-height: 1;
+}
+
+// ---- MD-36: the list controls above the list, the Actions menu and the view options
+.nt__lc {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--mf-border);
+}
+
+.nt__lc1,
+.nt__lc2,
+.nt__lc3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.nt__lc1 .nt__search {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.nt__lc2 {
+  justify-content: space-between;
+}
+
+.nt__vo,
+.nt__am {
+  position: relative;
+  display: inline-flex;
+}
+
+.nt__menu--left {
+  right: auto;
+  left: 0;
+}
+
+.nt__menu {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.nt__mh {
+  padding: 6px 10px 2px;
+  color: var(--mf-text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nt__sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--mf-border);
+}
+
+.nt__menu .nt__mi {
+  gap: 10px;
+  text-decoration: none;
+
+  .nt__grow {
+    flex: 1;
+  }
+
+  .nt__n {
+    color: var(--mf-text-muted);
+    font-size: 12.5px;
+  }
+
+  .nt__blank {
+    display: inline-block;
+    width: 1em;
+  }
+}
+
+.nt__menu [aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.nt__x {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  .pi {
+    font-size: 0.65rem;
+  }
+}
+
+// the view switch in the list pane: words only, so the switch and View options fit one line
+.nt__lc2 .nt__seg .pi {
+  display: none;
 }

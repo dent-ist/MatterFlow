@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 126 lines done (D), 17 different on purpose (P), 0 open (O).**
+**Result: 119 lines done (D), 24 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -13,7 +13,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | # | Mockup | Result |
 |---|---|---|
 | A1 | The Notes tab is ONE white card (border 1 px, radius 12, soft shadow) that fills the tab panel; nothing outside it scrolls on desktop | D |
-| A2 | Inside the card: a header row on top, below it the body with list (left), splitter, note panel (right) | D |
+| A2 | Inside the card: a header row on top, below it the body with list (left), splitter, note panel (right) | P: owner request 2026-11-02 (#1049): no full-width header row; the list pane has two compact control lines (Search + New Note; the view switch + View options) above the list |
 | A3 | List column default width 380 px, min 260 px, max so that the note keeps 420 px | D (380 px, 260 px minimum, the note keeps 420 px; remembered) |
 | A4 | Panel column fills the rest; empty panel shows icon tile, "Select a note to read it", "The note opens here. People who can edit the matter see an Edit button." | P: design A of the mockup has no panel until a note is opened, so the list fills the card (templates view too); the "Select a note to read it" tile is design B only |
 | A5 | Page and document never scroll at 1366x768 and 1920x1080; only the list, the note and the history scroll inside their frames | D (e2e measures no page scroll at 1366x768) |
@@ -23,14 +23,14 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 
 | # | Mockup | Result |
 |---|---|---|
-| B1 | `h2 Notes` (18 px) followed by a count chip with the number of notes (aria-label "Number of notes") | D |
-| B2 | Pill "Sensitive" (lock icon) when the matter is sensitive, with the title "Sensitive matter: only people who can open this matter can read its notes." | D (`sensitive` input from the Matter page) |
+| B1 | `h2 Notes` (18 px) followed by a count chip with the number of notes (aria-label "Number of notes") | P: #1049: no "Notes" heading and count (the tab label has the count) |
+| B2 | Pill "Sensitive" (lock icon) when the matter is sensitive, with the title "Sensitive matter: only people who can open this matter can read its notes." | P: #1049: the Sensitive pill is dropped (the matter header shows it) |
 | B3 | Pill "Read only" (eye icon, blue) when the person lacks Matter Note Edit, title "You can read notes on this matter. Adding and editing needs the Matter Note Edit permission." | D |
 | B4 | Search box with magnifier, placeholder "Search title and text", aria-label "Search notes by title and text", clear (x) button when text is typed; matches highlighted with `mark` in title and preview; preview shows the hit with a leading ellipsis when the hit is far in | D (mark in title and preview; the shared search box with its own clear; the far-hit ellipsis is not drawn: the preview is the server snippet)  |
-| B5 | Tag filter dropdown (tag icon, "Tags" prefix, value "All" or first name + "+n"), multi-select popover with search, colour dot, name, note count, check, Clear / Done, entries "Untagged" and "Locked" (with counts) | D (multi-select with search, counts, Untagged, Locked; tags and Locked combine) |
+| B5 | Tag filter dropdown (tag icon, "Tags" prefix, value "All" or first name + "+n"), multi-select popover with search, colour dot, name, note count, check, Clear / Done, entries "Untagged" and "Locked" (with counts) | P: #1049: the tag filter, Sort and Collapse all live in one "View options" menu; an active tag filter shows as a removable chip under the view switch |
 | B6 | View switch (segmented, `aria-pressed`): By tag, Latest first, Templates (the Board view was removed on the owner's request, #1046); labels shrink to icons when the card is narrower than 1000 px | D (labels fall back to icons under 1120/1000 px of card width) |
-| B7 | Collapse all / Expand all groups icon button (only in By tag view) | D |
-| B8 | Sort dropdown (not in Templates): Newest (updated), Oldest, A to Z, Created; pinned notes always stay on top | D (Newest, Oldest, A to Z, Created; pinned stay on top) |
+| B7 | Collapse all / Expand all groups icon button (only in By tag view) | P: #1049: Collapse all is an item of View options |
+| B8 | Sort dropdown (not in Templates): Newest (updated), Oldest, A to Z, Created; pinned notes always stay on top | P: #1049: Sort is in View options |
 | B9 | "New note" split button: main part makes a blank note (edit mode), the caret opens "Blank note" / "From template..." (hidden for people without Matter Note Edit) | P: "New Note" (Title Case, theme guide section 9, MD-26) and the caret are two adjacent buttons from the shared button system instead of one joined split button |
 | B10 | Header never wraps at 1366; below 690 px of card width the search drops to its own full-width line | D (one line at 1366; the search drops to its own full-width line under 760 px) |
 
@@ -46,7 +46,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | C6 | Latest first view: one flat list, every note once | D |
 | C7 | Board view: one column per tag, cards with title, preview, "also in" chips | P: removed on the owner's request 2026-11-02 (#1046); a stored Board preference falls back to By tag |
 | C8 | Pinned notes stay on top inside each group; pinning does not change "updated by" | D |
-| C9 | Tag chip = rounded pill with dot and name, colours from the palette, 24 px high, ellipsis for long names | D |
+| C9 | Tag chip = rounded pill with dot and name, colours from the palette, 24 px high, ellipsis for long names | D (a light tint of the tag colour, dark text, a solid coloured dot; tokens `--mf-tag-<key>-bg|fg|dot`, contrast checked) |
 | C10 | Skeleton rows while loading ("Loading notes" for screen readers) | D |
 
 ## D. Splitter
@@ -55,7 +55,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 |---|---|---|
 | D1 | 1 px line with a grip (8x44) in the middle; hover/drag/focus turns it blue; hit area 44 px wide | D |
 | D2 | `role="separator"`, `aria-valuemin/max/now/text` ("Note list 380 pixels wide"), Left/Right 16 px, Home, End, Enter resets, double click resets, drag with pointer capture, width remembered (localStorage) | D (16 px keys, Home, End, Enter, double click, drag, remembered) |
-| D3 | Note panel header has a "Reset list width" icon button while docked | D |
+| D3 | Note panel header has a "Reset list width" icon button while docked | P: #1049: no Reset list width button; the splitter resets with Enter or a double click |
 | D4 | Width is clamped so the note keeps at least 420 px; the splitter is hidden when the list is stacked (narrow) | D |
 
 ## E. Note panel: header and read mode
@@ -64,7 +64,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 |---|---|---|
 | E1 | Header: breadcrumb "Notes / <b>title</b>" (ellipsis), then buttons | D |
 | E2 | Edit button (small, pencil + "Edit") for people with Matter Note Edit; on a locked note it is disabled, `aria-disabled`, title/name "Locked by <name>" | D |
-| E3 | Icon buttons: Pin note (`aria-pressed`), Lock/Unlock, Delete (red), More actions (...), then History, Full width (expand/shrink), Close | P: icon buttons are the shared 32 px bordered `mf-btn--icon` (button rule, MD-26) instead of 34 px borderless ones |
+| E3 | Icon buttons: Pin note (`aria-pressed`), Lock/Unlock, Delete (red), More actions (...), then History, Full width (expand/shrink), Close | P: #1049: the header has AI, Edit, one Actions menu (Organise: Pin, Lock; Share and reuse: Copy link, Save as template; View: History and References when narrow; Danger: Delete), full width and Close; pinned and locked show as icons beside the title; History is on the right rail; the reset-width button is gone (Enter or a double click on the splitter resets) |
 | E4 | Unlock disabled with "Only <name> or an administrator can unlock this note" for everybody else; Delete disabled with "Delete needs the Matter Note Delete permission" / "Locked by <name>: unlock it before deleting"; disabled buttons stay visible, tooltip + accessible name carry the reason, click shows a toast with the reason | D |
 | E5 | Title 20 px bold, then one line "Last updated by <b>Name</b> . MM/DD hh:mm AM/PM" | D |
 | E6 | Tag chips under the line (or "No tags"), the lock badge "Locked by <name> . MM/DD hh:mm AM/PM" (amber pill with lock) beside them | D |
@@ -264,3 +264,4 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 14. **No Board view (owner request 2026-11-02, #1046).** The mockup's Board view (one column per tag) was removed; the views are By tag, Latest and Templates.
 15. **Templates are note items (owner request 2026-11-02, #1047).** The mockup's Templates view has Use, Edit, Duplicate and Delete buttons on every row and a separate template editor; built as plain rows that open in the note panel. Duplicate is dropped.
 16. **No New template button (owner request 2026-11-02, #1048).** Templates are created from a note (Save as template); the Templates view only lists, opens, edits and deletes existing ones.
+17. **List controls and grouped actions (owner request 2026-11-02, #1049).** The mockup's one-line header row and its ten header icons are replaced by two control lines in the list pane and one Actions menu; History is only on the right rail (and in Actions when the area is narrow). Tag chips are a tint of the colour with a solid dot.

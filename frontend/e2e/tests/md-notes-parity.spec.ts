@@ -43,14 +43,24 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await w.note(`No tag ${uid()}`);
     await page.setViewportSize({ width: 1366, height: 768 });
     await open(page, w.matter.matterId);
-    const head = page.locator('[data-notes-head]');
-    await expect(head.locator('h2')).toHaveText('Notes');
-    await expect(page.locator('[data-notes-count]')).toHaveText('2');
-    await expect(head.getByRole('searchbox')).toBeVisible();
-    await expect(head.getByRole('button', { name: /Filter by tag or lock/ })).toBeVisible();
+    // no full-width top row: the controls are two lines in the list pane
+    await expect(page.locator('[data-notes-head]')).toHaveCount(0);
+    const controls = page.locator('[data-notes-list] [data-notes-controls]');
+    await expect(controls.getByRole('searchbox')).toBeVisible();
+    await expect(controls.getByRole('button', { name: /View options/ })).toBeVisible();
     for (const v of ['By tag', 'Latest first', 'Templates'])
-      await expect(head.getByRole('button', { name: v, exact: true })).toBeVisible();
-    await expect(page.locator('[data-new-note]')).toBeVisible();
+      await expect(controls.getByRole('button', { name: v, exact: true })).toBeVisible();
+    await expect(controls.locator('[data-new-note]')).toBeVisible();
+    // view options: sort, tags filter (as a removable chip) and collapse all
+    await controls.getByRole('button', { name: /View options/ }).click();
+    const vo = page.locator('[data-view-options-menu]');
+    await expect(vo.getByRole('menuitemradio')).toHaveCount(4);
+    await vo.getByRole('menuitemcheckbox', { name: /Untagged/ }).click();
+    await page.keyboard.press('Escape');
+    await expect(controls.locator('[data-filter-chip]')).toHaveCount(1);
+    await expect(page.locator('[data-note-item]')).toHaveCount(1);
+    await controls.getByRole('button', { name: 'Remove filter Untagged' }).click();
+    await expect(page.locator('[data-note-item]')).toHaveCount(3);
     // one group per tag, the twin note is in both, and Untagged comes last
     await expect(page.locator('[data-group]')).toHaveCount(3);
     await expect(page.locator('[data-group]').last()).toContainText('Untagged');
@@ -63,8 +73,10 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const first = page.locator('[data-group]').first();
     await first.locator('h3 button').click();
     await expect(first.locator('h3 button')).toHaveAttribute('aria-expanded', 'false');
+    await page.getByRole('button', { name: /View options/ }).click();
     await page.locator('[data-toggle-all]').click();
     await expect(page.locator('[data-group] h3 button[aria-expanded="true"]')).toHaveCount(0);
+    await page.getByRole('button', { name: /View options/ }).click();
     await page.locator('[data-toggle-all]').click();
     await expect(page.locator('[data-group] h3 button[aria-expanded="false"]')).toHaveCount(0);
   });
@@ -290,6 +302,25 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     }
   });
 
+  test('tag chips are a light tint with dark text and a coloured dot, from the tag colour', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed); // tagA is red, tagB is teal
+    await w.note(`Coloured ${uid()}`, [w.tagA.noteTagId, w.tagB.noteTagId]);
+    await open(page, w.matter.matterId);
+    const red = page.locator('[data-notes-list] mf-note-tag[data-colour="red"]').first();
+    const teal = page.locator('[data-notes-list] mf-note-tag[data-colour="teal"]').first();
+    await expect(red).toBeVisible();
+    await expect(red).toHaveCSS('background-color', 'rgb(251, 218, 214)');
+    await expect(red).toHaveCSS('color', 'rgb(122, 27, 18)');
+    await expect(red.locator('.ntag__dot')).toHaveCSS('background-color', 'rgb(198, 40, 40)');
+    await expect(teal.locator('.ntag__dot')).toHaveCSS('background-color', 'rgb(10, 125, 114)');
+    // a tag saved without a colour still gets one
+    const bare = await seed.admin.post('/api/v1/note-tags', { name: `Bare ${uid()}` });
+    expect(bare.colourKey).toBeTruthy();
+  });
+
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
     page,
     seed,
@@ -318,12 +349,20 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const n = await w.note(`Lockable ${uid()}`);
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
-    await page.locator('[data-note-lock]').click();
+    // the header shows AI, Edit, Actions, full width and Close only: no History, Pin, Lock or Delete buttons
+    await expect(page.locator('[data-note-head] [data-note-history]')).toHaveCount(0);
+    await page.locator('[data-note-actions]').click();
+    const menu = page.locator('[data-actions-menu]');
+    for (const g of ['Organise', 'Share and reuse', 'Danger']) await expect(menu).toContainText(g);
+    await menu.locator('[data-note-lock]').click();
     await expect(page.locator('[data-note-lock-badge]')).toContainText('Locked by');
+    await expect(page.locator('[data-note-lock-icon]')).toBeVisible();
     await expect(page.locator('[data-note-edit]')).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('[data-note-actions]').click();
     await expect(page.locator('[data-note-delete]')).toHaveAttribute('aria-disabled', 'true');
     await page.locator('[data-note-pin]').click();
-    await expect(page.locator('[data-note-pin]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('[data-note-title] .pi-thumbtack')).toBeVisible();
+    await page.locator('[data-note-actions]').click();
     await page.locator('[data-note-unlock]').click();
     await expect(page.locator('[data-note-lock-badge]')).toHaveCount(0);
     expect(n.noteId).toBeGreaterThan(0);
@@ -424,6 +463,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.locator('[data-template-save]').click();
     await expect(page.locator('[data-note-pane]')).toContainText(`${name} v2`);
     // delete with the same confirmation as a note
+    await page.locator('[data-note-actions]').click();
     await page.locator('[data-template-delete]').click();
     await page.getByRole('dialog').getByRole('button', { name: 'Delete template' }).click();
     await expect(page.locator('[data-template-list] li', { hasText: name })).toHaveCount(0);
@@ -476,7 +516,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await w.note(source, [w.tagA.noteTagId]);
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
-    await page.locator('mf-notes-tab').getByRole('button', { name: 'More actions' }).click();
+    await page.locator('[data-note-actions]').click();
     await page.getByRole('menuitem', { name: 'Save as template...' }).click();
     const dlg = page.getByRole('dialog', { name: 'Save as template' });
     await expect(dlg).toContainText('Who can use it');

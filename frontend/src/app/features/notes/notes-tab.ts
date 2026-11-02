@@ -14,7 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetsClient,
@@ -37,7 +37,6 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
-import { ActionMenu, MenuAction } from '../../shared/ui/action-menu';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
@@ -111,7 +110,6 @@ interface RefChip {
 @Component({
   selector: 'mf-notes-tab',
   imports: [
-    ActionMenu,
     AiButton,
     AiComingSoon,
     ConfirmDialog,
@@ -142,147 +140,9 @@ interface RefChip {
       data-notes-tab
       [class.nt--stacked]="stacked()"
       [class.nt--wide]="wide()"
-      [class.nt--hide-head]="showPanel() && (wide() || stacked())"
       [class.nt--tight]="cardWidth() > 0 && cardWidth() <= 1120"
       [class.nt--tighter]="cardWidth() > 0 && cardWidth() <= 1000"
     >
-      <!-- header row: one line -->
-      <div class="nt__head" data-notes-head>
-        <h2>Notes</h2>
-        <span class="nt__cnt" aria-label="Number of notes" data-notes-count>{{
-          totalCount()
-        }}</span>
-        @if (sensitive()) {
-          <span
-            class="nt__pill"
-            title="Sensitive matter: only people who can open this matter can read its notes."
-            data-notes-sensitive
-            ><i class="pi pi-lock" aria-hidden="true"></i>Sensitive</span
-          >
-        }
-        @if (!canEdit()) {
-          <span
-            class="nt__pill nt__pill--info"
-            title="You can read notes on this matter. Adding and editing needs the Matter Note Edit permission."
-            data-notes-readonly
-            ><i class="pi pi-eye" aria-hidden="true"></i>Read only</span
-          >
-        }
-        <mf-search-box
-          class="nt__search"
-          inputId="nt-search"
-          [label]="view() === 'templates' ? 'Search templates' : 'Search notes by title and text'"
-          [hideLabel]="true"
-          [hintOnFocus]="true"
-          [leadingIcon]="true"
-          [placeholder]="view() === 'templates' ? 'Search templates' : 'Search title and text'"
-          [value]="query()"
-          (searchChange)="onSearch($event)"
-        />
-        @if (view() !== 'templates') {
-          <mf-dropdown
-            buttonId="nt-tag"
-            label="Filter by tag or lock"
-            prefix="Tags "
-            icon="pi-tag"
-            size="sm"
-            placeholder="All"
-            [multi]="true"
-            [search]="true"
-            searchLabel="Search tags"
-            [items]="tagFilterItems()"
-            [(values)]="filterValues"
-          />
-        }
-        <div class="nt__seg" role="group" aria-label="Notes view" data-notes-views>
-          @for (v of views; track v.id) {
-            <button
-              type="button"
-              [attr.data-view]="v.id"
-              [attr.aria-pressed]="view() === v.id"
-              [attr.aria-label]="v.label"
-              [title]="v.label"
-              (click)="setView(v.id)"
-            >
-              <i class="pi" [class]="v.icon" aria-hidden="true"></i
-              ><span class="nt__lbl">{{ v.short }}</span>
-            </button>
-          }
-        </div>
-        @if (view() === 'tag') {
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon"
-            data-toggle-all
-            [attr.aria-label]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
-            [title]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
-            (click)="toggleAll()"
-          >
-            <i
-              class="pi"
-              [class]="anyOpen() ? 'pi-angle-double-up' : 'pi-angle-double-down'"
-              aria-hidden="true"
-            ></i>
-          </button>
-        }
-        @if (view() !== 'templates') {
-          <mf-dropdown
-            buttonId="nt-sort"
-            label="Sort"
-            prefix="Sort "
-            icon="pi-sort-alt"
-            size="sm"
-            [items]="sortItems"
-            [neutralValue]="null"
-            [(value)]="sortValue"
-          />
-        }
-        @if (canEdit()) {
-          <span class="nt__split-btn">
-            <button type="button" class="mf-btn mf-btn--primary" data-new-note (click)="newNote()">
-              <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
-            </button>
-            <button
-              type="button"
-              class="mf-btn mf-btn--primary nt__caret"
-              data-new-menu
-              aria-haspopup="menu"
-              [attr.aria-expanded]="newMenuOpen()"
-              aria-label="New note: choose blank or from a template"
-              (click)="newMenuOpen.set(!newMenuOpen())"
-            >
-              <i class="pi pi-angle-down" aria-hidden="true"></i>
-            </button>
-            @if (newMenuOpen()) {
-              <ul class="nt__menu" role="menu" aria-label="New note" data-new-menu-list>
-                <li role="none">
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text nt__mi"
-                    role="menuitem"
-                    data-new-blank
-                    (click)="newMenuPick('blank')"
-                  >
-                    <i class="pi pi-file" aria-hidden="true"></i>Blank note
-                  </button>
-                </li>
-                <li role="none">
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text nt__mi"
-                    role="menuitem"
-                    data-new-template
-                    (click)="newMenuPick('template')"
-                  >
-                    <i class="pi pi-clone" aria-hidden="true"></i>From template...
-                  </button>
-                </li>
-              </ul>
-            }
-          </span>
-        }
-      </div>
-
       <div class="nt__body">
         <!-- the list -->
         @if (showList()) {
@@ -292,6 +152,213 @@ interface RefChip {
             [style.width.px]="stacked() || !showPanel() ? null : listWidth()"
             data-notes-list
           >
+            <div class="nt__lc" data-notes-controls>
+              <div class="nt__lc1">
+                <mf-search-box
+                  class="nt__search"
+                  inputId="nt-search"
+                  [label]="
+                    view() === 'templates' ? 'Search templates' : 'Search notes by title and text'
+                  "
+                  [hideLabel]="true"
+                  [hintOnFocus]="true"
+                  [leadingIcon]="true"
+                  [placeholder]="
+                    view() === 'templates' ? 'Search templates' : 'Search title and text'
+                  "
+                  [value]="query()"
+                  (searchChange)="onSearch($event)"
+                />
+                @if (canEdit()) {
+                  <span class="nt__split-btn">
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--primary"
+                      data-new-note
+                      (click)="newNote()"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--primary nt__caret"
+                      data-new-menu
+                      aria-haspopup="menu"
+                      [attr.aria-expanded]="newMenuOpen()"
+                      aria-label="New note: choose blank or from a template"
+                      (click)="newMenuOpen.set(!newMenuOpen())"
+                    >
+                      <i class="pi pi-angle-down" aria-hidden="true"></i>
+                    </button>
+                    @if (newMenuOpen()) {
+                      <ul class="nt__menu" role="menu" aria-label="New note" data-new-menu-list>
+                        <li role="none">
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--text nt__mi"
+                            role="menuitem"
+                            data-new-blank
+                            (click)="newMenuPick('blank')"
+                          >
+                            <i class="pi pi-file" aria-hidden="true"></i>Blank note
+                          </button>
+                        </li>
+                        <li role="none">
+                          <button
+                            type="button"
+                            class="mf-btn mf-btn--text nt__mi"
+                            role="menuitem"
+                            data-new-template
+                            (click)="newMenuPick('template')"
+                          >
+                            <i class="pi pi-clone" aria-hidden="true"></i>From template...
+                          </button>
+                        </li>
+                      </ul>
+                    }
+                  </span>
+                }
+              </div>
+              <div class="nt__lc2">
+                <div class="nt__seg" role="group" aria-label="Notes view" data-notes-views>
+                  @for (v of views; track v.id) {
+                    <button
+                      type="button"
+                      [attr.data-view]="v.id"
+                      [attr.aria-pressed]="view() === v.id"
+                      [attr.aria-label]="v.label"
+                      [title]="v.label"
+                      (click)="setView(v.id)"
+                    >
+                      <i class="pi" [class]="v.icon" aria-hidden="true"></i
+                      ><span class="nt__lbl">{{ v.short }}</span>
+                    </button>
+                  }
+                </div>
+                @if (view() !== 'templates') {
+                  <span class="nt__vo">
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      data-view-options
+                      aria-haspopup="menu"
+                      [attr.aria-expanded]="viewOptionsOpen()"
+                      (click)="toggleViewOptions()"
+                    >
+                      <i class="pi pi-sliders-h" aria-hidden="true"></i>View options
+                    </button>
+                    @if (viewOptionsOpen()) {
+                      <ul
+                        class="nt__menu nt__menu--left"
+                        role="menu"
+                        aria-label="View options"
+                        tabindex="-1"
+                        data-view-options-menu
+                        (keydown)="menuNav($event)"
+                      >
+                        <li role="presentation" class="nt__mh">Sort</li>
+                        @for (o of sortItems; track o.value) {
+                          <li role="none">
+                            <button
+                              type="button"
+                              class="mf-btn mf-btn--text nt__mi"
+                              role="menuitemradio"
+                              [attr.aria-checked]="sortValue() === o.value"
+                              (click)="sortValue.set(o.value)"
+                            >
+                              <i
+                                class="pi"
+                                [class]="sortValue() === o.value ? 'pi-check' : 'nt__blank'"
+                                aria-hidden="true"
+                              ></i
+                              >{{ o.label }}
+                            </button>
+                          </li>
+                        }
+                        <li role="separator" class="nt__sep"></li>
+                        <li role="presentation" class="nt__mh">Tags</li>
+                        @for (o of tagFilterItems(); track o.value) {
+                          <li role="none">
+                            <button
+                              type="button"
+                              class="mf-btn mf-btn--text nt__mi"
+                              role="menuitemcheckbox"
+                              [attr.aria-checked]="filterValues().includes(o.value)"
+                              [attr.data-filter]="o.value"
+                              (click)="toggleFilter(o.value)"
+                            >
+                              <i
+                                class="pi"
+                                [class]="
+                                  filterValues().includes(o.value) ? 'pi-check' : 'nt__blank'
+                                "
+                                aria-hidden="true"
+                              ></i
+                              ><span class="nt__grow">{{ o.label }}</span
+                              ><span class="nt__n">{{ o.count }}</span>
+                            </button>
+                          </li>
+                        }
+                        @if (view() === 'tag') {
+                          <li role="separator" class="nt__sep"></li>
+                          <li role="none">
+                            <button
+                              type="button"
+                              class="mf-btn mf-btn--text nt__mi"
+                              role="menuitem"
+                              data-toggle-all
+                              (click)="toggleAll(); closeMenus()"
+                            >
+                              <i
+                                class="pi"
+                                [class]="anyOpen() ? 'pi-angle-double-up' : 'pi-angle-double-down'"
+                                aria-hidden="true"
+                              ></i
+                              >{{ anyOpen() ? 'Collapse all groups' : 'Expand all groups' }}
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    }
+                  </span>
+                }
+              </div>
+              @if (activeFilters().length || !canEdit()) {
+                <div class="nt__lc3">
+                  @if (!canEdit()) {
+                    <span
+                      class="nt__pill nt__pill--info"
+                      title="You can read notes on this matter. Adding and editing needs the Matter Note Edit permission."
+                      data-notes-readonly
+                      ><i class="pi pi-eye" aria-hidden="true"></i>Read only</span
+                    >
+                  }
+                  @for (f of activeFilters(); track f.value) {
+                    @if (f.tag; as t) {
+                      <mf-note-tag
+                        [name]="t.name"
+                        [colourKey]="t.colourKey"
+                        [removable]="true"
+                        data-filter-chip
+                        (removed)="toggleFilter(f.value)"
+                      />
+                    } @else {
+                      <span class="nt__pill" data-filter-chip
+                        >{{ f.label }}
+                        <button
+                          type="button"
+                          class="nt__x"
+                          [attr.aria-label]="'Remove filter ' + f.label"
+                          (click)="toggleFilter(f.value)"
+                        >
+                          <i class="pi pi-times" aria-hidden="true"></i>
+                        </button>
+                      </span>
+                    }
+                  }
+                </div>
+              }
+            </div>
             <div class="nt__scroll" tabindex="-1">
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
@@ -594,22 +661,10 @@ interface RefChip {
                   >
                     <i class="pi pi-pencil" aria-hidden="true"></i>Edit
                   </button>
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    data-template-delete
-                    [class.mf-btn--danger]="!tplReason(t)"
-                    [attr.aria-disabled]="tplReason(t) ? 'true' : null"
-                    [attr.aria-label]="
-                      tplReason(t)
-                        ? 'Delete template, not available. ' + tplReason(t)
-                        : 'Delete template'
-                    "
-                    [title]="tplReason(t) || 'Delete template'"
-                    (click)="onTemplateAction($event, tplReason(t), 'del', t)"
-                  >
-                    <i class="pi pi-trash" aria-hidden="true"></i>
-                  </button>
+                  <ng-container
+                    [ngTemplateOutlet]="noteActions"
+                    [ngTemplateOutletContext]="{ $implicit: 'template' }"
+                  />
                   <button
                     type="button"
                     class="mf-btn mf-btn--icon"
@@ -681,12 +736,10 @@ interface RefChip {
                     [showNote]="false"
                     (pressed)="aiPanel.set(true)"
                   />
-                  @if (note(); as n) {
-                    <ng-container
-                      [ngTemplateOutlet]="deleteBtn"
-                      [ngTemplateOutletContext]="{ $implicit: n }"
-                    />
-                  }
+                  <ng-container
+                    [ngTemplateOutlet]="noteActions"
+                    [ngTemplateOutletContext]="{ $implicit: 'edit' }"
+                  />
                   <button
                     type="button"
                     class="mf-btn mf-btn--primary"
@@ -749,81 +802,11 @@ interface RefChip {
                     >
                       <i class="pi pi-pencil" aria-hidden="true"></i>Edit
                     </button>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      data-note-pin
-                      aria-label="Pin note"
-                      [attr.aria-pressed]="n.isPinned"
-                      [title]="n.isPinned ? 'Unpin note' : 'Pin note'"
-                      (click)="togglePin()"
-                    >
-                      <i class="pi pi-thumbtack" aria-hidden="true"></i>
-                    </button>
-                    @if (n.isLocked) {
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--icon"
-                        data-note-unlock
-                        aria-label="Unlock note"
-                        [attr.aria-disabled]="!lock().canUnlock ? 'true' : null"
-                        [title]="lock().canUnlock ? 'Unlock note' : unlockReason(n)"
-                        (click)="onUnlockClick($event)"
-                      >
-                        <i class="pi pi-lock-open" aria-hidden="true"></i>
-                      </button>
-                    } @else {
-                      <button
-                        type="button"
-                        class="mf-btn mf-btn--icon"
-                        data-note-lock
-                        aria-label="Lock note"
-                        title="Lock note"
-                        (click)="lockNote()"
-                      >
-                        <i class="pi pi-lock" aria-hidden="true"></i>
-                      </button>
-                    }
-                    <ng-container
-                      [ngTemplateOutlet]="deleteBtn"
-                      [ngTemplateOutletContext]="{ $implicit: n }"
-                    />
-                    <mf-action-menu label="More actions" [floating]="true" [items]="moreItems" />
                   }
-                  @if (!stacked() && !wide()) {
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      data-split-reset
-                      aria-label="Reset list width"
-                      title="Reset list width"
-                      (click)="splitReset()"
-                    >
-                      <i class="pi pi-replay" aria-hidden="true"></i>
-                    </button>
-                  }
-                  @if (!histWide() && refChips().length) {
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--icon"
-                      data-note-refs-button
-                      aria-label="Referenced items"
-                      title="Referenced items"
-                      (click)="refsButton()"
-                    >
-                      <i class="pi pi-link" aria-hidden="true"></i>
-                    </button>
-                  }
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--icon"
-                    data-note-history
-                    aria-label="History"
-                    title="History"
-                    (click)="historyButton()"
-                  >
-                    <i class="pi pi-history" aria-hidden="true"></i>
-                  </button>
+                  <ng-container
+                    [ngTemplateOutlet]="noteActions"
+                    [ngTemplateOutletContext]="{ $implicit: 'note' }"
+                  />
                   @if (!stacked()) {
                     <button
                       type="button"
@@ -1006,6 +989,10 @@ interface RefChip {
                         @if (n.isPinned) {
                           <i class="pi pi-thumbtack" aria-hidden="true"></i
                           ><span class="mf-sr-only">Pinned. </span>
+                        }
+                        @if (n.isLocked) {
+                          <i class="pi pi-lock" aria-hidden="true" data-note-lock-icon></i
+                          ><span class="mf-sr-only">Locked. </span>
                         }
                         {{ n.title }}
                       </h2>
@@ -1277,53 +1264,167 @@ interface RefChip {
       </li>
     </ng-template>
 
-    <!-- the delete icon: red, or disabled with its reason -->
-    <ng-template #deleteBtn let-n>
-      @if (canDelete()) {
-        @if (n.isLocked) {
+    <!-- the Actions menu of a note (MD-36): Organise, Share and reuse, View (narrow only), Danger -->
+    <ng-template #noteActions let-kind>
+      @if (kind === 'template' || note()) {
+        <span class="nt__am">
           <button
             type="button"
             class="mf-btn mf-btn--icon"
-            data-note-delete
-            aria-disabled="true"
-            [attr.aria-label]="
-              'Delete note, not available. Locked by ' +
-              (n.lockedByName ?? 'someone') +
-              ': unlock it before deleting'
-            "
-            [title]="'Locked by ' + (n.lockedByName ?? 'someone') + ': unlock it before deleting'"
-            (click)="
-              notify.info(
-                'Locked by ' + (n.lockedByName ?? 'someone') + ': unlock it before deleting'
-              )
-            "
+            data-note-actions
+            aria-haspopup="menu"
+            aria-label="Actions"
+            title="Actions"
+            [attr.aria-expanded]="actionsOpen()"
+            (click)="toggleActions()"
           >
-            <i class="pi pi-trash" aria-hidden="true"></i>
+            <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
           </button>
-        } @else {
-          <button
-            type="button"
-            class="mf-btn mf-btn--icon mf-btn--danger"
-            data-note-delete
-            aria-label="Delete note"
-            title="Delete note"
-            (click)="confirmDelete.set(true)"
-          >
-            <i class="pi pi-trash" aria-hidden="true"></i>
-          </button>
-        }
-      } @else {
-        <button
-          type="button"
-          class="mf-btn mf-btn--icon"
-          data-note-delete
-          aria-disabled="true"
-          aria-label="Delete note, not available. Delete needs the Matter Note Delete permission"
-          title="Delete needs the Matter Note Delete permission"
-          (click)="notify.info('Delete needs the Matter Note Delete permission')"
-        >
-          <i class="pi pi-trash" aria-hidden="true"></i>
-        </button>
+          @if (actionsOpen()) {
+            <ul
+              class="nt__menu nt__menu--right"
+              role="menu"
+              aria-label="Actions"
+              tabindex="-1"
+              data-actions-menu
+              (keydown)="menuNav($event)"
+            >
+              @if (kind !== 'template' && note(); as n) {
+                <li role="presentation" class="nt__mh">Organise</li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text nt__mi"
+                    role="menuitem"
+                    data-note-pin
+                    [attr.aria-disabled]="organiseReason() ? 'true' : null"
+                    [title]="organiseReason()"
+                    (click)="onMenu(organiseReason(), 'pin')"
+                  >
+                    <i class="pi pi-thumbtack" aria-hidden="true"></i
+                    >{{ n.isPinned ? 'Unpin note' : 'Pin note' }}
+                  </button>
+                </li>
+                <li role="none">
+                  @if (n.isLocked) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text nt__mi"
+                      role="menuitem"
+                      data-note-unlock
+                      [attr.aria-disabled]="organiseReason() || !lock().canUnlock ? 'true' : null"
+                      [title]="organiseReason() || (lock().canUnlock ? '' : unlockReason(n))"
+                      (click)="
+                        onMenu(
+                          organiseReason() || (lock().canUnlock ? '' : unlockReason(n)),
+                          'unlock'
+                        )
+                      "
+                    >
+                      <i class="pi pi-lock-open" aria-hidden="true"></i>Unlock note
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text nt__mi"
+                      role="menuitem"
+                      data-note-lock
+                      [attr.aria-disabled]="organiseReason() ? 'true' : null"
+                      [title]="organiseReason()"
+                      (click)="onMenu(organiseReason(), 'lock')"
+                    >
+                      <i class="pi pi-lock" aria-hidden="true"></i>Lock note
+                    </button>
+                  }
+                </li>
+                <li role="separator" class="nt__sep"></li>
+                <li role="presentation" class="nt__mh">Share and reuse</li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text nt__mi"
+                    role="menuitem"
+                    data-note-copy-link
+                    (click)="onMenu('', 'copy')"
+                  >
+                    <i class="pi pi-link" aria-hidden="true"></i>Copy link
+                  </button>
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text nt__mi"
+                    role="menuitem"
+                    data-note-save-template
+                    [attr.aria-disabled]="saveTplReason() ? 'true' : null"
+                    [title]="saveTplReason()"
+                    (click)="onMenu(saveTplReason(), 'saveTpl')"
+                  >
+                    <i class="pi pi-clone" aria-hidden="true"></i>Save as template...
+                  </button>
+                </li>
+                @if (!histWide()) {
+                  <li role="separator" class="nt__sep"></li>
+                  <li role="presentation" class="nt__mh">View</li>
+                  <li role="none">
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text nt__mi"
+                      role="menuitem"
+                      data-note-history
+                      (click)="onMenu('', 'history')"
+                    >
+                      <i class="pi pi-history" aria-hidden="true"></i>History
+                    </button>
+                  </li>
+                  @if (refChips().length) {
+                    <li role="none">
+                      <button
+                        type="button"
+                        class="mf-btn mf-btn--text nt__mi"
+                        role="menuitem"
+                        data-note-refs-button
+                        (click)="onMenu('', 'refs')"
+                      >
+                        <i class="pi pi-link" aria-hidden="true"></i>Referenced items
+                      </button>
+                    </li>
+                  }
+                }
+                <li role="separator" class="nt__sep"></li>
+                <li role="presentation" class="nt__mh">Danger</li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text mf-btn--danger nt__mi"
+                    role="menuitem"
+                    data-note-delete
+                    [attr.aria-disabled]="deleteReason(n) ? 'true' : null"
+                    [title]="deleteReason(n)"
+                    (click)="onMenu(deleteReason(n), 'delete')"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>Delete note
+                  </button>
+                </li>
+              } @else if (kind === 'template' && selTemplate(); as t) {
+                <li role="presentation" class="nt__mh">Danger</li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text mf-btn--danger nt__mi"
+                    role="menuitem"
+                    data-template-delete
+                    [attr.aria-disabled]="tplReason(t) ? 'true' : null"
+                    [title]="tplReason(t)"
+                    (click)="closeMenus(); onTemplateAction($event, tplReason(t), 'del', t)"
+                  >
+                    <i class="pi pi-trash" aria-hidden="true"></i>Delete template
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </span>
       }
     </ng-template>
 
@@ -1640,6 +1741,7 @@ export class NotesTab {
   private readonly usersApi = inject(UsersLookupClient);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   protected readonly notify = inject(NotificationService);
   private readonly editorRef = viewChild<NoteEditor>('editor');
   private readonly cardRef = viewChild<ElementRef<HTMLElement>>('card');
@@ -1698,6 +1800,15 @@ export class NotesTab {
   protected readonly allTags = signal<TagRow[]>([]);
   protected readonly tagQuery = signal('');
   protected readonly newMenuOpen = signal(false);
+  protected readonly viewOptionsOpen = signal(false);
+  protected readonly actionsOpen = signal(false);
+  /** The active tag, Untagged and Locked filters, for the removable chips under the view switch. */
+  protected readonly activeFilters = computed(() =>
+    this.filterValues().map((v) => {
+      const tag = this.allTags().find((t) => String(t.noteTagId) === v) ?? null;
+      return { value: v, tag, label: tag?.name ?? (v === '_none' ? 'Untagged' : 'Locked') };
+    }),
+  );
 
   private readonly tagValues = computed(() => this.filterValues().filter((v) => v !== '_locked'));
   private readonly onlyLocked = computed(() => this.filterValues().includes('_locked'));
@@ -1780,15 +1891,6 @@ export class NotesTab {
   /** The right-hand panel of the note area: History or References, one at a time (remembered). */
   protected readonly sideOpen = signal<'history' | 'refs' | 'none'>(this.readSide());
   protected readonly histWidth = signal(this.readHistWidth());
-
-  protected readonly moreItems: MenuAction[] = [
-    {
-      id: 'sat',
-      label: 'Save as template...',
-      icon: 'pi-clone',
-      run: () => this.openSaveTemplate(),
-    },
-  ];
 
   // ---- templates
   protected readonly templates = signal<NoteTemplateResponse[]>([]);
@@ -2062,14 +2164,17 @@ export class NotesTab {
     inject(DestroyRef).onDestroy(() => window.removeEventListener('beforeunload', unload));
     // The closing click of the "New note" menu.
     const close = (e: Event) => {
-      if (this.newMenuOpen() && !(e.target as HTMLElement).closest('.nt__split-btn'))
-        this.newMenuOpen.set(false);
+      const t = e.target as HTMLElement;
+      if (this.newMenuOpen() && !t.closest('.nt__split-btn')) this.newMenuOpen.set(false);
+      if (this.viewOptionsOpen() && !t.closest('.nt__vo')) this.viewOptionsOpen.set(false);
+      if (this.actionsOpen() && !t.closest('.nt__am')) this.actionsOpen.set(false);
     };
     document.addEventListener('click', close);
     inject(DestroyRef).onDestroy(() => document.removeEventListener('click', close));
   }
 
   private paneObserver: ResizeObserver | null = null;
+  private deepLinked = false;
 
   protected tagKey(): string {
     return this.selectedTags()
@@ -2191,6 +2296,123 @@ export class NotesTab {
     this.query.set('');
   }
 
+  protected toggleViewOptions(): void {
+    this.actionsOpen.set(false);
+    this.newMenuOpen.set(false);
+    this.viewOptionsOpen.update((o) => !o);
+    if (this.viewOptionsOpen()) this.focusFirstItem('[data-view-options-menu]');
+  }
+
+  protected toggleActions(): void {
+    this.viewOptionsOpen.set(false);
+    this.newMenuOpen.set(false);
+    this.actionsOpen.update((o) => !o);
+    if (this.actionsOpen()) this.focusFirstItem('[data-actions-menu]');
+  }
+
+  protected closeMenus(): void {
+    this.viewOptionsOpen.set(false);
+    this.actionsOpen.set(false);
+    this.newMenuOpen.set(false);
+  }
+
+  private focusFirstItem(menu: string): void {
+    setTimeout(
+      () =>
+        document.querySelector<HTMLElement>(`${menu} button:not([aria-disabled="true"])`)?.focus(),
+      0,
+    );
+  }
+
+  /** Up, Down, Home and End move inside an open menu (keys of the widget, not shortcuts, #420); Escape closes it and returns to its button. */
+  protected menuNav(ev: KeyboardEvent): void {
+    const menu = ev.currentTarget as HTMLElement;
+    const items = Array.from(menu.querySelectorAll<HTMLElement>('button'));
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const to =
+      ev.key === 'ArrowDown'
+        ? (i + 1) % items.length
+        : ev.key === 'ArrowUp'
+          ? (i - 1 + items.length) % items.length
+          : ev.key === 'Home'
+            ? 0
+            : ev.key === 'End'
+              ? items.length - 1
+              : -1;
+    if (to >= 0) {
+      ev.preventDefault();
+      items[to].focus();
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const opener = menu.parentElement?.querySelector<HTMLElement>(':scope > button');
+      this.closeMenus();
+      opener?.focus();
+    }
+  }
+
+  protected toggleFilter(value: string): void {
+    this.filterValues.update((v) =>
+      v.includes(value) ? v.filter((x) => x !== value) : [...v, value],
+    );
+  }
+
+  /** Runs a menu item, or says why it cannot (a disabled item stays visible with its reason). */
+  protected onMenu(
+    reason: string,
+    what: 'pin' | 'lock' | 'unlock' | 'copy' | 'saveTpl' | 'history' | 'refs' | 'delete',
+  ): void {
+    this.closeMenus();
+    if (reason) {
+      this.notify.info(reason);
+      return;
+    }
+    if (what === 'pin') void this.togglePin();
+    else if (what === 'lock') void this.lockNote();
+    else if (what === 'unlock') void this.unlock();
+    else if (what === 'copy') void this.copyLink();
+    else if (what === 'saveTpl') this.openSaveTemplate();
+    else if (what === 'history') this.historyButton();
+    else if (what === 'refs') this.refsButton();
+    else this.confirmDelete.set(true);
+  }
+
+  protected organiseReason(): string {
+    if (!this.canEdit()) return 'Needs the Matter Note Edit permission';
+    if (this.editing()) return 'Save or cancel your changes first';
+    return '';
+  }
+
+  protected saveTplReason(): string {
+    return this.organiseReason();
+  }
+
+  protected deleteReason(n: NoteResponse): string {
+    if (!this.canDelete()) return 'Delete needs the Matter Note Delete permission';
+    if (n.isLocked) return `Locked by ${n.lockedByName ?? 'someone'}: unlock it before deleting`;
+    return '';
+  }
+
+  /** The address of this note: the Notes tab of the matter with the note open. */
+  protected async copyLink(): Promise<void> {
+    const n = this.note();
+    if (!n) return;
+    const url = new URL(
+      this.router.serializeUrl(
+        this.router.createUrlTree(['/matters', n.matterId], {
+          queryParams: { tab: 'notes', note: n.noteId },
+        }),
+      ),
+      window.location.origin,
+    ).toString();
+    try {
+      await navigator.clipboard.writeText(url);
+      this.notify.success('Link copied');
+    } catch {
+      this.notify.warn('Copying is not allowed here. Copy the address from the browser.');
+    }
+  }
+
   protected newMenuPick(what: 'blank' | 'template'): void {
     this.newMenuOpen.set(false);
     if (what === 'blank') this.newNote();
@@ -2220,6 +2442,11 @@ export class NotesTab {
       if (!this.query()) this.totalCount.set(all.length);
       this.listError.set('');
       this.changed.emit();
+      const wanted = Number(this.route.snapshot.queryParamMap.get('note'));
+      if (wanted > 0 && !this.deepLinked) {
+        this.deepLinked = true;
+        void this.openNow(wanted, true);
+      }
     } catch {
       this.listError.set('The notes could not be loaded.');
     } finally {
@@ -2987,9 +3214,12 @@ export class NotesTab {
 
   /** Escape closes an open note on a narrow screen (a dialog or a menu takes it first); a menu of the editor stops it itself. */
   protected onKey(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && this.newMenuOpen()) {
+    if (
+      e.key === 'Escape' &&
+      (this.newMenuOpen() || this.viewOptionsOpen() || this.actionsOpen())
+    ) {
       e.preventDefault();
-      this.newMenuOpen.set(false);
+      this.closeMenus();
       return;
     }
     if (e.key === 'Escape' && (e.target as HTMLElement).closest('.nt__phist')) {

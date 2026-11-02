@@ -50,6 +50,11 @@ for (const h of ['overdue', 'risk', 'info', 'healthy', 'person', 'critical', 'ne
     graphic,
   ]);
 }
+// Note tag chips (MD-36, #1049): text on the tint 4.5:1, the dot on the tint 3:1.
+for (const c of ['slate', 'blue', 'teal', 'green', 'amber', 'orange', 'red', 'rose', 'violet', 'indigo', 'neutral']) {
+  pairs.push([`tag ${c} text on its tint`, `--mf-tag-${c}-fg`, `--mf-tag-${c}-bg`, text]);
+  pairs.push([`tag ${c} dot on its tint`, `--mf-tag-${c}-dot`, `--mf-tag-${c}-bg`, graphic]);
+}
 // Note text colours (MD-30, #1034): on the card and on the quote tint of a note.
 for (const c of ['red', 'orange', 'amber', 'green', 'teal', 'blue', 'violet', 'slate']) {
   pairs.push([`note colour ${c} on a card`, `--mf-note-${c}`, '--mf-surface', text]);

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
+import { isTaskTypeColour } from '../../shared/task-type/task-type-colours';
 
 /**
  * A note tag as the mockup draws it (`.tag`): a rounded chip, 24 px high, a dot and the name, in the tag's palette colour (the ten task type colours, so the
@@ -12,8 +12,7 @@ import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
   host: {
     class: 'ntag',
     '[class.ntag--here]': 'here()',
-    '[style.background]': 'colours().bg',
-    '[style.color]': 'colours().fg',
+    '[attr.data-colour]': 'key()',
   },
   template: `
     <i class="ntag__dot" aria-hidden="true"></i>
@@ -34,6 +33,11 @@ import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
   `,
   styles: `
     :host {
+      --tag-bg: var(--mf-tag-neutral-bg);
+      --tag-fg: var(--mf-tag-neutral-fg);
+      --tag-dot: var(--mf-tag-neutral-dot);
+      background: var(--tag-bg);
+      color: var(--tag-fg);
       display: inline-flex;
       gap: 6px;
       align-items: center;
@@ -46,6 +50,56 @@ import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
       line-height: 1;
       white-space: nowrap;
     }
+    :host([data-colour='slate']) {
+      --tag-bg: var(--mf-tag-slate-bg);
+      --tag-fg: var(--mf-tag-slate-fg);
+      --tag-dot: var(--mf-tag-slate-dot);
+    }
+    :host([data-colour='blue']) {
+      --tag-bg: var(--mf-tag-blue-bg);
+      --tag-fg: var(--mf-tag-blue-fg);
+      --tag-dot: var(--mf-tag-blue-dot);
+    }
+    :host([data-colour='teal']) {
+      --tag-bg: var(--mf-tag-teal-bg);
+      --tag-fg: var(--mf-tag-teal-fg);
+      --tag-dot: var(--mf-tag-teal-dot);
+    }
+    :host([data-colour='green']) {
+      --tag-bg: var(--mf-tag-green-bg);
+      --tag-fg: var(--mf-tag-green-fg);
+      --tag-dot: var(--mf-tag-green-dot);
+    }
+    :host([data-colour='amber']) {
+      --tag-bg: var(--mf-tag-amber-bg);
+      --tag-fg: var(--mf-tag-amber-fg);
+      --tag-dot: var(--mf-tag-amber-dot);
+    }
+    :host([data-colour='orange']) {
+      --tag-bg: var(--mf-tag-orange-bg);
+      --tag-fg: var(--mf-tag-orange-fg);
+      --tag-dot: var(--mf-tag-orange-dot);
+    }
+    :host([data-colour='red']) {
+      --tag-bg: var(--mf-tag-red-bg);
+      --tag-fg: var(--mf-tag-red-fg);
+      --tag-dot: var(--mf-tag-red-dot);
+    }
+    :host([data-colour='rose']) {
+      --tag-bg: var(--mf-tag-rose-bg);
+      --tag-fg: var(--mf-tag-rose-fg);
+      --tag-dot: var(--mf-tag-rose-dot);
+    }
+    :host([data-colour='violet']) {
+      --tag-bg: var(--mf-tag-violet-bg);
+      --tag-fg: var(--mf-tag-violet-fg);
+      --tag-dot: var(--mf-tag-violet-dot);
+    }
+    :host([data-colour='indigo']) {
+      --tag-bg: var(--mf-tag-indigo-bg);
+      --tag-fg: var(--mf-tag-indigo-fg);
+      --tag-dot: var(--mf-tag-indigo-dot);
+    }
     :host(.ntag--here) {
       box-shadow: inset 0 0 0 1.5px currentcolor;
     }
@@ -54,7 +108,7 @@ import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: currentcolor;
+      background: var(--tag-dot);
     }
     .ntag__name {
       overflow: hidden;
@@ -91,5 +145,5 @@ export class NoteTagChip {
   readonly removable = input(false);
   readonly inactive = input(false);
   readonly removed = output<void>();
-  protected readonly colours = computed(() => taskTypeChipColours(this.colourKey()));
+  protected readonly key = computed(() => (isTaskTypeColour(this.colourKey()) ? this.colourKey() : 'neutral'));
 }
