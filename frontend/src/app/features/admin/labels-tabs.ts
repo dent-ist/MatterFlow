@@ -27,9 +27,16 @@ export const LABEL_TABS: readonly AdminTab[] = [
     permission: ['OnHoldReason.Manage'],
     countKey: 'on-hold-reasons',
   },
+  {
+    id: 'note-tags',
+    label: 'Notes tags',
+    route: '/admin/note-tags',
+    permission: ['StatusLabel.Manage'],
+    countKey: 'note-tags',
+  },
 ];
 
-export type LabelsTab = 'priorities' | 'status-labels' | 'on-hold-reasons';
+export type LabelsTab = 'priorities' | 'status-labels' | 'on-hold-reasons' | 'note-tags';
 
 /** Whether this person may use more than one Labels tab (a lone tab needs no tab strip). */
 export function hasBothLabelTabs(auth: AuthStore): boolean {

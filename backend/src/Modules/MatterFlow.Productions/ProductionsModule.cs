@@ -14,6 +14,7 @@ public static class ProductionsModule
         services.AddScoped<ProductionAccess>();
         services.AddScoped<ProductionSpecService>();
         services.AddScoped<ProductionService>();
+        services.AddScoped<MatterFlow.Productions.Contracts.IProductionLabels, ProductionLabels>();
         return services;
     }
 }

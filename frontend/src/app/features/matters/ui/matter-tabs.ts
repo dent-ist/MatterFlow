@@ -28,8 +28,20 @@ export const MATTER_TABS: readonly MatterTabDef[] = [
     counted: true,
   },
   { key: 'assets', label: 'Assets', icon: 'pi-database', permission: 'Asset.View', counted: true },
-  { key: 'productions', label: 'Productions', icon: 'pi-send', permission: 'Production.View' },
-  { key: 'notes', label: 'Notes', icon: 'pi-file-edit', permission: 'MatterNote.View' },
+  {
+    key: 'productions',
+    label: 'Productions',
+    icon: 'pi-send',
+    permission: 'Production.View',
+    counted: true,
+  },
+  {
+    key: 'notes',
+    label: 'Notes',
+    icon: 'pi-file-edit',
+    permission: 'MatterNote.View',
+    counted: true,
+  },
   { key: 'activities', label: 'Activities', icon: 'pi-history', permission: 'Audit.View' },
 ];
 

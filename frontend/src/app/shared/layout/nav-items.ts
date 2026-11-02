@@ -130,7 +130,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     label: 'Labels',
     icon: 'pi pi-flag',
     path: '/admin/priorities',
-    alsoActive: ['/admin/status-labels', '/admin/on-hold-reasons'],
+    alsoActive: ['/admin/status-labels', '/admin/on-hold-reasons', '/admin/note-tags'],
     permissions: ['Priority.Manage', 'StatusLabel.Manage', 'OnHoldReason.Manage'],
   },
   {

@@ -139,7 +139,7 @@ function usersRolesMatcher(segments: UrlSegment[]): UrlMatchResult | null {
 /** `priorities`, `status-labels` and `on-hold-reasons` are the tabs of the Labels page; `:tab` is the segment. */
 function labelsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return segments.length === 1 &&
-    ['priorities', 'status-labels', 'on-hold-reasons'].includes(segments[0].path)
+    ['priorities', 'status-labels', 'on-hold-reasons', 'note-tags'].includes(segments[0].path)
     ? { consumed: segments, posParams: { tab: segments[0] } }
     : null;
 }
@@ -242,7 +242,9 @@ export const ADMIN_ROUTES: Routes = [
         ? pageTab('Labels', 'Status labels')
         : route.params['tab'] === 'on-hold-reasons'
           ? pageTab('Labels', 'On-hold reasons')
-          : pageTab('Labels', 'Priorities'),
+          : route.params['tab'] === 'note-tags'
+            ? pageTab('Labels', 'Notes tags')
+            : pageTab('Labels', 'Priorities'),
     canActivate: [labelsTabGuard()],
     canDeactivate: [unsavedChangesGuard],
     loadComponent: () => import('./labels-admin-page').then((m) => m.LabelsAdminPage),

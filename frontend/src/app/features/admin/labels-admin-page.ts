@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
+  NoteTagsClient,
   OnHoldReasonsClient,
   PrioritiesClient,
   StatusLabelsClient,
@@ -22,6 +23,7 @@ import { AdminTabCounts, adminTabItems, resolveAdminTab } from './admin-tabs';
 import { LABEL_TABS, LabelsTab } from './labels-tabs';
 import { OnHoldReasonsPage } from './on-hold-reasons/on-hold-reasons-page';
 import { PrioritiesPage } from './priorities/priorities-page';
+import { NoteTagsPage } from './note-tags/note-tags-page';
 import { StatusLabelsPage } from './status-labels/status-labels-page';
 
 /** One line per tab, 90 characters at most (the header shows it on one line). */
@@ -30,6 +32,7 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
   'status-labels': "Rename how the five statuses read. You can't add or remove statuses.",
   'on-hold-reasons':
     'The reasons offered when a task is put on hold. A used reason is deactivated, not deleted.',
+  'note-tags': 'The tags people pick in a note. A tag that notes use is deactivated, not deleted.',
 };
 
 /**
@@ -41,7 +44,14 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
  */
 @Component({
   selector: 'mf-labels-admin-page',
-  imports: [AdminListShell, Button, PrioritiesPage, StatusLabelsPage, OnHoldReasonsPage],
+  imports: [
+    AdminListShell,
+    Button,
+    PrioritiesPage,
+    StatusLabelsPage,
+    OnHoldReasonsPage,
+    NoteTagsPage,
+  ],
   providers: [AdminTabCounts],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -51,7 +61,7 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
       [description]="description()"
       [tabs]="tabs()"
       [tab]="current()"
-      tabsLabel="Priorities, status labels and on-hold reasons"
+      tabsLabel="Priorities, status labels, on-hold reasons and notes tags"
       idPrefix="labels"
       tableId="labels-table"
       (tabChange)="select($event)"
@@ -68,6 +78,9 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
       @if (current() === 'on-hold-reasons' && canManageReasons()) {
         <p-button mfPrimary label="New reason" icon="pi pi-plus" data-new (onClick)="newReason()" />
       }
+      @if (current() === 'note-tags') {
+        <p-button mfPrimary label="New tag" icon="pi pi-plus" data-new (onClick)="newTag()" />
+      }
       @switch (current()) {
         @case ('priorities') {
           <mf-priorities-page [edit]="edit()" />
@@ -77,6 +90,9 @@ export const LABEL_TAB_TEXT: Record<LabelsTab, string> = {
         }
         @case ('on-hold-reasons') {
           <mf-on-hold-reasons-page [edit]="edit()" />
+        }
+        @case ('note-tags') {
+          <mf-note-tags-page />
         }
       }
     </mf-admin-list-shell>
@@ -90,6 +106,8 @@ export class LabelsAdminPage implements HasUnsavedChanges {
   private readonly statusApi = inject(StatusLabelsClient);
   private readonly reasonApi = inject(OnHoldReasonsClient);
   private readonly statusPage = viewChild(StatusLabelsPage);
+  private readonly tagsPage = viewChild(NoteTagsPage);
+  private readonly tagApi = inject(NoteTagsClient);
 
   /** The `:tab` path segment (`priorities` or `status-labels`). */
   readonly tab = input<string>();
@@ -125,6 +143,8 @@ export class LabelsAdminPage implements HasUnsavedChanges {
           firstValueFrom(this.reasonApi.listOnHoldReasons()).then(
             (list) => list.filter((r) => r.isActive).length,
           ),
+        'note-tags': () =>
+          firstValueFrom(this.tagApi.listNoteTags(false)).then((list) => list.length),
       },
       this.can,
     );
@@ -137,6 +157,10 @@ export class LabelsAdminPage implements HasUnsavedChanges {
 
   protected newPriority(): void {
     void this.router.navigate(['/admin/priorities'], { queryParams: { edit: 'new' } });
+  }
+
+  protected newTag(): void {
+    this.tagsPage()?.openNew();
   }
 
   protected newReason(): void {

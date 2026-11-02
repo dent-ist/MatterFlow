@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -1056,6 +1057,8 @@ export class ProductionsTab {
 
   /** The matter whose productions are shown. */
   readonly matterId = input.required<number>();
+  /** A production was created or deleted: the page refreshes the tab number. */
+  readonly changed = output<void>();
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly directionLabel = directionLabel;
@@ -1241,6 +1244,7 @@ export class ProductionsTab {
     try {
       const s = await firstValueFrom(this.productionsApi.getMatterProductionsSummary(matterId));
       this.productionTotal.set(s.productionCount);
+      this.changed.emit();
       this.specTotal.set(s.specCount);
     } catch {
       // The badges are a convenience; the list shows the real error.

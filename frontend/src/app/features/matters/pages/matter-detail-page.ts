@@ -15,6 +15,8 @@ import { firstValueFrom } from 'rxjs';
 import {
   MatterResponse,
   MattersClient,
+  NotesClient,
+  ProductionsClient,
   ProjectResponse,
   ProjectsClient,
 } from '../../../api/generated/api-client';
@@ -197,13 +199,14 @@ type Tab = MatterTabKey;
                   />
                 }
                 @case ('productions') {
-                  <mf-productions-tab [matterId]="m.matterId" />
+                  <mf-productions-tab [matterId]="m.matterId" (changed)="refreshTabCounts()" />
                 }
                 @case ('notes') {
                   <mf-notes-tab
                     [matterId]="m.matterId"
                     [matterLabel]="m.matterRef + ' ' + m.name"
                     [aiAllowed]="m.aiAllowed"
+                    (changed)="refreshTabCounts()"
                   />
                 }
                 @case ('activities') {
@@ -345,6 +348,8 @@ export class MatterDetailPage {
   readonly sort = input<string>();
 
   private readonly api = inject(MattersClient);
+  private readonly productionsApi = inject(ProductionsClient);
+  private readonly notesApi = inject(NotesClient);
   private readonly pageTitle = inject(PageTitle);
   private readonly projectsApi = inject(ProjectsClient);
   private readonly router = inject(Router);
@@ -386,6 +391,9 @@ export class MatterDetailPage {
   protected readonly projectPanelUsed = signal(false);
   /** How many assets the matter has (the summary's `assetCount`, retired ones included); null when unknown or not for this viewer. */
   protected readonly assetCount = signal<number | null>(null);
+  /** The Productions and Notes tab numbers (their own summary endpoints); null until known or when the viewer may not see them. */
+  protected readonly productionCount = signal<number | null>(null);
+  protected readonly noteCount = signal<number | null>(null);
   /**
    * The tab strip. Projects and Assets are offered only with their View permission (a person who may not see them has no tab to open),
    * and a count is shown only when the viewer may see what it counts (no fake zero without Task.View).
@@ -396,6 +404,8 @@ export class MatterDetailPage {
       tasks: this.auth.has('Task.View') ? (m?.openTaskCount ?? 0) : null,
       projects: m?.projectCount ?? 0,
       assets: this.assetCount(),
+      productions: this.productionCount(),
+      notes: this.noteCount(),
     };
     return visibleMatterTabs((code) => this.auth.has(code)).map((t) => {
       const tab: MfTab = { key: t.key, label: t.label, icon: t.icon };
@@ -543,6 +553,10 @@ export class MatterDetailPage {
       this.matterId();
       untracked(() => void this.load());
     });
+    effect(() => {
+      void this.matter()?.matterId;
+      untracked(() => this.refreshTabCounts());
+    });
   }
 
   protected managerTarget(m: MatterResponse): ManagerTarget {
@@ -619,6 +633,22 @@ export class MatterDetailPage {
   protected projectSaved(): void {
     void this.refresh();
     this.reloadTick.update((n) => n + 1);
+  }
+
+  /** Loads (or refreshes) the Productions and Notes tab numbers; a failure only leaves the tab without one. */
+  protected refreshTabCounts(): void {
+    const id = this.matter()?.matterId;
+    if (id === undefined) return;
+    if (this.auth.has('Production.View')) {
+      firstValueFrom(this.productionsApi.getMatterProductionsSummary(id))
+        .then((s) => this.productionCount.set(s.productionCount))
+        .catch(() => undefined);
+    }
+    if (this.auth.has('MatterNote.View')) {
+      firstValueFrom(this.notesApi.getMatterNotesSummary(id))
+        .then((s) => this.noteCount.set(s.noteCount))
+        .catch(() => undefined);
+    }
   }
 
   private fetchAll(id: number) {

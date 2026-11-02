@@ -15,6 +15,7 @@ public static class NotesModule
         services.AddScoped<NoteService>();
         services.AddScoped<NoteTagService>();
         services.AddScoped<NoteTemplateService>();
+        services.AddScoped<MatterFlow.Notes.Contracts.INoteLabels, NoteLabels>();
         return services;
     }
 }

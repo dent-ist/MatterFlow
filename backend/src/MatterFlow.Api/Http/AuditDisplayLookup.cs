@@ -4,7 +4,9 @@ using MatterFlow.Audit.Contracts;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.Identity.Contracts;
+using MatterFlow.Notes.Contracts;
 using MatterFlow.Organization.Contracts;
+using MatterFlow.Productions.Contracts;
 using MatterFlow.SharedKernel.Visibility;
 using MatterFlow.WorkManagement.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +25,9 @@ internal sealed class AuditDisplayLookup(
     IProjectDirectory projects,
     IPodDirectory pods,
     IConfigurationNameDirectory configuration,
-    IMatterVisibility visibility) : IAuditDisplayLookup
+    IMatterVisibility visibility,
+    IProductionLabels productionLabels,
+    INoteLabels noteLabels) : IAuditDisplayLookup
 {
     /// <summary>The label of a record the caller may not see (sensitive-matter rule, epic #788): no number, name or client.</summary>
     public const string RestrictedLabel = "Restricted record";
@@ -92,8 +96,24 @@ internal sealed class AuditDisplayLookup(
             }
         }
 
+        await AddMatterContentLabelsAsync(objects, labels, cancellationToken);
         await AddAdministrationLabelsAsync(objects, labels, cancellationToken);
         return labels;
+    }
+
+    /// <summary>Productions, production specs and notes (epic #1001): named only for a matter the caller may see.</summary>
+    private async Task AddMatterContentLabelsAsync(IReadOnlyCollection<AuditObjectRef> objects, Dictionary<AuditObjectRef, string> labels, CancellationToken cancellationToken)
+    {
+        var productions = (await productionLabels.ProductionsAsync(IdsOf(objects, "Production"), cancellationToken)).Select(p => ("Production", p.Id, p.MatterId, p.Name));
+        var specs = (await productionLabels.SpecsAsync(IdsOf(objects, "ProductionSpec"), cancellationToken)).Select(p => ("ProductionSpec", p.Id, p.MatterId, p.Name));
+        var notes = (await noteLabels.NotesAsync(IdsOf(objects, "Note"), cancellationToken)).Select(n => ("Note", n.Id, n.MatterId, n.Title));
+        var all = productions.Concat(specs).Concat(notes).ToList();
+        if (all.Count == 0)
+            return;
+
+        var seen = await VisibleMattersAsync(all.Select(a => a.MatterId), cancellationToken);
+        foreach (var (type, id, matterId, name) in all)
+            labels[new(type, Text(id))] = seen is null || seen.Contains(matterId) ? name : RestrictedLabel;
     }
 
     /// <summary>

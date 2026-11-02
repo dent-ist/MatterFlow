@@ -6,8 +6,11 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
+  ElementRef,
+  afterNextRender,
   viewChild,
 } from '@angular/core';
 import { Button } from 'primeng/button';
@@ -32,6 +35,7 @@ import { ApiError } from '../../core/http/api-error';
 import { NotificationService } from '../../core/notify/notification.service';
 import { MfDatePipe } from '../../shared/pipes/mf-date.pipe';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog';
+import { ActionMenu, MenuAction } from '../../shared/ui/action-menu';
 import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { SearchBox } from '../../shared/ui/search-box';
@@ -52,10 +56,12 @@ import {
   titleOfHtml,
 } from './note-ui';
 
-type PanelKind = 'none' | 'tags' | 'history' | 'templates' | 'save-template' | 'template-read';
+type PanelKind = 'none' | 'tags' | 'history' | 'templates' | 'save-template' | 'template-edit';
 
 const SPLIT_KEY = 'mf.notes.split';
 const MAX_TAGS = 5;
+const HIST_OPEN_KEY = 'mf.notes.hist';
+const HIST_WIDTH_KEY = 'mf.notes.histw';
 
 /**
  * The Notes tab of a Matter (epic #1001, MD-13 to MD-15; mockup notes-mockup-r3, owner decision AQ.9): the notes of the matter on the left (pinned first, then
@@ -68,6 +74,7 @@ const MAX_TAGS = 5;
 @Component({
   selector: 'mf-notes-tab',
   imports: [
+    ActionMenu,
     AiButton,
     AiComingSoon,
     Button,
@@ -209,6 +216,63 @@ const MAX_TAGS = 5;
       background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
       color: var(--mf-text);
     }
+    .nt__newgroup {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s1);
+    }
+    .nt__body {
+      display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    .nt__body > .nt__editor {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .nt__hist {
+      display: flex;
+      flex: none;
+      flex-direction: column;
+      min-height: 0;
+      gap: var(--mf-s1);
+    }
+    .nt__histscroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .nt__rail {
+      display: flex;
+      flex: none;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--mf-s2);
+      width: 46px;
+      padding: var(--mf-s2) 0;
+      border: 1px solid var(--mf-border);
+      border-radius: var(--mf-radius-md);
+      background: var(--mf-surface);
+      color: var(--mf-text);
+      cursor: pointer;
+    }
+    .nt__x {
+      border: 0;
+      background: transparent;
+      color: var(--mf-text-muted);
+      cursor: pointer;
+    }
+    .nt__tplbody {
+      height: 22rem;
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius-md);
+      padding: var(--mf-s2);
+    }
+    .nt__fieldset {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
     .nt__editor {
       flex: 1 1 auto;
       min-height: 0;
@@ -296,21 +360,16 @@ const MAX_TAGS = 5;
             (valueChange)="onLocked($event)"
           />
           @if (canEdit()) {
-            <p-button
-              label="New note"
-              icon="pi pi-plus"
-              size="small"
-              data-new-note
-              (onClick)="newNote()"
-            />
-            <p-button
-              label="Templates"
-              icon="pi pi-clone"
-              severity="secondary"
-              size="small"
-              data-templates
-              (onClick)="openTemplates()"
-            />
+            <span class="nt__newgroup">
+              <p-button
+                label="New note"
+                icon="pi pi-plus"
+                size="small"
+                data-new-note
+                (onClick)="newNote()"
+              />
+              <mf-action-menu label="New note options" [floating]="true" [items]="newItems" />
+            </span>
           }
         </div>
         @if (listError()) {
@@ -377,7 +436,7 @@ const MAX_TAGS = 5;
         (keydown)="splitKey($event)"
       ></div>
 
-      <div class="nt__pane" data-note-pane>
+      <div class="nt__pane" #pane data-note-pane>
         @if (draft(); as d) {
           <div class="nt__head">
             <h2 class="pg-sr">Note</h2>
@@ -463,7 +522,7 @@ const MAX_TAGS = 5;
                 severity="secondary"
                 size="small"
                 data-note-history
-                (onClick)="openHistory()"
+                (onClick)="historyButton()"
               />
               @if (canEdit()) {
                 <p-button
@@ -534,20 +593,84 @@ const MAX_TAGS = 5;
               }
             }
           </div>
-          <div class="nt__editor">
-            @defer (on immediate) {
-              <mf-note-editor
-                #editor
-                [html]="d.html"
-                [contentKey]="d.key"
-                [editable]="editing()"
-                [source]="source"
-                [embedSource]="embedSource"
-                (changed)="onChanged($event)"
-                (ready)="onEditorReady()"
-              />
-            } @placeholder {
-              <p class="nt__empty" role="status">Loading the editor...</p>
+          <div class="nt__body">
+            <div class="nt__editor">
+              @defer (on immediate) {
+                <mf-note-editor
+                  #editor
+                  [html]="d.html"
+                  [contentKey]="d.key"
+                  [editable]="editing()"
+                  [source]="source"
+                  [embedSource]="embedSource"
+                  (changed)="onChanged($event)"
+                  (ready)="onEditorReady()"
+                />
+              } @placeholder {
+                <p class="nt__empty" role="status">Loading the editor...</p>
+              }
+            </div>
+            @if (wide() && note()) {
+              @if (histOpen()) {
+                <div
+                  class="nt__split nt__split--hist"
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize the history"
+                  tabindex="0"
+                  [attr.aria-valuenow]="histWidth()"
+                  [attr.aria-valuemin]="splitMin"
+                  [attr.aria-valuemax]="splitMax"
+                  data-history-splitter
+                  (pointerdown)="dragStartHist($event)"
+                  (keydown)="histKey($event)"
+                ></div>
+                <aside
+                  class="nt__hist"
+                  [style.width.px]="histWidth()"
+                  aria-label="History"
+                  data-history-rail-open
+                >
+                  <div class="nt__head">
+                    <h3 class="nt__day">History ({{ history().length }})</h3>
+                    <span class="nt__spacer"></span>
+                    <button
+                      type="button"
+                      class="nt__x"
+                      aria-label="Collapse the history"
+                      (click)="setHist(false)"
+                    >
+                      <i class="pi pi-angle-double-right" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="nt__histscroll" data-note-history-list>
+                    @for (g of historyGroups(); track g.day) {
+                      <h3 class="nt__day">{{ g.day }}</h3>
+                      <ul class="nt__panel-list">
+                        @for (h of g.entries; track h.auditEventId) {
+                          <li>
+                            <b>{{ h.actorName ?? 'Someone' }}</b> {{ historyText(h) }}
+                            <span class="nt__meta">{{ h.occurredAtUtc | mfDate: 'datetime' }}</span>
+                          </li>
+                        }
+                      </ul>
+                    } @empty {
+                      <p class="nt__byline">No history yet.</p>
+                    }
+                  </div>
+                </aside>
+              } @else {
+                <button
+                  type="button"
+                  class="nt__rail"
+                  data-history-rail
+                  [attr.aria-label]="'Open the history, ' + history().length + ' entries'"
+                  (click)="setHist(true)"
+                >
+                  <i class="pi pi-history" aria-hidden="true"></i>
+                  <span>{{ history().length }}</span>
+                </button>
+              }
             }
           </div>
         } @else {
@@ -629,6 +752,14 @@ const MAX_TAGS = 5;
       (visibleChange)="!$event && panel.set('none')"
       (submitted)="panel.set('none')"
     >
+      <p-button
+        label="New template"
+        icon="pi pi-plus"
+        size="small"
+        severity="secondary"
+        data-template-new
+        (onClick)="editTemplate(null)"
+      />
       <ul class="nt__panel-list" data-template-list>
         @for (t of templates(); track t.noteTemplateId) {
           <li>
@@ -648,6 +779,13 @@ const MAX_TAGS = 5;
               />
               @if (t.canEdit) {
                 <p-button
+                  label="Edit"
+                  size="small"
+                  severity="secondary"
+                  data-template-edit
+                  (onClick)="editTemplate(t)"
+                />
+                <p-button
                   label="Delete"
                   size="small"
                   severity="danger"
@@ -661,6 +799,79 @@ const MAX_TAGS = 5;
           <li class="nt__byline">No templates yet. Open a note and use Save as template.</li>
         }
       </ul>
+    </mf-slide-panel>
+
+    <mf-slide-panel
+      [title]="tplEditing() ? 'Edit template' : 'New template'"
+      [primaryLabel]="tplEditing() ? 'Save template' : 'Create template'"
+      size="large"
+      [busy]="busy()"
+      [error]="tplError()"
+      [visible]="panel() === 'template-edit'"
+      (visibleChange)="!$event && panel.set('templates')"
+      (submitted)="saveTemplateEdit()"
+    >
+      @if (panel() === 'template-edit') {
+        <div class="nt__panel-form" data-template-form>
+          <mf-text-field
+            inputId="te-name"
+            label="Name"
+            [required]="true"
+            [maxLength]="100"
+            [(value)]="tplName"
+          />
+          <mf-text-field
+            inputId="te-desc"
+            label="Description"
+            [maxLength]="160"
+            [(value)]="tplDescription"
+          />
+          <mf-text-field
+            inputId="te-title"
+            label="Title"
+            help="The first line of the new note. May use {{ '{{date}}' }}, {{ '{{matter}}' }}, {{ '{{author}}' }}, {{ '{{time}}' }}"
+            [maxLength]="300"
+            [(value)]="tplTitle"
+          />
+          @if (!tplEditing() && isAdmin()) {
+            <label class="nt__check"
+              ><input
+                type="checkbox"
+                [checked]="tplFirm()"
+                (change)="tplFirm.set($any($event.target).checked)"
+              />
+              Firm-wide (everyone can use it)</label
+            >
+          }
+          <fieldset class="nt__fieldset">
+            <legend class="nt__byline">Tags the template offers (up to five)</legend>
+            @for (t of allTags(); track t.noteTagId) {
+              <label class="nt__check">
+                <input
+                  type="checkbox"
+                  [checked]="tplTagIds().includes(t.noteTagId)"
+                  (change)="toggleTplTag(t.noteTagId)"
+                />
+                <span class="nt__chip">{{ t.name }}</span>
+              </label>
+            }
+          </fieldset>
+          <span class="nt__byline" id="te-body-label">Text</span>
+          <div class="nt__tplbody">
+            @defer (on immediate) {
+              <mf-note-editor
+                [html]="tplHtml()"
+                [contentKey]="tplKey()"
+                [editable]="true"
+                [source]="null"
+                (changed)="tplHtml.set($event)"
+              />
+            } @placeholder {
+              <p class="nt__empty" role="status">Loading the editor...</p>
+            }
+          </div>
+        </div>
+      }
     </mf-slide-panel>
 
     <mf-slide-panel
@@ -749,6 +960,8 @@ export class NotesTab {
   /** The matter whose notes are shown, and its reference and name for the template placeholder `{{matter}}`. */
   readonly matterId = input.required<number>();
   readonly matterLabel = input('');
+  /** A note was created or deleted: the page refreshes the tab number. */
+  readonly changed = output<void>();
   /** The matter's AI allowed setting: it decides whether the AI button is on or says "AI can't be used on this matter" (MD-16). */
   readonly aiAllowed = input<MatterAiAllowed | null | undefined>(MatterAiAllowed.No);
   /**
@@ -792,6 +1005,26 @@ export class NotesTab {
   protected readonly lockedWhileEditing = signal('');
   protected readonly panel = signal<PanelKind>('none');
   protected readonly aiPanel = signal(false);
+  private readonly paneRef = viewChild<ElementRef<HTMLElement>>('pane');
+  /** The note area is wide enough (820 px) for the history column; narrower, History opens in the side panel. */
+  protected readonly paneWidth = signal(0);
+  protected readonly wide = computed(() => this.paneWidth() >= 820);
+  protected readonly histOpen = signal(this.readNumber(HIST_OPEN_KEY, 1) === 1);
+  protected readonly histWidth = signal(clampSplit(this.readNumber(HIST_WIDTH_KEY, 300)));
+  protected readonly newItems: MenuAction[] = [
+    { id: 'blank', label: 'Blank note', icon: 'pi-file', run: () => this.newNote() },
+    {
+      id: 'template',
+      label: 'From template...',
+      icon: 'pi-clone',
+      run: () => void this.openTemplates(),
+    },
+  ];
+  protected readonly tplEditing = signal<NoteTemplateResponse | null>(null);
+  protected tplTitle = signal('');
+  protected readonly tplTagIds = signal<number[]>([]);
+  protected readonly tplHtml = signal('');
+  protected readonly tplKey = signal('');
   protected readonly history = signal<NoteHistoryEntry[]>([]);
   protected readonly templates = signal<NoteTemplateResponse[]>([]);
   protected readonly confirmDelete = signal(false);
@@ -949,6 +1182,14 @@ export class NotesTab {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stopDrag());
+    afterNextRender(() => {
+      const el = this.paneRef()?.nativeElement;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      const watch = new ResizeObserver(() => this.paneWidth.set(el.clientWidth));
+      watch.observe(el);
+      this.paneWidth.set(el.clientWidth);
+      this.stopWatch = () => watch.disconnect();
+    });
     effect(() => {
       this.matterId();
       this.query();
@@ -1007,6 +1248,7 @@ export class NotesTab {
       );
       this.items.set(result.items);
       this.listError.set('');
+      this.changed.emit();
     } catch {
       this.listError.set('The notes could not be loaded.');
     } finally {
@@ -1071,6 +1313,7 @@ export class NotesTab {
     this.selectedTags.set([...n.tags]);
     this.startedTags.set(this.tagKey());
     this.draft.set({ html: n.bodyHtml, key: `${n.noteId}:${n.rowVersion}` });
+    void this.loadHistory(n.noteId);
   }
 
   protected newNote(): void {
@@ -1268,6 +1511,73 @@ export class NotesTab {
 
   // ---------------------------------------------------------------- history, templates
 
+  private async loadHistory(id: number): Promise<void> {
+    try {
+      this.history.set((await firstValueFrom(this.notesApi.getNoteHistory(id))).items);
+    } catch {
+      this.history.set([]);
+    }
+  }
+
+  protected historyButton(): void {
+    if (this.wide()) this.setHist(!this.histOpen());
+    else void this.openHistory();
+  }
+
+  protected setHist(open: boolean): void {
+    this.histOpen.set(open);
+    this.writeNumber(HIST_OPEN_KEY, open ? 1 : 0);
+  }
+
+  protected dragStartHist(event: PointerEvent): void {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = this.histWidth();
+    this.dragMove = (e) => this.histWidth.set(clampSplit(startWidth - (e.clientX - startX)));
+    this.dragEnd = () => {
+      this.stopDrag();
+      this.writeNumber(HIST_WIDTH_KEY, this.histWidth());
+    };
+    window.addEventListener('pointermove', this.dragMove);
+    window.addEventListener('pointerup', this.dragEnd);
+  }
+
+  /** The history splitter has the same keys as the list splitter; the column is on the right, so ArrowLeft makes it wider. */
+  protected histKey(e: KeyboardEvent): void {
+    const step = e.shiftKey ? 100 : 20;
+    const next =
+      e.key === 'ArrowLeft'
+        ? this.histWidth() + step
+        : e.key === 'ArrowRight'
+          ? this.histWidth() - step
+          : e.key === 'Home'
+            ? SPLIT_MIN
+            : e.key === 'End'
+              ? SPLIT_MAX
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    this.histWidth.set(clampSplit(next));
+    this.writeNumber(HIST_WIDTH_KEY, this.histWidth());
+  }
+
+  private readNumber(key: string, fallback: number): number {
+    try {
+      const v = Number(localStorage.getItem(key));
+      return localStorage.getItem(key) === null || !Number.isFinite(v) ? fallback : v;
+    } catch {
+      return fallback;
+    }
+  }
+
+  private writeNumber(key: string, value: number): void {
+    try {
+      localStorage.setItem(key, String(value));
+    } catch {
+      // Remembering is a convenience.
+    }
+  }
+
   protected async openHistory(): Promise<void> {
     const n = this.note();
     if (!n) return;
@@ -1317,6 +1627,68 @@ export class NotesTab {
       const open = openPlaceholders(html);
       if (open.length > 0) this.notify.info(`Fill in: ${open.join(', ')}`);
     });
+  }
+
+  /** Opens the template form: a new template (null) or the one to change (name, description, title, text, tags). */
+  protected editTemplate(t: NoteTemplateResponse | null): void {
+    this.tplEditing.set(t);
+    this.tplName.set(t?.name ?? '');
+    this.tplDescription.set(t?.description ?? '');
+    this.tplTitle.set(t?.titleTemplate ?? '');
+    this.tplTagIds.set(t ? t.tags.map((x) => x.noteTagId) : []);
+    this.tplHtml.set(t?.bodyHtml ?? '');
+    this.tplKey.set(`${t?.noteTemplateId ?? 'new'}:${Date.now()}`);
+    this.tplFirm.set(false);
+    this.tplError.set('');
+    this.panel.set('template-edit');
+  }
+
+  protected toggleTplTag(id: number): void {
+    this.tplTagIds.update((l) =>
+      l.includes(id) ? l.filter((x) => x !== id) : l.length < MAX_TAGS ? [...l, id] : l,
+    );
+  }
+
+  protected async saveTemplateEdit(): Promise<void> {
+    if (!this.tplName().trim()) {
+      this.tplError.set('Enter a name.');
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const t = this.tplEditing();
+      const common = {
+        name: this.tplName().trim(),
+        description: this.tplDescription().trim() || undefined,
+        titleTemplate: this.tplTitle().trim() || undefined,
+        bodyHtml: this.tplHtml(),
+        tagIds: this.tplTagIds(),
+      };
+      if (t) {
+        await firstValueFrom(
+          this.templatesApi.updateNoteTemplate(t.noteTemplateId, {
+            ...common,
+            rowVersion: t.rowVersion,
+          } as never),
+        );
+      } else {
+        const firm = this.tplFirm() && this.isAdmin();
+        await firstValueFrom(
+          this.templatesApi.createNoteTemplate({
+            ...common,
+            scope: firm ? 'FIRM' : 'MATTER',
+            matterId: firm ? undefined : this.matterId(),
+          } as never),
+        );
+      }
+      this.notify.success('Template saved');
+      this.panel.set('templates');
+      await this.loadTemplates();
+    } catch (e) {
+      this.tplError.set(e instanceof ApiError ? e.message : 'The template could not be saved.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected async duplicateTemplate(t: NoteTemplateResponse): Promise<void> {
@@ -1383,6 +1755,7 @@ export class NotesTab {
 
   // ---------------------------------------------------------------- splitter
 
+  private stopWatch: (() => void) | null = null;
   private dragMove: ((e: PointerEvent) => void) | null = null;
   private dragEnd: (() => void) | null = null;
 
@@ -1400,6 +1773,8 @@ export class NotesTab {
   }
 
   private stopDrag(): void {
+    this.stopWatch?.();
+    this.stopWatch = null;
     if (this.dragMove) window.removeEventListener('pointermove', this.dragMove);
     if (this.dragEnd) window.removeEventListener('pointerup', this.dragEnd);
     this.dragMove = null;
