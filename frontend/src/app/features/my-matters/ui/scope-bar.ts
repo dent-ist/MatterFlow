@@ -55,7 +55,7 @@ import { MmTreePanel } from './tree-panel';
         <div class="browse">
           <button
             type="button"
-            class="btn"
+            class="mf-btn"
             data-browse
             aria-haspopup="dialog"
             [attr.aria-expanded]="browsing()"
@@ -83,7 +83,9 @@ import { MmTreePanel } from './tree-panel';
         </div>
       }
       @if (clientId() || matterId()) {
-        <button type="button" class="clr" data-clear-scope (click)="clear.emit()">Clear</button>
+        <button type="button" class="mf-btn mf-btn--text" data-clear-scope (click)="clear.emit()">
+          Clear
+        </button>
       }
     </div>
     <div class="new"><ng-content /></div>
@@ -111,29 +113,6 @@ import { MmTreePanel } from './tree-panel';
     }
     .dd mf-dropdown {
       display: block;
-    }
-    .btn,
-    .clr {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 36px;
-      padding: 0 var(--mf-s3);
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .clr {
-      border: 0;
-      background: none;
-      color: var(--mf-link);
-    }
-    .clr:hover {
-      text-decoration: underline;
     }
     .browse {
       flex: none;
@@ -167,8 +146,7 @@ import { MmTreePanel } from './tree-panel';
         flex: none;
         width: 100%;
       }
-      .btn,
-      .clr {
+      .mf-btn {
         min-height: 44px;
         justify-content: center;
       }

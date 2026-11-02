@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -25,6 +25,14 @@ const FILES = [
   'shared/ui/slide-panel.ts',
   'shared/work-queue/scoped-tasks.ts',
 ];
+/** My Matters (MD-26 round 2): its buttons are theme buttons too. */
+const MY_MATTERS = ['ui', 'tabs', 'panels'].flatMap((dir) =>
+  readdirSync(join(APP, 'features', 'my-matters', dir))
+    .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts') && !f.includes('generated'))
+    .map((f) => `features/my-matters/${dir}/${f}`),
+);
+FILES.push(...MY_MATTERS);
+
 /** Files whose `size="small"` buttons are still to be cleaned by their owner (none: Notes is clean since MD-27, #1031). */
 const SIZE_PENDING: string[] = [];
 

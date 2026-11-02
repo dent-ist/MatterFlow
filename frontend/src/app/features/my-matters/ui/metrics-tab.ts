@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { AuthStore } from '../../../core/auth/auth.store';
+import { Segmented } from '../../../shared/ui/segmented';
 import { ScrollRegion } from '../../../shared/ui/scroll-region';
 import { MmFilters } from '../my-matters-filters';
 import { MmMetricsWork } from './metrics-work';
@@ -13,7 +14,7 @@ import { MetricsView } from './mm-scope';
  */
 @Component({
   selector: 'mf-mm-metrics-tab',
-  imports: [MmMetricsWork, DataTab, ScrollRegion],
+  imports: [MmMetricsWork, DataTab, ScrollRegion, Segmented],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   template: `
@@ -21,9 +22,10 @@ import { MetricsView } from './mm-scope';
       <div class="hd">
         <h2>Metrics</h2>
         @if (canData()) {
-          <div class="seg" role="group" aria-label="Metrics view">
+          <div class="mf-seg" mfSegmented role="group" aria-label="Metrics view">
             <button
               type="button"
+              class="mf-btn"
               data-view="work"
               [attr.aria-pressed]="view() === 'breakdown'"
               (click)="viewChange.emit('breakdown')"
@@ -32,6 +34,7 @@ import { MetricsView } from './mm-scope';
             </button>
             <button
               type="button"
+              class="mf-btn"
               data-view="data"
               [attr.aria-pressed]="view() === 'data'"
               (click)="viewChange.emit('data')"
@@ -89,29 +92,6 @@ import { MetricsView } from './mm-scope';
       font-size: var(--mf-fs-lg);
       font-weight: 700;
     }
-    .seg {
-      display: inline-flex;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      overflow: hidden;
-    }
-    .seg button {
-      min-height: 36px;
-      padding: 0 var(--mf-s4);
-      border: 0;
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .seg button + button {
-      border-left: 1px solid var(--mf-border-strong);
-    }
-    .seg button[aria-pressed='true'] {
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-    }
     .body {
       position: relative;
       flex: 1 1 0;
@@ -128,9 +108,6 @@ import { MetricsView } from './mm-scope';
       }
       .body {
         overflow: visible;
-      }
-      .seg button {
-        min-height: 44px;
       }
     }
   `,

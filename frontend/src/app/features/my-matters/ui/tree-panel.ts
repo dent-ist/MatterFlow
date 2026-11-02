@@ -59,7 +59,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
         @if (!popover()) {
           <button
             type="button"
-            class="ib"
+            class="mf-btn mf-btn--icon ib"
             data-tree-pin
             [attr.aria-pressed]="pinned()"
             [attr.aria-label]="
@@ -88,7 +88,7 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
           </button>
           <button
             type="button"
-            class="ib"
+            class="mf-btn mf-btn--icon ib"
             data-tree-collapse
             aria-label="Collapse the tree to a thin rail"
             mfTip="Collapse to rail"
@@ -186,18 +186,6 @@ export function treeNodes(tree: MatterTree | null, activeOnly: boolean): TreeNod
       margin: 0;
       font-size: var(--mf-fs-md);
       font-weight: 700;
-    }
-    .ib {
-      display: grid;
-      place-items: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      cursor: pointer;
     }
     .pin {
       fill: none;
@@ -386,7 +374,7 @@ export class MmTreePanel {
     <div class="rail" role="group" aria-label="Clients and matters, collapsed">
       <button
         type="button"
-        class="ib"
+        class="mf-btn mf-btn--icon ib"
         data-tree-expand-rail
         aria-label="Show the tree of clients and matters"
         aria-expanded="false"
@@ -401,7 +389,7 @@ export class MmTreePanel {
       @if (hasChoice()) {
         <button
           type="button"
-          class="ib sm"
+          class="mf-btn mf-btn--icon ib sm"
           data-tree-clear
           aria-label="Clear client and matter"
           mfTip="Clear selection"
@@ -431,26 +419,6 @@ export class MmTreePanel {
       border-radius: var(--mf-radius-xl);
       background: var(--mf-surface);
       box-shadow: var(--mf-shadow-card);
-    }
-    .ib {
-      display: grid;
-      place-items: center;
-      width: 36px;
-      height: 36px;
-      padding: 0;
-      border: 1px solid var(--mf-border-strong);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-      color: var(--mf-text);
-      cursor: pointer;
-      flex: none;
-    }
-    .ib:hover {
-      background: var(--mf-surface-alt);
-    }
-    .ib.sm {
-      width: 28px;
-      height: 28px;
     }
     .lab {
       flex: 1;

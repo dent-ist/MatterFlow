@@ -38,7 +38,7 @@ interface Item {
     <div class="wrap">
       <button
         type="button"
-        class="go"
+        class="mf-btn mf-btn--primary"
         id="mm-new-btn"
         data-new-menu
         aria-haspopup="menu"
@@ -96,23 +96,6 @@ interface Item {
     }
     .wrap {
       position: relative;
-    }
-    .go {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--mf-s2);
-      min-height: 36px;
-      padding: 0 var(--mf-s4);
-      border: 1px solid var(--mf-primary);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .go:hover {
-      background: var(--mf-primary-hover);
     }
     .menu {
       position: absolute;
@@ -178,11 +161,6 @@ interface Item {
     @media (max-width: 767.98px) {
       :host {
         display: block;
-      }
-      .go {
-        width: 100%;
-        justify-content: center;
-        min-height: 44px;
       }
       .menu {
         left: 0;
