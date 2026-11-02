@@ -349,6 +349,70 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
   });
 
+  test('typing keeps the caret where it is: title line of a new note, an existing note and a template (MD-38)', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const tplName = `Caret ${uid()}`;
+    await seed.admin.post('/api/v1/note-templates', {
+      scope: 'MATTER',
+      matterId: w.matter.matterId,
+      name: tplName,
+      titleTemplate: 'T',
+      bodyHtml: '<h1>Heading</h1><p>Body text</p>',
+      tagIds: [],
+    });
+    const existing = await w.note(`Existing ${uid()}`);
+    expect(existing.noteId).toBeGreaterThan(0);
+    await open(page, w.matter.matterId);
+    // a new note: type "ac", step back, type "b": the text must be "abc" (a reset of the text would put the letter elsewhere)
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('ac');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.type('b');
+    await expect(page.locator('.ProseMirror p').first()).toHaveText('abc');
+    await page.keyboard.type('X');
+    await expect(page.locator('.ProseMirror p').first()).toHaveText('abXc');
+    await page.locator('[data-note-cancel]').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    // an existing note: the title line (first line) in the middle
+    await page.locator('[data-note-item]', { hasText: 'Existing' }).first().click();
+    await page.locator('[data-note-edit]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.press('Control+Home');
+    await page.keyboard.press('Home');
+    await page.keyboard.type('12');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.type('-');
+    await expect(page.locator('.ProseMirror > :first-child')).toContainText('1-2Existing');
+    await page.locator('[data-note-cancel]').click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Discard changes' }).click();
+    // a template: the first line inside the editor, and the Name field above it
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
+    await page.locator('[data-template-list] li', { hasText: tplName }).getByRole('button').click();
+    await page.locator('[data-template-edit]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.press('Control+Home');
+    await page.keyboard.press('Home');
+    await page.keyboard.type('ac');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.type('b');
+    await expect(page.locator('.ProseMirror > :first-child')).toContainText('abcHeading');
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type('!');
+    await expect(page.locator('.ProseMirror p', { hasText: 'Body text' })).toHaveText('Body text!');
+    const name = page.getByLabel('Name');
+    await name.click();
+    await name.press('End');
+    await name.pressSequentially('xy');
+    await name.press('ArrowLeft');
+    await name.pressSequentially('-');
+    await expect(name).toHaveValue(`${tplName}x-y`);
+    await expect(page.locator('[data-note-state]')).toContainText('Unsaved changes');
+  });
+
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
     page,
     seed,

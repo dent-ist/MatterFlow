@@ -836,10 +836,12 @@ export class NoteEditor {
       });
     });
     effect(() => {
+      // Only a different `contentKey` (another note, another mode) loads the text again. `html` is read WITHOUT being tracked: a host that keeps the typed
+      // text in a signal and passes it back (the template form) would otherwise reset the document on every keystroke and throw the caret to the end (MD-38).
       const key = this.contentKey();
-      const html = this.html();
       void key;
       untracked(() => {
+        const html = this.html();
         if (this.editor) this.editor.commands.setContent(html, { emitUpdate: false });
         this.tick.update((n) => n + 1);
         queueMicrotask(() => {
