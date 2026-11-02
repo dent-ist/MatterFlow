@@ -267,17 +267,36 @@ One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUME
 - Other pages keep `mfDate` for now. The native date and time inputs of the event dialog follow the browser's locale.
 
 
-## 6. Create and edit in a side panel (epic #1001, MD-01; owner decision AQ.4)
+## 6. Create and edit in a pop-up dialog; side panels for detail (epic #1001, MD-22; owner decision 2026-11-02, addendum AQ.4)
 
-From the Matter detail redesign on, **every create and edit opens in the shared right-hand side panel** (`mf-slide-panel`, `frontend/src/app/shared/ui/slide-panel.ts`). A centred dialog (`mf-confirm-dialog`) is only for confirmations ("Set matter inactive", "Discard your changes?"). The old routed form pages stay until their screen is converted.
+**Every create and edit opens in the shared centred pop-up dialog** (`mf-form-dialog`, `frontend/src/app/shared/ui/form-dialog.ts`). The right-hand side panel (`mf-slide-panel`, `slide-panel.ts`) is **only for read and detail context**: the tasks of a project, the details of a production or spec with comments and history, the notes history, the AI "coming soon" panel. A small centred confirmation (`mf-confirm-dialog`) is for confirmations ("Set matter inactive"). The old routed form pages stay until their screen is converted (the matter edit page `/matters/:id/edit` is one; creating a matter is the pop-up on the Matters list).
 
-Rules of the panel:
+Rules of the dialog:
 
-- Header: title (and an optional quiet subtitle, for example the CM number) and a close button. Body scrolls. Footer: **Cancel on the left, the primary action on the right**.
+- Header: title (and an optional quiet subtitle, for example the CM number) and a close button. Body scrolls inside the dialog (never taller than 90% of the window). Footer: **Cancel on the left, the primary action on the right**.
 - Esc and a click on the scrim close it; Tab stays inside; focus goes to the first field when it opens and returns to the control that opened it.
-- Widths: 480 px (default), 600 px (`size="large"`), full width below 640 px.
-- `dirty` makes every way of closing ask "You have unsaved changes. Discard them?" (Keep editing / Discard). `busy` shows "Saving..." and ignores clicks; `error` shows a message in the footer (`role="alert"`).
-- The page owns the form and the save; it closes the panel (`visible.set(false)`) when the save worked and refreshes its data. The panel does not navigate away from the page.
-- Example: `features/projects/ui/project-panel.ts` (create and edit a project from a Matter page).
+- Sizes: `small` 416 px, default 576 px, `large` 768 px; **full screen below 640 px**.
+- `dirty` makes every way of closing ask "You have unsaved changes. Discard them?" (Keep editing / Discard). `busy` shows "Saving..." and ignores clicks; `error` shows a message in the footer (`role="alert"`); `canSubmit` false makes the primary button `aria-disabled`.
+- The page owns the form and the save; it closes the dialog (`visible.set(false)`) when the save worked and refreshes its data. The dialog does not navigate away; a page that wants to go somewhere (a new matter opens its page) does it in its `(saved)` handler.
+- Put the form inside an `@if` so it exists only while the dialog is open; reset the form signals each time `visible` turns true.
+- Examples: `features/projects/ui/project-panel.ts` (create and edit a project), `features/matters/ui/matter-create-dialog.ts` (New matter), `features/matters/ui/matter-edit-panel.ts` (Edit matter).
 
-Screens that should adopt the panel later (not converted in this epic): My Matters Add event dialog, Create/Edit task, Clients create/edit, Assets list create/edit, Matters list create, Users, Roles, Pods, the admin lookup forms (task types, asset types, labels, custom fields) and profile preferences.
+Screens that should adopt the dialog later (not converted in this epic): My Matters Add event dialog, Create/Edit task, Clients create/edit, Assets list create/edit, Users, Roles, Pods, the admin lookup forms (task types, asset types, labels, custom fields) and profile preferences.
+
+
+## 9. Buttons: one rule, from the shared theme only (epic #1001, MD-26, #1030)
+
+Every button in the app, the Matter detail tabs included, is drawn by the shared button system and nothing else: PrimeNG `p-button` with the preset in `core/theme/mf-preset.ts`, or a native `<button class="mf-btn ...">` from `src/styles/_buttons.scss`. Both render the same tokens, so they look the same.
+
+| Kind | `p-button` | native | Use for |
+| --- | --- | --- | --- |
+| Primary (filled brand) | default | `mf-btn mf-btn--primary` | the one main action of a bar or form: "+ New Project", "Create matter", "Save" |
+| Secondary (white outline) | `severity="secondary"` | `mf-btn` | everything else in a bar, Cancel, Edit, Export |
+| Danger | `severity="danger"` (outlined) | `mf-btn mf-btn--danger` | Delete, Retire; the red fill (`mf-btn--solid`) only inside a confirmation |
+| Text (link style) | `[text]="true"` | `mf-btn mf-btn--text` | quiet in-line actions: "Change", "Try again", "All activities" |
+| Icon only | `[rounded]="true" [text]="true"` with `aria-label` | `mf-btn mf-btn--icon` | row and bar icons; always an accessible name |
+
+- **One size.** 32 px high (44 px for touch and phone), 14 px label, 600 weight (400 for text buttons). `size="small"` is the same size in this theme and is **not used** in new code: leave it out.
+- **Labels** are verbs or "+ New Thing" in Title Case ("New Production", "New Spec", "New Asset", "New Note", "New Project"); the `pi pi-plus` icon goes in front of a "New ..." button.
+- **No local button CSS.** A page style sheet never sets `background`, `border`, `color`, `padding`, `font`, `min-height` or `border-radius` on `.p-button`, `.mf-btn` or on a raw `<button>` that acts as a button. A link-looking action is `mf-btn mf-btn--text`, not a private `.xxx__link` class. Layout (margin, flex, gap, alignment) around a button is fine.
+- **Guard.** `src/app/shared/ui/button-rule.spec.ts` fails when a component under `features/` or `shared/` that belongs to a Matter detail tab (matter detail page, summary, projects, assets, productions, notes, scoped tasks) styles a button itself or uses `size="small"` on a `p-button`.

@@ -145,7 +145,7 @@ test.describe('Column filters on the record lists', () => {
       return { alpha, beta, merger, audit, review };
     }
 
-    test('Matter reference, Name and Client are column filters; Sensitive is a select after Status (no Other filters)', async ({
+    test('CM Number, Name and Client are column filters; Sensitive is a select after Status (no Other filters)', async ({
       page,
       seed,
     }) => {
@@ -167,10 +167,10 @@ test.describe('Column filters on the record lists', () => {
 
       // The typed pair finds the padded reference.
       const pair = `${alpha.clientNumber.replace(/^0+/, '')}-1`;
-      await text(page, 'Matter reference').fill(pair);
+      await text(page, 'CM Number').fill(pair);
       await expect(rows.filter({ hasText: merger.matterRef })).toHaveCount(1);
       await expect(rows.filter({ hasText: audit.matterRef })).toHaveCount(0);
-      await text(page, 'Matter reference').fill('');
+      await text(page, 'CM Number').fill('');
 
       // Sensitive is a select in the row (WP8 #272), then a chip when the row is closed.
       await expect(page.getByRole('button', { name: 'Other filters' })).toHaveCount(0);
@@ -215,7 +215,7 @@ test.describe('Column filters on the record lists', () => {
         'No matters match these filters',
       );
       await expect(region.locator('thead th').first()).toBeVisible();
-      await expect(text(page, 'Matter reference')).toHaveValue('99999-99999');
+      await expect(text(page, 'CM Number')).toHaveValue('99999-99999');
     });
   });
 

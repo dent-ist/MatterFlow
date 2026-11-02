@@ -2,6 +2,7 @@ import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
+  ClientsClient,
   MatterManagersClient,
   MatterResponse,
   MattersClient,
@@ -104,6 +105,7 @@ describe('MattersListPage', () => {
         { provide: MattersClient, useValue: api },
         { provide: MatterManagersClient, useValue: managers },
         { provide: MyMattersClient, useValue: myMatters },
+        { provide: ClientsClient, useValue: { listClients: vi.fn(), getClient: vi.fn() } },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
@@ -222,7 +224,7 @@ describe('MattersListPage', () => {
     expect(el.querySelector('#matter-search, #matter-status, mf-search-box')).toBeNull();
     expect(el.querySelector('[data-filter-row]')).not.toBeNull(); // open by default (WP8 #270)
 
-    expect(control<HTMLInputElement>(el, 'Matter reference')).not.toBeNull();
+    expect(control<HTMLInputElement>(el, 'CM Number')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Name')).not.toBeNull();
     expect(control<HTMLInputElement>(el, 'Client')).not.toBeNull();
     expect(ddSelect(el, 'Filter by Status').value).toBe('active');
@@ -391,6 +393,30 @@ describe('MattersListPage', () => {
     expect(buttonByLabel(fixture.nativeElement, 'New matter')).toBeUndefined();
   });
 
+  it('opens New matter as a pop-up dialog on the list instead of navigating (MD-22, #1026)', async () => {
+    const fixture = await create(['Matter.View', 'Matter.Create']);
+    buttonByLabel(fixture.nativeElement, 'New matter')!.click();
+    await settle(fixture);
+
+    const dialog = document.body.querySelector('.mf-formdlg');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('New matter');
+    expect(dialog?.querySelector('[data-panel-primary]')?.textContent).toContain('Create matter');
+    expect(navigate).not.toHaveBeenCalledWith(['/matters/new']);
+  });
+
+  it('has a handle on every resizable column header and none on the selection and action columns (MD-21, #1025)', async () => {
+    const fixture = await create(['Matter.View', 'Client.View']);
+    const el: HTMLElement = fixture.nativeElement;
+    const labels = Array.from(el.querySelectorAll('thead tr:first-child th > .mf-resize')).map((h) =>
+      h.getAttribute('aria-label'),
+    );
+    expect(labels).toContain('Resize CM Number column');
+    expect(labels).toContain('Resize Name column');
+    expect(labels).toContain('Resize Primary PM column');
+    expect(labels).toContain('Resize Secondary PM column');
+  });
+
   describe('Open tasks and Overdue (WP9, #266, #268)', () => {
     const heads = (el: HTMLElement) =>
       Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
@@ -405,11 +431,11 @@ describe('MattersListPage', () => {
       const el: HTMLElement = fixture.nativeElement;
 
       expect(heads(el)).toEqual([
-        'Matter reference',
+        'CM Number',
         'Name',
         'Client',
-        'Project manager',
-        'Secondary project manager',
+        'Primary PM',
+        'Secondary PM',
         'Open tasks',
         'Overdue',
         'Status',
@@ -431,11 +457,11 @@ describe('MattersListPage', () => {
       const fixture = await create(['Matter.View']);
       const el: HTMLElement = fixture.nativeElement;
       expect(heads(el)).toEqual([
-        'Matter reference',
+        'CM Number',
         'Name',
         'Client',
-        'Project manager',
-        'Secondary project manager',
+        'Primary PM',
+        'Secondary PM',
         'Status',
       ]);
       expect(el.querySelector('[data-count]')).toBeNull();
@@ -502,7 +528,7 @@ describe('MattersListPage', () => {
       const el: HTMLElement = fixture.nativeElement;
 
       const header = Array.from(el.querySelectorAll('thead tr:first-child th')).find(
-        (h) => h.textContent?.trim() === 'Project manager',
+        (h) => h.textContent?.trim() === 'Primary PM',
       )!;
       header.querySelector('button')!.click();
       expect(navigate).toHaveBeenLastCalledWith([], {
@@ -510,7 +536,7 @@ describe('MattersListPage', () => {
         queryParamsHandling: 'merge',
       });
 
-      const select = ddSelect(el, 'Filter by Project manager');
+      const select = ddSelect(el, 'Filter by Primary PM');
       expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual([
         'Any',
         'None',

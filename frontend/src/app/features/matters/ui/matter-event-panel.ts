@@ -15,19 +15,19 @@ import { MatterEventsClient } from '../../../api/generated/api-client';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { EVENT_TYPES, EventIcon } from '../../../shared/ui/event-type';
-import { SlidePanel } from '../../../shared/ui/slide-panel';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { TextField } from '../../../shared/ui/text-field';
 
 /**
- * Add an event to the matter in the shared side panel (MD-08, #1009): one of the eight types, a title, a date, an optional time (blank = all day) and a note.
- * It replaces the dialog of My Matters on this page only (My Matters keeps its dialog until it is converted). Saved, the panel closes and `saved` fires.
+ * Add an event to the matter in the shared form dialog (MD-08, #1009; a pop-up since MD-22): one of the eight types, a title, a date, an optional time (blank = all day) and a note.
+ * It replaces the dialog of My Matters on this page only (My Matters keeps its dialog until it is converted). Saved, the dialog closes and `saved` fires.
  */
 @Component({
   selector: 'mf-matter-event-panel',
-  imports: [SlidePanel, TextField, EventIcon],
+  imports: [FormDialog, TextField, EventIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <mf-slide-panel
+    <mf-form-dialog
       title="Add event"
       [subtitle]="matterLabel()"
       primaryLabel="Add event"
@@ -96,7 +96,7 @@ import { TextField } from '../../../shared/ui/text-field';
           [(value)]="note"
         />
       </form>
-    </mf-slide-panel>
+    </mf-form-dialog>
   `,
   styles: `
     .mev__form {

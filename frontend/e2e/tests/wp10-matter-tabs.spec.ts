@@ -268,8 +268,8 @@ test.describe('WP10 matter tabs', () => {
         'No projects in this matter yet.',
       );
       await page.locator('[data-empty-new-project]').click();
-      // The side panel opens and the page stays where it is (MD-01).
-      await expect(page.locator('.mf-slide')).toContainText('New project');
+      // The pop-up dialog opens and the page stays where it is (MD-22).
+      await expect(page.locator('.mf-formdlg')).toContainText('New project');
       await expect(page).toHaveURL(new RegExp(`/matters/${w.empty.matterId}`));
     });
 

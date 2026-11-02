@@ -26,9 +26,9 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
       const clipped = await link.evaluate((a) => a.scrollHeight > a.clientHeight + 1);
       expect(clipped, 'a matter name is cut').toBe(false);
     }
-    // The reference filter keeps room for its words, and Name has more than the 150 px it was squeezed to.
+    // The CM Number filter keeps room for its words, and Name has more than the 150 px it was squeezed to.
     expect(
-      (await page.getByLabel('Filter by Matter reference').boundingBox())!.width,
+      (await page.getByLabel('Filter by CM Number').boundingBox())!.width,
     ).toBeGreaterThanOrEqual(130);
     expect(
       (await page.locator('tbody td.ml-name').first().boundingBox())!.width,

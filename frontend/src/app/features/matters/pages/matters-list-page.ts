@@ -6,6 +6,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
   viewChild,
@@ -59,7 +60,9 @@ import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { viewportAtLeast } from '../../../shared/ui/viewport';
+import { ResizableColumns } from '../../../shared/ui/resizable-columns';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
+import { MatterCreateDialog } from '../ui/matter-create-dialog';
 import {
   MatterColumnsMenu,
   MatterExtraColumn,
@@ -72,11 +75,11 @@ import { assetsParams, sizeText } from '../../my-matters/data-model';
 /** Below this width the Client column (the least informative one) leaves the table (#266). */
 const CLIENT_COLUMN_MIN_PX = 900;
 /**
- * Below this width the Secondary project manager column leaves the table (the Primary stays), epic #667. The issue asks for 1100 px; measured
- * at 1366 px (a 1098 px grid next to the menu) the extra column squeezed Name to 121 px and the filter row fell back to the sheet, so the
- * column starts where the grid has room for it. A filter on it still works from any width (it shows as a chip).
+ * Below this width the Secondary PM column leaves the table (the Primary PM stays), epic #667. MD-21 (#1025): the owner wants both columns at
+ * 1366 px, so the column starts at 1280 px; the columns are resizable now (shared `mfResizable`) and Name and Client keep the widest share.
+ * A filter on it still works from any width (it shows as a chip).
  */
-const SECONDARY_COLUMN_MIN_PX = 1440;
+const SECONDARY_COLUMN_MIN_PX = 1280;
 /** Below this width the Primary project manager column leaves the table as well (the Client column goes at the same width): at 768 px it pushed Status out of the grid. */
 const PRIMARY_COLUMN_MIN_PX = 900;
 /** The "None" choice of a project manager filter (the matters with nobody in that place); the API argument is `hasPrimaryManager=false`. */
@@ -103,7 +106,7 @@ const BONES: Record<string, string> = {
 /**
  * Matters list (UX S06): Reference (plain text with a copy button), Name (the one link), Client (a link; from 900 px), the Primary project
  * manager (and from 1100 px the Secondary; an empty cell stays empty, a matter without a manager is normal), Open tasks and Overdue
- * (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (Matter reference, Name, Client, Status with Active by default, and Sensitive beside it),
+ * (counts that open the Task Queue; left out without Task.View), Status. Inline column filters (CM Number, Name, Client, Status with Active by default, and Sensitive beside it),
  * open by default from 640 px; a link from a Client keeps `?clientId=` as a removable chip. State lives in the URL.
  */
 @Component({
@@ -132,7 +135,9 @@ const BONES: Record<string, string> = {
     RecordSort,
     CopyButton,
     RowLink,
+    ResizableColumns,
     MatterManagersDialog,
+    MatterCreateDialog,
     MatterColumnsMenu,
     ScopeSwitch,
     ActionMenu,
@@ -162,17 +167,17 @@ const BONES: Record<string, string> = {
       overflow-wrap: anywhere;
     }
     /* Name and Client are the springs of the table (PM v2, #881): a floor of their own, so the fixed columns and the filter row never squeeze them to "Demo Emp...". */
-    /* The reference keeps the room its filter needs ("Matter reference" in full). */
+    /* The CM Number keeps the room of its value and copy button. */
     .pg-table td.ml-ref {
-      min-width: 10.5rem;
+      min-width: 8.5rem;
     }
     .pg-table td.ml-name {
-      width: 32%;
-      min-width: 10.5rem;
+      width: 36%;
+      min-width: 12rem;
     }
     .pg-table td.ml-client {
-      width: 17%;
-      min-width: 7rem;
+      width: 22%;
+      min-width: 9rem;
     }
     .ml-namecell mf-sensitive-badge {
       flex: none;
@@ -237,7 +242,7 @@ const BONES: Record<string, string> = {
           *mfHasPermission="'Matter.Create'"
           label="New matter"
           icon="pi pi-plus"
-          (onClick)="go('/matters/new')"
+          (onClick)="openNew()"
         />
       </mf-page-header>
 
@@ -310,7 +315,7 @@ const BONES: Record<string, string> = {
               mfEmptyAction
               *mfHasPermission="'Matter.Create'"
               label="New matter"
-              (onClick)="go('/matters/new')"
+              (onClick)="openNew()"
             />
             <ng-template [mfRecordCard]="rows()" let-m>
               <mf-record-card
@@ -385,14 +390,14 @@ const BONES: Record<string, string> = {
         } @else {
           <mf-grid-frame scrollLabel="Matters list" #scroll>
             <div class="mf-scroll">
-              <table class="pg-table tt">
+              <table class="pg-table tt" mfResizable="matters">
                 <caption class="pg-sr">
                   Matters
                 </caption>
                 <thead>
                   <tr>
                     @if (selecting()) {
-                      <th scope="col" class="ml-selcol">
+                      <th scope="col" class="ml-selcol" data-no-resize>
                         <input
                           type="checkbox"
                           aria-label="Select all matters on this page"
@@ -409,7 +414,7 @@ const BONES: Record<string, string> = {
                       [defaultSort]="defaultSort"
                       (sorted)="setSort($event)"
                     >
-                      Matter reference
+                      CM Number
                     </th>
                     <th
                       mfSort="name"
@@ -436,7 +441,7 @@ const BONES: Record<string, string> = {
                         [defaultSort]="defaultSort"
                         (sorted)="setSort($event)"
                       >
-                        Project manager
+                        Primary PM
                       </th>
                     }
                     @if (showSecondary()) {
@@ -446,7 +451,7 @@ const BONES: Record<string, string> = {
                         [defaultSort]="defaultSort"
                         (sorted)="setSort($event)"
                       >
-                        Secondary project manager
+                        Secondary PM
                       </th>
                     }
                     @if (counts()) {
@@ -487,7 +492,9 @@ const BONES: Record<string, string> = {
                     }
                     <th scope="col">Status</th>
                     @if (tableActions()) {
-                      <th scope="col" class="ml-actions"><span class="pg-sr">Actions</span></th>
+                      <th scope="col" class="ml-actions" data-no-resize>
+                        <span class="pg-sr">Actions</span>
+                      </th>
                     }
                   </tr>
                   @if (filters.rowVisible()) {
@@ -529,7 +536,7 @@ const BONES: Record<string, string> = {
                     mfEmptyAction
                     *mfHasPermission="'Matter.Create'"
                     label="New matter"
-                    (onClick)="go('/matters/new')"
+                    (onClick)="openNew()"
                   />
                   @for (m of rows(); track m.matterId) {
                     <tr>
@@ -717,6 +724,13 @@ const BONES: Record<string, string> = {
           [(visible)]="commentOpen"
         />
       }
+      @if (canCreate() && createUsed()) {
+        <mf-matter-create-dialog
+          [clientId]="createClient()"
+          [(visible)]="createOpen"
+          (saved)="created($event)"
+        />
+      }
       @if (canAssign()) {
         <mf-matter-managers-dialog
           [targets]="bulkTargets()"
@@ -880,10 +894,10 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
   protected readonly phone = phoneCards();
   /** The phone's Sort by select: the sortable columns, counts only with Task.View (the headers' keys). */
   protected readonly sortOptions = computed((): SortOption[] => [
-    { value: 'matterRef', label: 'Reference' },
+    { value: 'matterRef', label: 'CM Number' },
     { value: 'name', label: 'Name' },
     { value: 'clientNumber', label: 'Client' },
-    { value: 'primaryManager', label: 'Project manager' },
+    { value: 'primaryManager', label: 'Primary PM' },
     ...(this.counts()
       ? [
           { value: 'openTasks', label: 'Open tasks', descFirst: true },
@@ -928,8 +942,8 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       ref,
       name,
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
-      this.managerDef('primaryManager', 'Project manager'),
-      this.managerDef('secondaryManager', 'Secondary project manager'),
+      this.managerDef('primaryManager', 'Primary PM'),
+      this.managerDef('secondaryManager', 'Secondary PM'),
       // Quick filter "Mine" (the header button): the matters the viewer manages, as Primary or Secondary. A removable chip, no column.
       {
         key: 'mine',
@@ -970,9 +984,40 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     sheetBelow: 640,
   });
 
+  /** `?newMatter=1&newClient=5` (the old `/matters/new` link, Client pages): opens the New matter dialog at once, then leaves the URL clean. */
+  readonly newMatter = input<string | undefined>(undefined);
+  readonly newClient = input<string | undefined>(undefined);
+  protected readonly canCreate = computed(() => this.auth.has('Matter.Create'));
+  protected readonly createUsed = signal(false);
+  protected readonly createOpen = signal(false);
+  protected readonly createClient = signal<number | null>(null);
+
+  /** "+ New matter": the pop-up dialog (MD-22), no navigation. */
+  protected openNew(client: number | null = null): void {
+    this.createClient.set(client);
+    this.createUsed.set(true);
+    this.createOpen.set(true);
+  }
+
+  protected created(m: MatterResponse): void {
+    void this.router.navigate(['/matters', m.matterId]);
+  }
+
   constructor() {
     super();
     void this.loadManagers();
+    effect(() => {
+      if (!this.newMatter()) return;
+      const client = Number(this.newClient());
+      untracked(() => {
+        if (this.canCreate()) this.openNew(Number.isInteger(client) && client > 0 ? client : null);
+        void this.router.navigate([], {
+          queryParams: { newMatter: null, newClient: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
+    });
     // A new page of rows never keeps a tick from the old one.
     effect(() => {
       this.rows();

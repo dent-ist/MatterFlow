@@ -24,7 +24,7 @@ import { aiLabel } from './matter-ai';
  *
  *   Assets by type (a tile per type with a count; each opens the Assets tab filtered to the type)       [needs Asset.View]
  *   Details (one Edit button)                       | Recent activity (and the "Next events" panel, MD-08, in the same column)
- *     CM number (large, first), Client, Matter number, Name, Status, Sensitive, Project managers, Created, Last changed,
+ *     CM number (large, first), Client, Matter number, Name, Status, Sensitive, Primary PM, Secondary PM, Created, Last changed,
  *     the custom fields as ordinary rows (no heading), AI allowed
  *
  * It shows only fields the Matter already has plus the one new field AI allowed; nothing is invented.
@@ -84,7 +84,7 @@ import { aiLabel } from './matter-ai';
     }
     .ms__grid {
       display: grid;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       grid-auto-rows: minmax(0, 1fr);
       gap: var(--mf-s3);
       flex: 1 1 auto;
@@ -258,44 +258,27 @@ import { aiLabel } from './matter-ai';
                 No
               }
             </dd>
-            <dt>Project managers</dt>
+            <dt>Primary PM</dt>
             <dd data-managers>
-              @if (matter().primaryManager || matter().secondaryManager) {
-                @if (matter().primaryManager; as p) {
-                  <span data-primary-manager>{{ p.displayName }}</span
-                  >{{ ' ' }}<span class="pg-muted">(primary)</span>
-                }
-                @if (matter().primaryManager && matter().secondaryManager) {
-                  ,
-                }
-                @if (matter().secondaryManager; as sc) {
-                  <span data-secondary-manager>{{ sc.displayName }}</span
-                  >{{ ' ' }}<span class="pg-muted">(secondary)</span>
-                }
-              } @else {
-                <span class="pg-muted">None</span>
-              }
+              <span data-primary-manager>{{ matter().primaryManager?.displayName ?? 'None' }}</span>
               @if (canAssign()) {
-                @if (matter().primaryManager || matter().secondaryManager) {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    data-change-managers
-                    (click)="changeManagers.emit()"
-                  >
-                    Change
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    class="mf-btn mf-btn--text"
-                    data-add-managers
-                    (click)="changeManagers.emit()"
-                  >
-                    Add project manager
-                  </button>
-                }
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text"
+                  [attr.data-change-managers]="hasManagers() ? '' : null"
+                  [attr.data-add-managers]="hasManagers() ? null : ''"
+                  aria-label="Change project managers"
+                  (click)="changeManagers.emit()"
+                >
+                  {{ hasManagers() ? 'Change' : 'Add' }}
+                </button>
               }
+            </dd>
+            <dt>Secondary PM</dt>
+            <dd>
+              <span data-secondary-manager>{{
+                matter().secondaryManager?.displayName ?? 'None'
+              }}</span>
             </dd>
             <dt>Created</dt>
             <dd>{{ matter().createdAtUtc | mfDate }}</dd>
@@ -346,7 +329,6 @@ import { aiLabel } from './matter-ai';
             </div>
           </section>
         }
-        <ng-content />
       </div>
     </div>
   `,
@@ -391,6 +373,9 @@ export class MatterSummary {
   );
   protected readonly activity = computed<MyMattersActivityItem[]>(
     () => (this.overviewLoader.data() as MatterOverview | null)?.activity ?? [],
+  );
+  protected readonly hasManagers = computed(
+    () => !!(this.matter().primaryManager || this.matter().secondaryManager),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
   protected readonly text = activityText;

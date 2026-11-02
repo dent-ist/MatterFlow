@@ -52,8 +52,9 @@ export class MatterFormPage {
   }
 
   async open(): Promise<void> {
+    // The old address opens the New matter pop-up on the Matters list (MD-22).
     await this.page.goto('/matters/new');
-    await expect(this.page.getByRole('heading', { name: 'New matter' })).toBeVisible();
+    await expect(this.page.getByRole('dialog', { name: 'New matter' })).toBeVisible();
   }
 
   /** Picks the client by typing its number and choosing the suggestion. */

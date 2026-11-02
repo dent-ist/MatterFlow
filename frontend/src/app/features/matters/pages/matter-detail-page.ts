@@ -41,7 +41,6 @@ import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
 import { MatterEditPanel } from '../ui/matter-edit-panel';
 import { MatterActivities } from '../ui/matter-activities';
 import { MatterSummary } from '../ui/matter-summary';
-import { MatterNextEvents } from '../ui/matter-next-events';
 import { MatterEventPanel } from '../ui/matter-event-panel';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
@@ -79,7 +78,6 @@ type Tab = MatterTabKey;
     ScopedTasks,
     MatterProjects,
     MatterSummary,
-    MatterNextEvents,
     MatterEventPanel,
     MatterEditPanel,
     ProductionsTab,
@@ -167,16 +165,7 @@ type Tab = MatterTabKey;
                     (edit)="openEdit()"
                     (changeManagers)="managersOpen.set(true)"
                     (openActivities)="select('activities')"
-                  >
-                    @if (canCalendar()) {
-                      <mf-matter-next-events
-                        [matterId]="m.matterId"
-                        [canAdd]="canAddEvent()"
-                        [reload]="eventsTick()"
-                        (addEvent)="openEventPanel()"
-                      />
-                    }
-                  </mf-matter-summary>
+                  />
                 }
                 @case ('tasks') {
                   <mf-scoped-tasks
@@ -265,7 +254,6 @@ type Tab = MatterTabKey;
                 [matterId]="m.matterId"
                 [matterLabel]="m.matterRef + ' ' + m.name"
                 [(visible)]="eventOpen"
-                (saved)="eventsTick.update((n) => n + 1)"
               />
             }
 
@@ -365,8 +353,7 @@ export class MatterDetailPage {
   protected readonly projectsTotal = signal(0);
   protected readonly eventOpen = signal(false);
   protected readonly eventUsed = signal(false);
-  protected readonly eventsTick = signal(0);
-  /** Next events, the link into My Matters and the Event entry exist only for project managers who can open My Matters (Matter.BeManager; hides the dead link of #976). */
+  /** The Calendar event entry of the New menu exists only for project managers who can open My Matters, where the events show (Matter.BeManager; the Summary's Next events panel is gone, MD-23). */
   protected readonly canCalendar = computed(() => this.auth.has('Matter.BeManager'));
   /** Add event: a manager of this matter or a holder of Matter.Edit, on an active matter. */
   protected readonly canAddEvent = computed(() => {

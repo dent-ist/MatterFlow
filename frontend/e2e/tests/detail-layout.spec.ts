@@ -60,7 +60,9 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     // The primary action of the header (the Matters tab has its own button too until the list package drops it).
     await page.locator('[data-page-actions]').getByRole('button', { name: 'New matter' }).click();
-    await expect(page).toHaveURL(new RegExp(`/matters/new\\?clientId=${client.clientId}$`));
+    // The pop-up of the Matters list opens with this client (MD-22): the old address redirects there.
+    await expect(page.getByRole('dialog', { name: 'New matter' })).toBeVisible();
+    await expect(page).toHaveURL(/\/matters$/);
   });
 
   test('Client: the matters grid filters by name through the column filter row', async ({

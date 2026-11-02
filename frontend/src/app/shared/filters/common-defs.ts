@@ -27,7 +27,7 @@ export function statusDef(options: readonly FilterOption[] = ACTIVE_STATUS_OPTIO
 }
 
 /** The Matters filters that Matters and a Client's Matters share (the client column is added by the Matters list). */
-export function matterColumnDefs(refLabel = 'Matter reference'): FilterDef[] {
+export function matterColumnDefs(refLabel = 'CM Number'): FilterDef[] {
   return [
     { key: 'matterRef', label: refLabel, column: 'matterRef', type: 'text' },
     { key: 'name', label: 'Name', column: 'name', type: 'text' },
