@@ -18,6 +18,7 @@ public class RowVersionRulesTests
         "SetUserPodsRequest", // replaces membership rows (no row of its own to version); concurrency is the optional expectedPodIds check
         "ReorderRequest", // reorders a list; the order is the whole payload
         "SaveRememberedViewRequest", // the automatic remembered state of a screen (one row per person and surface); last write wins by design
+        "SetTasksProjectRequest", // bulk link/unlink of up to 100 tasks (MD-05): like the bulk re-assign, each task is read and changed in its own transaction and the answer lists every task
     ];
 
     private static IEnumerable<Type> RequestTypes()

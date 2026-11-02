@@ -5,6 +5,7 @@ import {
   AssetsClient,
   AuditEventsClient,
   MatterManagersClient,
+  MatterEventsClient,
   MatterOverviewClient,
   MattersClient,
   ProjectsClient,
@@ -122,6 +123,29 @@ describe('MatterDetailPage', () => {
         },
         { provide: ProjectsClient, useValue: projects },
         { provide: AssetsClient, useValue: assets },
+        {
+          provide: MatterEventsClient,
+          useValue: {
+            listMatterEvents: vi.fn().mockReturnValue(
+              ok({
+                from: '2026-10-14',
+                to: '2027-01-12',
+                total: 1,
+                items: [
+                  {
+                    eventId: 5,
+                    matterId: 7,
+                    typeCode: 'COURT_HEARING',
+                    title: 'Status hearing',
+                    date: '2026-11-03',
+                    time: '14:30:00',
+                  },
+                ],
+              }),
+            ),
+            createMatterEvent: vi.fn(),
+          },
+        },
         {
           provide: MatterOverviewClient,
           useValue: {
@@ -402,6 +426,26 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-summary-assets]')).toBeNull();
     expect(el().querySelector('[data-summary-activity]')).toBeNull();
     expect(assets.getAssetCountsByType).not.toHaveBeenCalled();
+  });
+
+  it('shows Next events, Add event and the My Matters link only with Matter.BeManager (project managers who can open My Matters)', async () => {
+    await create(['Matter.View', 'Matter.BeManager' as Permission, 'Matter.Edit']);
+    const panel = el().querySelector('[data-next-events]')!;
+    expect(panel.textContent).toContain('Status hearing');
+    expect(panel.textContent).toContain('11/03 2:30 PM');
+    expect(panel.querySelector('[data-open-calendar]')?.getAttribute('href')).toContain(
+      '/my-matters?matterId=7&tab=calendar',
+    );
+    expect(panel.querySelector('[data-add-event]')).not.toBeNull();
+    // Add event opens the side panel.
+    panel.querySelector<HTMLButtonElement>('[data-add-event]')!.click();
+    await settle(fixture);
+    expect(document.body.querySelector('.mf-slide')?.textContent).toContain('Add event');
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View', 'Matter.Edit']);
+    expect(el().querySelector('[data-next-events]')).toBeNull();
+    expect(el().querySelector('[data-open-calendar]')).toBeNull();
   });
 
   it('shows one Edit button on the Summary only with Matter.Edit; it opens the side panel without leaving the page', async () => {
