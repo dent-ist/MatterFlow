@@ -60,14 +60,14 @@ describe('Labels page on the admin list shell (#593)', () => {
   }
 
   it(
-    'shows the crumb, the title, one description line and the counted tabs Priorities (4) and Status labels (5)',
+    'shows the crumb, the title, one description line and the counted tabs Priorities (4), Status labels (5) and Notes tags',
     async () => {
       await open('/admin/priorities', ['Priority.Manage', 'StatusLabel.Manage']);
 
       expect(crumbs()).toEqual(['Administration', 'Labels']);
       expect(el().querySelector('h1')!.textContent).toContain('Labels');
       expect(el().textContent).toContain(LABEL_TAB_TEXT.priorities);
-      expect(tabText()).toEqual(['Priorities (4)', 'Status labels (5)']);
+      expect(tabText()).toEqual(['Priorities (4)', 'Status labels (5)', 'Notes tags (--)']);
       expect(
         tabs()
           .filter((t) => t.getAttribute('aria-selected') === 'true')

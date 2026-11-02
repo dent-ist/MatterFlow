@@ -15,11 +15,11 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 | #1009 | MD-08 | Next events and My Matters link | 5.0 | 3.0 | 90 | 2.7 |
 | #1010 | MD-09 | Production spec backend | 7.0 | 4.3 | 100 | 4.3 |
 | #1011 | MD-10 | Productions backend | 9.0 | 5.5 | 100 | 5.5 |
-| #1012 | MD-11 | Productions tab UI and Specs | 12.0 | 7.3 | 85 | 6.2 |
+| #1012 | MD-11 | Productions tab UI and Specs | 12.0 | 7.3 | 90 | 6.6 |
 | #1013 | MD-12 | Notes backend | 12.0 | 7.3 | 100 | 7.3 |
-| #1014 | MD-13 | Notes tab UI | 12.0 | 7.3 | 80 | 5.8 |
-| #1015 | MD-14 | Slash commands, @, #, embed | 10.0 | 6.1 | 70 | 4.3 |
-| #1016 | MD-15 | Templates, history, lock | 10.0 | 6.1 | 70 | 4.3 |
+| #1014 | MD-13 | Notes tab UI | 12.0 | 7.3 | 90 | 6.6 |
+| #1015 | MD-14 | Slash commands, @, #, embed | 10.0 | 6.1 | 80 | 4.9 |
+| #1016 | MD-15 | Templates, history, lock | 10.0 | 6.1 | 90 | 5.5 |
 | #1017 | MD-16 | AI placeholder and warning dialog | 5.0 | 3.0 | 60 | 1.8 |
 | #1018 | MD-17 | Cross-cutting | 10.0 | 6.1 | 0 | 0.0 |
 | #1019 | MD-18 | Final QA and merge | 14.0 | 8.5 | 0 | 0.0 |
@@ -61,3 +61,7 @@ Questions for the owner are listed at the end of this section; each has a recomm
 3. **Delete of an unused spec.** The mockup offers delete for an unused spec, the issue says "no delete in v1". Built without delete.
 
 - 2026-11-02 Hand-back of Agent B (MD-09 to MD-15), done percentages above: backends 100 (integration tests run in MD-18); the UIs are written, type-checked, linted and unit tested for their pure logic but were NOT opened in a browser and have no e2e spec yet (cheap checks only, by the rule), so MD-11 85, MD-13 80, MD-14 70, MD-15 70. Open items for QA or a follow-up: the admin tab "Labels > Notes tags" (the API is there: `/note-tags`, permission `StatusLabel.Manage`), e2e smoke specs and axe at four sizes for both tabs, the bundle gate (`ng build`), Activities kinds for productions, specs and notes (MD-07 reads the Audit module by object type `Production`, `ProductionSpec`, `Note`), mobile/stacked layout check, the AI warning dialog is not wired because no check exists (`NotesTab.beforeSave` is the seam).
+
+- 2026-11-02 Agent B, round 2: MD-15 gaps closed (history column with its own splitter at 820 px and wider, rail when collapsed, side panel when narrower; New note split button with Blank note / From template; template create and edit form), new issue #1021 (MD-19) "Notes tags" tab under Labels (`StatusLabel.Manage`, `/admin/note-tags`), tab counts for Productions and Notes in the tab strip (`refreshTabCounts` on the page, `(changed)` output of both tabs), audit labels for `Production`, `ProductionSpec` and `Note` (`IProductionLabels`, `INoteLabels`; "Restricted record" for hidden matters), so Activities (MD-07) can show names. Specs stay Active/Retired with no delete.
+- 2026-11-02 Browser self-check (real stack, one Playwright script, not the runner; screenshots at 1366x768, 375x812 and 1920x1080): created a spec and a production with a comment, read the history, new note, typed, `/` menu, table, saved, `#` menu, lock and unlock, history column and rail, save as template, template edit form, Notes tags admin tab: all passed, 0 console errors. Found and fixed: doubled AI button, doubled Close buttons in the History and Templates panels, comment action spacing. OPEN for Agent A / shell: at 1366x600 EVERY tab (Summary and Tasks too) has `scrollHeight` 737 against a 600 window; the fixed page has a minimum height of about 737 px, so the page scrolls on a 600 px high window. At 1366x768 and 1920x1080 it does not scroll on Productions and Notes. The cause is in the shell or fixed-page rule, not in the two new tabs.
+
