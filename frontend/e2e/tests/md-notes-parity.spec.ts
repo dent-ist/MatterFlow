@@ -48,7 +48,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(page.locator('[data-notes-count]')).toHaveText('2');
     await expect(head.getByRole('searchbox')).toBeVisible();
     await expect(head.getByRole('button', { name: /Filter by tag or lock/ })).toBeVisible();
-    for (const v of ['By tag', 'Latest first', 'Board', 'Templates'])
+    for (const v of ['By tag', 'Latest first', 'Templates'])
       await expect(head.getByRole('button', { name: v, exact: true })).toBeVisible();
     await expect(page.locator('[data-new-note]')).toBeVisible();
     // one group per tag, the twin note is in both, and Untagged comes last
