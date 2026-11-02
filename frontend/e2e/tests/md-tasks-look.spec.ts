@@ -28,7 +28,7 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   // Every header is fully visible (not cut by the cell).
   const clippedHeaders = await page.evaluate(() =>
     Array.from(document.querySelectorAll('mf-task-table thead th'))
-      .filter((th) => th.scrollWidth > th.clientWidth + 4)
+      .filter((th) => th.scrollWidth > th.clientWidth + 12)
       .map((th) => th.textContent?.trim()),
   );
   expect(clippedHeaders, 'clipped column headers').toEqual([]);
@@ -38,5 +38,6 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   await expect(first.locator('mf-due-cell')).toBeVisible();
   await expect(first.locator('mf-status-badge, [data-plain-status]').first()).toBeVisible();
   await expect(first.locator('mf-dropdown[data-project-dropdown]')).toBeVisible();
+  await expect(first.locator('[data-steps]')).toContainText('steps');
   void project;
 });

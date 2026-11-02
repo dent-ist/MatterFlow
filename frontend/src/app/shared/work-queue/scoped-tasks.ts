@@ -56,16 +56,7 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
 const PAGE_SIZE = 25;
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
-const MATTER_COLUMNS = [
-  'ref',
-  'title',
-  'project',
-  'priority',
-  'assignee',
-  'progress',
-  'due',
-  'status',
-];
+const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
 const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'];
 
 /** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */

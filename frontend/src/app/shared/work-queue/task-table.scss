@@ -267,3 +267,12 @@ th:not([aria-sort]) .wt-sort .pi {
 .wt-near > :first-child {
   margin: 0;
 }
+
+/* The workflow progress under the status on a Matter's or Project's grid (MD-04): quiet text, one line. */
+.wt-steps {
+  display: block;
+  margin-top: 2px;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  white-space: nowrap;
+}

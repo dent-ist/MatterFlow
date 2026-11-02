@@ -470,6 +470,13 @@ const LONG_PRESS_MS = 500;
                           } @else {
                             <mf-status-badge [code]="row.status" [label]="row.statusLabel" />
                           }
+                          @if (hideContext() && row.workflow.stepsTotal > 0) {
+                            <!-- On a Matter's or Project's grid the workflow progress sits under the status (MD-04), so no column has to give way for it. -->
+                            <span class="wt-steps" data-steps [attr.title]="progressTitle(row)"
+                              >{{ row.workflow.stepsResolved }} of
+                              {{ row.workflow.stepsTotal }} steps</span
+                            >
+                          }
                           @if (
                             row.status === 'ON_HOLD' && (row.holdReason || row.onHoldReasonName)
                           ) {
