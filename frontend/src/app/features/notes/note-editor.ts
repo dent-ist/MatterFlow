@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
 import { AnyExtension, Editor, Extension, Node } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
 import { PluginKey } from '@tiptap/pm/state';
@@ -253,6 +254,7 @@ function embedNode(source: () => EmbedSource | null): Node {
  */
 @Component({
   selector: 'mf-note-editor',
+  imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styles: `
@@ -460,17 +462,14 @@ function embedNode(source: () => EmbedSource | null): Node {
     <div class="ne" data-note-editor>
       @if (editable()) {
         <div class="ne__bar" role="toolbar" aria-label="Text formatting" data-editor-toolbar>
-          <select
-            class="ne__select"
-            aria-label="Paragraph style"
+          <mf-dropdown
+            buttonId="ne-style"
+            label="Paragraph style"
+            size="sm"
+            [items]="styleItems"
             [value]="style()"
-            (change)="setStyle($any($event.target).value)"
-          >
-            <option value="p">Paragraph</option>
-            <option value="h1">Heading 1</option>
-            <option value="h2">Heading 2</option>
-            <option value="h3">Heading 3</option>
-          </select>
+            (valueChange)="setStyle($event)"
+          />
           <button
             type="button"
             class="ne__btn"
@@ -748,6 +747,13 @@ export class NoteEditor {
       });
     });
   }
+
+  protected readonly styleItems: DropdownItem[] = [
+    { value: 'p', label: 'Paragraph' },
+    { value: 'h1', label: 'Heading 1' },
+    { value: 'h2', label: 'Heading 2' },
+    { value: 'h3', label: 'Heading 3' },
+  ];
 
   protected style(): string {
     this.tick();
