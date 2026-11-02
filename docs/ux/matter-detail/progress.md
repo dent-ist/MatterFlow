@@ -13,13 +13,13 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 | #1007 | MD-06 | Assets tab | 6.0 | 3.7 | 40 | 1.5 |
 | #1008 | MD-07 | Activities tab | 6.0 | 3.7 | 0 | 0.0 |
 | #1009 | MD-08 | Next events and My Matters link | 5.0 | 3.0 | 90 | 2.7 |
-| #1010 | MD-09 | Production spec backend | 7.0 | 4.3 | 0 | 0.0 |
-| #1011 | MD-10 | Productions backend | 9.0 | 5.5 | 0 | 0.0 |
-| #1012 | MD-11 | Productions tab UI and Specs | 12.0 | 7.3 | 0 | 0.0 |
-| #1013 | MD-12 | Notes backend | 12.0 | 7.3 | 0 | 0.0 |
-| #1014 | MD-13 | Notes tab UI | 12.0 | 7.3 | 0 | 0.0 |
-| #1015 | MD-14 | Slash commands, @, #, embed | 10.0 | 6.1 | 0 | 0.0 |
-| #1016 | MD-15 | Templates, history, lock | 10.0 | 6.1 | 0 | 0.0 |
+| #1010 | MD-09 | Production spec backend | 7.0 | 4.3 | 100 | 4.3 |
+| #1011 | MD-10 | Productions backend | 9.0 | 5.5 | 100 | 5.5 |
+| #1012 | MD-11 | Productions tab UI and Specs | 12.0 | 7.3 | 85 | 6.2 |
+| #1013 | MD-12 | Notes backend | 12.0 | 7.3 | 100 | 7.3 |
+| #1014 | MD-13 | Notes tab UI | 12.0 | 7.3 | 80 | 5.8 |
+| #1015 | MD-14 | Slash commands, @, #, embed | 10.0 | 6.1 | 70 | 4.3 |
+| #1016 | MD-15 | Templates, history, lock | 10.0 | 6.1 | 70 | 4.3 |
 | #1017 | MD-16 | AI placeholder and warning dialog | 5.0 | 3.0 | 60 | 1.8 |
 | #1018 | MD-17 | Cross-cutting | 10.0 | 6.1 | 0 | 0.0 |
 | #1019 | MD-18 | Final QA and merge | 14.0 | 8.5 | 0 | 0.0 |
@@ -59,3 +59,5 @@ Questions for the owner are listed at the end of this section; each has a recomm
 1. **Note tags: firm-wide or per matter?** The issue text (#1013, #1014) says per matter and "create/rename/delete tags needs Edit". The approved Notes mockup r3 (and addendum AQ item 9, which wins) shows tags managed by administrators under Labels, "Notes tags", with people only picking them (max 5 per note, ten-colour palette, active flag). Built as in the mockup: firm-wide `NoteTag`, managed with the existing permission `StatusLabel.Manage` (no fourth note permission). The admin tab itself ("Labels > Notes tags") is not in any issue estimate; recommended default: build it in MD-13 if time allows, otherwise administrators use the API.
 2. **Spec statuses.** Mockup r2 had Draft/Approved/Retired; the issue and AQ say list, create, edit, duplicate, retire. Built Active/Retired only (a retired spec can be reinstated), no delete.
 3. **Delete of an unused spec.** The mockup offers delete for an unused spec, the issue says "no delete in v1". Built without delete.
+
+- 2026-11-02 Hand-back of Agent B (MD-09 to MD-15), done percentages above: backends 100 (integration tests run in MD-18); the UIs are written, type-checked, linted and unit tested for their pure logic but were NOT opened in a browser and have no e2e spec yet (cheap checks only, by the rule), so MD-11 85, MD-13 80, MD-14 70, MD-15 70. Open items for QA or a follow-up: the admin tab "Labels > Notes tags" (the API is there: `/note-tags`, permission `StatusLabel.Manage`), e2e smoke specs and axe at four sizes for both tabs, the bundle gate (`ng build`), Activities kinds for productions, specs and notes (MD-07 reads the Audit module by object type `Production`, `ProductionSpec`, `Note`), mobile/stacked layout check, the AI warning dialog is not wired because no check exists (`NotesTab.beforeSave` is the seam).
