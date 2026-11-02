@@ -33,6 +33,7 @@ export function sortSentence(
   selector: 'mf-sorted-line',
   imports: [Dismissable],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.sl--default]': '!custom() && !grouped()' },
   template: `
     <span class="sl" data-sorted-line data-sort-note>
       @if (grouped()) {
@@ -128,6 +129,12 @@ export function sortSentence(
       background: var(--mf-surface);
       color: var(--mf-text);
       box-shadow: var(--mf-shadow-pop);
+    }
+    /* A phone has no column headers to sort by: the Sort by select of its Filters sheet names the order. The line shows only for a chosen sort (with Reset sort). */
+    @media (width < 640px) {
+      :host(.sl--default) {
+        display: none;
+      }
     }
     @media print {
       :host {

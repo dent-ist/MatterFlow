@@ -218,7 +218,7 @@ test.describe('Fixed 44 px rows (#210)', () => {
     expect(pill.height, 'the pill keeps its 26 px').toBeGreaterThanOrEqual(24);
   });
 
-  test('rows visible: Task Queue at least 11 at 1366x768, My Work Active at least 9 (and report)', async ({
+  test('rows visible: Task Queue at least 9 at 1366x768, My Work Active at least 7 (and report; the Sorted by line of the list toolbar costs about two rows, LC-01)', async ({
     seed,
     asUser,
   }) => {
@@ -240,8 +240,8 @@ test.describe('Fixed 44 px rows (#210)', () => {
     const mine = await visibleRows(page);
     await shot(page, 'my-work-rows-visible-1366x768');
     console.log(`ROWS VISIBLE 1366x768: Task Queue ${queue}, My Work ${mine}`);
-    expect(queue, 'Task Queue rows visible').toBeGreaterThanOrEqual(11);
-    expect(mine, 'My Work rows visible').toBeGreaterThanOrEqual(9);
+    expect(queue, 'Task Queue rows visible').toBeGreaterThanOrEqual(9);
+    expect(mine, 'My Work rows visible').toBeGreaterThanOrEqual(7);
   });
 
   test('axe: the grid with every kind of row has no violations at 1366, 1920, 768 and 640', async ({

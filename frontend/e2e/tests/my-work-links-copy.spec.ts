@@ -398,10 +398,7 @@ test.describe('My Work links, filters and copy', () => {
 
     // A reload that fails: the rows go, the same message and controls come.
     fail = true;
-    await page
-      .locator('tr[data-filter-row]')
-      .getByRole('searchbox', { name: 'Search tasks', exact: true })
-      .fill('x');
+    await page.getByRole('searchbox', { name: 'Search tasks', exact: true }).fill('x');
     await page.keyboard.press('Enter');
     await expect(error).toBeVisible();
     expect(await normalized()).toBe(first);

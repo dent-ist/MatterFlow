@@ -42,30 +42,27 @@ describe('list toolbar', { timeout: 20_000 }, () => {
   };
   const row2 = () => m.el.querySelector('[data-list-toolbar]')!;
   const search = () => m.el.querySelector<HTMLInputElement>('[data-list-search] input')!;
+  const search_input = search;
   const clear = () => m.el.querySelector<HTMLButtonElement>('[data-clear-filters]');
 
-  it('puts Search first, Filters right after it, then the view, Columns and the menu, in that order', async () => {
+  it('puts Search first, Filters right after it, then the view, and Columns and the menu together at the right end', async () => {
     await mount();
-    const order = Array.from(row2().children).map((c) =>
-      c.hasAttribute('data-list-search')
-        ? 'search'
-        : c.querySelector('[data-filters-toggle]')
-          ? 'filters'
-          : c.classList.contains('view')
-            ? 'view'
-            : c.classList.contains('lt__gap')
-              ? 'gap'
-              : c.querySelector('.cols')
-                ? 'columns'
-                : c.classList.contains('more')
-                  ? 'more'
-                  : (c.tagName ?? '').toLowerCase(),
+    const zones = Array.from(row2().children);
+    const at = (test: (c: Element) => boolean) => zones.findIndex(test);
+    const search = at((c) => c.hasAttribute('data-list-search'));
+    const filters = at(
+      (c) => !!c.querySelector('[data-filters-toggle]') || c.matches('.lt__filters'),
     );
-    expect(
-      order.filter((o) => ['search', 'filters', 'view', 'gap', 'columns', 'more'].includes(o)),
-    ).toEqual(['search', 'filters', 'view', 'gap', 'columns', 'more']);
-    expect(search().placeholder).toBe('Search things');
-    expect(search().getAttribute('type')).toBe('search');
+    const view = at((c) => c.classList.contains('view'));
+    const tail = at((c) => c.classList.contains('lt__tail'));
+    // Search first, Filters right after it, then (Other filters and) the view, and the tail last.
+    expect([search, filters]).toEqual([0, 1]);
+    expect(view).toBeGreaterThan(filters);
+    expect(tail).toBeGreaterThan(view);
+    const inTail = Array.from(zones[tail].querySelectorAll('.cols, .more')).map((c) => c.className);
+    expect(inTail).toEqual(['cols', 'more']);
+    expect(search_input().placeholder).toBe('Search things');
+    expect(search_input().getAttribute('type')).toBe('search');
   });
 
   it('shows the text of the search filter in Search, not in a chip, and not in the Filters badge', async () => {

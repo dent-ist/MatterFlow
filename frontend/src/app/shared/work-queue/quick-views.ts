@@ -210,7 +210,11 @@ const STRIP_GAP = 4;
   styles: `
     :host {
       display: block;
-      min-width: 0;
+      /* Takes the room the other controls of the bar leave (and never more, so the bar never wraps because of the views); until the strip has
+         measured itself the views that do not fit are clipped, not wrapped (no layout shift, #755). */
+      flex: 1 1 0;
+      min-width: 8rem;
+      overflow: hidden;
       /* Left in the bar whatever wraps: the rest of the bar is right aligned. */
       margin-right: auto;
     }
@@ -490,9 +494,7 @@ export class QuickViews {
     let others = 0;
     let count = 0;
     for (const child of Array.from(parent.children) as HTMLElement[]) {
-      // The toolbar's spring (`data-flex-gap`) takes whatever room is left: it is not a button that needs room.
-      if (child === host || child.offsetWidth === 0 || child.hasAttribute('data-flex-gap'))
-        continue;
+      if (child === host || child.offsetWidth === 0) continue;
       others += child.offsetWidth;
       count++;
     }

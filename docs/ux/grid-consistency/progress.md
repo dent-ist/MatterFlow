@@ -5,15 +5,15 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 | Issue | Code | Title | Hours | Weight % | Done % | Weighted % |
 | --- | --- | --- | --- | --- | --- | --- |
 | (this commit) | LC-00 | Epic, issues, plan, decision AR | 2.0 | 7.3 | 100 | 7.3 |
-| #1038 | LC-01 | Shared list toolbar and title row | 6.0 | 21.8 | 0 | 0.0 |
-| #1039 | LC-02 | Adopt the toolbar on eight lists | 7.0 | 25.5 | 0 | 0.0 |
-| #1040 | LC-03 | Standard task and asset columns | 3.0 | 10.9 | 0 | 0.0 |
+| #1038 | LC-01 | Shared list toolbar and title row | 6.0 | 21.8 | 100 | 21.8 |
+| #1039 | LC-02 | Adopt the toolbar on eight lists | 7.0 | 25.5 | 100 | 25.5 |
+| #1040 | LC-03 | Standard task and asset columns | 3.0 | 10.9 | 100 | 10.9 |
 | #1041 | LC-04 | Matter Tasks cards on a phone | 2.0 | 7.3 | 100 | 7.3 |
-| #1042 | LC-05 | Page size 50, Sorted by, First/Last | 1.5 | 5.5 | 0 | 0.0 |
-| #1043 | LC-06 | Filters, + New Task, admin New buttons, Title Case | 1.0 | 3.6 | 0 | 0.0 |
+| #1042 | LC-05 | Page size 50, Sorted by, First/Last | 1.5 | 5.5 | 100 | 5.5 |
+| #1043 | LC-06 | Filters, + New Task, admin New buttons, Title Case | 1.0 | 3.6 | 100 | 3.6 |
 | #1044 | SH-01 | Shell: radius and full-height navigation panel | 4.0 | 14.5 | 100 | 14.5 |
-| #1045 | LC-07 | Verify Users Pods chip and Matter Projects New button | 1.0 | 3.6 | 0 | 0.0 |
-| | | **Total** | **27.5** | **100.0** | | **7.3** |
+| #1045 | LC-07 | Verify Users Pods chip and Matter Projects New button | 1.0 | 3.6 | 100 | 3.6 |
+| | | **Total** | **27.5** | **100.0** | | **100.0** |
 
 ## PM (LC-00)
 
@@ -25,6 +25,7 @@ Protocol: one section per agent below, append-only, newest entry last; `git pull
 - 2026-11-02 **Matter Tasks (LC-02) is on `matter-detail` (commit "WPx LC-02 Adopt the list toolbar on eight lists"): Agent F may start LC-04.** `shared/work-queue/scoped-tasks.ts` now renders `mf-list-toolbar` (Search tasks, Filters, View dropdown, Columns and Select, "+ New Task", Sorted by line, bulk bar in the toolbar) and the pager with 25/50/100 (default 50). The phone branch (`phone()`) still draws the same task table as before: LC-04 replaces it with cards. Please pull before editing that file; the toolbar block is the `<mf-list-toolbar>` element, the grid is `<mf-task-table>` below it.
 
 - 2026-11-02 LC-02 (#1039), LC-05 (#1042), LC-03 (#1040), LC-06 (#1043) and LC-07 (#1045) are built and committed; see the hand-back report for the commit list, the checks run and the checks not run. Page size default is 50 in `list-query.ts` (every `ListQueryPage` list: Clients, Matters, Projects, Assets, Pods, Users, Workflows, Steps, ...), in `scoped-tasks.ts` and in Notifications. Audit Logs and Activities are untouched.
+- 2026-11-02 Agent E hand-back: LC-01, LC-02, LC-03, LC-05, LC-06, LC-07 done. Checks: unit specs of the touched areas (290 files, 3121 tests, all green), ESLint, Prettier, tsc app, spec and e2e, theme colour and contrast scripts, `ng build` (initial 659 kB), targeted e2e against a local stack (about 540 test runs in seven batches, the last four batches green; open items: Matters filter-row specs in `column-filters-records.spec.ts` and Agent-F or Matter-detail areas, see the report). Not run: the full Playwright suite, the .NET integration tests, axe at 1920 and 768 on every one of the eight pages (axe runs inside the targeted specs only). Open questions for the owner are in the hand-back report.
 
 ## Agent F (shell, phone cards)
 

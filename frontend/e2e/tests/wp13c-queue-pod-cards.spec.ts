@@ -115,8 +115,11 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
         const bar = document.querySelector('[data-grid-toolbar]')!;
         const ys = new Set<number>();
         bar.querySelectorAll<HTMLElement>('button, a').forEach((el) => {
+          // The entries of the closed "..." menu are not on screen.
+          if (el.closest('details:not([open])')) return;
           const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) ys.add(Math.round(r.top / 8));
+          // Rows by the vertical centre of each control (a 44 px menu button and a 32 px Filters button share a row).
+          if (r.width > 0 && r.height > 0) ys.add(Math.round((r.top + r.height / 2) / 20));
         });
         return ys.size;
       });
@@ -222,7 +225,9 @@ test.describe('WP13c: Task Queue and Pod Work cards', () => {
     await new TaskQueuePage(page).open(`?q=${px.tag}`);
     await page.getByRole('button', { name: /^Filters/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Filters' });
-    const box = sheet.getByRole('textbox', { name: /Title or Ref/ });
+    // Title or Ref is the Search box of the toolbar, also on a phone (LC-01); the sheet has the other filters.
+    await expect(sheet.getByRole('textbox', { name: /Title or Ref/ })).toHaveCount(0);
+    const box = page.getByRole('searchbox', { name: 'Search tasks', exact: true });
     await box.fill(px.titles[3]);
     await box.press('Enter');
     await expect(cards(page)).toHaveCount(1);

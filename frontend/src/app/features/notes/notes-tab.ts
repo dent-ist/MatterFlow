@@ -314,11 +314,6 @@ interface RefChip {
                     <span class="nt__tok">{{ '{{author}}' }}</span> are filled when it is
                     used.</span
                   >
-                  @if (canEdit()) {
-                    <button type="button" class="mf-btn" data-template-new (click)="newTemplate()">
-                      <i class="pi pi-plus" aria-hidden="true"></i>New Template
-                    </button>
-                  }
                 </div>
                 @if (shownTemplates().length) {
                   <ul class="nt__nl" data-template-list>
@@ -371,7 +366,7 @@ interface RefChip {
                       {{
                         query()
                           ? 'Try other words.'
-                          : 'Open a note and use More actions, Save as template.'
+                          : 'Create one from a note: open it and use More actions, Save as template.'
                       }}
                     </p>
                   </div>
@@ -496,9 +491,7 @@ interface RefChip {
                   >
                     Cancel
                   </button>
-                  <span class="nt__crumb"
-                    ><b>{{ tplEditing() ? 'Edit template' : 'New template' }}</b></span
-                  >
+                  <span class="nt__crumb"><b>Edit template</b></span>
                   <span class="nt__pill nt__pill--info" data-template-badge>Template</span>
                   <span class="nt__state" [class.is-dirty]="tplDirty()" data-note-state>
                     <i aria-hidden="true"></i
@@ -545,32 +538,6 @@ interface RefChip {
                         [(value)]="tplTitle"
                       />
                     </div>
-                    @if (!tplEditing()) {
-                      <fieldset class="nt__fieldset nt__erow">
-                        <legend class="nt__byline">Who can use it</legend>
-                        <label class="nt__check"
-                          ><input
-                            type="radio"
-                            name="te-scope"
-                            [checked]="!tplFirm()"
-                            (change)="tplFirm.set(false)"
-                          />
-                          <span><b>This matter</b></span></label
-                        >
-                        <label class="nt__check"
-                          ><input
-                            type="radio"
-                            name="te-scope"
-                            [disabled]="!isAdmin()"
-                            [checked]="tplFirm()"
-                            (change)="tplFirm.set(true)"
-                          />
-                          <span
-                            ><b>Firm-wide</b> {{ isAdmin() ? '' : '(administrator only)' }}</span
-                          ></label
-                        >
-                      </fieldset>
-                    }
                     <fieldset class="nt__fieldset nt__erow">
                       <legend class="nt__byline">Tags the template offers (up to five)</legend>
                       @for (g of allTags(); track g.noteTagId) {
@@ -1544,7 +1511,8 @@ interface RefChip {
           </button>
         } @empty {
           <p class="nt__byline">
-            No templates yet. Open a note and use More actions, Save as template.
+            No templates yet. Create one from a note: open it and use More actions, Save as
+            template.
           </p>
         }
       </div>
@@ -2890,31 +2858,6 @@ export class NotesTab {
     });
   }
 
-  /** A new template: the note panel opens in edit mode with empty fields. */
-  protected newTemplate(): void {
-    this.guard(() => {
-      this.note.set(null);
-      this.draft.set(null);
-      this.editing.set(false);
-      this.selTemplate.set(this.blankTemplate());
-      this.editTemplate(null);
-    });
-  }
-
-  private blankTemplate(): NoteTemplateResponse {
-    return {
-      noteTemplateId: 0,
-      scope: 'MATTER',
-      name: '',
-      bodyHtml: '',
-      tags: [],
-      usedCount: 0,
-      canEdit: true,
-      updatedAtUtc: new Date().toISOString(),
-      rowVersion: '',
-    } as unknown as NoteTemplateResponse;
-  }
-
   /** Edit mode of the open template, in the note panel (name, description, title, text, tags). */
   protected editTemplate(t: NoteTemplateResponse | null): void {
     this.tplEditing.set(t);
@@ -2933,7 +2876,6 @@ export class NotesTab {
   protected cancelTemplate(): void {
     const back = () => {
       this.tplEditMode.set(false);
-      if (!this.tplEditing()) this.selTemplate.set(null);
     };
     if (this.tplDirty()) {
       this.pendingAfterDiscard = back;
@@ -2964,24 +2906,13 @@ export class NotesTab {
         bodyHtml: this.tplHtml(),
         tagIds: this.tplTagIds(),
       };
-      let saved: NoteTemplateResponse;
-      if (t) {
-        saved = await firstValueFrom(
-          this.templatesApi.updateNoteTemplate(t.noteTemplateId, {
-            ...common,
-            rowVersion: t.rowVersion,
-          }),
-        );
-      } else {
-        const firm = this.tplFirm() && this.isAdmin();
-        saved = await firstValueFrom(
-          this.templatesApi.createNoteTemplate({
-            ...common,
-            scope: firm ? 'FIRM' : 'MATTER',
-            matterId: firm ? undefined : this.matterId(),
-          }),
-        );
-      }
+      if (!t) return;
+      const saved = await firstValueFrom(
+        this.templatesApi.updateNoteTemplate(t.noteTemplateId, {
+          ...common,
+          rowVersion: t.rowVersion,
+        }),
+      );
       this.notify.success('Template saved');
       this.tplEditMode.set(false);
       await this.loadTemplates();

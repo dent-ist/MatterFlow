@@ -93,8 +93,8 @@ test.describe('Assets final verification (#517)', () => {
       'phone page height with 25 cards (review: 3,048 px with 25 table rows and the panel)',
       height,
     );
-    // 25 cards of 4 lines each (about 137 px): the page is a list, not a list plus a panel; opening an asset is a tap, not a 1,500 px scroll.
-    expect(height).toBeLessThan(25 * 150);
+    // 50 cards (the default page size since LC-05) of 4 lines each (about 137 px): the page is a list, not a list plus a panel; opening an asset is a tap.
+    expect(height).toBeLessThan(50 * 150);
     await noHorizontalScroll(page);
   });
 
