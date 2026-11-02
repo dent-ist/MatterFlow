@@ -68,6 +68,9 @@ public class ProjectManagerNoDashboardSchemaTests(SqlServerFixture sql)
         return cs;
     }
 
+    /// <summary>Production.View|Edit|Comment (3), ProductionSpec.View|Edit (2) and MatterNote.View|Edit|Delete (3) granted by scripts 52 to 55.</summary>
+    private const int MatterDetailGrants = 8;
+
     [Fact]
     public async Task The_starter_role_loses_the_three_Dashboard_grants_and_the_old_description_once()
     {
@@ -80,11 +83,13 @@ public class ProjectManagerNoDashboardSchemaTests(SqlServerFixture sql)
         grants.ShouldNotContain("Dashboard.ViewSummary");
         grants.ShouldNotContain("Dashboard.ViewSwimlane");
         grants.ShouldContain("Asset.Dispose"); // script 46 (epic #851) gave the starter role the permission to dispose assets
-        grants.Count.ShouldBe(Codes().Length - 3 + 1);
+        grants.ShouldContain("Production.Edit"); // scripts 52 to 55 (epic #1001) gave the starter role the Production, ProductionSpec and MatterNote permissions
+        grants.ShouldContain("MatterNote.Delete");
+        grants.Count.ShouldBe(Codes().Length - 3 + 1 + MatterDetailGrants);
         (await ReadAsync(cs, "SELECT Description FROM dbo.Role WHERE Name = N'Project Manager'")).ShouldBe(["Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters."]);
 
         await RunAsync(cs, new EmbeddedMigrationScriptSource()); // nothing left to apply: the runner is idempotent too
-        (await GrantsAsync(cs, "Project Manager")).Count.ShouldBe(Codes().Length - 3 + 1);
+        (await GrantsAsync(cs, "Project Manager")).Count.ShouldBe(Codes().Length - 3 + 1 + MatterDetailGrants);
     }
 
     [Fact]
