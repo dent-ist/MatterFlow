@@ -44,6 +44,8 @@ import { MatterEventPanel } from '../ui/matter-event-panel';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
 import { MatterProjects } from './matter-projects';
+import { ProductionsTab } from '../../productions/productions-tab';
+import { NotesTab } from '../../notes/notes-tab';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
@@ -80,6 +82,8 @@ type Tab = MatterTabKey;
     MatterNextEvents,
     MatterEventPanel,
     MatterEditPanel,
+    ProductionsTab,
+    NotesTab,
     AddCommentDialog,
     MatterManagersDialog,
   ],
@@ -195,12 +199,13 @@ type Tab = MatterTabKey;
                   />
                 }
                 @case ('productions') {
-                  <div class="pg-state" data-placeholder="productions">
-                    Productions are coming soon.
-                  </div>
+                  <mf-productions-tab [matterId]="m.matterId" />
                 }
                 @case ('notes') {
-                  <div class="pg-state" data-placeholder="notes">Notes are coming soon.</div>
+                  <mf-notes-tab
+                    [matterId]="m.matterId"
+                    [matterLabel]="m.matterRef + ' ' + m.name"
+                  />
                 }
                 @case ('activities') {
                   <div class="mf-scroll-area" mfScrollArea="Matter activities" data-activities-tab>

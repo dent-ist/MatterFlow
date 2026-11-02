@@ -291,11 +291,11 @@ describe('MatterDetailPage', () => {
       ),
     ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes', 'Activities']);
     expect(el().querySelectorAll('[role=tab] .pi').length).toBe(7);
-    // Productions and Notes show a placeholder until their tabs are built.
+    // Productions and Notes open their own tabs (MD-11, MD-13).
     await openTab('productions');
-    expect(el().querySelector('[data-placeholder=productions]')).not.toBeNull();
+    expect(el().querySelector('[data-productions-tab]')).not.toBeNull();
     await openTab('notes');
-    expect(el().querySelector('[data-placeholder=notes]')).not.toBeNull();
+    expect(el().querySelector('[data-notes-tab]')).not.toBeNull();
   });
 
   it('has Summary, Tasks, Projects and Assets tabs, Summary first and the default; Tasks needs Task.View, Projects lists the matter projects', async () => {
