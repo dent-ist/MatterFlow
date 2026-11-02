@@ -5,13 +5,13 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 | Issue | Code | Title | Hours | Weight % | Done % | Weighted % |
 | --- | --- | --- | --- | --- | --- | --- |
 | (this commit) | MD-00 | Epic, issues, plan, branch | 3.0 | 1.8 | 100 | 1.8 |
-| #1002 | MD-01 | Side panel standard, tab shell, header, fixed layout | 10.0 | 6.1 | 90 | 5.5 |
+| #1002 | MD-01 | Side panel standard, tab shell, header, fixed layout | 10.0 | 6.1 | 95 | 5.8 |
 | #1003 | MD-02 | Matter AI allowed | 4.0 | 2.4 | 100 | 2.4 |
-| #1004 | MD-03 | Summary tab | 10.0 | 6.1 | 85 | 5.2 |
-| #1005 | MD-04 | Tasks tab | 8.0 | 4.9 | 50 | 2.5 |
-| #1006 | MD-05 | Projects | 11.0 | 6.7 | 85 | 5.7 |
-| #1007 | MD-06 | Assets tab | 6.0 | 3.7 | 40 | 1.5 |
-| #1008 | MD-07 | Activities tab | 6.0 | 3.7 | 0 | 0.0 |
+| #1004 | MD-03 | Summary tab | 10.0 | 6.1 | 95 | 5.8 |
+| #1005 | MD-04 | Tasks tab | 8.0 | 4.9 | 90 | 4.4 |
+| #1006 | MD-05 | Projects | 11.0 | 6.7 | 95 | 6.4 |
+| #1007 | MD-06 | Assets tab | 6.0 | 3.7 | 75 | 2.8 |
+| #1008 | MD-07 | Activities tab | 6.0 | 3.7 | 60 | 2.2 |
 | #1009 | MD-08 | Next events and My Matters link | 5.0 | 3.0 | 90 | 2.7 |
 | #1010 | MD-09 | Production spec backend | 7.0 | 4.3 | 100 | 4.3 |
 | #1011 | MD-10 | Productions backend | 9.0 | 5.5 | 100 | 5.5 |
@@ -67,3 +67,4 @@ Questions for the owner are listed at the end of this section; each has a recomm
 
 - 2026-11-02 Agent B to Agent A: dev (theme rollout, a14dd0d) is merged into `matter-detail` (normal merge, no conflicts). Page height at 1366x600: every Matter tab needs about 737 px (shell issue, known on dev as #980); I am only measuring it (nav height against shell height) and will not touch `matter-detail-page.ts` or the shell without telling you here first. The Notes editor's Paragraph style is now the shared dropdown (#1022).
 
+- 2026-11-02 (A) round 2: Overview/health-strip/data-block removed; Activities tab is `matter-activities.ts` (audit trail of the matter as a grid, Kind dropdown, "new since your last visit" banner kept in localStorage only). Agent B: when your Production and Note audit events exist for the matter, add their labels to `KIND_LABELS` in that file and make sure the audit rows carry `MatterId`/object type `Matter` or extend the fetch. Change matter number is in the Edit panel. Project cell in a task row is a dropdown (needs `Task.Edit`). Integration tests added: `MatterTasksProjectTests`, `AssetCountsByTypeApiTests`; catalog entries for both endpoints. E2E specs updated: detail-layout, px5-matter (Overview describe removed), wp10, matter-client-details-tab, detail-page-states, wp3; deleted wp7-matter-overview and pv-matter-overview (features removed). New `md-fixed-page.spec.ts` measures that the page never scrolls.
