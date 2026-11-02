@@ -296,4 +296,56 @@ test.describe('Fixed layout (#200)', () => {
       await axeClean(page, `Pod Work ${width}`);
     }
   });
+  test('#980: on a short desktop window the page does not scroll; the left menu scrolls inside itself and keeps the version line in view', async ({
+    asUser,
+  }) => {
+    const page = await asUser('ke\\kekim');
+    for (const [width, height] of [
+      [1366, 600],
+      [1366, 768],
+      [1920, 1080],
+    ]) {
+      await page.setViewportSize({ width, height });
+      for (const url of ['/', '/tasks', '/matters']) {
+        await page.goto(url);
+        await expect(page.locator('h1').first()).toBeVisible();
+        const m = await page.evaluate(() => {
+          const nav = document.querySelector<HTMLElement>('nav.mf-nav')!;
+          const ver = document
+            .querySelector<HTMLElement>('[data-testid="nav-version"]')!
+            .getBoundingClientRect();
+          return {
+            doc: document.documentElement.scrollHeight,
+            win: window.innerHeight,
+            navScroll: nav.scrollHeight,
+            navClient: nav.clientHeight,
+            overflowY: getComputedStyle(nav).overflowY,
+            verBottom: ver.bottom,
+          };
+        });
+        expect(m.doc, `document height is the window height at ${width}x${height} for ${url}`).toBe(
+          m.win,
+        );
+        expect(m.overflowY).toBe('auto');
+        expect(m.verBottom, `version line stays in view at ${width}x${height}`).toBeLessThanOrEqual(
+          m.win,
+        );
+        await shot(page, `shell-nav-scroll-${width}x${height}`);
+      }
+    }
+    // Below the fixed-layout size (1280 x 500) the page may scroll, but the menu still scrolls inside itself and never makes the page taller.
+    await page.setViewportSize({ width: 1280, height: 500 });
+    await page.goto('/');
+    await expect(page.locator('h1').first()).toBeVisible();
+    const nav = await page.evaluate(() => {
+      const n = document.querySelector<HTMLElement>('nav.mf-nav')!;
+      return {
+        box: n.getBoundingClientRect().height,
+        win: window.innerHeight,
+        overflowY: getComputedStyle(n).overflowY,
+      };
+    });
+    expect(nav.overflowY).toBe('auto');
+    expect(nav.box).toBeLessThanOrEqual(nav.win);
+  });
 });
