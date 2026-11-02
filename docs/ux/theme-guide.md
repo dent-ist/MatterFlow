@@ -327,7 +327,7 @@ How to adopt it on a list page (the Matters list is the example, `features/matte
 
 Work tables (Task Queue, My Work, Pod Work, the Matter and Project Tasks tabs) use `mf-task-table`, which has its own column-based resize (`shared/work-queue/column-resize.ts`) and the same `mfReorder`; the Tasks tabs take their columns from `grid-prefs` (`reorderable` input), the Task Queue pages keep their older chooser.
 
-**Where the Matter Tasks tab stands (MD-29, #1033):** default order Ref, Type (chip and the type's name), Title, Priority, Assignee, Due, Status, Progress. **Project is not in the default set**; it is in the Columns menu (a Matter that has projects) and, once added, sits right after Title. Ref is pinned first, Title cannot be hidden.
+**Where the Matter Tasks tab stands (MD-29, #1033):** default order Ref, Type (chip and the type's name), Title, Project, Priority, Assignee, Due, Status, Progress. Project is a default column (right after Title) for a Matter that has projects; a Matter without projects has nothing to choose, so the column is left out there. Any column but Ref and Title can be hidden in the Columns menu. Ref is pinned first, Title cannot be hidden.
 
 **Pages that should adopt it later (not converted; estimates in agent-hours):** Clients list 2.5, Projects list 2.5, Assets list 3, Matter Projects tab 2, Matter Assets tab 2, Matter Activities 2, Users 3, Roles 2.5, Pods 2.5, admin lookups (Task Types, Asset Types, Labels, Custom Fields, Workflows) 2 each, Audit Logs 3, Reports lists 3; unifying the Task Queue / My Work / Pod Work chooser and resize with this set (one Columns menu instead of the chooser panel, one resize store) 10.
 

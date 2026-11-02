@@ -578,26 +578,6 @@ describe('MatterDetailPage', () => {
 
   it('filters the matter tasks by the shared column filters from the address, with a Project choice', async () => {
     await create(['Matter.View', 'Task.View', 'Project.View']);
-    // The Project column (and so its filter) is added in the Columns menu: the stored choice stands for that.
-    const user = TestBed.inject(AuthStore).profile()?.userId ?? 'anon';
-    localStorage.setItem(
-      `mf.grid.v1.matterTasks.${user}`,
-      JSON.stringify({
-        v: 1,
-        o: [],
-        s: [
-          'ref',
-          'typeChip',
-          'title',
-          'project',
-          'priority',
-          'assignee',
-          'due',
-          'status',
-          'steps',
-        ],
-      }),
-    );
     await openTab('tasks');
     const grid = el().querySelector('mf-scoped-tasks')!;
     grid.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
