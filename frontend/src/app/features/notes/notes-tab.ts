@@ -2549,6 +2549,11 @@ export class NotesTab {
     if (!n) return;
     try {
       const latest = await firstValueFrom(this.notesApi.getNote(n.noteId));
+      if (latest.isLocked) {
+        // The change that made the saved copy newer was somebody locking the note: say that, not "someone saved".
+        this.lockedWhileEditing.set(latest.lockedByName ?? 'someone');
+        return;
+      }
       this.conflict.set({
         who: latest.updatedByName ?? 'Someone',
         at: latest.updatedAtUtc,

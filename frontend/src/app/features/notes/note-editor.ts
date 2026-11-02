@@ -956,6 +956,8 @@ export class NoteEditor {
 
   /** Puts keyboard focus in the text (a new note, or after Edit). */
   focus(): void {
+    // The editor loads lazily: when the person has already clicked into the text, the caret stays where they put it.
+    if (this.hostEl().nativeElement.contains(document.activeElement)) return;
     this.editor?.commands.focus('start');
   }
 

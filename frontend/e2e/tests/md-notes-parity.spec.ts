@@ -64,9 +64,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await first.locator('h3 button').click();
     await expect(first.locator('h3 button')).toHaveAttribute('aria-expanded', 'false');
     await page.locator('[data-toggle-all]').click();
-    await expect(
-      page.locator('[data-group] h3 button[aria-expanded="true"]').first(),
-    ).toBeVisible();
+    await expect(page.locator('[data-group] h3 button[aria-expanded="true"]')).toHaveCount(0);
+    await page.locator('[data-toggle-all]').click();
+    await expect(page.locator('[data-group] h3 button[aria-expanded="false"]')).toHaveCount(0);
   });
 
   test('a note opens in read mode; Edit shows Cancel left and Save right; Save returns to read mode', async ({
@@ -329,18 +329,20 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
 
   test('Save as template and the template tags offer', async ({ page, seed }) => {
     const w = await world(seed);
-    await w.note(`Source ${uid()}`, [w.tagA.noteTagId]);
+    const source = `Source ${uid()}`;
+    await w.note(source, [w.tagA.noteTagId]);
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
-    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.locator('mf-notes-tab').getByRole('button', { name: 'More actions' }).click();
     await page.getByRole('menuitem', { name: 'Save as template...' }).click();
     const dlg = page.getByRole('dialog', { name: 'Save as template' });
     await expect(dlg).toContainText('Who can use it');
     await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
     await dlg.getByRole('button', { name: 'Save template' }).click();
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
-    await expect(page.locator('[data-template-list] li').first()).toContainText('This matter');
-    await page.locator('[data-template-use]').first().click();
+    const row = page.locator('[data-template-list] li', { hasText: source });
+    await expect(row).toContainText('This matter');
+    await row.locator('[data-template-use]').click();
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
     await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
     await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
@@ -390,6 +392,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
       expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
       await page.locator('[data-note-cancel]').click();
+      if (width < 760) await page.locator('[data-note-close]').click();
       await page.getByRole('button', { name: 'Templates', exact: true }).click();
       await expect(page.locator('[data-template-new]')).toBeVisible();
       expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
