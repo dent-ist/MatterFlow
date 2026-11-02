@@ -149,7 +149,7 @@ describe('ClientOverview', () => {
       }),
     );
 
-    expect(text(el().querySelector('[data-no-matters]'))).toBe('No matters yet. New matter');
+    expect(text(el().querySelector('[data-no-matters]'))).toBe('No matters yet. New Matter');
     expect(el().querySelector('[data-new-matter]')!.getAttribute('href')).toBe(
       '/matters/new?clientId=1',
     );

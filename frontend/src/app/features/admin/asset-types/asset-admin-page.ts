@@ -51,7 +51,7 @@ import { AssetTypesPage } from './asset-types-page';
       @if (current() === 'types') {
         <p-button
           mfPrimary
-          label="New asset type"
+          label="New Asset Type"
           icon="pi pi-plus"
           data-new
           (onClick)="newType()"
@@ -60,7 +60,7 @@ import { AssetTypesPage } from './asset-types-page';
       @if (current() === 'link-roles') {
         <p-button
           mfPrimary
-          label="New link role"
+          label="New Link Role"
           icon="pi pi-plus"
           data-new-role
           (onClick)="newRole()"

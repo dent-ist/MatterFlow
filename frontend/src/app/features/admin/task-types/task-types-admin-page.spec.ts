@@ -137,7 +137,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(el().querySelector('#task-type-search, #wf-search, mf-search-box')).toBeNull();
       expect(el().querySelector('[data-filter-row]')).not.toBeNull();
       expect(el().querySelector('mf-page-header [data-filters-toggle]')).not.toBeNull();
-      expect(el().querySelector('[data-new]')!.textContent).toContain('New task type');
+      expect(el().querySelector('[data-new]')!.textContent).toContain('New Task Type');
       expect(el().querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
         'task-types-admin-tab-task-types',
       );
@@ -157,7 +157,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(el().querySelector('#wf-search, mf-search-box')).toBeNull();
       expect(
         Array.from(el().querySelectorAll('button')).some(
-          (b) => b.textContent?.trim() === 'New workflow',
+          (b) => b.textContent?.trim() === 'New Workflow',
         ),
       ).toBe(true);
     },
@@ -194,7 +194,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(el().querySelector('#step-search, mf-search-box')).toBeNull();
       expect(
         Array.from(el().querySelectorAll('button')).some(
-          (b) => b.textContent?.trim() === 'New step',
+          (b) => b.textContent?.trim() === 'New Step',
         ),
       ).toBe(true);
 
@@ -234,7 +234,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         'any',
         true,
         1,
-        25,
+        50,
       ]);
       // The address opens the filter row with the tags chosen and Match any selected.
       expect(ddSelect(el(), 'Filter by Tag match')?.value).toBe('any');
@@ -260,7 +260,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         1,
         undefined,
         1,
-        25,
+        50,
       ]);
       expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
         'Filtered by task type Data Processing',
@@ -286,7 +286,7 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
         undefined,
         5,
         1,
-        25,
+        50,
       ]);
       expect(el().querySelector('[data-filtered-by]')!.textContent).toContain(
         'Filtered by step Load',

@@ -205,7 +205,7 @@ export class ClientDetailPage {
       list.push({
         id: 'new-matter',
         role: 'primary',
-        label: 'New matter',
+        label: 'New Matter',
         icon: 'pi-plus',
         disabled: !c.isActive,
         reason: INACTIVE_REASON,

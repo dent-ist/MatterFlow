@@ -125,7 +125,7 @@ export function rowsFromMatters(matters: readonly MatterResponse[]): OverviewMat
                   routerLink="/matters/new"
                   [queryParams]="{ clientId: client().clientId }"
                   data-new-matter
-                  >New matter</a
+                  >New Matter</a
                 >
               } @else if (!client().isActive) {
                 <span class="ov-muted" data-inactive-reason>{{ reason }}</span>

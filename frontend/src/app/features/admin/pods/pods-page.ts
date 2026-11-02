@@ -394,7 +394,8 @@ export class PodsPage extends ServerListPage<PodSummary> implements OnDestroy, H
 
   // ---- editor actions
 
-  protected async newPod(): Promise<void> {
+  /** "+ New Pod" lives in the page header (LC-06): the Users page calls this. */
+  async newPod(): Promise<void> {
     if (!(await this.leaveEditor())) return;
     this.openEditor(null, '', '', true);
   }

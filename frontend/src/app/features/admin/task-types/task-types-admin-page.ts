@@ -53,7 +53,7 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
         @case ('task-types') {
           <p-button
             mfPrimary
-            label="New task type"
+            label="New Task Type"
             icon="pi pi-plus"
             data-new
             (onClick)="go('/admin/task-types/new')"
@@ -62,7 +62,7 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
         @case ('workflows') {
           <p-button
             mfPrimary
-            label="New workflow"
+            label="New Workflow"
             icon="pi pi-plus"
             (onClick)="go('/admin/workflows/new')"
           />
@@ -70,7 +70,7 @@ export const TAB_TEXT: Record<TaskTypesTab, string> = {
         @case ('steps') {
           <p-button
             mfPrimary
-            label="New step"
+            label="New Step"
             icon="pi pi-plus"
             (onClick)="go('/admin/steps/new')"
           />
