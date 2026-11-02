@@ -716,11 +716,9 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
     <mf-slide-panel
       title="History"
       subtitle="Who did what and when. No versions."
-      secondaryLabel="Close"
-      [showFooter]="true"
-      primaryLabel="Close"
       [visible]="panel() === 'history'"
       (visibleChange)="!$event && panel.set('none')"
+      [showFooter]="false"
       (submitted)="panel.set('none')"
     >
       <div data-note-history-list>
@@ -744,11 +742,10 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
     <mf-slide-panel
       title="Templates"
       subtitle="Using a template copies it into a new note."
-      primaryLabel="Close"
-      secondaryLabel="Close"
       size="large"
       [visible]="panel() === 'templates'"
       (visibleChange)="!$event && panel.set('none')"
+      [showFooter]="false"
       (submitted)="panel.set('none')"
     >
       <p-button
