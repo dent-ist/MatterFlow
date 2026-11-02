@@ -92,6 +92,35 @@ test.describe('the administrator changes the name and the icon', () => {
     expect(icon.headers()['content-type']).toBe('image/png');
   });
 
+  test('an uploaded logo sits on a light tile in the dark panel and stays readable (SH-01, #1044)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.goto('/admin/settings');
+    await page.locator('[data-icon-input]').setInputFiles(tempFile('dark.svg', GOOD_SVG));
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(toasts(page)).toContainText(SAVED);
+    await page.reload();
+    const tile = page.locator('.mf-logo picture.mf-logo__pic--tile');
+    await expect(tile).toBeVisible();
+    expect(
+      await tile.evaluate((el) => {
+        const css = getComputedStyle(el);
+        return {
+          radius: css.borderTopLeftRadius,
+          padding: css.paddingTop,
+          bg: css.backgroundColor,
+        };
+      }),
+    ).toEqual({ radius: '6px', padding: '4px', bg: 'rgb(255, 255, 255)' });
+    const nav = (await page.locator('nav.mf-nav').boundingBox())!;
+    const logo = (await page.locator('.mf-logo').boundingBox())!;
+    expect(logo.x).toBe(0);
+    expect(logo.y).toBe(0);
+    expect(logo.width).toBeLessThanOrEqual(nav.width + 1);
+    await shot(page, 'sh01-uploaded-logo');
+  });
+
   test('an SVG icon is used as the tab icon without an apple-touch-icon', async ({ page }) => {
     await page.goto('/admin/settings');
     await page.locator('[data-icon-input]').setInputFiles(tempFile('mark.svg', GOOD_SVG));

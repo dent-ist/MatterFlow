@@ -75,6 +75,22 @@ describe('the application name in the screens', () => {
     expect(logo.querySelector('[data-app-name]')!.textContent).toBe('Renamed');
   });
 
+  it('the built-in mark has a white-on-navy variant for the dark panel and no light tile (SH-01, #1044)', async () => {
+    const el = (await shell()).nativeElement as HTMLElement;
+    const pic = el.querySelector('.mf-logo picture')!;
+    expect(pic.classList).not.toContain('mf-logo__pic--tile');
+    expect(pic.querySelector('source')!.getAttribute('srcset')).toBe('logo-light.svg');
+    expect(pic.querySelector('source')!.getAttribute('media')).toBe('(min-width: 640px)');
+  });
+
+  it('an uploaded logo is shown on a light tile and has no recoloured variant (SH-01, #1044)', async () => {
+    applyBranding(CUSTOM);
+    const el = (await shell()).nativeElement as HTMLElement;
+    const pic = el.querySelector('.mf-logo picture')!;
+    expect(pic.classList).toContain('mf-logo__pic--tile');
+    expect(pic.querySelector('source')).toBeNull();
+  });
+
   it('a name that looks like markup is shown as plain text, never as HTML', async () => {
     // The server refuses < and > (BRANDING_NAME_INVALID_CHARS); this proves the binding is text even if one slipped in.
     const fixture = await shell();

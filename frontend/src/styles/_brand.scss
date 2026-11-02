@@ -25,3 +25,68 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/*
+ * From 640 px up the mark and name sit at the top of the dark navigation panel (SH-01, #1044): the header carries the one logo element and lays it
+ * over the panel column, as tall as the header and as wide as the panel (full 220 px panel, or the 56 px rail where only the mark shows). The top bar
+ * itself starts to the right of the panel, so its search box lines up with the page content. Below 640 px the logo stays in the white top bar.
+ */
+@media (min-width: 640px) {
+  .mf-header {
+    --mf-brand-w: var(--mf-nav-w);
+    box-sizing: border-box;
+    height: var(--mf-header-h);
+  }
+
+  .mf-header .mf-logo {
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--mf-brand-w));
+    z-index: 1;
+    box-sizing: border-box;
+    width: var(--mf-brand-w);
+    height: var(--mf-header-h);
+    padding-inline: calc(var(--mf-s2) + var(--mf-s4));
+    background: var(--mf-nav-bg);
+    border-bottom: 1px solid var(--mf-nav-border);
+    border-right: 1px solid var(--mf-nav-border);
+    color: var(--mf-nav-text);
+  }
+
+  .mf-header .mf-logo:focus-visible {
+    outline-color: var(--mf-nav-focus);
+    outline-offset: -3px;
+  }
+
+  /* An uploaded logo cannot be recoloured: it sits on a light tile so any image stays readable. */
+  .mf-logo__pic--tile {
+    display: flex;
+    flex: none;
+    padding: var(--mf-s1);
+    background: var(--mf-surface);
+    border-radius: var(--mf-radius-md);
+  }
+
+  .mf-logo__pic--tile .mf-logo__mark {
+    object-fit: contain;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1099px) {
+  .mf-header {
+    --mf-brand-w: var(--mf-nav-rail-w);
+  }
+
+  .mf-header .mf-logo {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .mf-header .mf-logo__name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}

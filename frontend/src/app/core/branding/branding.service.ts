@@ -10,6 +10,9 @@ import {
 /** Where the built-in header mark lives (the same file the static `index.html` uses as the tab icon). */
 export const BUILT_IN_MARK = 'favicon.svg';
 
+/** The white-on-navy variant of the built-in mark, shown on the dark navigation panel (SH-01, #1044). */
+export const BUILT_IN_MARK_LIGHT = 'logo-light.svg';
+
 /**
  * Signal facade over the branding holder (`branding.ts`) for components: the application name for the header, the state pages, the search
  * labels and the error texts, and the address of the header mark. The name is only ever bound as text, never as HTML.
@@ -30,6 +33,9 @@ export class BrandingService {
     const url = this.state().iconUrl;
     return url && !this.iconBroken() ? url : BUILT_IN_MARK;
   });
+
+  /** True while an uploaded icon is shown: it sits on a light tile on the dark panel, because an arbitrary image cannot be recoloured. */
+  readonly customMark = computed(() => this.markSrc() !== BUILT_IN_MARK);
 
   constructor() {
     const stop = onBrandingChange((b) => {

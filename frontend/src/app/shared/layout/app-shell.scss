@@ -1,5 +1,6 @@
 :host {
-  --mf-header-h: 3.75rem;
+  /* The real height of the top bar (40 px controls, 16 px padding, 1 px line) and of the brand row of the navigation panel (SH-01, #1044). */
+  --mf-header-h: 57px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -60,10 +61,21 @@
   min-height: 0;
 }
 
+.mf-col {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .mf-nav {
   width: var(--mf-nav-w);
   flex: none;
-  padding: var(--mf-s3);
+  /* 8 px side margins: the white selection is 8 px in from the panel edge (SH-01, #1044). The brand row on top (the logo, which the header
+     carries and lays over the panel) takes the old header height; items scroll under it. */
+  padding: calc(var(--mf-header-h) + var(--mf-s2)) var(--mf-s2) var(--mf-s3);
+  order: -1;
   border-right: 1px solid var(--mf-nav-border);
   display: flex;
   flex-direction: column;
@@ -79,9 +91,9 @@
     var(--mf-nav-bg);
   /* Stays in view while the page scrolls; scrolls itself when the window is shorter than the menu. */
   position: sticky;
-  top: var(--mf-header-h);
+  top: 0;
   align-self: flex-start;
-  height: calc(100vh - var(--mf-header-h));
+  height: 100vh;
   overflow-y: auto;
   overscroll-behavior: contain;
 
@@ -166,7 +178,7 @@
 @media (max-width: 1099px) {
   .mf-nav {
     width: var(--mf-nav-rail-w);
-    padding: var(--mf-s2);
+    padding: calc(var(--mf-header-h) + var(--mf-s2)) var(--mf-s2) var(--mf-s3);
   }
 
   .mf-nav-label,
@@ -281,7 +293,8 @@
     width: min(18rem, 85vw);
     height: auto;
     align-self: auto;
-    padding: var(--mf-s3);
+    order: 0;
+    padding: var(--mf-s3) var(--mf-s2);
     box-shadow: var(--mf-shadow-2);
   }
 

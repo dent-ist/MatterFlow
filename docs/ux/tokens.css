@@ -291,12 +291,12 @@
   --mf-event-other-fg: var(--mf-sem-neutral-fg);
   --mf-event-other-bg: #e8ecf1;
 
-  /* 3c. Navigation panel (colours are the ones above: --mf-nav-*). Geometry of the new menu: a 36 px pill row, 19 px icons, 220 px panel,
-     a 56 px rail. The selected item is a white pill with bold type, never a coloured left border. */
+  /* 3c. Navigation panel (colours are the ones above: --mf-nav-*). Geometry of the new menu: a 36 px row with 6 px corners, 19 px icons, 220 px panel,
+     a 56 px rail. The selected item is a white 6 px rounded row with bold type, never a coloured left border. */
   --mf-nav-w: 220px;
   --mf-nav-rail-w: 56px;
   --mf-nav-item-h: 36px;
-  --mf-nav-item-radius: 999px;
+  --mf-nav-item-radius: var(--mf-radius-md); /* 6 px (SH-01, #1044) */
   --mf-nav-icon: 19px;
   --mf-nav-indent: 36px; /* Projects and Assets under Matters */
   --mf-nav-heading: #b4c3d8; /* ADMINISTRATION heading (same as --mf-nav-text-muted: 7.0:1 on the panel) */
