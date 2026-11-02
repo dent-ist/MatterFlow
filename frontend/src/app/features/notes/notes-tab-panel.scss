@@ -87,12 +87,10 @@
   overflow: auto;
 }
 
-.nt--wide .nt__pscroll > *,
-.nt--wide .nt__pedit > * {
-  width: 100%;
-  max-width: 940px;
-  margin-right: auto;
-  margin-left: auto;
+// MD-32 (#1036): editing uses the whole width of the note panel (no cap, no centring). Reading uses it too, except that running text keeps a readable line
+// length (about 110 characters, left aligned); tables, the title and the chips fill the width.
+.nt--wide .nt__pscroll .ne--read .ProseMirror > :is(p, ul, ol, blockquote, h1, h2, h3) {
+  max-width: 110ch;
 }
 
 .nt__pedit {

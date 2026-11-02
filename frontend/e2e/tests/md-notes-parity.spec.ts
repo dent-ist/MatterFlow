@@ -277,6 +277,19 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(saved.bodyHtml).not.toContain('style=');
   });
 
+  test('editing uses the full width of the note panel at 1675 px', async ({ page, seed }) => {
+    const w = await world(seed);
+    await page.setViewportSize({ width: 1675, height: 900 });
+    await open(page, w.matter.matterId);
+    await page.locator('[data-new-note]').click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    const panel = await page.locator('[data-note-edit-area]').boundingBox();
+    for (const sel of ['[data-note-tag-chips]', '[data-editor-toolbar]', '[data-editor-area]']) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box!.width).toBeGreaterThan(panel!.width - 40);
+    }
+  });
+
   test('tags: a side panel picks up to five, chips show in the editor, Add tag opens the panel', async ({
     page,
     seed,
