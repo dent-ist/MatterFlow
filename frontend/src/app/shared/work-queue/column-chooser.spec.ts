@@ -80,8 +80,9 @@ describe('ColumnChooser', () => {
     const labels = Array.from(el().querySelectorAll('[data-columns-group] .cc-check')).map((l) =>
       l.textContent?.replace('(always shown)', '').trim(),
     );
-    expect(labels.length).toBe(WORK_COLUMNS.length);
-    expect(new Set(labels).size).toBe(WORK_COLUMNS.length);
+    const chooserColumns = WORK_COLUMNS.filter((c) => !c.scopedOnly);
+    expect(labels.length).toBe(chooserColumns.length);
+    expect(new Set(labels).size).toBe(chooserColumns.length);
     expect(
       el().querySelectorAll('[data-columns-group] input[type=checkbox][disabled]').length,
     ).toBe(2);

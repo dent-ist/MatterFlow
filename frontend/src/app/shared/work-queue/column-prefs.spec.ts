@@ -318,7 +318,7 @@ describe('work table preferences', () => {
       const m = css.match(new RegExp(`--mf-col-${name}:\\s*(\\d+)px`));
       return m ? Number(m[1]) : null;
     };
-    for (const def of WORK_COLUMNS) {
+    for (const def of WORK_COLUMNS.filter((c) => !c.scopedOnly)) {
       if (def.fill) {
         expect(token(`${def.key}-min`)).toBe(def.minWidth);
         continue;

@@ -120,6 +120,11 @@ describe('resizable columns (MD-21, #1025)', () => {
       const el = await start();
       const table = el.querySelector('table')!;
       expect(table.classList.contains('mf-rz--fixed')).toBe(false);
+      // jsdom has no layout: a header cell is as wide as its style says (200 px before anything is set).
+      el.querySelectorAll('thead th').forEach((c) => {
+        (c as HTMLElement).getBoundingClientRect = () =>
+          ({ width: parseFloat((c as HTMLElement).style.width) || 200 }) as DOMRect;
+      });
       const [name] = handles(el);
       const th = name.parentElement as HTMLTableCellElement;
       name.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
