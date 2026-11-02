@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import {
   AssetsClient,
   AuditEventsClient,
+  AuditSearchClient,
   MatterManagersClient,
   MatterEventsClient,
   MatterOverviewClient,
@@ -177,6 +178,14 @@ describe('MatterDetailPage', () => {
         ...provideLookups(),
         ...provideQueueChoices(),
         ...provideClock('2026-10-14T15:00:00Z'),
+        {
+          provide: AuditSearchClient,
+          useValue: {
+            searchAuditEvents: vi
+              .fn()
+              .mockReturnValue(ok({ items: [], nextCursor: null, pageSize: 50, timeZone: 'UTC' })),
+          },
+        },
         {
           provide: AuditEventsClient,
           useValue: { listAuditEvents: vi.fn().mockReturnValue(ok({ items: [] })) },

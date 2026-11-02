@@ -1242,6 +1242,16 @@
               "format": "int32",
               "default": 50
             }
+          },
+          {
+            "name": "matterId",
+            "in": "query",
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {

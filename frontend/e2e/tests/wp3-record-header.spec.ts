@@ -129,8 +129,8 @@ const urls = () => ({
   longProject: `/projects/${data.longProject.projectId}`,
 });
 
-// The Matter page has its own header since the Matter detail redesign (MD-01, #1002): `mf-matter-header` (see matter-detail-page.spec.ts for its unit tests).
-// The Matter cases of this file are removed from the shared loops or marked fixme; MD-17 rewrites them for the new header.
+// The Matter page has its own header since the Matter detail redesign (MD-01, #1002): its e2e cases are in md-matter-header.spec.ts.
+// This file keeps the Client and Project pages (the shared record header).
 test.describe('WP3: record header geometry (#253, #254)', () => {
   for (const [w, h] of SIZES) {
     test(`short and long records keep the header small at ${w}x${h}; axe clean; no sideways scroll`, async ({
@@ -196,80 +196,6 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
       }
     });
   }
-
-  test.fixme('a tooltip carries the full name and the heading keeps all of it for assistive technology', async ({
-    page,
-  }) => {
-    await page.goto(urls().longMatter);
-    await expect(page.locator('h1')).toContainText(MATTER_150);
-    await expect(page.locator('h1 [data-name]')).toHaveAttribute('title', MATTER_150);
-    await expect(page.locator('[data-crumb-current] .mf-sr-only')).toContainText(MATTER_150);
-  });
-
-  test.fixme('the context line names the client (a link) and, on a project, the matter', async ({
-    page,
-  }) => {
-    await page.goto(urls().matter);
-    const ctx = page.locator('[data-record-context] [data-client]');
-    await expect(ctx).toContainText('Client');
-    await expect(ctx.locator('a')).toHaveAttribute('href', `/clients/${data.client.clientId}`);
-    expect(await lines(page, '[data-record-context]')).toBe(1);
-
-    await page.goto(urls().project);
-    const pctx = page.locator('[data-record-context] [data-matter]');
-    await expect(pctx).toContainText('Matter');
-    await expect(pctx.locator('a.mf-ref')).toHaveAttribute(
-      'href',
-      `/matters/${data.matter.matterId}`,
-    );
-
-    await page.goto(urls().client);
-    await expect(page.locator('[data-record-context]')).toBeHidden(); // a client has none
-  });
-
-  test.fixme('the matter reference keeps its copy button in the title; a client shows its number', async ({
-    page,
-  }) => {
-    await page.goto(urls().matter);
-    await expect(page.locator('h1 mf-copy-button button')).toBeVisible();
-    await page.goto(urls().client);
-    await expect(page.locator('h1 [data-ref]')).toHaveText(data.client.clientNumber);
-  });
-
-  test.fixme('the loading skeleton has the height of the loaded header (short names)', async ({
-    page,
-  }) => {
-    for (const [w, h] of [
-      [1366, 768],
-      [375, 812],
-    ] as const) {
-      await page.setViewportSize({ width: w, height: h });
-      for (const [key, url, api] of [
-        ['matter', urls().matter, `/api/v1/matters/${data.matter.matterId}`],
-        ['client', urls().client, `/api/v1/clients/${data.client.clientId}`],
-        ['project', urls().project, `/api/v1/projects/${data.project.projectId}`],
-      ] as const) {
-        let release: () => void = () => undefined;
-        const gate = new Promise<void>((r) => (release = r));
-        const handler = async (route: import('@playwright/test').Route) => {
-          await gate;
-          await route.fallback();
-        };
-        await page.route(`**${api}`, handler);
-        await page.goto(url);
-        await expect(page.locator('[data-record-skeleton]')).toBeVisible();
-        const skeleton = await page.locator('[data-record-header]').first().boundingBox();
-        release();
-        await expect(page.locator('[data-record-skeleton]')).toHaveCount(0);
-        const loaded = await page.locator('[data-record-header]').first().boundingBox();
-        await page.unroute(`**${api}`, handler);
-        expect(Math.abs(skeleton!.height - loaded!.height), `${key} at ${w}`).toBeLessThanOrEqual(
-          1,
-        );
-        if (key === 'matter') await shot(page, 'header-matter-after-skeleton');
-      }
-    }
-  });
 });
 
 test.describe('WP3: one action rule (#255)', () => {
@@ -285,150 +211,6 @@ test.describe('WP3: one action rule (#255)', () => {
       .getByRole('menuitem')
       .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action')));
   }
-
-  test.fixme('with every permission: Edit, Activity, the primary action and an overflow on each page', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(urls().client);
-    await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-    expect(await headerButtons(page)).toEqual(['edit', 'activity', 'new-matter']);
-    expect(await menuItems(page)).toEqual(['toggle-active']);
-    await shot(page, 'overflow-client');
-    await page.keyboard.press('Escape');
-
-    await page.goto(urls().matter);
-    await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-    expect(await headerButtons(page)).toEqual(['edit', 'activity', 'create-task']);
-    // The matter's quick actions (epic #758, PX-25) sit in the overflow between the records to add and Set inactive.
-    expect(await menuItems(page)).toEqual([
-      'new-project',
-      'new-asset',
-      'bulk-tasks',
-      'add-comment',
-      'open-tasks',
-      'toggle-active',
-    ]);
-    await shot(page, 'overflow-matter');
-    await page.keyboard.press('Escape');
-
-    await page.goto(urls().project);
-    await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-    expect(await headerButtons(page)).toEqual(['edit', 'activity', 'create-task']);
-    expect(await menuItems(page)).toEqual(['toggle-active']);
-    await expect(page.getByRole('menuitem')).toHaveText('Archive');
-    await shot(page, 'overflow-project');
-  });
-
-  test.fixme('nothing that changes the record stays in a tab body or in the project side panel', async ({
-    page,
-  }) => {
-    for (const url of [urls().client, urls().matter]) {
-      await page.goto(url);
-      const panel = page.getByRole('tabpanel');
-      await expect(panel).toBeVisible();
-      for (const name of ['Edit', 'Set inactive', 'Set active']) {
-        await expect(panel.getByRole('button', { name, exact: true })).toHaveCount(0);
-      }
-    }
-    await page.goto(urls().project);
-    await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-    await expect(
-      page.locator('[mfaside], .dl-aside').getByRole('button', { name: 'Edit', exact: true }),
-    ).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0);
-  });
-
-  test.fixme('the overflow is a menu: ArrowDown opens it, arrows move, Esc closes and returns focus to the button', async ({
-    page,
-  }) => {
-    await page.goto(urls().matter);
-    const button = page.locator('[data-overflow]');
-    await expect(button).toHaveAttribute('aria-haspopup', 'menu');
-    await button.focus();
-    await page.keyboard.press('ArrowDown');
-    const items = page.getByRole('menuitem');
-    await expect(items.first()).toBeFocused();
-    await page.keyboard.press('ArrowDown');
-    await expect(items.nth(1)).toBeFocused();
-    await page.keyboard.press('End');
-    await expect(items.last()).toBeFocused();
-    await page.keyboard.press('Home');
-    await expect(items.first()).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('menu')).toHaveCount(0);
-    await expect(button).toBeFocused();
-    await expect(button).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test.fixme('Set inactive from the overflow confirms, and focus comes back to the overflow button', async ({
-    page,
-    seed,
-  }) => {
-    const matter = await seed.matter({
-      client: data.client,
-      number: String(30000 + Math.floor(Math.random() * 9999)).slice(0, 5),
-    });
-    await page.goto(`/matters/${matter.matterId}`);
-    await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Set inactive' }).click();
-    await expect(page.locator('[data-inactive-banner]')).toBeVisible();
-    await expect(page.locator('[data-overflow]')).toBeFocused();
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Set active' })).toBeVisible();
-    // Create task is disabled with its reason on an inactive matter.
-    const create = page.locator('[data-action=create-task]');
-    await expect(create).toHaveAttribute('aria-disabled', 'true');
-  });
-
-  test.fixme('disabled with a reason: Set inactive while tasks are open, New matter for an inactive client', async ({
-    page,
-  }) => {
-    await page.goto(`/matters/${data.busyMatter.matterId}`);
-    await page.locator('[data-overflow]').click();
-    const toggle = page.getByRole('menuitem', { name: /Set inactive/ });
-    await expect(toggle).toHaveAttribute('aria-disabled', 'true');
-    await expect(toggle).toContainText("aren't Completed or Cancelled");
-    await toggle.focus();
-    await expect(toggle).toBeFocused(); // still reachable by keyboard
-    await page.keyboard.press('Escape');
-
-    await page.goto(`/clients/${data.inactiveClient.clientId}`);
-    const create = page.locator('[data-action=new-matter]');
-    await expect(create).toHaveAttribute('aria-disabled', 'true');
-    await create.focus();
-    await expect(create).toBeFocused();
-    await expect(create).toHaveAttribute('title', /inactive/);
-    await create.click({ force: true });
-    await expect(page).toHaveURL(new RegExp(`/clients/${data.inactiveClient.clientId}$`));
-  });
-
-  test.fixme('Archive from the project overflow asks first; the empty Projects tab keeps its New project action', async ({
-    page,
-    seed,
-  }) => {
-    const empty = await seed.matter({ client: data.client, number: '00077' });
-    await page.goto(`/matters/${empty.matterId}?tab=projects`);
-    await expect(page.locator('[data-empty-new-project]')).toBeVisible();
-    await page.locator('[data-empty-new-project]').click();
-    await expect(page).toHaveURL(new RegExp(`/projects/new\\?matterId=${empty.matterId}`));
-
-    const project = await seed.project(data.matter);
-    await page.goto(`/projects/${project.projectId}`);
-    await page.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: 'Archive' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Archive' }).click();
-    await expect(page.locator('[data-archived-banner]')).toBeVisible();
-    await expect(page.locator('[data-action=create-task]')).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Restore' })).toBeVisible();
-  });
 
   for (const [w, h] of SIZES) {
     test(`axe finds nothing with the overflow open on each page at ${w}x${h}`, async ({ page }) => {
@@ -450,129 +232,11 @@ test.describe('WP3: one action rule (#255)', () => {
     });
   }
 
-  test.describe('permission matrix', () => {
-    test.fixme('a view-only user sees no Edit, no Activity, no create action and no empty overflow', async ({
-      asUser,
-      seed,
-    }) => {
-      const role = await seed.role(
-        ['Client.View', 'Matter.View', 'Project.View', 'Task.View', 'Asset.View'],
-        'E2E header viewer',
-      );
-      const viewer = await seed.user([role.name], 'hdr-viewer');
-      const page = await asUser(viewer.username);
-      for (const url of [urls().client, urls().matter, urls().project]) {
-        await page.goto(url);
-        await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-        // A person who may see tasks has one entry on a matter: Open the matter's tasks (epic #758, PX-25). Nothing else is offered.
-        const quick = url === urls().matter ? 1 : 0;
-        await expect(page.locator('[data-page-actions] button')).toHaveCount(quick);
-        await expect(page.locator('[data-overflow]')).toHaveCount(quick);
-      }
-      // Context line: plain text without Client.View / Matter.View would be the other branch; this role holds both, so links stay.
-      await page.goto(urls().matter);
-      await expect(page.locator('[data-client] a')).toHaveCount(1);
-    });
-
-    test.fixme('without Task.Create there is no Create task, the rest of the rule stays', async ({
-      asUser,
-      seed,
-    }) => {
-      const role = await seed.role(
-        [
-          'Client.View',
-          'Matter.View',
-          'Matter.Edit',
-          'Matter.SetActive',
-          'Project.View',
-          'Project.Create',
-          'Task.View',
-          'Asset.View',
-          'Audit.View',
-        ],
-        'E2E no task create',
-      );
-      const user = await seed.user([role.name], 'hdr-notask');
-      const page = await asUser(user.username);
-      await page.goto(urls().matter);
-      await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-      expect(
-        await page
-          .locator('[data-page-actions] > button')
-          .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-      ).toEqual(['edit', 'activity']);
-      await page.locator('[data-overflow]').click();
-      // evaluateAll does not wait: the menu is drawn a moment after the click (1 in 100 read an empty list).
-      await expect(page.getByRole('menuitem').first()).toBeVisible();
-      expect(
-        await page
-          .getByRole('menuitem')
-          .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-      ).toEqual(['new-project', 'open-tasks', 'toggle-active']);
-    });
-
-    test.fixme('without Client.View the matter context line is plain text, not a link', async ({
-      asUser,
-      seed,
-    }) => {
-      const role = await seed.role(['Matter.View', 'Task.View'], 'E2E no client view');
-      const user = await seed.user([role.name], 'hdr-nolink');
-      const page = await asUser(user.username);
-      await page.goto(urls().matter);
-      await expect(page.locator('[data-client]')).toContainText('Client');
-      await expect(page.locator('[data-client] a')).toHaveCount(0);
-    });
-  });
+  test.describe('permission matrix', () => {});
 });
 
 test.describe('WP3: phone header (#254)', () => {
   test.use({ viewport: { width: 375, height: 812 } });
-
-  test.fixme('one row: the primary action and one overflow with 44 px targets; everything else is in the menu', async ({
-    page,
-  }) => {
-    for (const [url, primary, items] of [
-      [urls().client, 'new-matter', ['edit', 'activity', 'toggle-active']],
-      [
-        urls().matter,
-        'create-task',
-        [
-          'edit',
-          'activity',
-          'new-project',
-          'new-asset',
-          'bulk-tasks',
-          'add-comment',
-          'open-tasks',
-          'toggle-active',
-        ],
-      ],
-      [urls().project, 'create-task', ['edit', 'activity', 'toggle-active']],
-    ] as const) {
-      await page.goto(url);
-      await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-      const buttons = await page
-        .locator('[data-page-actions] > button')
-        .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action')));
-      expect(buttons).toEqual([primary]);
-      for (const sel of [`[data-action=${primary}]`, '[data-overflow]']) {
-        const box = (await page.locator(sel).boundingBox())!;
-        expect(box.height, sel).toBeGreaterThanOrEqual(44);
-        expect(box.width, sel).toBeGreaterThanOrEqual(44);
-      }
-      await page.locator('[data-overflow]').click();
-      await expect(page.getByRole('menuitem').first()).toBeVisible();
-      const menu = await page
-        .getByRole('menuitem')
-        .evaluateAll((bs) =>
-          bs.map((b) => [b.getAttribute('data-action'), b.getBoundingClientRect().height]),
-        );
-      expect(menu.map((m) => m[0])).toEqual(items);
-      for (const [, height] of menu) expect(height as number).toBeGreaterThanOrEqual(44);
-      await shot(page, `phone-overflow-${primary}`);
-      await page.keyboard.press('Escape');
-    }
-  });
 
   test('the first grid row of the Matter Tasks tab is above the fold', async ({ page, seed }) => {
     const world = await seed.world();
@@ -584,46 +248,10 @@ test.describe('WP3: phone header (#254)', () => {
     expect(box.y + 20).toBeLessThan(812);
     await shot(page, 'phone-matter-tasks');
   });
-
-  test.fixme('"Back to Matters" replaces the trail and goes to the list', async ({ page }) => {
-    await page.goto(urls().matter);
-    const back = page.locator('[data-back-link]');
-    await expect(back).toHaveText(/Back to Matters/);
-    await back.click();
-    await expect(page).toHaveURL(/\/matters$/);
-  });
 });
 
 test.describe('WP3: tablet header (#254)', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
-
-  test.fixme('the primary action and Edit stay; Activity and the rest are in the overflow', async ({
-    page,
-  }) => {
-    await page.goto(urls().matter);
-    await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-    expect(
-      await page
-        .locator('[data-page-actions] > button')
-        .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-    ).toEqual(['edit', 'create-task']);
-    await page.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem').first()).toBeVisible();
-    expect(
-      await page
-        .getByRole('menuitem')
-        .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action'))),
-    ).toEqual([
-      'activity',
-      'new-project',
-      'new-asset',
-      'bulk-tasks',
-      'add-comment',
-      'open-tasks',
-      'toggle-active',
-    ]);
-    await shot(page, 'tablet-matter-overflow');
-  });
 });
 
 test.describe('WP3: Sensitive note (#256)', () => {
@@ -631,38 +259,6 @@ test.describe('WP3: Sensitive note (#256)', () => {
     [1366, 768],
     [375, 812],
   ] as const) {
-    test.fixme(`a Sensitive matter's tabs start at most 40 px lower than a plain one at ${w}x${h}`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: w, height: h });
-      await page.goto(`/matters/${data.matter.matterId}`);
-      await expect(page.locator('[data-record-header] h1 [data-name]')).toBeVisible();
-      const plain = await top(page, '[role=tablist]');
-      await expect(page.locator('[data-sensitive-banner]')).toHaveCount(0);
-      await page.goto(`/matters/${data.sensitive.matterId}`);
-      const note = page.locator('[data-sensitive-banner]');
-      await expect(note).toBeVisible();
-      const sens = await top(page, '[role=tablist]');
-      expect(sens - plain, `delta at ${w}`).toBeLessThanOrEqual(40);
-      expect(sens - plain).toBeGreaterThan(0);
-      await expect(note).toHaveAttribute('role', 'note');
-      await expect(note).not.toHaveAttribute('aria-live', /.+/);
-      await expect(note).toContainText('Sensitive matter.');
-      await expect(note).toHaveAttribute('title', /Only its project managers.*can see it\.$/);
-      const noteBox = (await note.boundingBox())!;
-      expect(noteBox.height).toBeLessThanOrEqual(w < 400 ? 48 : 32.5);
-      // The badge beside the title is described by the note, which a screen reader hears once.
-      const noteId = await note.getAttribute('id');
-      await expect(page.locator('h1 mf-sensitive-badge span[aria-describedby]')).toHaveAttribute(
-        'aria-describedby',
-        noteId!,
-      );
-      // The Summary's details list keeps its own row.
-      await expect(page.locator('[data-sensitive-value]')).toContainText('Restricted access');
-      await noSidewaysScroll(page);
-      await axeClean(page, `sensitive matter at ${w}x${h}`);
-      await shot(page, 'sensitive-matter');
-    });
   }
 
   for (const [w, h] of SIZES) {

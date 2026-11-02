@@ -19,7 +19,8 @@ public sealed record AuditSearchFilter(
     string? Text,
     Guid? CorrelationId,
     long? Cursor,
-    int PageSize);
+    int PageSize,
+    int? MatterId = null);
 
 /// <summary>Who did it: the user id and, when the user is known, the display name. A null id is the system.</summary>
 public sealed record AuditActor(int? UserId, string DisplayName);
@@ -107,6 +108,9 @@ public sealed class AuditSearchService(DbContext db, IAuditDisplayLookup display
             var id = filter.ObjectId.Trim();
             query = query.Where(e => e.ObjectId == id);
         }
+
+        if (filter.MatterId is { } matterId)
+            query = query.Where(e => e.MatterId == matterId);
 
         if (filter.ActorUserIds is { Count: > 0 } actors)
         {

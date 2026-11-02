@@ -38,6 +38,20 @@ export function auditObjectLink(item: AuditSearchItem, can: CanFn): AuditLink | 
       return numeric && can('Asset.View') ? { commands: ['/assets', id] } : null;
     case 'Project':
       return numeric && can('Project.View') ? { commands: ['/projects', id] } : null;
+    case 'Production':
+    case 'ProductionComment':
+      return item.matterId != null && can('Production.View')
+        ? { commands: ['/matters', String(item.matterId)], queryParams: { tab: 'productions' } }
+        : null;
+    case 'ProductionSpec':
+      return item.matterId != null && can('ProductionSpec.View')
+        ? { commands: ['/matters', String(item.matterId)], queryParams: { tab: 'productions' } }
+        : null;
+    case 'Note':
+    case 'NoteTemplate':
+      return item.matterId != null && can('MatterNote.View')
+        ? { commands: ['/matters', String(item.matterId)], queryParams: { tab: 'notes' } }
+        : null;
     case 'User':
       return can('User.View') ? { commands: ['/admin/users'] } : null;
     case 'AssetType':

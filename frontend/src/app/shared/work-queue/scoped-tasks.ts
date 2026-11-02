@@ -56,7 +56,16 @@ import { DUE_SOON_DAYS } from './work-vocabulary';
 const PAGE_SIZE = 25;
 /** The choice that takes the ticked tasks out of their project. */
 const NO_PROJECT = 'none';
-const MATTER_COLUMNS = ['ref', 'title', 'project', 'priority', 'assignee', 'due', 'status'];
+const MATTER_COLUMNS = [
+  'ref',
+  'title',
+  'project',
+  'priority',
+  'assignee',
+  'progress',
+  'due',
+  'status',
+];
 const PROJECT_COLUMNS = ['ref', 'title', 'priority', 'assignee', 'due', 'status'];
 
 /** The query parameters of this grid's filters; the Matter page drops them when another tab is chosen. */
@@ -139,17 +148,18 @@ const asId = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null);
     @if (!canView()) {
       <div class="st-state" data-no-access="tasks">You don't have permission to view tasks.</div>
     } @else {
-      <mf-summary-strip
-        [kind]="projectId() === null ? 'matter' : 'project'"
-        [id]="projectId() ?? matterId()"
-        [interactive]="true"
-        variant="dropdown"
-        [active]="view() ?? 'open'"
-        [reload]="stripReload()"
-        (pick)="pickView($event)"
-        (opened)="opened.emit($event)"
-      />
       <mf-filters-bar [filters]="filters" [controls]="filterRowId">
+        <mf-summary-strip
+          mfBarStart
+          [kind]="projectId() === null ? 'matter' : 'project'"
+          [id]="projectId() ?? matterId()"
+          [interactive]="true"
+          variant="dropdown"
+          [active]="view() ?? 'open'"
+          [reload]="stripReload()"
+          (pick)="pickView($event)"
+          (opened)="opened.emit($event)"
+        />
         @if (showCreate()) {
           <p-button
             mfBarStart

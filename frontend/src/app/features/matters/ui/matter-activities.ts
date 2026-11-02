@@ -8,42 +8,48 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { AuditEventDto, AuditEventsClient, UsersClient } from '../../../api/generated/api-client';
-import { MfDatePipe } from '../../../shared/pipes/mf-date.pipe';
-import { describeAuditEvent, isNoise } from '../../../shared/ui/audit-format';
+import { AuditSearchClient, AuditSearchItem } from '../../../api/generated/api-client';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { USER_TIME_ZONE } from '../../../core/time/clock';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { GridFrame } from '../../../shared/ui/grid-frame';
-
-/** The words of the Kind dropdown for the audit event codes of a matter; a code that is not listed is shown in plain sentence case. */
-const KIND_LABELS: Readonly<Record<string, string>> = {
-  FIELD_CHANGED: 'Changes',
-  MATTER_CREATED: 'Created',
-  MATTER_SENSITIVITY_CHANGED: 'Sensitivity',
-  MATTER_MANAGER_CHANGED: 'Managers',
-  MATTER_ACTIVATED: 'Status',
-  MATTER_DEACTIVATED: 'Status',
-  MATTER_NUMBER_CHANGED: 'Number',
-};
-
-const ALL = '';
-const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
-
-function kindOf(e: AuditEventDto): string {
-  const known = KIND_LABELS[e.eventType];
-  if (known) return known;
-  const words = e.eventType.toLowerCase().replace(/_/g, ' ');
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
+import { friendlyText } from '../../../shared/ui/audit-format';
+import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
+import { stampText } from '../../admin/audit/audit-rows';
 
 /**
- * The Activities tab of a Matter (MD-07, #1008; owner decision AQ.7): the matter's history in the My Matters grid style: When, Who and one What cell, newest first, a Kind dropdown
- * and a banner "N new since your last visit" (the last visit is remembered in this browser only). It lists the events the audit trail holds for the matter; the Production and Note kinds
- * arrive with their modules. Needs `Audit.View` (the tab is not offered without it).
+ * The Kind dropdown of the Activities tab: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
+ * stays right. Production, Spec and Note events come from the Productions and Notes modules (object types Production, ProductionSpec and Note).
+ */
+export const ACTIVITY_KINDS: readonly { value: string; label: string; types: string }[] = [
+  { value: '', label: 'All kinds', types: '' },
+  { value: 'matter', label: 'Matter', types: 'Matter' },
+  {
+    value: 'tasks',
+    label: 'Tasks',
+    types: 'Task,TaskStepInstance,StepInstance,FormValueSet,TaskAsset',
+  },
+  { value: 'comments', label: 'Comments', types: 'TaskComment' },
+  { value: 'assets', label: 'Assets', types: 'Asset' },
+  { value: 'projects', label: 'Projects', types: 'Project' },
+  { value: 'productions', label: 'Productions', types: 'Production,ProductionComment' },
+  { value: 'specs', label: 'Specs', types: 'ProductionSpec' },
+  { value: 'notes', label: 'Notes', types: 'Note,NoteTemplate' },
+];
+
+const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
+
+/**
+ * The Activities tab of a Matter (MD-07, #1008; owner decision AQ.7): everything the audit trail holds for the matter (the matter itself, its tasks, comments, assets,
+ * projects, productions, specs and notes) in the My Matters grid style: When, Who and one What cell that ends with the object as a link when it has a page, newest first,
+ * a Kind dropdown and a banner "N new since your last visit" (the last visit is remembered in this browser only). A record the viewer may not see keeps the server's
+ * label "Restricted record". Needs `Audit.View` (the tab is not offered without it).
  */
 @Component({
   selector: 'mf-matter-activities',
-  imports: [GridFrame, Dropdown, MfDatePipe],
+  imports: [GridFrame, Dropdown, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
   styles: `
@@ -88,6 +94,9 @@ function kindOf(e: AuditEventDto): string {
       white-space: nowrap;
       color: var(--mf-text-muted);
     }
+    .ma__obj {
+      margin-left: var(--mf-s1);
+    }
     .ma__new {
       margin-left: var(--mf-s1);
       padding: 0 var(--mf-s2);
@@ -111,9 +120,9 @@ function kindOf(e: AuditEventDto): string {
           label="Kind"
           prefix="Kind:"
           size="sm"
-          [items]="kindItems()"
+          [items]="kindItems"
           [value]="kind()"
-          (valueChange)="kind.set($event)"
+          (valueChange)="setKind($event)"
           neutralValue=""
         />
       </div>
@@ -132,7 +141,7 @@ function kindOf(e: AuditEventDto): string {
           <p class="ma__muted" role="alert" data-error>We couldn't load the activities.</p>
         }
         @default {
-          @if (shown().length === 0) {
+          @if (items().length === 0) {
             <p class="ma__muted" data-empty>No activity recorded yet.</p>
           } @else {
             <table data-activities>
@@ -147,18 +156,29 @@ function kindOf(e: AuditEventDto): string {
                 </tr>
               </thead>
               <tbody>
-                @for (e of shown(); track e.auditEventId) {
-                  <tr data-activity-row>
+                @for (e of items(); track e.auditEventId) {
+                  <tr data-activity-row [attr.data-object-type]="e.object.type">
                     <td class="ma__when">
-                      <time [attr.datetime]="e.occurredAtUtc">{{ e.occurredAtUtc | mfDate }}</time>
+                      <time [attr.datetime]="e.occurredAtUtc">{{ stamp(e) }}</time>
                     </td>
                     <td>
-                      {{ describe(e) }}
+                      {{ what(e) }}
+                      @if (link(e); as l) {
+                        <a
+                          class="pg-link ma__obj"
+                          data-object-link
+                          [routerLink]="l.commands"
+                          [queryParams]="l.queryParams"
+                          >{{ objectText(e) }}</a
+                        >
+                      } @else {
+                        <span class="ma__obj" data-object-text>{{ objectText(e) }}</span>
+                      }
                       @if (isNew(e)) {
                         <span class="ma__new" data-new>New</span>
                       }
                     </td>
-                    <td>{{ actor(e) }}</td>
+                    <td>{{ e.actor.displayName }}</td>
                   </tr>
                 }
               </tbody>
@@ -167,8 +187,10 @@ function kindOf(e: AuditEventDto): string {
         }
       }
       <div frameFoot>
-        @if (hasMore()) {
-          <button type="button" class="mf-btn" data-show-more (click)="fetch()">Show more</button>
+        @if (nextCursor() !== null) {
+          <button type="button" class="mf-btn" data-show-more (click)="fetch(false)">
+            Show more
+          </button>
         }
       </div>
     </mf-grid-frame>
@@ -177,53 +199,55 @@ function kindOf(e: AuditEventDto): string {
 export class MatterActivities {
   readonly matterId = input.required<number>();
 
-  private readonly api = inject(AuditEventsClient);
-  private readonly users = inject(UsersClient);
-  private readonly actors = signal<ReadonlyMap<number, string>>(new Map());
-  private nextAfter: number | undefined;
+  private readonly api = inject(AuditSearchClient);
+  private readonly auth = inject(AuthStore);
+  private readonly zone = inject(USER_TIME_ZONE);
   /** The highest event id the person had seen when this visit began (0 when there was no earlier visit). */
   private seenBefore = 0;
+  private turn = 0;
 
+  protected readonly kindItems: DropdownItem[] = ACTIVITY_KINDS.map((k) => ({
+    value: k.value,
+    label: k.label,
+  }));
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
-  protected readonly events = signal<AuditEventDto[]>([]);
-  protected readonly hasMore = signal(false);
-  protected readonly kind = signal(ALL);
-  protected readonly shown = computed(() =>
-    this.kind() === ALL ? this.events() : this.events().filter((e) => kindOf(e) === this.kind()),
-  );
-  protected readonly kindItems = computed<DropdownItem[]>(() => {
-    const counts = new Map<string, number>();
-    for (const e of this.events()) counts.set(kindOf(e), (counts.get(kindOf(e)) ?? 0) + 1);
-    return [
-      { value: ALL, label: 'All kinds', count: this.events().length },
-      ...[...counts].sort().map(([label, count]) => ({ value: label, label, count })),
-    ];
-  });
-  protected readonly newCount = computed(() => this.events().filter((e) => this.isNew(e)).length);
+  protected readonly items = signal<AuditSearchItem[]>([]);
+  protected readonly nextCursor = signal<number | null>(null);
+  protected readonly kind = signal('');
+  protected readonly newCount = computed(() => this.items().filter((e) => this.isNew(e)).length);
 
   constructor() {
     effect(() => {
       const id = this.matterId();
       untracked(() => {
-        this.events.set([]);
-        this.nextAfter = undefined;
         this.seenBefore = this.readSeen(id);
-        void this.fetch().then(() => this.rememberVisit(id));
+        void this.fetch(true).then(() => this.rememberVisit(id));
       });
     });
   }
 
-  protected isNew(e: AuditEventDto): boolean {
+  protected setKind(value: string): void {
+    this.kind.set(value);
+    void this.fetch(true);
+  }
+
+  protected isNew(e: AuditSearchItem): boolean {
     return this.seenBefore > 0 && e.auditEventId > this.seenBefore;
   }
 
-  protected describe(e: AuditEventDto): string {
-    return describeAuditEvent(e, this.actor(e));
+  protected stamp(e: AuditSearchItem): string {
+    return stampText(e, this.zone);
   }
 
-  protected actor(e: AuditEventDto): string {
-    if (e.actorUserId === undefined || e.actorUserId === null) return 'System';
-    return this.actors().get(e.actorUserId) ?? `User ${e.actorUserId}`;
+  /** The event as a sentence, without the object (the link follows it). */
+  protected what(e: AuditSearchItem): string {
+    return friendlyText(e.summary) || 'Event';
+  }
+
+  protected objectText = auditObjectText;
+
+  protected link(e: AuditSearchItem) {
+    return auditObjectLink(e, (permission) => this.auth.has(permission));
   }
 
   private readSeen(id: number): number {
@@ -235,7 +259,8 @@ export class MatterActivities {
   }
 
   private rememberVisit(id: number): void {
-    const newest = Math.max(0, ...this.events().map((e) => e.auditEventId));
+    if (this.kind() !== '') return;
+    const newest = Math.max(0, ...this.items().map((e) => e.auditEventId));
     if (newest === 0) return;
     try {
       localStorage.setItem(seenKey(id), String(newest));
@@ -244,42 +269,35 @@ export class MatterActivities {
     }
   }
 
-  protected async fetch(): Promise<void> {
+  protected async fetch(first: boolean): Promise<void> {
+    const mine = ++this.turn;
+    if (first) {
+      this.state.set('loading');
+      this.nextCursor.set(null);
+    }
+    const types = ACTIVITY_KINDS.find((k) => k.value === this.kind())?.types || undefined;
     try {
       const page = await firstValueFrom(
-        this.api.listAuditEvents('Matter', String(this.matterId()), this.nextAfter, 50),
-      );
-      await this.resolveActors(page.items);
-      // The API pages oldest first; the grid shows the newest event on top.
-      this.events.update((list) =>
-        [...list, ...page.items.filter((e) => !isNoise(e))].sort(
-          (a, b) => b.auditEventId - a.auditEventId,
+        this.api.searchAuditEvents(
+          types,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          first ? undefined : (this.nextCursor() ?? undefined),
+          50,
+          this.matterId(),
         ),
       );
-      this.nextAfter = page.nextAfterId ?? undefined;
-      this.hasMore.set(page.nextAfterId !== undefined && page.nextAfterId !== null);
+      if (mine !== this.turn) return;
+      this.items.update((list) => (first ? page.items : [...list, ...page.items]));
+      this.nextCursor.set(page.nextCursor ?? null);
       this.state.set('ready');
     } catch {
-      this.state.set('error');
+      if (mine === this.turn) this.state.set('error');
     }
-  }
-
-  private async resolveActors(events: AuditEventDto[]): Promise<void> {
-    const known = this.actors();
-    const missing = [
-      ...new Set(events.map((e) => e.actorUserId).filter((id): id is number => id != null)),
-    ].filter((id) => !known.has(id));
-    if (missing.length === 0) return;
-    const found = await Promise.all(
-      missing.map(async (id) => {
-        try {
-          const user = await firstValueFrom(this.users.getUser(id));
-          return [id, user.windowsAccount || user.displayName] as const;
-        } catch {
-          return null;
-        }
-      }),
-    );
-    this.actors.update((m) => new Map([...m, ...found.filter((f) => f !== null)]));
   }
 }

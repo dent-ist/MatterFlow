@@ -1725,9 +1725,10 @@ export interface IAuditSearchClient {
      * @param correlationId (optional) 
      * @param cursor (optional) 
      * @param pageSize (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage>;
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined, matterId?: number | undefined): Observable<AuditSearchPage>;
     /**
      * @return OK
      */
@@ -1758,9 +1759,10 @@ export class AuditSearchClient implements IAuditSearchClient {
      * @param correlationId (optional) 
      * @param cursor (optional) 
      * @param pageSize (optional) 
+     * @param matterId (optional) 
      * @return OK
      */
-    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined): Observable<AuditSearchPage> {
+    searchAuditEvents(objectType?: string | undefined, objectId?: string | undefined, actor?: number[] | undefined, eventType?: string | undefined, from?: string | undefined, to?: string | undefined, q?: string | undefined, correlationId?: string | undefined, cursor?: number | undefined, pageSize?: number | undefined, matterId?: number | undefined): Observable<AuditSearchPage> {
         let url_ = this.baseUrl + "/api/v1/audit/search?";
         if (objectType === null)
             throw new globalThis.Error("The parameter 'objectType' cannot be null.");
@@ -1802,6 +1804,10 @@ export class AuditSearchClient implements IAuditSearchClient {
             throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
         else if (pageSize !== undefined)
             url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' cannot be null.");
+        else if (matterId !== undefined)
+            url_ += "matterId=" + encodeURIComponent("" + matterId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {

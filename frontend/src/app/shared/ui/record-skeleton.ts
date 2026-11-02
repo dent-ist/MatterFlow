@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   DRILL_SOURCES,
   RECORD_ORIGINS,
@@ -77,7 +77,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
  */
 @Component({
   selector: 'mf-record-skeleton',
-  imports: [RecordHeader, Tabs, DetailLayout, NgTemplateOutlet, StillLoading],
+  imports: [RecordHeader, RouterLink, Tabs, DetailLayout, NgTemplateOutlet, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class.rk-task]': "kind() === 'task' || kind() === 'profile'" },
   template: `
@@ -88,6 +88,15 @@ const ROWS = [0, 1, 2, 3, 4] as const;
           <ng-container *ngTemplateOutlet="taskTpl" />
         } @else if (kind() === 'profile') {
           <ng-container *ngTemplateOutlet="profileTpl" />
+        } @else if (kind() === 'matter') {
+          <ng-container *ngTemplateOutlet="matterHeaderTpl" />
+          <mf-tabs
+            [label]="kind() + ' sections'"
+            idPrefix="rk"
+            [tabs]="tabs()"
+            [selected]="tab()"
+          />
+          <ng-container *ngTemplateOutlet="rowsTpl" />
         } @else {
           <mf-record-header [kind]="kind()" [parents]="parents()" [skeleton]="true" />
           <mf-tabs
@@ -101,6 +110,28 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       </div>
       <mf-still-loading (retry)="retry.emit()" />
     </div>
+    <!-- The Matter page's own header (MD-01): the breadcrumb, the title row with the New and More actions, and the subtitle line with its chips, as grey bars at the final heights. -->
+    <ng-template #matterHeaderTpl>
+      <div class="rk__mh" data-matter-header-skeleton>
+        <nav class="rk__mh-crumbs" aria-label="Breadcrumb">
+          <a [routerLink]="'/matters'" data-back-link>Matters</a>
+          <span aria-hidden="true">&gt;</span>
+          <span class="rk__bar rk__mh-ref" data-crumb-skeleton></span>
+        </nav>
+        <div class="rk__mh-row">
+          <span class="rk__bar rk__mh-title" data-title-skeleton></span>
+          <span class="rk__mh-actions">
+            <span class="rk__bar rk__mh-btn"></span>
+            <span class="rk__bar rk__mh-btn rk__mh-btn--sq"></span>
+          </span>
+        </div>
+        <div class="rk__mh-sub">
+          <span class="rk__bar rk__mh-chip"></span>
+          <span class="rk__bar rk__mh-chip"></span>
+          <span class="rk__bar rk__mh-chip"></span>
+        </div>
+      </div>
+    </ng-template>
     <ng-template #taskTpl>
       <mf-record-header
         kind="task"
@@ -208,6 +239,55 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       border-radius: 3px;
       background: var(--mf-border);
       opacity: 0.55;
+    }
+    .rk__mh {
+      margin-bottom: var(--mf-s2);
+    }
+    .rk__mh-crumbs {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-height: 2rem;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .rk__mh-ref {
+      width: 7rem;
+      height: 0.75rem;
+    }
+    .rk__mh-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--mf-s3);
+      min-height: 2.5rem;
+    }
+    .rk__mh-title {
+      width: min(24rem, 60%);
+      height: 1.5rem;
+    }
+    .rk__mh-actions {
+      display: flex;
+      gap: var(--mf-s2);
+    }
+    .rk__mh-btn {
+      width: 5rem;
+      height: var(--mf-ctl-h);
+      border-radius: var(--mf-radius);
+    }
+    .rk__mh-btn--sq {
+      width: var(--mf-ctl-h);
+    }
+    .rk__mh-sub {
+      display: flex;
+      gap: var(--mf-s2);
+      margin-top: var(--mf-s1);
+      min-height: var(--mf-chip-h);
+    }
+    .rk__mh-chip {
+      width: 5rem;
+      height: var(--mf-chip-h);
+      border-radius: var(--mf-radius-pill);
     }
     .rk__rows {
       border-top: 1px solid var(--mf-border);

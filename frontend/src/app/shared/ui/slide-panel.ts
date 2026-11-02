@@ -116,7 +116,7 @@ const WIDTHS = { default: '30rem', large: '37.5rem' } as const;
       [modal]="true"
       [closable]="false"
       [dismissableMask]="!dirty()"
-      [closeOnEscape]="!dirty()"
+      [closeOnEscape]="false"
       [mfDialogFocus]="visible()"
       [focusOnShow]="false"
       (onShow)="focusFirst()"
@@ -254,13 +254,20 @@ export class SlidePanel {
     }
   }
 
-  /** Esc is not handled by PrimeNG while the form is dirty (`closeOnEscape`), so it asks here. */
+  /**
+   * Esc closes the panel, or asks first while there are unsaved changes (PrimeNG's own Esc handling is off). A key that an open dropdown or menu inside the panel used
+   * to close its own list is left alone.
+   */
   @HostListener('document:keydown.escape', ['$event'])
   protected onEscape(e: Event): void {
-    if (this.visible() && this.dirty() && document.querySelector('.mf-slide')) {
-      e.stopPropagation();
+    if (!this.visible() || e.defaultPrevented || !document.querySelector('.mf-slide')) return;
+    const target = e.target instanceof HTMLElement ? e.target : null;
+    if (target?.closest('[role=listbox], [role=menu], .dd-panel')) return;
+    if (this.dirty()) {
       this.guard.set(true);
+      return;
     }
+    this.close();
   }
 
   /** A click on the scrim while there are unsaved changes asks as well. */

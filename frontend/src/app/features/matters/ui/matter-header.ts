@@ -62,6 +62,14 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
     .mh__title .pi {
       color: var(--mf-text-muted);
     }
+    /* At most two lines; the whole name is in the tooltip and stays in the page text. */
+    .mh__name {
+      display: -webkit-box;
+      overflow: hidden;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
     .mh__sep {
       color: var(--mf-text-muted);
       font-weight: 400;
@@ -102,10 +110,12 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
       <div class="mh__row">
         <h1 class="mh__title" data-page-title>
           <i class="pi pi-briefcase" aria-hidden="true" data-page-icon></i>
-          <span data-name [attr.title]="matter().clientName + ' > ' + matter().name"
-            >{{ matter().clientName }}
-            <span class="mh__sep" aria-hidden="true">&gt;</span>
-            <span class="mf-sr-only">, </span>{{ matter().name }}</span
+          <span
+            class="mh__name"
+            data-name
+            [attr.title]="matter().clientName + ' > ' + matter().name"
+            >{{ matter().clientName }}<span class="mh__sep" aria-hidden="true"> &gt; </span
+            ><span class="mf-sr-only">, </span>{{ matter().name }}</span
           >
         </h1>
         <div class="mh__actions" data-page-actions>

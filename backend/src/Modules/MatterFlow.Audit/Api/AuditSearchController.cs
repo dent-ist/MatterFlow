@@ -27,6 +27,7 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
     /// <param name="q">Free text on the summary or field key.</param>
     /// <param name="correlationId">Only the events of one operation (a bulk action).</param>
     /// <param name="cursor">The <c>nextCursor</c> of the previous page.</param>
+    /// <param name="matterId">Only the events scoped to this matter (the matter's Activities tab); the sensitive-matter rule still applies.</param>
     /// <param name="pageSize">Items per page (default 50, max 200).</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet("search", Name = "SearchAuditEvents")]
@@ -42,9 +43,10 @@ public class AuditSearchController(AuditSearchService search) : ControllerBase
         [FromQuery] Guid? correlationId,
         [FromQuery, Range(1, long.MaxValue)] long? cursor,
         [FromQuery, Range(1, AuditSearchService.MaxPageSize)] int pageSize = AuditSearchService.DefaultPageSize,
+        [FromQuery, Range(1, int.MaxValue)] int? matterId = null,
         CancellationToken cancellationToken = default) =>
         await search.SearchAsync(
-            new AuditSearchFilter(objectType, objectId, actor, eventType, from, to, q, correlationId, cursor, pageSize),
+            new AuditSearchFilter(objectType, objectId, actor, eventType, from, to, q, correlationId, cursor, pageSize, matterId),
             cancellationToken);
 
     /// <summary>The object types and event types present in the audit trail (for the filter lists).</summary>

@@ -88,6 +88,24 @@ describe('SlidePanel (MD-01, #1002)', () => {
     expect(f.componentInstance.open()).toBe(true);
   });
 
+  it('closes on Esc when nothing changed', async () => {
+    const f = await start();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    f.detectChanges();
+    expect(f.componentInstance.open()).toBe(false);
+  });
+
+  it('leaves an Esc alone that closed a dropdown list inside the panel', async () => {
+    const f = await start();
+    const list = document.createElement('div');
+    list.setAttribute('role', 'listbox');
+    document.body.appendChild(list);
+    list.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    f.detectChanges();
+    expect(f.componentInstance.open()).toBe(true);
+    list.remove();
+  });
+
   it('shows a save error as an alert', async () => {
     const f = await start();
     f.componentInstance.error.set('Could not save');
