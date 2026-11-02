@@ -85,6 +85,7 @@ import { aiLabel } from './matter-ai';
     .ms__grid {
       display: grid;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-auto-rows: minmax(0, 1fr);
       gap: var(--mf-s3);
       flex: 1 1 auto;
       min-height: 0;

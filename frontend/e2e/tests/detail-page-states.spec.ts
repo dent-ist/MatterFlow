@@ -249,7 +249,7 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       await expect(skeleton).toHaveAttribute('aria-busy', 'true');
       await expect(skeleton.locator('[role=status]')).toHaveText(`Loading ${kind}`);
       await expect(page.locator('nav[aria-label=Breadcrumb] a:visible').first()).toBeVisible();
-      await expect(skeleton.locator('[role=tab]')).toHaveCount(kind === 'matter' ? 4 : 2);
+      await expect(skeleton.locator('[role=tab]')).toHaveCount(kind === 'matter' ? 7 : 2);
       await expect(skeleton.locator('.rk__row')).toHaveCount(5);
       const rowHeight = await skeleton
         .locator('.rk__row')

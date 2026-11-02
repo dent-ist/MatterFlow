@@ -46,6 +46,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
       /^\s*Tasks/,
       /^\s*Projects/,
       /^\s*Assets \(0\)\s*$/,
+      /^\s*Productions\s*$/,
+      /^\s*Notes\s*$/,
       /^\s*Activities\s*$/,
     ]);
     await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
@@ -61,7 +63,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await openMatterDetails(page);
     // The reference, the number and the name are in the header, not rows again (WP7).
     await expect(panel.getByText('Matter reference')).toHaveCount(0);
-    await expect(panel.locator('dl')).not.toContainText(world.matter.name);
+    await expect(panel.locator('dl')).toContainText(world.matter.name); // the Summary lists the matter name as a row (round 3)
     await expect(panel).toContainText('Sensitive');
     await expect(panel).toContainText('Restricted access');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toHaveAttribute(
@@ -139,13 +141,13 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, /^Projects/)).toBeFocused();
     await page.keyboard.press('End');
-    await expect(tab(page, 'Assets')).toBeFocused();
+    await expect(tab(page, 'Activities')).toBeFocused();
     await page.keyboard.press('ArrowRight'); // wraps round to the first tab
     await expect(tab(page, 'Summary')).toBeFocused();
     await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
     await expect(page).not.toHaveURL(/tab=/);
     await page.keyboard.press('ArrowLeft');
-    await expect(tab(page, 'Assets')).toBeFocused();
+    await expect(tab(page, 'Activities')).toBeFocused();
     await page.keyboard.press('Home');
     await expect(tab(page, 'Summary')).toBeFocused();
   });
@@ -228,7 +230,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
 
     await page.goto(`/matters/${world.matter.matterId}`);
     const panel = page.getByRole('tabpanel');
-    await expect(tab(page, 'Overview')).toHaveAttribute('aria-selected', 'true');
+    await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Set (in)?active$/ })).toHaveCount(0);

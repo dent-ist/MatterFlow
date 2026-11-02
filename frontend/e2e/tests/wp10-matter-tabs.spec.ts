@@ -67,7 +67,8 @@ const tabTexts = async (page: Page) =>
   (await page.getByRole('tab').allTextContents())
     .map((t) => t.replace(/\s+/g, ' ').trim())
     .filter((t) => !/^(Productions|Notes|Activities)/.test(t));
-const ready = (page: Page) => expect(page.locator('[data-matter-header] h1')).toBeVisible();
+const ready = (page: Page) =>
+  expect(page.locator('[data-matter-header] h1, [data-record-header] h1').first()).toBeVisible();
 const projectNames = (page: Page) =>
   page
     .locator('[data-matter-projects] [data-project-name]')
@@ -267,7 +268,9 @@ test.describe('WP10 matter tabs', () => {
         'No projects in this matter yet.',
       );
       await page.locator('[data-empty-new-project]').click();
-      await expect(page).toHaveURL(new RegExp(`/projects/new\\?matterId=${w.empty.matterId}`));
+      // The side panel opens and the page stays where it is (MD-01).
+      await expect(page.locator('.mf-slide')).toContainText('New project');
+      await expect(page).toHaveURL(new RegExp(`/matters/${w.empty.matterId}`));
     });
 
     test('creating or archiving a project updates the counts and the group when the tab is shown again', async ({
@@ -287,6 +290,9 @@ test.describe('WP10 matter tabs', () => {
       await page
         .locator('[data-matter-projects] [data-project-name]', { hasText: 'Alpha' })
         .click();
+      // The row opens the project's side panel (MD-05); its link opens the project page.
+      await expect(page.locator('.mf-slide')).toContainText('Alpha');
+      await page.locator('[data-open-project]').click();
       await expect(page).toHaveURL(new RegExp(`/projects/${first.projectId}`));
       await ready(page);
       await page.locator('[data-overflow]').click();
@@ -337,7 +343,7 @@ test.describe('WP10 matter tabs', () => {
       expect(new Set(heights)).toEqual(new Set([44]));
       await shot(page, 'matter-assets');
 
-      await page.locator('[data-overflow]').click();
+      await page.locator('[data-overflow][aria-label^="Create"]').click();
       await page.getByRole('menuitem', { name: 'Asset' }).click();
       await expect(page).toHaveURL(new RegExp(`/assets/new\\?matterId=${w.assets.matterId}`));
     });

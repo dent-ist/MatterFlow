@@ -90,7 +90,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
     }
   `,
   template: `
-    <header data-matter-header>
+    <header data-matter-header data-record-header data-kind="matter">
       <nav class="mh__crumbs" aria-label="Breadcrumb">
         <ol>
           <li><a routerLink="/matters">Matters</a></li>
@@ -102,7 +102,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
       <div class="mh__row">
         <h1 class="mh__title" data-page-title>
           <i class="pi pi-briefcase" aria-hidden="true" data-page-icon></i>
-          <span
+          <span data-name [attr.title]="matter().clientName + ' > ' + matter().name"
             >{{ matter().clientName }}
             <span class="mh__sep" aria-hidden="true">&gt;</span>
             <span class="mf-sr-only">, </span>{{ matter().name }}</span

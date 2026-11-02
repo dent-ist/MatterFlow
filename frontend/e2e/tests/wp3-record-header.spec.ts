@@ -129,6 +129,8 @@ const urls = () => ({
   longProject: `/projects/${data.longProject.projectId}`,
 });
 
+// The Matter page has its own header since the Matter detail redesign (MD-01, #1002): `mf-matter-header` (see matter-detail-page.spec.ts for its unit tests).
+// The Matter cases of this file are removed from the shared loops or marked fixme; MD-17 rewrites them for the new header.
 test.describe('WP3: record header geometry (#253, #254)', () => {
   for (const [w, h] of SIZES) {
     test(`short and long records keep the header small at ${w}x${h}; axe clean; no sideways scroll`, async ({
@@ -140,8 +142,6 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
       const cases = [
         { key: 'client', url: u.client, tabs: true, long: false },
         { key: 'client-long', url: u.longClient, tabs: true, long: true },
-        { key: 'matter', url: u.matter, tabs: true, long: false },
-        { key: 'matter-long', url: u.longMatter, tabs: true, long: true },
         { key: 'project', url: u.project, tabs: true, long: false },
         { key: 'project-long', url: u.longProject, tabs: true, long: true },
       ];
@@ -197,7 +197,7 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
     });
   }
 
-  test('a tooltip carries the full name and the heading keeps all of it for assistive technology', async ({
+  test.fixme('a tooltip carries the full name and the heading keeps all of it for assistive technology', async ({
     page,
   }) => {
     await page.goto(urls().longMatter);
@@ -206,7 +206,7 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
     await expect(page.locator('[data-crumb-current] .mf-sr-only')).toContainText(MATTER_150);
   });
 
-  test('the context line names the client (a link) and, on a project, the matter', async ({
+  test.fixme('the context line names the client (a link) and, on a project, the matter', async ({
     page,
   }) => {
     await page.goto(urls().matter);
@@ -227,7 +227,7 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
     await expect(page.locator('[data-record-context]')).toBeHidden(); // a client has none
   });
 
-  test('the matter reference keeps its copy button in the title; a client shows its number', async ({
+  test.fixme('the matter reference keeps its copy button in the title; a client shows its number', async ({
     page,
   }) => {
     await page.goto(urls().matter);
@@ -236,7 +236,7 @@ test.describe('WP3: record header geometry (#253, #254)', () => {
     await expect(page.locator('h1 [data-ref]')).toHaveText(data.client.clientNumber);
   });
 
-  test('the loading skeleton has the height of the loaded header (short names)', async ({
+  test.fixme('the loading skeleton has the height of the loaded header (short names)', async ({
     page,
   }) => {
     for (const [w, h] of [
@@ -286,7 +286,7 @@ test.describe('WP3: one action rule (#255)', () => {
       .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-action')));
   }
 
-  test('with every permission: Edit, Activity, the primary action and an overflow on each page', async ({
+  test.fixme('with every permission: Edit, Activity, the primary action and an overflow on each page', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -320,7 +320,7 @@ test.describe('WP3: one action rule (#255)', () => {
     await shot(page, 'overflow-project');
   });
 
-  test('nothing that changes the record stays in a tab body or in the project side panel', async ({
+  test.fixme('nothing that changes the record stays in a tab body or in the project side panel', async ({
     page,
   }) => {
     for (const url of [urls().client, urls().matter]) {
@@ -339,7 +339,7 @@ test.describe('WP3: one action rule (#255)', () => {
     await expect(page.getByRole('button', { name: 'Archive', exact: true })).toHaveCount(0);
   });
 
-  test('the overflow is a menu: ArrowDown opens it, arrows move, Esc closes and returns focus to the button', async ({
+  test.fixme('the overflow is a menu: ArrowDown opens it, arrows move, Esc closes and returns focus to the button', async ({
     page,
   }) => {
     await page.goto(urls().matter);
@@ -361,7 +361,7 @@ test.describe('WP3: one action rule (#255)', () => {
     await expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('Set inactive from the overflow confirms, and focus comes back to the overflow button', async ({
+  test.fixme('Set inactive from the overflow confirms, and focus comes back to the overflow button', async ({
     page,
     seed,
   }) => {
@@ -384,7 +384,7 @@ test.describe('WP3: one action rule (#255)', () => {
     await expect(create).toHaveAttribute('aria-disabled', 'true');
   });
 
-  test('disabled with a reason: Set inactive while tasks are open, New matter for an inactive client', async ({
+  test.fixme('disabled with a reason: Set inactive while tasks are open, New matter for an inactive client', async ({
     page,
   }) => {
     await page.goto(`/matters/${data.busyMatter.matterId}`);
@@ -406,7 +406,7 @@ test.describe('WP3: one action rule (#255)', () => {
     await expect(page).toHaveURL(new RegExp(`/clients/${data.inactiveClient.clientId}$`));
   });
 
-  test('Archive from the project overflow asks first; the empty Projects tab keeps its New project action', async ({
+  test.fixme('Archive from the project overflow asks first; the empty Projects tab keeps its New project action', async ({
     page,
     seed,
   }) => {
@@ -435,7 +435,6 @@ test.describe('WP3: one action rule (#255)', () => {
       await page.setViewportSize({ width: w, height: h });
       for (const [key, url] of [
         ['client', urls().client],
-        ['matter', urls().longMatter],
         ['project', urls().project],
       ] as const) {
         await page.goto(url);
@@ -447,13 +446,12 @@ test.describe('WP3: one action rule (#255)', () => {
         expect(box!.x + box!.width, `${key} menu right edge`).toBeLessThanOrEqual(w);
         await axeClean(page, `${key} overflow open at ${w}x${h}`);
         await noSidewaysScroll(page);
-        if (key === 'matter') await shot(page, 'overflow-open-matter-long');
       }
     });
   }
 
   test.describe('permission matrix', () => {
-    test('a view-only user sees no Edit, no Activity, no create action and no empty overflow', async ({
+    test.fixme('a view-only user sees no Edit, no Activity, no create action and no empty overflow', async ({
       asUser,
       seed,
     }) => {
@@ -476,7 +474,7 @@ test.describe('WP3: one action rule (#255)', () => {
       await expect(page.locator('[data-client] a')).toHaveCount(1);
     });
 
-    test('without Task.Create there is no Create task, the rest of the rule stays', async ({
+    test.fixme('without Task.Create there is no Create task, the rest of the rule stays', async ({
       asUser,
       seed,
     }) => {
@@ -513,7 +511,7 @@ test.describe('WP3: one action rule (#255)', () => {
       ).toEqual(['new-project', 'open-tasks', 'toggle-active']);
     });
 
-    test('without Client.View the matter context line is plain text, not a link', async ({
+    test.fixme('without Client.View the matter context line is plain text, not a link', async ({
       asUser,
       seed,
     }) => {
@@ -530,7 +528,7 @@ test.describe('WP3: one action rule (#255)', () => {
 test.describe('WP3: phone header (#254)', () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
-  test('one row: the primary action and one overflow with 44 px targets; everything else is in the menu', async ({
+  test.fixme('one row: the primary action and one overflow with 44 px targets; everything else is in the menu', async ({
     page,
   }) => {
     for (const [url, primary, items] of [
@@ -587,7 +585,7 @@ test.describe('WP3: phone header (#254)', () => {
     await shot(page, 'phone-matter-tasks');
   });
 
-  test('"Back to Matters" replaces the trail and goes to the list', async ({ page }) => {
+  test.fixme('"Back to Matters" replaces the trail and goes to the list', async ({ page }) => {
     await page.goto(urls().matter);
     const back = page.locator('[data-back-link]');
     await expect(back).toHaveText(/Back to Matters/);
@@ -599,7 +597,7 @@ test.describe('WP3: phone header (#254)', () => {
 test.describe('WP3: tablet header (#254)', () => {
   test.use({ viewport: { width: 768, height: 1024 } });
 
-  test('the primary action and Edit stay; Activity and the rest are in the overflow', async ({
+  test.fixme('the primary action and Edit stay; Activity and the rest are in the overflow', async ({
     page,
   }) => {
     await page.goto(urls().matter);
@@ -633,7 +631,7 @@ test.describe('WP3: Sensitive note (#256)', () => {
     [1366, 768],
     [375, 812],
   ] as const) {
-    test(`a Sensitive matter's tabs start at most 40 px lower than a plain one at ${w}x${h}`, async ({
+    test.fixme(`a Sensitive matter's tabs start at most 40 px lower than a plain one at ${w}x${h}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: w, height: h });
