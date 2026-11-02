@@ -31,7 +31,7 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 
 ## Agent A (see the entries at the end of the file)
 
-## Agent B
+### Agent A entries
 
 - 2026-11-01 MD-01 (A): `mf-slide-panel` (shared/ui/slide-panel.ts) is on the branch: use it for every create/edit panel (inputs title, subtitle, size, primaryLabel, busy, error, dirty, canSubmit; `[(visible)]`, `(submitted)`). Example: features/projects/ui/project-panel.ts. Tab registry: features/matters/ui/matter-tabs.ts (add a tab permission there, then a `@case` in matter-detail-page.ts replacing the placeholder). Productions tab needs `Production.View` and Notes `MatterNote.View` in contracts/permissions.json (Agent B adds them; the tabs show only for holders). New menu entries for Production/Spec/Note/Event: Agent B adds them to `newItems` in matter-detail-page.ts when the feature exists.
 - 2026-11-01 MD-02 (A): script 51 `Matter.AiAllowed` (tinyint, default 0, CHECK 0..2); API enum `MatterAiAllowed` (`No`, `OnPremOnly`, `CompanyApproved`) in Organization.Contracts, on MatterResponse, CreateMatterRequest and UpdateMatterRequest (nullable = unchanged).
@@ -42,3 +42,20 @@ Protocol: one section per agent below, append-only, newest entry last; rebase be
 
 - 2026-11-01 MD-03/04/05/08/16 (A): Summary (`matter-summary.ts`, `matter-edit-panel.ts`), asset counts by type (Assets module `GET /assets/counts-by-type?matterId=`), View dropdown in the Tasks tab (`SummaryStrip variant="dropdown"`), project panels (`projects/ui/project-panel.ts`, `project-tasks-panel.ts`), bulk link/unlink (`POST /matters/{id}/tasks/project`, WorkManagement), Next events + Add event panel (shown with `Matter.BeManager`), AI components (`shared/ui/ai/`: `mf-ai-button`, `mf-ai-coming-soon`, `mf-ai-warning-dialog`, `AI_FLAGS.aiPolicyCheck` = false). Agent B: the Notes toolbar uses `<mf-ai-button [allowed]="matter.aiAllowed" (pressed)=...>` and `<mf-ai-coming-soon>`; on a "Save anyway" write the note history line "Saved after an AI warning".
 - E2E todo for MD-17 (not updated yet, they still target the old header/Overview): wp3-record-header, wp7-matter-overview, wp10-matter-tabs, detail-layout, detail-page-states, px5-matter, pm4-bulk-tasks, sensitive-ui and the `openMatterDetails` helper in e2e/support/matter-details.ts (the Details toggle is gone; the details list is always visible).
+
+## Agent B
+
+Questions for the owner are listed at the end of this section; each has a recommended default that is already built.
+
+- 2026-11-01 Worktree `/home/user/wt/mdb`, local branch `md-b-work` tracks `matter-detail`. Order: MD-09, MD-10, MD-12 backends, then the UIs on Agent A's shell.
+- Backend design decisions (all three backends): new modules `MatterFlow.Productions` (productions, comments, specs) and `MatterFlow.Notes` (notes, tags, templates), each with a `.Contracts` marker project; scripts 52 (specs), 53 (productions and comments), 54 (notes, tags, links), 55 (templates); script 56 is not used.
+- History uses the Audit module for productions, specs and notes (object types `Production`, `ProductionSpec`, `Note`). Audit.Contracts got one new read method, `IAuditReader.ListAllForObjectAsync` (every event type of one object, newest first, with a cursor), because the existing one filtered by a single event type. Entities are NOT marked `[Audited]` (that would write one event per field on create); the services write one `FIELD_CHANGED` per changed field and one semantic event per state change, always with the matter, so the sensitive-matter rule restricts the history.
+- Permission grants: the scripts insert the permission rows and grant them to the existing starter roles by name (same pattern as script 46); `StarterRoles.cs` has the same matrix for fresh databases. Everyone gets Production.View/Edit/Comment, ProductionSpec.View, MatterNote.View/Edit; Director, Project Manager and Pod Lead also get ProductionSpec.Edit and MatterNote.Delete.
+- Note body: the shared sanitiser `RichHtml` got a second profile (`RichHtmlProfile.Note`: headings 1 to 3, quote, and a reference span with exactly one of `data-asset-id`, `data-project-id`, `data-matter-id`, `data-note-id`, `data-user-id`, `data-embed-id`; `data-embed-id` is a linked note shown inline). The Basic profile is unchanged.
+- API shape for the UI (all under `/api/v1`): `production-specs` (list by matterId, get, create, update, duplicate, retire, unretire, history), `productions` (list, get, create, update, delete, history, comments, summary at `matters/{id}/productions/summary`), `production-comments/{id}` (update, delete), `notes` (list, get, create, update, delete, pinned, lock, unlock, history, resolve-references, summary at `matters/{id}/notes/summary`), `note-tags`, `note-templates` (list, get, create, update, duplicate, delete, use).
+
+### Questions (owner)
+
+1. **Note tags: firm-wide or per matter?** The issue text (#1013, #1014) says per matter and "create/rename/delete tags needs Edit". The approved Notes mockup r3 (and addendum AQ item 9, which wins) shows tags managed by administrators under Labels, "Notes tags", with people only picking them (max 5 per note, ten-colour palette, active flag). Built as in the mockup: firm-wide `NoteTag`, managed with the existing permission `StatusLabel.Manage` (no fourth note permission). The admin tab itself ("Labels > Notes tags") is not in any issue estimate; recommended default: build it in MD-13 if time allows, otherwise administrators use the API.
+2. **Spec statuses.** Mockup r2 had Draft/Approved/Retired; the issue and AQ say list, create, edit, duplicate, retire. Built Active/Retired only (a retired spec can be reinstated), no delete.
+3. **Delete of an unused spec.** The mockup offers delete for an unused spec, the issue says "no delete in v1". Built without delete.
