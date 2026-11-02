@@ -359,10 +359,31 @@
     overflow: hidden;
   }
 
+  /* The body row is exactly the room left under the header; the left menu is never taller than that. A menu taller than the window scrolls
+     inside itself (thin themed scrollbar) and never stretches the page (#980). The version line stays pinned at the foot of the panel. */
+  :host(.mf-shell--fixed) .mf-body {
+    overflow: hidden;
+  }
+
   :host(.mf-shell--fixed) .mf-nav {
     position: static;
     align-self: stretch;
     height: auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mf-nav-text-muted) transparent;
+  }
+
+  :host(.mf-shell--fixed) .mf-nav-version {
+    position: sticky;
+    bottom: calc(-1 * var(--mf-s3));
+    z-index: 1;
+    margin-bottom: calc(-1 * var(--mf-s3));
+    padding-bottom: var(--mf-s3);
+    background: var(--mf-nav-bg);
   }
 
   :host(.mf-shell--fixed) .mf-main {
