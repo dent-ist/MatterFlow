@@ -8,7 +8,7 @@ using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
 
 namespace MatterFlow.IntegrationTests.Assets;
 
-/// <summary>GET /assets/counts-by-type?matterId= (MD-03, #1004): the Summary tiles. Types with assets only, largest first, active and retired counted apart, a missing or hidden matter is a 404.</summary>
+/// <summary>GET /assets/counts-by-type?matterId= (MD-03, #1004): the Summary tiles. Types with assets only, largest first, active and retired counted apart, a hidden or missing matter gives an empty list.</summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class AssetCountsByTypeApiTests(SqlServerFixture sql) : IAsyncLifetime
 {
@@ -51,10 +51,10 @@ public sealed class AssetCountsByTypeApiTests(SqlServerFixture sql) : IAsyncLife
     }
 
     [Fact]
-    public async Task A_matter_without_assets_gives_an_empty_list_and_an_unknown_matter_is_404()
+    public async Task A_matter_without_assets_or_an_unknown_matter_gives_an_empty_list()
     {
         (await OkAsync(await _h.Admin.GetAsync($"/api/v1/assets/counts-by-type?matterId={_w.MatterId}"))).GetArrayLength().ShouldBe(0);
-        (await _h.Admin.GetAsync("/api/v1/assets/counts-by-type?matterId=9999999")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await OkAsync(await _h.Admin.GetAsync("/api/v1/assets/counts-by-type?matterId=9999999"))).GetArrayLength().ShouldBe(0);
     }
 
     [Fact]

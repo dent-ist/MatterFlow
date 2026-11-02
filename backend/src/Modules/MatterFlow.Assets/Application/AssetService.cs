@@ -241,15 +241,13 @@ public sealed class AssetService(
     }
 
     /// <summary>
-    /// The matter's assets counted per asset type, types with at least one asset only, largest first (the Summary tiles). A matter the caller may not
-    /// see (sensitive-matter rule) is "not found", like one that does not exist.
+    /// The matter's assets counted per asset type, types with at least one asset only, largest first (the Summary tiles). Counted over the assets the caller may see
+    /// (sensitive-matter rule, mode A): a matter the caller may not see, or that does not exist, simply has none.
     /// </summary>
     public async Task<Result<IReadOnlyList<AssetTypeCount>>> CountsByTypeAsync(int matterId, CancellationToken ct)
     {
-        if (!await access.CanSeeMatterAsync(matterId, ct))
-            return AssetSupport.NotFound("Matter");
-
-        var rows = await db.Set<Asset>().AsNoTracking()
+        await access.PrepareAsync(ct);
+        var rows = await access.Visible(db.Set<Asset>().AsNoTracking())
             .Where(a => a.MatterId == matterId)
             .GroupBy(a => a.AssetTypeId)
             .Select(g => new { TypeId = g.Key, Active = g.Count(a => a.IsActive), Retired = g.Count(a => !a.IsActive) })

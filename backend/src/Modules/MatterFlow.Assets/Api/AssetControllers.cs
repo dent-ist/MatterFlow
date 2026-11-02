@@ -132,7 +132,7 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
         return this.ToActionResult(await assets.ListAsync(query, cancellationToken));
     }
 
-    /// <summary>The Matter's assets counted per asset type (<c>matterId</c> is required), largest type first; types without assets are left out. 404 for a matter the caller may not see.</summary>
+    /// <summary>The Matter's assets counted per asset type (<c>matterId</c> is required), largest type first; types without assets are left out. Only assets the caller may see are counted, so a matter they may not see (or that does not exist) gives an empty list.</summary>
     [HttpGet("counts-by-type", Name = "GetAssetCountsByType")]
     [Authorize(Policy = AssetPolicies.AssetView)]
     [ProducesResponseType<IReadOnlyList<AssetTypeCount>>(StatusCodes.Status200OK, "application/json")]

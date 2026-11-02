@@ -72,7 +72,7 @@ public static class SensitiveAccessCatalog
         ["GET api/v1/asset-reports/{assetReportId:int}/run"] = new(AccessKind.Aggregate, IdKind.None, "counts and sums over assets of matters the caller may see; a hidden matter contributes nothing (epic #851, PV-22 and PV-37; a saved report belongs to one person, so the persona suite AssetReportSensitiveTests saves one per persona and runs it)", []),
         ["GET api/v1/asset-reports/{assetReportId:int}"] = new(AccessKind.Neutral, IdKind.None, "the caller's own saved report definition: no matter data, another person's report is a 404", []),
         ["GET api/v1/assets"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/assets?pageSize=100", "api/v1/assets?pageSize=100&q=ZZSENS"]),
-        ["GET api/v1/assets/counts-by-type"] = new(AccessKind.Aggregate, IdKind.Matter, "counts of one matter's assets: a hidden matter = 404 like a missing id (MD-03)", ["api/v1/assets/counts-by-type?matterId={matter}"]),
+        ["GET api/v1/assets/counts-by-type"] = new(AccessKind.Aggregate, IdKind.Matter, "counts of one matter's assets over the assets the caller may see: a hidden matter gives an empty list (MD-03)", ["api/v1/assets/counts-by-type?matterId={matter}"]),
         ["GET api/v1/assets/lookup"] = new(AccessKind.List, IdKind.None, "list, filtered by the rule", ["api/v1/assets/lookup?matterId={matter}"]),
         ["GET api/v1/assets/{assetId:int}"] = new(AccessKind.Gated, IdKind.Asset, "resource by id: hidden = 404 like a missing id", ["api/v1/assets/{asset}"]),
         ["GET api/v1/assets/{assetId:int}/disposition-history"] = new(AccessKind.Gated, IdKind.Asset, "resource by id: hidden = 404 like a missing id", ["api/v1/assets/{asset}/disposition-history"]),

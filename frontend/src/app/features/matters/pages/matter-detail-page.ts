@@ -9,7 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -29,7 +29,7 @@ import { SCOPED_TASK_PARAMS, ScopedTasks } from '../../../shared/work-queue/scop
 import { PageTitle, recordTitle } from '../../../core/title/page-title';
 import { RecordLoadFlow, RecordState, recordStateTitle } from '../../../shared/ui/record-state';
 import { RecordSkeleton, recordTabLabel } from '../../../shared/ui/record-skeleton';
-import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
+import { FixedPage } from '../../../shared/ui/fixed-page';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterHeader } from '../ui/matter-header';
@@ -63,14 +63,12 @@ type Tab = MatterTabKey;
   selector: 'mf-matter-detail-page',
   imports: [
     FixedPage,
-    ScrollArea,
     MatterHeader,
     ProjectPanel,
     ProjectTasksPanel,
     MatterActivities,
     RecordState,
     RecordSkeleton,
-    RouterLink,
     Button,
     HasPermissionDirective,
     ConfirmDialog,
