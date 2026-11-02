@@ -441,7 +441,6 @@ const HIST_WIDTH_KEY = 'mf.notes.histw';
           <div class="nt__head">
             <h2 class="pg-sr">Note</h2>
             <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
-            <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
             @if (editing()) {
               <p-button
                 label="Cancel"

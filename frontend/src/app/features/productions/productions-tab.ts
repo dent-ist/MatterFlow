@@ -218,6 +218,9 @@ const emptySpec = (): SpecDraft => ({
       border-bottom: 1px solid var(--mf-border);
       overflow-wrap: anywhere;
     }
+    .pt__meta .pt__link {
+      margin-inline-start: var(--mf-s2);
+    }
     .pt__meta {
       display: block;
       color: var(--mf-text-muted);
