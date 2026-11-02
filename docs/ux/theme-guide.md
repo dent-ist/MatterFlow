@@ -331,6 +331,33 @@ Work tables (Task Queue, My Work, Pod Work, the Matter and Project Tasks tabs) u
 
 **Pages that should adopt it later (not converted; estimates in agent-hours):** Clients list 2.5, Projects list 2.5, Assets list 3, Matter Projects tab 2, Matter Assets tab 2, Matter Activities 2, Users 3, Roles 2.5, Pods 2.5, admin lookups (Task Types, Asset Types, Labels, Custom Fields, Workflows) 2 each, Audit Logs 3, Reports lists 3; unifying the Task Queue / My Work / Pod Work chooser and resize with this set (one Columns menu instead of the chooser panel, one resize store) 10.
 
+### 11.1 List page anatomy (epic #1037, LC-01 #1038, owner decision addendum AR)
+
+Every list page puts the same things in the same place with the same names. A zone that a page does not fill is left out, it never moves another zone. The picture is `docs/ux/grid-consistency/anatomy-mockup.html` (branch `grid-consistency-review`).
+
+```
+Row 1  [icon] Title  (count chip)                                          [+ New Thing]
+Row 2  [Search tasks]  [Filters (2)]  [Other filters]  [view slot]  ......  [Columns]  [...]
+Row 3  filter chips  Clear filters                          Sorted by Name, A to Z   Reset sort
+Grid   sort by header click; a bulk bar REPLACES row 2 while rows are selected
+Foot   Rows per page [50]   Showing 1-50 of 139   Page 1 of 3   First  Previous  Next  Last
+```
+
+| Zone | Component | Notes |
+| --- | --- | --- |
+| Row 1 | `mf-page-header` with `[count]` | the H1, then the total after the filters as a small chip (`data-list-count`, left out while the list loads); the primary "+ New Thing" is the last `mfActions` button (Title Case, `pi pi-plus`, guide section 9) |
+| Row 2 | `mf-list-toolbar` (`shared/filters/list-toolbar.ts`) | Search first (always visible, not the global search; it drives the one text filter marked `search: true` in the page's `FilterDef[]`, so the URL parameter, links and saved views are unchanged), then Filters (n) and Other filters, then the `[mfView]` slot (quick views or a View dropdown), a spring, the `[mfColumns]` slot, the `[mfMore]` "..." menu (`mf-options-menu`: Saved views, Export) and, on a tab that has no H1, the `[mfPrimary]` button |
+| Row 3 | `mf-list-toolbar` + `mf-sorted-line` (`shared/ui/sorted-line.ts`, in the `[mfBarEnd]` slot) | chips with "Clear filters" show whenever a filter is active, with the filter row open or closed; the Sorted by line always names the sort, the default order included, and "Reset sort" shows only while the person chose a sort |
+| Bulk bar | `[mfBulk]` slot, `[bulkActive]` | replaces row 2 ("3 selected", the actions, Clear) |
+| Footer | `mf-pager` | rows per page 25 / 50 / 100 (default 50, `DEFAULT_PAGE_SIZE` in `list-query.ts`), Showing a-b of n, Page n of m, First / Previous / Next / Last; no "Load more" |
+| Phone (under 640 px) | the same component | Search and Filters stay (the Filters sheet holds every filter and the Sort select), Columns and Other filters are hidden, the primary button stays |
+
+Rules: the Search box is `mf-search-box` (live after 300 ms, Enter at once, x to clear); a filter with `search: true` has no cell in the filter row and no field in the sheet, makes no chip and is not counted in the Filters badge, but it still counts as an active filter for Clear filters and the empty state. The `/` shortcut (unchanged, `shortcut-registry.ts`) focuses Search first. Sort is by header click (Enter or Space on the header button); nothing here adds or changes a keyboard shortcut (#420). Both Columns menus stay in phase 1 (the work lists keep their chooser, the record lists keep `mf-grid-columns`: same place, same name "Columns").
+
+**Adopted in phase 1:** Task Queue, My Work, Pod Work, the Matter Tasks tab (`mf-scoped-tasks`), Clients, Matters, Projects, Assets. Not yet (later phases): admin lists, Matter Assets and Matter Projects tabs, My Matters, Search, Notifications, Audit Logs, Activities.
+
+**Standard columns.** Tasks, one order on every list (`WORK_COLUMNS` in `shared/work-queue/column-prefs.ts` is the order of the table and of the Columns menu): Ref, Type, Title, CM Number, Matter Name (global lists only), Project, Priority, Assignee, Due, Status, Progress; a list that is already scoped drops the obvious columns by default (Matter Tasks: no CM Number or Matter Name; My Work: no Assignee; the Closed tab shows Closed in place of Due). Assets: Type, Name, CM Number (global lists), Size, Linked Tasks, External Reference, Disposition. The matter number is "CM Number" everywhere; the workflow progress is "Progress".
+
 ## 10. Note text colours (epic #1001, MD-30, #1034)
 
 The Notes editor offers a fixed palette of eight text colours plus Default: red, orange, amber, green, teal, blue, violet and slate (grey). They are the tokens `--mf-note-<key>` in `docs/ux/tokens.css`; `scripts/check-theme-contrast.mjs` checks each at 4.5:1 on a card and on the quote tint. A note stores a colour as `<span data-color="red">` (never inline CSS); the server keeps only these eight keys. The page maps the key to the token (`[data-color='red'] { color: var(--mf-note-red) }` in `note-editor-refs.scss`). Colour never carries meaning alone: the menu names every colour, and bold or headings stay available.

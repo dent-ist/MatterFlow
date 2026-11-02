@@ -200,7 +200,7 @@ export class FilterSheet {
   protected readonly controls = computed(() =>
     this.filters()
       .defs()
-      .filter((d) => !d.noControl),
+      .filter((d) => !d.noControl && !d.search),
   );
   protected readonly showText = computed(() => {
     const n = this.filters().resultTotal();

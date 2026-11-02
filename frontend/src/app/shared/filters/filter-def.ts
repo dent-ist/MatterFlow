@@ -97,6 +97,12 @@ export interface FilterDef {
   readonly labelInRow?: boolean;
   /** No control anywhere (a link-only filter such as `?matterId=`): it only shows as a removable chip. */
   readonly noControl?: boolean;
+  /**
+   * text: the filter is driven by the list toolbar's always-visible Search box (LC-01, decision AR 2), not by a cell of the filter row or a field of the sheet.
+   * It still counts as active (Clear filters clears it, the empty state offers Clear), but it makes no chip and is left out of the Filters (n) badge:
+   * the Search box already shows its text.
+   */
+  readonly search?: boolean;
   /** The chip reads the value alone ("New since your last visit"), without the "<label>: " prefix. */
   readonly bareChip?: boolean;
   /** Replaces the value part of the chip / print text (a record name instead of its id). */
