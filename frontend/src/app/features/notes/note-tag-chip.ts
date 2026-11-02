@@ -77,7 +77,7 @@ import { taskTypeChipColours } from '../../shared/task-type/task-type-colours';
       cursor: pointer;
     }
     .ntag__x:hover {
-      background: rgb(0 0 0 / 12%);
+      background: color-mix(in srgb, currentcolor 15%, transparent);
     }
     .ntag__x .pi {
       font-size: 0.65rem;

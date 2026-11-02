@@ -32,7 +32,9 @@ export const AI_OFF_MESSAGE = "AI can't be used on this matter";
       }
     </button>
     @if (off()) {
-      <span class="ai__note" id="ai-off-note" data-ai-off-note>{{ offMessage }}</span>
+      <span class="ai__note" [class.mf-sr-only]="!showNote()" id="ai-off-note" data-ai-off-note>{{
+        offMessage
+      }}</span>
     }
   `,
   styles: `
@@ -68,6 +70,8 @@ export class AiButton {
   /** The matter's setting; a missing value counts as No. */
   readonly allowed = input<MatterAiAllowed | null | undefined>(MatterAiAllowed.No);
   readonly pressed = output<void>();
+  /** Show "AI can't be used on this matter" beside the button; off where space is tight (the message is then the tooltip and the button's description). */
+  readonly showNote = input(true);
   protected readonly offMessage = AI_OFF_MESSAGE;
   protected readonly off = computed(
     () => (this.allowed() ?? MatterAiAllowed.No) === MatterAiAllowed.No,

@@ -9,13 +9,20 @@ import { uid } from '../support/seed';
  * the Templates view, the history column, the lock, and axe at the two reference sizes. Typing triggers (/ @ #) and the menu keys are widget keys, not
  * shortcuts (#420).
  */
-const html = (title: string, body = '') => `<h1>${title}</h1><p>${body || `${title} body text.`}</p>`;
+const html = (title: string, body = '') =>
+  `<h1>${title}</h1><p>${body || `${title} body text.`}</p>`;
 
 async function world(seed: import('../support/seed').Seeder) {
   const client = await seed.client({ name: `Notes Client ${uid()}` });
   const matter = await seed.matter({ client, name: `Notes Matter ${uid()}` });
-  const tagA = await seed.admin.post('/api/v1/note-tags', { name: `Privilege ${uid()}`, colourKey: 'red' });
-  const tagB = await seed.admin.post('/api/v1/note-tags', { name: `Hosting ${uid()}`, colourKey: 'teal' });
+  const tagA = await seed.admin.post('/api/v1/note-tags', {
+    name: `Privilege ${uid()}`,
+    colourKey: 'red',
+  });
+  const tagB = await seed.admin.post('/api/v1/note-tags', {
+    name: `Hosting ${uid()}`,
+    colourKey: 'teal',
+  });
   const note = async (title: string, tagIds: number[] = []) =>
     seed.admin.post('/api/v1/notes', { matterId: matter.matterId, bodyHtml: html(title), tagIds });
   return { client, matter, tagA, tagB, note };
@@ -47,7 +54,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     // one group per tag, the twin note is in both, and Untagged comes last
     await expect(page.locator('[data-group]')).toHaveCount(3);
     await expect(page.locator('[data-group]').last()).toContainText('Untagged');
-    await expect(page.locator('[data-note-item]')).toHaveCount(4);
+    await expect(page.locator('[data-note-item]')).toHaveCount(3);
     // nothing scrolls on desktop
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight),
@@ -57,7 +64,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await first.locator('h3 button').click();
     await expect(first.locator('h3 button')).toHaveAttribute('aria-expanded', 'false');
     await page.locator('[data-toggle-all]').click();
-    await expect(page.locator('[data-group] h3 button[aria-expanded="true"]').first()).toBeVisible();
+    await expect(
+      page.locator('[data-group] h3 button[aria-expanded="true"]').first(),
+    ).toBeVisible();
   });
 
   test('a note opens in read mode; Edit shows Cancel left and Save right; Save returns to read mode', async ({
@@ -148,7 +157,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const dlg = page.getByRole('dialog', { name: 'Add a link' });
     await dlg.getByLabel('Address').fill('ftp://nope');
     await dlg.getByRole('button', { name: 'Apply' }).click();
-    await expect(dlg).toContainText('Enter an address that starts with https:// or onenote:https://');
+    await expect(dlg).toContainText(
+      'Enter an address that starts with https:// or onenote:https://',
+    );
     await dlg.getByLabel('Address').fill('onenote:https://example.test/notebooks/x');
     await dlg.getByLabel('Text to show').fill('Notebook');
     await dlg.getByRole('button', { name: 'Apply' }).click();
@@ -227,7 +238,10 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(n.noteId).toBeGreaterThan(0);
   });
 
-  test('history column at 1366 wide: grouped by day, collapses to a rail', async ({ page, seed }) => {
+  test('history column at 1366 wide: grouped by day, collapses to a rail', async ({
+    page,
+    seed,
+  }) => {
     const w = await world(seed);
     await w.note(`History ${uid()}`);
     await page.setViewportSize({ width: 1600, height: 900 });
@@ -262,14 +276,74 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.getByRole('button', { name: 'Templates', exact: true }).click();
     const row = page.locator('[data-template-list] li', { hasText: name });
     await expect(row).toContainText('This matter');
-    await expect(row.getByRole('button', { name: 'Use' })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Duplicate' })).toBeVisible();
-    await expect(row.getByRole('button', { name: 'Delete' })).toBeVisible();
-    await row.getByRole('button', { name: 'Use' }).click();
+    await expect(row.getByRole('button', { name: 'Use', exact: true })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Duplicate', exact: true })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Delete', exact: true })).toBeVisible();
+    await row.getByRole('button', { name: 'Use', exact: true }).click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
     await expect(page.locator('.ProseMirror')).toContainText('{{custodian}}');
     await expect(page.locator('.ProseMirror')).not.toContainText('{{author}}');
+  });
+
+  test('a reader sees the Read only pill, the reader banner, no Edit and no New Note', async ({
+    asUser,
+    seed,
+  }) => {
+    const w = await world(seed);
+    await w.note(`Readable ${uid()}`);
+    const role = await seed.role(['Matter.View', 'Client.View', 'MatterNote.View'], 'note reader');
+    const reader = await seed.user([role.name], 'notereader');
+    const page = await asUser(reader.username);
+    await open(page, w.matter.matterId);
+    await expect(page.locator('[data-notes-readonly]')).toContainText('Read only');
+    await expect(page.locator('[data-new-note]')).toHaveCount(0);
+    await page.locator('[data-note-item]').first().click();
+    await expect(page.locator('[data-note-title]')).toBeVisible();
+    await expect(page.locator('[data-note-edit]')).toHaveCount(0);
+    await expect(page.locator('[data-notes-tab]')).toContainText(
+      'You can read this note. Editing needs the Matter Note Edit permission.',
+    );
+  });
+
+  test('a note locked while it is being edited shows the warning and cannot be saved', async ({
+    page,
+    seed,
+  }) => {
+    const w = await world(seed);
+    const n = await w.note(`Locked under you ${uid()}`);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await page.locator('[data-note-edit]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type(' mine');
+    await seed.admin.post(`/api/v1/notes/${n.noteId}/lock`, { rowVersion: n.rowVersion });
+    await page.locator('[data-note-save]').click();
+    const warn = page.locator('[data-note-locked-warning]');
+    await expect(warn).toContainText('your changes cannot be saved');
+    await expect(warn.getByRole('button', { name: 'Copy my text' })).toBeVisible();
+    await expect(page.locator('[data-note-save]')).toHaveAttribute('aria-disabled', 'true');
+    await warn.getByRole('button', { name: 'Close' }).click();
+    await expect(page.locator('[data-editor-toolbar]')).toHaveCount(0);
+  });
+
+  test('Save as template and the template tags offer', async ({ page, seed }) => {
+    const w = await world(seed);
+    await w.note(`Source ${uid()}`, [w.tagA.noteTagId]);
+    await open(page, w.matter.matterId);
+    await page.locator('[data-note-item]').first().click();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByRole('menuitem', { name: 'Save as template...' }).click();
+    const dlg = page.getByRole('dialog', { name: 'Save as template' });
+    await expect(dlg).toContainText('Who can use it');
+    await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
+    await dlg.getByRole('button', { name: 'Save template' }).click();
+    await page.getByRole('button', { name: 'Templates', exact: true }).click();
+    await expect(page.locator('[data-template-list] li').first()).toContainText('This matter');
+    await page.locator('[data-template-use]').first().click();
+    await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
+    await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
+    await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
   });
 
   test('the empty state and the New note menu', async ({ page, seed }) => {
@@ -314,6 +388,10 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
       await page.locator('[data-note-edit]').click();
       await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+      expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
+      await page.locator('[data-note-cancel]').click();
+      await page.getByRole('button', { name: 'Templates', exact: true }).click();
+      await expect(page.locator('[data-template-new]')).toBeVisible();
       expect(await axeViolations(page, '[data-notes-tab]')).toEqual([]);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth),

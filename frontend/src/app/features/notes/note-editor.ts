@@ -145,7 +145,7 @@ function baseExtensions(): AnyExtension[] {
       link: {
         openOnClick: false,
         autolink: true,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: null },
+        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
         protocols: [{ scheme: 'onenote', optionalSlashes: true }],
       },
       code: false,
@@ -330,7 +330,7 @@ export interface RefInfo {
   imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  styleUrl: './note-editor.scss',
+  styleUrls: ['./note-editor.scss', './note-editor-refs.scss'],
   template: `
     <div class="ne" [class.ne--edit]="editable()" [class.ne--read]="!editable()" data-note-editor>
       @if (editable()) {
@@ -658,13 +658,23 @@ export interface RefInfo {
             }
             <div class="ne__dlg-foot">
               @if (linkEditing()) {
-                <button type="button" class="ne__link-rm" data-link-remove (click)="removeLink()">
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text mf-btn--danger"
+                  data-link-remove
+                  (click)="removeLink()"
+                >
                   Remove link
                 </button>
               }
               <span class="ne__grow"></span>
-              <button type="button" class="ne__b" (click)="closeLink()">Cancel</button>
-              <button type="button" class="ne__b ne__b--p" data-link-apply (click)="applyLink()">
+              <button type="button" class="mf-btn" (click)="closeLink()">Cancel</button>
+              <button
+                type="button"
+                class="mf-btn mf-btn--primary"
+                data-link-apply
+                (click)="applyLink()"
+              >
                 Apply
               </button>
             </div>

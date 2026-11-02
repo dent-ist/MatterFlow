@@ -1,0 +1,291 @@
+// The Notes tab: empty, error and loading states, side panel content, narrow layout, menus.
+// ---- empty, error, loading, side-panel content
+.nt__empty {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  padding: 48px 24px;
+  color: var(--mf-text-muted);
+  text-align: center;
+
+  h3 {
+    margin: 0;
+    color: var(--mf-text);
+    font-size: 17px;
+  }
+
+  p {
+    max-width: 420px;
+    margin: 0;
+  }
+
+  .nt__eic {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--mf-sem-info-bg);
+    color: var(--mf-sem-info-fg);
+    font-size: 1.5rem;
+  }
+}
+
+.nt__skel {
+  padding: 8px 20px;
+
+  div {
+    height: 14px;
+    margin: 10px 0;
+    border-radius: 7px;
+    background: linear-gradient(
+      90deg,
+      var(--mf-sem-neutral-bg),
+      var(--mf-surface-2, var(--mf-surface)),
+      var(--mf-sem-neutral-bg)
+    );
+    background-size: 200% 100%;
+    animation: nt-shimmer 1.2s infinite linear;
+  }
+}
+
+@keyframes nt-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.nt__error {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 20px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-sem-risk-fg);
+}
+
+.nt__byline {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.nt__panel-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: var(--mf-s2) 0;
+    border-bottom: 1px solid var(--mf-border);
+    overflow-wrap: anywhere;
+  }
+}
+
+.nt__day {
+  margin: var(--mf-s3) 0 var(--mf-s1);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+}
+
+.nt__check {
+  display: flex;
+  gap: var(--mf-s2);
+  align-items: center;
+  padding: var(--mf-s1) 0;
+}
+
+.nt__tagopt {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mf-sem-neutral-bg);
+  }
+
+  &[aria-checked='true'] {
+    background: var(--mf-sem-info-bg);
+  }
+
+  &:disabled {
+    color: var(--mf-text-muted);
+    cursor: not-allowed;
+  }
+
+  .nt__grow {
+    flex: 1;
+  }
+
+  .nt__n {
+    color: var(--mf-text-muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nt__tick {
+    width: 18px;
+    color: var(--mf-primary);
+  }
+}
+
+.nt__tcard {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--mf-border);
+  border-radius: 10px;
+  background: var(--mf-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--mf-primary);
+  }
+
+  small {
+    display: block;
+    color: var(--mf-text-muted);
+    font-size: 12.5px;
+  }
+}
+
+.nt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+}
+
+.nt__tplbody {
+  height: 22rem;
+  padding: var(--mf-s2);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-md);
+}
+
+.nt__fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.nt__tplbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+// ---- narrow: the list and the note stack (the note replaces the list while one is open)
+.nt--stacked {
+  .nt__list {
+    width: 100% !important;
+    flex: 1 1 auto;
+  }
+
+  .nt__split {
+    display: none;
+  }
+
+  .nt__head {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+
+    .nt__search {
+      flex-basis: 100%;
+      max-width: none;
+      order: 9;
+    }
+  }
+}
+
+.nt--narrow-head .nt__head {
+  flex-wrap: wrap;
+
+  .nt__search {
+    flex-basis: 100%;
+    max-width: none;
+    order: 9;
+  }
+}
+
+.nt--tight .nt__seg button:not([aria-pressed='true']) .nt__lbl {
+  display: none;
+}
+
+.nt--tight .nt__seg button:not([aria-pressed='true']) {
+  padding: 0 10px;
+}
+
+.nt--tighter .nt__seg .nt__lbl {
+  display: none;
+}
+
+.nt--stacked .nt__row,
+.nt--stacked .nt__grp > h3 > button {
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+// ---- the "New note" menu, the tag list and the template cards in the side panels
+.nt__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 200px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--mf-border);
+  border-radius: 10px;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+
+  .nt__mi {
+    justify-content: flex-start;
+    width: 100%;
+    border-color: transparent;
+  }
+}
+
+.nt__taglist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--mf-s2) 0;
+}
+
+.nt__tchoose {
+  display: grid;
+  gap: 10px;
+}
+
+.nt__panel-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mf-s3);
+}

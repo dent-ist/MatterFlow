@@ -1,0 +1,196 @@
+// The Notes tab: board, templates and splitter (split from notes-tab.scss for the component style budget).
+// board view
+.nt__board {
+  display: flex;
+  flex: 1;
+  gap: 14px;
+  align-items: stretch;
+  min-height: 0;
+  padding: 16px 20px;
+  overflow: auto;
+}
+
+.nt__col {
+  display: flex;
+  flex: 0 0 272px;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--mf-border);
+  border-radius: var(--mf-radius-xl, 12px);
+  background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
+
+  > h3 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--mf-border);
+    font-size: 14px;
+  }
+
+  ul {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    overflow: auto;
+    list-style: none;
+  }
+
+  .nt__grow {
+    flex: 1;
+  }
+}
+
+.nt__card {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--mf-border);
+  border-radius: 10px;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--mf-primary);
+  }
+
+  &[aria-current='true'] {
+    border-color: var(--mf-sem-info-line, var(--mf-primary));
+    background: var(--mf-sem-info-bg);
+  }
+
+  &.is-twin {
+    background: var(--mf-sem-info-bg);
+    box-shadow: 0 0 0 2px var(--mf-primary);
+  }
+
+  .nt__pv {
+    font-size: 13px;
+  }
+
+  .nt__meta {
+    gap: 8px;
+    font-size: 12px;
+  }
+}
+
+// templates view
+.nt__thead {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--mf-border);
+  background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
+  color: var(--mf-text-muted);
+  font-size: 13px;
+}
+
+.nt__tpl {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--mf-border);
+
+  .nt__row {
+    flex: 1;
+    grid-template-columns: 44px minmax(0, 1fr);
+    border-bottom: 0;
+  }
+}
+
+.nt__tile {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--mf-sem-info-bg);
+  color: var(--mf-sem-info-fg);
+  font-size: 1.2rem;
+}
+
+.nt__tacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 330px;
+  padding: 0 16px 0 0;
+}
+
+.nt__tok {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-text);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.92em;
+  white-space: nowrap;
+}
+
+// splitter: 1 px line with a grip
+.nt__split {
+  position: relative;
+  z-index: 6;
+  flex: 0 0 1px;
+  background: var(--mf-border);
+  cursor: col-resize;
+  outline: 0;
+  touch-action: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -22px;
+    bottom: 0;
+    left: -22px;
+  }
+
+  .nt__grip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 44px;
+    margin: -22px 0 0 -4px;
+    border: 1px solid var(--mf-border-strong);
+    border-radius: 4px;
+    background: var(--mf-surface);
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      right: 2px;
+      bottom: 14px;
+      left: 2px;
+      border-right: 1px solid var(--mf-text-muted);
+      border-left: 1px solid var(--mf-text-muted);
+    }
+  }
+
+  &:hover,
+  &:focus-visible,
+  &.is-drag {
+    background: var(--mf-primary);
+  }
+
+  &:focus-visible .nt__grip {
+    outline: 2px solid var(--mf-focus, var(--mf-primary));
+    outline-offset: 2px;
+  }
+}

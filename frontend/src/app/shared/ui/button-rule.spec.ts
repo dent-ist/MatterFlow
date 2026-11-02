@@ -25,8 +25,8 @@ const FILES = [
   'shared/ui/slide-panel.ts',
   'shared/work-queue/scoped-tasks.ts',
 ];
-/** Files whose `size="small"` buttons are still to be cleaned by their owner (Notes, Agent D, #1031). */
-const SIZE_PENDING = ['features/notes/notes-tab.ts'];
+/** Files whose `size="small"` buttons are still to be cleaned by their owner (none: Notes is clean since MD-27, #1031). */
+const SIZE_PENDING: string[] = [];
 
 /** Properties that paint a button. */
 const PAINT =

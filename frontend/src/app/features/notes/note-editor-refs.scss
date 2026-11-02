@@ -1,0 +1,320 @@
+// The note editor: reference chips, the linked note, the menu of / @ #, the link dialog.
+// ---- reference chips (a person, an asset, a project, a matter, a note) and the linked note
+.ne-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 0 9px 0 6px;
+  border-radius: var(--mf-radius-lg, 8px);
+  background: var(--mf-surface);
+  box-shadow: inset 0 0 0 1px var(--mf-border-strong);
+  color: var(--mf-text);
+  font-size: 0.93em;
+  font-weight: 600;
+  line-height: 1.6;
+  vertical-align: baseline;
+  user-select: all;
+
+  .pi {
+    font-size: 0.85em;
+    color: var(--mf-text-muted);
+  }
+
+  &[data-state]::after {
+    content: attr(data-state);
+    margin-left: 4px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: var(--mf-sem-risk-bg);
+    color: var(--mf-sem-risk-fg);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+}
+
+.ne-ref--user {
+  padding: 0 9px;
+  border-radius: var(--mf-radius-pill);
+  background: var(--mf-sem-info-bg);
+  box-shadow: none;
+  color: var(--mf-sem-info-fg);
+  white-space: nowrap;
+}
+
+.ne--read .ne-ref[role='link'] {
+  color: var(--mf-link, var(--mf-primary));
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: inset 0 0 0 2px var(--mf-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mf-focus, var(--mf-primary));
+    outline-offset: 2px;
+  }
+}
+
+.ne-ref--gone {
+  background: var(--mf-surface-2, var(--mf-sem-neutral-bg));
+  color: var(--mf-text-muted);
+  font-weight: 500;
+
+  &[data-state]::after {
+    background: var(--mf-surface);
+    box-shadow: inset 0 0 0 1px var(--mf-border-strong);
+    color: var(--mf-text-muted);
+  }
+}
+
+.ne-embed {
+  display: block;
+  margin: 8px 0 12px;
+  border: 2px solid var(--mf-primary);
+  border-radius: 10px;
+  background: var(--mf-surface-2, var(--mf-surface));
+  user-select: none;
+}
+
+.ne-embed__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--mf-sem-info-bg);
+  color: var(--mf-sem-info-fg);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ne-embed__title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ne-embed__open {
+  height: 26px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--mf-surface);
+  color: var(--mf-sem-info-fg);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ne-embed__body {
+  display: block;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+
+  .ProseMirror {
+    outline: none;
+
+    p {
+      margin: 0 0 0.5em;
+    }
+
+    > :first-child {
+      font-size: 16px;
+      font-weight: 700;
+    }
+  }
+}
+
+// ---- the menu of / @ #
+.ne__menu {
+  position: fixed;
+  z-index: 1100;
+  width: min(340px, 94vw);
+  max-height: 260px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--mf-border);
+  border-radius: 10px;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+
+  li {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &[aria-selected='true'] {
+      background: var(--mf-sem-info-bg);
+      box-shadow: inset 0 0 0 2px var(--mf-primary);
+    }
+  }
+
+  small {
+    display: block;
+    overflow: hidden;
+    color: var(--mf-text-muted);
+    font-size: 12px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ne__menu-hd {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 8px 6px;
+    color: var(--mf-text-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .ne__keys {
+    margin-left: auto;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .ne__crumb {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    color: var(--mf-text);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+
+    .pi {
+      font-size: 0.7rem;
+    }
+  }
+
+  .ne__none {
+    padding: 10px;
+    color: var(--mf-text-muted);
+    cursor: default;
+  }
+
+  .ne__nm {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.ne__tile,
+.ne__av {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--mf-sem-info-bg);
+  color: var(--mf-sem-info-fg);
+}
+
+.ne__av {
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+// ---- the link dialog
+.ne__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--mf-text) 45%, transparent);
+}
+
+.ne__dlg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 480px;
+  max-width: 100%;
+  padding: 18px 24px;
+  border-radius: 14px;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+
+  h2 {
+    margin: 0 0 6px;
+    font-size: 19px;
+  }
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  input {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--mf-border-strong);
+    border-radius: 8px;
+    background: var(--mf-surface);
+    color: var(--mf-text);
+    font: inherit;
+
+    &[aria-invalid='true'] {
+      border-color: var(--mf-sem-overdue-solid);
+    }
+  }
+}
+
+.ne__help {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: 12.5px;
+}
+
+.ne__err {
+  min-height: 0;
+  margin: 0;
+  color: var(--mf-sem-overdue-fg);
+  font-size: 12.5px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.ne__dlg-foot {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.ne__grow {
+  flex: 1;
+}
+
+::highlight(mf-tok) {
+  background: var(--mf-sem-risk-bg);
+  color: var(--mf-text);
+}

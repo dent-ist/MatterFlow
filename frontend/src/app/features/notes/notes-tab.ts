@@ -14,8 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { Router } from '@angular/router';
-import { Button } from 'primeng/button';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   AssetsClient,
@@ -43,6 +42,7 @@ import { AiButton, AiComingSoon } from '../../shared/ui/ai/ai-assist';
 import { DropdownItem, Dropdown } from '../../shared/ui/dropdown';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { SearchBox } from '../../shared/ui/search-box';
+import { FormDialog } from '../../shared/ui/form-dialog';
 import { SlidePanel } from '../../shared/ui/slide-panel';
 import { TextField } from '../../shared/ui/text-field';
 import { EmbedContent, NoteEditor, RefInfo, RefKind, SuggestItem } from './note-editor';
@@ -114,20 +114,26 @@ interface RefChip {
     ActionMenu,
     AiButton,
     AiComingSoon,
-    Button,
     ConfirmDialog,
     Dropdown,
+    FormDialog,
     NgTemplateOutlet,
     NoteEditor,
     NoteTagChip,
     NumericDatePipe,
+    RouterLink,
     SearchBox,
     SlidePanel,
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill', '(keydown)': 'onKey($event)' },
-  styleUrl: './notes-tab.scss',
+  styleUrls: [
+    './notes-tab.scss',
+    './notes-tab-views.scss',
+    './notes-tab-panel.scss',
+    './notes-tab-misc.scss',
+  ],
   template: `
     <section
       class="nt"
@@ -136,7 +142,7 @@ interface RefChip {
       data-notes-tab
       [class.nt--stacked]="stacked()"
       [class.nt--wide]="wide()"
-      [class.nt--hide-head]="wide() && !stacked()"
+      [class.nt--hide-head]="showPanel() && (wide() || stacked())"
       [class.nt--tight]="cardWidth() > 0 && cardWidth() <= 1120"
       [class.nt--tighter]="cardWidth() > 0 && cardWidth() <= 1000"
     >
@@ -167,6 +173,7 @@ interface RefChip {
           inputId="nt-search"
           [label]="view() === 'templates' ? 'Search templates' : 'Search notes by title and text'"
           [hideLabel]="true"
+          [hintOnFocus]="true"
           [leadingIcon]="true"
           [placeholder]="view() === 'templates' ? 'Search templates' : 'Search title and text'"
           [value]="query()"
@@ -205,7 +212,7 @@ interface RefChip {
         @if (view() === 'tag') {
           <button
             type="button"
-            class="nt__ib nt__ib--bord"
+            class="mf-btn mf-btn--icon"
             data-toggle-all
             [attr.aria-label]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
             [title]="anyOpen() ? 'Collapse all groups' : 'Expand all groups'"
@@ -232,12 +239,12 @@ interface RefChip {
         }
         @if (canEdit()) {
           <span class="nt__split-btn">
-            <button type="button" class="nt__btn nt__btn--p" data-new-note (click)="newNote()">
-              <i class="pi pi-plus" aria-hidden="true"></i><span>New note</span>
+            <button type="button" class="mf-btn mf-btn--primary" data-new-note (click)="newNote()">
+              <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
             </button>
             <button
               type="button"
-              class="nt__btn nt__btn--p nt__btn--caret"
+              class="mf-btn mf-btn--primary nt__caret"
               data-new-menu
               aria-haspopup="menu"
               [attr.aria-expanded]="newMenuOpen()"
@@ -251,6 +258,7 @@ interface RefChip {
                 <li role="none">
                   <button
                     type="button"
+                    class="mf-btn mf-btn--text nt__mi"
                     role="menuitem"
                     data-new-blank
                     (click)="newMenuPick('blank')"
@@ -261,6 +269,7 @@ interface RefChip {
                 <li role="none">
                   <button
                     type="button"
+                    class="mf-btn mf-btn--text nt__mi"
                     role="menuitem"
                     data-new-template
                     (click)="newMenuPick('template')"
@@ -277,14 +286,17 @@ interface RefChip {
       <div class="nt__body">
         <!-- the list -->
         @if (showList()) {
-          <div class="nt__list" [style.width.px]="stacked() ? null : listWidth()" data-notes-list>
+          <div
+            class="nt__list"
+            [class.nt__list--full]="stacked() || !showPanel()"
+            [style.width.px]="stacked() || !showPanel() ? null : listWidth()"
+            data-notes-list
+          >
             <div class="nt__scroll" [class.nt__scroll--board]="view() === 'board'" tabindex="-1">
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
                   <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>{{ listError() }}
-                  <button type="button" class="nt__btn nt__btn--sm" (click)="loadList()">
-                    Try again
-                  </button>
+                  <button type="button" class="mf-btn" (click)="loadList()">Try again</button>
                 </p>
               } @else if (!loaded()) {
                 <div class="nt__skel" aria-busy="true" role="status" data-notes-loading>
@@ -305,11 +317,11 @@ interface RefChip {
                   @if (canEdit()) {
                     <button
                       type="button"
-                      class="nt__btn nt__btn--sm"
+                      class="mf-btn"
                       data-template-new
                       (click)="editTemplate(null)"
                     >
-                      <i class="pi pi-plus" aria-hidden="true"></i>New template
+                      <i class="pi pi-plus" aria-hidden="true"></i>New Template
                     </button>
                   }
                 </div>
@@ -356,7 +368,7 @@ interface RefChip {
                         <span class="nt__tacts">
                           <button
                             type="button"
-                            class="nt__btn nt__btn--sm"
+                            class="mf-btn"
                             data-template-use
                             [attr.aria-disabled]="!canEdit() || null"
                             [title]="canEdit() ? '' : useReason"
@@ -366,7 +378,7 @@ interface RefChip {
                           </button>
                           <button
                             type="button"
-                            class="nt__btn nt__btn--sm"
+                            class="mf-btn"
                             data-template-edit
                             [attr.aria-disabled]="tplReason(t) ? 'true' : null"
                             [title]="tplReason(t)"
@@ -376,7 +388,7 @@ interface RefChip {
                           </button>
                           <button
                             type="button"
-                            class="nt__btn nt__btn--sm"
+                            class="mf-btn"
                             [attr.aria-disabled]="!canEdit() || null"
                             [title]="canEdit() ? '' : useReason"
                             (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
@@ -385,7 +397,7 @@ interface RefChip {
                           </button>
                           <button
                             type="button"
-                            class="nt__btn nt__btn--sm"
+                            class="mf-btn"
                             [attr.aria-disabled]="tplReason(t) ? 'true' : null"
                             [title]="tplReason(t)"
                             (click)="onTemplateAction($event, tplReason(t), 'del', t)"
@@ -419,7 +431,7 @@ interface RefChip {
                     version.
                   </p>
                   @if (canEdit()) {
-                    <button type="button" class="nt__btn nt__btn--p" (click)="newNote()">
+                    <button type="button" class="mf-btn mf-btn--primary" (click)="newNote()">
                       <i class="pi pi-plus" aria-hidden="true"></i>Add the first note
                     </button>
                   } @else {
@@ -435,7 +447,7 @@ interface RefChip {
                     {{ query() ? '“' + query() + '”' : 'the chosen tags' }}. Try other words or
                     remove a filter.
                   </p>
-                  <button type="button" class="nt__btn" (click)="clearFilters()">
+                  <button type="button" class="mf-btn" (click)="clearFilters()">
                     Clear search and filters
                   </button>
                 </div>
@@ -567,7 +579,7 @@ interface RefChip {
           </div>
         }
 
-        @if (showList() && !stacked()) {
+        @if (showList() && showPanel() && !stacked()) {
           <div
             class="nt__split"
             role="separator"
@@ -598,7 +610,7 @@ interface RefChip {
                 >
                 <button
                   type="button"
-                  class="nt__btn nt__btn--sm nt__btn--p"
+                  class="mf-btn mf-btn--primary"
                   [attr.aria-disabled]="!canEdit() || null"
                   [title]="canEdit() ? '' : useReason"
                   (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'use', t)"
@@ -607,7 +619,7 @@ interface RefChip {
                 </button>
                 <button
                   type="button"
-                  class="nt__btn nt__btn--sm"
+                  class="mf-btn"
                   [attr.aria-disabled]="tplReason(t) ? 'true' : null"
                   [title]="tplReason(t)"
                   (click)="onTemplateAction($event, tplReason(t), 'edit', t)"
@@ -616,7 +628,7 @@ interface RefChip {
                 </button>
                 <button
                   type="button"
-                  class="nt__btn nt__btn--sm"
+                  class="mf-btn"
                   [attr.aria-disabled]="!canEdit() || null"
                   [title]="canEdit() ? '' : useReason"
                   (click)="onTemplateAction($event, canEdit() ? '' : useReason, 'dup', t)"
@@ -625,7 +637,7 @@ interface RefChip {
                 </button>
                 <button
                   type="button"
-                  class="nt__btn nt__btn--sm"
+                  class="mf-btn"
                   [attr.aria-disabled]="tplReason(t) ? 'true' : null"
                   [title]="tplReason(t)"
                   (click)="onTemplateAction($event, tplReason(t), 'del', t)"
@@ -634,7 +646,7 @@ interface RefChip {
                 </button>
                 <button
                   type="button"
-                  class="nt__ib"
+                  class="mf-btn mf-btn--icon"
                   aria-label="Close template"
                   title="Close"
                   (click)="closePanel()"
@@ -684,12 +696,7 @@ interface RefChip {
               <!-- the header: read mode and edit mode -->
               @if (editing()) {
                 <header class="nt__ph" data-note-head>
-                  <button
-                    type="button"
-                    class="nt__btn nt__btn--sm"
-                    data-note-cancel
-                    (click)="cancel()"
-                  >
+                  <button type="button" class="mf-btn" data-note-cancel (click)="cancel()">
                     Cancel
                   </button>
                   <span class="nt__crumb"
@@ -700,7 +707,11 @@ interface RefChip {
                     ><span>{{ dirty() ? 'Unsaved changes' : 'No changes' }}</span>
                   </span>
                   <span class="nt__grow"></span>
-                  <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
+                  <mf-ai-button
+                    [allowed]="aiAllowed()"
+                    [showNote]="false"
+                    (pressed)="aiPanel.set(true)"
+                  />
                   @if (note(); as n) {
                     <ng-container
                       [ngTemplateOutlet]="deleteBtn"
@@ -709,7 +720,7 @@ interface RefChip {
                   }
                   <button
                     type="button"
-                    class="nt__btn nt__btn--sm nt__btn--p"
+                    class="mf-btn mf-btn--primary"
                     data-note-save
                     [attr.aria-disabled]="saveBlocked() ? 'true' : null"
                     [title]="
@@ -724,7 +735,7 @@ interface RefChip {
                   @if (!stacked()) {
                     <button
                       type="button"
-                      class="nt__ib"
+                      class="mf-btn mf-btn--icon"
                       data-note-wide
                       [attr.aria-pressed]="wide()"
                       [attr.aria-label]="
@@ -746,11 +757,15 @@ interface RefChip {
                   <span class="nt__crumb"
                     >Notes / <b>{{ n.title }}</b></span
                   >
-                  <mf-ai-button [allowed]="aiAllowed()" (pressed)="aiPanel.set(true)" />
+                  <mf-ai-button
+                    [allowed]="aiAllowed()"
+                    [showNote]="false"
+                    (pressed)="aiPanel.set(true)"
+                  />
                   @if (canEdit()) {
                     <button
                       type="button"
-                      class="nt__btn nt__btn--sm"
+                      class="mf-btn"
                       data-note-edit
                       [attr.aria-disabled]="!lock().canEdit ? 'true' : null"
                       [title]="
@@ -767,7 +782,7 @@ interface RefChip {
                     </button>
                     <button
                       type="button"
-                      class="nt__ib"
+                      class="mf-btn mf-btn--icon"
                       data-note-pin
                       aria-label="Pin note"
                       [attr.aria-pressed]="n.isPinned"
@@ -779,7 +794,7 @@ interface RefChip {
                     @if (n.isLocked) {
                       <button
                         type="button"
-                        class="nt__ib"
+                        class="mf-btn mf-btn--icon"
                         data-note-unlock
                         aria-label="Unlock note"
                         [attr.aria-disabled]="!lock().canUnlock ? 'true' : null"
@@ -791,7 +806,7 @@ interface RefChip {
                     } @else {
                       <button
                         type="button"
-                        class="nt__ib"
+                        class="mf-btn mf-btn--icon"
                         data-note-lock
                         aria-label="Lock note"
                         title="Lock note"
@@ -809,7 +824,7 @@ interface RefChip {
                   @if (!stacked() && !wide()) {
                     <button
                       type="button"
-                      class="nt__ib"
+                      class="mf-btn mf-btn--icon"
                       data-split-reset
                       aria-label="Reset list width"
                       title="Reset list width"
@@ -820,7 +835,7 @@ interface RefChip {
                   }
                   <button
                     type="button"
-                    class="nt__ib"
+                    class="mf-btn mf-btn--icon"
                     data-note-history
                     aria-label="History"
                     title="History"
@@ -831,7 +846,7 @@ interface RefChip {
                   @if (!stacked()) {
                     <button
                       type="button"
-                      class="nt__ib"
+                      class="mf-btn mf-btn--icon"
                       data-note-wide
                       [attr.aria-pressed]="wide()"
                       [attr.aria-label]="
@@ -849,7 +864,7 @@ interface RefChip {
                   }
                   <button
                     type="button"
-                    class="nt__ib"
+                    class="mf-btn mf-btn--icon"
                     data-note-close
                     aria-label="Close note"
                     title="Close note"
@@ -878,12 +893,12 @@ interface RefChip {
                           Nobody can edit a locked note until {{ lockedWhileEditing() }} or an
                           administrator unlocks it. Copy your text first if you want to keep it.
                           <div class="nt__bb">
-                            <button type="button" class="nt__btn nt__btn--sm" (click)="copyMine()">
+                            <button type="button" class="mf-btn" (click)="copyMine()">
                               <i class="pi pi-copy" aria-hidden="true"></i>Copy my text
                             </button>
                             <button
                               type="button"
-                              class="nt__btn nt__btn--sm"
+                              class="mf-btn"
                               data-note-locked-close
                               (click)="closeLockedWarning()"
                             >
@@ -917,7 +932,7 @@ interface RefChip {
                           <div class="nt__bb">
                             <button
                               type="button"
-                              class="nt__btn nt__btn--sm"
+                              class="mf-btn"
                               data-note-reload
                               (click)="reloadTheirs()"
                             >
@@ -926,7 +941,7 @@ interface RefChip {
                             @if (!keepMine()) {
                               <button
                                 type="button"
-                                class="nt__btn nt__btn--sm"
+                                class="mf-btn"
                                 data-note-keep
                                 (click)="keepMine.set(true)"
                               >
@@ -951,14 +966,10 @@ interface RefChip {
                           <mf-note-tag [name]="t.name" [colourKey]="t.colourKey" />
                         }
                         <span class="nt__grow"></span>
-                        <button type="button" class="nt__btn nt__btn--sm" (click)="applyTplTags()">
+                        <button type="button" class="mf-btn" (click)="applyTplTags()">
                           Apply tags
                         </button>
-                        <button
-                          type="button"
-                          class="nt__btn nt__btn--sm"
-                          (click)="tplBanner.set([])"
-                        >
+                        <button type="button" class="mf-btn" (click)="tplBanner.set([])">
                           No thanks
                         </button>
                       </div>
@@ -1157,7 +1168,7 @@ interface RefChip {
                       </h3>
                       <button
                         type="button"
-                        class="nt__ib"
+                        class="mf-btn mf-btn--icon"
                         data-history-rail
                         [attr.aria-expanded]="histOpen()"
                         [attr.aria-label]="
@@ -1196,20 +1207,6 @@ interface RefChip {
                 }
               </div>
             }
-          </div>
-        } @else if (!stacked()) {
-          <div class="nt__panel" data-note-pane>
-            <div class="nt__empty" data-note-none>
-              <span class="nt__eic"><i class="pi pi-file" aria-hidden="true"></i></span>
-              <h3>
-                {{
-                  view() === 'templates'
-                    ? 'Select a template to read it'
-                    : 'Select a note to read it'
-                }}
-              </h3>
-              <p>The note opens here. People who can edit the matter see an Edit button.</p>
-            </div>
           </div>
         }
       </div>
@@ -1306,7 +1303,7 @@ interface RefChip {
         @if (n.isLocked) {
           <button
             type="button"
-            class="nt__ib"
+            class="mf-btn mf-btn--icon"
             data-note-delete
             aria-disabled="true"
             [attr.aria-label]="
@@ -1326,7 +1323,7 @@ interface RefChip {
         } @else {
           <button
             type="button"
-            class="nt__ib nt__ib--red"
+            class="mf-btn mf-btn--icon mf-btn--danger"
             data-note-delete
             aria-label="Delete note"
             title="Delete note"
@@ -1338,7 +1335,7 @@ interface RefChip {
       } @else {
         <button
           type="button"
-          class="nt__ib"
+          class="mf-btn mf-btn--icon"
           data-note-delete
           aria-disabled="true"
           aria-label="Delete note, not available. Delete needs the Matter Note Delete permission"
@@ -1431,11 +1428,13 @@ interface RefChip {
         }
         <p class="nt__byline">
           Missing a tag?
-          {{
-            isAdmin()
-              ? 'Create one under Labels, Notes tags.'
-              : 'Ask an administrator (Labels, Notes tags). Users can only pick.'
-          }}
+          @if (isAdmin()) {
+            <a routerLink="/admin/note-tags" target="_blank" data-tags-admin-link
+              >Create one under Labels, Notes tags</a
+            >.
+          } @else {
+            Ask an administrator (Labels, Notes tags). Users can only pick.
+          }
         </p>
       </div>
     </mf-slide-panel>
@@ -1458,7 +1457,7 @@ interface RefChip {
     </mf-slide-panel>
 
     <!-- New note from a template: one card per template -->
-    <mf-slide-panel
+    <mf-form-dialog
       title="New note from a template"
       subtitle="Pick a layout. The note opens with its title, tags and body; placeholders are filled in."
       size="large"
@@ -1489,9 +1488,9 @@ interface RefChip {
           </p>
         }
       </div>
-    </mf-slide-panel>
+    </mf-form-dialog>
 
-    <mf-slide-panel
+    <mf-form-dialog
       [title]="tplEditing() ? 'Edit template' : 'New template'"
       [primaryLabel]="tplEditing() ? 'Save template' : 'Create template'"
       size="large"
@@ -1590,9 +1589,9 @@ interface RefChip {
           </div>
         </div>
       }
-    </mf-slide-panel>
+    </mf-form-dialog>
 
-    <mf-slide-panel
+    <mf-form-dialog
       title="Save as template"
       primaryLabel="Save template"
       [busy]="busy()"
@@ -1658,7 +1657,7 @@ interface RefChip {
           </p>
         </div>
       }
-    </mf-slide-panel>
+    </mf-form-dialog>
 
     <mf-ai-coming-soon [(visible)]="aiPanel" />
     <mf-confirm-dialog
@@ -1892,16 +1891,6 @@ export class NotesTab {
   protected readonly confirmDiscard = signal(false);
   private pendingAfterDiscard: (() => void) | null = null;
 
-  protected readonly newItems: MenuAction[] = [
-    { id: 'blank', label: 'Blank note', icon: 'pi-file', run: () => this.newNote() },
-    {
-      id: 'template',
-      label: 'From template...',
-      icon: 'pi-clone',
-      run: () => void this.openTemplates(),
-    },
-  ];
-
   protected readonly canEdit = computed(() => this.auth.has('MatterNote.Edit'));
   protected readonly canDelete = computed(() => this.auth.has('MatterNote.Delete'));
   protected readonly isAdmin = computed(() => this.auth.isSystemAdmin());
@@ -1968,7 +1957,9 @@ export class NotesTab {
             kind: 'asset' as const,
             id: a.assetId,
             label: a.displayName,
-            sub: a.assetTypeName,
+            sub: [a.assetTypeName, a.externalReference, a.isActive ? '' : 'inactive']
+              .filter(Boolean)
+              .join(' · '),
           }));
         }
         case 'project': {
