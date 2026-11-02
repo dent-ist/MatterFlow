@@ -50,6 +50,11 @@ for (const h of ['overdue', 'risk', 'info', 'healthy', 'person', 'critical', 'ne
     graphic,
   ]);
 }
+// Note text colours (MD-30, #1034): on the card and on the quote tint of a note.
+for (const c of ['red', 'orange', 'amber', 'green', 'teal', 'blue', 'violet', 'slate']) {
+  pairs.push([`note colour ${c} on a card`, `--mf-note-${c}`, '--mf-surface', text]);
+  pairs.push([`note colour ${c} on the quote tint`, `--mf-note-${c}`, '--mf-surface-alt', text]);
+}
 for (const s of ['new', 'progress', 'hold', 'done', 'cancel']) {
   pairs.push([`status ${s} text on its chip`, `--mf-status-${s}-fg`, `--mf-status-${s}-bg`, text]);
   pairs.push([`status ${s} text on a card`, `--mf-status-${s}-fg`, '--mf-surface', text]);

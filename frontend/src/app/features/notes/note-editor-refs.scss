@@ -318,3 +318,76 @@
   background: var(--mf-sem-risk-bg);
   color: var(--mf-text);
 }
+
+// ---- text colours (MD-30): the stored key `data-color` maps to a theme token; everywhere a note is drawn (edit, read, templates, the /note embed, print)
+@each $key in red, orange, amber, green, teal, blue, violet, slate {
+  [data-color='#{$key}'] {
+    color: var(--mf-note-#{$key});
+  }
+}
+
+.ne__colour {
+  position: relative;
+  display: inline-flex;
+}
+
+.ne__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: 3px;
+  background: currentcolor;
+}
+
+.ne__swatch--default {
+  background: var(--mf-text);
+}
+
+.ne__colour > .ne__btn {
+  width: auto;
+  gap: 3px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ne__cmenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  min-width: 160px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--mf-border);
+  border-radius: 10px;
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+
+  button {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--mf-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--mf-sem-neutral-bg);
+    }
+
+    &[aria-checked='true'] {
+      background: var(--mf-sem-info-bg);
+      font-weight: 600;
+    }
+  }
+}

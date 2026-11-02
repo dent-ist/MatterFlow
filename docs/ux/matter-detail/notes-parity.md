@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 131 lines done (D), 11 different on purpose (P), 0 open (O).**
+**Result: 133 lines done (D), 10 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -40,7 +40,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 |---|---|---|
 | C1 | By tag view: one collapsible group per tag, alphabetical, last group "Untagged"; sticky group header = chevron, tag chip, "inactive" label for inactive tags, count chip; header is a button with `aria-expanded` | D |
 | C2 | A note with several tags appears in each of its groups; hovering/focusing one copy highlights all copies ("twin" ring) | D |
-| C3 | Row: avatar (32 px, initials, palette colour), title bold 14.5 px with pin and lock icons (screen-reader text "Pinned." / "Locked."), 2-line preview, tag chips, meta "Updated by <b>Name</b> . MM/DD hh:mm AM/PM" | P: the avatar shows the person who last updated the note (the list endpoint has no author); the meta line is as in the mockup |
+| C3 | Row: avatar (32 px, initials, palette colour), title bold 14.5 px with pin and lock icons (screen-reader text "Pinned." / "Locked."), 2-line preview, tag chips, meta "Updated by <b>Name</b> . MM/DD hh:mm AM/PM" | D (the avatar is the note's author: the list endpoint now returns `createdByUserId` and `createdByName`; the meta line says who updated it last, as in the mockup) |
 | C4 | Chips inside a group: the group's tag with a ring ("here"), then "also in" and the other tags; in Latest view all tags; no tags shows "No tags" | D |
 | C5 | Selected row has the blue background and `aria-current`; hover has a light background; focus ring inside the row | D |
 | C6 | Latest first view: one flat list, every note once | D |
@@ -125,6 +125,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | H11 | Undo and Redo (disabled when nothing to undo/redo) | D |
 | H12 | Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y inside the text field | D |
 | H13 | Ctrl+K opens the link dialog | P: no Ctrl+K (no new shortcuts, #420); the Link button does the same |
+| H15 | (addition beyond the mockup, owner 2026-11-02, #1034) Text colour: toolbar button with the current colour, menu with Default and eight named colours (red, orange, amber, green, teal, blue, violet, grey), arrow keys, current colour in the button name; stored as a span with `data-color`, unknown keys stripped by the Note sanitiser; drawn from `--mf-note-*` tokens (4.5:1 checked) in edit, read, templates and the /note embed | D |
 | H14 | Paste is plain text only; drop is blocked | D |
 
 ## I. Slash, @ and # menus
@@ -133,7 +134,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 |---|---|---|
 | I1 | `/` is recognised at the start of a line or after a space only (URLs and "and/or" never open it) | D |
 | I2 | Popover `role="listbox"`, the editor keeps focus and points at the active row (`aria-activedescendant`), header row in small caps with a key hint ("type to filter, Esc closes") | D |
-| I3 | Commands (owner list): /asset, /mention, /project, /matter, /note (no /assets, no /template, no /task); each row has an icon tile, "/name" and a one-line description | D (owner list: asset, mention, project, matter, note; no /assets, /template or /task) |
+| I3 | Commands (owner list, /template added 2026-11-02): /template, /asset, /mention, /project, /matter, /note (no /assets, no /task); each row has an icon tile, "/name" and a one-line description | D (owner list: template, asset, mention, project, matter, note; no /assets or /task) |
 | I4 | Keys inside the menu: type to filter, Up/Down, Enter or Tab choose, Esc closes, Backspace goes back one level | D |
 | I5 | Two levels in the same popover: choosing a command turns the text into "/asset " and shows the breadcrumb "Asset >" with that command's list; Backspace on the space returns to the command list | D |
 | I6 | Choosing an item deletes the typed "/..." text and puts the chip in its place followed by a space | D |
@@ -244,7 +245,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 
 1. **Title.** The mockup has a Title input above the toolbar; AQ 9 says the title is the first line of the content. Built: no title input, the first line is drawn large while editing and is the heading in read mode.
 2. **Edit mode buttons.** The mockup put Cancel and Save together on the right of the header; the owner (2026-11-02) wants Cancel left and Save right. Built that way.
-3. **Slash commands.** The mockup lists Template, Asset, Task, Project and a `#`/`@` shortcut; AQ 9 fixes /asset /mention /project /matter /note (no /assets). Built: those five (plus `@` and `#`); templates are reached from New Note > From template and the Templates view, tasks are not referenced.
+3. **Slash commands.** The mockup lists Template, Asset, Task, Project and a `#`/`@` shortcut; AQ 9 fixes /template /asset /mention /project /matter /note (no /assets; the owner added /template on 2026-11-02). Built: those six (plus `@` and `#`); tasks are not referenced. `/template` lists the templates (name, description, tags), puts the body in at the cursor, and in an empty note also fills the title line and offers the template tags.
 4. **Tags.** The mockup picks tags in a popover; AQ 9 says tags show in a side panel and (Labels, #1021) are firm-wide. Built: side panel, firm-wide tags, at most five.
 5. **Permissions.** The mockup's role switch had three note permissions (Read, Edit, Delete); same as AQ 9: `MatterNote.View`, `MatterNote.Edit`, `MatterNote.Delete`. Unchanged.
 6. **AI.** The mockup r3 had no AI button; AQ 10 and the matter-detail mockup do: the button opens the "coming soon" panel, is disabled with "AI can't be used on this matter" when AI allowed is No, the save warning dialog exists behind the OFF flag.

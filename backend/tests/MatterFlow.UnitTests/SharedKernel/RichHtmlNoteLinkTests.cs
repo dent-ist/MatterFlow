@@ -46,4 +46,33 @@ public sealed class RichHtmlNoteLinkTests
     {
         Note("<p><a href=\"https://example.test/x\">x</a></p>").ShouldContain("href=\"https://example.test/x\"");
     }
+
+    [Theory]
+    [InlineData("red")]
+    [InlineData("slate")]
+    public void A_note_keeps_a_palette_colour_and_its_nested_text(string key)
+    {
+        var clean = Note($"<p>a <span data-color=\"{key}\">b <strong>c</strong></span></p>");
+
+        clean.ShouldBe($"<p>a <span data-color=\"{key}\">b <strong>c</strong></span></p>");
+    }
+
+    [Theory]
+    [InlineData("pink")]
+    [InlineData("RED")]
+    [InlineData("red;x")]
+    [InlineData("")]
+    public void A_note_strips_an_unknown_colour_but_keeps_the_text(string value)
+    {
+        var clean = Note($"<p>a <span data-color=\"{value}\">b <strong>c</strong></span></p>");
+
+        clean.ShouldBe("<p>a b <strong>c</strong></p>");
+    }
+
+    [Fact]
+    public void A_colour_span_carries_no_style_class_or_other_attribute_and_comments_drop_it()
+    {
+        Note("<p><span data-color=\"red\" style=\"color:red\" class=\"x\" onclick=\"y()\">t</span></p>").ShouldBe("<p><span data-color=\"red\">t</span></p>");
+        RichHtml.Sanitize("<p><span data-color=\"red\">t</span></p>", RichHtmlLimits.Comment).ShouldNotContain("data-color");
+    }
 }

@@ -25015,7 +25015,9 @@
           "lockedAtUtc",
           "updatedAtUtc",
           "updatedByUserId",
-          "updatedByName"
+          "updatedByName",
+          "createdByUserId",
+          "createdByName"
         ],
         "type": "object",
         "properties": {
@@ -25077,6 +25079,19 @@
             "format": "int32"
           },
           "updatedByName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdByUserId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdByName": {
             "type": [
               "null",
               "string"

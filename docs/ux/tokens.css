@@ -230,6 +230,15 @@
   --mf-sem-healthy-bg: var(--mf-p-teal-bg);
   --mf-sem-healthy-solid: var(--mf-p-teal-solid);
   --mf-sem-healthy-line: var(--mf-p-teal-line);
+  /* Note text colours (MD-30, #1034): the fixed palette of the Notes editor; each is dark enough for 4.5:1 on a card and on the quote tint. */
+  --mf-note-red: var(--mf-p-red-fg);
+  --mf-note-orange: var(--mf-p-orange-fg);
+  --mf-note-amber: var(--mf-p-amber-fg);
+  --mf-note-green: #146c2e;
+  --mf-note-teal: var(--mf-p-teal-fg);
+  --mf-note-blue: var(--mf-p-blue-fg);
+  --mf-note-violet: var(--mf-p-violet-fg);
+  --mf-note-slate: var(--mf-p-slate-fg);
   --mf-sem-person-fg: var(--mf-p-violet-fg);
   --mf-sem-person-bg: var(--mf-p-violet-bg);
   --mf-sem-person-solid: var(--mf-p-violet-solid);
