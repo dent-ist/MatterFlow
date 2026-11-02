@@ -2,7 +2,7 @@
 
 Source of truth: `docs/ux/mockups/notes-mockup-r3.html` (design option A, the one the README recommends) with its README section "Notes mockup, revision 3", and the Notes tab of the matter-detail mockup round 3 (`docs/ux/mockups/matter-detail/index.html`, branch `matter-detail-mockups`) where the owner's later decisions are already drawn. Owner decisions in `docs/requirements/decisions-addendum.md` section AQ (items 9 and 10) and the owner's later calls of 2026-11-02 win over the mockup when they conflict.
 
-**Result: 116 lines done (D), 27 different on purpose (P), 0 open (O).**
+**Result: 115 lines done (D), 28 different on purpose (P), 0 open (O).**
 
 Legend: **D** = done (built as in the mockup), **P** = different on purpose (the reason is in the line), **O** = open (not done, reason given). The result column is filled in at the end of the work. Screenshots: `docs/ux/matter-detail/notes-parity/` (`<state>-mockup-<size>.png` next to `<state>-app-<size>.png`; sizes 1366 and 375).
 
@@ -31,7 +31,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | B6 | View switch (segmented, `aria-pressed`): By tag, Latest first, Templates (the Board view was removed on the owner's request, #1046); labels shrink to icons when the card is narrower than 1000 px | D (labels fall back to icons under 1120/1000 px of card width) |
 | B7 | Collapse all / Expand all groups icon button (only in By tag view) | P: #1049: Collapse all is an item of View options |
 | B8 | Sort dropdown (not in Templates): Newest (updated), Oldest, A to Z, Created; pinned notes always stay on top | P: #1049: Sort is in View options |
-| B9 | "New note" split button: main part makes a blank note (edit mode), the caret opens "Blank note" / "From template..." (hidden for people without Matter Note Edit) | P: "New Note" (Title Case, theme guide section 9, MD-26) and the caret are two adjacent buttons from the shared button system instead of one joined split button |
+| B9 | "New note" split button: main part makes a blank note (edit mode), the caret opens "Blank note" / "From template..." (hidden for people without Matter Note Edit) | P: owner request 2026-11-02 (#1056): one plain "+ New Note" button, no caret and no Blank note / From template menu; starting from a template is /template in the editor (an empty new note shows that hint under the box) |
 | B10 | Header never wraps at 1366; below 690 px of card width the search drops to its own full-width line | D (one line at 1366; the search drops to its own full-width line under 760 px) |
 
 ## C. List: groups, rows, chips
@@ -167,7 +167,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | K3 | Template read panel: header "Templates / name", Use (primary), Edit, Duplicate, Delete; body with placeholders highlighted; info line "Highlighted placeholders are replaced when the template is used. Title when used: ..." | P: owner request #1047: a template opens in the same note panel as a note (read mode, a "Template" badge, Edit, delete icon, Cancel left and Save right); no Use or Duplicate; lock and history do not exist for templates |
 | K4 | Permissions: using or changing a matter template needs Matter Note Edit; firm-wide templates are changed only by an administrator; a reader sees the list, actions disabled with the reason (tooltip + name + toast) | D |
 | K5 | Use: opens a new note in edit mode with title, tags and body filled ({{date}}, {{matter}}, {{author}}, {{time}}); other placeholders stay; offers tags | D (use a template with /template or New Note > From template; both stay: one inserts into a note being written, the other starts a note) |
-| K6 | New note > From template...: dialog "New note from a template" with one card per template (icon, name, description, first words, scope chip, used count) | D (centred dialog, `mf-form-dialog` of #1026) |
+| K6 | New note > From template...: dialog "New note from a template" with one card per template (icon, name, description, first words, scope chip, used count) | P: owner request #1056: no "New note from a template" dialog; use /template in the editor |
 | K7 | Save as template (More menu "Save as template..."): dialog with name, description, scope radios (Firm-wide only for an administrator), "Include the tags", note about references; works on a locked note | D (`mf-form-dialog`) |
 | K8 | Template editor = note editor + description + scope select + highlighted tokens; banner explaining tokens | P: owner request #1047: the template is edited in the note panel with the note editor, toolbar and slash commands, and Name, Description and Title-when-used fields above the text; no dialog |
 | K9 | Delete template confirmation "Delete this template?" ("Notes already made from it are not changed.") | D |
@@ -266,3 +266,4 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 16. **No New template button (owner request 2026-11-02, #1048).** Templates are created from a note (Save as template); the Templates view only lists, opens, edits and deletes existing ones.
 17. **List controls and grouped actions (owner request 2026-11-02, #1049).** The mockup's one-line header row and its ten header icons are replaced by two control lines in the list pane and one Actions menu; History is only on the right rail (and in Actions when the area is narrow). Tag chips are a tint of the colour with a solid dot.
 18. **Edit header and tags line (owner request 2026-11-02, #1050).** Cancel and Save together at the far right, the status next to an Editing label, Save off until there is a change, tags as a slim line.
+19. **One New Note button (owner request 2026-11-02, #1056).** The mockup's split button and the From template dialog are gone; /template does that job.

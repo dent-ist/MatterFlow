@@ -616,23 +616,35 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(dlg).toContainText('Who can use it');
     await expect(dlg.getByLabel('Template name')).not.toHaveValue('');
     await dlg.getByRole('button', { name: 'Save template' }).click();
-    await page.locator('[data-new-menu]').click();
-    await page.getByRole('menuitem', { name: 'From template...' }).click();
-    await page.getByRole('dialog').locator('[data-template-use]', { hasText: source }).click();
+    await page.locator('[data-new-note]').click();
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type(`/template ${source}`);
+    await expect(page.locator('[data-suggest-menu] [role=option]')).toHaveCount(1);
+    await page.keyboard.press('Enter');
     await expect(page.locator('[data-template-tags]')).toContainText('Template tags');
     await page.locator('[data-template-tags]').getByRole('button', { name: 'Apply tags' }).click();
     await expect(page.locator('[data-note-tag-chips] mf-note-tag')).toHaveCount(1);
   });
 
-  test('the empty state and the New note menu', async ({ page, seed }) => {
+  test('the empty state and one plain New Note button with the /template hint', async ({
+    page,
+    seed,
+  }) => {
     const w = await world(seed);
     await open(page, w.matter.matterId);
     const empty = page.locator('[data-notes-empty]');
     await expect(empty).toContainText('No notes on this matter yet');
     await expect(empty.getByRole('button', { name: 'Add the first note' })).toBeVisible();
-    await page.locator('[data-new-menu]').click();
-    await expect(page.getByRole('menuitem', { name: 'Blank note' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'From template...' })).toBeVisible();
+    // one plain button: no caret, no dropdown, no From template picker
+    await expect(page.locator('[data-new-menu]')).toHaveCount(0);
+    await page.locator('[data-new-note]').click();
+    await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
+    await expect(page.locator('[data-editor-empty-hint]')).toContainText(
+      'Type / for commands, for example /template to start from a template.',
+    );
+    await page.locator('.ProseMirror').click();
+    await page.keyboard.type('x');
+    await expect(page.locator('[data-editor-empty-hint]')).toHaveCount(0);
   });
 
   test('the AI button says it is not available on a matter that does not allow AI', async ({

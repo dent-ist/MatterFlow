@@ -67,7 +67,7 @@ import {
   withoutTitleBlock,
 } from './note-ui';
 
-type PanelKind = 'none' | 'tags' | 'history' | 'refs' | 'templates' | 'save-template';
+type PanelKind = 'none' | 'tags' | 'history' | 'refs' | 'save-template';
 type NoteView = 'tag' | 'latest' | 'templates';
 type TagRow = NoteTagResponse & { noteTagId: number };
 
@@ -170,53 +170,14 @@ interface RefChip {
                   (searchChange)="onSearch($event)"
                 />
                 @if (canEdit()) {
-                  <span class="nt__split-btn">
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--primary"
-                      data-new-note
-                      (click)="newNote()"
-                    >
-                      <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="mf-btn mf-btn--primary nt__caret"
-                      data-new-menu
-                      aria-haspopup="menu"
-                      [attr.aria-expanded]="newMenuOpen()"
-                      aria-label="New note: choose blank or from a template"
-                      (click)="newMenuOpen.set(!newMenuOpen())"
-                    >
-                      <i class="pi pi-angle-down" aria-hidden="true"></i>
-                    </button>
-                    @if (newMenuOpen()) {
-                      <ul class="nt__menu" role="menu" aria-label="New note" data-new-menu-list>
-                        <li role="none">
-                          <button
-                            type="button"
-                            class="mf-btn mf-btn--text nt__mi"
-                            role="menuitem"
-                            data-new-blank
-                            (click)="newMenuPick('blank')"
-                          >
-                            <i class="pi pi-file" aria-hidden="true"></i>Blank note
-                          </button>
-                        </li>
-                        <li role="none">
-                          <button
-                            type="button"
-                            class="mf-btn mf-btn--text nt__mi"
-                            role="menuitem"
-                            data-new-template
-                            (click)="newMenuPick('template')"
-                          >
-                            <i class="pi pi-clone" aria-hidden="true"></i>From template...
-                          </button>
-                        </li>
-                      </ul>
-                    }
-                  </span>
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--primary"
+                    data-new-note
+                    (click)="newNote()"
+                  >
+                    <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
+                  </button>
                 }
               </div>
               <div class="nt__lc2">
@@ -1597,41 +1558,6 @@ interface RefChip {
       </div>
     </mf-slide-panel>
 
-    <!-- New note from a template: one card per template -->
-    <mf-form-dialog
-      title="New note from a template"
-      subtitle="Pick a layout. The note opens with its title, tags and body; placeholders are filled in."
-      size="large"
-      [visible]="panel() === 'templates'"
-      (visibleChange)="!$event && panel.set('none')"
-      [showFooter]="false"
-      (submitted)="panel.set('none')"
-    >
-      <div class="nt__tchoose" data-template-list>
-        @for (t of templates(); track t.noteTemplateId) {
-          <button type="button" class="nt__tcard" data-template-use (click)="useTemplate(t)">
-            <span class="nt__tile" aria-hidden="true"><i class="pi pi-clone"></i></span>
-            <span>
-              <b>{{ t.name }}</b>
-              <small>{{ t.description }}</small>
-              <small>{{ preview(t.bodyHtml) }}</small>
-            </span>
-            <span class="nt__tags">
-              <span class="nt__pill" [class.nt__pill--info]="t.scope === 'FIRM'">{{
-                t.scope === 'FIRM' ? 'Firm-wide' : 'This matter'
-              }}</span>
-              <small>Used {{ t.usedCount }} times</small>
-            </span>
-          </button>
-        } @empty {
-          <p class="nt__byline">
-            No templates yet. Create one from a note: open it and use More actions, Save as
-            template.
-          </p>
-        }
-      </div>
-    </mf-form-dialog>
-
     <mf-form-dialog
       title="Save as template"
       primaryLabel="Save template"
@@ -1812,7 +1738,6 @@ export class NotesTab {
   protected readonly twinId = signal<number | null>(null);
   protected readonly allTags = signal<TagRow[]>([]);
   protected readonly tagQuery = signal('');
-  protected readonly newMenuOpen = signal(false);
   protected readonly viewOptionsOpen = signal(false);
   protected readonly actionsOpen = signal(false);
   /** The active tag, Untagged and Locked filters, for the removable chips under the view switch. */
@@ -2182,7 +2107,6 @@ export class NotesTab {
     // The closing click of the "New note" menu.
     const close = (e: Event) => {
       const t = e.target as HTMLElement;
-      if (this.newMenuOpen() && !t.closest('.nt__split-btn')) this.newMenuOpen.set(false);
       if (this.viewOptionsOpen() && !t.closest('.nt__vo')) this.viewOptionsOpen.set(false);
       if (this.actionsOpen() && !t.closest('.nt__am')) this.actionsOpen.set(false);
     };
@@ -2315,14 +2239,12 @@ export class NotesTab {
 
   protected toggleViewOptions(): void {
     this.actionsOpen.set(false);
-    this.newMenuOpen.set(false);
     this.viewOptionsOpen.update((o) => !o);
     if (this.viewOptionsOpen()) this.focusFirstItem('[data-view-options-menu]');
   }
 
   protected toggleActions(): void {
     this.viewOptionsOpen.set(false);
-    this.newMenuOpen.set(false);
     this.actionsOpen.update((o) => !o);
     if (this.actionsOpen()) this.focusFirstItem('[data-actions-menu]');
   }
@@ -2330,7 +2252,6 @@ export class NotesTab {
   protected closeMenus(): void {
     this.viewOptionsOpen.set(false);
     this.actionsOpen.set(false);
-    this.newMenuOpen.set(false);
   }
 
   private focusFirstItem(menu: string): void {
@@ -2428,12 +2349,6 @@ export class NotesTab {
     } catch {
       this.notify.warn('Copying is not allowed here. Copy the address from the browser.');
     }
-  }
-
-  protected newMenuPick(what: 'blank' | 'template'): void {
-    this.newMenuOpen.set(false);
-    if (what === 'blank') this.newNote();
-    else void this.openTemplates();
   }
 
   protected async loadList(): Promise<void> {
@@ -3033,11 +2948,6 @@ export class NotesTab {
 
   // ---------------------------------------------------------------- templates
 
-  protected async openTemplates(): Promise<void> {
-    this.panel.set('templates');
-    await this.loadTemplates();
-  }
-
   private async loadTemplates(): Promise<void> {
     try {
       this.templates.set(
@@ -3077,29 +2987,6 @@ export class NotesTab {
       this.tplToDelete.set(t);
       this.confirmDeleteTpl.set(true);
     }
-  }
-
-  /** Copies the template into a new note: the placeholders {{date}}, {{time}}, {{matter}} and {{author}} are filled in; others stay for the person. */
-  protected useTemplate(t: NoteTemplateResponse): void {
-    this.guard(async () => {
-      const values = placeholderValues(new Date(), this.matterLabel(), this.auth.displayName());
-      const title = t.titleTemplate
-        ? `<h1>${resolvePlaceholders(escapeText(t.titleTemplate), values)}</h1>`
-        : '';
-      const html = title + resolvePlaceholders(t.bodyHtml, values);
-      this.panel.set('none');
-      this.selTemplate.set(null);
-      this.startNew(html, []);
-      const offer = t.tags.filter((x) => x.isActive);
-      this.tplBanner.set(offer);
-      try {
-        await firstValueFrom(this.templatesApi.useNoteTemplate(t.noteTemplateId));
-      } catch {
-        // The count is a convenience; the note is already open.
-      }
-      const open = openPlaceholders(html);
-      if (open.length > 0) this.notify.info(`Fill in: ${open.join(', ')}`);
-    });
   }
 
   /** Edit mode of the open template, in the note panel (name, description, title, text, tags). */
@@ -3231,10 +3118,7 @@ export class NotesTab {
 
   /** Escape closes an open note on a narrow screen (a dialog or a menu takes it first); a menu of the editor stops it itself. */
   protected onKey(e: KeyboardEvent): void {
-    if (
-      e.key === 'Escape' &&
-      (this.newMenuOpen() || this.viewOptionsOpen() || this.actionsOpen())
-    ) {
+    if (e.key === 'Escape' && (this.viewOptionsOpen() || this.actionsOpen())) {
       e.preventDefault();
       this.closeMenus();
       return;
